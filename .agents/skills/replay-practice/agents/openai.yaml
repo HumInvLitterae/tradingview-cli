@@ -1,0 +1,4 @@
+interface:
+  display_name: "Replay Practice"
+  short_description: "Plan replay work with current CLI gaps."
+  default_prompt: "Use replay-practice to plan TradingView replay practice while respecting current Rust tv CLI gaps."

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Multi-Symbol Scan"
+  short_description: "Compare symbols with the Rust tv CLI."
+  default_prompt: "Use multi-symbol-scan to compare a small TradingView symbol set with the Rust tv CLI."

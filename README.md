@@ -63,7 +63,6 @@ The wire shape may differ, but information compatibility is required for migrate
 - no copied JavaScript bridge code
 - no all-at-once feature parity promise
 - no release packaging
-- no skill migration yet
 - no MCP server implementation
 
 ## Quick Start
@@ -131,6 +130,7 @@ Exit codes are:
 - a read utilities migration ExecPlan and implementation slice
 - a chart-region screenshot ExecPlan and implementation slice
 - a diagnostic read commands ExecPlan and implementation slice
+- repo-local CLI skills migrated from the original MCP workflow split
 
 ## Where to start
 

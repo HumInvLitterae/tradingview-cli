@@ -1,0 +1,4 @@
+interface:
+  display_name: "Pine Develop"
+  short_description: "Plan Pine work with current CLI gaps."
+  default_prompt: "Use pine-develop to plan Pine Script work while respecting current Rust tv CLI gaps."

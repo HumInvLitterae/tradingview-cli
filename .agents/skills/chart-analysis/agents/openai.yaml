@@ -1,0 +1,4 @@
+interface:
+  display_name: "Chart Analysis"
+  short_description: "Analyze charts with the Rust tv CLI."
+  default_prompt: "Use chart-analysis to review a live TradingView chart with the Rust tv CLI."
