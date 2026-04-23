@@ -20,11 +20,22 @@ pub enum Command {
     Ohlcv {
         #[arg(long, short)]
         summary: bool,
+        #[arg(long, short)]
+        count: Option<usize>,
     },
-    #[command(about = "Set the chart symbol")]
-    Symbol { symbol: String },
-    #[command(about = "Set the chart timeframe")]
-    Timeframe { timeframe: String },
+    #[command(about = "Get or set the chart symbol")]
+    Symbol { symbol: Option<String> },
+    #[command(about = "Get or set the chart timeframe")]
+    Timeframe { timeframe: Option<String> },
+    #[command(about = "Get or set the visible chart range")]
+    Range {
+        #[arg(long)]
+        from: Option<f64>,
+        #[arg(long)]
+        to: Option<f64>,
+    },
+    #[command(about = "Scroll the chart to a date or Unix timestamp")]
+    Scroll { date: String },
     #[command(about = "Capture a full screenshot")]
     Screenshot {
         #[arg(long, short, default_value = "full")]
@@ -43,6 +54,8 @@ impl Command {
             Self::Ohlcv { .. } => "ohlcv",
             Self::Symbol { .. } => "symbol",
             Self::Timeframe { .. } => "timeframe",
+            Self::Range { .. } => "range",
+            Self::Scroll { .. } => "scroll",
             Self::Screenshot { .. } => "screenshot",
         }
     }

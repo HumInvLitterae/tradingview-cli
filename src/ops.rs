@@ -3,7 +3,7 @@ use std::{fs, path::Path};
 use serde_json::{Value, json};
 
 use crate::{
-    cdp::RuntimeEvaluator,
+    cdp::{CdpClient, RuntimeEvaluator},
     error::{AppError, ErrorKind},
     transport::{self, TargetSelection, TransportConfig},
 };
@@ -11,34 +11,88 @@ use crate::{
 const CHART_API: &str = "window.TradingViewApi._activeChartWidgetWV.value()";
 const BARS_PATH: &str =
     "window.TradingViewApi._activeChartWidgetWV.value()._chartWidget.model().mainSeries().bars()";
+const DEFAULT_OHLCV_COUNT: usize = 100;
+const MAX_OHLCV_COUNT: usize = 500;
 
 pub async fn status(config: &TransportConfig) -> Result<Value, AppError> {
     let targets = transport::fetch_targets(config).await?;
     let data = match transport::select_target(&targets) {
-        TargetSelection::Selected(target) => json!({
-            "connected": true,
-            "target_id": target.id,
-            "target_url": target.url,
-            "target_title": target.title,
-            "cdp_host": config.host,
-            "cdp_port": config.port,
-        }),
+        TargetSelection::Selected(target) => {
+            let mut data = json!({
+                "connected": true,
+                "cdp_connected": true,
+                "target_id": target.id,
+                "target_url": target.url,
+                "target_title": target.title,
+                "cdp_host": config.host,
+                "cdp_port": config.port,
+                "chart_symbol": "unknown",
+                "chart_resolution": "unknown",
+                "chart_type": null,
+                "api_available": false,
+            });
+            let mut runtime = CdpClient::connect(&target).await?;
+            if let Ok(chart) = chart_status(&mut runtime).await {
+                merge_object(&mut data, chart);
+            }
+            data
+        }
         TargetSelection::None => json!({
             "connected": false,
+            "cdp_connected": false,
             "cdp_host": config.host,
             "cdp_port": config.port,
+            "chart_symbol": "unknown",
+            "chart_resolution": "unknown",
+            "chart_type": null,
+            "api_available": false,
             "error": "No TradingView chart target found",
             "candidates": targets,
         }),
         TargetSelection::Ambiguous(candidates) => json!({
             "connected": false,
+            "cdp_connected": false,
             "cdp_host": config.host,
             "cdp_port": config.port,
+            "chart_symbol": "unknown",
+            "chart_resolution": "unknown",
+            "chart_type": null,
+            "api_available": false,
             "error": "Multiple TradingView chart targets found",
             "candidates": candidates,
         }),
     };
     Ok(data)
+}
+
+async fn chart_status(runtime: &mut impl RuntimeEvaluator) -> Result<Value, AppError> {
+    runtime
+        .evaluate(
+            &format!(
+                r#"
+                (function() {{
+                    var result = {{
+                        chart_symbol: "unknown",
+                        chart_resolution: "unknown",
+                        chart_type: null,
+                        api_available: false
+                    }};
+                    try {{
+                        var chart = {CHART_API};
+                        result.chart_symbol = chart.symbol();
+                        result.chart_resolution = chart.resolution();
+                        result.chart_type = chart.chartType();
+                        result.api_available = true;
+                    }} catch(e) {{
+                        result.api_error = e && e.message ? e.message : String(e);
+                    }}
+                    return result;
+                }})()
+                "#
+            ),
+            false,
+        )
+        .await
 }
 
 pub async fn state(runtime: &mut impl RuntimeEvaluator) -> Result<Value, AppError> {
@@ -49,11 +103,23 @@ pub async fn state(runtime: &mut impl RuntimeEvaluator) -> Result<Value, AppErro
                 (function() {{
                     var chart = {CHART_API};
                     var visibleRange = null;
+                    var studies = [];
                     try {{ visibleRange = chart.getVisibleRange(); }} catch(e) {{}}
+                    try {{
+                        var allStudies = chart.getAllStudies();
+                        studies = allStudies.map(function(s) {{
+                            return {{ id: s.id, name: s.name || s.title || "unknown" }};
+                        }});
+                    }} catch(e) {{}}
+                    var resolution = chart.resolution();
+                    var chartType = chart.chartType();
                     return {{
                         symbol: chart.symbol(),
-                        timeframe: chart.resolution(),
-                        chart_type: chart.chartType(),
+                        resolution: resolution,
+                        timeframe: resolution,
+                        chartType: chartType,
+                        chart_type: chartType,
+                        studies: studies,
                         visible_range: visibleRange
                     }};
                 }})()
@@ -72,20 +138,29 @@ pub async fn quote(runtime: &mut impl RuntimeEvaluator) -> Result<Value, AppErro
                 (function() {{
                     var chart = {CHART_API};
                     var bars = {BARS_PATH};
+                    var ext = {{}};
+                    try {{ ext = chart.symbolExt() || {{}}; }} catch(e) {{}}
                     var quote = {{
                         symbol: chart.symbol(),
+                        time: null,
                         last: null,
+                        close: null,
                         open: null,
                         high: null,
                         low: null,
-                        volume: null
+                        volume: null,
+                        description: ext.description || null,
+                        exchange: ext.exchange || null,
+                        type: ext.type || null
                     }};
                     if (bars && typeof bars.lastIndex === 'function') {{
                         var last = bars.valueAt(bars.lastIndex());
                         if (last) {{
+                            quote.time = last[0];
                             quote.open = last[1];
                             quote.high = last[2];
                             quote.low = last[3];
+                            quote.close = last[4];
                             quote.last = last[4];
                             quote.volume = last[5] || 0;
                         }}
@@ -99,7 +174,11 @@ pub async fn quote(runtime: &mut impl RuntimeEvaluator) -> Result<Value, AppErro
         .await
 }
 
-pub async fn ohlcv_summary(runtime: &mut impl RuntimeEvaluator) -> Result<Value, AppError> {
+pub async fn ohlcv_bars(
+    runtime: &mut impl RuntimeEvaluator,
+    count: Option<usize>,
+) -> Result<Value, AppError> {
+    let limit = normalized_count(count);
     runtime
         .evaluate(
             &format!(
@@ -112,7 +191,7 @@ pub async fn ohlcv_summary(runtime: &mut impl RuntimeEvaluator) -> Result<Value,
                     }}
                     var result = [];
                     var end = bars.lastIndex();
-                    var start = Math.max(bars.firstIndex(), end - 99);
+                    var start = Math.max(bars.firstIndex(), end - {limit} + 1);
                     for (var i = start; i <= end; i++) {{
                         var v = bars.valueAt(i);
                         if (v) result.push({{time: v[0], open: v[1], high: v[2], low: v[3], close: v[4], volume: v[5] || 0}});
@@ -120,22 +199,14 @@ pub async fn ohlcv_summary(runtime: &mut impl RuntimeEvaluator) -> Result<Value,
                     if (result.length === 0) {{
                         throw new Error('Could not extract OHLCV data. The chart may still be loading.');
                     }}
-                    var first = result[0];
-                    var last = result[result.length - 1];
-                    var high = Math.max.apply(null, result.map(function(bar) {{ return bar.high; }}));
-                    var low = Math.min.apply(null, result.map(function(bar) {{ return bar.low; }}));
-                    var volume = result.reduce(function(sum, bar) {{ return sum + (bar.volume || 0); }}, 0);
                     return {{
                         symbol: chart.symbol(),
+                        resolution: chart.resolution(),
                         timeframe: chart.resolution(),
                         bar_count: result.length,
-                        first_time: first.time,
-                        last_time: last.time,
-                        open: first.open,
-                        high: high,
-                        low: low,
-                        close: last.close,
-                        volume: volume
+                        total_available: (typeof bars.size === 'function') ? bars.size() : null,
+                        source: "direct_bars",
+                        bars: result
                     }};
                 }})()
                 "#
@@ -143,6 +214,14 @@ pub async fn ohlcv_summary(runtime: &mut impl RuntimeEvaluator) -> Result<Value,
             false,
         )
         .await
+}
+
+pub async fn ohlcv_summary(
+    runtime: &mut impl RuntimeEvaluator,
+    count: Option<usize>,
+) -> Result<Value, AppError> {
+    let data = ohlcv_bars(runtime, count).await?;
+    summarize_ohlcv(data)
 }
 
 pub async fn set_symbol(
@@ -159,9 +238,12 @@ pub async fn set_symbol(
                     return new Promise(function(resolve) {{
                         chart.setSymbol({symbol_literal}, {{}});
                         setTimeout(function() {{
+                            var observed = chart.symbol();
                             resolve({{
+                                symbol: observed,
+                                chart_ready: String(observed).toUpperCase().indexOf(String({symbol_literal}).toUpperCase()) >= 0,
                                 requested_symbol: {symbol_literal},
-                                observed_symbol: chart.symbol()
+                                observed_symbol: observed
                             }});
                         }}, 500);
                     }});
@@ -169,6 +251,25 @@ pub async fn set_symbol(
                 "#
             ),
             true,
+        )
+        .await
+}
+
+pub async fn current_symbol(runtime: &mut impl RuntimeEvaluator) -> Result<Value, AppError> {
+    runtime
+        .evaluate(
+            &format!(
+                r#"
+                (function() {{
+                    var chart = {CHART_API};
+                    return {{
+                        symbol: chart.symbol(),
+                        resolution: chart.resolution()
+                    }};
+                }})()
+                "#
+            ),
+            false,
         )
         .await
 }
@@ -185,14 +286,158 @@ pub async fn set_timeframe(
                 (function() {{
                     var chart = {CHART_API};
                     chart.setResolution({timeframe_literal}, {{}});
+                    var observed = chart.resolution();
                     return {{
+                        timeframe: observed,
+                        chart_ready: String(observed) === String({timeframe_literal}),
                         requested_timeframe: {timeframe_literal},
-                        observed_timeframe: chart.resolution()
+                        observed_timeframe: observed
                     }};
                 }})()
                 "#
             ),
             false,
+        )
+        .await
+}
+
+pub async fn current_timeframe(runtime: &mut impl RuntimeEvaluator) -> Result<Value, AppError> {
+    runtime
+        .evaluate(
+            &format!(
+                r#"
+                (function() {{
+                    var chart = {CHART_API};
+                    return {{
+                        resolution: chart.resolution(),
+                        timeframe: chart.resolution(),
+                        symbol: chart.symbol()
+                    }};
+                }})()
+                "#
+            ),
+            false,
+        )
+        .await
+}
+
+pub async fn visible_range(runtime: &mut impl RuntimeEvaluator) -> Result<Value, AppError> {
+    runtime
+        .evaluate(
+            &format!(
+                r#"
+                (function() {{
+                    var chart = {CHART_API};
+                    return {{
+                        visible_range: chart.getVisibleRange(),
+                        bars_range: chart.getVisibleBarsRange()
+                    }};
+                }})()
+                "#
+            ),
+            false,
+        )
+        .await
+}
+
+pub async fn set_visible_range(
+    runtime: &mut impl RuntimeEvaluator,
+    from: f64,
+    to: f64,
+) -> Result<Value, AppError> {
+    require_finite(from, "from")?;
+    require_finite(to, "to")?;
+    runtime
+        .evaluate(
+            &format!(
+                r#"
+                (function() {{
+                    var chart = {CHART_API};
+                    var m = chart._chartWidget.model();
+                    var ts = m.timeScale();
+                    var bars = m.mainSeries().bars();
+                    var startIdx = bars.firstIndex();
+                    var endIdx = bars.lastIndex();
+                    var fromIdx = startIdx, toIdx = endIdx;
+                    for (var i = startIdx; i <= endIdx; i++) {{
+                        var v = bars.valueAt(i);
+                        if (v && v[0] >= {from} && fromIdx === startIdx) fromIdx = i;
+                        if (v && v[0] <= {to}) toIdx = i;
+                    }}
+                    ts.zoomToBarsRange(fromIdx, toIdx);
+                    return new Promise(function(resolve) {{
+                        setTimeout(function() {{
+                            var actual = null;
+                            try {{ actual = chart.getVisibleRange(); }} catch(e) {{}}
+                            resolve({{
+                                requested: {{ from: {from}, to: {to} }},
+                                actual: actual || {{ from: 0, to: 0 }}
+                            }});
+                        }}, 500);
+                    }});
+                }})()
+                "#
+            ),
+            true,
+        )
+        .await
+}
+
+pub async fn scroll_to_date(
+    runtime: &mut impl RuntimeEvaluator,
+    date: &str,
+) -> Result<Value, AppError> {
+    let date_literal = js_string(date)?;
+    runtime
+        .evaluate(
+            &format!(
+                r#"
+                (function() {{
+                    var date = {date_literal};
+                    var timestamp;
+                    if (/^\d+$/.test(date)) timestamp = Number(date);
+                    else timestamp = Math.floor(new Date(date).getTime() / 1000);
+                    if (!Number.isFinite(timestamp)) throw new Error("Could not parse date: " + date + ". Use ISO format (2024-01-15) or unix timestamp.");
+                    var chart = {CHART_API};
+                    var resolution = chart.resolution();
+                    var secsPerBar = 60;
+                    var res = String(resolution);
+                    if (res === "D" || res === "1D") secsPerBar = 86400;
+                    else if (res === "W" || res === "1W") secsPerBar = 604800;
+                    else if (res === "M" || res === "1M") secsPerBar = 2592000;
+                    else {{
+                        var mins = parseInt(res, 10);
+                        if (!Number.isNaN(mins)) secsPerBar = mins * 60;
+                    }}
+                    var halfWindow = 25 * secsPerBar;
+                    var from = timestamp - halfWindow;
+                    var to = timestamp + halfWindow;
+                    var m = chart._chartWidget.model();
+                    var ts = m.timeScale();
+                    var bars = m.mainSeries().bars();
+                    var startIdx = bars.firstIndex();
+                    var endIdx = bars.lastIndex();
+                    var fromIdx = startIdx, toIdx = endIdx;
+                    for (var i = startIdx; i <= endIdx; i++) {{
+                        var v = bars.valueAt(i);
+                        if (v && v[0] >= from && fromIdx === startIdx) fromIdx = i;
+                        if (v && v[0] <= to) toIdx = i;
+                    }}
+                    ts.zoomToBarsRange(fromIdx, toIdx);
+                    return new Promise(function(resolve) {{
+                        setTimeout(function() {{
+                            resolve({{
+                                date: date,
+                                centered_on: timestamp,
+                                resolution: resolution,
+                                window: {{ from: from, to: to }}
+                            }});
+                        }}, 500);
+                    }});
+                }})()
+                "#
+            ),
+            true,
         )
         .await
 }
@@ -225,6 +470,110 @@ pub async fn screenshot_full(
         "region": "full",
         "size_bytes": bytes.len(),
     }))
+}
+
+fn normalized_count(count: Option<usize>) -> usize {
+    count
+        .unwrap_or(DEFAULT_OHLCV_COUNT)
+        .clamp(1, MAX_OHLCV_COUNT)
+}
+
+fn summarize_ohlcv(data: Value) -> Result<Value, AppError> {
+    let bars = data.get("bars").and_then(Value::as_array).ok_or_else(|| {
+        AppError::new(
+            ErrorKind::InternalApiUnavailable,
+            "OHLCV data did not include bars",
+        )
+    })?;
+    let first = bars.first().ok_or_else(|| {
+        AppError::new(
+            ErrorKind::InternalApiUnavailable,
+            "Could not extract OHLCV data. The chart may still be loading.",
+        )
+    })?;
+    let last = bars.last().expect("non-empty bars should have last bar");
+    let highs = bars
+        .iter()
+        .filter_map(|bar| bar.get("high").and_then(Value::as_f64))
+        .collect::<Vec<_>>();
+    let lows = bars
+        .iter()
+        .filter_map(|bar| bar.get("low").and_then(Value::as_f64))
+        .collect::<Vec<_>>();
+    let volumes = bars
+        .iter()
+        .filter_map(|bar| bar.get("volume").and_then(Value::as_f64))
+        .collect::<Vec<_>>();
+    let open = first.get("open").and_then(Value::as_f64).unwrap_or(0.0);
+    let close = last.get("close").and_then(Value::as_f64).unwrap_or(0.0);
+    let high = highs.iter().copied().reduce(f64::max).unwrap_or(0.0);
+    let low = lows.iter().copied().reduce(f64::min).unwrap_or(0.0);
+    let volume: f64 = volumes.iter().sum();
+    let avg_volume = if volumes.is_empty() {
+        0.0
+    } else {
+        (volume / volumes.len() as f64).round()
+    };
+    let change = round2(close - open);
+    let change_pct = if open == 0.0 {
+        "0%".to_string()
+    } else {
+        format!("{}%", round2(((close - open) / open) * 100.0))
+    };
+    let last_5_bars = bars
+        .iter()
+        .skip(bars.len().saturating_sub(5))
+        .cloned()
+        .collect::<Vec<_>>();
+    let mut summary = json!({
+        "bar_count": bars.len(),
+        "period": {
+            "from": first.get("time").cloned().unwrap_or(Value::Null),
+            "to": last.get("time").cloned().unwrap_or(Value::Null),
+        },
+        "first_time": first.get("time").cloned().unwrap_or(Value::Null),
+        "last_time": last.get("time").cloned().unwrap_or(Value::Null),
+        "open": open,
+        "close": close,
+        "high": high,
+        "low": low,
+        "range": round2(high - low),
+        "change": change,
+        "change_pct": change_pct,
+        "avg_volume": avg_volume,
+        "volume": volume,
+        "last_5_bars": last_5_bars,
+    });
+    for field in ["symbol", "resolution", "timeframe"] {
+        if let Some(value) = data.get(field) {
+            summary[field] = value.clone();
+        }
+    }
+    Ok(summary)
+}
+
+fn round2(value: f64) -> f64 {
+    (value * 100.0).round() / 100.0
+}
+
+fn require_finite(value: f64, label: &str) -> Result<(), AppError> {
+    if value.is_finite() {
+        Ok(())
+    } else {
+        Err(AppError::new(
+            ErrorKind::Validation,
+            format!("{label} must be a finite number"),
+        ))
+    }
+}
+
+fn merge_object(target: &mut Value, source: Value) {
+    let (Some(target), Some(source)) = (target.as_object_mut(), source.as_object()) else {
+        return;
+    };
+    for (key, value) in source {
+        target.insert(key.clone(), value.clone());
+    }
 }
 
 fn js_string(value: &str) -> Result<String, AppError> {
@@ -293,6 +642,67 @@ mod tests {
         let _ = set_timeframe(&mut runtime, "D").await;
 
         assert!(runtime.evaluated[0].0.contains("\"D\""));
+    }
+
+    #[tokio::test]
+    async fn scroll_to_date_serializes_user_input_as_js_string() {
+        let mut runtime = FakeRuntime::new([json!({"date": "2026-03-03"})]);
+
+        let _ = scroll_to_date(&mut runtime, "2026-03-03'; window.bad = true; '").await;
+
+        assert!(
+            runtime.evaluated[0]
+                .0
+                .contains("\"2026-03-03'; window.bad = true; '\"")
+        );
+        assert!(runtime.evaluated[0].1);
+    }
+
+    #[tokio::test]
+    async fn ohlcv_count_is_clamped_to_500() {
+        let mut runtime = FakeRuntime::new([
+            json!({"symbol": "NASDAQ:AAPL", "timeframe": "D", "bars": [{"time": 1, "open": 1, "high": 1, "low": 1, "close": 1, "volume": 1}]}),
+        ]);
+
+        let _ = ohlcv_bars(&mut runtime, Some(900)).await;
+
+        assert!(runtime.evaluated[0].0.contains("end - 500 + 1"));
+    }
+
+    #[tokio::test]
+    async fn ohlcv_summary_returns_legacy_practical_fields() {
+        let mut runtime = FakeRuntime::new([json!({
+            "symbol": "NASDAQ:AAPL",
+            "resolution": "D",
+            "timeframe": "D",
+            "bars": [
+                {"time": 10, "open": 10.0, "high": 12.0, "low": 9.0, "close": 11.0, "volume": 100.0},
+                {"time": 20, "open": 11.0, "high": 13.0, "low": 10.0, "close": 12.0, "volume": 200.0}
+            ]
+        })]);
+
+        let summary = ohlcv_summary(&mut runtime, Some(2)).await.unwrap();
+
+        assert_eq!(summary["bar_count"], 2);
+        assert_eq!(summary["period"]["from"], 10);
+        assert_eq!(summary["period"]["to"], 20);
+        assert_eq!(summary["range"], 4.0);
+        assert_eq!(summary["change"], 2.0);
+        assert_eq!(summary["avg_volume"], 150.0);
+        assert_eq!(summary["symbol"], "NASDAQ:AAPL");
+        assert_eq!(summary["timeframe"], "D");
+        assert_eq!(summary["last_5_bars"].as_array().unwrap().len(), 2);
+    }
+
+    #[tokio::test]
+    async fn set_visible_range_rejects_non_finite_values() {
+        let mut runtime = FakeRuntime::new([]);
+
+        let err = set_visible_range(&mut runtime, f64::NAN, 1.0)
+            .await
+            .expect_err("NaN should be rejected");
+
+        assert_eq!(err.kind, ErrorKind::Validation);
     }
 
     #[tokio::test]

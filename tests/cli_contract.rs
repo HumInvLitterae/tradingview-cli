@@ -12,6 +12,8 @@ fn help_lists_v1_commands() {
         .assert()
         .success()
         .stdout(predicate::str::contains("status"))
+        .stdout(predicate::str::contains("range"))
+        .stdout(predicate::str::contains("scroll"))
         .stdout(predicate::str::contains("screenshot"));
 }
 
@@ -26,13 +28,26 @@ fn unknown_command_exits_with_usage_error() {
 }
 
 #[test]
-fn ohlcv_requires_summary_for_v1() {
-    let assert = tv().arg("ohlcv").assert().failure().code(1);
+fn ohlcv_without_summary_attempts_connection() {
+    let assert = tv()
+        .env("TV_CDP_PORT", "9")
+        .arg("ohlcv")
+        .assert()
+        .failure()
+        .code(2);
     let stderr = String::from_utf8(assert.get_output().stderr.clone()).unwrap();
     let value: Value = serde_json::from_str(&stderr).unwrap();
     assert_eq!(value["success"], false);
     assert_eq!(value["command"], "ohlcv");
-    assert_eq!(value["error"]["kind"], "validation");
+    assert_eq!(value["error"]["kind"], "connection");
+}
+
+#[test]
+fn ohlcv_accepts_count_argument() {
+    tv().args(["ohlcv", "--help"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("--count"));
 }
 
 #[test]
@@ -68,4 +83,32 @@ fn screenshot_rejects_chart_region_for_v1() {
     assert_eq!(value["success"], false);
     assert_eq!(value["command"], "screenshot");
     assert_eq!(value["error"]["kind"], "validation");
+}
+
+#[test]
+fn range_requires_from_and_to_together() {
+    let assert = tv()
+        .args(["range", "--from", "1"])
+        .assert()
+        .failure()
+        .code(1);
+    let stderr = String::from_utf8(assert.get_output().stderr.clone()).unwrap();
+    let value: Value = serde_json::from_str(&stderr).unwrap();
+    assert_eq!(value["success"], false);
+    assert_eq!(value["command"], "range");
+    assert_eq!(value["error"]["kind"], "validation");
+}
+
+#[test]
+fn symbol_and_timeframe_allow_read_mode() {
+    tv().env("TV_CDP_PORT", "9")
+        .arg("symbol")
+        .assert()
+        .failure()
+        .code(2);
+    tv().env("TV_CDP_PORT", "9")
+        .arg("timeframe")
+        .assert()
+        .failure()
+        .code(2);
 }

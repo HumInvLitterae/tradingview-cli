@@ -66,35 +66,64 @@ async fn dispatch(command: Command) -> Result<serde_json::Value, AppError> {
             let mut runtime = connect_runtime().await?;
             ops::quote(&mut runtime).await
         }
-        Command::Ohlcv { summary } => {
-            if !summary {
-                return Err(AppError::new(
-                    ErrorKind::Validation,
-                    "Only --summary is supported in v1",
-                ));
-            }
+        Command::Ohlcv { summary, count } => {
             let mut runtime = connect_runtime().await?;
-            ops::ohlcv_summary(&mut runtime).await
+            if summary {
+                ops::ohlcv_summary(&mut runtime, count).await
+            } else {
+                ops::ohlcv_bars(&mut runtime, count).await
+            }
         }
         Command::Symbol { symbol } => {
-            if symbol.trim().is_empty() {
-                return Err(AppError::new(
-                    ErrorKind::Validation,
-                    "Symbol must not be empty",
-                ));
-            }
             let mut runtime = connect_runtime().await?;
-            ops::set_symbol(&mut runtime, &symbol).await
+            match symbol {
+                Some(symbol) => {
+                    if symbol.trim().is_empty() {
+                        return Err(AppError::new(
+                            ErrorKind::Validation,
+                            "Symbol must not be empty",
+                        ));
+                    }
+                    ops::set_symbol(&mut runtime, &symbol).await
+                }
+                None => ops::current_symbol(&mut runtime).await,
+            }
         }
         Command::Timeframe { timeframe } => {
-            if timeframe.trim().is_empty() {
+            let mut runtime = connect_runtime().await?;
+            match timeframe {
+                Some(timeframe) => {
+                    if timeframe.trim().is_empty() {
+                        return Err(AppError::new(
+                            ErrorKind::Validation,
+                            "Timeframe must not be empty",
+                        ));
+                    }
+                    ops::set_timeframe(&mut runtime, &timeframe).await
+                }
+                None => ops::current_timeframe(&mut runtime).await,
+            }
+        }
+        Command::Range { from, to } => {
+            let mut runtime = connect_runtime().await?;
+            match (from, to) {
+                (Some(from), Some(to)) => ops::set_visible_range(&mut runtime, from, to).await,
+                (None, None) => ops::visible_range(&mut runtime).await,
+                _ => Err(AppError::new(
+                    ErrorKind::Validation,
+                    "Both --from and --to are required when setting range",
+                )),
+            }
+        }
+        Command::Scroll { date } => {
+            if date.trim().is_empty() {
                 return Err(AppError::new(
                     ErrorKind::Validation,
-                    "Timeframe must not be empty",
+                    "Date must not be empty",
                 ));
             }
             let mut runtime = connect_runtime().await?;
-            ops::set_timeframe(&mut runtime, &timeframe).await
+            ops::scroll_to_date(&mut runtime, &date).await
         }
         Command::Screenshot { region, output } => {
             if region != "full" {
