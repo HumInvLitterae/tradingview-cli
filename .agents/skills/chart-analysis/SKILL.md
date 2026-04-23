@@ -18,8 +18,9 @@ Use this skill for live TradingView chart review through the Rust `tv` CLI.
 1. Set the requested market context with `tv symbol <SYMBOL>` and `tv timeframe <RESOLUTION>` when needed.
 2. Read chart context with `tv state`, `tv quote`, and `tv ohlcv --summary`.
 3. Read visible study values with `tv values` when indicators already exist on the chart.
-4. Inspect or adjust the date window with `tv range`, `tv scroll <DATE>`, or `tv range --from <UNIX_SECONDS> --to <UNIX_SECONDS>`.
-5. Capture visual evidence only when useful: `tv screenshot --region chart --output <PATH>`.
+4. Read Pine drawing-derived levels or zones with `tv data lines`, `tv data labels`, `tv data tables`, or `tv data boxes` when the chart includes such primitives.
+5. Inspect or adjust the date window with `tv range`, `tv scroll <DATE>`, or `tv range --from <UNIX_SECONDS> --to <UNIX_SECONDS>`.
+6. Capture visual evidence only when useful: `tv screenshot --region chart --output <PATH>`.
 
 ## Reporting
 
@@ -27,6 +28,6 @@ Lead with the practical market read, then cite the observed CLI evidence. Separa
 
 ## Boundaries
 
-This Rust CLI can read chart state and perform basic chart navigation. It does not currently add/remove indicators, edit indicator inputs, draw annotations, clean drawings, or automate the strategy tester.
+This Rust CLI can read chart state, perform basic chart navigation, and inspect some chart-model data. It does not currently add/remove indicators, edit indicator inputs, draw annotations, clean drawings, or automate the strategy tester.
 
 Read `references/workflow.md` when the task needs an old MCP-to-CLI command mapping or a reminder of unsupported chart-analysis features.

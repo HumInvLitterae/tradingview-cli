@@ -27,6 +27,14 @@ Do not use `explicitly_not_planned` for ordinary missing old CLI commands unless
 - `scroll`
 - `watchlist get`
 - `pane list`
+- `data indicator`
+- `data strategy`
+- `data trades`
+- `data equity`
+- `data lines`
+- `data labels`
+- `data tables`
+- `data boxes`
 - `symbol [SYMBOL]`
 - `timeframe [RESOLUTION]`
 - `screenshot --region full --output <PATH>`
@@ -50,15 +58,7 @@ These old CLI surfaces are not first in line, but they are not automatically out
 - `watchlist add`
 - `alert list`
 - `alert create`
-- `data lines`
-- `data labels`
-- `data tables`
-- `data boxes`
-- `data strategy`
-- `data trades`
-- `data equity`
 - `data depth`
-- `data indicator`
 - Pine editor commands
 - drawing commands
 - replay commands

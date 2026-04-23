@@ -38,6 +38,14 @@ The implemented commands are:
 - `tv scroll <DATE_OR_UNIX_SECONDS>`
 - `tv watchlist get`
 - `tv pane list`
+- `tv data indicator <ENTITY_ID>`
+- `tv data strategy`
+- `tv data trades [--max <N>]`
+- `tv data equity`
+- `tv data lines [--filter <TEXT>] [--verbose]`
+- `tv data labels [--filter <TEXT>] [--max <N>] [--verbose]`
+- `tv data tables [--filter <TEXT>]`
+- `tv data boxes [--filter <TEXT>] [--verbose]`
 - `tv symbol [SYMBOL]`
 - `tv timeframe [RESOLUTION]`
 - `tv screenshot --region full --output <PATH>`
@@ -82,6 +90,7 @@ Focus first on migration readiness:
 
 Deferred old CLI surfaces that need planned implementation or an explicit exclusion decision:
 
+- whether `data depth` deserves a DOM-dependent slice
 - whether launch automation belongs in this CLI or should remain external runbook material
 - larger old CLI surfaces such as Pine, alerts, replay, stream, and UI automation
 

@@ -1,4 +1,4 @@
 interface:
   display_name: "Strategy Report"
-  short_description: "Review strategy context with CLI gaps."
-  default_prompt: "Use strategy-report to review TradingView strategy context with current Rust tv CLI capabilities and gaps."
+  short_description: "Review strategy data with the CLI."
+  default_prompt: "Use strategy-report to review TradingView strategy metrics, trades, equity context, and remaining CLI gaps."

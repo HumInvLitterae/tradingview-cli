@@ -50,8 +50,8 @@ What is true right now:
 - the read utilities migration slice is complete
 - the chart-region screenshot slice is complete
 - the diagnostic read commands slice is complete
+- the advanced data reads slice is complete
 - the original MCP workflow skills have been migrated into repo-local CLI skills with current capability gaps marked
-- the high-priority planned read-only migration backlog is empty
 - this repository should stay narrower than a full reimplementation of the old bridge
 
 ## Near-Term Deliverables

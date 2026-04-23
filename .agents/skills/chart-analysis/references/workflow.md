@@ -18,6 +18,10 @@ The original chart-analysis skill reviewed a TradingView chart by setting symbol
 | `symbol_info` | `tv info` |
 | `data_get_ohlcv` | `tv ohlcv --summary` or `tv ohlcv --count <N>` |
 | `data_get_study_values` | `tv values` |
+| Pine line levels | `tv data lines [--filter <TEXT>] [--verbose]` |
+| Pine labels | `tv data labels [--filter <TEXT>] [--max <N>] [--verbose]` |
+| Pine tables | `tv data tables [--filter <TEXT>]` |
+| Pine boxes | `tv data boxes [--filter <TEXT>] [--verbose]` |
 | `capture_screenshot` | `tv screenshot --region full|chart --output <PATH>` |
 
 ## Not Yet Available
