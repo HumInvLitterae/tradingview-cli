@@ -20,7 +20,7 @@ This project is inspired by [`tradesdontlie/tradingview-mcp`](https://github.com
 - [x] (2026-04-24 03:45 JST) Added README attribution to the migration source.
 - [x] (2026-04-24 03:59 JST) Create the Rust package skeleton for a single `tv` binary.
 - [x] (2026-04-24 04:02 JST) Implement the CLI argument surface and common JSON envelopes.
-- [ ] Implement target discovery and CDP transport.
+- [x] (2026-04-24 04:06 JST) Implement target discovery and CDP transport.
 - [ ] Implement `status`, `state`, `quote`, `ohlcv --summary`, `symbol`, `timeframe`, and `screenshot --region full`.
 - [ ] Add unit and CLI integration tests for command contracts, CDP behavior, and error mapping.
 - [ ] Run the full validation commands and record results in this plan.
@@ -38,6 +38,9 @@ This project is inspired by [`tradesdontlie/tradingview-mcp`](https://github.com
 
 - Observation: Running the migration source through `npm test -- --test-reporter=spec tests/sanitization.test.js` accidentally appended arguments to the existing e2e-heavy npm script instead of limiting the run to one file.
   Evidence: The run started live e2e suites and was interrupted after showing failures in live-environment-dependent checks such as `tv_launch` and `ui_open_panel`.
+
+- Observation: The CDP transport needed two small support crates beyond the initial dependency hypothesis.
+  Evidence: `futures-util` provides WebSocket stream and sink helpers used by `tokio-tungstenite`, and `base64` decodes the `Page.captureScreenshot` response body.
 
 ## Decision Log
 

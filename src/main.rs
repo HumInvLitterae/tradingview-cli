@@ -1,6 +1,8 @@
+mod cdp;
 mod cli;
 mod error;
 mod output;
+mod transport;
 
 use std::process::ExitCode;
 
