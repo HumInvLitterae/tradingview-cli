@@ -4,9 +4,9 @@ This file is the root operating guide for coding agents in this repository.
 
 ## Mission
 
-Build the groundwork for a Rust-native TradingView CLI that replaces the currently used TradingView bridge path in sibling trading-analysis projects.
+Build and maintain a Rust-native TradingView CLI that replaces the currently used TradingView bridge path in sibling trading-analysis projects.
 
-The repository is intentionally in docs-seed mode. The immediate goal is not implementation. The immediate goal is to understand the current bridge surface, identify the narrowest useful replacement boundary, and produce the next implementation-ready ExecPlan without dragging planning context back into another repository.
+The repository now contains the first Rust-native `tv` CLI implementation. The immediate goal is to keep that narrow v1 surface reliable, document the real operating contract, and choose any post-v1 work only after evidence shows it belongs in the core CLI.
 
 ## Sources of Truth
 
@@ -14,35 +14,37 @@ Read these in order before making major decisions:
 
 1. `CONTINUITY.md`
 2. `README.md`
-3. `docs/plans/tradingview-cli-bootstrap-and-bridge-replacement.md`
-4. `docs/notes/tradingview-mcp-investigation-2026-04-24.md`
-5. `docs/plans/tradingview-cli-rust-v1.md`
-6. `docs/notes/next-agent-handoff-prompt-2026-04-21.md`
-7. `.agents/PLANS.md`
-8. `.agents/skills/continuity/SKILL.md` when the continuity skill is active
+3. `docs/notes/next-agent-handoff-prompt-2026-04-24.md`
+4. `docs/plans/tradingview-cli-rust-v1.md`
+5. `docs/notes/tradingview-mcp-investigation-2026-04-24.md`
+6. `docs/plans/tradingview-cli-bootstrap-and-bridge-replacement.md`
+7. `docs/notes/next-agent-handoff-prompt-2026-04-21.md`
+8. `.agents/PLANS.md`
+9. `.agents/skills/continuity/SKILL.md` when the continuity skill is active
 
 If these sources disagree, preserve the higher-level user and system instructions, then update repository docs so the durable project state is clear again.
 
 ## Current Status
 
-The repository currently exists to hold planning, investigation results, and successor execution plans.
+The repository currently contains a working Rust v1 CLI plus the planning and investigation history that explains its boundary.
 
 What is true right now:
 
-- there is no Rust implementation yet
-- v1 is expected to be CLI-first
+- Rust v1 is implemented as a `tv` binary
+- v1 is CLI-first
 - MCP server implementation is not planned
 - the first capability and boundary research milestone is complete
+- the first Rust v1 implementation milestone is complete
 - this repository should stay narrower than a full reimplementation of the old bridge
 
 ## Near-Term Deliverables
 
-Until Rust v1 is implemented, prefer work that moves one of these forward:
+Prefer work that moves one of these forward:
 
-1. implementing `docs/plans/tradingview-cli-rust-v1.md`
-2. keeping `docs/notes/tradingview-mcp-investigation-2026-04-24.md` accurate when new facts are discovered
-3. preserving the v1 CLI boundary unless a decision is recorded in the ExecPlan
-4. validating the Rust CLI with the commands required by the ExecPlan
+1. keeping `README.md`, handoff notes, and ExecPlans aligned with the implemented CLI
+2. validating the Rust CLI in real downstream provider, review, and operator workflows
+3. preserving the v1 CLI boundary unless a decision is recorded in a new ExecPlan
+4. investigating post-v1 candidates such as chart-region screenshots, launch automation, or additional read-only commands before implementing them
 
 Supporting notes are welcome when they reduce ambiguity, but avoid speculative design sprawl.
 
