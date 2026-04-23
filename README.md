@@ -80,10 +80,15 @@ Then run the Rust CLI:
 cargo build
 cargo run -- status
 cargo run -- state
+cargo run -- info
+cargo run -- search AAPL
 cargo run -- quote
+cargo run -- values
 cargo run -- ohlcv --summary --count 100
 cargo run -- ohlcv --count 5
 cargo run -- range
+cargo run -- watchlist get
+cargo run -- pane list
 cargo run -- symbol BATS:IONQ
 cargo run -- symbol
 cargo run -- timeframe 15
@@ -120,6 +125,7 @@ Exit codes are:
 - a post-v1 handoff prompt
 - Rust CLI contract and command migration notes
 - a first read/provider migration ExecPlan and implementation slice
+- a read utilities migration ExecPlan and implementation slice
 
 ## Where to start
 
@@ -128,9 +134,10 @@ Read these in order:
 1. `docs/notes/next-agent-handoff-prompt-2026-04-24.md`
 2. `docs/notes/rust-cli-contract-migration-2026-04-24.md`
 3. `docs/notes/legacy-cli-command-migration-inventory-2026-04-24.md`
-4. `docs/plans/tradingview-cli-read-provider-migration-v1-1.md`
-5. `docs/plans/tradingview-cli-rust-v1.md`
-6. `docs/notes/tradingview-mcp-investigation-2026-04-24.md`
-7. `docs/plans/tradingview-cli-bootstrap-and-bridge-replacement.md`
+4. `docs/plans/tradingview-cli-read-utilities-v1-2.md`
+5. `docs/plans/tradingview-cli-read-provider-migration-v1-1.md`
+6. `docs/plans/tradingview-cli-rust-v1.md`
+7. `docs/notes/tradingview-mcp-investigation-2026-04-24.md`
+8. `docs/plans/tradingview-cli-bootstrap-and-bridge-replacement.md`
 
-The first capability and boundary research milestone, the Rust v1 implementation milestone, and the first read/provider migration slice are complete. The next milestone is migration readiness: keep the improved Rust JSON contract documented, preserve information compatibility for migrated commands, and continue implementing old CLI command coverage in planned slices.
+The first capability and boundary research milestone, the Rust v1 implementation milestone, the first read/provider migration slice, and the read utilities migration slice are complete. The next milestone is migration readiness: keep the improved Rust JSON contract documented, preserve information compatibility for migrated commands, and continue implementing old CLI command coverage in planned slices.

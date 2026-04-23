@@ -71,6 +71,10 @@ When an old field name is important to downstream workflows, prefer one of these
 - `quote` payload is under `data` in Rust and includes the practical quote fields from the old CLI shape, including `symbol`, `time`, `last`, `close`, `open`, `high`, `low`, `volume`, and best-effort symbol metadata.
 - `ohlcv --summary` payload is under `data` in Rust and includes summary fields such as `symbol`, `timeframe`, `bar_count`, `period`, `range`, `change`, `change_pct`, `avg_volume`, `volume`, and `last_5_bars`.
 - Raw `ohlcv --count`, `range`, and `scroll` are implemented in Rust. Their payloads still live under `data`.
-- `values`, `watchlist get`, `pane list`, `search`, `info`, `discover`, `ui-state`, and `screenshot --region chart` are not yet implemented in Rust.
+- `info` payload is under `data` in Rust and includes symbol metadata such as `symbol`, `full_name`, `exchange`, `description`, `type`, `pro_name`, `typespecs`, `resolution`, and `chart_type`.
+- `search` payload is under `data` in Rust and includes `query`, `source`, `count`, and normalized `results` rows with `symbol`, `description`, `exchange`, `type`, and `full_name`.
+- `values` payload is under `data` in Rust and includes `study_count` plus `studies` rows with `name` and `values`.
+- `watchlist get` and `pane list` are implemented in Rust. Their payloads still live under `data`; `watchlist get` may return `source: "panel_closed"` with `count: 0` when the watchlist panel is closed.
+- `discover`, `ui-state`, and `screenshot --region chart` are not yet implemented in Rust.
 
 These differences are migration gaps, not proof that the information is out of scope.

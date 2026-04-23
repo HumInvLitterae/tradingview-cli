@@ -15,11 +15,16 @@ Do not use `explicitly_not_planned` for ordinary missing old CLI commands unless
 
 - `status`
 - `state`
+- `info`
+- `search`
 - `quote`
+- `values`
 - `ohlcv --summary`
 - `ohlcv --count`
 - `range`
 - `scroll`
+- `watchlist get`
+- `pane list`
 - `symbol [SYMBOL]`
 - `timeframe [RESOLUTION]`
 - `screenshot --region full --output <PATH>`
@@ -30,11 +35,6 @@ These commands still have known contract differences from the JavaScript CLI. Se
 
 These old CLI surfaces are expected to need Rust equivalents or explicit replacement decisions:
 
-- `info`
-- `search`
-- `values`
-- `watchlist get`
-- `pane list`
 - `screenshot --region chart`
 - `discover`
 - `ui-state`

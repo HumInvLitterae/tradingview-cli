@@ -24,12 +24,17 @@ The implemented commands are:
 
 - `tv status`
 - `tv state`
+- `tv info`
+- `tv search <QUERY>`
 - `tv quote`
+- `tv values`
 - `tv ohlcv --summary`
 - `tv ohlcv --count <N>`
 - `tv range`
 - `tv range --from <UNIX_SECONDS> --to <UNIX_SECONDS>`
 - `tv scroll <DATE_OR_UNIX_SECONDS>`
+- `tv watchlist get`
+- `tv pane list`
 - `tv symbol [SYMBOL]`
 - `tv timeframe [RESOLUTION]`
 - `tv screenshot --region full --output <PATH>`
@@ -75,7 +80,7 @@ Post-v1 command gaps that need planned implementation or an explicit exclusion d
 
 - whether `screenshot --region chart` can be made stable enough for repeated use
 - whether launch automation belongs in this CLI or should remain external runbook material
-- read-only surfaces such as `values`, `watchlist get`, `pane list`, `search`, `info`, `discover`, and `ui-state`
+- read-only diagnostics such as `discover` and `ui-state`
 - larger old CLI surfaces such as Pine, alerts, replay, stream, and UI automation
 
 ## Validation baseline
