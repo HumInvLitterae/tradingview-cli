@@ -19,6 +19,8 @@ Do not use `explicitly_not_planned` for ordinary missing old CLI commands unless
 - `search`
 - `quote`
 - `values`
+- `discover`
+- `ui-state`
 - `ohlcv --summary`
 - `ohlcv --count`
 - `range`
@@ -34,12 +36,7 @@ These commands still have known contract differences from the JavaScript CLI. Se
 
 ## Planned migration backlog
 
-These old CLI surfaces are expected to need Rust equivalents or explicit replacement decisions:
-
-- `discover`
-- `ui-state`
-
-These are high-priority because they are read-oriented or already appear in downstream provider, review, and operator workflows.
+No high-priority planned read-only backlog remains after the diagnostic read commands slice.
 
 ## Deferred larger surfaces
 

@@ -74,11 +74,13 @@ When an old field name is important to downstream workflows, prefer one of these
 - `info` payload is under `data` in Rust and includes symbol metadata such as `symbol`, `full_name`, `exchange`, `description`, `type`, `pro_name`, `typespecs`, `resolution`, and `chart_type`.
 - `search` payload is under `data` in Rust and includes `query`, `source`, `count`, and normalized `results` rows with `symbol`, `description`, `exchange`, `type`, and `full_name`.
 - `values` payload is under `data` in Rust and includes `study_count` plus `studies` rows with `name` and `values`.
+- `discover` payload is under `data` in Rust and includes `apis_available`, `apis_total`, and `apis`.
+- `ui-state` payload is under `data` in Rust and includes panel state, button groups, key buttons, chart summary, and replay state.
 - `watchlist get` and `pane list` are implemented in Rust. Their payloads still live under `data`; `watchlist get` may return `source: "panel_closed"` with `count: 0` when the watchlist panel is closed.
 - `screenshot --region full` and `screenshot --region chart` are implemented in Rust. Their payloads live under `data`; screenshot payloads include the old CLI practical fields `method`, `file_path`, `region`, and `size_bytes`, plus Rust's `output_path`. Chart-region screenshot payloads also include `clip` fields with `x`, `y`, `width`, `height`, and `scale`, and `capture_mode`.
 - Chart-region screenshots prefer CDP `Page.captureScreenshot` with a `clip` parameter, matching the old JavaScript CLI's practical capture path. If clipped CDP capture fails, Rust falls back to a full-page CDP screenshot plus local PNG crop.
 - A clipped CDP timeout was observed during development, but later checks showed both the old JavaScript CLI and the Rust implementation could capture the same chart through clipped CDP. Treat that timeout as an intermittent CDP/session-state observation, not as a confirmed TradingView or Rust library limitation.
 - `screenshot --region chart` remains DOM-selector dependent. If TradingView changes the visible chart DOM or no chart element is available, the command may fail with `internal_api_unavailable`.
-- `discover` and `ui-state` are not yet implemented in Rust.
+- The old JavaScript CLI included `success: true` inside `discover` and `ui-state` payloads. Rust does not duplicate that field inside `data`; success remains the top-level envelope field.
 
 These differences are migration gaps, not proof that the information is out of scope.

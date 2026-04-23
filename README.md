@@ -84,6 +84,8 @@ cargo run -- info
 cargo run -- search AAPL
 cargo run -- quote
 cargo run -- values
+cargo run -- discover
+cargo run -- ui-state
 cargo run -- ohlcv --summary --count 100
 cargo run -- ohlcv --count 5
 cargo run -- range
@@ -128,6 +130,7 @@ Exit codes are:
 - a first read/provider migration ExecPlan and implementation slice
 - a read utilities migration ExecPlan and implementation slice
 - a chart-region screenshot ExecPlan and implementation slice
+- a diagnostic read commands ExecPlan and implementation slice
 
 ## Where to start
 
@@ -136,11 +139,12 @@ Read these in order:
 1. `docs/notes/next-agent-handoff-prompt-2026-04-24.md`
 2. `docs/notes/rust-cli-contract-migration-2026-04-24.md`
 3. `docs/notes/legacy-cli-command-migration-inventory-2026-04-24.md`
-4. `docs/plans/tradingview-cli-chart-region-screenshot-v1-3.md`
-5. `docs/plans/tradingview-cli-read-utilities-v1-2.md`
-6. `docs/plans/tradingview-cli-read-provider-migration-v1-1.md`
-7. `docs/plans/tradingview-cli-rust-v1.md`
-8. `docs/notes/tradingview-mcp-investigation-2026-04-24.md`
-9. `docs/plans/tradingview-cli-bootstrap-and-bridge-replacement.md`
+4. `docs/plans/tradingview-cli-diagnostic-read-commands-v1-4.md`
+5. `docs/plans/tradingview-cli-chart-region-screenshot-v1-3.md`
+6. `docs/plans/tradingview-cli-read-utilities-v1-2.md`
+7. `docs/plans/tradingview-cli-read-provider-migration-v1-1.md`
+8. `docs/plans/tradingview-cli-rust-v1.md`
+9. `docs/notes/tradingview-mcp-investigation-2026-04-24.md`
+10. `docs/plans/tradingview-cli-bootstrap-and-bridge-replacement.md`
 
-The first capability and boundary research milestone, the Rust v1 implementation milestone, the first read/provider migration slice, the read utilities migration slice, and the chart-region screenshot slice are complete. The next milestone is migration readiness: keep the improved Rust JSON contract documented, preserve information compatibility for migrated commands, and continue implementing old CLI command coverage in planned slices.
+The first capability and boundary research milestone, the Rust v1 implementation milestone, the first read/provider migration slice, the read utilities migration slice, the chart-region screenshot slice, and the diagnostic read commands slice are complete. The high-priority planned read-only migration backlog is now empty. The next milestone is migration readiness: keep the improved Rust JSON contract documented, preserve information compatibility for migrated commands, and choose any deferred old CLI surfaces only after evidence shows they belong in this CLI.

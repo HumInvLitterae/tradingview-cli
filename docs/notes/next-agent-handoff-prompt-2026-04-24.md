@@ -17,6 +17,7 @@ Keep the Rust-native `tv` CLI reliable and useful as a replacement path for prac
 - migrated commands must preserve the practical information available from the old CLI
 - missing old CLI commands are migration backlog unless explicitly excluded
 - chart-region screenshots have a first Rust implementation, but remain DOM-selector dependent
+- the high-priority planned read-only migration backlog is complete
 
 ## Current v1 surface
 
@@ -28,6 +29,8 @@ The implemented commands are:
 - `tv search <QUERY>`
 - `tv quote`
 - `tv values`
+- `tv discover`
+- `tv ui-state`
 - `tv ohlcv --summary`
 - `tv ohlcv --count <N>`
 - `tv range`
@@ -77,10 +80,9 @@ Focus first on migration readiness:
 - expand old CLI command coverage in planned slices, preserving information compatibility
 - record evidence before starting any post-v1 ExecPlan
 
-Post-v1 command gaps that need planned implementation or an explicit exclusion decision:
+Deferred old CLI surfaces that need planned implementation or an explicit exclusion decision:
 
 - whether launch automation belongs in this CLI or should remain external runbook material
-- read-only diagnostics such as `discover` and `ui-state`
 - larger old CLI surfaces such as Pine, alerts, replay, stream, and UI automation
 
 ## Validation baseline
