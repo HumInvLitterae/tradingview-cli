@@ -19,6 +19,7 @@ const DEFAULT_TIMEOUT: Duration = Duration::from_secs(10);
 pub trait RuntimeEvaluator {
     async fn evaluate(&mut self, expression: &str, await_promise: bool) -> Result<Value, AppError>;
     async fn capture_screenshot(&mut self) -> Result<Vec<u8>, AppError>;
+    async fn capture_screenshot_clip(&mut self, clip: ScreenshotClip) -> Result<Vec<u8>, AppError>;
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, serde::Serialize)]
@@ -111,22 +112,39 @@ impl RuntimeEvaluator for CdpClient {
         let response = self
             .call_method("Page.captureScreenshot", json!({ "format": "png" }))
             .await?;
-        let data = response
-            .get("data")
-            .and_then(Value::as_str)
-            .ok_or_else(|| {
-                AppError::new(
-                    ErrorKind::InternalApiUnavailable,
-                    "Page.captureScreenshot did not return data",
-                )
-            })?;
-        STANDARD.decode(data).map_err(|err| {
+        screenshot_bytes_from_response(&response)
+    }
+
+    async fn capture_screenshot_clip(&mut self, clip: ScreenshotClip) -> Result<Vec<u8>, AppError> {
+        let response = self
+            .call_method(
+                "Page.captureScreenshot",
+                json!({
+                    "format": "png",
+                    "clip": clip,
+                }),
+            )
+            .await?;
+        screenshot_bytes_from_response(&response)
+    }
+}
+
+fn screenshot_bytes_from_response(response: &Value) -> Result<Vec<u8>, AppError> {
+    let data = response
+        .get("data")
+        .and_then(Value::as_str)
+        .ok_or_else(|| {
             AppError::new(
                 ErrorKind::InternalApiUnavailable,
-                format!("Could not decode screenshot data: {err}"),
+                "Page.captureScreenshot did not return data",
             )
-        })
-    }
+        })?;
+    STANDARD.decode(data).map_err(|err| {
+        AppError::new(
+            ErrorKind::InternalApiUnavailable,
+            format!("Could not decode screenshot data: {err}"),
+        )
+    })
 }
 
 async fn wait_for_response(

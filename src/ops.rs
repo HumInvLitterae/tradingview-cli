@@ -669,6 +669,8 @@ pub async fn screenshot_full(
     let bytes = runtime.capture_screenshot().await?;
     write_screenshot(output_path, &bytes)?;
     Ok(json!({
+        "file_path": output_path,
+        "method": "cdp",
         "output_path": output_path,
         "region": "full",
         "size_bytes": bytes.len(),
@@ -703,11 +705,22 @@ pub async fn screenshot_chart(
         )
         .await?;
     let bounds = screenshot_bounds_from_value(&bounds)?;
-    let full_bytes = runtime.capture_screenshot().await?;
-    let bytes = crop_screenshot_to_bounds(&full_bytes, &bounds)?;
+    let (bytes, capture_mode) = match runtime.capture_screenshot_clip(bounds.clip).await {
+        Ok(bytes) => (bytes, "cdp_clip"),
+        Err(_) => {
+            let full_bytes = runtime.capture_screenshot().await?;
+            (
+                crop_screenshot_to_bounds(&full_bytes, &bounds)?,
+                "full_page_crop",
+            )
+        }
+    };
     write_screenshot(output_path, &bytes)?;
     Ok(json!({
+        "capture_mode": capture_mode,
         "output_path": output_path,
+        "file_path": output_path,
+        "method": "cdp",
         "region": "chart",
         "size_bytes": bytes.len(),
         "clip": bounds.clip,
@@ -1040,7 +1053,9 @@ mod tests {
         evaluated: Vec<(String, bool)>,
         responses: VecDeque<Value>,
         screenshot: Vec<u8>,
+        clipped_screenshot: Result<Vec<u8>, ErrorKind>,
         screenshot_count: usize,
+        clipped_screenshot_count: usize,
     }
 
     impl FakeRuntime {
@@ -1049,12 +1064,24 @@ mod tests {
                 evaluated: Vec::new(),
                 responses: responses.into(),
                 screenshot: vec![137, 80, 78, 71],
+                clipped_screenshot: Ok(vec![137, 80, 78, 71]),
                 screenshot_count: 0,
+                clipped_screenshot_count: 0,
             }
         }
 
         fn with_screenshot(mut self, screenshot: Vec<u8>) -> Self {
             self.screenshot = screenshot;
+            self
+        }
+
+        fn with_clipped_screenshot(mut self, screenshot: Vec<u8>) -> Self {
+            self.clipped_screenshot = Ok(screenshot);
+            self
+        }
+
+        fn with_clipped_error(mut self, kind: ErrorKind) -> Self {
+            self.clipped_screenshot = Err(kind);
             self
         }
     }
@@ -1072,6 +1099,16 @@ mod tests {
         async fn capture_screenshot(&mut self) -> Result<Vec<u8>, AppError> {
             self.screenshot_count += 1;
             Ok(self.screenshot.clone())
+        }
+
+        async fn capture_screenshot_clip(
+            &mut self,
+            _clip: ScreenshotClip,
+        ) -> Result<Vec<u8>, AppError> {
+            self.clipped_screenshot_count += 1;
+            self.clipped_screenshot
+                .clone()
+                .map_err(|kind| AppError::new(kind, "simulated clipped screenshot capture failure"))
         }
     }
 
@@ -1255,6 +1292,8 @@ mod tests {
             .unwrap();
 
         assert_eq!(data["region"], "full");
+        assert_eq!(data["file_path"], output.to_str().unwrap());
+        assert_eq!(data["method"], "cdp");
         assert_eq!(data["size_bytes"], 4);
         assert_eq!(runtime.screenshot_count, 1);
         assert_eq!(fs::read(output).unwrap(), vec![137, 80, 78, 71]);
@@ -1264,6 +1303,7 @@ mod tests {
     async fn screenshot_chart_writes_clipped_png_bytes() {
         let dir = tempdir().unwrap();
         let output = dir.path().join("chart.png");
+        let clipped_png = png_fixture(640, 360);
         let mut runtime = FakeRuntime::new([json!({
             "x": 10.0,
             "y": 20.0,
@@ -1272,13 +1312,17 @@ mod tests {
             "viewport_width": 1000.0,
             "viewport_height": 500.0
         })])
-        .with_screenshot(png_fixture(1000, 500));
+        .with_screenshot(png_fixture(1000, 500))
+        .with_clipped_screenshot(clipped_png);
 
         let data = screenshot_chart(&mut runtime, output.to_str().unwrap())
             .await
             .unwrap();
 
         assert_eq!(data["region"], "chart");
+        assert_eq!(data["capture_mode"], "cdp_clip");
+        assert_eq!(data["file_path"], output.to_str().unwrap());
+        assert_eq!(data["method"], "cdp");
         assert!(data["size_bytes"].as_u64().unwrap() > 0);
         assert_eq!(data["clip"]["x"], 10.0);
         assert_eq!(data["clip"]["width"], 640.0);
@@ -1292,6 +1336,35 @@ mod tests {
                 .0
                 .contains("[class*=\"chart-container\"]")
         );
+        assert_eq!(runtime.clipped_screenshot_count, 1);
+        assert_eq!(runtime.screenshot_count, 0);
+
+        let cropped = image::load_from_memory(&fs::read(output).unwrap()).unwrap();
+        assert_eq!(cropped.width(), 640);
+        assert_eq!(cropped.height(), 360);
+    }
+
+    #[tokio::test]
+    async fn screenshot_chart_falls_back_to_local_crop_when_clipped_capture_fails() {
+        let dir = tempdir().unwrap();
+        let output = dir.path().join("chart.png");
+        let mut runtime = FakeRuntime::new([json!({
+            "x": 10.0,
+            "y": 20.0,
+            "width": 640.0,
+            "height": 360.0,
+            "viewport_width": 1000.0,
+            "viewport_height": 500.0
+        })])
+        .with_screenshot(png_fixture(1000, 500))
+        .with_clipped_error(ErrorKind::Timeout);
+
+        let data = screenshot_chart(&mut runtime, output.to_str().unwrap())
+            .await
+            .unwrap();
+
+        assert_eq!(data["capture_mode"], "full_page_crop");
+        assert_eq!(runtime.clipped_screenshot_count, 1);
         assert_eq!(runtime.screenshot_count, 1);
 
         let cropped = image::load_from_memory(&fs::read(output).unwrap()).unwrap();
@@ -1318,5 +1391,6 @@ mod tests {
 
         assert_eq!(err.kind, ErrorKind::InternalApiUnavailable);
         assert_eq!(runtime.screenshot_count, 0);
+        assert_eq!(runtime.clipped_screenshot_count, 0);
     }
 }

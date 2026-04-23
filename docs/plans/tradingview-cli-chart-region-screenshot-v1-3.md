@@ -13,11 +13,13 @@ Chart-region capture is less stable than full-page capture because it depends on
 ## Progress
 
 - [x] (2026-04-24 20:25 JST) Read current screenshot/CDP code, prior migration docs, old JavaScript chart-region implementation, and downstream visual-audit references.
-- [x] (2026-04-24 06:33 JST) Tested clipped CDP screenshots, found they time out in the live TradingView Desktop target, and switched to local PNG cropping after a full CDP screenshot.
+- [x] (2026-04-24 06:33 JST) Tested clipped CDP screenshots, observed an intermittent timeout, and initially switched to local PNG cropping after a full CDP screenshot.
 - [x] (2026-04-24 06:33 JST) Implemented `screenshot --region chart`.
 - [x] (2026-04-24 06:33 JST) Added unit and CLI contract tests.
 - [x] (2026-04-24 06:33 JST) Updated README, migration inventory, contract note, handoff note, and agent guide.
 - [x] (2026-04-24 06:33 JST) Ran validation and live smoke checks.
+- [x] (2026-04-24 06:33 JST) Re-tested the old JavaScript CLI, a raw WebSocket CDP probe, and the Rust implementation with clipped CDP capture. All succeeded against the same live TradingView session.
+- [x] (2026-04-24 06:33 JST) Updated Rust to prefer clipped CDP capture and fall back to local PNG crop only when clipped capture fails.
 
 ## Surprises & Discoveries
 
@@ -27,10 +29,16 @@ Chart-region capture is less stable than full-page capture because it depends on
 - Observation: The old bridge used simple DOM fallback selectors for chart bounds and then passed that rectangle to CDP `Page.captureScreenshot`.
   Evidence: `src/core/capture.js` in the migration source checks `[data-name="pane-canvas"]`, `[class*="chart-container"]`, then `canvas`.
 
-- Observation: In the live TradingView Desktop target, CDP `Page.captureScreenshot` timed out whenever a `clip` parameter was supplied, including a tiny `{ x: 0, y: 0, width: 200, height: 200, scale: 1 }` clip.
+- Observation: In one live TradingView Desktop session state during development, CDP `Page.captureScreenshot` timed out whenever a `clip` parameter was supplied, including a tiny `{ x: 0, y: 0, width: 200, height: 200, scale: 1 }` clip.
   Evidence: targeted Node CDP probes reproduced the timeout with `clip`, `clip + fromSurface: false`, and `clip + captureBeyondViewport: false`, while full-page screenshot capture succeeded afterward.
 
-- Observation: Local PNG cropping after full-page CDP capture avoids the clipped CDP timeout and still produces a chart-region PNG.
+- Observation: The timeout is not confirmed as a general TradingView/CDP or Rust library problem.
+  Evidence: The old JavaScript `tv screenshot -r chart` succeeded against the same running TradingView target and wrote a 2530 x 200 PNG. A later raw WebSocket CDP probe also succeeded with `Page.captureScreenshot({ clip })`.
+
+- Observation: Rust clipped CDP capture works in the current live TradingView session.
+  Evidence: `cargo run -- screenshot --region chart --output target/tv-chart-clip-retest.png` returned `capture_mode: "cdp_clip"` and wrote a 2530 x 200 PNG.
+
+- Observation: Local PNG cropping after full-page CDP capture avoids clipped CDP failures and still produces a chart-region PNG.
   Evidence: `cargo run -- screenshot --region chart --output target/tv-chart.png` succeeded and wrote a 2530 x 201 PNG in the live smoke test.
 
 ## Decision Log
@@ -43,13 +51,13 @@ Chart-region capture is less stable than full-page capture because it depends on
   Rationale: A missing chart element means the TradingView internal page shape does not support this operation at that moment, not that the user's command syntax is wrong.
   Date/Author: 2026-04-24 / Codex
 
-- Decision: Do not call CDP `Page.captureScreenshot` with `clip` for chart-region capture. Capture the full page and crop locally with the Rust `image` crate instead.
-  Rationale: The clipped CDP path timed out in live TradingView Desktop, and local cropping keeps the externally visible command reliable while preserving the same output contract.
+- Decision: Prefer CDP `Page.captureScreenshot` with `clip` for chart-region capture, and fall back to full-page screenshot plus local PNG crop if clipped capture fails.
+  Rationale: The old JavaScript CLI uses clipped CDP capture and it works in the current live session. Keeping it as the primary path improves behavioral compatibility, while the local-crop fallback preserves resilience if CDP enters a state where clipped capture times out.
   Date/Author: 2026-04-24 / Codex
 
 ## Outcomes & Retrospective
 
-The chart-region screenshot slice is implemented. `tv screenshot --region chart --output <PATH>` now finds the visible TradingView chart element, captures a full-page PNG through CDP, crops that PNG locally to the chart bounds, writes the cropped PNG, and returns `output_path`, `region`, `size_bytes`, and `clip`.
+The chart-region screenshot slice is implemented. `tv screenshot --region chart --output <PATH>` now finds the visible TradingView chart element, first tries clipped CDP screenshot capture, falls back to local crop if clipped capture fails, writes the PNG, and returns `method`, `file_path`, `output_path`, `region`, `size_bytes`, `clip`, and `capture_mode`.
 
 Validation passed:
 
@@ -65,6 +73,8 @@ Live smoke checks passed against a running TradingView Desktop CDP target:
 
 The chart-region smoke produced a positive `size_bytes` result and a 2530 x 201 PNG. The remaining risk is DOM selector drift: TradingView may rename the chart canvas/container elements, in which case the command should fail with `internal_api_unavailable` rather than silently writing a misleading crop.
 
+After the initial implementation, clipped CDP capture was re-tested and now succeeds from Rust. The latest chart-region smoke produced `capture_mode: "cdp_clip"` and a 2530 x 200 PNG, matching the old JavaScript CLI's observed image dimensions.
+
 ## Context and Orientation
 
 The Rust CLI is a single binary named `tv`. `src/cli.rs` defines command-line parsing. `src/main.rs` dispatches commands and wraps results in JSON envelopes. `src/cdp.rs` owns Chrome DevTools Protocol communication. `src/ops.rs` owns command behavior, including screenshot file writing.
@@ -73,9 +83,9 @@ Chrome DevTools Protocol, or CDP, is the local debugging protocol exposed by Tra
 
 ## Plan of Work
 
-First, keep `src/cdp.rs` screenshot capture on the full-page `Page.captureScreenshot` path. Do not pass a CDP `clip` parameter; live testing showed that clipped CDP screenshots can time out in TradingView Desktop.
+First, expose both full-page and clipped CDP screenshot capture through `src/cdp.rs`. Clipped capture should call `Page.captureScreenshot` with the same `clip` shape the old JavaScript CLI uses.
 
-Next, update `src/ops.rs`. Keep `screenshot_full` as the full-page path. Add `screenshot_chart`, which evaluates JavaScript inside the TradingView page to find the chart element bounds, validates the returned rectangle, captures the full screenshot through CDP, crops the PNG locally to the chart rectangle, writes the PNG, and returns `output_path`, `region`, `size_bytes`, and `clip`.
+Next, update `src/ops.rs`. Keep `screenshot_full` as the full-page path. Add `screenshot_chart`, which evaluates JavaScript inside the TradingView page to find the chart element bounds, validates the returned rectangle, tries clipped CDP capture, falls back to full screenshot plus local PNG crop if clipped capture fails, writes the PNG, and returns `method`, `file_path`, `output_path`, `region`, `size_bytes`, `clip`, and `capture_mode`.
 
 Then, update `src/main.rs` so `--region full` calls `screenshot_full`, `--region chart` calls `screenshot_chart`, and all other region values still fail validation.
 
@@ -124,7 +134,7 @@ The Rust `image` crate is required with PNG support and default image formats di
 
     image = { version = "0.25.10", default-features = false, features = ["png"] }
 
-`src/cdp.rs` must expose a serializable clip type with `x`, `y`, `width`, `height`, and `scale` for the output contract. `RuntimeEvaluator` captures the full screenshot.
+`src/cdp.rs` must expose a serializable clip type with `x`, `y`, `width`, `height`, and `scale` for both the output contract and clipped CDP capture. `RuntimeEvaluator` captures full screenshots and clipped screenshots.
 
 `src/ops.rs` must expose:
 
