@@ -85,6 +85,8 @@ The migration source is [`tradesdontlie/tradingview-mcp`](https://github.com/tra
 
 The Rust v1 should implement only `status`, `state`, `quote`, `ohlcv --summary`, `symbol`, `timeframe`, and `screenshot --region full`. It must not implement Pine editing, panes, tabs, alerts, watchlists, replay, streaming, arbitrary UI automation, or an MCP server.
 
+This paragraph defines the Rust v1 slice only. It does not mean that every old CLI command outside v1 is permanently out of scope. Later command migration must follow `docs/notes/legacy-cli-command-migration-inventory-2026-04-24.md`. The MCP server remains the explicit exception: MCP server implementation is not planned for this project.
+
 ## Plan of Work
 
 First, create a normal Rust binary package in the repository root with a binary named `tv`. Use Rust edition 2024 and a `rust-toolchain.toml` that selects stable. Add a `Cargo.lock` when dependencies are resolved. Use semver dependency requirements in `Cargo.toml`; do not hard-code exact crate versions in prose or comments.
@@ -244,3 +246,5 @@ No critical open questions block implementation. The following non-blocking ques
 - Whether downstream consumers need additional read-only commands after the initial provider and operator workflows exercise the CLI.
 
 Revision note: created after migration-source investigation to turn the docs-seed repository into an implementation-ready Rust v1 CLI plan. The plan deliberately states that MCP server implementation is not planned, fixes the v1 command contract, and carries forward testability lessons from the migration source.
+
+Revision note: clarified after v1 implementation that the v1 command boundary is not the same as the full CLI migration boundary. Missing old CLI commands are migration backlog unless explicitly excluded, and migrated commands must preserve practical information available from the old JavaScript CLI even though the Rust JSON envelope differs.

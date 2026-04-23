@@ -8,6 +8,8 @@ Build and maintain a Rust-native TradingView CLI that replaces the currently use
 
 The repository now contains the first Rust-native `tv` CLI implementation. The immediate goal is to keep that narrow v1 surface reliable, document the real operating contract, and choose any post-v1 work only after evidence shows it belongs in the core CLI.
 
+The broader CLI migration is not complete just because v1 is implemented. Missing old CLI commands are migration backlog unless a durable project decision explicitly excludes them. The MCP server remains separate from that backlog and is not planned.
+
 ## Sources of Truth
 
 Read these in order before making major decisions:
@@ -15,12 +17,14 @@ Read these in order before making major decisions:
 1. `CONTINUITY.md`
 2. `README.md`
 3. `docs/notes/next-agent-handoff-prompt-2026-04-24.md`
-4. `docs/plans/tradingview-cli-rust-v1.md`
-5. `docs/notes/tradingview-mcp-investigation-2026-04-24.md`
-6. `docs/plans/tradingview-cli-bootstrap-and-bridge-replacement.md`
-7. `docs/notes/next-agent-handoff-prompt-2026-04-21.md`
-8. `.agents/PLANS.md`
-9. `.agents/skills/continuity/SKILL.md` when the continuity skill is active
+4. `docs/notes/rust-cli-contract-migration-2026-04-24.md`
+5. `docs/notes/legacy-cli-command-migration-inventory-2026-04-24.md`
+6. `docs/plans/tradingview-cli-rust-v1.md`
+7. `docs/notes/tradingview-mcp-investigation-2026-04-24.md`
+8. `docs/plans/tradingview-cli-bootstrap-and-bridge-replacement.md`
+9. `docs/notes/next-agent-handoff-prompt-2026-04-21.md`
+10. `.agents/PLANS.md`
+11. `.agents/skills/continuity/SKILL.md` when the continuity skill is active
 
 If these sources disagree, preserve the higher-level user and system instructions, then update repository docs so the durable project state is clear again.
 
@@ -33,6 +37,9 @@ What is true right now:
 - Rust v1 is implemented as a `tv` binary
 - v1 is CLI-first
 - MCP server implementation is not planned
+- the Rust JSON wire shape intentionally differs from the old JavaScript CLI
+- migrated commands must preserve the practical information available from the old CLI
+- old CLI commands not yet implemented remain migration backlog unless explicitly excluded
 - the first capability and boundary research milestone is complete
 - the first Rust v1 implementation milestone is complete
 - this repository should stay narrower than a full reimplementation of the old bridge
@@ -43,8 +50,8 @@ Prefer work that moves one of these forward:
 
 1. keeping `README.md`, handoff notes, and ExecPlans aligned with the implemented CLI
 2. validating the Rust CLI in real downstream provider, review, and operator workflows
-3. preserving the v1 CLI boundary unless a decision is recorded in a new ExecPlan
-4. investigating post-v1 candidates such as chart-region screenshots, launch automation, or additional read-only commands before implementing them
+3. expanding old CLI command coverage in planned slices while preserving the improved Rust JSON envelope
+4. recording compatibility gaps before implementing or excluding them
 
 Supporting notes are welcome when they reduce ambiguity, but avoid speculative design sprawl.
 
@@ -56,9 +63,11 @@ Supporting notes are welcome when they reduce ambiguity, but avoid speculative d
 4. When inspecting external or sibling repositories, summarize the relevant findings in this repository. Do not depend on private local memory.
 5. Never write machine-specific absolute filesystem paths into tracked repository files.
 6. Mark uncertainty as `UNCONFIRMED` instead of guessing.
-7. Keep the repo boundary clean. Downstream workflow helpers, skills, and adapters should stay outside the core CLI unless the investigation proves they belong in v1.
-8. Commit related changes in sensible batches when files are changed. Do not accumulate a large mixed set of unrelated edits.
-9. Never push to a remote unless the user explicitly asks in the current turn.
+7. Keep the repo boundary clean. Downstream workflow helpers, skills, and adapters should stay outside the core CLI unless investigation proves they belong in the Rust CLI migration surface.
+8. Do not describe unimplemented old CLI commands as non-goals unless a project decision explicitly excludes them.
+9. Preserve information compatibility for migrated commands. Field names and envelope shape may change, but practical information available from the old CLI must remain available in the Rust CLI.
+10. Commit related changes in sensible batches when files are changed. Do not accumulate a large mixed set of unrelated edits.
+11. Never push to a remote unless the user explicitly asks in the current turn.
 
 ## Documentation Policy
 

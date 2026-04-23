@@ -10,6 +10,8 @@ This repository now contains the first Rust-native `tv` CLI implementation.
 
 The first implementation focuses on a narrow CLI surface for connecting to an already-running TradingView Desktop instance through Chrome DevTools Protocol on `localhost:9222`.
 
+The broader TradingView MCP Bridge CLI migration is still in progress. Commands that are not implemented yet should be treated as migration backlog unless a repository decision explicitly marks them out of scope. The MCP server is different: implementing an MCP server is not planned for this project.
+
 ## Purpose
 
 This is a CLI-first tool that focuses on the practical capabilities currently needed from the existing TradingView bridge:
@@ -22,12 +24,47 @@ The replacement is Rust-native, CLI-centered, and narrower than a full MCP-compa
 
 An MCP server is not planned for this project. Downstream integration should start through ordinary process invocation and JSON CLI output rather than by recreating the original MCP server surface.
 
+## Compatibility policy
+
+This Rust CLI is intended to replace practical usage of the old `tv` CLI over time, but it is not a drop-in JSON wire-format clone.
+
+The Rust CLI intentionally uses stable command envelopes:
+
+```json
+{
+  "success": true,
+  "command": "quote",
+  "data": {
+    "symbol": "NASDAQ:AAPL"
+  }
+}
+```
+
+Errors use the same envelope shape with structured details:
+
+```json
+{
+  "success": false,
+  "command": "quote",
+  "error": {
+    "kind": "connection",
+    "message": "CDP connection failed",
+    "details": null
+  }
+}
+```
+
+The old JavaScript CLI usually returned command fields at the top level, for example `{ "success": true, "symbol": "NASDAQ:AAPL" }`. Downstream adapters must therefore read command payloads from `data` when migrating to this Rust CLI.
+
+The wire shape may differ, but information compatibility is required for migrated commands: information available from the old CLI should remain available from the Rust CLI once the corresponding command is implemented. New fields may be added. Removing old practical information requires an explicit decision and migration note.
+
 ## Non-goals
 
 - no copied JavaScript bridge code
-- no full feature parity promise
+- no all-at-once feature parity promise
 - no release packaging
 - no skill migration yet
+- no MCP server implementation
 
 ## Quick Start
 
@@ -76,14 +113,17 @@ Exit codes are:
 - a first Rust v1 implementation ExecPlan
 - a Rust v1 `tv` CLI implementation
 - a post-v1 handoff prompt
+- Rust CLI contract and command migration notes
 
 ## Where to start
 
 Read these in order:
 
 1. `docs/notes/next-agent-handoff-prompt-2026-04-24.md`
-2. `docs/plans/tradingview-cli-rust-v1.md`
-3. `docs/notes/tradingview-mcp-investigation-2026-04-24.md`
-4. `docs/plans/tradingview-cli-bootstrap-and-bridge-replacement.md`
+2. `docs/notes/rust-cli-contract-migration-2026-04-24.md`
+3. `docs/notes/legacy-cli-command-migration-inventory-2026-04-24.md`
+4. `docs/plans/tradingview-cli-rust-v1.md`
+5. `docs/notes/tradingview-mcp-investigation-2026-04-24.md`
+6. `docs/plans/tradingview-cli-bootstrap-and-bridge-replacement.md`
 
-The first capability and boundary research milestone and the Rust v1 implementation milestone are complete. The next milestone is operational readiness: keep the documentation accurate, exercise the CLI in real downstream workflows, and choose any post-v1 feature only after recording evidence in a new plan.
+The first capability and boundary research milestone and the Rust v1 implementation milestone are complete. The next milestone is migration readiness: keep the improved Rust JSON contract documented, preserve information compatibility for migrated commands, and continue implementing old CLI command coverage in planned slices.
