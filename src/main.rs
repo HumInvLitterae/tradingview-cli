@@ -9,7 +9,7 @@ use std::process::ExitCode;
 
 use cdp::CdpClient;
 use clap::{Parser, error::ErrorKind as ClapErrorKind};
-use cli::{Cli, Command};
+use cli::{Cli, Command, PaneCommand, WatchlistCommand};
 use error::{AppError, ErrorKind};
 use output::{ErrorBody, ErrorEnvelope, SuccessEnvelope};
 use serde_json::json;
@@ -62,9 +62,27 @@ async fn dispatch(command: Command) -> Result<serde_json::Value, AppError> {
             let mut runtime = connect_runtime().await?;
             ops::state(&mut runtime).await
         }
+        Command::Info => {
+            let mut runtime = connect_runtime().await?;
+            ops::symbol_info(&mut runtime).await
+        }
+        Command::Search { query } => {
+            let query = query.join(" ");
+            if query.trim().is_empty() {
+                return Err(AppError::new(
+                    ErrorKind::Validation,
+                    "Query required. Usage: tv search AAPL",
+                ));
+            }
+            ops::symbol_search(&query).await
+        }
         Command::Quote => {
             let mut runtime = connect_runtime().await?;
             ops::quote(&mut runtime).await
+        }
+        Command::Values => {
+            let mut runtime = connect_runtime().await?;
+            ops::study_values(&mut runtime).await
         }
         Command::Ohlcv { summary, count } => {
             let mut runtime = connect_runtime().await?;
@@ -124,6 +142,18 @@ async fn dispatch(command: Command) -> Result<serde_json::Value, AppError> {
             }
             let mut runtime = connect_runtime().await?;
             ops::scroll_to_date(&mut runtime, &date).await
+        }
+        Command::Watchlist { command } => {
+            let mut runtime = connect_runtime().await?;
+            match command {
+                WatchlistCommand::Get => ops::watchlist_get(&mut runtime).await,
+            }
+        }
+        Command::Pane { command } => {
+            let mut runtime = connect_runtime().await?;
+            match command {
+                PaneCommand::List => ops::pane_list(&mut runtime).await,
+            }
         }
         Command::Screenshot { region, output } => {
             if region != "full" {

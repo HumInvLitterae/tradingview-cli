@@ -9,8 +9,10 @@ use crate::{
 };
 
 const CHART_API: &str = "window.TradingViewApi._activeChartWidgetWV.value()";
+const CHART_WIDGET_COLLECTION: &str = "window.TradingViewApi._chartWidgetCollection";
 const BARS_PATH: &str =
     "window.TradingViewApi._activeChartWidgetWV.value()._chartWidget.model().mainSeries().bars()";
+const SYMBOL_SEARCH_URL: &str = "https://symbol-search.tradingview.com/symbol_search/v3/";
 const DEFAULT_OHLCV_COUNT: usize = 100;
 const MAX_OHLCV_COUNT: usize = 500;
 
@@ -130,6 +132,69 @@ pub async fn state(runtime: &mut impl RuntimeEvaluator) -> Result<Value, AppErro
         .await
 }
 
+pub async fn symbol_info(runtime: &mut impl RuntimeEvaluator) -> Result<Value, AppError> {
+    runtime
+        .evaluate(
+            &format!(
+                r#"
+                (function() {{
+                    var chart = {CHART_API};
+                    var info = chart.symbolExt();
+                    return {{
+                        symbol: info.symbol,
+                        full_name: info.full_name,
+                        exchange: info.exchange,
+                        description: info.description,
+                        type: info.type,
+                        pro_name: info.pro_name,
+                        typespecs: info.typespecs,
+                        resolution: chart.resolution(),
+                        chart_type: chart.chartType()
+                    }};
+                }})()
+                "#
+            ),
+            false,
+        )
+        .await
+}
+
+pub async fn symbol_search(query: &str) -> Result<Value, AppError> {
+    let url = reqwest::Url::parse_with_params(
+        SYMBOL_SEARCH_URL,
+        &[
+            ("text", query),
+            ("hl", "1"),
+            ("exchange", ""),
+            ("lang", "en"),
+            ("search_type", ""),
+            ("domain", "production"),
+        ],
+    )
+    .map_err(|err| AppError::new(ErrorKind::Internal, err.to_string()))?;
+    let response = reqwest::Client::new()
+        .get(url)
+        .header("Origin", "https://www.tradingview.com")
+        .header("Referer", "https://www.tradingview.com/")
+        .send()
+        .await
+        .map_err(|err| AppError::new(ErrorKind::Connection, err.to_string()))?;
+
+    let status = response.status();
+    if !status.is_success() {
+        return Err(AppError::new(
+            ErrorKind::Connection,
+            format!("Symbol search API returned {status}"),
+        ));
+    }
+
+    let value = response
+        .json::<Value>()
+        .await
+        .map_err(|err| AppError::new(ErrorKind::InternalApiUnavailable, err.to_string()))?;
+    Ok(normalize_symbol_search_response(query, &value))
+}
+
 pub async fn quote(runtime: &mut impl RuntimeEvaluator) -> Result<Value, AppError> {
     runtime
         .evaluate(
@@ -166,6 +231,47 @@ pub async fn quote(runtime: &mut impl RuntimeEvaluator) -> Result<Value, AppErro
                         }}
                     }}
                     return quote;
+                }})()
+                "#
+            ),
+            false,
+        )
+        .await
+}
+
+pub async fn study_values(runtime: &mut impl RuntimeEvaluator) -> Result<Value, AppError> {
+    runtime
+        .evaluate(
+            &format!(
+                r#"
+                (function() {{
+                    var chart = {CHART_API};
+                    var sources = chart._chartWidget.model().model().dataSources();
+                    var results = [];
+                    for (var si = 0; si < sources.length; si++) {{
+                        var s = sources[si];
+                        if (!s.metaInfo) continue;
+                        try {{
+                            var meta = s.metaInfo();
+                            var name = meta.description || meta.shortDescription || "";
+                            if (!name) continue;
+                            var values = {{}};
+                            try {{
+                                var dwv = s.dataWindowView();
+                                if (dwv) {{
+                                    var items = dwv.items();
+                                    if (items) {{
+                                        for (var i = 0; i < items.length; i++) {{
+                                            var item = items[i];
+                                            if (item._value && item._value !== "∅" && item._title) values[item._title] = item._value;
+                                        }}
+                                    }}
+                                }}
+                            }} catch(e) {{}}
+                            if (Object.keys(values).length > 0) results.push({{ name: name, values: values }});
+                        }} catch(e) {{}}
+                    }}
+                    return {{ study_count: results.length, studies: results }};
                 }})()
                 "#
             ),
@@ -442,6 +548,119 @@ pub async fn scroll_to_date(
         .await
 }
 
+pub async fn watchlist_get(runtime: &mut impl RuntimeEvaluator) -> Result<Value, AppError> {
+    runtime
+        .evaluate(
+            r#"
+            (function() {
+                try {
+                    var rightArea = document.querySelector('[class*="layout__area--right"]');
+                    if (!rightArea || rightArea.offsetWidth < 50) return { count: 0, source: "panel_closed", symbols: [] };
+                } catch(e) {}
+
+                var results = [];
+                var seen = {};
+                var container = document.querySelector('[class*="layout__area--right"]');
+                if (!container) return { count: 0, source: "no_container", symbols: [] };
+
+                var symbolEls = container.querySelectorAll('[data-symbol-full]');
+                for (var i = 0; i < symbolEls.length; i++) {
+                    var sym = symbolEls[i].getAttribute('data-symbol-full');
+                    if (!sym || seen[sym]) continue;
+                    seen[sym] = true;
+
+                    var row = symbolEls[i].closest('[class*="row"]') || symbolEls[i].parentElement;
+                    var cells = row ? row.querySelectorAll('[class*="cell"], [class*="column"]') : [];
+                    var nums = [];
+                    for (var j = 0; j < cells.length; j++) {
+                        var t = cells[j].textContent.trim();
+                        if (t && /^[\-+]?[\d,]+\.?\d*%?$/.test(t.replace(/[\s,]/g, ''))) nums.push(t);
+                    }
+                    results.push({ symbol: sym, last: nums[0] || null, change: nums[1] || null, change_percent: nums[2] || null });
+                }
+
+                if (results.length > 0) return { count: results.length, source: "data_attributes", symbols: results };
+
+                var items = container.querySelectorAll('[class*="symbolName"], [class*="tickerName"], [class*="symbol-"]');
+                for (var k = 0; k < items.length; k++) {
+                    var text = items[k].textContent.trim();
+                    if (text && /^[A-Z][A-Z0-9.:!]{0,20}$/.test(text) && !seen[text]) {
+                        seen[text] = true;
+                        results.push({ symbol: text, last: null, change: null, change_percent: null });
+                    }
+                }
+
+                return { count: results.length, source: results.length > 0 ? "text_scan" : "empty", symbols: results };
+            })()
+            "#,
+            false,
+        )
+        .await
+}
+
+pub async fn pane_list(runtime: &mut impl RuntimeEvaluator) -> Result<Value, AppError> {
+    runtime
+        .evaluate(
+            &format!(
+                r#"
+                (function() {{
+                    var layoutNames = {{
+                        "s": "single",
+                        "single": "single",
+                        "2h": "2 horizontal",
+                        "2v": "2 vertical",
+                        "2x2": "2 by 2",
+                        "4": "4 panes",
+                        "6": "6 panes",
+                        "8": "8 panes"
+                    }};
+                    var cwc = {CHART_WIDGET_COLLECTION};
+                    var layoutType = cwc._layoutType;
+                    if (typeof layoutType === "object" && layoutType && typeof layoutType.value === "function") layoutType = layoutType.value();
+                    var count = cwc.inlineChartsCount;
+                    if (typeof count === "object" && count && typeof count.value === "function") count = count.value();
+
+                    var all = cwc.getAll();
+                    var panes = [];
+                    for (var i = 0; i < all.length; i++) {{
+                        try {{
+                            var c = all[i];
+                            var model = c.model ? c.model() : null;
+                            var mainSeries = model ? model.mainSeries() : null;
+                            var sym = mainSeries ? mainSeries.symbol() : "unknown";
+                            var res = mainSeries ? mainSeries.interval() : null;
+                            panes.push({{ index: i, symbol: sym, resolution: res || null }});
+                        }} catch(e) {{
+                            panes.push({{ index: i, symbol: null, resolution: null, error: e.message }});
+                        }}
+                    }}
+
+                    var activeChart = {CHART_API};
+                    var activeIndex = null;
+                    for (var j = 0; j < all.length; j++) {{
+                        try {{
+                            if (all[j].model && activeChart._chartWidget && all[j] === activeChart._chartWidget) {{
+                                activeIndex = j;
+                                break;
+                            }}
+                        }} catch(e) {{}}
+                    }}
+
+                    return {{
+                        layout: layoutType,
+                        layout_name: layoutNames[layoutType] || layoutType,
+                        chart_count: count,
+                        active_index: activeIndex,
+                        panes: panes
+                    }};
+                }})()
+                "#
+            ),
+            false,
+        )
+        .await
+}
+
 pub async fn screenshot_full(
     runtime: &mut impl RuntimeEvaluator,
     output_path: &str,
@@ -552,6 +771,65 @@ fn summarize_ohlcv(data: Value) -> Result<Value, AppError> {
     Ok(summary)
 }
 
+fn normalize_symbol_search_response(query: &str, value: &Value) -> Value {
+    let rows = value
+        .get("symbols")
+        .and_then(Value::as_array)
+        .or_else(|| value.as_array())
+        .cloned()
+        .unwrap_or_default();
+    let results = rows
+        .into_iter()
+        .take(15)
+        .map(|row| {
+            let symbol = strip_em(
+                row.get("symbol")
+                    .and_then(Value::as_str)
+                    .unwrap_or_default(),
+            );
+            let description = strip_em(
+                row.get("description")
+                    .and_then(Value::as_str)
+                    .unwrap_or_default(),
+            );
+            let exchange = row
+                .get("exchange")
+                .or_else(|| row.get("prefix"))
+                .and_then(Value::as_str)
+                .unwrap_or_default()
+                .to_string();
+            let symbol_type = row
+                .get("type")
+                .and_then(Value::as_str)
+                .unwrap_or_default()
+                .to_string();
+            let full_name = if exchange.is_empty() {
+                symbol.clone()
+            } else {
+                format!("{exchange}:{symbol}")
+            };
+            json!({
+                "symbol": symbol,
+                "description": description,
+                "exchange": exchange,
+                "type": symbol_type,
+                "full_name": full_name,
+            })
+        })
+        .collect::<Vec<_>>();
+
+    json!({
+        "query": query,
+        "source": "rest_api",
+        "count": results.len(),
+        "results": results,
+    })
+}
+
+fn strip_em(value: &str) -> String {
+    value.replace("<em>", "").replace("</em>", "")
+}
+
 fn round2(value: f64) -> f64 {
     (value * 100.0).round() / 100.0
 }
@@ -656,6 +934,83 @@ mod tests {
                 .contains("\"2026-03-03'; window.bad = true; '\"")
         );
         assert!(runtime.evaluated[0].1);
+    }
+
+    #[tokio::test]
+    async fn symbol_info_uses_symbol_ext() {
+        let mut runtime = FakeRuntime::new([json!({"symbol": "AAPL"})]);
+
+        let _ = symbol_info(&mut runtime).await;
+
+        assert!(runtime.evaluated[0].0.contains("chart.symbolExt()"));
+        assert!(!runtime.evaluated[0].1);
+    }
+
+    #[tokio::test]
+    async fn study_values_returns_runtime_payload() {
+        let payload = json!({
+            "study_count": 1,
+            "studies": [{"name": "Relative Strength", "values": {"RS": "98"}}]
+        });
+        let mut runtime = FakeRuntime::new([payload.clone()]);
+
+        let result = study_values(&mut runtime).await.unwrap();
+
+        assert_eq!(result, payload);
+        assert!(runtime.evaluated[0].0.contains("dataWindowView"));
+    }
+
+    #[tokio::test]
+    async fn watchlist_get_returns_runtime_payload() {
+        let payload = json!({
+            "count": 1,
+            "source": "data_attributes",
+            "symbols": [{"symbol": "NASDAQ:AAPL", "last": "100", "change": "1", "change_percent": "1%"}]
+        });
+        let mut runtime = FakeRuntime::new([payload.clone()]);
+
+        let result = watchlist_get(&mut runtime).await.unwrap();
+
+        assert_eq!(result, payload);
+        assert!(runtime.evaluated[0].0.contains("data-symbol-full"));
+    }
+
+    #[tokio::test]
+    async fn pane_list_returns_runtime_payload() {
+        let payload = json!({
+            "layout": "single",
+            "layout_name": "single",
+            "chart_count": 1,
+            "active_index": 0,
+            "panes": [{"index": 0, "symbol": "NASDAQ:AAPL", "resolution": "D"}]
+        });
+        let mut runtime = FakeRuntime::new([payload.clone()]);
+
+        let result = pane_list(&mut runtime).await.unwrap();
+
+        assert_eq!(result, payload);
+        assert!(runtime.evaluated[0].0.contains("_chartWidgetCollection"));
+    }
+
+    #[test]
+    fn normalize_symbol_search_response_handles_object_and_em_tags() {
+        let response = json!({
+            "symbols": [{
+                "symbol": "<em>AAPL</em>",
+                "description": "Apple <em>Inc</em>",
+                "exchange": "NASDAQ",
+                "type": "stock"
+            }]
+        });
+
+        let result = normalize_symbol_search_response("AAPL", &response);
+
+        assert_eq!(result["query"], "AAPL");
+        assert_eq!(result["source"], "rest_api");
+        assert_eq!(result["count"], 1);
+        assert_eq!(result["results"][0]["symbol"], "AAPL");
+        assert_eq!(result["results"][0]["description"], "Apple Inc");
+        assert_eq!(result["results"][0]["full_name"], "NASDAQ:AAPL");
     }
 
     #[tokio::test]

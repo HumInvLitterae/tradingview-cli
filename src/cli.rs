@@ -14,8 +14,14 @@ pub enum Command {
     Status,
     #[command(about = "Get current chart state")]
     State,
+    #[command(about = "Get detailed symbol metadata")]
+    Info,
+    #[command(about = "Search TradingView symbols")]
+    Search { query: Vec<String> },
     #[command(about = "Get real-time price quote")]
     Quote,
+    #[command(about = "Get current indicator values")]
+    Values,
     #[command(about = "Get OHLCV summary data")]
     Ohlcv {
         #[arg(long, short)]
@@ -36,6 +42,16 @@ pub enum Command {
     },
     #[command(about = "Scroll the chart to a date or Unix timestamp")]
     Scroll { date: String },
+    #[command(about = "Watchlist read tools")]
+    Watchlist {
+        #[command(subcommand)]
+        command: WatchlistCommand,
+    },
+    #[command(about = "Pane read tools")]
+    Pane {
+        #[command(subcommand)]
+        command: PaneCommand,
+    },
     #[command(about = "Capture a full screenshot")]
     Screenshot {
         #[arg(long, short, default_value = "full")]
@@ -45,17 +61,34 @@ pub enum Command {
     },
 }
 
+#[derive(Debug, Subcommand)]
+pub enum WatchlistCommand {
+    #[command(about = "Get watchlist symbols")]
+    Get,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum PaneCommand {
+    #[command(about = "List all panes in the current layout")]
+    List,
+}
+
 impl Command {
     pub fn name(&self) -> &'static str {
         match self {
             Self::Status => "status",
             Self::State => "state",
+            Self::Info => "info",
+            Self::Search { .. } => "search",
             Self::Quote => "quote",
+            Self::Values => "values",
             Self::Ohlcv { .. } => "ohlcv",
             Self::Symbol { .. } => "symbol",
             Self::Timeframe { .. } => "timeframe",
             Self::Range { .. } => "range",
             Self::Scroll { .. } => "scroll",
+            Self::Watchlist { .. } => "watchlist",
+            Self::Pane { .. } => "pane",
             Self::Screenshot { .. } => "screenshot",
         }
     }

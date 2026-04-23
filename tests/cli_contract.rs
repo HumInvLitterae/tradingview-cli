@@ -12,6 +12,11 @@ fn help_lists_v1_commands() {
         .assert()
         .success()
         .stdout(predicate::str::contains("status"))
+        .stdout(predicate::str::contains("info"))
+        .stdout(predicate::str::contains("search"))
+        .stdout(predicate::str::contains("values"))
+        .stdout(predicate::str::contains("watchlist"))
+        .stdout(predicate::str::contains("pane"))
         .stdout(predicate::str::contains("range"))
         .stdout(predicate::str::contains("scroll"))
         .stdout(predicate::str::contains("screenshot"));
@@ -48,6 +53,49 @@ fn ohlcv_accepts_count_argument() {
         .assert()
         .success()
         .stdout(predicate::str::contains("--count"));
+}
+
+#[test]
+fn search_requires_query() {
+    let assert = tv().arg("search").assert().failure().code(1);
+    let stderr = String::from_utf8(assert.get_output().stderr.clone()).unwrap();
+    let value: Value = serde_json::from_str(&stderr).unwrap();
+    assert_eq!(value["success"], false);
+    assert_eq!(value["command"], "search");
+    assert_eq!(value["error"]["kind"], "validation");
+}
+
+#[test]
+fn watchlist_and_pane_help_list_read_subcommands() {
+    tv().args(["watchlist", "--help"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("get"));
+    tv().args(["pane", "--help"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("list"));
+}
+
+#[test]
+fn read_utilities_attempt_connection_when_cdp_is_unavailable() {
+    for args in [
+        vec!["info"],
+        vec!["values"],
+        vec!["watchlist", "get"],
+        vec!["pane", "list"],
+    ] {
+        let assert = tv()
+            .env("TV_CDP_PORT", "9")
+            .args(args)
+            .assert()
+            .failure()
+            .code(2);
+        let stderr = String::from_utf8(assert.get_output().stderr.clone()).unwrap();
+        let value: Value = serde_json::from_str(&stderr).unwrap();
+        assert_eq!(value["success"], false);
+        assert_eq!(value["error"]["kind"], "connection");
+    }
 }
 
 #[test]
