@@ -114,12 +114,33 @@ fn connection_failure_uses_structured_json_and_exit_code_2() {
 }
 
 #[test]
-fn screenshot_rejects_chart_region_for_v1() {
+fn screenshot_chart_region_attempts_connection() {
     let assert = tv()
+        .env("TV_CDP_PORT", "9")
         .args([
             "screenshot",
             "--region",
             "chart",
+            "--output",
+            "target/test.png",
+        ])
+        .assert()
+        .failure()
+        .code(2);
+    let stderr = String::from_utf8(assert.get_output().stderr.clone()).unwrap();
+    let value: Value = serde_json::from_str(&stderr).unwrap();
+    assert_eq!(value["success"], false);
+    assert_eq!(value["command"], "screenshot");
+    assert_eq!(value["error"]["kind"], "connection");
+}
+
+#[test]
+fn screenshot_rejects_unsupported_region() {
+    let assert = tv()
+        .args([
+            "screenshot",
+            "--region",
+            "strategy_tester",
             "--output",
             "target/test.png",
         ])

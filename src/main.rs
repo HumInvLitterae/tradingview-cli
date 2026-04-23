@@ -156,10 +156,10 @@ async fn dispatch(command: Command) -> Result<serde_json::Value, AppError> {
             }
         }
         Command::Screenshot { region, output } => {
-            if region != "full" {
+            if !matches!(region.as_str(), "full" | "chart") {
                 return Err(AppError::new(
                     ErrorKind::Validation,
-                    "Only --region full is supported in v1",
+                    "Only --region full and --region chart are supported",
                 )
                 .with_details(json!({ "region": region })));
             }
@@ -170,7 +170,11 @@ async fn dispatch(command: Command) -> Result<serde_json::Value, AppError> {
                 ));
             }
             let mut runtime = connect_runtime().await?;
-            ops::screenshot_full(&mut runtime, &output).await
+            match region.as_str() {
+                "full" => ops::screenshot_full(&mut runtime, &output).await,
+                "chart" => ops::screenshot_chart(&mut runtime, &output).await,
+                _ => unreachable!("screenshot region should be validated"),
+            }
         }
     }
 }

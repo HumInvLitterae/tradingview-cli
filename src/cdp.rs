@@ -18,7 +18,16 @@ const DEFAULT_TIMEOUT: Duration = Duration::from_secs(10);
 
 pub trait RuntimeEvaluator {
     async fn evaluate(&mut self, expression: &str, await_promise: bool) -> Result<Value, AppError>;
-    async fn capture_full_screenshot(&mut self) -> Result<Vec<u8>, AppError>;
+    async fn capture_screenshot(&mut self) -> Result<Vec<u8>, AppError>;
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, serde::Serialize)]
+pub struct ScreenshotClip {
+    pub x: f64,
+    pub y: f64,
+    pub width: f64,
+    pub height: f64,
+    pub scale: f64,
 }
 
 pub struct CdpClient {
@@ -98,7 +107,7 @@ impl RuntimeEvaluator for CdpClient {
             .unwrap_or(Value::Null))
     }
 
-    async fn capture_full_screenshot(&mut self) -> Result<Vec<u8>, AppError> {
+    async fn capture_screenshot(&mut self) -> Result<Vec<u8>, AppError> {
         let response = self
             .call_method("Page.captureScreenshot", json!({ "format": "png" }))
             .await?;
