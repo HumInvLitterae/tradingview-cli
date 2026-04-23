@@ -39,6 +39,20 @@ impl Default for TransportConfig {
 }
 
 impl TransportConfig {
+    pub fn from_env() -> Result<Self, AppError> {
+        let host = std::env::var("TV_CDP_HOST").unwrap_or_else(|_| "localhost".to_string());
+        let port = match std::env::var("TV_CDP_PORT") {
+            Ok(value) => value.parse::<u16>().map_err(|err| {
+                AppError::new(
+                    ErrorKind::Validation,
+                    format!("TV_CDP_PORT must be a valid port: {err}"),
+                )
+            })?,
+            Err(_) => 9222,
+        };
+        Ok(Self { host, port })
+    }
+
     pub fn list_url(&self) -> String {
         format!("http://{}:{}/json/list", self.host, self.port)
     }

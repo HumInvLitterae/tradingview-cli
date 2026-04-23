@@ -21,9 +21,9 @@ This project is inspired by [`tradesdontlie/tradingview-mcp`](https://github.com
 - [x] (2026-04-24 03:59 JST) Create the Rust package skeleton for a single `tv` binary.
 - [x] (2026-04-24 04:02 JST) Implement the CLI argument surface and common JSON envelopes.
 - [x] (2026-04-24 04:06 JST) Implement target discovery and CDP transport.
-- [ ] Implement `status`, `state`, `quote`, `ohlcv --summary`, `symbol`, `timeframe`, and `screenshot --region full`.
-- [ ] Add unit and CLI integration tests for command contracts, CDP behavior, and error mapping.
-- [ ] Run the full validation commands and record results in this plan.
+- [x] (2026-04-24 04:09 JST) Implement `status`, `state`, `quote`, `ohlcv --summary`, `symbol`, `timeframe`, and `screenshot --region full`.
+- [x] (2026-04-24 04:09 JST) Add unit and CLI integration tests for command contracts, CDP behavior, and error mapping.
+- [x] (2026-04-24 04:09 JST) Run the full validation commands and record results in this plan.
 
 ## Surprises & Discoveries
 
@@ -41,6 +41,9 @@ This project is inspired by [`tradesdontlie/tradingview-mcp`](https://github.com
 
 - Observation: The CDP transport needed two small support crates beyond the initial dependency hypothesis.
   Evidence: `futures-util` provides WebSocket stream and sink helpers used by `tokio-tungstenite`, and `base64` decodes the `Page.captureScreenshot` response body.
+
+- Observation: The local machine had a running TradingView Desktop CDP target during implementation.
+  Evidence: `cargo run -- status` returned a connected TradingView chart target on `localhost:9222`, allowing all v1 smoke commands to run against a real chart.
 
 ## Decision Log
 
@@ -71,6 +74,8 @@ This project is inspired by [`tradesdontlie/tradingview-mcp`](https://github.com
 ## Outcomes & Retrospective
 
 The research and planning portion of this ExecPlan is complete: the migration source has been inspected, the README now attributes the upstream project, and the implementation boundary is narrow enough for coding to begin. Update this section again after each implementation milestone with what was built, what passed validation, and any changes to the command contract.
+
+The Rust v1 implementation is complete as of 2026-04-24 04:09 JST. The repository now builds a `tv` binary with the v1 commands `status`, `state`, `quote`, `ohlcv --summary`, `symbol`, `timeframe`, and `screenshot --region full`. Automated validation passed with `cargo fmt --check`, `cargo clippy --all-targets --all-features`, and `cargo test`. Manual smoke testing against a running TradingView Desktop CDP target also passed for every v1 command. The smoke test used the current chart symbol and timeframe, `BATS:IONQ` and `15`, to avoid changing the user's chart state.
 
 ## Context and Orientation
 
@@ -203,6 +208,24 @@ An accidental broad migration-source test command started e2e tests and was inte
     npm test -- --test-reporter=spec tests/sanitization.test.js
 
 This demonstrated that the old project's e2e surface is live-environment dependent and should not drive the Rust v1 boundary.
+
+Rust v1 validation commands completed successfully:
+
+    cargo fmt --check
+    cargo clippy --all-targets --all-features
+    cargo test
+
+Manual smoke commands completed successfully against a running TradingView Desktop CDP target:
+
+    cargo run -- status
+    cargo run -- state
+    cargo run -- quote
+    cargo run -- ohlcv --summary
+    cargo run -- symbol BATS:IONQ
+    cargo run -- timeframe 15
+    cargo run -- screenshot --region full --output target/tv-full.png
+
+The screenshot command wrote a PNG at `target/tv-full.png` with a positive byte count.
 
 ## Interfaces and Dependencies
 

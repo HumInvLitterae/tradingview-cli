@@ -197,14 +197,14 @@ mod tests {
     fn ignores_events_while_waiting_for_response() {
         let event = json!({ "method": "Runtime.consoleAPICalled", "params": {} });
 
-        assert!(matches!(match_response_value(7, event), None));
+        assert!(match_response_value(7, event).is_none());
     }
 
     #[test]
     fn ignores_responses_for_other_ids() {
         let response = json!({ "id": 8, "result": { "ok": true } });
 
-        assert!(matches!(match_response_value(7, response), None));
+        assert!(match_response_value(7, response).is_none());
     }
 
     #[test]

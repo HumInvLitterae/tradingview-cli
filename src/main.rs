@@ -1,16 +1,19 @@
 mod cdp;
 mod cli;
 mod error;
+mod ops;
 mod output;
 mod transport;
 
 use std::process::ExitCode;
 
+use cdp::CdpClient;
 use clap::{Parser, error::ErrorKind as ClapErrorKind};
 use cli::{Cli, Command};
 use error::{AppError, ErrorKind};
 use output::{ErrorBody, ErrorEnvelope, SuccessEnvelope};
 use serde_json::json;
+use transport::TransportConfig;
 
 #[tokio::main]
 async fn main() -> ExitCode {
@@ -52,19 +55,17 @@ async fn main() -> ExitCode {
 }
 
 async fn dispatch(command: Command) -> Result<serde_json::Value, AppError> {
+    let config = TransportConfig::from_env()?;
     match command {
-        Command::Status => Err(AppError::new(
-            ErrorKind::Connection,
-            "CDP transport is not implemented yet",
-        )),
-        Command::State => Err(AppError::new(
-            ErrorKind::Connection,
-            "CDP transport is not implemented yet",
-        )),
-        Command::Quote => Err(AppError::new(
-            ErrorKind::Connection,
-            "CDP transport is not implemented yet",
-        )),
+        Command::Status => ops::status(&config).await,
+        Command::State => {
+            let mut runtime = connect_runtime().await?;
+            ops::state(&mut runtime).await
+        }
+        Command::Quote => {
+            let mut runtime = connect_runtime().await?;
+            ops::quote(&mut runtime).await
+        }
         Command::Ohlcv { summary } => {
             if !summary {
                 return Err(AppError::new(
@@ -72,10 +73,8 @@ async fn dispatch(command: Command) -> Result<serde_json::Value, AppError> {
                     "Only --summary is supported in v1",
                 ));
             }
-            Err(AppError::new(
-                ErrorKind::Connection,
-                "CDP transport is not implemented yet",
-            ))
+            let mut runtime = connect_runtime().await?;
+            ops::ohlcv_summary(&mut runtime).await
         }
         Command::Symbol { symbol } => {
             if symbol.trim().is_empty() {
@@ -84,10 +83,8 @@ async fn dispatch(command: Command) -> Result<serde_json::Value, AppError> {
                     "Symbol must not be empty",
                 ));
             }
-            Err(AppError::new(
-                ErrorKind::Connection,
-                "CDP transport is not implemented yet",
-            ))
+            let mut runtime = connect_runtime().await?;
+            ops::set_symbol(&mut runtime, &symbol).await
         }
         Command::Timeframe { timeframe } => {
             if timeframe.trim().is_empty() {
@@ -96,10 +93,8 @@ async fn dispatch(command: Command) -> Result<serde_json::Value, AppError> {
                     "Timeframe must not be empty",
                 ));
             }
-            Err(AppError::new(
-                ErrorKind::Connection,
-                "CDP transport is not implemented yet",
-            ))
+            let mut runtime = connect_runtime().await?;
+            ops::set_timeframe(&mut runtime, &timeframe).await
         }
         Command::Screenshot { region, output } => {
             if region != "full" {
@@ -115,12 +110,15 @@ async fn dispatch(command: Command) -> Result<serde_json::Value, AppError> {
                     "Output path must not be empty",
                 ));
             }
-            Err(AppError::new(
-                ErrorKind::Connection,
-                "CDP transport is not implemented yet",
-            ))
+            let mut runtime = connect_runtime().await?;
+            ops::screenshot_full(&mut runtime, &output).await
         }
     }
+}
+
+async fn connect_runtime() -> Result<CdpClient, AppError> {
+    let target = transport::discover_target(&TransportConfig::from_env()?).await?;
+    CdpClient::connect(&target).await
 }
 
 fn init_tracing() {

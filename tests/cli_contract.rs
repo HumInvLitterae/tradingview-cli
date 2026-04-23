@@ -37,7 +37,12 @@ fn ohlcv_requires_summary_for_v1() {
 
 #[test]
 fn connection_failure_uses_structured_json_and_exit_code_2() {
-    let assert = tv().arg("status").assert().failure().code(2);
+    let assert = tv()
+        .env("TV_CDP_PORT", "9")
+        .arg("status")
+        .assert()
+        .failure()
+        .code(2);
     let stderr = String::from_utf8(assert.get_output().stderr.clone()).unwrap();
     let value: Value = serde_json::from_str(&stderr).unwrap();
     assert_eq!(value["success"], false);

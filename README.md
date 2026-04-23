@@ -6,9 +6,9 @@ This project is inspired by and planned as a Rust-native successor to practical 
 
 ## Current status
 
-This repository is intentionally in docs-seed mode.
+This repository now contains the first Rust-native `tv` CLI implementation.
 
-The goal of this first seed is not to start implementation immediately. The goal is to give the next engineer or agent a clean place to continue the work without dragging bridge-replacement planning back into another repository.
+The first implementation focuses on a narrow CLI surface for connecting to an already-running TradingView Desktop instance through Chrome DevTools Protocol on `localhost:9222`.
 
 ## Purpose
 
@@ -24,11 +24,30 @@ An MCP server is not planned for this project. Downstream integration should sta
 
 ## Non-goals for this seed
 
-- no Rust implementation yet
 - no copied JavaScript bridge code
 - no full feature parity promise
 - no release packaging
 - no skill migration yet
+
+## Quick Start
+
+Launch TradingView Desktop with Chrome DevTools Protocol enabled:
+
+```bash
+/path/to/TradingView --remote-debugging-port=9222
+```
+
+Then run the Rust CLI:
+
+```bash
+cargo run -- status
+cargo run -- state
+cargo run -- quote
+cargo run -- ohlcv --summary
+cargo run -- screenshot --region full --output target/tv-full.png
+```
+
+The default CDP endpoint is `localhost:9222`. Override it with `TV_CDP_HOST` and `TV_CDP_PORT` when needed.
 
 ## What is included
 
