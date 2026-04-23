@@ -19,7 +19,7 @@ This project is inspired by [`tradesdontlie/tradingview-mcp`](https://github.com
 - [x] (2026-04-24 03:45 JST) Added `docs/notes/tradingview-mcp-investigation-2026-04-24.md` with confirmed facts and implementation hypotheses.
 - [x] (2026-04-24 03:45 JST) Added README attribution to the migration source.
 - [x] (2026-04-24 03:59 JST) Create the Rust package skeleton for a single `tv` binary.
-- [ ] Implement the CLI argument surface and common JSON envelopes.
+- [x] (2026-04-24 04:02 JST) Implement the CLI argument surface and common JSON envelopes.
 - [ ] Implement target discovery and CDP transport.
 - [ ] Implement `status`, `state`, `quote`, `ohlcv --summary`, `symbol`, `timeframe`, and `screenshot --region full`.
 - [ ] Add unit and CLI integration tests for command contracts, CDP behavior, and error mapping.
