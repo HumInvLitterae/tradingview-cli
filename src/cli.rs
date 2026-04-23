@@ -51,6 +51,11 @@ pub enum Command {
         #[command(subcommand)]
         command: WatchlistCommand,
     },
+    #[command(about = "Advanced read-only data tools")]
+    Data {
+        #[command(subcommand)]
+        command: DataCommand,
+    },
     #[command(about = "Pane read tools")]
     Pane {
         #[command(subcommand)]
@@ -69,6 +74,49 @@ pub enum Command {
 pub enum WatchlistCommand {
     #[command(about = "Get watchlist symbols")]
     Get,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum DataCommand {
+    #[command(about = "Get indicator info and inputs by entity ID")]
+    Indicator { entity_id: String },
+    #[command(about = "Get strategy performance metrics")]
+    Strategy,
+    #[command(about = "Get strategy trade list")]
+    Trades {
+        #[arg(long, short = 'n')]
+        max: Option<usize>,
+    },
+    #[command(about = "Get strategy equity curve")]
+    Equity,
+    #[command(about = "Get Pine Script line.new() price levels")]
+    Lines {
+        #[arg(long, short)]
+        filter: Option<String>,
+        #[arg(long, short)]
+        verbose: bool,
+    },
+    #[command(about = "Get Pine Script label.new() annotations")]
+    Labels {
+        #[arg(long, short)]
+        filter: Option<String>,
+        #[arg(long, short = 'n')]
+        max: Option<usize>,
+        #[arg(long, short)]
+        verbose: bool,
+    },
+    #[command(about = "Get Pine Script table.new() data")]
+    Tables {
+        #[arg(long, short)]
+        filter: Option<String>,
+    },
+    #[command(about = "Get Pine Script box.new() price zones")]
+    Boxes {
+        #[arg(long, short)]
+        filter: Option<String>,
+        #[arg(long, short)]
+        verbose: bool,
+    },
 }
 
 #[derive(Debug, Subcommand)]
@@ -94,6 +142,7 @@ impl Command {
             Self::Range { .. } => "range",
             Self::Scroll { .. } => "scroll",
             Self::Watchlist { .. } => "watchlist",
+            Self::Data { .. } => "data",
             Self::Pane { .. } => "pane",
             Self::Screenshot { .. } => "screenshot",
         }

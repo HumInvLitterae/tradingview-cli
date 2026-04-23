@@ -9,7 +9,7 @@ use std::process::ExitCode;
 
 use cdp::CdpClient;
 use clap::{Parser, error::ErrorKind as ClapErrorKind};
-use cli::{Cli, Command, PaneCommand, WatchlistCommand};
+use cli::{Cli, Command, DataCommand, PaneCommand, WatchlistCommand};
 use error::{AppError, ErrorKind};
 use output::{ErrorBody, ErrorEnvelope, SuccessEnvelope};
 use serde_json::json;
@@ -155,6 +155,37 @@ async fn dispatch(command: Command) -> Result<serde_json::Value, AppError> {
             let mut runtime = connect_runtime().await?;
             match command {
                 WatchlistCommand::Get => ops::watchlist_get(&mut runtime).await,
+            }
+        }
+        Command::Data { command } => {
+            let mut runtime = connect_runtime().await?;
+            match command {
+                DataCommand::Indicator { entity_id } => {
+                    if entity_id.trim().is_empty() {
+                        return Err(AppError::new(
+                            ErrorKind::Validation,
+                            "Entity ID must not be empty",
+                        ));
+                    }
+                    ops::data_indicator(&mut runtime, &entity_id).await
+                }
+                DataCommand::Strategy => ops::data_strategy(&mut runtime).await,
+                DataCommand::Trades { max } => ops::data_trades(&mut runtime, max).await,
+                DataCommand::Equity => ops::data_equity(&mut runtime).await,
+                DataCommand::Lines { filter, verbose } => {
+                    ops::data_lines(&mut runtime, filter.as_deref(), verbose).await
+                }
+                DataCommand::Labels {
+                    filter,
+                    max,
+                    verbose,
+                } => ops::data_labels(&mut runtime, filter.as_deref(), max, verbose).await,
+                DataCommand::Tables { filter } => {
+                    ops::data_tables(&mut runtime, filter.as_deref()).await
+                }
+                DataCommand::Boxes { filter, verbose } => {
+                    ops::data_boxes(&mut runtime, filter.as_deref(), verbose).await
+                }
             }
         }
         Command::Pane { command } => {

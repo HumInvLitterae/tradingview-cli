@@ -18,6 +18,7 @@ fn help_lists_v1_commands() {
         .stdout(predicate::str::contains("discover"))
         .stdout(predicate::str::contains("ui-state"))
         .stdout(predicate::str::contains("watchlist"))
+        .stdout(predicate::str::contains("data"))
         .stdout(predicate::str::contains("pane"))
         .stdout(predicate::str::contains("range"))
         .stdout(predicate::str::contains("scroll"))
@@ -80,6 +81,38 @@ fn watchlist_and_pane_help_list_read_subcommands() {
 }
 
 #[test]
+fn data_help_lists_advanced_read_subcommands() {
+    tv().args(["data", "--help"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("indicator"))
+        .stdout(predicate::str::contains("strategy"))
+        .stdout(predicate::str::contains("trades"))
+        .stdout(predicate::str::contains("equity"))
+        .stdout(predicate::str::contains("lines"))
+        .stdout(predicate::str::contains("labels"))
+        .stdout(predicate::str::contains("tables"))
+        .stdout(predicate::str::contains("boxes"));
+
+    tv().args(["data", "labels", "--help"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("--filter"))
+        .stdout(predicate::str::contains("--max"))
+        .stdout(predicate::str::contains("--verbose"));
+}
+
+#[test]
+fn data_indicator_requires_entity_id() {
+    let assert = tv().args(["data", "indicator"]).assert().failure().code(1);
+    let stderr = String::from_utf8(assert.get_output().stderr.clone()).unwrap();
+    let value: Value = serde_json::from_str(&stderr).unwrap();
+    assert_eq!(value["success"], false);
+    assert_eq!(value["command"], "tv");
+    assert_eq!(value["error"]["kind"], "validation");
+}
+
+#[test]
 fn read_utilities_attempt_connection_when_cdp_is_unavailable() {
     for args in [
         vec!["info"],
@@ -98,6 +131,32 @@ fn read_utilities_attempt_connection_when_cdp_is_unavailable() {
         let stderr = String::from_utf8(assert.get_output().stderr.clone()).unwrap();
         let value: Value = serde_json::from_str(&stderr).unwrap();
         assert_eq!(value["success"], false);
+        assert_eq!(value["error"]["kind"], "connection");
+    }
+}
+
+#[test]
+fn data_read_commands_attempt_connection_when_cdp_is_unavailable() {
+    for args in [
+        vec!["data", "indicator", "study-id"],
+        vec!["data", "strategy"],
+        vec!["data", "trades", "--max", "5"],
+        vec!["data", "equity"],
+        vec!["data", "lines", "--filter", "RS", "--verbose"],
+        vec!["data", "labels", "--max", "5"],
+        vec!["data", "tables"],
+        vec!["data", "boxes", "--verbose"],
+    ] {
+        let assert = tv()
+            .env("TV_CDP_PORT", "9")
+            .args(args)
+            .assert()
+            .failure()
+            .code(2);
+        let stderr = String::from_utf8(assert.get_output().stderr.clone()).unwrap();
+        let value: Value = serde_json::from_str(&stderr).unwrap();
+        assert_eq!(value["success"], false);
+        assert_eq!(value["command"], "data");
         assert_eq!(value["error"]["kind"], "connection");
     }
 }
