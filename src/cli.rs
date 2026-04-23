@@ -22,6 +22,10 @@ pub enum Command {
     Quote,
     #[command(about = "Get current indicator values")]
     Values,
+    #[command(about = "Report available TradingView internal API paths")]
+    Discover,
+    #[command(name = "ui-state", about = "Get current TradingView UI state")]
+    UiState,
     #[command(about = "Get OHLCV summary data")]
     Ohlcv {
         #[arg(long, short)]
@@ -82,6 +86,8 @@ impl Command {
             Self::Search { .. } => "search",
             Self::Quote => "quote",
             Self::Values => "values",
+            Self::Discover => "discover",
+            Self::UiState => "ui-state",
             Self::Ohlcv { .. } => "ohlcv",
             Self::Symbol { .. } => "symbol",
             Self::Timeframe { .. } => "timeframe",

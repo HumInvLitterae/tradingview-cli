@@ -84,6 +84,14 @@ async fn dispatch(command: Command) -> Result<serde_json::Value, AppError> {
             let mut runtime = connect_runtime().await?;
             ops::study_values(&mut runtime).await
         }
+        Command::Discover => {
+            let mut runtime = connect_runtime().await?;
+            ops::discover(&mut runtime).await
+        }
+        Command::UiState => {
+            let mut runtime = connect_runtime().await?;
+            ops::ui_state(&mut runtime).await
+        }
         Command::Ohlcv { summary, count } => {
             let mut runtime = connect_runtime().await?;
             if summary {

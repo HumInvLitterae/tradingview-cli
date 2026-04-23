@@ -15,6 +15,8 @@ fn help_lists_v1_commands() {
         .stdout(predicate::str::contains("info"))
         .stdout(predicate::str::contains("search"))
         .stdout(predicate::str::contains("values"))
+        .stdout(predicate::str::contains("discover"))
+        .stdout(predicate::str::contains("ui-state"))
         .stdout(predicate::str::contains("watchlist"))
         .stdout(predicate::str::contains("pane"))
         .stdout(predicate::str::contains("range"))
@@ -82,6 +84,8 @@ fn read_utilities_attempt_connection_when_cdp_is_unavailable() {
     for args in [
         vec!["info"],
         vec!["values"],
+        vec!["discover"],
+        vec!["ui-state"],
         vec!["watchlist", "get"],
         vec!["pane", "list"],
     ] {
