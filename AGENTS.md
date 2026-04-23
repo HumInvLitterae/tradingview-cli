@@ -19,14 +19,15 @@ Read these in order before making major decisions:
 3. `docs/notes/next-agent-handoff-prompt-2026-04-24.md`
 4. `docs/notes/rust-cli-contract-migration-2026-04-24.md`
 5. `docs/notes/legacy-cli-command-migration-inventory-2026-04-24.md`
-6. `docs/plans/tradingview-cli-read-utilities-v1-2.md`
-7. `docs/plans/tradingview-cli-read-provider-migration-v1-1.md`
-8. `docs/plans/tradingview-cli-rust-v1.md`
-9. `docs/notes/tradingview-mcp-investigation-2026-04-24.md`
-10. `docs/plans/tradingview-cli-bootstrap-and-bridge-replacement.md`
-11. `docs/notes/next-agent-handoff-prompt-2026-04-21.md`
-12. `.agents/PLANS.md`
-13. `.agents/skills/continuity/SKILL.md` when the continuity skill is active
+6. `docs/plans/tradingview-cli-chart-region-screenshot-v1-3.md`
+7. `docs/plans/tradingview-cli-read-utilities-v1-2.md`
+8. `docs/plans/tradingview-cli-read-provider-migration-v1-1.md`
+9. `docs/plans/tradingview-cli-rust-v1.md`
+10. `docs/notes/tradingview-mcp-investigation-2026-04-24.md`
+11. `docs/plans/tradingview-cli-bootstrap-and-bridge-replacement.md`
+12. `docs/notes/next-agent-handoff-prompt-2026-04-21.md`
+13. `.agents/PLANS.md`
+14. `.agents/skills/continuity/SKILL.md` when the continuity skill is active
 
 If these sources disagree, preserve the higher-level user and system instructions, then update repository docs so the durable project state is clear again.
 
@@ -46,6 +47,7 @@ What is true right now:
 - the first Rust v1 implementation milestone is complete
 - the first read/provider migration slice is complete
 - the read utilities migration slice is complete
+- the chart-region screenshot slice is complete
 - this repository should stay narrower than a full reimplementation of the old bridge
 
 ## Near-Term Deliverables

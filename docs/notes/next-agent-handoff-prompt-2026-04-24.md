@@ -16,7 +16,7 @@ Keep the Rust-native `tv` CLI reliable and useful as a replacement path for prac
 - the Rust JSON envelope intentionally differs from the old JavaScript CLI
 - migrated commands must preserve the practical information available from the old CLI
 - missing old CLI commands are migration backlog unless explicitly excluded
-- chart-region screenshots require a separate stability spike before being advertised as stable
+- chart-region screenshots have a first Rust implementation, but remain DOM-selector dependent
 
 ## Current v1 surface
 
@@ -38,6 +38,7 @@ The implemented commands are:
 - `tv symbol [SYMBOL]`
 - `tv timeframe [RESOLUTION]`
 - `tv screenshot --region full --output <PATH>`
+- `tv screenshot --region chart --output <PATH>`
 
 The default CDP endpoint is `localhost:9222`. `TV_CDP_HOST` and `TV_CDP_PORT` can override it.
 
@@ -78,7 +79,6 @@ Focus first on migration readiness:
 
 Post-v1 command gaps that need planned implementation or an explicit exclusion decision:
 
-- whether `screenshot --region chart` can be made stable enough for repeated use
 - whether launch automation belongs in this CLI or should remain external runbook material
 - read-only diagnostics such as `discover` and `ui-state`
 - larger old CLI surfaces such as Pine, alerts, replay, stream, and UI automation

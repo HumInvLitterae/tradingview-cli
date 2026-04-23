@@ -28,6 +28,7 @@ Do not use `explicitly_not_planned` for ordinary missing old CLI commands unless
 - `symbol [SYMBOL]`
 - `timeframe [RESOLUTION]`
 - `screenshot --region full --output <PATH>`
+- `screenshot --region chart --output <PATH>`
 
 These commands still have known contract differences from the JavaScript CLI. See `docs/notes/rust-cli-contract-migration-2026-04-24.md`.
 
@@ -35,7 +36,6 @@ These commands still have known contract differences from the JavaScript CLI. Se
 
 These old CLI surfaces are expected to need Rust equivalents or explicit replacement decisions:
 
-- `screenshot --region chart`
 - `discover`
 - `ui-state`
 
