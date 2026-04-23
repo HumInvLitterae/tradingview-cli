@@ -18,8 +18,9 @@ Investigate and define the first practical Rust CLI replacement for the currentl
 
 1. Read `README.md`
 2. Read `docs/plans/tradingview-cli-bootstrap-and-bridge-replacement.md`
-3. Inspect the current upstream TradingView bridge implementation and summarize the relevant findings in this repository
-4. Produce the first implementation-ready ExecPlan for this repository
+3. Read `docs/notes/tradingview-mcp-investigation-2026-04-24.md`
+4. Read `docs/plans/tradingview-cli-rust-v1.md`
+5. Continue from the Rust v1 ExecPlan unless the user explicitly redirects the work
 
 ## Constraints
 
@@ -27,6 +28,7 @@ Investigate and define the first practical Rust CLI replacement for the currentl
 - do not assume every old capability deserves a replacement
 - do not promise release packaging or public API stability yet
 - do not bloat v1 with downstream workflow helpers that can live in consumer repos
+- do not implement an MCP server; this project is planned as a CLI-first replacement, and MCP server implementation is not a planned target
 
 ## Questions you should answer
 
@@ -37,6 +39,10 @@ Investigate and define the first practical Rust CLI replacement for the currentl
 
 ## Desired outputs
 
-- updated bootstrap ExecPlan with real investigation findings
-- one successor ExecPlan that is detailed enough for implementation
-- any small supporting notes needed to explain capability boundaries or bug inventory
+- Rust v1 implementation that follows `docs/plans/tradingview-cli-rust-v1.md`
+- updates to the ExecPlan as implementation progresses
+- focused supporting notes only when new facts change the existing investigation record
+
+## Status update 2026-04-24
+
+The initial investigation and implementation-ready successor plan have been produced. The next agent should treat `docs/plans/tradingview-cli-rust-v1.md` as the active implementation plan.

@@ -15,9 +15,11 @@ Read these in order before making major decisions:
 1. `CONTINUITY.md`
 2. `README.md`
 3. `docs/plans/tradingview-cli-bootstrap-and-bridge-replacement.md`
-4. `docs/notes/next-agent-handoff-prompt-2026-04-21.md`
-5. `.agents/PLANS.md`
-6. `.agents/skills/continuity/SKILL.md` when the continuity skill is active
+4. `docs/notes/tradingview-mcp-investigation-2026-04-24.md`
+5. `docs/plans/tradingview-cli-rust-v1.md`
+6. `docs/notes/next-agent-handoff-prompt-2026-04-21.md`
+7. `.agents/PLANS.md`
+8. `.agents/skills/continuity/SKILL.md` when the continuity skill is active
 
 If these sources disagree, preserve the higher-level user and system instructions, then update repository docs so the durable project state is clear again.
 
@@ -29,18 +31,18 @@ What is true right now:
 
 - there is no Rust implementation yet
 - v1 is expected to be CLI-first
-- full MCP parity is not a default goal
-- the first milestone is capability and boundary research
+- MCP server implementation is not planned
+- the first capability and boundary research milestone is complete
 - this repository should stay narrower than a full reimplementation of the old bridge
 
 ## Near-Term Deliverables
 
-Until the first investigation milestone is complete, prefer work that moves one of these forward:
+Until Rust v1 is implemented, prefer work that moves one of these forward:
 
-1. capability inventory of the current bridge that matters for CLI-first use
-2. bug and maintenance-risk inventory that explains why replacement is needed
-3. concrete v1 CLI boundary
-4. successor ExecPlan detailed enough that implementation can start safely
+1. implementing `docs/plans/tradingview-cli-rust-v1.md`
+2. keeping `docs/notes/tradingview-mcp-investigation-2026-04-24.md` accurate when new facts are discovered
+3. preserving the v1 CLI boundary unless a decision is recorded in the ExecPlan
+4. validating the Rust CLI with the commands required by the ExecPlan
 
 Supporting notes are welcome when they reduce ambiguity, but avoid speculative design sprawl.
 

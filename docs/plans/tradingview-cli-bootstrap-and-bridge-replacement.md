@@ -2,7 +2,7 @@
 
 This ExecPlan is a living document. The sections `Progress`, `Surprises & Discoveries`, `Decision Log`, and `Outcomes & Retrospective` must be kept up to date as work proceeds.
 
-No prior repository-specific PLANS file exists yet in this repo. If one is added later, this document must be maintained in accordance with it.
+This document must be maintained in accordance with `.agents/PLANS.md`.
 
 ## Purpose / Big Picture
 
@@ -10,16 +10,25 @@ After this change, the repository will have a clean, decision-oriented foundatio
 
 ## Progress
 
-- [ ] Inspect the current upstream bridge repository and write down the capability inventory actually needed for CLI-first use.
-- [ ] Record the known pain points, bugs, and maintenance risks that justify replacement.
-- [ ] Define the minimum CLI boundary for v1.
-- [ ] Decide repository boundaries, release posture, and relationship to sibling consumer projects.
-- [ ] Produce the first implementation-ready successor plan after the investigation.
+- [x] (2026-04-24 03:45 JST) Inspect the current upstream bridge repository and write down the capability inventory actually needed for CLI-first use.
+- [x] (2026-04-24 03:45 JST) Record the known pain points, bugs, and maintenance risks that justify replacement.
+- [x] (2026-04-24 03:45 JST) Define the minimum CLI boundary for v1.
+- [x] (2026-04-24 03:45 JST) Decide repository boundaries, release posture, and relationship to sibling consumer projects.
+- [x] (2026-04-24 03:45 JST) Produce the first implementation-ready successor plan after the investigation.
 
 ## Surprises & Discoveries
 
 - Observation: This repository is intentionally being initialized in docs-seed mode before any implementation starts.
   Evidence: The initial commit contains only `README.md`, this ExecPlan, and a handoff prompt.
+
+- Observation: The migration source exposes both an MCP server and a broad `tv` CLI, but this repository should carry forward only the CLI-first path.
+  Evidence: `docs/notes/tradingview-mcp-investigation-2026-04-24.md` records the migration source package structure, registered CLI command groups, and CDP connection model.
+
+- Observation: Full screenshot support is a reasonable v1 candidate, while chart-region screenshot support needs a later stability spike.
+  Evidence: The migration source uses CDP `Page.captureScreenshot` directly for full screenshots but uses DOM selectors and clip rectangles for chart-region screenshots.
+
+- Observation: Testability must be a first-class design constraint in the Rust plan.
+  Evidence: The local migration source had uncommitted dependency-injection changes for chart operations, and `node --test tests/sanitization.test.js` passed 69 tests including injected-evaluator coverage.
 
 ## Decision Log
 
@@ -35,9 +44,19 @@ After this change, the repository will have a clean, decision-oriented foundatio
   Rationale: The motivating problem is practical command-line use and reliability. Full MCP compatibility would enlarge scope before the narrower operational replacement is proven.
   Date/Author: 2026-04-21 / Codex
 
+- Decision: Do not plan an MCP server implementation for this repository.
+  Rationale: The replacement target is a Rust-native CLI. Downstream integration should use ordinary process invocation and JSON CLI output. Recreating the original MCP server would compete with the narrower operational goal and has lower priority than post-v1 CLI capabilities.
+  Date/Author: 2026-04-24 / Codex
+
+- Decision: Use `docs/plans/tradingview-cli-rust-v1.md` as the first implementation-ready successor ExecPlan.
+  Rationale: The bootstrap plan should remain the seed and investigation record, while the successor plan should be the place where coding begins.
+  Date/Author: 2026-04-24 / Codex
+
 ## Outcomes & Retrospective
 
-This section is intentionally empty at repository seeding time. Update it after the first real investigation milestone is complete and the first implementation-ready plan exists.
+The bootstrap phase completed on 2026-04-24. The repository now has attribution to the migration source in `README.md`, a migration-source investigation note at `docs/notes/tradingview-mcp-investigation-2026-04-24.md`, and a first implementation-ready successor ExecPlan at `docs/plans/tradingview-cli-rust-v1.md`.
+
+The main lesson from this bootstrap phase is that the old bridge's breadth is evidence for narrowing, not for feature parity. The Rust v1 should preserve the useful `tv` CLI name and JSON command-line posture, but it should not recreate the MCP server and should not inherit Pine, pane, replay, stream, UI automation, or chart-region screenshot complexity before the core CLI proves reliable.
 
 ## Context and Orientation
 
@@ -93,6 +112,11 @@ Then inspect the current upstream bridge repository and summarize findings direc
 
 Expected successful output for this bootstrap phase is not a binary. It is an updated ExecPlan with a concrete capability inventory, a v1 command boundary, and a replacement-ready next milestone.
 
+This bootstrap phase has produced those outputs. Continue with:
+
+    sed -n '1,260p' docs/notes/tradingview-mcp-investigation-2026-04-24.md
+    sed -n '1,320p' docs/plans/tradingview-cli-rust-v1.md
+
 ## Validation and Acceptance
 
 Acceptance is document-driven for this bootstrap phase.
@@ -119,6 +143,12 @@ The first useful artifacts should be:
 
 Keep all external findings summarized here or in a sibling repository note. Do not rely on unstated local memory.
 
+The completed artifacts are:
+
+- `docs/notes/tradingview-mcp-investigation-2026-04-24.md`
+- `docs/plans/tradingview-cli-rust-v1.md`
+- updated `README.md` attribution to the migration source
+
 ## Interfaces and Dependencies
 
 The first implementation-ready plan should strongly prefer:
@@ -127,15 +157,19 @@ The first implementation-ready plan should strongly prefer:
 - one binary crate for the initial CLI
 - additive downstream integration through ordinary process invocation before any plugin or MCP layering
 
-Do not assume any MCP server compatibility layer is required in v1 unless the investigation proves it is necessary for the minimum useful capability set.
+Do not implement an MCP server for this project unless a future plan explicitly reopens that decision with new evidence. It is not a v1 feature and is not a planned post-v1 target.
 
 ## Open Questions
 
 The next contributor must resolve these during investigation:
 
-- Which existing bridge capabilities are truly required for v1?
-- Which known bugs are severe enough to define the replacement boundary?
-- Should the first Rust CLI own only session/control primitives, or should it also expose provider-friendly data reads in v1?
-- Which parts should remain in downstream skills or consumer repositories rather than in the core CLI?
+- Resolved: Which existing bridge capabilities are truly required for v1?
+- Resolved: Which known bugs are severe enough to define the replacement boundary?
+- Resolved: Should the first Rust CLI own only session/control primitives, or should it also expose provider-friendly data reads in v1?
+- Resolved: Which parts should remain in downstream skills or consumer repositories rather than in the core CLI?
+
+Remaining non-blocking questions are captured in `docs/plans/tradingview-cli-rust-v1.md`.
 
 Revision note: created as the initial seed plan for a separate Rust-native TradingView CLI repository, intentionally before any implementation begins.
+
+Revision note: updated on 2026-04-24 after migration-source investigation. The bootstrap phase now points to the completed investigation note and the first Rust v1 successor ExecPlan.
