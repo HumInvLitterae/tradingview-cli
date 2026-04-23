@@ -18,7 +18,7 @@ This project is inspired by [`tradesdontlie/tradingview-mcp`](https://github.com
 - [x] (2026-04-24 03:45 JST) Investigated the migration source package structure, CLI router, CDP connection layer, chart/data/screenshot commands, and local uncommitted fixes.
 - [x] (2026-04-24 03:45 JST) Added `docs/notes/tradingview-mcp-investigation-2026-04-24.md` with confirmed facts and implementation hypotheses.
 - [x] (2026-04-24 03:45 JST) Added README attribution to the migration source.
-- [ ] Create the Rust package skeleton for a single `tv` binary.
+- [x] (2026-04-24 03:59 JST) Create the Rust package skeleton for a single `tv` binary.
 - [ ] Implement the CLI argument surface and common JSON envelopes.
 - [ ] Implement target discovery and CDP transport.
 - [ ] Implement `status`, `state`, `quote`, `ohlcv --summary`, `symbol`, `timeframe`, and `screenshot --region full`.
@@ -82,6 +82,8 @@ The Rust v1 should implement only `status`, `state`, `quote`, `ohlcv --summary`,
 First, create a normal Rust binary package in the repository root with a binary named `tv`. Use Rust edition 2024 and a `rust-toolchain.toml` that selects stable. Add a `Cargo.lock` when dependencies are resolved. Use semver dependency requirements in `Cargo.toml`; do not hard-code exact crate versions in prose or comments.
 
 Use these runtime dependencies unless implementation shows a concrete reason to change them: `clap` for command parsing, `tokio` for async runtime, `reqwest` for HTTP calls to CDP endpoints, `tokio-tungstenite` for CDP WebSocket transport, `serde` and `serde_json` for JSON, `tracing` and `tracing-subscriber` for diagnostic logging, and `thiserror` for typed errors. Use `assert_cmd`, `predicates`, and `tempfile` as dev dependencies for CLI tests and temporary screenshot paths.
+
+The implementation also uses `futures-util` for WebSocket stream and sink utilities and `base64` for decoding CDP screenshot data. These are implementation-support dependencies rather than new user-facing capabilities.
 
 Organize the code into modules with these responsibilities. The `cli` module owns `clap` argument definitions and maps commands to operation calls. The `output` module owns the common JSON success and error envelopes. The `transport` module owns fetching `/json/list`, target selection, WebSocket connection setup, and connection retry policy. The `cdp` module owns CDP JSON-RPC request IDs, response correlation, event handling, timeouts, close handling, and `Runtime.evaluate`. The `ops` module owns command behavior and calls a small evaluator trait instead of talking to raw WebSocket code directly.
 
