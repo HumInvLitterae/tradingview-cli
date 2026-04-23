@@ -17,8 +17,11 @@ Do not use `explicitly_not_planned` for ordinary missing old CLI commands unless
 - `state`
 - `quote`
 - `ohlcv --summary`
-- `symbol <SYMBOL>`
-- `timeframe <RESOLUTION>`
+- `ohlcv --count`
+- `range`
+- `scroll`
+- `symbol [SYMBOL]`
+- `timeframe [RESOLUTION]`
 - `screenshot --region full --output <PATH>`
 
 These commands still have known contract differences from the JavaScript CLI. See `docs/notes/rust-cli-contract-migration-2026-04-24.md`.
@@ -27,9 +30,6 @@ These commands still have known contract differences from the JavaScript CLI. Se
 
 These old CLI surfaces are expected to need Rust equivalents or explicit replacement decisions:
 
-- `ohlcv --count`
-- `range`
-- `scroll`
 - `info`
 - `search`
 - `values`

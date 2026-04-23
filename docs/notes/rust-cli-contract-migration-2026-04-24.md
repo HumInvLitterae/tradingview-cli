@@ -66,10 +66,11 @@ When an old field name is important to downstream workflows, prefer one of these
 
 ## Current known differences
 
-- `status` in Rust v1 focuses on CDP target connectivity. The JavaScript CLI also exposed chart API availability and current chart fields such as `chart_symbol`, `chart_resolution`, and `api_available`.
-- `state` in Rust v1 uses `timeframe` and `chart_type`; the JavaScript CLI used `resolution` and `chartType` and included `studies`.
-- `quote` payload is under `data` in Rust. The JavaScript CLI returned quote fields at the top level.
-- `ohlcv --summary` payload is under `data` in Rust and does not yet expose every JavaScript summary field.
-- Raw `ohlcv --count`, `range`, `scroll`, `values`, `watchlist get`, `pane list`, `search`, and `screenshot --region chart` are not yet implemented in Rust v1.
+- `status` payload is under `data` in Rust and now includes CDP target fields plus chart API availability and current chart fields such as `chart_symbol`, `chart_resolution`, `chart_type`, and `api_available`.
+- `state` payload is under `data` in Rust and includes both old and new naming where useful, including `resolution`, `timeframe`, `chartType`, `chart_type`, `studies`, and `visible_range`.
+- `quote` payload is under `data` in Rust and includes the practical quote fields from the old CLI shape, including `symbol`, `time`, `last`, `close`, `open`, `high`, `low`, `volume`, and best-effort symbol metadata.
+- `ohlcv --summary` payload is under `data` in Rust and includes summary fields such as `symbol`, `timeframe`, `bar_count`, `period`, `range`, `change`, `change_pct`, `avg_volume`, `volume`, and `last_5_bars`.
+- Raw `ohlcv --count`, `range`, and `scroll` are implemented in Rust. Their payloads still live under `data`.
+- `values`, `watchlist get`, `pane list`, `search`, `info`, `discover`, `ui-state`, and `screenshot --region chart` are not yet implemented in Rust.
 
 These differences are migration gaps, not proof that the information is out of scope.

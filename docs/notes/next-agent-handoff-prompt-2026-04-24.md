@@ -26,8 +26,12 @@ The implemented commands are:
 - `tv state`
 - `tv quote`
 - `tv ohlcv --summary`
-- `tv symbol <SYMBOL>`
-- `tv timeframe <RESOLUTION>`
+- `tv ohlcv --count <N>`
+- `tv range`
+- `tv range --from <UNIX_SECONDS> --to <UNIX_SECONDS>`
+- `tv scroll <DATE_OR_UNIX_SECONDS>`
+- `tv symbol [SYMBOL]`
+- `tv timeframe [RESOLUTION]`
 - `tv screenshot --region full --output <PATH>`
 
 The default CDP endpoint is `localhost:9222`. `TV_CDP_HOST` and `TV_CDP_PORT` can override it.
@@ -71,7 +75,7 @@ Post-v1 command gaps that need planned implementation or an explicit exclusion d
 
 - whether `screenshot --region chart` can be made stable enough for repeated use
 - whether launch automation belongs in this CLI or should remain external runbook material
-- read-only surfaces such as `range`, `scroll`, `values`, `watchlist get`, `pane list`, and `search`
+- read-only surfaces such as `values`, `watchlist get`, `pane list`, `search`, `info`, `discover`, and `ui-state`
 - larger old CLI surfaces such as Pine, alerts, replay, stream, and UI automation
 
 ## Validation baseline

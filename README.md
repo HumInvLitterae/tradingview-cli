@@ -81,9 +81,14 @@ cargo build
 cargo run -- status
 cargo run -- state
 cargo run -- quote
-cargo run -- ohlcv --summary
+cargo run -- ohlcv --summary --count 100
+cargo run -- ohlcv --count 5
+cargo run -- range
 cargo run -- symbol BATS:IONQ
+cargo run -- symbol
 cargo run -- timeframe 15
+cargo run -- timeframe
+cargo run -- scroll 2026-03-03
 cargo run -- screenshot --region full --output target/tv-full.png
 ```
 
@@ -114,6 +119,7 @@ Exit codes are:
 - a Rust v1 `tv` CLI implementation
 - a post-v1 handoff prompt
 - Rust CLI contract and command migration notes
+- a first read/provider migration ExecPlan and implementation slice
 
 ## Where to start
 
@@ -122,8 +128,9 @@ Read these in order:
 1. `docs/notes/next-agent-handoff-prompt-2026-04-24.md`
 2. `docs/notes/rust-cli-contract-migration-2026-04-24.md`
 3. `docs/notes/legacy-cli-command-migration-inventory-2026-04-24.md`
-4. `docs/plans/tradingview-cli-rust-v1.md`
-5. `docs/notes/tradingview-mcp-investigation-2026-04-24.md`
-6. `docs/plans/tradingview-cli-bootstrap-and-bridge-replacement.md`
+4. `docs/plans/tradingview-cli-read-provider-migration-v1-1.md`
+5. `docs/plans/tradingview-cli-rust-v1.md`
+6. `docs/notes/tradingview-mcp-investigation-2026-04-24.md`
+7. `docs/plans/tradingview-cli-bootstrap-and-bridge-replacement.md`
 
-The first capability and boundary research milestone and the Rust v1 implementation milestone are complete. The next milestone is migration readiness: keep the improved Rust JSON contract documented, preserve information compatibility for migrated commands, and continue implementing old CLI command coverage in planned slices.
+The first capability and boundary research milestone, the Rust v1 implementation milestone, and the first read/provider migration slice are complete. The next milestone is migration readiness: keep the improved Rust JSON contract documented, preserve information compatibility for migrated commands, and continue implementing old CLI command coverage in planned slices.
