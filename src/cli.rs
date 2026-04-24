@@ -200,6 +200,16 @@ pub enum PineCommand {
     },
     #[command(about = "Compile the current Pine Script editor source")]
     Compile,
+    #[command(about = "Run offline Pine Script static analysis")]
+    Analyze {
+        #[arg(long, short)]
+        file: Option<PathBuf>,
+    },
+    #[command(about = "Run TradingView server-side Pine Script compile check")]
+    Check {
+        #[arg(long, short)]
+        file: Option<PathBuf>,
+    },
     #[command(about = "Get Pine Script editor diagnostics")]
     Errors,
     #[command(about = "Get Pine Script console output")]

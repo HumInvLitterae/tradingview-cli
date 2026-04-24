@@ -12,7 +12,8 @@ The original pine-develop skill supported a TradingView Pine Script loop: pull t
 | Visible chart evidence | `tv values`, `tv screenshot --region chart --output <PATH>` |
 | Pull Pine script from editor | `tv pine get` |
 | Push Pine script to editor | `tv pine set --file <PATH>` or stdin |
-| Compile/check Pine script in TradingView | `tv pine compile` for editor compile; server-side checks are not implemented |
+| Offline Pine static analysis | `tv pine analyze --file <PATH>` or stdin |
+| Compile/check Pine script in TradingView | `tv pine check --file <PATH>` for server-side check; `tv pine compile` for live editor compile |
 | Save/open Pine script in TradingView | Not implemented |
 | Read Pine editor diagnostics | `tv pine errors` |
 | Read Pine console/log output | `tv pine console` |
@@ -20,6 +21,6 @@ The original pine-develop skill supported a TradingView Pine Script loop: pull t
 
 ## Working Pattern Today
 
-Use the CLI for chart context, visual evidence, Pine read context, editor-buffer source replacement, and live editor compile verification. Write or review Pine Script in normal local files, push it to the Pine Editor with `tv pine set` when useful, then run `tv pine compile` when a TradingView Desktop session is available. Be clear that compile verification may add or update a chart-local study, and that it is not a save operation.
+Use the CLI for chart context, visual evidence, Pine read context, source validation, editor-buffer source replacement, and live editor compile verification. Write or review Pine Script in normal local files, run `tv pine analyze` for quick offline checks, run `tv pine check` for TradingView server-side compile validation, push it to the Pine Editor with `tv pine set` when useful, then run `tv pine compile` when a TradingView Desktop session is available. Be clear that live editor compile verification may add or update a chart-local study, and that it is not a save operation.
 
-Pine raw compile, save, new/open, offline analyze, and server-side check automation remain migration backlog. The MCP server itself is not planned.
+Pine raw compile, save, and new/open automation remain migration backlog. The MCP server itself is not planned.

@@ -47,6 +47,8 @@ Do not use `explicitly_not_planned` for ordinary missing old CLI commands unless
 - `pine get`
 - `pine set`
 - `pine compile`
+- `pine analyze`
+- `pine check`
 - `pine errors`
 - `pine console`
 - `pine list`
@@ -87,7 +89,7 @@ No high-priority planned read-only backlog remains after the diagnostic read com
 
 `tab close <INDEX>` intentionally differs from the old JavaScript CLI's current-tab close command. Rust requires an explicit TradingView app-tab index and refuses to close the final TradingView app tab. `tab list` preserves the old practical chart-target list while also exposing `app_tabs` so newly opened blank app tabs can be identified and cleaned up. This preserves practical tab lifecycle behavior while reducing accidental destructive session changes.
 
-`pine get`, `pine set`, `pine compile`, `pine errors`, and `pine console` may open the Pine Editor panel to make Monaco available. `pine set` changes only the local Pine Editor buffer from stdin or `--file`. `pine compile` compiles the current editor buffer and may add or update a chart-local study, but it intentionally refuses save-related action buttons and does not save or open scripts. `pine list` reads saved script metadata through TradingView's pine-facade endpoint from the current page session.
+`pine get`, `pine set`, `pine compile`, `pine errors`, and `pine console` may open the Pine Editor panel to make Monaco available. `pine set` changes only the local Pine Editor buffer from stdin or `--file`. `pine compile` compiles the current editor buffer and may add or update a chart-local study, but it intentionally refuses save-related action buttons and does not save or open scripts. `pine analyze` runs local static analysis without TradingView Desktop or network access. `pine check` posts source to TradingView's pine-facade compile endpoint without CDP or editor mutation. `pine list` reads saved script metadata through TradingView's pine-facade endpoint from the current page session.
 
 ## Deferred larger surfaces
 
@@ -97,7 +99,6 @@ These old CLI surfaces are not first in line, but they are not automatically out
 - `alert delete --all`
 - alert editing / pause / resume commands
 - Pine editor raw compile / persistence commands: `pine raw-compile`, `pine save`, `pine new`, `pine open`
-- Pine offline/server helper commands: `pine analyze`, `pine check`
 - `draw clear`
 - stream commands
 - UI automation commands

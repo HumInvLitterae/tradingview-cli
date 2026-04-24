@@ -15,19 +15,25 @@ The work is intentionally narrow. `pine analyze` is a local heuristic checker an
 - [x] (2026-04-24 17:05Z) Read `.agents/PLANS.md`, Pine skill guidance, current Rust Pine implementation, old JavaScript Pine CLI/core code, and relevant inventory docs.
 - [x] (2026-04-24 17:10Z) Split the existing Pine Editor implementation from `src/ops/pine.rs` into `src/ops/pine/editor.rs` with a thin facade, preserving behavior.
 - [x] (2026-04-24 17:10Z) Created this ExecPlan.
-- [ ] Commit the behavior-preserving Pine module refactor.
-- [ ] Add `tv pine analyze` and `tv pine check` CLI and dispatch.
-- [ ] Implement local static analysis in `src/ops/pine/analysis.rs`.
-- [ ] Implement server-side Pine compile check in `src/ops/pine/check.rs`.
-- [ ] Add unit and CLI contract tests.
-- [ ] Update README, AGENTS, migration inventory, contract notes, handoff note, and Pine skill mapping.
-- [ ] Run automated validation, skill validation, and live/external smoke.
-- [ ] Commit the completed feature slice.
+- [x] (2026-04-24 17:15Z) Commit the behavior-preserving Pine module refactor.
+- [x] (2026-04-24 17:25Z) Added `tv pine analyze` and `tv pine check` CLI and dispatch.
+- [x] (2026-04-24 17:25Z) Implemented local static analysis in `src/ops/pine/analysis.rs`.
+- [x] (2026-04-24 17:25Z) Implemented server-side Pine compile check in `src/ops/pine/check.rs`.
+- [x] (2026-04-24 17:30Z) Added unit and CLI contract tests.
+- [x] (2026-04-24 17:35Z) Updated README, AGENTS, migration inventory, contract notes, handoff note, and Pine skill mapping.
+- [x] (2026-04-24 17:45Z) Ran automated validation, skill validation, and external smoke.
+- [x] (2026-04-24 17:50Z) Commit the completed feature slice.
 
 ## Surprises & Discoveries
 
 - Observation: Moving `src/ops/pine.rs` under `src/ops/pine/editor.rs` required only one test import path adjustment.
   Evidence: `cargo test ops::pine -- --nocapture` passed after changing the fake runtime import from two parent modules to three.
+
+- Observation: `reqwest::RequestBuilder::form` was unavailable with the repository's current dependency feature set.
+  Evidence: The first targeted compile failed with `no method named form found for struct RequestBuilder`. The implementation now uses `reqwest::Url::parse_with_params` to build an `application/x-www-form-urlencoded` request body without adding dependencies.
+
+- Observation: The initial local parser missed `array.get(a, 5)` because it looked for a comma after the second argument and did not stop on the closing parenthesis.
+  Evidence: The `array_get_out_of_bounds_is_error` and `array_get_negative_index_is_error` tests failed until the second argument reader was changed to stop at either `,` or `)`.
 
 ## Decision Log
 
@@ -39,9 +45,13 @@ The work is intentionally narrow. `pine analyze` is a local heuristic checker an
   Rationale: They are the remaining low-mutation Pine development helpers from the old CLI. Both consume Pine source from stdin or `--file`, neither saves scripts, and together they unblock a practical pre-editor validation loop.
   Date/Author: 2026-04-24 / Codex.
 
+- Decision: Do not add a new URL-encoding crate or enable new reqwest features for this slice.
+  Rationale: The repository already depends on `reqwest`, and the small form body can be generated safely with `reqwest::Url::parse_with_params`.
+  Date/Author: 2026-04-24 / Codex.
+
 ## Outcomes & Retrospective
 
-Not completed yet.
+Completed. The Rust CLI now supports `tv pine analyze` for local static checks and `tv pine check` for TradingView pine-facade server compile checks. Both commands read source from stdin or `--file`; neither connects to CDP or mutates the Pine Editor. The remaining Pine backlog is now raw compile, save, new, and open.
 
 ## Context and Orientation
 
@@ -83,6 +93,20 @@ After the feature implementation:
 
 Because `.agents/skills/pine-develop` changes, run the skill validator against that skill before committing the feature slice.
 
+Observed validation results:
+
+    cargo fmt --check && cargo clippy --all-targets --all-features -- -D warnings && cargo test
+    test result: ok. 148 unit tests passed; 48 CLI contract tests passed
+
+    git diff --check
+    passed
+
+    rg -n "(/[U]sers/|[C]:\\\\)" README.md AGENTS.md docs .agents/skills || true
+    returned no tracked-doc local absolute paths
+
+    python3 .../quick_validate.py .agents/skills/pine-develop
+    Skill is valid!
+
 ## Validation and Acceptance
 
 Automated acceptance is that the full Rust baseline passes and the new tests prove both commands are usable without CDP. `tv pine analyze --file target/pine-analyze-invalid.pine` should print `success: true` with `data.issue_count` greater than zero for a source containing an obvious out-of-bounds array access. `tv pine check --file target/pine-check-valid.pine` should print `success: true` with `data.compiled: true` for a small valid script, if the TradingView pine-facade endpoint is reachable.
@@ -99,6 +123,17 @@ Refactor validation:
 
     cargo test ops::pine -- --nocapture
     test result: ok. 13 passed; 0 failed; 0 ignored; 0 measured; 117 filtered out
+
+Feature smoke:
+
+    cargo run --quiet -- pine analyze --file target/pine-analyze-invalid.pine
+    success: true, data.issue_count: 1, message: "array.get(a, 5) — index 5 out of bounds (array size is 2)"
+
+    cargo run --quiet -- pine check --file target/pine-check-valid.pine
+    success: true, data.compiled: true, data.error_count: 0
+
+    cargo run --quiet -- pine check --file target/pine-check-invalid.pine
+    success: true, data.compiled: false, data.error_count: 1, ctx.fullName: "this_function_does_not_exist"
 
 ## Interfaces and Dependencies
 

@@ -388,6 +388,14 @@ async fn dispatch(command: Command) -> Result<serde_json::Value, AppError> {
                 let mut runtime = connect_runtime().await?;
                 ops::pine_compile(&mut runtime).await
             }
+            PineCommand::Analyze { file } => {
+                let (source, input_source) = read_pine_source(file.as_deref())?;
+                Ok(ops::pine_analyze(&source, input_source))
+            }
+            PineCommand::Check { file } => {
+                let (source, input_source) = read_pine_source(file.as_deref())?;
+                ops::pine_check(&source, input_source).await
+            }
             PineCommand::Errors => {
                 let mut runtime = connect_runtime().await?;
                 ops::pine_errors(&mut runtime).await
