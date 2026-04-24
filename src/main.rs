@@ -11,7 +11,7 @@ use cdp::CdpClient;
 use clap::{Parser, error::ErrorKind as ClapErrorKind};
 use cli::{
     AlertCommand, Cli, Command, DataCommand, DrawingCommand, IndicatorCommand, PaneCommand,
-    TabCommand, WatchlistCommand,
+    ReplayCommand, TabCommand, WatchlistCommand,
 };
 use error::{AppError, ErrorKind};
 use output::{ErrorBody, ErrorEnvelope, SuccessEnvelope};
@@ -431,6 +431,12 @@ async fn dispatch(command: Command) -> Result<serde_json::Value, AppError> {
         Command::Tab { command } => match command {
             TabCommand::List => ops::tab_list(&config).await,
             TabCommand::Switch { index } => ops::tab_switch(&config, index).await,
+        },
+        Command::Replay { command } => match command {
+            ReplayCommand::Status => {
+                let mut runtime = connect_runtime().await?;
+                ops::replay_status(&mut runtime).await
+            }
         },
         Command::Screenshot { region, output } => {
             if !matches!(region.as_str(), "full" | "chart") {

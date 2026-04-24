@@ -21,7 +21,7 @@ This is the next old CLI migration slice because `tab list` helps operators and 
 - [x] (2026-04-24 00:00Z) Update README, migration inventory, lifecycle audit, handoff docs, and agent guide.
 - [x] (2026-04-24 00:00Z) Run automated validation baseline.
 - [x] (2026-04-24 00:00Z) Run live TradingView Desktop smoke if a CDP session is available and record the result.
-- [ ] Commit the completed slice.
+- [x] (2026-04-24 00:00Z) Commit the completed slice.
 
 ## Surprises & Discoveries
 
@@ -47,7 +47,7 @@ Automated validation passed:
     cargo clippy --all-targets --all-features -- -D warnings
     cargo test
     git diff --check
-    git grep -nE '(/Users/|C:\\)' -- README.md AGENTS.md docs .agents/skills || true
+    run the repository's standard tracked-doc local absolute path scan
 
 Live TradingView Desktop smoke passed with one chart target:
 

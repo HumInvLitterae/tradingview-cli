@@ -22,6 +22,7 @@ fn help_lists_v1_commands() {
         .stdout(predicate::str::contains("indicator"))
         .stdout(predicate::str::contains("draw"))
         .stdout(predicate::str::contains("tab"))
+        .stdout(predicate::str::contains("replay"))
         .stdout(predicate::str::contains("data"))
         .stdout(predicate::str::contains("pane"))
         .stdout(predicate::str::contains("range"))
@@ -171,6 +172,19 @@ fn tab_help_lists_non_destructive_subcommands() {
 }
 
 #[test]
+fn replay_help_lists_read_only_subcommands() {
+    tv().args(["replay", "--help"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("status"))
+        .stdout(predicate::str::contains("start").not())
+        .stdout(predicate::str::contains("step").not())
+        .stdout(predicate::str::contains("stop").not())
+        .stdout(predicate::str::contains("autoplay").not())
+        .stdout(predicate::str::contains("trade").not());
+}
+
+#[test]
 fn data_help_lists_advanced_read_subcommands() {
     tv().args(["data", "--help"])
         .assert()
@@ -264,6 +278,7 @@ fn read_utilities_attempt_connection_when_cdp_is_unavailable() {
         vec!["draw", "remove", "shape-id"],
         vec!["tab", "list"],
         vec!["tab", "switch", "0"],
+        vec!["replay", "status"],
         vec!["pane", "list"],
         vec!["pane", "layout", "s"],
         vec!["pane", "focus", "0"],

@@ -8,6 +8,7 @@ mod drawing;
 mod indicator;
 mod layout;
 mod market;
+mod replay;
 mod screenshot;
 mod status;
 mod tab;
@@ -39,6 +40,7 @@ pub use layout::{
     watchlist_get, watchlist_remove,
 };
 pub use market::{ohlcv_bars, ohlcv_summary, quote, symbol_search};
+pub use replay::replay_status;
 pub use screenshot::{screenshot_chart, screenshot_full};
 pub use status::status;
 pub use tab::{tab_list, tab_switch};

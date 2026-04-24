@@ -83,6 +83,11 @@ pub enum Command {
         #[command(subcommand)]
         command: TabCommand,
     },
+    #[command(about = "Replay read tools")]
+    Replay {
+        #[command(subcommand)]
+        command: ReplayCommand,
+    },
     #[command(about = "Capture a full screenshot")]
     Screenshot {
         #[arg(long, short, default_value = "full")]
@@ -242,6 +247,12 @@ pub enum TabCommand {
     Switch { index: usize },
 }
 
+#[derive(Debug, Subcommand)]
+pub enum ReplayCommand {
+    #[command(about = "Get current TradingView replay state")]
+    Status,
+}
+
 impl Command {
     pub fn name(&self) -> &'static str {
         match self {
@@ -266,6 +277,7 @@ impl Command {
             Self::Data { .. } => "data",
             Self::Pane { .. } => "pane",
             Self::Tab { .. } => "tab",
+            Self::Replay { .. } => "replay",
             Self::Screenshot { .. } => "screenshot",
         }
     }
