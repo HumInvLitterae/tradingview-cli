@@ -17,6 +17,18 @@ const SYMBOL_SEARCH_URL: &str = "https://symbol-search.tradingview.com/symbol_se
 const DEFAULT_OHLCV_COUNT: usize = 100;
 const MAX_OHLCV_COUNT: usize = 500;
 const MAX_TRADES_COUNT: usize = 20;
+const CHART_TYPES: [&str; 10] = [
+    "Bars",
+    "Candles",
+    "Line",
+    "Area",
+    "Renko",
+    "Kagi",
+    "PointAndFigure",
+    "LineBreak",
+    "HeikinAshi",
+    "HollowCandles",
+];
 
 pub async fn status(config: &TransportConfig) -> Result<Value, AppError> {
     let targets = transport::fetch_targets(config).await?;
@@ -567,6 +579,71 @@ pub async fn current_timeframe(runtime: &mut impl RuntimeEvaluator) -> Result<Va
             false,
         )
         .await
+}
+
+pub async fn current_chart_type(runtime: &mut impl RuntimeEvaluator) -> Result<Value, AppError> {
+    runtime
+        .evaluate(
+            &format!(
+                r#"
+                (function() {{
+                    var chart = {CHART_API};
+                    var typeNames = {chart_type_names_json};
+                    var typeNum = chart.chartType();
+                    return {{
+                        chart_type: typeNames[typeNum] || typeNum,
+                        type_num: typeNum,
+                        symbol: chart.symbol(),
+                        resolution: chart.resolution()
+                    }};
+                }})()
+                "#,
+                chart_type_names_json = serde_json::to_string(&CHART_TYPES)
+                    .expect("static chart type names should serialize")
+            ),
+            false,
+        )
+        .await
+}
+
+pub async fn set_chart_type(
+    runtime: &mut impl RuntimeEvaluator,
+    chart_type: &str,
+) -> Result<Value, AppError> {
+    let (type_num, canonical_name) = parse_chart_type(chart_type)?;
+    let requested_chart_type = js_string(canonical_name)?;
+    runtime
+        .evaluate(
+            &format!(
+                r#"
+                (function() {{
+                    var chart = {CHART_API};
+                    var typeNames = {chart_type_names_json};
+                    var previousTypeNum = chart.chartType();
+                    chart.setChartType({type_num});
+                    var observedTypeNum = chart.chartType();
+                    return {{
+                        chart_type: typeNames[observedTypeNum] || observedTypeNum,
+                        type_num: observedTypeNum,
+                        requested_chart_type: {requested_chart_type},
+                        requested_type_num: {type_num},
+                        previous_chart_type: typeNames[previousTypeNum] || previousTypeNum,
+                        previous_type_num: previousTypeNum,
+                        observed_chart_type: typeNames[observedTypeNum] || observedTypeNum,
+                        observed_type_num: observedTypeNum
+                    }};
+                }})()
+                "#,
+                chart_type_names_json = serde_json::to_string(&CHART_TYPES)
+                    .expect("static chart type names should serialize")
+            ),
+            false,
+        )
+        .await
+}
+
+pub fn validate_chart_type(chart_type: &str) -> Result<(), AppError> {
+    parse_chart_type(chart_type).map(|_| ())
 }
 
 pub async fn visible_range(runtime: &mut impl RuntimeEvaluator) -> Result<Value, AppError> {
@@ -1449,6 +1526,38 @@ fn merge_object(target: &mut Value, source: Value) {
     }
 }
 
+fn parse_chart_type(value: &str) -> Result<(usize, &'static str), AppError> {
+    let trimmed = value.trim();
+    if let Ok(type_num) = trimmed.parse::<usize>()
+        && let Some(name) = CHART_TYPES.get(type_num)
+    {
+        return Ok((type_num, name));
+    }
+
+    let normalized = normalize_chart_type_name(trimmed);
+    for (index, name) in CHART_TYPES.iter().enumerate() {
+        if normalize_chart_type_name(name) == normalized {
+            return Ok((index, name));
+        }
+    }
+
+    Err(AppError::new(
+        ErrorKind::Validation,
+        format!("Unknown chart type: {value}. Use a name (Candles, Line, etc.) or number (0-9)."),
+    )
+    .with_details(json!({
+        "supported": CHART_TYPES,
+    })))
+}
+
+fn normalize_chart_type_name(value: &str) -> String {
+    value
+        .chars()
+        .filter(|character| character.is_ascii_alphanumeric())
+        .flat_map(char::to_lowercase)
+        .collect()
+}
+
 fn js_string(value: &str) -> Result<String, AppError> {
     serde_json::to_string(value).map_err(|err| {
         AppError::new(
@@ -1835,6 +1944,71 @@ mod tests {
         let _ = set_timeframe(&mut runtime, "D").await;
 
         assert!(runtime.evaluated[0].0.contains("\"D\""));
+    }
+
+    #[tokio::test]
+    async fn current_chart_type_returns_runtime_payload() {
+        let payload = json!({
+            "chart_type": "Candles",
+            "type_num": 1,
+            "symbol": "NASDAQ:AAPL",
+            "resolution": "D"
+        });
+        let mut runtime = FakeRuntime::new([payload.clone()]);
+
+        let result = current_chart_type(&mut runtime).await.unwrap();
+
+        assert_eq!(result, payload);
+        assert!(runtime.evaluated[0].0.contains("chart.chartType()"));
+        assert!(!runtime.evaluated[0].1);
+    }
+
+    #[tokio::test]
+    async fn set_chart_type_accepts_name_and_returns_runtime_payload() {
+        let payload = json!({
+            "chart_type": "Line",
+            "type_num": 2,
+            "requested_chart_type": "Line",
+            "requested_type_num": 2,
+            "previous_chart_type": "Candles",
+            "previous_type_num": 1,
+            "observed_chart_type": "Line",
+            "observed_type_num": 2
+        });
+        let mut runtime = FakeRuntime::new([payload.clone()]);
+
+        let result = set_chart_type(&mut runtime, "line").await.unwrap();
+
+        assert_eq!(result, payload);
+        assert!(runtime.evaluated[0].0.contains("chart.setChartType(2)"));
+        assert!(runtime.evaluated[0].0.contains("\"Line\""));
+    }
+
+    #[tokio::test]
+    async fn set_chart_type_accepts_number_and_separator_alias() {
+        let mut runtime = FakeRuntime::new([json!({"type_num": 8})]);
+
+        let _ = set_chart_type(&mut runtime, "heikin-ashi").await.unwrap();
+
+        assert!(runtime.evaluated[0].0.contains("chart.setChartType(8)"));
+
+        let mut runtime = FakeRuntime::new([json!({"type_num": 1})]);
+
+        let _ = set_chart_type(&mut runtime, "1").await.unwrap();
+
+        assert!(runtime.evaluated[0].0.contains("chart.setChartType(1)"));
+    }
+
+    #[tokio::test]
+    async fn set_chart_type_rejects_unknown_type_before_evaluating() {
+        let mut runtime = FakeRuntime::new([]);
+
+        let err = set_chart_type(&mut runtime, "not-a-chart-type")
+            .await
+            .expect_err("unknown chart type should be rejected");
+
+        assert_eq!(err.kind, ErrorKind::Validation);
+        assert!(runtime.evaluated.is_empty());
     }
 
     #[tokio::test]

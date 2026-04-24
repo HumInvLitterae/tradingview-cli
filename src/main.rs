@@ -130,6 +130,23 @@ async fn dispatch(command: Command) -> Result<serde_json::Value, AppError> {
                 None => ops::current_timeframe(&mut runtime).await,
             }
         }
+        Command::Type { chart_type } => match chart_type {
+            Some(chart_type) => {
+                if chart_type.trim().is_empty() {
+                    return Err(AppError::new(
+                        ErrorKind::Validation,
+                        "Chart type must not be empty",
+                    ));
+                }
+                ops::validate_chart_type(&chart_type)?;
+                let mut runtime = connect_runtime().await?;
+                ops::set_chart_type(&mut runtime, &chart_type).await
+            }
+            None => {
+                let mut runtime = connect_runtime().await?;
+                ops::current_chart_type(&mut runtime).await
+            }
+        },
         Command::Range { from, to } => {
             let mut runtime = connect_runtime().await?;
             match (from, to) {

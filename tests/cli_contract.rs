@@ -21,6 +21,7 @@ fn help_lists_v1_commands() {
         .stdout(predicate::str::contains("data"))
         .stdout(predicate::str::contains("pane"))
         .stdout(predicate::str::contains("range"))
+        .stdout(predicate::str::contains("type"))
         .stdout(predicate::str::contains("scroll"))
         .stdout(predicate::str::contains("screenshot"));
 }
@@ -243,4 +244,41 @@ fn symbol_and_timeframe_allow_read_mode() {
         .assert()
         .failure()
         .code(2);
+}
+
+#[test]
+fn type_attempts_connection_when_cdp_is_unavailable() {
+    for args in [vec!["type"], vec!["type", "Line"], vec!["type", "1"]] {
+        let assert = tv()
+            .env("TV_CDP_PORT", "9")
+            .args(args)
+            .assert()
+            .failure()
+            .code(2);
+        let stderr = String::from_utf8(assert.get_output().stderr.clone()).unwrap();
+        let value: Value = serde_json::from_str(&stderr).unwrap();
+        assert_eq!(value["success"], false);
+        assert_eq!(value["command"], "type");
+        assert_eq!(value["error"]["kind"], "connection");
+    }
+}
+
+#[test]
+fn type_rejects_unknown_chart_type_before_connecting() {
+    let assert = tv()
+        .args(["type", "not-a-chart-type"])
+        .assert()
+        .failure()
+        .code(1);
+    let stderr = String::from_utf8(assert.get_output().stderr.clone()).unwrap();
+    let value: Value = serde_json::from_str(&stderr).unwrap();
+    assert_eq!(value["success"], false);
+    assert_eq!(value["command"], "type");
+    assert_eq!(value["error"]["kind"], "validation");
+    assert!(
+        value["error"]["details"]["supported"]
+            .as_array()
+            .expect("supported chart types should be listed")
+            .contains(&Value::String("Candles".to_string()))
+    );
 }

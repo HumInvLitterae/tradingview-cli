@@ -37,6 +37,8 @@ pub enum Command {
     Symbol { symbol: Option<String> },
     #[command(about = "Get or set the chart timeframe")]
     Timeframe { timeframe: Option<String> },
+    #[command(about = "Get or set the chart type")]
+    Type { chart_type: Option<String> },
     #[command(about = "Get or set the visible chart range")]
     Range {
         #[arg(long)]
@@ -139,6 +141,7 @@ impl Command {
             Self::Ohlcv { .. } => "ohlcv",
             Self::Symbol { .. } => "symbol",
             Self::Timeframe { .. } => "timeframe",
+            Self::Type { .. } => "type",
             Self::Range { .. } => "range",
             Self::Scroll { .. } => "scroll",
             Self::Watchlist { .. } => "watchlist",
