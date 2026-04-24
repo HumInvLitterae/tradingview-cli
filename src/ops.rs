@@ -1,3 +1,4 @@
+mod alert;
 mod chart;
 mod common;
 mod data;
@@ -11,6 +12,7 @@ mod status;
 #[cfg(test)]
 mod test_support;
 
+pub use alert::alert_list;
 pub use chart::{
     current_chart_type, current_symbol, current_timeframe, scroll_to_date, set_chart_type,
     set_symbol, set_timeframe, set_visible_range, state, symbol_info, validate_chart_type,

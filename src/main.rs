@@ -9,7 +9,7 @@ use std::process::ExitCode;
 
 use cdp::CdpClient;
 use clap::{Parser, error::ErrorKind as ClapErrorKind};
-use cli::{Cli, Command, DataCommand, PaneCommand, WatchlistCommand};
+use cli::{AlertCommand, Cli, Command, DataCommand, PaneCommand, WatchlistCommand};
 use error::{AppError, ErrorKind};
 use output::{ErrorBody, ErrorEnvelope, SuccessEnvelope};
 use serde_json::json;
@@ -172,6 +172,12 @@ async fn dispatch(command: Command) -> Result<serde_json::Value, AppError> {
             let mut runtime = connect_runtime().await?;
             match command {
                 WatchlistCommand::Get => ops::watchlist_get(&mut runtime).await,
+            }
+        }
+        Command::Alert { command } => {
+            let mut runtime = connect_runtime().await?;
+            match command {
+                AlertCommand::List => ops::alert_list(&mut runtime).await,
             }
         }
         Command::Data { command } => {

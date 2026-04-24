@@ -53,6 +53,11 @@ pub enum Command {
         #[command(subcommand)]
         command: WatchlistCommand,
     },
+    #[command(about = "Alert read tools")]
+    Alert {
+        #[command(subcommand)]
+        command: AlertCommand,
+    },
     #[command(about = "Advanced read-only data tools")]
     Data {
         #[command(subcommand)]
@@ -76,6 +81,12 @@ pub enum Command {
 pub enum WatchlistCommand {
     #[command(about = "Get watchlist symbols")]
     Get,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum AlertCommand {
+    #[command(about = "List TradingView alerts")]
+    List,
 }
 
 #[derive(Debug, Subcommand)]
@@ -147,6 +158,7 @@ impl Command {
             Self::Range { .. } => "range",
             Self::Scroll { .. } => "scroll",
             Self::Watchlist { .. } => "watchlist",
+            Self::Alert { .. } => "alert",
             Self::Data { .. } => "data",
             Self::Pane { .. } => "pane",
             Self::Screenshot { .. } => "screenshot",

@@ -18,6 +18,7 @@ fn help_lists_v1_commands() {
         .stdout(predicate::str::contains("discover"))
         .stdout(predicate::str::contains("ui-state"))
         .stdout(predicate::str::contains("watchlist"))
+        .stdout(predicate::str::contains("alert"))
         .stdout(predicate::str::contains("data"))
         .stdout(predicate::str::contains("pane"))
         .stdout(predicate::str::contains("range"))
@@ -82,6 +83,14 @@ fn watchlist_and_pane_help_list_read_subcommands() {
 }
 
 #[test]
+fn alert_help_lists_read_subcommands() {
+    tv().args(["alert", "--help"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("list"));
+}
+
+#[test]
 fn data_help_lists_advanced_read_subcommands() {
     tv().args(["data", "--help"])
         .assert()
@@ -122,6 +131,7 @@ fn read_utilities_attempt_connection_when_cdp_is_unavailable() {
         vec!["discover"],
         vec!["ui-state"],
         vec!["watchlist", "get"],
+        vec!["alert", "list"],
         vec!["pane", "list"],
     ] {
         let assert = tv()
