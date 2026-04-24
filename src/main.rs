@@ -186,6 +186,7 @@ async fn dispatch(command: Command) -> Result<serde_json::Value, AppError> {
                     }
                     ops::data_indicator(&mut runtime, &entity_id).await
                 }
+                DataCommand::Depth => ops::data_depth(&mut runtime).await,
                 DataCommand::Strategy => ops::data_strategy(&mut runtime).await,
                 DataCommand::Trades { max } => ops::data_trades(&mut runtime, max).await,
                 DataCommand::Equity => ops::data_equity(&mut runtime).await,

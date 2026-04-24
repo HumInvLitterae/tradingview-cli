@@ -82,6 +82,8 @@ pub enum WatchlistCommand {
 pub enum DataCommand {
     #[command(about = "Get indicator info and inputs by entity ID")]
     Indicator { entity_id: String },
+    #[command(about = "Get visible DOM / Depth of Market bid and ask levels")]
+    Depth,
     #[command(about = "Get strategy performance metrics")]
     Strategy,
     #[command(about = "Get strategy trade list")]

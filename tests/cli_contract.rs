@@ -87,6 +87,7 @@ fn data_help_lists_advanced_read_subcommands() {
         .assert()
         .success()
         .stdout(predicate::str::contains("indicator"))
+        .stdout(predicate::str::contains("depth"))
         .stdout(predicate::str::contains("strategy"))
         .stdout(predicate::str::contains("trades"))
         .stdout(predicate::str::contains("equity"))
@@ -140,6 +141,7 @@ fn read_utilities_attempt_connection_when_cdp_is_unavailable() {
 fn data_read_commands_attempt_connection_when_cdp_is_unavailable() {
     for args in [
         vec!["data", "indicator", "study-id"],
+        vec!["data", "depth"],
         vec!["data", "strategy"],
         vec!["data", "trades", "--max", "5"],
         vec!["data", "equity"],

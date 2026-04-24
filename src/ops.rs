@@ -1,6 +1,7 @@
 mod chart;
 mod common;
 mod data;
+mod data_depth;
 mod diagnostics;
 mod layout;
 mod market;
@@ -19,6 +20,7 @@ pub use data::{
     data_boxes, data_equity, data_indicator, data_labels, data_lines, data_strategy, data_tables,
     data_trades, study_values,
 };
+pub use data_depth::data_depth;
 pub use diagnostics::{discover, ui_state};
 pub use layout::{pane_list, watchlist_get};
 pub use market::{ohlcv_bars, ohlcv_summary, quote, symbol_search};
