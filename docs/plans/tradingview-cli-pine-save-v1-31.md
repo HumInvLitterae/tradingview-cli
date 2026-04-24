@@ -19,12 +19,14 @@ This command writes to TradingView cloud state, so it is intentionally isolated 
 - [x] (2026-04-24 19:02Z) Add unit and CLI contract tests.
 - [x] (2026-04-24 19:08Z) Update README, AGENTS, migration inventory, contract notes, handoff note, remaining deferred audit, and Pine skill.
 - [x] (2026-04-24 19:17Z) Run automated validation and skill validation.
-- [x] (2026-04-24 19:08Z) Live smoke skipped because it would persist TradingView cloud state and no explicit save-smoke approval was given for this slice.
+- [x] (2026-04-24 19:08Z) Live smoke initially skipped because it would persist TradingView cloud state and no explicit save-smoke approval was given for this slice.
+- [x] (2026-04-24 19:31Z) Live smoke attempted after explicit user approval; named save did not pass in the current TradingView Desktop session.
 - [x] (2026-04-24 19:20Z) Commit the completed slice.
 
 ## Surprises & Discoveries
 
 - `pine save` is more safety-sensitive than the prior Pine editor-buffer mutations because even the smoke path can leave a saved script behind. Automated fake-runtime coverage is the default acceptance path unless the user explicitly approves a live cloud-state smoke.
+- Current TradingView Desktop shows the unsaved-script naming dialog in the desktop UI/accessibility tree, but the dialog was not visible to the CDP page context used by the Rust CLI. A keyboard fallback is unsafe because focus can remain in Monaco and insert the requested name into the script body.
 
 ## Decision Log
 
@@ -42,7 +44,7 @@ This command writes to TradingView cloud state, so it is intentionally isolated 
 
 ## Outcomes & Retrospective
 
-Implemented `tv pine save [--name <NAME>]` as an explicit Pine persistence command. Plain `pine save` saves the current editor buffer, while `--name` supports new unsaved-script naming and rejects existing saved-script conflicts before dispatching Ctrl+S. The command reports save state under `data` and keeps `pine compile` non-persistent.
+Implemented `tv pine save [--name <NAME>]` as an explicit Pine persistence command. Plain `pine save` saves the current editor buffer. `--name` rejects existing saved-script conflicts before attempting a named save, but it must not keyboard-type into an unverified focus target if the naming dialog is outside the CDP page context. The command reports save state under `data` and keeps `pine compile` non-persistent.
 
 ## Context and Orientation
 
@@ -81,9 +83,20 @@ Because `.agents/skills/pine-develop` changes, run the skill validator against t
 
 ## Validation and Acceptance
 
-Automated acceptance is that tests prove help output, connection error behavior, empty name validation, existing save payload normalization, missing name validation for a dialog, named save conflict rejection, named save success, and dirty-after-save failure handling.
+Automated acceptance is that tests prove help output, connection error behavior, empty name validation, existing save payload normalization, missing name validation for a dialog, named save conflict rejection, named save success when the dialog is CDP-visible, and dirty-after-save failure handling.
 
 Live smoke is optional and should not create or overwrite TradingView cloud state without explicit approval. If live smoke is approved, use a unique disposable name, run `tv pine new indicator`, then `tv pine save --name <NAME>`, then `tv pine list` and confirm the disposable name appears. Record the created name in this plan and the final response. Do not smoke `pine raw-compile`.
+
+Live smoke after approval:
+
+- Intended disposable names:
+  - `Codex Pine Save Smoke 20260424-190422`
+  - `Codex Pine Save Smoke 20260424-190635`
+  - `Codex Pine Save Smoke 20260424-190739`
+- None of those intended disposable names appeared in `tv pine list`.
+- A rejected keyboard fallback experiment caused TradingView to save the script under the default dialog name `My script`.
+- Leftover saved script: one default-named disposable script, with its account-local script id intentionally omitted from this public archive note.
+- The original Pine Editor source was restored with `tv pine set --file ...` and verified with `tv pine get`.
 
 ## Idempotence and Recovery
 
@@ -93,7 +106,7 @@ Source and docs edits are ordinary additive changes and can be rerun. Automated 
 
 - Targeted Pine save unit and CLI contract tests were added for payload normalization, dialog-name validation, named-save conflict rejection, named-save success, dirty-after-save failure, empty-name validation, and connection-attempt behavior.
 - Validation passed: `cargo fmt --check`, `cargo clippy --all-targets --all-features -- -D warnings`, `cargo test`, `git diff --check`, tracked docs local absolute path scan, and the Pine develop skill validator.
-- Live smoke was skipped because it can create or overwrite TradingView cloud state.
+- Live smoke found a named-save blocker in the current TradingView Desktop session and left one identifiable default-named disposable script; the account-local script id is intentionally omitted from this public archive note.
 
 ## Interfaces and Dependencies
 

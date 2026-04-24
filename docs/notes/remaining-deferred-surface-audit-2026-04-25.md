@@ -40,9 +40,9 @@ The old UI automation surface is broad and generic. It can click by label/text/c
 `pine save` was implemented in `docs/plans/tradingview-cli-pine-save-v1-31.md` with these contract choices:
 
 - `tv pine save` saves the current Pine Editor buffer through an explicit persistence command.
-- `tv pine save --name <NAME>` supports naming a new unsaved script and rejects existing saved script name conflicts.
+- `tv pine save --name <NAME>` rejects existing saved script name conflicts before attempting a named save, but current TradingView Desktop live smoke found the naming dialog can be outside the CDP page target. The command must fail rather than keyboard-type into an unverified focus target when that happens.
 - The payload reports `saved`, `action`, `name`, `dialog_handled`, `source`, `editor_open_before`, `opened_editor`, `dirty_before`, and `dirty_after`.
-- Live smoke remains optional because it can create or overwrite TradingView cloud state.
+- Live smoke created a default-named script during a rejected keyboard fallback experiment; see the Pine save ExecPlan for the exact leftover name and id.
 
 If `draw clear` or `alert delete --all` is reconsidered, the ExecPlan must require explicit destructive intent, preflight counts, post-action verification, and a recovery story. Old CLI parity alone is not enough.
 

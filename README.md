@@ -128,7 +128,6 @@ cargo run -- pine new indicator
 cargo run -- pine open "My Script"
 cargo run -- pine compile
 cargo run -- pine save
-cargo run -- pine save --name "My Script"
 cargo run -- pine analyze --file script.pine
 cargo run -- pine check --file script.pine
 cargo run -- pine errors

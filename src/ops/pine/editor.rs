@@ -326,6 +326,9 @@ pub async fn pine_save(
         "name": raw.get("name").cloned().unwrap_or(Value::Null),
         "dialog_handled": raw.get("dialog_handled").and_then(Value::as_bool).unwrap_or(false),
         "source": raw.get("source").cloned().unwrap_or_else(|| json!("dom_fallback")),
+        "script_id": raw.get("script_id").cloned().unwrap_or(Value::Null),
+        "version": raw.get("version").cloned().unwrap_or(Value::Null),
+        "clicked_save_button": raw.get("clicked_save_button").and_then(Value::as_bool).unwrap_or(false),
         "editor_open_before": open_state.editor_open_before,
         "opened_editor": open_state.opened_editor,
         "dirty_before": raw.get("dirty_before").cloned().unwrap_or_else(|| before.get("dirty_before").cloned().unwrap_or(Value::Null)),
@@ -658,7 +661,8 @@ var dirtyBefore = {dirty_before};
 function visible(el) {{
     if (!el) return false;
     var rect = el.getBoundingClientRect();
-    return rect.width > 0 && rect.height > 0 && el.offsetParent !== null;
+    var style = window.getComputedStyle(el);
+    return rect.width > 0 && rect.height > 0 && style.visibility !== 'hidden' && style.display !== 'none';
 }}
 function label(el) {{
     return (el.textContent || el.getAttribute('aria-label') || el.getAttribute('title') || '').trim();
@@ -694,6 +698,26 @@ function saveDialog() {{
         var hasInput = dialogs[i].querySelector('input, textarea');
         if (hasSave && (hasInput || /save/i.test(text) || /保存/.test(text))) return dialogs[i];
     }}
+    var inputs = Array.from(document.querySelectorAll('input, textarea')).filter(visible);
+    for (var j = 0; j < inputs.length; j++) {{
+        var parent = inputs[j].parentElement;
+        for (var depth = 0; parent && depth < 8; depth++, parent = parent.parentElement) {{
+            var parentText = parent.textContent || '';
+            var parentButtons = Array.from(parent.querySelectorAll('button')).filter(visible);
+            var parentHasSave = parentButtons.some(function(button) {{ return /^save$/i.test(label(button)) || /^保存$/.test(label(button)); }});
+            if (parentHasSave && (/script/i.test(parentText) || /スクリプト/.test(parentText) || /保存/.test(parentText))) return parent;
+        }}
+    }}
+    return null;
+}}
+function standaloneSaveButton() {{
+    var nodes = Array.from(document.querySelectorAll('button, [role="button"], [tabindex], span, div')).filter(visible);
+    for (var i = 0; i < nodes.length; i++) {{
+        var text = label(nodes[i]);
+        if (/^save$/i.test(text) || /^保存$/.test(text)) {{
+            return nodes[i].closest('button, [role="button"], [tabindex]') || nodes[i];
+        }}
+    }}
     return null;
 }}
 function clickSaveInDialog(dialog) {{
@@ -707,7 +731,32 @@ function clickSaveInDialog(dialog) {{
     }}
     return null;
 }}
-function finish() {{
+function normalizeName(value) {{
+    return (value || '').trim().toLowerCase();
+}}
+function verifySavedName(attempt) {{
+    if (!requestedName) return Promise.resolve(null);
+    return fetch('https://pine-facade.tradingview.com/pine-facade/list/?filter=saved', {{ credentials: 'include' }})
+        .then(function(r) {{ return r.json(); }})
+        .then(function(scripts) {{
+            if (!Array.isArray(scripts)) return {{ error: "pine-facade returned unexpected data", kind: "internal_api_unavailable" }};
+            var target = normalizeName(requestedName);
+            for (var i = 0; i < scripts.length; i++) {{
+                var script = scripts[i] || {{}};
+                if (normalizeName(script.scriptName) === target || normalizeName(script.scriptTitle) === target) {{
+                    return {{ verified: true, script_id: script.scriptIdPart || null, version: script.version || null }};
+                }}
+            }}
+            if (attempt >= 5) {{
+                return {{ error: 'Pine save did not appear in the saved script list: "' + requestedName + '"', kind: "internal_api_unavailable" }};
+            }}
+            return new Promise(function(resolve) {{
+                setTimeout(function() {{ resolve(verifySavedName(attempt + 1)); }}, 1000);
+            }});
+        }})
+        .catch(function(e) {{ return {{ error: e.message, kind: "internal_api_unavailable" }}; }});
+}}
+function finishAfterDialogAttempt(openedByButton) {{
     var dialog = saveDialog();
     var dialogHandled = false;
     var action = "saved";
@@ -726,20 +775,43 @@ function finish() {{
         }}
         dialogHandled = true;
         action = "saved_with_name";
+    }} else if (requestedName) {{
+        return {{ error: "Pine save did not expose a naming dialog to CDP", kind: "internal_api_unavailable", dialog_open: false, clicked_save_button: openedByButton, dirty_before: dirtyBefore }};
     }}
     return new Promise(function(resolve) {{
         setTimeout(function() {{
             var dirtyAfter = dirtyState();
-            resolve({{
-                saved: dirtyAfter !== true,
-                action: action,
-                name: requestedName || null,
-                dialog_handled: dialogHandled,
-                source: "dom_fallback",
-                dirty_before: dirtyBefore,
-                dirty_after: dirtyAfter
+            verifySavedName(0).then(function(verified) {{
+                if (verified && verified.error) {{
+                    resolve(verified);
+                    return;
+                }}
+                resolve({{
+                    saved: dirtyAfter !== true,
+                    action: action,
+                    name: requestedName || null,
+                    dialog_handled: dialogHandled,
+                    source: requestedName ? "internal_api_verified" : "dom_fallback",
+                    script_id: verified && verified.script_id ? verified.script_id : null,
+                    version: verified && verified.version ? verified.version : null,
+                    clicked_save_button: openedByButton,
+                    dirty_before: dirtyBefore,
+                    dirty_after: dirtyAfter
+                }});
             }});
-        }}, 800);
+        }}, 1200);
+    }});
+}}
+function finish() {{
+    if (!requestedName) return finishAfterDialogAttempt(false);
+    if (saveDialog()) return finishAfterDialogAttempt(false);
+    var button = standaloneSaveButton();
+    if (!button) {{
+        return {{ error: "Pine save button was not available for named save", kind: "internal_api_unavailable", dirty_before: dirtyBefore }};
+    }}
+    button.click();
+    return new Promise(function(resolve) {{
+        setTimeout(function() {{ resolve(finishAfterDialogAttempt(true)); }}, 800);
     }});
 }}
 return finish();
