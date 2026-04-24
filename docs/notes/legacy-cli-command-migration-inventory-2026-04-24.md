@@ -14,6 +14,7 @@ Do not use `explicitly_not_planned` for ordinary missing old CLI commands unless
 ## Implemented in Rust v1
 
 - `status`
+- `launch`
 - `state`
 - `info`
 - `search`
@@ -102,11 +103,12 @@ No high-priority planned read-only backlog remains after the diagnostic read com
 
 `stream quote`, `stream bars`, `stream values`, `stream lines`, `stream labels`, `stream tables`, and `stream all` are implemented as read-only polling commands. They print newline-delimited JSON envelopes and emit only changed samples. They are intended for shell and external monitoring workflows rather than request-response adapters.
 
+`launch` is implemented as a bounded local process-control command. It is intentionally safer than the old JavaScript CLI: Rust defaults to no-kill behavior, treats an already responding CDP endpoint as success, and requires explicit `--kill-existing` before attempting to terminate existing TradingView processes. It does not mutate account, chart, Pine, drawing, alert, replay, tab, or watchlist state.
+
 ## Deferred larger surfaces
 
 These old CLI surfaces are not first in line, but they are not automatically out of scope:
 
-- `launch`
 - `alert delete --all`
 - alert editing / pause / resume commands
 - Pine editor raw compile / persistence commands: `pine raw-compile`, `pine save`

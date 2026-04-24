@@ -78,6 +78,14 @@ async fn dispatch(command: Command) -> Result<serde_json::Value, AppError> {
     let config = TransportConfig::from_env()?;
     match command {
         Command::Status => ops::status(&config).await,
+        Command::Launch {
+            port,
+            path,
+            kill_existing,
+        } => {
+            let request = ops::LaunchRequest::new(&config, port, path, kill_existing)?;
+            ops::launch(request).await
+        }
         Command::State => {
             let mut runtime = connect_runtime().await?;
             ops::state(&mut runtime).await

@@ -67,6 +67,7 @@ When an old field name is important to downstream workflows, prefer one of these
 ## Current known differences
 
 - `status` payload is under `data` in Rust and now includes CDP target fields plus chart API availability and current chart fields such as `chart_symbol`, `chart_resolution`, `chart_type`, and `api_available`.
+- `launch` payload is under `data` in Rust and includes `launched`, `used_existing`, `platform`, `binary`, `pid`, `cdp_port`, `cdp_url`, `cdp_ready`, `browser`, `user_agent`, `kill_existing`, and optional `warning`. Unlike the old JavaScript CLI, Rust defaults to no-kill behavior and only attempts to terminate existing TradingView processes when `--kill-existing` is explicit.
 - `state` payload is under `data` in Rust and includes both old and new naming where useful, including `resolution`, `timeframe`, `chartType`, `chart_type`, `studies`, and `visible_range`.
 - `quote` payload is under `data` in Rust and includes the practical quote fields from the old CLI shape, including `symbol`, `time`, `last`, `close`, `open`, `high`, `low`, `volume`, and best-effort symbol metadata.
 - `ohlcv --summary` payload is under `data` in Rust and includes summary fields such as `symbol`, `timeframe`, `bar_count`, `period`, `range`, `change`, `change_pct`, `avg_volume`, `volume`, and `last_5_bars`.

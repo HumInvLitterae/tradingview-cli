@@ -14,6 +14,15 @@ pub struct Cli {
 pub enum Command {
     #[command(about = "Check CDP connection to TradingView")]
     Status,
+    #[command(about = "Launch TradingView Desktop with CDP enabled")]
+    Launch {
+        #[arg(long, short)]
+        port: Option<u16>,
+        #[arg(long)]
+        path: Option<PathBuf>,
+        #[arg(long)]
+        kill_existing: bool,
+    },
     #[command(about = "Get current chart state")]
     State,
     #[command(about = "Get detailed symbol metadata")]
@@ -370,6 +379,7 @@ impl Command {
     pub fn name(&self) -> &'static str {
         match self {
             Self::Status => "status",
+            Self::Launch { .. } => "launch",
             Self::State => "state",
             Self::Info => "info",
             Self::Search { .. } => "search",

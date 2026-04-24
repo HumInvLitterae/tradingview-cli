@@ -13,6 +13,7 @@ fn help_lists_v1_commands() {
         .assert()
         .success()
         .stdout(predicate::str::contains("status"))
+        .stdout(predicate::str::contains("launch"))
         .stdout(predicate::str::contains("info"))
         .stdout(predicate::str::contains("search"))
         .stdout(predicate::str::contains("values"))
@@ -32,6 +33,45 @@ fn help_lists_v1_commands() {
         .stdout(predicate::str::contains("type"))
         .stdout(predicate::str::contains("scroll"))
         .stdout(predicate::str::contains("screenshot"));
+}
+
+#[test]
+fn launch_help_lists_safety_options() {
+    tv().args(["launch", "--help"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("--port"))
+        .stdout(predicate::str::contains("--path"))
+        .stdout(predicate::str::contains("--kill-existing"));
+}
+
+#[test]
+fn launch_rejects_missing_explicit_path_before_connecting() {
+    let assert = tv()
+        .env("TV_CDP_PORT", "9")
+        .args(["launch", "--path", "target/does-not-exist-tradingview"])
+        .assert()
+        .failure()
+        .code(1);
+    let stderr = String::from_utf8(assert.get_output().stderr.clone()).unwrap();
+    let value: Value = serde_json::from_str(&stderr).unwrap();
+    assert_eq!(value["success"], false);
+    assert_eq!(value["command"], "launch");
+    assert_eq!(value["error"]["kind"], "validation");
+}
+
+#[test]
+fn launch_rejects_port_zero_before_connecting() {
+    let assert = tv()
+        .args(["launch", "--port", "0"])
+        .assert()
+        .failure()
+        .code(1);
+    let stderr = String::from_utf8(assert.get_output().stderr.clone()).unwrap();
+    let value: Value = serde_json::from_str(&stderr).unwrap();
+    assert_eq!(value["success"], false);
+    assert_eq!(value["command"], "launch");
+    assert_eq!(value["error"]["kind"], "validation");
 }
 
 #[test]

@@ -6,6 +6,7 @@ mod data_depth;
 mod diagnostics;
 mod drawing;
 mod indicator;
+mod launch;
 mod layout;
 mod market;
 mod pine;
@@ -37,6 +38,7 @@ pub use drawing::{
 pub use indicator::{
     indicator_add, indicator_remove, indicator_set, indicator_toggle, parse_indicator_inputs,
 };
+pub use launch::{LaunchRequest, launch};
 pub use layout::{
     pane_focus, pane_layout, pane_list, pane_symbol, validate_pane_layout, watchlist_add,
     watchlist_get, watchlist_remove,

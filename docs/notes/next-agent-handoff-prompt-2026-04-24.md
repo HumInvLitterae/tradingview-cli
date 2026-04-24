@@ -36,12 +36,14 @@ Keep the Rust-native `tv` CLI reliable and useful as a replacement path for prac
 - `tab list/switch/new/close` is implemented as a bounded tab lifecycle surface; `tab list` preserves chart-target fields and adds app-tab fields, while `tab close` requires an explicit app-tab index and refuses to close the final app tab
 - `replay start/step/stop/status/autoplay/trade` is implemented as a bounded replay lifecycle surface
 - `stream quote/bars/values/lines/labels/tables/all` is implemented as read-only JSONL polling for shell and external monitoring workflows
+- `launch` is implemented as a bounded local process-control command; it is no-kill by default, treats an already responding CDP endpoint as success, and requires explicit `--kill-existing` for process termination
 
 ## Current v1 surface
 
 The implemented commands are:
 
 - `tv status`
+- `tv launch [--port <PORT>] [--path <PATH>] [--kill-existing]`
 - `tv state`
 - `tv info`
 - `tv search <QUERY>`
@@ -158,7 +160,6 @@ Focus first on migration readiness:
 
 Deferred old CLI surfaces that need planned implementation or an explicit exclusion decision:
 
-- whether launch automation belongs in this CLI or should remain external runbook material
 - larger old CLI surfaces such as alert bulk deletion/editing, draw clear, Pine raw-compile/save helpers, and UI automation
 
 ## Validation baseline
