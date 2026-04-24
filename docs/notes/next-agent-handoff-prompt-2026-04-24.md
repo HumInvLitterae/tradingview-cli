@@ -31,13 +31,13 @@ Keep the Rust-native `tv` CLI reliable and useful as a replacement path for prac
 - GitHub Actions CI is configured for the automated Rust baseline
 - `pane layout`, `pane focus`, and `pane symbol` are implemented as explicit chart mutations using TradingView's chart widget collection
 - `indicator add/remove/toggle/set/get` is implemented as a complete chart-local lifecycle mutation and read surface
-- `draw shape/list/get/remove` is implemented as a chart-local drawing lifecycle surface; `draw clear` remains deferred as bulk destructive cleanup
+- `draw shape/list/get/remove/clear` is implemented as a chart-local drawing lifecycle surface; `draw clear` includes a read-only dry-run and post-clear verification
 - `pine get/set/new/open/save/compile/analyze/check/errors/console/list` is implemented as a Pine surface; `set`, `new`, and `open` change only the editor buffer, `save` explicitly persists the current saved script to TradingView cloud state, `compile` compiles the current buffer, may add or update a chart-local study, and refuses save-related buttons, while `analyze` and `check` validate source without CDP editor mutation. Named new-save for unsaved scripts is deferred because current live smoke showed the TradingView naming dialog can be outside the CDP page target.
 - `tab list/switch/new/close` is implemented as a bounded tab lifecycle surface; `tab list` preserves chart-target fields and adds app-tab fields, while `tab close` requires an explicit app-tab index and refuses to close the final app tab
 - `replay start/step/stop/status/autoplay/trade` is implemented as a bounded replay lifecycle surface
 - `stream quote/bars/values/lines/labels/tables/all` is implemented as read-only JSONL polling for shell and external monitoring workflows
 - `launch` is implemented as a bounded local process-control command; it is no-kill by default, treats an already responding CDP endpoint as success, and requires explicit `--kill-existing` for process termination
-- remaining deferred surfaces have been audited in `docs/notes/remaining-deferred-surface-audit-2026-04-25.md`; `pine raw-compile`, bulk destructive commands, and generic UI automation remain deferred
+- remaining deferred surfaces have been audited in `docs/notes/remaining-deferred-surface-audit-2026-04-25.md`; `pine raw-compile`, alert bulk destructive commands, alert edit/pause/resume, and generic UI automation remain deferred
 
 ## Current v1 surface
 
@@ -76,6 +76,7 @@ The implemented commands are:
 - `tv draw list`
 - `tv draw get <ENTITY_ID>`
 - `tv draw remove <ENTITY_ID>`
+- `tv draw clear [--dry-run]`
 - `tv pine get`
 - `tv pine set [--file <PATH>]`
 - `tv pine new [indicator|strategy|library]`
@@ -163,7 +164,7 @@ Focus first on migration readiness:
 
 Deferred old CLI surfaces that need planned implementation or an explicit exclusion decision:
 
-- larger old CLI surfaces such as alert bulk deletion/editing, draw clear, Pine raw-compile helpers, and UI automation
+- larger old CLI surfaces such as alert bulk deletion/editing, Pine raw-compile helpers, and UI automation
 
 ## Validation baseline
 

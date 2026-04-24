@@ -16,7 +16,7 @@ Rust now implements both `tv watchlist add <SYMBOL>` and `tv watchlist remove <S
 
 `indicator add/remove/toggle/set/get` is now implemented as a complete chart-local lifecycle surface. `indicator add` returns the new `entity_id`, `indicator remove` removes by `entity_id`, `indicator toggle` can hide or show that same study, `indicator set` changes known input ids, and `indicator get` exposes the same practical indicator information as `data indicator`.
 
-`draw shape/list/get/remove` is now implemented as a chart-local drawing lifecycle surface. `draw shape` returns the new drawing `entity_id`, `draw get` inspects that one drawing, and `draw remove` removes that exact drawing by id. `draw clear` remains deferred because it removes all chart drawings and has a much larger blast radius.
+`draw shape/list/get/remove/clear` is now implemented as a chart-local drawing lifecycle surface. `draw shape` returns the new drawing `entity_id`, `draw get` inspects that one drawing, `draw remove` removes that exact drawing by id, and `draw clear` removes all chart-local drawings only after a `--dry-run`-capable preflight and post-clear verification. Live smoke must not use `draw clear` when pre-existing user drawings are present.
 
 `tab list/switch/new/close` is now implemented as a bounded tab lifecycle surface. `tab list` reads existing TradingView chart targets from the CDP target list and also reports TradingView Desktop app tabs from the tab-strip DOM, `tab switch` activates one existing chart target by index, `tab new` opens a new app tab from an explicit or unambiguous source chart tab, and `tab close` closes an explicit app-tab index. `tab close` refuses to close the final TradingView app tab. This is intentionally safer than the old current-tab close behavior.
 
@@ -34,13 +34,12 @@ The following are intentionally not next by default:
 
 - `alert delete --all`
 - alert edit, pause, and resume commands
-- drawing `clear`
 - generic UI automation commands
 
 These commands can remove many account or chart resources or depend heavily on localized UI state. They need stronger safety design than simple old CLI parity.
 
 ## Recommended next candidate
 
-No immediate asymmetric lifecycle gap is known in the implemented Rust CLI after `watchlist remove`.
+No immediate asymmetric lifecycle gap is known in the implemented Rust CLI after `watchlist remove` and `draw clear`.
 
-The next mutation surface should still be checked against this note before implementation. Account-level or destructive commands such as bulk alert deletion, drawing clear, and generic UI automation remain high-risk and need their own ExecPlan.
+The next mutation surface should still be checked against this note before implementation. Account-level or destructive commands such as bulk alert deletion and generic UI automation remain high-risk and need their own ExecPlan.

@@ -201,6 +201,11 @@ pub enum DrawingCommand {
     Get { entity_id: String },
     #[command(about = "Remove a drawing by entity ID")]
     Remove { entity_id: String },
+    #[command(about = "Clear all drawings from the chart")]
+    Clear {
+        #[arg(long)]
+        dry_run: bool,
+    },
 }
 
 #[derive(Debug, Subcommand)]

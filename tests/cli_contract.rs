@@ -184,7 +184,7 @@ fn indicator_help_lists_lifecycle_subcommands() {
 }
 
 #[test]
-fn draw_help_lists_non_bulk_lifecycle_subcommands() {
+fn draw_help_lists_lifecycle_subcommands() {
     tv().args(["draw", "--help"])
         .assert()
         .success()
@@ -192,7 +192,7 @@ fn draw_help_lists_non_bulk_lifecycle_subcommands() {
         .stdout(predicate::str::contains("list"))
         .stdout(predicate::str::contains("get"))
         .stdout(predicate::str::contains("remove"))
-        .stdout(predicate::str::contains("clear").not());
+        .stdout(predicate::str::contains("clear"));
 
     tv().args(["draw", "shape", "--help"])
         .assert()
@@ -201,6 +201,11 @@ fn draw_help_lists_non_bulk_lifecycle_subcommands() {
         .stdout(predicate::str::contains("--price"))
         .stdout(predicate::str::contains("--time"))
         .stdout(predicate::str::contains("--overrides"));
+
+    tv().args(["draw", "clear", "--help"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("--dry-run"));
 }
 
 #[test]
@@ -613,6 +618,8 @@ fn read_utilities_attempt_connection_when_cdp_is_unavailable() {
         vec!["draw", "list"],
         vec!["draw", "get", "shape-id"],
         vec!["draw", "remove", "shape-id"],
+        vec!["draw", "clear", "--dry-run"],
+        vec!["draw", "clear"],
         vec!["pine", "get"],
         vec!["pine", "compile"],
         vec!["pine", "save"],

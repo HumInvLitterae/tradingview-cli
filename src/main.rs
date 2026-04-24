@@ -395,6 +395,10 @@ async fn dispatch(command: Command) -> Result<serde_json::Value, AppError> {
                 let mut runtime = connect_runtime().await?;
                 ops::drawing_remove(&mut runtime, &entity_id).await
             }
+            DrawingCommand::Clear { dry_run } => {
+                let mut runtime = connect_runtime().await?;
+                ops::drawing_clear(&mut runtime, dry_run).await
+            }
         },
         Command::Pine { command } => match command {
             PineCommand::Get => {
