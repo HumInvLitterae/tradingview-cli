@@ -119,7 +119,7 @@ After edits, run:
     cargo clippy --all-targets --all-features -- -D warnings
     cargo test
     git diff --check
-    git grep -nE '(/Users/|C:\\)' -- README.md AGENTS.md docs .agents/skills || true
+    git grep -nE '(/[U]sers/|[C]:\\)' -- README.md AGENTS.md docs .agents/skills || true
 
 For live smoke with TradingView Desktop running and CDP enabled, run:
 
@@ -169,7 +169,7 @@ Final automated baseline:
     cargo clippy --all-targets --all-features -- -D warnings
     cargo test
     git diff --check
-    git grep -nE '(/Users/|C:\\)' -- README.md AGENTS.md docs .agents/skills || true
+    git grep -nE '(/[U]sers/|[C]:\\)' -- README.md AGENTS.md docs .agents/skills || true
 
 All commands succeeded. The tracked-doc local path scan printed no matches.
 

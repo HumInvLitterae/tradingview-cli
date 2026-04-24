@@ -21,6 +21,7 @@ fn help_lists_v1_commands() {
         .stdout(predicate::str::contains("alert"))
         .stdout(predicate::str::contains("indicator"))
         .stdout(predicate::str::contains("draw"))
+        .stdout(predicate::str::contains("pine"))
         .stdout(predicate::str::contains("tab"))
         .stdout(predicate::str::contains("replay"))
         .stdout(predicate::str::contains("data"))
@@ -33,7 +34,7 @@ fn help_lists_v1_commands() {
 
 #[test]
 fn unknown_command_exits_with_usage_error() {
-    let assert = tv().arg("pine").assert().failure().code(1);
+    let assert = tv().arg("unknown-command").assert().failure().code(1);
     let stderr = String::from_utf8(assert.get_output().stderr.clone()).unwrap();
     let value: Value = serde_json::from_str(&stderr).unwrap();
     assert_eq!(value["success"], false);
@@ -158,6 +159,20 @@ fn draw_help_lists_non_bulk_lifecycle_subcommands() {
         .stdout(predicate::str::contains("--price"))
         .stdout(predicate::str::contains("--time"))
         .stdout(predicate::str::contains("--overrides"));
+}
+
+#[test]
+fn pine_help_lists_read_subcommands_only() {
+    tv().args(["pine", "--help"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("get"))
+        .stdout(predicate::str::contains("errors"))
+        .stdout(predicate::str::contains("console"))
+        .stdout(predicate::str::contains("list"))
+        .stdout(predicate::str::contains("set").not())
+        .stdout(predicate::str::contains("compile").not())
+        .stdout(predicate::str::contains("open").not());
 }
 
 #[test]
@@ -291,6 +306,10 @@ fn read_utilities_attempt_connection_when_cdp_is_unavailable() {
         vec!["draw", "list"],
         vec!["draw", "get", "shape-id"],
         vec!["draw", "remove", "shape-id"],
+        vec!["pine", "get"],
+        vec!["pine", "errors"],
+        vec!["pine", "console"],
+        vec!["pine", "list"],
         vec!["tab", "list"],
         vec!["tab", "switch", "0"],
         vec!["tab", "new"],

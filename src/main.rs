@@ -11,7 +11,7 @@ use cdp::CdpClient;
 use clap::{Parser, error::ErrorKind as ClapErrorKind};
 use cli::{
     AlertCommand, Cli, Command, DataCommand, DrawingCommand, IndicatorCommand, PaneCommand,
-    ReplayCommand, TabCommand, WatchlistCommand,
+    PineCommand, ReplayCommand, TabCommand, WatchlistCommand,
 };
 use error::{AppError, ErrorKind};
 use output::{ErrorBody, ErrorEnvelope, SuccessEnvelope};
@@ -371,6 +371,15 @@ async fn dispatch(command: Command) -> Result<serde_json::Value, AppError> {
                 ops::drawing_remove(&mut runtime, &entity_id).await
             }
         },
+        Command::Pine { command } => {
+            let mut runtime = connect_runtime().await?;
+            match command {
+                PineCommand::Get => ops::pine_get(&mut runtime).await,
+                PineCommand::Errors => ops::pine_errors(&mut runtime).await,
+                PineCommand::Console => ops::pine_console(&mut runtime).await,
+                PineCommand::List => ops::pine_list(&mut runtime).await,
+            }
+        }
         Command::Data { command } => {
             let mut runtime = connect_runtime().await?;
             match command {

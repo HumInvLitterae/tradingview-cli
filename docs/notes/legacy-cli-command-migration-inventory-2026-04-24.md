@@ -44,6 +44,10 @@ Do not use `explicitly_not_planned` for ordinary missing old CLI commands unless
 - `draw list`
 - `draw get`
 - `draw remove`
+- `pine get`
+- `pine errors`
+- `pine console`
+- `pine list`
 - `tab list`
 - `tab switch`
 - `tab new`
@@ -81,6 +85,8 @@ No high-priority planned read-only backlog remains after the diagnostic read com
 
 `tab close <INDEX>` intentionally differs from the old JavaScript CLI's current-tab close command. Rust requires an explicit TradingView app-tab index and refuses to close the final TradingView app tab. `tab list` preserves the old practical chart-target list while also exposing `app_tabs` so newly opened blank app tabs can be identified and cleaned up. This preserves practical tab lifecycle behavior while reducing accidental destructive session changes.
 
+`pine get`, `pine errors`, and `pine console` may open the Pine Editor panel to make Monaco available, but they do not edit source, save, compile, add studies, or open saved scripts. `pine list` reads saved script metadata through TradingView's pine-facade endpoint from the current page session.
+
 ## Deferred larger surfaces
 
 These old CLI surfaces are not first in line, but they are not automatically out of scope:
@@ -88,7 +94,8 @@ These old CLI surfaces are not first in line, but they are not automatically out
 - `launch`
 - `alert delete --all`
 - alert editing / pause / resume commands
-- Pine editor commands
+- Pine editor mutation / compile commands: `pine set`, `pine compile`, `pine raw-compile`, `pine save`, `pine new`, `pine open`
+- Pine offline/server helper commands: `pine analyze`, `pine check`
 - `draw clear`
 - stream commands
 - UI automation commands

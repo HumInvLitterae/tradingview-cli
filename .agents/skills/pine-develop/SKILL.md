@@ -9,7 +9,9 @@ Use this skill for Pine Script assistance around TradingView while staying hones
 
 ## Current Reality
 
-The Rust `tv` CLI does not currently pull scripts from the Pine editor, push scripts into TradingView, compile Pine, save scripts in TradingView, or open the Pine editor. Those old MCP workflow capabilities remain migration backlog, not completed CLI features.
+The Rust `tv` CLI can now read from the Pine Editor with `tv pine get`, `tv pine errors`, and `tv pine console`, and can list saved scripts with `tv pine list`.
+
+The Rust `tv` CLI still does not push scripts into TradingView, compile Pine, save scripts in TradingView, create new Pine scripts, open saved Pine scripts, run offline Pine analysis, or run server-side Pine checks. Those old MCP workflow capabilities remain migration backlog, not completed CLI features.
 
 ## Useful CLI Context
 
@@ -17,6 +19,7 @@ The Rust `tv` CLI does not currently pull scripts from the Pine editor, push scr
 2. Use `tv info`, `tv quote`, and `tv ohlcv --summary` to gather market context for a script idea.
 3. Use `tv values` to inspect already-visible study values when that helps validate behavior.
 4. Use `tv screenshot --region chart --output <PATH>` when visual evidence helps discuss the script.
+5. Use `tv pine get`, `tv pine errors`, `tv pine console`, and `tv pine list` for read-only Pine Editor context when TradingView Desktop is available.
 
 ## Pine Work
 

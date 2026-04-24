@@ -68,6 +68,11 @@ pub enum Command {
         #[command(subcommand)]
         command: DrawingCommand,
     },
+    #[command(about = "Pine Script read tools")]
+    Pine {
+        #[command(subcommand)]
+        command: PineCommand,
+    },
     #[command(about = "Advanced read-only data tools")]
     Data {
         #[command(subcommand)]
@@ -180,6 +185,18 @@ pub enum DrawingCommand {
     Get { entity_id: String },
     #[command(about = "Remove a drawing by entity ID")]
     Remove { entity_id: String },
+}
+
+#[derive(Debug, Subcommand)]
+pub enum PineCommand {
+    #[command(about = "Get current Pine Script source from the editor")]
+    Get,
+    #[command(about = "Get Pine Script editor diagnostics")]
+    Errors,
+    #[command(about = "Get Pine Script console output")]
+    Console,
+    #[command(about = "List saved Pine Scripts")]
+    List,
 }
 
 #[derive(Debug, Subcommand)]
@@ -297,6 +314,7 @@ impl Command {
             Self::Alert { .. } => "alert",
             Self::Indicator { .. } => "indicator",
             Self::Draw { .. } => "draw",
+            Self::Pine { .. } => "pine",
             Self::Data { .. } => "data",
             Self::Pane { .. } => "pane",
             Self::Tab { .. } => "tab",
