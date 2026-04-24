@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use clap::{Parser, Subcommand};
 
 #[derive(Debug, Parser)]
@@ -191,6 +193,11 @@ pub enum DrawingCommand {
 pub enum PineCommand {
     #[command(about = "Get current Pine Script source from the editor")]
     Get,
+    #[command(about = "Set Pine Script source in the editor")]
+    Set {
+        #[arg(long, short)]
+        file: Option<PathBuf>,
+    },
     #[command(about = "Get Pine Script editor diagnostics")]
     Errors,
     #[command(about = "Get Pine Script console output")]

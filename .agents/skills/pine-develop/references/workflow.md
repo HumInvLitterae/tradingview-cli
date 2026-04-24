@@ -11,7 +11,7 @@ The original pine-develop skill supported a TradingView Pine Script loop: pull t
 | Chart context | `tv state`, `tv info`, `tv quote`, `tv ohlcv --summary` |
 | Visible chart evidence | `tv values`, `tv screenshot --region chart --output <PATH>` |
 | Pull Pine script from editor | `tv pine get` |
-| Push Pine script to editor | Not implemented |
+| Push Pine script to editor | `tv pine set --file <PATH>` or stdin |
 | Compile/check Pine script in TradingView | Not implemented |
 | Save/open Pine script in TradingView | Not implemented |
 | Read Pine editor diagnostics | `tv pine errors` |
@@ -20,6 +20,6 @@ The original pine-develop skill supported a TradingView Pine Script loop: pull t
 
 ## Working Pattern Today
 
-Use the CLI for chart context, visual evidence, and Pine read context. Write or review Pine Script in normal local files, and clearly say when TradingView compile verification has not been performed.
+Use the CLI for chart context, visual evidence, Pine read context, and editor-buffer source replacement. Write or review Pine Script in normal local files, push it to the Pine Editor with `tv pine set` when useful, and clearly say when TradingView compile verification has not been performed.
 
-Pine editor automation is migration backlog. The MCP server itself is not planned.
+Pine compile, save, new/open, offline analyze, and server-side check automation remain migration backlog. The MCP server itself is not planned.

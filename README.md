@@ -116,6 +116,7 @@ cargo run -- draw get <ENTITY_ID>
 cargo run -- draw remove <ENTITY_ID>
 cargo run -- pine list
 cargo run -- pine get
+cargo run -- pine set --file script.pine
 cargo run -- pine errors
 cargo run -- pine console
 cargo run -- tab list
@@ -192,6 +193,7 @@ Exit codes are:
 - an indicator command ExecPlan and implementation slice
 - a drawing command ExecPlan and implementation slice
 - a Pine read command ExecPlan and implementation slice
+- a Pine source set ExecPlan and implementation slice
 - a tab list/switch ExecPlan and implementation slice
 - a tab new/close ExecPlan and implementation slice
 - a replay status ExecPlan and implementation slice
@@ -214,15 +216,15 @@ Read these in order:
 3. `docs/notes/rust-cli-contract-migration-2026-04-24.md`
 4. `docs/notes/legacy-cli-command-migration-inventory-2026-04-24.md`
 5. `docs/notes/command-lifecycle-balance-audit-2026-04-24.md`
-6. `docs/plans/tradingview-cli-pine-read-v1-24.md`
-7. `docs/plans/tradingview-cli-replay-trade-v1-22.md`
-8. `docs/plans/tradingview-cli-tab-new-close-v1-23.md`
-9. `docs/plans/tradingview-cli-replay-autoplay-v1-21.md`
-10. `docs/plans/tradingview-cli-replay-basic-controls-v1-20.md`
-11. `docs/plans/tradingview-cli-replay-status-v1-19.md`
-12. `docs/plans/tradingview-cli-tab-list-switch-v1-18.md`
-13. `docs/plans/tradingview-cli-drawing-commands-v1-17.md`
-14. `docs/plans/tradingview-cli-indicator-commands-v1-16.md`
+6. `docs/plans/tradingview-cli-pine-set-v1-25.md`
+7. `docs/plans/tradingview-cli-pine-read-v1-24.md`
+8. `docs/plans/tradingview-cli-replay-trade-v1-22.md`
+9. `docs/plans/tradingview-cli-tab-new-close-v1-23.md`
+10. `docs/plans/tradingview-cli-replay-autoplay-v1-21.md`
+11. `docs/plans/tradingview-cli-replay-basic-controls-v1-20.md`
+12. `docs/plans/tradingview-cli-replay-status-v1-19.md`
+13. `docs/plans/tradingview-cli-tab-list-switch-v1-18.md`
+14. `docs/plans/tradingview-cli-drawing-commands-v1-17.md`
 15. `docs/plans/tradingview-cli-watchlist-remove-v1-15.md`
 16. `docs/plans/tradingview-cli-alert-delete-v1-14.md`
 17. `docs/plans/tradingview-cli-pane-mutation-v1-13.md`
@@ -242,4 +244,4 @@ Read these in order:
 31. `docs/notes/tradingview-mcp-investigation-2026-04-24.md`
 32. `docs/plans/tradingview-cli-bootstrap-and-bridge-replacement.md`
 
-The first capability and boundary research milestone, the Rust v1 implementation milestone, the first read/provider migration slice, the read utilities migration slice, the chart-region screenshot slice, the diagnostic read commands slice, the advanced data reads slice, the chart type slice, the DOM-dependent data depth slice, the read-only alert list slice, the watchlist add slice, the watchlist remove slice, the alert create slice, the pane mutation slice, the alert delete slice, the indicator command slice, the drawing command slice, the Pine read slice, the tab list/switch slice, the tab new/close slice, the replay status slice, the replay basic controls slice, the replay autoplay slice, the replay trade slice, the command lifecycle balance audit, the operation-layer module refactor, the data-operation module refactor, and the development guideline pass are complete. The next milestone is migration readiness: keep the improved Rust JSON contract documented, preserve information compatibility for migrated commands, and choose any deferred old CLI surfaces only after evidence shows they belong in this CLI.
+The first capability and boundary research milestone, the Rust v1 implementation milestone, the first read/provider migration slice, the read utilities migration slice, the chart-region screenshot slice, the diagnostic read commands slice, the advanced data reads slice, the chart type slice, the DOM-dependent data depth slice, the read-only alert list slice, the watchlist add slice, the watchlist remove slice, the alert create slice, the pane mutation slice, the alert delete slice, the indicator command slice, the drawing command slice, the Pine read slice, the Pine source set slice, the tab list/switch slice, the tab new/close slice, the replay status slice, the replay basic controls slice, the replay autoplay slice, the replay trade slice, the command lifecycle balance audit, the operation-layer module refactor, the data-operation module refactor, and the development guideline pass are complete. The next milestone is migration readiness: keep the improved Rust JSON contract documented, preserve information compatibility for migrated commands, and choose any deferred old CLI surfaces only after evidence shows they belong in this CLI.

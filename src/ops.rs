@@ -41,7 +41,7 @@ pub use layout::{
     watchlist_get, watchlist_remove,
 };
 pub use market::{ohlcv_bars, ohlcv_summary, quote, symbol_search};
-pub use pine::{pine_console, pine_errors, pine_get, pine_list};
+pub use pine::{pine_console, pine_errors, pine_get, pine_list, pine_set};
 pub use replay::{
     replay_autoplay, replay_start, replay_status, replay_step, replay_stop, replay_trade,
     validate_replay_autoplay_speed, validate_replay_date, validate_replay_trade_action,

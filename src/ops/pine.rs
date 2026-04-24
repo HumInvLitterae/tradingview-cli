@@ -67,6 +67,43 @@ pub async fn pine_get(runtime: &mut impl RuntimeEvaluator) -> Result<Value, AppE
     }))
 }
 
+pub async fn pine_set(
+    runtime: &mut impl RuntimeEvaluator,
+    source: &str,
+    input_source: &str,
+) -> Result<Value, AppError> {
+    let open_state = ensure_pine_editor_open(runtime).await?;
+    let value = runtime
+        .evaluate(&pine_set_source_expression(source), false)
+        .await?;
+    let observed_source = value.as_str().ok_or_else(|| {
+        AppError::new(
+            ErrorKind::InternalApiUnavailable,
+            "Monaco editor found but set source verification was not a string",
+        )
+        .with_details(value.clone())
+    })?;
+
+    if observed_source != source {
+        return Err(AppError::new(
+            ErrorKind::InternalApiUnavailable,
+            "Pine source set verification failed",
+        )
+        .with_details(json!({
+            "expected_char_count": source.chars().count(),
+            "observed_char_count": observed_source.chars().count(),
+        })));
+    }
+
+    Ok(json!({
+        "lines_set": source.split('\n').count(),
+        "char_count": source.chars().count(),
+        "input_source": input_source,
+        "editor_open_before": open_state.editor_open_before,
+        "opened_editor": open_state.opened_editor,
+    }))
+}
+
 pub async fn pine_errors(runtime: &mut impl RuntimeEvaluator) -> Result<Value, AppError> {
     let open_state = ensure_pine_editor_open(runtime).await?;
     let errors = runtime
@@ -190,6 +227,18 @@ fn normalize_array(value: Value, error_message: &str) -> Result<Vec<Value>, AppE
     value.as_array().cloned().ok_or_else(|| {
         AppError::new(ErrorKind::InternalApiUnavailable, error_message).with_details(value)
     })
+}
+
+fn pine_set_source_expression(source: &str) -> String {
+    let source = serde_json::to_string(source).expect("string serialization should not fail");
+    with_monaco(&format!(
+        r#"
+var m = __FIND_MONACO__;
+if (!m) return null;
+m.editor.setValue({source});
+return m.editor.getValue();
+"#
+    ))
 }
 
 const PINE_GET_SOURCE_EXPRESSION: &str = r#"
@@ -318,6 +367,53 @@ mod tests {
         assert_eq!(result["editor_open_before"], false);
         assert_eq!(result["opened_editor"], true);
         assert!(runtime.evaluated[1].0.contains("activateScriptEditorTab"));
+    }
+
+    #[tokio::test]
+    async fn pine_set_updates_source_and_returns_counts() {
+        let source = "//@version=6\nindicator(\"Quoted \\\"X\\\"\")\nplot(close)";
+        let mut runtime = FakeRuntime::new([json!(true), json!(source)]);
+
+        let result = pine_set(&mut runtime, source, "stdin").await.unwrap();
+
+        assert_eq!(result["lines_set"], 3);
+        assert_eq!(result["char_count"], source.chars().count());
+        assert_eq!(result["input_source"], "stdin");
+        assert_eq!(result["editor_open_before"], true);
+        assert_eq!(result["opened_editor"], false);
+        assert!(runtime.evaluated[1].0.contains("setValue"));
+        let serialized_source = serde_json::to_string(source).unwrap();
+        assert!(runtime.evaluated[1].0.contains(&serialized_source));
+    }
+
+    #[tokio::test]
+    async fn pine_set_opens_editor_when_needed() {
+        let mut runtime = FakeRuntime::new([
+            json!(false),
+            json!(true),
+            json!(false),
+            json!(true),
+            json!("plot(close)"),
+        ]);
+
+        let result = pine_set(&mut runtime, "plot(close)", "file").await.unwrap();
+
+        assert_eq!(result["lines_set"], 1);
+        assert_eq!(result["input_source"], "file");
+        assert_eq!(result["editor_open_before"], false);
+        assert_eq!(result["opened_editor"], true);
+    }
+
+    #[tokio::test]
+    async fn pine_set_errors_when_verification_differs() {
+        let mut runtime = FakeRuntime::new([json!(true), json!("plot(open)")]);
+
+        let error = pine_set(&mut runtime, "plot(close)", "stdin")
+            .await
+            .unwrap_err();
+
+        assert_eq!(error.kind, ErrorKind::InternalApiUnavailable);
+        assert_eq!(error.message, "Pine source set verification failed");
     }
 
     #[tokio::test]

@@ -5,7 +5,10 @@ mod ops;
 mod output;
 mod transport;
 
-use std::process::ExitCode;
+use std::{
+    io::{self, IsTerminal, Read},
+    process::ExitCode,
+};
 
 use cdp::CdpClient;
 use clap::{Parser, error::ErrorKind as ClapErrorKind};
@@ -371,15 +374,29 @@ async fn dispatch(command: Command) -> Result<serde_json::Value, AppError> {
                 ops::drawing_remove(&mut runtime, &entity_id).await
             }
         },
-        Command::Pine { command } => {
-            let mut runtime = connect_runtime().await?;
-            match command {
-                PineCommand::Get => ops::pine_get(&mut runtime).await,
-                PineCommand::Errors => ops::pine_errors(&mut runtime).await,
-                PineCommand::Console => ops::pine_console(&mut runtime).await,
-                PineCommand::List => ops::pine_list(&mut runtime).await,
+        Command::Pine { command } => match command {
+            PineCommand::Get => {
+                let mut runtime = connect_runtime().await?;
+                ops::pine_get(&mut runtime).await
             }
-        }
+            PineCommand::Set { file } => {
+                let (source, input_source) = read_pine_source(file.as_deref())?;
+                let mut runtime = connect_runtime().await?;
+                ops::pine_set(&mut runtime, &source, input_source).await
+            }
+            PineCommand::Errors => {
+                let mut runtime = connect_runtime().await?;
+                ops::pine_errors(&mut runtime).await
+            }
+            PineCommand::Console => {
+                let mut runtime = connect_runtime().await?;
+                ops::pine_console(&mut runtime).await
+            }
+            PineCommand::List => {
+                let mut runtime = connect_runtime().await?;
+                ops::pine_list(&mut runtime).await
+            }
+        },
         Command::Data { command } => {
             let mut runtime = connect_runtime().await?;
             match command {
@@ -523,6 +540,43 @@ fn validate_finite(value: f64, label: &str) -> Result<(), AppError> {
             format!("{label} must be a finite number"),
         ))
     }
+}
+
+fn read_pine_source(file: Option<&std::path::Path>) -> Result<(String, &'static str), AppError> {
+    let (source, input_source) = if let Some(path) = file {
+        let source = std::fs::read_to_string(path).map_err(|err| {
+            AppError::new(
+                ErrorKind::Validation,
+                format!("Failed to read Pine source file: {err}"),
+            )
+        })?;
+        (source, "file")
+    } else {
+        let mut stdin = io::stdin();
+        if stdin.is_terminal() {
+            return Err(AppError::new(
+                ErrorKind::Validation,
+                "Pine source required via stdin or --file",
+            ));
+        }
+        let mut source = String::new();
+        stdin.read_to_string(&mut source).map_err(|err| {
+            AppError::new(
+                ErrorKind::Validation,
+                format!("Failed to read Pine source from stdin: {err}"),
+            )
+        })?;
+        (source, "stdin")
+    };
+
+    if source.trim().is_empty() {
+        return Err(AppError::new(
+            ErrorKind::Validation,
+            "Pine source must not be empty",
+        ));
+    }
+
+    Ok((source, input_source))
 }
 
 fn print_json_stdout<T: serde::Serialize>(value: &T) {
