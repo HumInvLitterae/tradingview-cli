@@ -28,6 +28,9 @@ Do not use `explicitly_not_planned` for ordinary missing old CLI commands unless
 - `watchlist get`
 - `watchlist add`
 - `pane list`
+- `pane layout`
+- `pane focus`
+- `pane symbol`
 - `alert list`
 - `alert create`
 - `data indicator`
@@ -56,9 +59,6 @@ No high-priority planned read-only backlog remains after the diagnostic read com
 These old CLI surfaces are not first in line, but they are not automatically out of scope:
 
 - `launch`
-- `pane layout`
-- `pane focus`
-- `pane symbol`
 - Pine editor commands
 - drawing commands
 - replay commands

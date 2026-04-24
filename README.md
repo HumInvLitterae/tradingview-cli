@@ -91,6 +91,9 @@ cargo run -- range
 cargo run -- watchlist get
 cargo run -- watchlist add NASDAQ:AAPL
 cargo run -- pane list
+cargo run -- pane layout 2x2
+cargo run -- pane focus 0
+cargo run -- pane symbol 0 NASDAQ:AAPL
 cargo run -- alert list
 cargo run -- alert create --price 123.45 --condition crossing --message "Breakout"
 cargo run -- data strategy
@@ -149,6 +152,7 @@ Exit codes are:
 - a read-only alert list ExecPlan and implementation slice
 - a watchlist add ExecPlan and implementation slice
 - an alert create ExecPlan and implementation slice
+- a pane mutation ExecPlan and implementation slice
 - an operation-layer module refactor ExecPlan and implementation slice
 - a data-operation module refactor ExecPlan and implementation slice
 - a repo-local development guideline for module layout, style, and validation
@@ -162,20 +166,21 @@ Read these in order:
 2. `docs/notes/development-guidelines-2026-04-24.md`
 3. `docs/notes/rust-cli-contract-migration-2026-04-24.md`
 4. `docs/notes/legacy-cli-command-migration-inventory-2026-04-24.md`
-5. `docs/plans/tradingview-cli-alert-create-v1-12.md`
-6. `docs/plans/tradingview-cli-watchlist-add-v1-11.md`
-7. `docs/plans/tradingview-cli-data-module-refactor-v1-10.md`
-8. `docs/plans/tradingview-cli-alert-list-v1-9.md`
-9. `docs/plans/tradingview-cli-data-depth-v1-8.md`
-10. `docs/plans/tradingview-cli-ops-module-refactor-v1-7.md`
-11. `docs/plans/tradingview-cli-chart-type-v1-6.md`
-12. `docs/plans/tradingview-cli-advanced-data-reads-v1-5.md`
-13. `docs/plans/tradingview-cli-diagnostic-read-commands-v1-4.md`
-14. `docs/plans/tradingview-cli-chart-region-screenshot-v1-3.md`
-15. `docs/plans/tradingview-cli-read-utilities-v1-2.md`
-16. `docs/plans/tradingview-cli-read-provider-migration-v1-1.md`
-17. `docs/plans/tradingview-cli-rust-v1.md`
-18. `docs/notes/tradingview-mcp-investigation-2026-04-24.md`
-19. `docs/plans/tradingview-cli-bootstrap-and-bridge-replacement.md`
+5. `docs/plans/tradingview-cli-pane-mutation-v1-13.md`
+6. `docs/plans/tradingview-cli-alert-create-v1-12.md`
+7. `docs/plans/tradingview-cli-watchlist-add-v1-11.md`
+8. `docs/plans/tradingview-cli-data-module-refactor-v1-10.md`
+9. `docs/plans/tradingview-cli-alert-list-v1-9.md`
+10. `docs/plans/tradingview-cli-data-depth-v1-8.md`
+11. `docs/plans/tradingview-cli-ops-module-refactor-v1-7.md`
+12. `docs/plans/tradingview-cli-chart-type-v1-6.md`
+13. `docs/plans/tradingview-cli-advanced-data-reads-v1-5.md`
+14. `docs/plans/tradingview-cli-diagnostic-read-commands-v1-4.md`
+15. `docs/plans/tradingview-cli-chart-region-screenshot-v1-3.md`
+16. `docs/plans/tradingview-cli-read-utilities-v1-2.md`
+17. `docs/plans/tradingview-cli-read-provider-migration-v1-1.md`
+18. `docs/plans/tradingview-cli-rust-v1.md`
+19. `docs/notes/tradingview-mcp-investigation-2026-04-24.md`
+20. `docs/plans/tradingview-cli-bootstrap-and-bridge-replacement.md`
 
-The first capability and boundary research milestone, the Rust v1 implementation milestone, the first read/provider migration slice, the read utilities migration slice, the chart-region screenshot slice, the diagnostic read commands slice, the advanced data reads slice, the chart type slice, the DOM-dependent data depth slice, the read-only alert list slice, the watchlist add slice, the alert create slice, the operation-layer module refactor, the data-operation module refactor, and the development guideline pass are complete. The next milestone is migration readiness: keep the improved Rust JSON contract documented, preserve information compatibility for migrated commands, and choose any deferred old CLI surfaces only after evidence shows they belong in this CLI.
+The first capability and boundary research milestone, the Rust v1 implementation milestone, the first read/provider migration slice, the read utilities migration slice, the chart-region screenshot slice, the diagnostic read commands slice, the advanced data reads slice, the chart type slice, the DOM-dependent data depth slice, the read-only alert list slice, the watchlist add slice, the alert create slice, the pane mutation slice, the operation-layer module refactor, the data-operation module refactor, and the development guideline pass are complete. The next milestone is migration readiness: keep the improved Rust JSON contract documented, preserve information compatibility for migrated commands, and choose any deferred old CLI surfaces only after evidence shows they belong in this CLI.

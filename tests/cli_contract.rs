@@ -1,6 +1,6 @@
 use assert_cmd::Command;
 use predicates::prelude::*;
-use serde_json::Value;
+use serde_json::{Value, json};
 
 fn tv() -> Command {
     Command::cargo_bin("tv").expect("tv binary should build")
@@ -80,7 +80,10 @@ fn watchlist_and_pane_help_list_read_subcommands() {
     tv().args(["pane", "--help"])
         .assert()
         .success()
-        .stdout(predicate::str::contains("list"));
+        .stdout(predicate::str::contains("list"))
+        .stdout(predicate::str::contains("layout"))
+        .stdout(predicate::str::contains("focus"))
+        .stdout(predicate::str::contains("symbol"));
 }
 
 #[test]
@@ -161,6 +164,9 @@ fn read_utilities_attempt_connection_when_cdp_is_unavailable() {
             "crossing",
         ],
         vec!["pane", "list"],
+        vec!["pane", "layout", "s"],
+        vec!["pane", "focus", "0"],
+        vec!["pane", "symbol", "0", "NASDAQ:AAPL"],
     ] {
         let assert = tv()
             .env("TV_CDP_PORT", "9")
@@ -173,6 +179,27 @@ fn read_utilities_attempt_connection_when_cdp_is_unavailable() {
         assert_eq!(value["success"], false);
         assert_eq!(value["error"]["kind"], "connection");
     }
+}
+
+#[test]
+fn pane_layout_rejects_unknown_layout_before_connecting() {
+    let assert = tv()
+        .env("TV_CDP_PORT", "9")
+        .args(["pane", "layout", "banana"])
+        .assert()
+        .failure()
+        .code(1);
+    let stderr = String::from_utf8(assert.get_output().stderr.clone()).unwrap();
+    let value: Value = serde_json::from_str(&stderr).unwrap();
+    assert_eq!(value["success"], false);
+    assert_eq!(value["command"], "pane");
+    assert_eq!(value["error"]["kind"], "validation");
+    assert!(
+        value["error"]["details"]["supported"]
+            .as_array()
+            .expect("supported pane layouts should be listed")
+            .contains(&json!({"layout": "4", "layout_name": "2x2 grid"}))
+    );
 }
 
 #[test]

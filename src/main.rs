@@ -237,12 +237,31 @@ async fn dispatch(command: Command) -> Result<serde_json::Value, AppError> {
                 }
             }
         }
-        Command::Pane { command } => {
-            let mut runtime = connect_runtime().await?;
-            match command {
-                PaneCommand::List => ops::pane_list(&mut runtime).await,
+        Command::Pane { command } => match command {
+            PaneCommand::List => {
+                let mut runtime = connect_runtime().await?;
+                ops::pane_list(&mut runtime).await
             }
-        }
+            PaneCommand::Layout { layout } => {
+                ops::validate_pane_layout(&layout)?;
+                let mut runtime = connect_runtime().await?;
+                ops::pane_layout(&mut runtime, &layout).await
+            }
+            PaneCommand::Focus { index } => {
+                let mut runtime = connect_runtime().await?;
+                ops::pane_focus(&mut runtime, index).await
+            }
+            PaneCommand::Symbol { index, symbol } => {
+                if symbol.trim().is_empty() {
+                    return Err(AppError::new(
+                        ErrorKind::Validation,
+                        "Symbol must not be empty",
+                    ));
+                }
+                let mut runtime = connect_runtime().await?;
+                ops::pane_symbol(&mut runtime, index, &symbol).await
+            }
+        },
         Command::Screenshot { region, output } => {
             if !matches!(region.as_str(), "full" | "chart") {
                 return Err(AppError::new(

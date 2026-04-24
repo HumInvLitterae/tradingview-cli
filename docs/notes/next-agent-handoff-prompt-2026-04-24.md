@@ -25,6 +25,7 @@ Keep the Rust-native `tv` CLI reliable and useful as a replacement path for prac
 - `alert list` is implemented as a read-only internal API slice
 - `alert create` is implemented as an explicit account mutation; downstream workflow helpers remain outside the core CLI
 - `watchlist add` is implemented as an explicit operator mutation using DOM panel controls plus CDP input events
+- `pane layout`, `pane focus`, and `pane symbol` are implemented as explicit chart mutations using TradingView's chart widget collection
 
 ## Current v1 surface
 
@@ -46,6 +47,9 @@ The implemented commands are:
 - `tv watchlist get`
 - `tv watchlist add <SYMBOL>`
 - `tv pane list`
+- `tv pane layout <LAYOUT>`
+- `tv pane focus <INDEX>`
+- `tv pane symbol <INDEX> <SYMBOL>`
 - `tv alert list`
 - `tv alert create --price <NUMBER> [--condition <CONDITION>] [--message <TEXT>]`
 - `tv data indicator <ENTITY_ID>`
@@ -105,7 +109,7 @@ Focus first on migration readiness:
 Deferred old CLI surfaces that need planned implementation or an explicit exclusion decision:
 
 - whether launch automation belongs in this CLI or should remain external runbook material
-- larger old CLI surfaces such as pane mutation, alert deletion/editing, Pine, replay, stream, and UI automation
+- larger old CLI surfaces such as alert deletion/editing, Pine, replay, stream, and UI automation
 
 ## Validation baseline
 
@@ -118,4 +122,4 @@ cargo test
 git diff --check
 ```
 
-Manual smoke testing previously passed against a running TradingView Desktop CDP target for the earlier v1 command set. `alert create` has automated coverage but was not live-smoked in its implementation slice because it mutates account alerts.
+Manual smoke testing previously passed against a running TradingView Desktop CDP target for the earlier v1 command set. `alert create` was live-smoked with an explicit test alert after the user approved account mutation smoke testing.

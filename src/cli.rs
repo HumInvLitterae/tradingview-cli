@@ -63,7 +63,7 @@ pub enum Command {
         #[command(subcommand)]
         command: DataCommand,
     },
-    #[command(about = "Pane read tools")]
+    #[command(about = "Pane tools")]
     Pane {
         #[command(subcommand)]
         command: PaneCommand,
@@ -149,6 +149,12 @@ pub enum DataCommand {
 pub enum PaneCommand {
     #[command(about = "List all panes in the current layout")]
     List,
+    #[command(about = "Set the chart pane layout")]
+    Layout { layout: String },
+    #[command(about = "Focus a pane by zero-based index")]
+    Focus { index: usize },
+    #[command(about = "Set the symbol in a pane by zero-based index")]
+    Symbol { index: usize, symbol: String },
 }
 
 impl Command {
