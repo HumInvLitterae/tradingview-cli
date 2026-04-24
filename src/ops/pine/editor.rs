@@ -110,6 +110,116 @@ pub async fn pine_set(
     }))
 }
 
+pub fn validate_pine_script_type(script_type: &str) -> Result<&'static str, AppError> {
+    match script_type.trim().to_ascii_lowercase().as_str() {
+        "indicator" => Ok("indicator"),
+        "strategy" => Ok("strategy"),
+        "library" => Ok("library"),
+        _ => Err(AppError::new(
+            ErrorKind::Validation,
+            "Pine script type must be one of: indicator, strategy, library",
+        )
+        .with_details(json!({ "script_type": script_type }))),
+    }
+}
+
+pub async fn pine_new(
+    runtime: &mut impl RuntimeEvaluator,
+    script_type: &str,
+) -> Result<Value, AppError> {
+    let script_type = validate_pine_script_type(script_type)?;
+    let template = pine_template(script_type);
+    let open_state = ensure_pine_editor_open(runtime).await?;
+    let value = runtime
+        .evaluate(&pine_set_source_expression(template), false)
+        .await?;
+    let observed_source = value.as_str().ok_or_else(|| {
+        AppError::new(
+            ErrorKind::InternalApiUnavailable,
+            "Monaco editor found but new script verification was not a string",
+        )
+        .with_details(value.clone())
+    })?;
+
+    if observed_source != template {
+        return Err(AppError::new(
+            ErrorKind::InternalApiUnavailable,
+            "Pine new script verification failed",
+        )
+        .with_details(json!({
+            "expected_char_count": template.chars().count(),
+            "observed_char_count": observed_source.chars().count(),
+        })));
+    }
+
+    Ok(json!({
+        "type": script_type,
+        "action": "new_script_created",
+        "template": template,
+        "lines_set": template.split('\n').count(),
+        "char_count": template.chars().count(),
+        "editor_open_before": open_state.editor_open_before,
+        "opened_editor": open_state.opened_editor,
+    }))
+}
+
+pub async fn pine_open(runtime: &mut impl RuntimeEvaluator, name: &str) -> Result<Value, AppError> {
+    let open_state = ensure_pine_editor_open(runtime).await?;
+    let raw = runtime.evaluate(&pine_open_expression(name), true).await?;
+
+    if let Some(error) = raw.get("error").and_then(Value::as_str) {
+        let kind = match raw.get("kind").and_then(Value::as_str) {
+            Some("validation") => ErrorKind::Validation,
+            _ => ErrorKind::InternalApiUnavailable,
+        };
+        return Err(AppError::new(kind, error).with_details(raw));
+    }
+
+    let source = raw
+        .get("source_text")
+        .and_then(Value::as_str)
+        .ok_or_else(|| {
+            AppError::new(
+                ErrorKind::InternalApiUnavailable,
+                "Pine open payload did not include source text",
+            )
+            .with_details(raw.clone())
+        })?;
+    let script_name = raw
+        .get("name")
+        .and_then(Value::as_str)
+        .filter(|value| !value.trim().is_empty())
+        .ok_or_else(|| {
+            AppError::new(
+                ErrorKind::InternalApiUnavailable,
+                "Pine open payload did not include script name",
+            )
+            .with_details(raw.clone())
+        })?;
+    let script_id = raw
+        .get("script_id")
+        .and_then(Value::as_str)
+        .filter(|value| !value.trim().is_empty())
+        .ok_or_else(|| {
+            AppError::new(
+                ErrorKind::InternalApiUnavailable,
+                "Pine open payload did not include script id",
+            )
+            .with_details(raw.clone())
+        })?;
+
+    Ok(json!({
+        "name": script_name,
+        "script_id": script_id,
+        "version": raw.get("version").cloned().unwrap_or(Value::Null),
+        "lines": source.split('\n').count(),
+        "source": "internal_api",
+        "opened": true,
+        "editor_open_before": open_state.editor_open_before,
+        "opened_editor": open_state.opened_editor,
+    }))
+}
+
 pub async fn pine_compile(runtime: &mut impl RuntimeEvaluator) -> Result<Value, AppError> {
     let open_state = ensure_pine_editor_open(runtime).await?;
     let studies_before = pine_study_count(runtime).await?;
@@ -345,6 +455,75 @@ var m = __FIND_MONACO__;
 if (!m) return null;
 m.editor.setValue({source});
 return m.editor.getValue();
+"#
+    ))
+}
+
+fn pine_template(script_type: &str) -> &'static str {
+    match script_type {
+        "strategy" => "//@version=6\nstrategy(\"My strategy\", overlay=true)\n",
+        "library" => {
+            "//@version=6\n// @description TODO: add library description here\nlibrary(\"MyLibrary\")\n"
+        }
+        _ => "//@version=6\nindicator(\"My script\")\nplot(close)",
+    }
+}
+
+fn pine_open_expression(name: &str) -> String {
+    let target = serde_json::to_string(&name.to_ascii_lowercase())
+        .expect("string serialization should not fail");
+    with_monaco(&format!(
+        r#"
+var m = __FIND_MONACO__;
+if (!m) return {{ error: "Monaco editor not found to inject source", kind: "internal_api_unavailable" }};
+var target = {target};
+return fetch('https://pine-facade.tradingview.com/pine-facade/list/?filter=saved', {{ credentials: 'include' }})
+    .then(function(r) {{ return r.json(); }})
+    .then(function(scripts) {{
+        if (!Array.isArray(scripts)) return {{ error: "pine-facade returned unexpected data", kind: "internal_api_unavailable" }};
+        var exact = [];
+        var partial = [];
+        for (var i = 0; i < scripts.length; i++) {{
+            var script = scripts[i] || {{}};
+            var sn = (script.scriptName || '').toLowerCase();
+            var st = (script.scriptTitle || '').toLowerCase();
+            if (sn === target || st === target) exact.push(script);
+            else if (sn.indexOf(target) !== -1 || st.indexOf(target) !== -1) partial.push(script);
+        }}
+        var match = null;
+        if (exact.length > 0) {{
+            match = exact[0];
+        }} else if (partial.length === 1) {{
+            match = partial[0];
+        }} else if (partial.length > 1) {{
+            return {{
+                error: 'Multiple Pine scripts match "' + target + '"',
+                kind: "validation",
+                matches: partial.slice(0, 10).map(function(s) {{
+                    return {{ name: s.scriptName || s.scriptTitle || 'Untitled', id: s.scriptIdPart || null, version: s.version || null }};
+                }})
+            }};
+        }} else {{
+            return {{ error: 'Script "' + target + '" not found. Use pine list to see available scripts.', kind: "validation" }};
+        }}
+
+        var id = match.scriptIdPart;
+        var version = match.version || 1;
+        var displayName = match.scriptName || match.scriptTitle || 'Untitled';
+        if (!id) return {{ error: "Matched script did not include script id", kind: "internal_api_unavailable", name: displayName }};
+
+        return fetch('https://pine-facade.tradingview.com/pine-facade/get/' + id + '/' + version, {{ credentials: 'include' }})
+            .then(function(r2) {{ return r2.json(); }})
+            .then(function(data) {{
+                var source = data && data.source || '';
+                if (!source) return {{ error: "Script source is empty", kind: "internal_api_unavailable", name: displayName, script_id: id, version: version }};
+                m.editor.setValue(source);
+                var observed = m.editor.getValue();
+                if (observed !== source) return {{ error: "Pine open source verification failed", kind: "internal_api_unavailable", name: displayName, script_id: id, version: version }};
+                return {{ success: true, name: displayName, script_id: id, version: version, source_text: source }};
+            }});
+    }})
+    .catch(function(e) {{ return {{ error: e.message, kind: "internal_api_unavailable" }}; }});
 "#
     ))
 }
@@ -588,6 +767,160 @@ mod tests {
 
         assert_eq!(error.kind, ErrorKind::InternalApiUnavailable);
         assert_eq!(error.message, "Pine source set verification failed");
+    }
+
+    #[test]
+    fn validate_pine_script_type_accepts_known_types() {
+        assert_eq!(validate_pine_script_type("indicator").unwrap(), "indicator");
+        assert_eq!(validate_pine_script_type("STRATEGY").unwrap(), "strategy");
+        assert_eq!(validate_pine_script_type(" library ").unwrap(), "library");
+    }
+
+    #[test]
+    fn validate_pine_script_type_rejects_unknown_type() {
+        let error = validate_pine_script_type("study").unwrap_err();
+
+        assert_eq!(error.kind, ErrorKind::Validation);
+        assert!(error.message.contains("indicator, strategy, library"));
+    }
+
+    #[tokio::test]
+    async fn pine_new_sets_indicator_template_by_default_shape() {
+        let template = pine_template("indicator");
+        let mut runtime = FakeRuntime::new([json!(true), json!(template)]);
+
+        let result = pine_new(&mut runtime, "indicator").await.unwrap();
+
+        assert_eq!(result["type"], "indicator");
+        assert_eq!(result["action"], "new_script_created");
+        assert_eq!(result["template"], template);
+        assert_eq!(result["lines_set"], 3);
+        assert_eq!(result["char_count"], template.chars().count());
+        assert_eq!(result["editor_open_before"], true);
+        assert_eq!(result["opened_editor"], false);
+        assert!(runtime.evaluated[1].0.contains("setValue"));
+    }
+
+    #[tokio::test]
+    async fn pine_new_supports_strategy_and_library_templates() {
+        let strategy = pine_template("strategy");
+        let mut runtime = FakeRuntime::new([json!(true), json!(strategy)]);
+
+        let result = pine_new(&mut runtime, "strategy").await.unwrap();
+
+        assert_eq!(result["type"], "strategy");
+        assert!(result["template"].as_str().unwrap().contains("strategy("));
+
+        let library = pine_template("library");
+        let mut runtime = FakeRuntime::new([json!(true), json!(library)]);
+
+        let result = pine_new(&mut runtime, "library").await.unwrap();
+
+        assert_eq!(result["type"], "library");
+        assert!(result["template"].as_str().unwrap().contains("library("));
+    }
+
+    #[tokio::test]
+    async fn pine_new_errors_when_verification_differs() {
+        let mut runtime = FakeRuntime::new([json!(true), json!("plot(open)")]);
+
+        let error = pine_new(&mut runtime, "indicator").await.unwrap_err();
+
+        assert_eq!(error.kind, ErrorKind::InternalApiUnavailable);
+        assert_eq!(error.message, "Pine new script verification failed");
+    }
+
+    #[tokio::test]
+    async fn pine_open_returns_success_payload() {
+        let source = "//@version=6\nindicator(\"Saved\")\nplot(close)";
+        let mut runtime = FakeRuntime::new([
+            json!(true),
+            json!({
+                "success": true,
+                "name": "Saved Script",
+                "script_id": "abc123",
+                "version": 4,
+                "source_text": source
+            }),
+        ]);
+
+        let result = pine_open(&mut runtime, "Saved Script").await.unwrap();
+
+        assert_eq!(result["name"], "Saved Script");
+        assert_eq!(result["script_id"], "abc123");
+        assert_eq!(result["version"], 4);
+        assert_eq!(result["lines"], 3);
+        assert_eq!(result["source"], "internal_api");
+        assert_eq!(result["opened"], true);
+        assert_eq!(result["editor_open_before"], true);
+        assert_eq!(result["opened_editor"], false);
+        assert!(runtime.evaluated[1].0.contains("pine-facade/list"));
+        assert!(runtime.evaluated[1].0.contains("pine-facade/get"));
+        assert!(runtime.evaluated[1].1);
+    }
+
+    #[tokio::test]
+    async fn pine_open_maps_missing_script_to_validation() {
+        let mut runtime = FakeRuntime::new([
+            json!(true),
+            json!({
+                "error": "Script \"missing\" not found. Use pine list to see available scripts.",
+                "kind": "validation"
+            }),
+        ]);
+
+        let error = pine_open(&mut runtime, "missing").await.unwrap_err();
+
+        assert_eq!(error.kind, ErrorKind::Validation);
+        assert!(error.message.contains("not found"));
+    }
+
+    #[tokio::test]
+    async fn pine_open_maps_ambiguous_match_to_validation_with_candidates() {
+        let mut runtime = FakeRuntime::new([
+            json!(true),
+            json!({
+                "error": "Multiple Pine scripts match \"test\"",
+                "kind": "validation",
+                "matches": [{"name": "Test A"}, {"name": "Test B"}]
+            }),
+        ]);
+
+        let error = pine_open(&mut runtime, "test").await.unwrap_err();
+
+        assert_eq!(error.kind, ErrorKind::Validation);
+        assert!(error.message.contains("Multiple Pine scripts match"));
+        assert_eq!(error.details.unwrap()["matches"][0]["name"], "Test A");
+    }
+
+    #[tokio::test]
+    async fn pine_open_rejects_empty_source_payload() {
+        let mut runtime = FakeRuntime::new([
+            json!(true),
+            json!({
+                "error": "Script source is empty",
+                "kind": "internal_api_unavailable",
+                "name": "Empty Script"
+            }),
+        ]);
+
+        let error = pine_open(&mut runtime, "Empty Script").await.unwrap_err();
+
+        assert_eq!(error.kind, ErrorKind::InternalApiUnavailable);
+        assert_eq!(error.message, "Script source is empty");
+    }
+
+    #[tokio::test]
+    async fn pine_open_rejects_malformed_success_payload() {
+        let mut runtime = FakeRuntime::new([json!(true), json!({"success": true})]);
+
+        let error = pine_open(&mut runtime, "Broken").await.unwrap_err();
+
+        assert_eq!(error.kind, ErrorKind::InternalApiUnavailable);
+        assert_eq!(
+            error.message,
+            "Pine open payload did not include source text"
+        );
     }
 
     #[tokio::test]

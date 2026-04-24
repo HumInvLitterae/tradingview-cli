@@ -170,14 +170,15 @@ fn pine_help_lists_current_subcommands() {
         .stdout(predicate::str::contains("get"))
         .stdout(predicate::str::contains("set"))
         .stdout(predicate::str::contains("compile"))
+        .stdout(predicate::str::contains("new"))
+        .stdout(predicate::str::contains("open"))
         .stdout(predicate::str::contains("analyze"))
         .stdout(predicate::str::contains("check"))
         .stdout(predicate::str::contains("errors"))
         .stdout(predicate::str::contains("console"))
         .stdout(predicate::str::contains("list"))
         .stdout(predicate::str::contains("raw-compile").not())
-        .stdout(predicate::str::contains("new").not())
-        .stdout(predicate::str::contains("open").not());
+        .stdout(predicate::str::contains("\n  save").not());
 
     tv().args(["pine", "set", "--help"])
         .assert()
@@ -350,6 +351,66 @@ fn pine_check_requires_source_before_connecting() {
     assert_eq!(value["success"], false);
     assert_eq!(value["command"], "pine");
     assert_eq!(value["error"]["kind"], "validation");
+}
+
+#[test]
+fn pine_new_rejects_unknown_type_before_connecting() {
+    let assert = tv()
+        .env("TV_CDP_PORT", "9")
+        .args(["pine", "new", "study"])
+        .assert()
+        .failure()
+        .code(1);
+    let stderr = String::from_utf8(assert.get_output().stderr.clone()).unwrap();
+    let value: Value = serde_json::from_str(&stderr).unwrap();
+    assert_eq!(value["success"], false);
+    assert_eq!(value["command"], "pine");
+    assert_eq!(value["error"]["kind"], "validation");
+}
+
+#[test]
+fn pine_open_requires_name_before_connecting() {
+    let assert = tv()
+        .env("TV_CDP_PORT", "9")
+        .args(["pine", "open"])
+        .assert()
+        .failure()
+        .code(1);
+    let stderr = String::from_utf8(assert.get_output().stderr.clone()).unwrap();
+    let value: Value = serde_json::from_str(&stderr).unwrap();
+    assert_eq!(value["success"], false);
+    assert_eq!(value["command"], "pine");
+    assert_eq!(value["error"]["kind"], "validation");
+}
+
+#[test]
+fn pine_new_attempts_connection_when_cdp_is_unavailable() {
+    let assert = tv()
+        .env("TV_CDP_PORT", "9")
+        .args(["pine", "new", "indicator"])
+        .assert()
+        .failure()
+        .code(2);
+    let stderr = String::from_utf8(assert.get_output().stderr.clone()).unwrap();
+    let value: Value = serde_json::from_str(&stderr).unwrap();
+    assert_eq!(value["success"], false);
+    assert_eq!(value["command"], "pine");
+    assert_eq!(value["error"]["kind"], "connection");
+}
+
+#[test]
+fn pine_open_attempts_connection_when_cdp_is_unavailable() {
+    let assert = tv()
+        .env("TV_CDP_PORT", "9")
+        .args(["pine", "open", "My", "Script"])
+        .assert()
+        .failure()
+        .code(2);
+    let stderr = String::from_utf8(assert.get_output().stderr.clone()).unwrap();
+    let value: Value = serde_json::from_str(&stderr).unwrap();
+    assert_eq!(value["success"], false);
+    assert_eq!(value["command"], "pine");
+    assert_eq!(value["error"]["kind"], "connection");
 }
 
 #[test]

@@ -200,6 +200,10 @@ pub enum PineCommand {
     },
     #[command(about = "Compile the current Pine Script editor source")]
     Compile,
+    #[command(about = "Create a new Pine Script template in the editor")]
+    New { script_type: Option<String> },
+    #[command(about = "Open a saved Pine Script by name into the editor")]
+    Open { name: Vec<String> },
     #[command(about = "Run offline Pine Script static analysis")]
     Analyze {
         #[arg(long, short)]

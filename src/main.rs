@@ -388,6 +388,23 @@ async fn dispatch(command: Command) -> Result<serde_json::Value, AppError> {
                 let mut runtime = connect_runtime().await?;
                 ops::pine_compile(&mut runtime).await
             }
+            PineCommand::New { script_type } => {
+                let script_type =
+                    ops::validate_pine_script_type(script_type.as_deref().unwrap_or("indicator"))?;
+                let mut runtime = connect_runtime().await?;
+                ops::pine_new(&mut runtime, script_type).await
+            }
+            PineCommand::Open { name } => {
+                let name = name.join(" ");
+                if name.trim().is_empty() {
+                    return Err(AppError::new(
+                        ErrorKind::Validation,
+                        "Script name required. Usage: tv pine open \"My Script\"",
+                    ));
+                }
+                let mut runtime = connect_runtime().await?;
+                ops::pine_open(&mut runtime, &name).await
+            }
             PineCommand::Analyze { file } => {
                 let (source, input_source) = read_pine_source(file.as_deref())?;
                 Ok(ops::pine_analyze(&source, input_source))
