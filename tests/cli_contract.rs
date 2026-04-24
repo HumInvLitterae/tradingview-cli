@@ -20,6 +20,7 @@ fn help_lists_v1_commands() {
         .stdout(predicate::str::contains("watchlist"))
         .stdout(predicate::str::contains("alert"))
         .stdout(predicate::str::contains("indicator"))
+        .stdout(predicate::str::contains("draw"))
         .stdout(predicate::str::contains("data"))
         .stdout(predicate::str::contains("pane"))
         .stdout(predicate::str::contains("range"))
@@ -138,6 +139,26 @@ fn indicator_help_lists_lifecycle_subcommands() {
 }
 
 #[test]
+fn draw_help_lists_non_bulk_lifecycle_subcommands() {
+    tv().args(["draw", "--help"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("shape"))
+        .stdout(predicate::str::contains("list"))
+        .stdout(predicate::str::contains("get"))
+        .stdout(predicate::str::contains("remove"))
+        .stdout(predicate::str::contains("clear").not());
+
+    tv().args(["draw", "shape", "--help"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("--type"))
+        .stdout(predicate::str::contains("--price"))
+        .stdout(predicate::str::contains("--time"))
+        .stdout(predicate::str::contains("--overrides"));
+}
+
+#[test]
 fn data_help_lists_advanced_read_subcommands() {
     tv().args(["data", "--help"])
         .assert()
@@ -225,6 +246,10 @@ fn read_utilities_attempt_connection_when_cdp_is_unavailable() {
             r#"{"length":20}"#,
         ],
         vec!["indicator", "get", "study-id"],
+        vec!["draw", "shape", "--price", "100", "--time", "1700000000"],
+        vec!["draw", "list"],
+        vec!["draw", "get", "shape-id"],
+        vec!["draw", "remove", "shape-id"],
         vec!["pane", "list"],
         vec!["pane", "layout", "s"],
         vec!["pane", "focus", "0"],
@@ -240,6 +265,67 @@ fn read_utilities_attempt_connection_when_cdp_is_unavailable() {
         let value: Value = serde_json::from_str(&stderr).unwrap();
         assert_eq!(value["success"], false);
         assert_eq!(value["error"]["kind"], "connection");
+    }
+}
+
+#[test]
+fn draw_get_and_remove_require_entity_id() {
+    for args in [vec!["draw", "get"], vec!["draw", "remove"]] {
+        let assert = tv().args(args).assert().failure().code(1);
+        let stderr = String::from_utf8(assert.get_output().stderr.clone()).unwrap();
+        let value: Value = serde_json::from_str(&stderr).unwrap();
+        assert_eq!(value["success"], false);
+        assert_eq!(value["command"], "tv");
+        assert_eq!(value["error"]["kind"], "validation");
+    }
+}
+
+#[test]
+fn draw_shape_rejects_invalid_inputs_before_connecting() {
+    for args in [
+        vec!["draw", "shape", "--price", "NaN", "--time", "1700000000"],
+        vec!["draw", "shape", "--price", "100", "--time", "NaN"],
+        vec![
+            "draw",
+            "shape",
+            "--price",
+            "100",
+            "--time",
+            "1700000000",
+            "--price2",
+            "101",
+        ],
+        vec![
+            "draw",
+            "shape",
+            "--price",
+            "100",
+            "--time",
+            "1700000000",
+            "--overrides",
+            "[]",
+        ],
+        vec![
+            "draw",
+            "shape",
+            "--price",
+            "100",
+            "--time",
+            "1700000000",
+            "--overrides",
+            "{",
+        ],
+    ] {
+        let assert = tv()
+            .env("TV_CDP_PORT", "9")
+            .args(args)
+            .assert()
+            .failure()
+            .code(1);
+        let stderr = String::from_utf8(assert.get_output().stderr.clone()).unwrap();
+        let value: Value = serde_json::from_str(&stderr).unwrap();
+        assert_eq!(value["success"], false);
+        assert_eq!(value["error"]["kind"], "validation");
     }
 }
 

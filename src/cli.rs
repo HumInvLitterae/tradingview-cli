@@ -63,6 +63,11 @@ pub enum Command {
         #[command(subcommand)]
         command: IndicatorCommand,
     },
+    #[command(about = "Drawing tools")]
+    Draw {
+        #[command(subcommand)]
+        command: DrawingCommand,
+    },
     #[command(about = "Advanced read-only data tools")]
     Data {
         #[command(subcommand)]
@@ -138,6 +143,33 @@ pub enum IndicatorCommand {
     },
     #[command(about = "Get indicator info and inputs by entity ID")]
     Get { entity_id: String },
+}
+
+#[derive(Debug, Subcommand)]
+pub enum DrawingCommand {
+    #[command(about = "Draw a shape on the chart")]
+    Shape {
+        #[arg(long = "type", short = 't', default_value = "horizontal_line")]
+        shape_type: String,
+        #[arg(long, short)]
+        price: f64,
+        #[arg(long)]
+        time: f64,
+        #[arg(long)]
+        price2: Option<f64>,
+        #[arg(long)]
+        time2: Option<f64>,
+        #[arg(long)]
+        text: Option<String>,
+        #[arg(long)]
+        overrides: Option<String>,
+    },
+    #[command(about = "List all drawings on the chart")]
+    List,
+    #[command(about = "Get drawing properties by entity ID")]
+    Get { entity_id: String },
+    #[command(about = "Remove a drawing by entity ID")]
+    Remove { entity_id: String },
 }
 
 #[derive(Debug, Subcommand)]
@@ -217,6 +249,7 @@ impl Command {
             Self::Watchlist { .. } => "watchlist",
             Self::Alert { .. } => "alert",
             Self::Indicator { .. } => "indicator",
+            Self::Draw { .. } => "draw",
             Self::Data { .. } => "data",
             Self::Pane { .. } => "pane",
             Self::Screenshot { .. } => "screenshot",

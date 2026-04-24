@@ -16,11 +16,12 @@ Rust now implements both `tv watchlist add <SYMBOL>` and `tv watchlist remove <S
 
 `indicator add/remove/toggle/set/get` is now implemented as a complete chart-local lifecycle surface. `indicator add` returns the new `entity_id`, `indicator remove` removes by `entity_id`, `indicator toggle` can hide or show that same study, `indicator set` changes known input ids, and `indicator get` exposes the same practical indicator information as `data indicator`.
 
+`draw shape/list/get/remove` is now implemented as a chart-local drawing lifecycle surface. `draw shape` returns the new drawing `entity_id`, `draw get` inspects that one drawing, and `draw remove` removes that exact drawing by id. `draw clear` remains deferred because it removes all chart drawings and has a much larger blast radius.
+
 ## Old CLI lifecycle pairs not yet migrated
 
 Some old JavaScript CLI areas expose lifecycle pairs, but those whole surfaces are still deferred in Rust. They should be planned as full high-risk surfaces, not treated as a single missing cleanup command for an already-implemented Rust mutation.
 
-- `draw shape/list/get/remove/clear`
 - `tab new/close/switch/list`
 - `replay start/stop/status/step/autoplay/trade`
 

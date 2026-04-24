@@ -4,6 +4,7 @@ mod common;
 mod data;
 mod data_depth;
 mod diagnostics;
+mod drawing;
 mod indicator;
 mod layout;
 mod market;
@@ -25,6 +26,10 @@ pub use data::{
 };
 pub use data_depth::data_depth;
 pub use diagnostics::{discover, ui_state};
+pub use drawing::{
+    DrawingPoint, DrawingShapeRequest, drawing_get, drawing_list, drawing_remove, drawing_shape,
+    parse_drawing_overrides,
+};
 pub use indicator::{
     indicator_add, indicator_remove, indicator_set, indicator_toggle, parse_indicator_inputs,
 };

@@ -10,7 +10,8 @@ use std::process::ExitCode;
 use cdp::CdpClient;
 use clap::{Parser, error::ErrorKind as ClapErrorKind};
 use cli::{
-    AlertCommand, Cli, Command, DataCommand, IndicatorCommand, PaneCommand, WatchlistCommand,
+    AlertCommand, Cli, Command, DataCommand, DrawingCommand, IndicatorCommand, PaneCommand,
+    WatchlistCommand,
 };
 use error::{AppError, ErrorKind};
 use output::{ErrorBody, ErrorEnvelope, SuccessEnvelope};
@@ -296,6 +297,80 @@ async fn dispatch(command: Command) -> Result<serde_json::Value, AppError> {
                 ops::data_indicator(&mut runtime, &entity_id).await
             }
         },
+        Command::Draw { command } => match command {
+            DrawingCommand::Shape {
+                shape_type,
+                price,
+                time,
+                price2,
+                time2,
+                text,
+                overrides,
+            } => {
+                if shape_type.trim().is_empty() {
+                    return Err(AppError::new(
+                        ErrorKind::Validation,
+                        "Drawing shape type must not be empty",
+                    ));
+                }
+                validate_finite(price, "price")?;
+                validate_finite(time, "time")?;
+                let point2 = match (price2, time2) {
+                    (Some(price2), Some(time2)) => {
+                        validate_finite(price2, "price2")?;
+                        validate_finite(time2, "time2")?;
+                        Some(ops::DrawingPoint {
+                            time: time2,
+                            price: price2,
+                        })
+                    }
+                    (None, None) => None,
+                    _ => {
+                        return Err(AppError::new(
+                            ErrorKind::Validation,
+                            "--price2 and --time2 must be provided together",
+                        ));
+                    }
+                };
+                let overrides = overrides
+                    .as_deref()
+                    .map(ops::parse_drawing_overrides)
+                    .transpose()?;
+                let request = ops::DrawingShapeRequest {
+                    shape_type: shape_type.trim().to_string(),
+                    point: ops::DrawingPoint { time, price },
+                    point2,
+                    text,
+                    overrides,
+                };
+                let mut runtime = connect_runtime().await?;
+                ops::drawing_shape(&mut runtime, request).await
+            }
+            DrawingCommand::List => {
+                let mut runtime = connect_runtime().await?;
+                ops::drawing_list(&mut runtime).await
+            }
+            DrawingCommand::Get { entity_id } => {
+                if entity_id.trim().is_empty() {
+                    return Err(AppError::new(
+                        ErrorKind::Validation,
+                        "Entity ID must not be empty",
+                    ));
+                }
+                let mut runtime = connect_runtime().await?;
+                ops::drawing_get(&mut runtime, &entity_id).await
+            }
+            DrawingCommand::Remove { entity_id } => {
+                if entity_id.trim().is_empty() {
+                    return Err(AppError::new(
+                        ErrorKind::Validation,
+                        "Entity ID must not be empty",
+                    ));
+                }
+                let mut runtime = connect_runtime().await?;
+                ops::drawing_remove(&mut runtime, &entity_id).await
+            }
+        },
         Command::Data { command } => {
             let mut runtime = connect_runtime().await?;
             match command {
@@ -389,6 +464,17 @@ fn init_tracing() {
         .with_env_filter(filter)
         .with_writer(std::io::stderr)
         .try_init();
+}
+
+fn validate_finite(value: f64, label: &str) -> Result<(), AppError> {
+    if value.is_finite() {
+        Ok(())
+    } else {
+        Err(AppError::new(
+            ErrorKind::Validation,
+            format!("{label} must be a finite number"),
+        ))
+    }
 }
 
 fn print_json_stdout<T: serde::Serialize>(value: &T) {

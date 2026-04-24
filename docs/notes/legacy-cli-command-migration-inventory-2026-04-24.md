@@ -40,6 +40,10 @@ Do not use `explicitly_not_planned` for ordinary missing old CLI commands unless
 - `indicator toggle`
 - `indicator set`
 - `indicator get`
+- `draw shape`
+- `draw list`
+- `draw get`
+- `draw remove`
 - `data indicator`
 - `data strategy`
 - `data trades`
@@ -73,7 +77,7 @@ These old CLI surfaces are not first in line, but they are not automatically out
 - `alert delete --all`
 - alert editing / pause / resume commands
 - Pine editor commands
-- drawing commands
+- `draw clear`
 - replay commands
 - tab commands
 - stream commands
