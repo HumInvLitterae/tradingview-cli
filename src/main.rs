@@ -9,7 +9,9 @@ use std::process::ExitCode;
 
 use cdp::CdpClient;
 use clap::{Parser, error::ErrorKind as ClapErrorKind};
-use cli::{AlertCommand, Cli, Command, DataCommand, PaneCommand, WatchlistCommand};
+use cli::{
+    AlertCommand, Cli, Command, DataCommand, IndicatorCommand, PaneCommand, WatchlistCommand,
+};
 use error::{AppError, ErrorKind};
 use output::{ErrorBody, ErrorEnvelope, SuccessEnvelope};
 use serde_json::json;
@@ -223,6 +225,75 @@ async fn dispatch(command: Command) -> Result<serde_json::Value, AppError> {
                 }
                 let mut runtime = connect_runtime().await?;
                 ops::alert_delete(&mut runtime, &id).await
+            }
+        },
+        Command::Indicator { command } => match command {
+            IndicatorCommand::Add { indicator, inputs } => {
+                let indicator = indicator.join(" ");
+                if indicator.trim().is_empty() {
+                    return Err(AppError::new(
+                        ErrorKind::Validation,
+                        "Indicator name required. Usage: tv indicator add \"Volume\"",
+                    ));
+                }
+                let inputs = inputs
+                    .as_deref()
+                    .map(ops::parse_indicator_inputs)
+                    .transpose()?;
+                let mut runtime = connect_runtime().await?;
+                ops::indicator_add(&mut runtime, &indicator, inputs.as_ref()).await
+            }
+            IndicatorCommand::Remove { entity_id } => {
+                if entity_id.trim().is_empty() {
+                    return Err(AppError::new(
+                        ErrorKind::Validation,
+                        "Entity ID must not be empty",
+                    ));
+                }
+                let mut runtime = connect_runtime().await?;
+                ops::indicator_remove(&mut runtime, &entity_id).await
+            }
+            IndicatorCommand::Toggle {
+                entity_id,
+                visible,
+                hidden,
+            } => {
+                if entity_id.trim().is_empty() {
+                    return Err(AppError::new(
+                        ErrorKind::Validation,
+                        "Entity ID must not be empty",
+                    ));
+                }
+                if visible && hidden {
+                    return Err(AppError::new(
+                        ErrorKind::Validation,
+                        "Use either --visible or --hidden, not both",
+                    ));
+                }
+                let target_visible = !hidden;
+                let mut runtime = connect_runtime().await?;
+                ops::indicator_toggle(&mut runtime, &entity_id, target_visible).await
+            }
+            IndicatorCommand::Set { entity_id, inputs } => {
+                if entity_id.trim().is_empty() {
+                    return Err(AppError::new(
+                        ErrorKind::Validation,
+                        "Entity ID must not be empty",
+                    ));
+                }
+                let inputs = ops::parse_indicator_inputs(&inputs)?;
+                let mut runtime = connect_runtime().await?;
+                ops::indicator_set(&mut runtime, &entity_id, &inputs).await
+            }
+            IndicatorCommand::Get { entity_id } => {
+                if entity_id.trim().is_empty() {
+                    return Err(AppError::new(
+                        ErrorKind::Validation,
+                        "Entity ID must not be empty",
+                    ));
+                }
+                let mut runtime = connect_runtime().await?;
+                ops::data_indicator(&mut runtime, &entity_id).await
             }
         },
         Command::Data { command } => {

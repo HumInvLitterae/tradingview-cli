@@ -19,6 +19,7 @@ fn help_lists_v1_commands() {
         .stdout(predicate::str::contains("ui-state"))
         .stdout(predicate::str::contains("watchlist"))
         .stdout(predicate::str::contains("alert"))
+        .stdout(predicate::str::contains("indicator"))
         .stdout(predicate::str::contains("data"))
         .stdout(predicate::str::contains("pane"))
         .stdout(predicate::str::contains("range"))
@@ -109,6 +110,34 @@ fn alert_help_lists_read_subcommands() {
 }
 
 #[test]
+fn indicator_help_lists_lifecycle_subcommands() {
+    tv().args(["indicator", "--help"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("add"))
+        .stdout(predicate::str::contains("remove"))
+        .stdout(predicate::str::contains("toggle"))
+        .stdout(predicate::str::contains("set"))
+        .stdout(predicate::str::contains("get"));
+
+    tv().args(["indicator", "add", "--help"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("--inputs"));
+
+    tv().args(["indicator", "set", "--help"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("--inputs"));
+
+    tv().args(["indicator", "toggle", "--help"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("--visible"))
+        .stdout(predicate::str::contains("--hidden"));
+}
+
+#[test]
 fn data_help_lists_advanced_read_subcommands() {
     tv().args(["data", "--help"])
         .assert()
@@ -185,6 +214,17 @@ fn read_utilities_attempt_connection_when_cdp_is_unavailable() {
             "crossing",
         ],
         vec!["alert", "delete", "--id", "4546454367"],
+        vec!["indicator", "add", "Volume"],
+        vec!["indicator", "remove", "study-id"],
+        vec!["indicator", "toggle", "study-id", "--hidden"],
+        vec![
+            "indicator",
+            "set",
+            "study-id",
+            "--inputs",
+            r#"{"length":20}"#,
+        ],
+        vec!["indicator", "get", "study-id"],
         vec!["pane", "list"],
         vec!["pane", "layout", "s"],
         vec!["pane", "focus", "0"],
@@ -201,6 +241,53 @@ fn read_utilities_attempt_connection_when_cdp_is_unavailable() {
         assert_eq!(value["success"], false);
         assert_eq!(value["error"]["kind"], "connection");
     }
+}
+
+#[test]
+fn indicator_add_requires_name() {
+    let assert = tv().args(["indicator", "add"]).assert().failure().code(1);
+    let stderr = String::from_utf8(assert.get_output().stderr.clone()).unwrap();
+    let value: Value = serde_json::from_str(&stderr).unwrap();
+    assert_eq!(value["success"], false);
+    assert_eq!(value["command"], "indicator");
+    assert_eq!(value["error"]["kind"], "validation");
+}
+
+#[test]
+fn indicator_set_rejects_invalid_inputs_before_connecting() {
+    for args in [
+        vec!["indicator", "set", "study-id", "--inputs", "[]"],
+        vec!["indicator", "set", "study-id", "--inputs", "{}"],
+        vec!["indicator", "set", "study-id", "--inputs", "{"],
+        vec!["indicator", "add", "Volume", "--inputs", "[]"],
+    ] {
+        let assert = tv()
+            .env("TV_CDP_PORT", "9")
+            .args(args)
+            .assert()
+            .failure()
+            .code(1);
+        let stderr = String::from_utf8(assert.get_output().stderr.clone()).unwrap();
+        let value: Value = serde_json::from_str(&stderr).unwrap();
+        assert_eq!(value["success"], false);
+        assert_eq!(value["command"], "indicator");
+        assert_eq!(value["error"]["kind"], "validation");
+    }
+}
+
+#[test]
+fn indicator_toggle_rejects_conflicting_visibility_flags_before_connecting() {
+    let assert = tv()
+        .env("TV_CDP_PORT", "9")
+        .args(["indicator", "toggle", "study-id", "--visible", "--hidden"])
+        .assert()
+        .failure()
+        .code(1);
+    let stderr = String::from_utf8(assert.get_output().stderr.clone()).unwrap();
+    let value: Value = serde_json::from_str(&stderr).unwrap();
+    assert_eq!(value["success"], false);
+    assert_eq!(value["command"], "indicator");
+    assert_eq!(value["error"]["kind"], "validation");
 }
 
 #[test]

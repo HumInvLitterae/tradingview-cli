@@ -58,6 +58,11 @@ pub enum Command {
         #[command(subcommand)]
         command: AlertCommand,
     },
+    #[command(about = "Indicator tools")]
+    Indicator {
+        #[command(subcommand)]
+        command: IndicatorCommand,
+    },
     #[command(about = "Advanced read-only data tools")]
     Data {
         #[command(subcommand)]
@@ -105,6 +110,34 @@ pub enum AlertCommand {
         #[arg(long)]
         id: String,
     },
+}
+
+#[derive(Debug, Subcommand)]
+pub enum IndicatorCommand {
+    #[command(about = "Add an indicator to the chart")]
+    Add {
+        indicator: Vec<String>,
+        #[arg(long, short)]
+        inputs: Option<String>,
+    },
+    #[command(about = "Remove an indicator by entity ID")]
+    Remove { entity_id: String },
+    #[command(about = "Show or hide an indicator by entity ID")]
+    Toggle {
+        entity_id: String,
+        #[arg(long)]
+        visible: bool,
+        #[arg(long)]
+        hidden: bool,
+    },
+    #[command(about = "Change indicator input values")]
+    Set {
+        entity_id: String,
+        #[arg(long, short)]
+        inputs: String,
+    },
+    #[command(about = "Get indicator info and inputs by entity ID")]
+    Get { entity_id: String },
 }
 
 #[derive(Debug, Subcommand)]
@@ -183,6 +216,7 @@ impl Command {
             Self::Scroll { .. } => "scroll",
             Self::Watchlist { .. } => "watchlist",
             Self::Alert { .. } => "alert",
+            Self::Indicator { .. } => "indicator",
             Self::Data { .. } => "data",
             Self::Pane { .. } => "pane",
             Self::Screenshot { .. } => "screenshot",

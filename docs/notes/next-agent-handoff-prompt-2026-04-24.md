@@ -30,6 +30,7 @@ Keep the Rust-native `tv` CLI reliable and useful as a replacement path for prac
 - command lifecycle balance has been audited, and no immediate asymmetric lifecycle gap is known in the implemented Rust CLI
 - GitHub Actions CI is configured for the automated Rust baseline
 - `pane layout`, `pane focus`, and `pane symbol` are implemented as explicit chart mutations using TradingView's chart widget collection
+- `indicator add/remove/toggle/set/get` is implemented as a complete chart-local lifecycle mutation and read surface
 
 ## Current v1 surface
 
@@ -58,6 +59,11 @@ The implemented commands are:
 - `tv alert list`
 - `tv alert create --price <NUMBER> [--condition <CONDITION>] [--message <TEXT>]`
 - `tv alert delete --id <ALERT_ID>`
+- `tv indicator add <INDICATOR_NAME...> [--inputs <JSON>]`
+- `tv indicator remove <ENTITY_ID>`
+- `tv indicator toggle <ENTITY_ID> [--visible | --hidden]`
+- `tv indicator set <ENTITY_ID> --inputs <JSON>`
+- `tv indicator get <ENTITY_ID>`
 - `tv data indicator <ENTITY_ID>`
 - `tv data strategy`
 - `tv data trades [--max <N>]`
@@ -117,7 +123,7 @@ Focus first on migration readiness:
 Deferred old CLI surfaces that need planned implementation or an explicit exclusion decision:
 
 - whether launch automation belongs in this CLI or should remain external runbook material
-- larger old CLI surfaces such as alert bulk deletion/editing, Pine, replay, stream, and UI automation
+- larger old CLI surfaces such as alert bulk deletion/editing, Pine, drawing, tab, replay, stream, and UI automation
 
 ## Validation baseline
 

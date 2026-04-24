@@ -14,11 +14,12 @@ Rust now implements both `tv watchlist add <SYMBOL>` and `tv watchlist remove <S
 
 `pane layout`, `pane focus`, `pane symbol`, `symbol`, `timeframe`, `type`, `range`, and `scroll` are chart state mutations rather than account resource creation. Their recovery model is to read the previous value and restore it after smoke or downstream workflows. They do not require a delete command, but tests and live smoke should keep using restore-safe patterns.
 
+`indicator add/remove/toggle/set/get` is now implemented as a complete chart-local lifecycle surface. `indicator add` returns the new `entity_id`, `indicator remove` removes by `entity_id`, `indicator toggle` can hide or show that same study, `indicator set` changes known input ids, and `indicator get` exposes the same practical indicator information as `data indicator`.
+
 ## Old CLI lifecycle pairs not yet migrated
 
 Some old JavaScript CLI areas expose lifecycle pairs, but those whole surfaces are still deferred in Rust. They should be planned as full high-risk surfaces, not treated as a single missing cleanup command for an already-implemented Rust mutation.
 
-- `indicator add/remove/toggle/set/get`
 - `draw shape/list/get/remove/clear`
 - `tab new/close/switch/list`
 - `replay start/stop/status/step/autoplay/trade`

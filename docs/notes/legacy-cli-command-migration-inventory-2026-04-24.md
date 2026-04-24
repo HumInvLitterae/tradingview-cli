@@ -35,6 +35,11 @@ Do not use `explicitly_not_planned` for ordinary missing old CLI commands unless
 - `alert list`
 - `alert create`
 - `alert delete --id`
+- `indicator add`
+- `indicator remove`
+- `indicator toggle`
+- `indicator set`
+- `indicator get`
 - `data indicator`
 - `data strategy`
 - `data trades`

@@ -4,6 +4,7 @@ mod common;
 mod data;
 mod data_depth;
 mod diagnostics;
+mod indicator;
 mod layout;
 mod market;
 mod screenshot;
@@ -24,6 +25,9 @@ pub use data::{
 };
 pub use data_depth::data_depth;
 pub use diagnostics::{discover, ui_state};
+pub use indicator::{
+    indicator_add, indicator_remove, indicator_set, indicator_toggle, parse_indicator_inputs,
+};
 pub use layout::{
     pane_focus, pane_layout, pane_list, pane_symbol, validate_pane_layout, watchlist_add,
     watchlist_get, watchlist_remove,
