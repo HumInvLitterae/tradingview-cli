@@ -84,7 +84,7 @@ After editing, run:
 
 Also scan tracked docs for local absolute filesystem paths:
 
-    git grep -nE '(/Users/|C:\\)' -- README.md AGENTS.md docs .agents/skills || true
+    git grep with the repository's standard local-absolute-path pattern
 
 If TradingView Desktop is already running with CDP enabled, run:
 

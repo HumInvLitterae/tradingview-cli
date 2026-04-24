@@ -21,6 +21,7 @@ Keep the Rust-native `tv` CLI reliable and useful as a replacement path for prac
 - the operation layer is split into a thin `src/ops.rs` facade plus feature modules under `src/ops/`; do not reintroduce a monolithic ops file or `mod.rs`
 - development guidelines are recorded in `docs/notes/development-guidelines-2026-04-24.md`
 - `data depth` is implemented as a read-only DOM-dependent slice and may require a visible DOM or Depth of Market panel
+- `alert list` is implemented as a read-only internal API slice; alert mutation remains deferred
 
 ## Current v1 surface
 
@@ -41,6 +42,7 @@ The implemented commands are:
 - `tv scroll <DATE_OR_UNIX_SECONDS>`
 - `tv watchlist get`
 - `tv pane list`
+- `tv alert list`
 - `tv data indicator <ENTITY_ID>`
 - `tv data strategy`
 - `tv data trades [--max <N>]`
@@ -98,7 +100,7 @@ Focus first on migration readiness:
 Deferred old CLI surfaces that need planned implementation or an explicit exclusion decision:
 
 - whether launch automation belongs in this CLI or should remain external runbook material
-- larger old CLI surfaces such as pane mutation, watchlist mutation, Pine, alerts, replay, stream, and UI automation
+- larger old CLI surfaces such as pane mutation, watchlist mutation, alert creation, Pine, replay, stream, and UI automation
 
 ## Validation baseline
 
