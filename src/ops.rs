@@ -26,7 +26,7 @@ pub use data_depth::data_depth;
 pub use diagnostics::{discover, ui_state};
 pub use layout::{
     pane_focus, pane_layout, pane_list, pane_symbol, validate_pane_layout, watchlist_add,
-    watchlist_get,
+    watchlist_get, watchlist_remove,
 };
 pub use market::{ohlcv_bars, ohlcv_summary, quote, symbol_search};
 pub use screenshot::{screenshot_chart, screenshot_full};

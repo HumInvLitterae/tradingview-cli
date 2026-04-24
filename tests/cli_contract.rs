@@ -152,6 +152,20 @@ fn watchlist_add_requires_symbol() {
 }
 
 #[test]
+fn watchlist_remove_requires_symbol() {
+    let assert = tv()
+        .args(["watchlist", "remove"])
+        .assert()
+        .failure()
+        .code(1);
+    let stderr = String::from_utf8(assert.get_output().stderr.clone()).unwrap();
+    let value: Value = serde_json::from_str(&stderr).unwrap();
+    assert_eq!(value["success"], false);
+    assert_eq!(value["command"], "tv");
+    assert_eq!(value["error"]["kind"], "validation");
+}
+
+#[test]
 fn read_utilities_attempt_connection_when_cdp_is_unavailable() {
     for args in [
         vec!["info"],
@@ -160,6 +174,7 @@ fn read_utilities_attempt_connection_when_cdp_is_unavailable() {
         vec!["ui-state"],
         vec!["watchlist", "get"],
         vec!["watchlist", "add", "NASDAQ:AAPL"],
+        vec!["watchlist", "remove", "NASDAQ:AAPL"],
         vec!["alert", "list"],
         vec![
             "alert",

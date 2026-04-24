@@ -183,6 +183,16 @@ async fn dispatch(command: Command) -> Result<serde_json::Value, AppError> {
                 let mut runtime = connect_runtime().await?;
                 ops::watchlist_add(&mut runtime, &symbol).await
             }
+            WatchlistCommand::Remove { symbol } => {
+                if symbol.trim().is_empty() {
+                    return Err(AppError::new(
+                        ErrorKind::Validation,
+                        "Symbol must not be empty",
+                    ));
+                }
+                let mut runtime = connect_runtime().await?;
+                ops::watchlist_remove(&mut runtime, &symbol).await
+            }
         },
         Command::Alert { command } => match command {
             AlertCommand::List => {

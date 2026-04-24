@@ -197,51 +197,8 @@ pub async fn watchlist_add(
     runtime: &mut impl RuntimeEvaluator,
     symbol: &str,
 ) -> Result<Value, AppError> {
-    let panel_state = runtime
-        .evaluate(
-            r#"
-            (function() {
-                var rightArea = document.querySelector('[class*="layout__area--right"]');
-                if (rightArea && rightArea.offsetWidth >= 50 && rightArea.querySelector('[data-symbol-full]')) {
-                    return { opened: false, already_open: true, source: 'visible_watchlist_rows' };
-                }
-
-                var btn = document.querySelector('[data-name="base-watchlist-widget-button"]')
-                    || document.querySelector('[aria-label*="Watchlist"]');
-                if (!btn) return { error: 'Watchlist button not found' };
-                var isActive = btn.getAttribute('aria-pressed') === 'true'
-                    || btn.classList.toString().indexOf('Active') !== -1
-                    || btn.classList.toString().indexOf('active') !== -1;
-                if (!isActive) {
-                    btn.click();
-                    return { opened: true };
-                }
-                return { opened: false };
-            })()
-            "#,
-            false,
-        )
-        .await?;
-
-    if let Some(message) = panel_state.get("error").and_then(Value::as_str) {
-        return Err(AppError::new(
-            ErrorKind::InternalApiUnavailable,
-            message.to_string(),
-        ));
-    }
-
-    if panel_state
-        .get("opened")
-        .and_then(Value::as_bool)
-        .unwrap_or(false)
-    {
-        runtime
-            .evaluate(
-                "new Promise(function(resolve) { setTimeout(function() { resolve(true); }, 500); })",
-                true,
-            )
-            .await?;
-    }
+    let panel_state = ensure_watchlist_panel_open(runtime).await?;
+    wait_after_panel_open(runtime, &panel_state).await?;
 
     let add_clicked = runtime
         .evaluate(
@@ -321,6 +278,301 @@ pub async fn watchlist_add(
         "opened_panel": panel_state.get("opened").cloned().unwrap_or(Value::Bool(false)),
         "add_button": add_clicked,
     }))
+}
+
+pub async fn watchlist_remove(
+    runtime: &mut impl RuntimeEvaluator,
+    symbol: &str,
+) -> Result<Value, AppError> {
+    let symbol = symbol.trim();
+    if symbol.is_empty() {
+        return Err(AppError::new(
+            ErrorKind::Validation,
+            "Symbol must not be empty",
+        ));
+    }
+
+    let panel_state = ensure_watchlist_panel_open(runtime).await?;
+    wait_after_panel_open(runtime, &panel_state).await?;
+
+    let symbol_literal = js_string(symbol)?;
+    let mut expression = format!(
+        r#"
+            (async function() {{
+                const requestedSymbol = {};
+        "#,
+        symbol_literal
+    );
+    expression.push_str(
+        r#"
+                function sleep(ms) {
+                    return new Promise(function(resolve) { setTimeout(resolve, ms); });
+                }
+
+                function isVisible(element) {
+                    if (!element) return false;
+                    const rect = element.getBoundingClientRect();
+                    return rect.width > 0 && rect.height > 0 && window.getComputedStyle(element).visibility !== 'hidden';
+                }
+
+                function textOf(element) {
+                    return [
+                        element.getAttribute('aria-label') || '',
+                        element.getAttribute('title') || '',
+                        element.getAttribute('data-name') || '',
+                        String(element.className || ''),
+                        element.textContent || ''
+                    ].join(' ').trim();
+                }
+
+                function isRemoveText(text) {
+                    return /(remove|delete|削除|リストから削除|ウォッチリストから削除)/i.test(text)
+                        && !/(add|追加)/i.test(text);
+                }
+
+                function rowForSymbolElement(element) {
+                    return element.closest('[role="row"], [class*="row"], [data-role="list-item"], [class*="item"]')
+                        || element.closest('tr')
+                        || element.parentElement;
+                }
+
+                function readRows() {
+                    const container = document.querySelector('[class*="layout__area--right"]');
+                    if (!container) return { container: null, rows: [] };
+                    const seen = {};
+                    const rows = Array.from(container.querySelectorAll('[data-symbol-full]'))
+                        .map(function(element) {
+                            const symbol = element.getAttribute('data-symbol-full');
+                            if (!symbol || seen[symbol]) return null;
+                            seen[symbol] = true;
+                            return { symbol: symbol, element: element, row: rowForSymbolElement(element) };
+                        })
+                        .filter(function(entry) { return entry && entry.row; });
+                    return { container: container, rows: rows };
+                }
+
+                function publicRows(rows) {
+                    return rows.map(function(entry) { return { symbol: entry.symbol }; });
+                }
+
+                async function revealRowControls(row) {
+                    const rect = row.getBoundingClientRect();
+                    const eventOptions = {
+                        bubbles: true,
+                        cancelable: true,
+                        view: window,
+                        clientX: rect.right - 20,
+                        clientY: rect.top + (rect.height / 2)
+                    };
+                    ['mouseenter', 'mouseover', 'mousemove'].forEach(function(type) {
+                        row.dispatchEvent(new MouseEvent(type, eventOptions));
+                    });
+                    await sleep(300);
+                }
+
+                function findRemoveButton(row) {
+                    const candidates = Array.from(row.querySelectorAll('button, [role="button"], [aria-label], [title], [class*="removeButton"]'));
+                    for (let i = 0; i < candidates.length; i++) {
+                        const candidate = candidates[i];
+                        const className = String(candidate.className || '');
+                        const isRowRemoveIcon = /removeButton/.test(className);
+                        if (!isVisible(candidate) && !isRowRemoveIcon) continue;
+                        if (candidate.disabled || candidate.getAttribute('aria-disabled') === 'true') continue;
+                        if (isRemoveText(textOf(candidate))) return candidate;
+                    }
+                    return null;
+                }
+
+                const before = readRows();
+                if (!before.container) {
+                    return {
+                        error: 'Watchlist panel not found',
+                        error_kind: 'internal_api_unavailable',
+                        symbol: requestedSymbol,
+                        requested_symbol: requestedSymbol,
+                        source: 'dom_row'
+                    };
+                }
+
+                const matched = before.rows.find(function(entry) {
+                    return entry.symbol === requestedSymbol;
+                }) || null;
+                if (!matched) {
+                    return {
+                        error: 'Watchlist symbol not found: ' + requestedSymbol,
+                        error_kind: 'validation',
+                        symbol: requestedSymbol,
+                        requested_symbol: requestedSymbol,
+                        source: 'dom_row',
+                        before_count: before.rows.length,
+                        matched_before: false,
+                        symbols_before: publicRows(before.rows)
+                    };
+                }
+
+                let method = null;
+                await revealRowControls(matched.row);
+                const button = findRemoveButton(matched.row);
+                if (button) {
+                    button.click();
+                    method = 'row_remove_button';
+                }
+
+                if (!method) {
+                    return {
+                        error: 'Remove control not found for watchlist symbol: ' + requestedSymbol,
+                        error_kind: 'internal_api_unavailable',
+                        symbol: requestedSymbol,
+                        requested_symbol: requestedSymbol,
+                        source: 'dom_row',
+                        before_count: before.rows.length,
+                        matched_before: true,
+                        remove_method: null
+                    };
+                }
+
+                await sleep(700);
+                const after = readRows();
+                const matchedAfter = after.rows.some(function(entry) {
+                    return entry.symbol === requestedSymbol;
+                });
+
+                return {
+                    symbol: requestedSymbol,
+                    requested_symbol: requestedSymbol,
+                    action: 'removed',
+                    removed: !matchedAfter,
+                    source: 'dom_row',
+                    before_count: before.rows.length,
+                    after_count: after.rows.length,
+                    matched_before: true,
+                    matched_after: matchedAfter,
+                    remove_method: method,
+                    confirmation_clicked: false
+                };
+            })()
+        "#,
+    );
+
+    let result = runtime.evaluate(&expression, true).await?;
+    normalize_watchlist_remove_payload(result)
+}
+
+fn normalize_watchlist_remove_payload(data: Value) -> Result<Value, AppError> {
+    if let Some(message) = data.get("error").and_then(Value::as_str) {
+        let kind = match data.get("error_kind").and_then(Value::as_str) {
+            Some("validation") => ErrorKind::Validation,
+            _ => ErrorKind::InternalApiUnavailable,
+        };
+        return Err(AppError::new(kind, message.to_string()).with_details(data));
+    }
+
+    if !data
+        .get("removed")
+        .and_then(Value::as_bool)
+        .unwrap_or(false)
+    {
+        return Err(AppError::new(
+            ErrorKind::InternalApiUnavailable,
+            "Watchlist remove did not remove the requested symbol",
+        )
+        .with_details(data));
+    }
+
+    Ok(json!({
+        "symbol": data.get("symbol").cloned().unwrap_or(Value::Null),
+        "requested_symbol": data.get("requested_symbol").cloned().unwrap_or(Value::Null),
+        "action": data.get("action").cloned().unwrap_or_else(|| json!("removed")),
+        "removed": true,
+        "source": data
+            .get("source")
+            .and_then(Value::as_str)
+            .unwrap_or("dom_row"),
+        "before_count": data.get("before_count").cloned().unwrap_or(Value::Null),
+        "after_count": data.get("after_count").cloned().unwrap_or(Value::Null),
+        "matched_before": data
+            .get("matched_before")
+            .and_then(Value::as_bool)
+            .unwrap_or(true),
+        "matched_after": data
+            .get("matched_after")
+            .and_then(Value::as_bool)
+            .unwrap_or(false),
+        "remove_method": data.get("remove_method").cloned().unwrap_or(Value::Null),
+        "confirmation_clicked": data
+            .get("confirmation_clicked")
+            .and_then(Value::as_bool)
+            .unwrap_or(false),
+    }))
+}
+
+async fn ensure_watchlist_panel_open(
+    runtime: &mut impl RuntimeEvaluator,
+) -> Result<Value, AppError> {
+    let panel_state = runtime
+        .evaluate(
+            r#"
+            (function() {
+                function isWatchlistLabel(label) {
+                    return /Watchlist/i.test(label || '') || /ウォッチリスト/.test(label || '');
+                }
+
+                var rightArea = document.querySelector('[class*="layout__area--right"]');
+                if (rightArea && rightArea.offsetWidth >= 50 && rightArea.querySelector('[data-symbol-full]')) {
+                    return { opened: false, already_open: true, source: 'visible_watchlist_rows' };
+                }
+
+                var buttons = Array.from(document.querySelectorAll('[data-name="base-watchlist-widget-button"], button[aria-label]'));
+                var btn = null;
+                for (var i = 0; i < buttons.length; i++) {
+                    var label = buttons[i].getAttribute('aria-label') || '';
+                    if (buttons[i].getAttribute('data-name') === 'base-watchlist-widget-button' || isWatchlistLabel(label)) {
+                        btn = buttons[i];
+                        break;
+                    }
+                }
+                if (!btn) return { error: 'Watchlist button not found' };
+                var isActive = btn.getAttribute('aria-pressed') === 'true'
+                    || btn.classList.toString().indexOf('Active') !== -1
+                    || btn.classList.toString().indexOf('active') !== -1;
+                if (!isActive) {
+                    btn.click();
+                    return { opened: true, source: 'watchlist_button', label: btn.getAttribute('aria-label') || null };
+                }
+                return { opened: false, source: 'watchlist_button', label: btn.getAttribute('aria-label') || null };
+            })()
+            "#,
+            false,
+        )
+        .await?;
+
+    if let Some(message) = panel_state.get("error").and_then(Value::as_str) {
+        return Err(AppError::new(
+            ErrorKind::InternalApiUnavailable,
+            message.to_string(),
+        ));
+    }
+
+    Ok(panel_state)
+}
+
+async fn wait_after_panel_open(
+    runtime: &mut impl RuntimeEvaluator,
+    panel_state: &Value,
+) -> Result<(), AppError> {
+    if panel_state
+        .get("opened")
+        .and_then(Value::as_bool)
+        .unwrap_or(false)
+    {
+        runtime
+            .evaluate(
+                "new Promise(function(resolve) { setTimeout(function() { resolve(true); }, 500); })",
+                true,
+            )
+            .await?;
+    }
+    Ok(())
 }
 
 async fn dispatch_key(
@@ -705,6 +957,131 @@ mod tests {
 
         assert_eq!(err.kind, ErrorKind::InternalApiUnavailable);
         assert!(runtime.inserted_text.is_empty());
+    }
+
+    #[tokio::test]
+    async fn watchlist_remove_removes_exact_symbol() {
+        let mut runtime = FakeRuntime::new([
+            json!({"opened": false, "already_open": true, "source": "visible_watchlist_rows"}),
+            json!({
+                "symbol": "NASDAQ:AAPL",
+                "requested_symbol": "NASDAQ:AAPL",
+                "action": "removed",
+                "removed": true,
+                "source": "dom_row",
+                "before_count": 2,
+                "after_count": 1,
+                "matched_before": true,
+                "matched_after": false,
+                "remove_method": "row_remove_button",
+                "confirmation_clicked": false
+            }),
+        ]);
+
+        let result = watchlist_remove(&mut runtime, "NASDAQ:AAPL").await.unwrap();
+
+        assert_eq!(result["symbol"], "NASDAQ:AAPL");
+        assert_eq!(result["requested_symbol"], "NASDAQ:AAPL");
+        assert_eq!(result["action"], "removed");
+        assert_eq!(result["removed"], true);
+        assert_eq!(result["before_count"], 2);
+        assert_eq!(result["after_count"], 1);
+        assert_eq!(result["remove_method"], "row_remove_button");
+        assert!(
+            runtime.evaluated[1]
+                .0
+                .contains("entry.symbol === requestedSymbol")
+        );
+        assert!(runtime.evaluated[1].0.contains("removeButton"));
+        assert!(!runtime.evaluated[1].0.contains("contextmenu"));
+    }
+
+    #[tokio::test]
+    async fn watchlist_remove_rejects_empty_symbol_before_evaluating() {
+        let mut runtime = FakeRuntime::new([]);
+
+        let err = watchlist_remove(&mut runtime, " ").await.unwrap_err();
+
+        assert_eq!(err.kind, ErrorKind::Validation);
+        assert!(runtime.evaluated.is_empty());
+    }
+
+    #[tokio::test]
+    async fn watchlist_remove_maps_absent_symbol_to_validation() {
+        let mut runtime = FakeRuntime::new([
+            json!({"opened": false, "already_open": true, "source": "visible_watchlist_rows"}),
+            json!({
+                "error": "Watchlist symbol not found: NASDAQ:AAPL",
+                "error_kind": "validation",
+                "symbol": "NASDAQ:AAPL",
+                "requested_symbol": "NASDAQ:AAPL",
+                "source": "dom_row",
+                "before_count": 1,
+                "matched_before": false,
+                "symbols_before": [{"symbol": "NASDAQ:MSFT"}]
+            }),
+        ]);
+
+        let err = watchlist_remove(&mut runtime, "NASDAQ:AAPL")
+            .await
+            .unwrap_err();
+
+        assert_eq!(err.kind, ErrorKind::Validation);
+        assert_eq!(
+            err.details.as_ref().unwrap()["symbols_before"][0]["symbol"],
+            "NASDAQ:MSFT"
+        );
+    }
+
+    #[tokio::test]
+    async fn watchlist_remove_maps_missing_remove_control_to_internal_api_error() {
+        let mut runtime = FakeRuntime::new([
+            json!({"opened": false, "already_open": true, "source": "visible_watchlist_rows"}),
+            json!({
+                "error": "Remove control not found for watchlist symbol: NASDAQ:AAPL",
+                "error_kind": "internal_api_unavailable",
+                "symbol": "NASDAQ:AAPL",
+                "requested_symbol": "NASDAQ:AAPL",
+                "source": "dom_row",
+                "before_count": 1,
+                "matched_before": true,
+                "remove_method": null
+            }),
+        ]);
+
+        let err = watchlist_remove(&mut runtime, "NASDAQ:AAPL")
+            .await
+            .unwrap_err();
+
+        assert_eq!(err.kind, ErrorKind::InternalApiUnavailable);
+        assert_eq!(err.details.as_ref().unwrap()["matched_before"], true);
+    }
+
+    #[tokio::test]
+    async fn watchlist_remove_fails_when_symbol_remains_after_delete() {
+        let mut runtime = FakeRuntime::new([
+            json!({"opened": false, "already_open": true, "source": "visible_watchlist_rows"}),
+            json!({
+                "symbol": "NASDAQ:AAPL",
+                "requested_symbol": "NASDAQ:AAPL",
+                "action": "removed",
+                "removed": false,
+                "source": "dom_row",
+                "before_count": 1,
+                "after_count": 1,
+                "matched_before": true,
+                "matched_after": true,
+                "remove_method": "context_menu",
+                "confirmation_clicked": false
+            }),
+        ]);
+
+        let err = watchlist_remove(&mut runtime, "NASDAQ:AAPL")
+            .await
+            .unwrap_err();
+
+        assert_eq!(err.kind, ErrorKind::InternalApiUnavailable);
+        assert_eq!(err.details.as_ref().unwrap()["matched_after"], true);
     }
 
     #[tokio::test]

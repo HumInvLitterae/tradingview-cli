@@ -83,6 +83,8 @@ pub enum WatchlistCommand {
     Get,
     #[command(about = "Add a symbol to the watchlist")]
     Add { symbol: String },
+    #[command(about = "Remove a symbol from the watchlist")]
+    Remove { symbol: String },
 }
 
 #[derive(Debug, Subcommand)]
