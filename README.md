@@ -65,6 +65,12 @@ The wire shape may differ, but information compatibility is required for migrate
 - no release packaging
 - no MCP server implementation
 
+## Validation
+
+GitHub Actions runs the automated Rust baseline on push and pull request: `cargo fmt --check`, `cargo clippy --all-targets --all-features -- -D warnings`, and `cargo test` across Linux, macOS, and Windows.
+
+TradingView Desktop live smoke checks are intentionally separate from CI because they require a logged-in desktop session with Chrome DevTools Protocol enabled.
+
 ## Quick Start
 
 Launch TradingView Desktop with Chrome DevTools Protocol enabled:
@@ -157,6 +163,7 @@ Exit codes are:
 - an alert create ExecPlan and implementation slice
 - a pane mutation ExecPlan and implementation slice
 - an alert delete ExecPlan and implementation slice
+- a GitHub Actions CI baseline for Rust formatting, linting, and tests
 - a command lifecycle balance audit note
 - an operation-layer module refactor ExecPlan and implementation slice
 - a data-operation module refactor ExecPlan and implementation slice

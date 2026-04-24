@@ -28,6 +28,7 @@ Keep the Rust-native `tv` CLI reliable and useful as a replacement path for prac
 - `watchlist add` is implemented as an explicit operator mutation using DOM panel controls plus CDP input events
 - `watchlist remove <SYMBOL>` is implemented as a Rust-specific cleanup command for `watchlist add`; it is exact-match and row-scoped
 - command lifecycle balance has been audited, and no immediate asymmetric lifecycle gap is known in the implemented Rust CLI
+- GitHub Actions CI is configured for the automated Rust baseline
 - `pane layout`, `pane focus`, and `pane symbol` are implemented as explicit chart mutations using TradingView's chart widget collection
 
 ## Current v1 surface
@@ -106,6 +107,7 @@ Focus first on migration readiness:
 
 - keep README and agent-facing docs aligned with the implemented v1 surface
 - smoke-test the CLI against real TradingView Desktop sessions when available
+- keep GitHub Actions CI aligned with the local baseline
 - exercise the CLI from downstream workflows before deciding the next command slice
 - keep new operation code in the relevant `src/ops/` feature module
 - expand old CLI command coverage in planned slices, preserving information compatibility
@@ -119,13 +121,13 @@ Deferred old CLI surfaces that need planned implementation or an explicit exclus
 
 ## Validation baseline
 
-The Rust v1 implementation previously passed:
+The Rust v1 implementation is checked locally and in GitHub Actions with:
 
 ```bash
 cargo fmt --check
-cargo clippy --all-targets --all-features
+cargo clippy --all-targets --all-features -- -D warnings
 cargo test
 git diff --check
 ```
 
-Manual smoke testing previously passed against a running TradingView Desktop CDP target for the earlier v1 command set. `alert create` was live-smoked with an explicit test alert after the user approved account mutation smoke testing; that smoke alert was later deleted while confirming the `alert delete --id` endpoint.
+Manual smoke testing remains separate from CI because it requires a running, logged-in TradingView Desktop CDP target. `alert create` was live-smoked with an explicit test alert after the user approved account mutation smoke testing; that smoke alert was later deleted while confirming the `alert delete --id` endpoint.
