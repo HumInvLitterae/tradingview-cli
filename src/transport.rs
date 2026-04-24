@@ -56,6 +56,13 @@ impl TransportConfig {
     pub fn list_url(&self) -> String {
         format!("http://{}:{}/json/list", self.host, self.port)
     }
+
+    pub fn activate_url(&self, target_id: &str) -> String {
+        format!(
+            "http://{}:{}/json/activate/{}",
+            self.host, self.port, target_id
+        )
+    }
 }
 
 pub async fn fetch_targets(config: &TransportConfig) -> Result<Vec<Target>, AppError> {

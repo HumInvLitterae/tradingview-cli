@@ -44,6 +44,8 @@ Do not use `explicitly_not_planned` for ordinary missing old CLI commands unless
 - `draw list`
 - `draw get`
 - `draw remove`
+- `tab list`
+- `tab switch`
 - `data indicator`
 - `data strategy`
 - `data trades`
@@ -79,7 +81,8 @@ These old CLI surfaces are not first in line, but they are not automatically out
 - Pine editor commands
 - `draw clear`
 - replay commands
-- tab commands
+- `tab new`
+- `tab close`
 - stream commands
 - UI automation commands
 

@@ -10,6 +10,7 @@ mod layout;
 mod market;
 mod screenshot;
 mod status;
+mod tab;
 
 #[cfg(test)]
 mod test_support;
@@ -40,3 +41,4 @@ pub use layout::{
 pub use market::{ohlcv_bars, ohlcv_summary, quote, symbol_search};
 pub use screenshot::{screenshot_chart, screenshot_full};
 pub use status::status;
+pub use tab::{tab_list, tab_switch};

@@ -18,11 +18,13 @@ Rust now implements both `tv watchlist add <SYMBOL>` and `tv watchlist remove <S
 
 `draw shape/list/get/remove` is now implemented as a chart-local drawing lifecycle surface. `draw shape` returns the new drawing `entity_id`, `draw get` inspects that one drawing, and `draw remove` removes that exact drawing by id. `draw clear` remains deferred because it removes all chart drawings and has a much larger blast radius.
 
+`tab list/switch` is now implemented as a non-resource-destructive target operation surface. `tab list` reads existing TradingView chart targets from the CDP target list, and `tab switch` activates one existing chart target by index. These commands do not create or close tabs, so they do not introduce a new cleanup gap.
+
 ## Old CLI lifecycle pairs not yet migrated
 
 Some old JavaScript CLI areas expose lifecycle pairs, but those whole surfaces are still deferred in Rust. They should be planned as full high-risk surfaces, not treated as a single missing cleanup command for an already-implemented Rust mutation.
 
-- `tab new/close/switch/list`
+- `tab new/close`
 - `replay start/stop/status/step/autoplay/trade`
 
 These surfaces can mutate chart state, account state, or UI session state. Each needs its own ExecPlan before implementation, with downstream need, safety constraints, information compatibility, live smoke strategy, and recovery behavior recorded.
@@ -34,6 +36,7 @@ The following are intentionally not next by default:
 - `alert delete --all`
 - alert edit, pause, and resume commands
 - drawing `clear`
+- tab `new`
 - tab `close`
 - generic UI automation commands
 

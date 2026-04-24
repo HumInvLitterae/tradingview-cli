@@ -78,6 +78,11 @@ pub enum Command {
         #[command(subcommand)]
         command: PaneCommand,
     },
+    #[command(about = "Tab tools")]
+    Tab {
+        #[command(subcommand)]
+        command: TabCommand,
+    },
     #[command(about = "Capture a full screenshot")]
     Screenshot {
         #[arg(long, short, default_value = "full")]
@@ -229,6 +234,14 @@ pub enum PaneCommand {
     Symbol { index: usize, symbol: String },
 }
 
+#[derive(Debug, Subcommand)]
+pub enum TabCommand {
+    #[command(about = "List open TradingView chart tabs")]
+    List,
+    #[command(about = "Switch to a TradingView chart tab by zero-based index")]
+    Switch { index: usize },
+}
+
 impl Command {
     pub fn name(&self) -> &'static str {
         match self {
@@ -252,6 +265,7 @@ impl Command {
             Self::Draw { .. } => "draw",
             Self::Data { .. } => "data",
             Self::Pane { .. } => "pane",
+            Self::Tab { .. } => "tab",
             Self::Screenshot { .. } => "screenshot",
         }
     }
