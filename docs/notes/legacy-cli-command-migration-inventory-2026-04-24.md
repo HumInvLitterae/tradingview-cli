@@ -55,6 +55,12 @@ These commands still have known contract differences from the JavaScript CLI. Se
 
 No high-priority planned read-only backlog remains after the diagnostic read commands slice.
 
+## Rust-specific lifecycle considerations
+
+These surfaces are not direct old CLI migration items, but they may be needed because Rust has implemented a mutation that can leave account or workspace state behind:
+
+- `watchlist remove <SYMBOL>`: old JavaScript exposed `watchlist get` and `watchlist add`, but no remove command. Rust also has `watchlist add`, so a cleanup command should be investigated as an operator safety surface rather than old CLI parity.
+
 ## Deferred larger surfaces
 
 These old CLI surfaces are not first in line, but they are not automatically out of scope:
