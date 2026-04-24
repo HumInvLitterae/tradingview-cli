@@ -1,0 +1,79 @@
+use std::{collections::VecDeque, io::Cursor};
+
+use image::{ImageBuffer, ImageFormat, Rgba};
+use serde_json::Value;
+
+use crate::{
+    cdp::{RuntimeEvaluator, ScreenshotClip},
+    error::{AppError, ErrorKind},
+};
+
+pub(super) struct FakeRuntime {
+    pub(super) evaluated: Vec<(String, bool)>,
+    responses: VecDeque<Value>,
+    screenshot: Vec<u8>,
+    clipped_screenshot: Result<Vec<u8>, ErrorKind>,
+    pub(super) screenshot_count: usize,
+    pub(super) clipped_screenshot_count: usize,
+}
+
+impl FakeRuntime {
+    pub(super) fn new(responses: impl Into<VecDeque<Value>>) -> Self {
+        Self {
+            evaluated: Vec::new(),
+            responses: responses.into(),
+            screenshot: vec![137, 80, 78, 71],
+            clipped_screenshot: Ok(vec![137, 80, 78, 71]),
+            screenshot_count: 0,
+            clipped_screenshot_count: 0,
+        }
+    }
+
+    pub(super) fn with_screenshot(mut self, screenshot: Vec<u8>) -> Self {
+        self.screenshot = screenshot;
+        self
+    }
+
+    pub(super) fn with_clipped_screenshot(mut self, screenshot: Vec<u8>) -> Self {
+        self.clipped_screenshot = Ok(screenshot);
+        self
+    }
+
+    pub(super) fn with_clipped_error(mut self, kind: ErrorKind) -> Self {
+        self.clipped_screenshot = Err(kind);
+        self
+    }
+}
+
+impl RuntimeEvaluator for FakeRuntime {
+    async fn evaluate(&mut self, expression: &str, await_promise: bool) -> Result<Value, AppError> {
+        self.evaluated.push((expression.to_string(), await_promise));
+        Ok(self.responses.pop_front().unwrap_or(Value::Null))
+    }
+
+    async fn capture_screenshot(&mut self) -> Result<Vec<u8>, AppError> {
+        self.screenshot_count += 1;
+        Ok(self.screenshot.clone())
+    }
+
+    async fn capture_screenshot_clip(
+        &mut self,
+        _clip: ScreenshotClip,
+    ) -> Result<Vec<u8>, AppError> {
+        self.clipped_screenshot_count += 1;
+        self.clipped_screenshot
+            .clone()
+            .map_err(|kind| AppError::new(kind, "simulated clipped screenshot capture failure"))
+    }
+}
+
+pub(super) fn png_fixture(width: u32, height: u32) -> Vec<u8> {
+    let image = ImageBuffer::from_fn(width, height, |x, y| {
+        Rgba([(x % 255) as u8, (y % 255) as u8, 100, 255])
+    });
+    let mut cursor = Cursor::new(Vec::new());
+    image
+        .write_to(&mut cursor, ImageFormat::Png)
+        .expect("test PNG should encode");
+    cursor.into_inner()
+}
