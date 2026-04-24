@@ -75,7 +75,8 @@ fn watchlist_and_pane_help_list_read_subcommands() {
     tv().args(["watchlist", "--help"])
         .assert()
         .success()
-        .stdout(predicate::str::contains("get"));
+        .stdout(predicate::str::contains("get"))
+        .stdout(predicate::str::contains("add"));
     tv().args(["pane", "--help"])
         .assert()
         .success()
@@ -124,6 +125,16 @@ fn data_indicator_requires_entity_id() {
 }
 
 #[test]
+fn watchlist_add_requires_symbol() {
+    let assert = tv().args(["watchlist", "add"]).assert().failure().code(1);
+    let stderr = String::from_utf8(assert.get_output().stderr.clone()).unwrap();
+    let value: Value = serde_json::from_str(&stderr).unwrap();
+    assert_eq!(value["success"], false);
+    assert_eq!(value["command"], "tv");
+    assert_eq!(value["error"]["kind"], "validation");
+}
+
+#[test]
 fn read_utilities_attempt_connection_when_cdp_is_unavailable() {
     for args in [
         vec!["info"],
@@ -131,6 +142,7 @@ fn read_utilities_attempt_connection_when_cdp_is_unavailable() {
         vec!["discover"],
         vec!["ui-state"],
         vec!["watchlist", "get"],
+        vec!["watchlist", "add", "NASDAQ:AAPL"],
         vec!["alert", "list"],
         vec!["pane", "list"],
     ] {

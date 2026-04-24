@@ -24,7 +24,7 @@ pub use data::{
 };
 pub use data_depth::data_depth;
 pub use diagnostics::{discover, ui_state};
-pub use layout::{pane_list, watchlist_get};
+pub use layout::{pane_list, watchlist_add, watchlist_get};
 pub use market::{ohlcv_bars, ohlcv_summary, quote, symbol_search};
 pub use screenshot::{screenshot_chart, screenshot_full};
 pub use status::status;

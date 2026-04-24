@@ -20,6 +20,8 @@ pub trait RuntimeEvaluator {
     async fn evaluate(&mut self, expression: &str, await_promise: bool) -> Result<Value, AppError>;
     async fn capture_screenshot(&mut self) -> Result<Vec<u8>, AppError>;
     async fn capture_screenshot_clip(&mut self, clip: ScreenshotClip) -> Result<Vec<u8>, AppError>;
+    async fn insert_text(&mut self, text: &str) -> Result<(), AppError>;
+    async fn dispatch_key_event(&mut self, event: KeyEvent) -> Result<(), AppError>;
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, serde::Serialize)]
@@ -29,6 +31,29 @@ pub struct ScreenshotClip {
     pub width: f64,
     pub height: f64,
     pub scale: f64,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum KeyEventType {
+    KeyDown,
+    KeyUp,
+}
+
+impl KeyEventType {
+    fn as_cdp_type(self) -> &'static str {
+        match self {
+            Self::KeyDown => "keyDown",
+            Self::KeyUp => "keyUp",
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct KeyEvent {
+    pub event_type: KeyEventType,
+    pub key: &'static str,
+    pub code: &'static str,
+    pub windows_virtual_key_code: i64,
 }
 
 pub struct CdpClient {
@@ -126,6 +151,26 @@ impl RuntimeEvaluator for CdpClient {
             )
             .await?;
         screenshot_bytes_from_response(&response)
+    }
+
+    async fn insert_text(&mut self, text: &str) -> Result<(), AppError> {
+        self.call_method("Input.insertText", json!({ "text": text }))
+            .await
+            .map(|_| ())
+    }
+
+    async fn dispatch_key_event(&mut self, event: KeyEvent) -> Result<(), AppError> {
+        self.call_method(
+            "Input.dispatchKeyEvent",
+            json!({
+                "type": event.event_type.as_cdp_type(),
+                "key": event.key,
+                "code": event.code,
+                "windowsVirtualKeyCode": event.windows_virtual_key_code,
+            }),
+        )
+        .await
+        .map(|_| ())
     }
 }
 

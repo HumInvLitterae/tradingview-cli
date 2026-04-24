@@ -168,12 +168,22 @@ async fn dispatch(command: Command) -> Result<serde_json::Value, AppError> {
             let mut runtime = connect_runtime().await?;
             ops::scroll_to_date(&mut runtime, &date).await
         }
-        Command::Watchlist { command } => {
-            let mut runtime = connect_runtime().await?;
-            match command {
-                WatchlistCommand::Get => ops::watchlist_get(&mut runtime).await,
+        Command::Watchlist { command } => match command {
+            WatchlistCommand::Get => {
+                let mut runtime = connect_runtime().await?;
+                ops::watchlist_get(&mut runtime).await
             }
-        }
+            WatchlistCommand::Add { symbol } => {
+                if symbol.trim().is_empty() {
+                    return Err(AppError::new(
+                        ErrorKind::Validation,
+                        "Symbol must not be empty",
+                    ));
+                }
+                let mut runtime = connect_runtime().await?;
+                ops::watchlist_add(&mut runtime, &symbol).await
+            }
+        },
         Command::Alert { command } => {
             let mut runtime = connect_runtime().await?;
             match command {
