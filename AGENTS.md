@@ -20,21 +20,22 @@ Read these in order before making major decisions:
 4. `docs/notes/next-agent-handoff-prompt-2026-04-24.md`
 5. `docs/notes/rust-cli-contract-migration-2026-04-24.md`
 6. `docs/notes/legacy-cli-command-migration-inventory-2026-04-24.md`
-7. `docs/plans/tradingview-cli-alert-list-v1-9.md`
-8. `docs/plans/tradingview-cli-data-module-refactor-v1-10.md`
-9. `docs/plans/tradingview-cli-data-depth-v1-8.md`
-10. `docs/plans/tradingview-cli-ops-module-refactor-v1-7.md`
-11. `docs/plans/tradingview-cli-chart-type-v1-6.md`
-12. `docs/plans/tradingview-cli-diagnostic-read-commands-v1-4.md`
-13. `docs/plans/tradingview-cli-chart-region-screenshot-v1-3.md`
-14. `docs/plans/tradingview-cli-read-utilities-v1-2.md`
-15. `docs/plans/tradingview-cli-read-provider-migration-v1-1.md`
-16. `docs/plans/tradingview-cli-rust-v1.md`
-17. `docs/notes/tradingview-mcp-investigation-2026-04-24.md`
-18. `docs/plans/tradingview-cli-bootstrap-and-bridge-replacement.md`
-19. `docs/notes/next-agent-handoff-prompt-2026-04-21.md`
-20. `.agents/PLANS.md`
-21. `.agents/skills/continuity/SKILL.md` when the continuity skill is active
+7. `docs/plans/tradingview-cli-watchlist-add-v1-11.md`
+8. `docs/plans/tradingview-cli-alert-list-v1-9.md`
+9. `docs/plans/tradingview-cli-data-module-refactor-v1-10.md`
+10. `docs/plans/tradingview-cli-data-depth-v1-8.md`
+11. `docs/plans/tradingview-cli-ops-module-refactor-v1-7.md`
+12. `docs/plans/tradingview-cli-chart-type-v1-6.md`
+13. `docs/plans/tradingview-cli-diagnostic-read-commands-v1-4.md`
+14. `docs/plans/tradingview-cli-chart-region-screenshot-v1-3.md`
+15. `docs/plans/tradingview-cli-read-utilities-v1-2.md`
+16. `docs/plans/tradingview-cli-read-provider-migration-v1-1.md`
+17. `docs/plans/tradingview-cli-rust-v1.md`
+18. `docs/notes/tradingview-mcp-investigation-2026-04-24.md`
+19. `docs/plans/tradingview-cli-bootstrap-and-bridge-replacement.md`
+20. `docs/notes/next-agent-handoff-prompt-2026-04-21.md`
+21. `.agents/PLANS.md`
+22. `.agents/skills/continuity/SKILL.md` when the continuity skill is active
 
 If these sources disagree, preserve the higher-level user and system instructions, then update repository docs so the durable project state is clear again.
 
@@ -60,6 +61,7 @@ What is true right now:
 - the chart type slice is complete
 - the DOM-dependent data depth read slice is complete
 - the read-only alert list slice is complete
+- the watchlist add operator mutation slice is complete
 - the operation layer has been split from one oversized `src/ops.rs` into a thin facade plus feature modules under `src/ops/`
 - the data operation layer has been split from one large `src/ops/data.rs` into a thin facade plus capability modules under `src/ops/data/`
 - repo-local development guidelines now record module layout, style, contract, and validation rules for future work

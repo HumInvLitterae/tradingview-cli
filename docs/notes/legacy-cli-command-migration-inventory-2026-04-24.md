@@ -26,6 +26,7 @@ Do not use `explicitly_not_planned` for ordinary missing old CLI commands unless
 - `range`
 - `scroll`
 - `watchlist get`
+- `watchlist add`
 - `pane list`
 - `alert list`
 - `data indicator`
@@ -57,7 +58,6 @@ These old CLI surfaces are not first in line, but they are not automatically out
 - `pane layout`
 - `pane focus`
 - `pane symbol`
-- `watchlist add`
 - `alert create`
 - Pine editor commands
 - drawing commands

@@ -23,6 +23,7 @@ Keep the Rust-native `tv` CLI reliable and useful as a replacement path for prac
 - development guidelines are recorded in `docs/notes/development-guidelines-2026-04-24.md`
 - `data depth` is implemented as a read-only DOM-dependent slice and may require a visible DOM or Depth of Market panel
 - `alert list` is implemented as a read-only internal API slice; alert mutation remains deferred
+- `watchlist add` is implemented as an explicit operator mutation using DOM panel controls plus CDP input events
 
 ## Current v1 surface
 
@@ -42,6 +43,7 @@ The implemented commands are:
 - `tv range --from <UNIX_SECONDS> --to <UNIX_SECONDS>`
 - `tv scroll <DATE_OR_UNIX_SECONDS>`
 - `tv watchlist get`
+- `tv watchlist add <SYMBOL>`
 - `tv pane list`
 - `tv alert list`
 - `tv data indicator <ENTITY_ID>`
@@ -101,7 +103,7 @@ Focus first on migration readiness:
 Deferred old CLI surfaces that need planned implementation or an explicit exclusion decision:
 
 - whether launch automation belongs in this CLI or should remain external runbook material
-- larger old CLI surfaces such as pane mutation, watchlist mutation, alert creation, Pine, replay, stream, and UI automation
+- larger old CLI surfaces such as pane mutation, alert creation, Pine, replay, stream, and UI automation
 
 ## Validation baseline
 
