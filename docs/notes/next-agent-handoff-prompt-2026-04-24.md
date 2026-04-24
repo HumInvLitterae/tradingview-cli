@@ -19,6 +19,7 @@ Keep the Rust-native `tv` CLI reliable and useful as a replacement path for prac
 - chart-region screenshots have a first Rust implementation, but remain DOM-selector dependent
 - the high-priority planned read-only migration backlog is complete
 - the operation layer is split into a thin `src/ops.rs` facade plus feature modules under `src/ops/`; do not reintroduce a monolithic ops file or `mod.rs`
+- development guidelines are recorded in `docs/notes/development-guidelines-2026-04-24.md`
 
 ## Current v1 surface
 
@@ -62,12 +63,13 @@ The Rust CLI does not preserve the old JavaScript CLI's top-level payload wire s
 ## Your first tasks
 
 1. Read `README.md`
-2. Read `docs/notes/rust-cli-contract-migration-2026-04-24.md`
-3. Read `docs/notes/legacy-cli-command-migration-inventory-2026-04-24.md`
-4. Read `docs/plans/tradingview-cli-rust-v1.md`
-5. Read `docs/notes/tradingview-mcp-investigation-2026-04-24.md`
-6. Check `git status --short`
-7. Run targeted validation before changing behavior
+2. Read `docs/notes/development-guidelines-2026-04-24.md`
+3. Read `docs/notes/rust-cli-contract-migration-2026-04-24.md`
+4. Read `docs/notes/legacy-cli-command-migration-inventory-2026-04-24.md`
+5. Read `docs/plans/tradingview-cli-rust-v1.md`
+6. Read `docs/notes/tradingview-mcp-investigation-2026-04-24.md`
+7. Check `git status --short`
+8. Run targeted validation before changing behavior
 
 ## Constraints
 

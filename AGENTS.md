@@ -16,21 +16,22 @@ Read these in order before making major decisions:
 
 1. `CONTINUITY.md`
 2. `README.md`
-3. `docs/notes/next-agent-handoff-prompt-2026-04-24.md`
-4. `docs/notes/rust-cli-contract-migration-2026-04-24.md`
-5. `docs/notes/legacy-cli-command-migration-inventory-2026-04-24.md`
-6. `docs/plans/tradingview-cli-ops-module-refactor-v1-7.md`
-7. `docs/plans/tradingview-cli-chart-type-v1-6.md`
-8. `docs/plans/tradingview-cli-diagnostic-read-commands-v1-4.md`
-9. `docs/plans/tradingview-cli-chart-region-screenshot-v1-3.md`
-10. `docs/plans/tradingview-cli-read-utilities-v1-2.md`
-11. `docs/plans/tradingview-cli-read-provider-migration-v1-1.md`
-12. `docs/plans/tradingview-cli-rust-v1.md`
-13. `docs/notes/tradingview-mcp-investigation-2026-04-24.md`
-14. `docs/plans/tradingview-cli-bootstrap-and-bridge-replacement.md`
-15. `docs/notes/next-agent-handoff-prompt-2026-04-21.md`
-16. `.agents/PLANS.md`
-17. `.agents/skills/continuity/SKILL.md` when the continuity skill is active
+3. `docs/notes/development-guidelines-2026-04-24.md`
+4. `docs/notes/next-agent-handoff-prompt-2026-04-24.md`
+5. `docs/notes/rust-cli-contract-migration-2026-04-24.md`
+6. `docs/notes/legacy-cli-command-migration-inventory-2026-04-24.md`
+7. `docs/plans/tradingview-cli-ops-module-refactor-v1-7.md`
+8. `docs/plans/tradingview-cli-chart-type-v1-6.md`
+9. `docs/plans/tradingview-cli-diagnostic-read-commands-v1-4.md`
+10. `docs/plans/tradingview-cli-chart-region-screenshot-v1-3.md`
+11. `docs/plans/tradingview-cli-read-utilities-v1-2.md`
+12. `docs/plans/tradingview-cli-read-provider-migration-v1-1.md`
+13. `docs/plans/tradingview-cli-rust-v1.md`
+14. `docs/notes/tradingview-mcp-investigation-2026-04-24.md`
+15. `docs/plans/tradingview-cli-bootstrap-and-bridge-replacement.md`
+16. `docs/notes/next-agent-handoff-prompt-2026-04-21.md`
+17. `.agents/PLANS.md`
+18. `.agents/skills/continuity/SKILL.md` when the continuity skill is active
 
 If these sources disagree, preserve the higher-level user and system instructions, then update repository docs so the durable project state is clear again.
 
@@ -55,6 +56,7 @@ What is true right now:
 - the advanced data reads slice is complete
 - the chart type slice is complete
 - the operation layer has been split from one oversized `src/ops.rs` into a thin facade plus feature modules under `src/ops/`
+- repo-local development guidelines now record module layout, style, contract, and validation rules for future work
 - the original MCP workflow skills have been migrated into repo-local CLI skills with current capability gaps marked
 - this repository should stay narrower than a full reimplementation of the old bridge
 
@@ -106,6 +108,7 @@ If the answer still depends on unresolved bridge facts, investigate first and wr
 
 - `README.md`: project overview and current status
 - `CONTINUITY.md`: compaction-safe continuity ledger for current durable state
+- `docs/notes/development-guidelines-2026-04-24.md`: module layout, coding style, and validation guide
 - `src/ops.rs`: thin operation facade that re-exports feature modules
 - `src/ops/`: operation implementations grouped by capability
 - `docs/plans/`: bootstrap and successor ExecPlans
