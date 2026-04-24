@@ -65,6 +65,11 @@ pub async fn watchlist_add(
         .evaluate(
             r#"
             (function() {
+                var rightArea = document.querySelector('[class*="layout__area--right"]');
+                if (rightArea && rightArea.offsetWidth >= 50 && rightArea.querySelector('[data-symbol-full]')) {
+                    return { opened: false, already_open: true, source: 'visible_watchlist_rows' };
+                }
+
                 var btn = document.querySelector('[data-name="base-watchlist-widget-button"]')
                     || document.querySelector('[aria-label*="Watchlist"]');
                 if (!btn) return { error: 'Watchlist button not found' };
@@ -315,7 +320,25 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn watchlist_add_maps_missing_watchlist_button_to_internal_api_error() {
+    async fn watchlist_add_continues_when_watchlist_rows_are_already_visible() {
+        let mut runtime = FakeRuntime::new([
+            json!({"opened": false, "already_open": true, "source": "visible_watchlist_rows"}),
+            json!({"found": true, "method": "fallback"}),
+            json!(true),
+            json!(true),
+            json!(true),
+        ]);
+
+        let result = watchlist_add(&mut runtime, "NASDAQ:AAPL").await.unwrap();
+
+        assert_eq!(result["symbol"], "NASDAQ:AAPL");
+        assert_eq!(result["opened_panel"], false);
+        assert_eq!(runtime.inserted_text, vec!["NASDAQ:AAPL"]);
+        assert_eq!(runtime.key_events.len(), 4);
+    }
+
+    #[tokio::test]
+    async fn watchlist_add_maps_missing_watchlist_ui_to_internal_api_error() {
         let mut runtime = FakeRuntime::new([json!({"error": "Watchlist button not found"})]);
 
         let err = watchlist_add(&mut runtime, "NASDAQ:AAPL")

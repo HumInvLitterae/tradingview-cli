@@ -19,6 +19,8 @@ The command is an explicit operator mutation. It changes the active TradingView 
 - [x] (2026-04-24 00:00Z) Update tests and durable docs.
 - [x] (2026-04-24 00:00Z) Run the full validation baseline: `cargo fmt --check`, `cargo clippy --all-targets --all-features`, `cargo test`, `git diff --check`, and the tracked-doc local absolute path scan passed.
 - [x] (2026-04-24 00:00Z) Run live smoke with `cargo run -- watchlist add NASDAQ:AAPL`; the command reached TradingView but failed with `internal_api_unavailable` because the watchlist button was not found in the current UI state.
+- [x] (2026-04-24 00:00Z) Fix the live-smoke blocker by treating visible watchlist rows as proof that the watchlist panel is already open.
+- [x] (2026-04-24 00:00Z) Re-ran live smoke with `cargo run -- watchlist add NASDAQ:AAPL`; the command succeeded with `action: "added"`.
 - [ ] Commit implementation and docs in sensible batches.
 
 ## Surprises & Discoveries
@@ -31,6 +33,9 @@ The command is an explicit operator mutation. It changes the active TradingView 
 
 - Observation: The live TradingView UI in the smoke session did not expose the expected watchlist button selector.
   Evidence: `cargo run -- watchlist add NASDAQ:AAPL` returned `internal_api_unavailable` with message `Watchlist button not found`.
+
+- Observation: `watchlist get` can read the active watchlist even when the widgetbar button selector is unavailable.
+  Evidence: A later read returned `source: "data_attributes"` with 31 symbols and `ui-state` reported `right_panel.open: true`; the add flow now accepts visible `[data-symbol-full]` rows as an already-open watchlist.
 
 ## Decision Log
 
@@ -48,7 +53,7 @@ The command is an explicit operator mutation. It changes the active TradingView 
 
 ## Outcomes & Retrospective
 
-The implementation is complete and behavior-preserving outside the new command surface. The CLI now exposes `tv watchlist add <SYMBOL>`, and the operation uses DOM panel controls plus CDP input events rather than interpolating the symbol into JavaScript source. Automated validation passed. Live smoke reached the page but was blocked by the current TradingView UI not exposing the expected watchlist button selector.
+The implementation is complete and behavior-preserving outside the new command surface. The CLI now exposes `tv watchlist add <SYMBOL>`, and the operation uses DOM panel controls plus CDP input events rather than interpolating the symbol into JavaScript source. Automated validation passed. The first live smoke exposed a selector gap, and the follow-up fix now treats visible watchlist rows as an already-open panel instead of failing before the add button search.
 
 ## Context and Orientation
 
@@ -150,6 +155,16 @@ Live smoke:
 
     cargo run -- watchlist add NASDAQ:AAPL
     result: exit code 3, internal_api_unavailable, Watchlist button not found
+
+Follow-up selector fix:
+
+    cargo test ops::layout::tests::watchlist_add
+    result: ok. 4 watchlist add tests passed.
+
+Follow-up live smoke:
+
+    cargo run -- watchlist add NASDAQ:AAPL
+    result: success true, action added, add_button selector [data-name="add-symbol-button"], opened_panel false.
 
 ## Interfaces and Dependencies
 
