@@ -161,14 +161,19 @@ fn draw_help_lists_non_bulk_lifecycle_subcommands() {
 }
 
 #[test]
-fn tab_help_lists_non_destructive_subcommands() {
+fn tab_help_lists_lifecycle_subcommands() {
     tv().args(["tab", "--help"])
         .assert()
         .success()
         .stdout(predicate::str::contains("list"))
         .stdout(predicate::str::contains("switch"))
-        .stdout(predicate::str::contains("new").not())
-        .stdout(predicate::str::contains("close").not());
+        .stdout(predicate::str::contains("new"))
+        .stdout(predicate::str::contains("close"));
+
+    tv().args(["tab", "new", "--help"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("--from"));
 }
 
 #[test]
@@ -288,6 +293,8 @@ fn read_utilities_attempt_connection_when_cdp_is_unavailable() {
         vec!["draw", "remove", "shape-id"],
         vec!["tab", "list"],
         vec!["tab", "switch", "0"],
+        vec!["tab", "new"],
+        vec!["tab", "close", "0"],
         vec!["replay", "start"],
         vec!["replay", "step"],
         vec!["replay", "stop"],
@@ -327,6 +334,16 @@ fn draw_get_and_remove_require_entity_id() {
 #[test]
 fn tab_switch_requires_index() {
     let assert = tv().args(["tab", "switch"]).assert().failure().code(1);
+    let stderr = String::from_utf8(assert.get_output().stderr.clone()).unwrap();
+    let value: Value = serde_json::from_str(&stderr).unwrap();
+    assert_eq!(value["success"], false);
+    assert_eq!(value["command"], "tv");
+    assert_eq!(value["error"]["kind"], "validation");
+}
+
+#[test]
+fn tab_close_requires_index() {
+    let assert = tv().args(["tab", "close"]).assert().failure().code(1);
     let stderr = String::from_utf8(assert.get_output().stderr.clone()).unwrap();
     let value: Value = serde_json::from_str(&stderr).unwrap();
     assert_eq!(value["success"], false);

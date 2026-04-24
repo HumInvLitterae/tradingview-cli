@@ -588,6 +588,7 @@ async fn dispatch_key(
             key,
             code,
             windows_virtual_key_code,
+            modifiers: 0,
         })
         .await
 }

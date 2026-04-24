@@ -18,7 +18,7 @@ Rust now implements both `tv watchlist add <SYMBOL>` and `tv watchlist remove <S
 
 `draw shape/list/get/remove` is now implemented as a chart-local drawing lifecycle surface. `draw shape` returns the new drawing `entity_id`, `draw get` inspects that one drawing, and `draw remove` removes that exact drawing by id. `draw clear` remains deferred because it removes all chart drawings and has a much larger blast radius.
 
-`tab list/switch` is now implemented as a non-resource-destructive target operation surface. `tab list` reads existing TradingView chart targets from the CDP target list, and `tab switch` activates one existing chart target by index. These commands do not create or close tabs, so they do not introduce a new cleanup gap.
+`tab list/switch/new/close` is now implemented as a bounded tab lifecycle surface. `tab list` reads existing TradingView chart targets from the CDP target list and also reports TradingView Desktop app tabs from the tab-strip DOM, `tab switch` activates one existing chart target by index, `tab new` opens a new app tab from an explicit or unambiguous source chart tab, and `tab close` closes an explicit app-tab index. `tab close` refuses to close the final TradingView app tab. This is intentionally safer than the old current-tab close behavior.
 
 `replay start/step/stop/status/autoplay/trade` is now implemented as a bounded replay lifecycle surface. `start` enters replay mode, `step` advances one replay bar, `autoplay` toggles autoplay and can set only known safe delays, `trade` can buy, sell, or close a replay position, `stop` returns to realtime or reports `already_stopped`, and `status` reads the current state. Live smoke and downstream workflows must still close any replay position, disable autoplay if it was turned on, and use `stop` after a successful `start`.
 
@@ -35,8 +35,6 @@ The following are intentionally not next by default:
 - `alert delete --all`
 - alert edit, pause, and resume commands
 - drawing `clear`
-- tab `new`
-- tab `close`
 - generic UI automation commands
 
 These commands can remove many account or chart resources or depend heavily on localized UI state. They need stronger safety design than simple old CLI parity.
@@ -45,4 +43,4 @@ These commands can remove many account or chart resources or depend heavily on l
 
 No immediate asymmetric lifecycle gap is known in the implemented Rust CLI after `watchlist remove`.
 
-The next mutation surface should still be checked against this note before implementation. Account-level or destructive commands such as bulk alert deletion, drawing clear, tab close, and generic UI automation remain high-risk and need their own ExecPlan.
+The next mutation surface should still be checked against this note before implementation. Account-level or destructive commands such as bulk alert deletion, drawing clear, and generic UI automation remain high-risk and need their own ExecPlan.

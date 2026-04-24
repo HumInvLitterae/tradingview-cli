@@ -46,4 +46,4 @@ pub use replay::{
 };
 pub use screenshot::{screenshot_chart, screenshot_full};
 pub use status::status;
-pub use tab::{tab_list, tab_switch};
+pub use tab::{tab_close, tab_list, tab_new, tab_switch};

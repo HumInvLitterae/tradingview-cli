@@ -46,6 +46,8 @@ Do not use `explicitly_not_planned` for ordinary missing old CLI commands unless
 - `draw remove`
 - `tab list`
 - `tab switch`
+- `tab new`
+- `tab close`
 - `replay start`
 - `replay step`
 - `replay stop`
@@ -77,6 +79,8 @@ No high-priority planned read-only backlog remains after the diagnostic read com
 
 `watchlist remove <SYMBOL>` is implemented as a Rust-specific lifecycle command, not direct old CLI parity. The old JavaScript CLI exposed `watchlist get` and `watchlist add`, but no remove command. Rust includes remove because `watchlist add` can leave account watchlist state behind after live smoke or downstream operator workflows.
 
+`tab close <INDEX>` intentionally differs from the old JavaScript CLI's current-tab close command. Rust requires an explicit TradingView app-tab index and refuses to close the final TradingView app tab. `tab list` preserves the old practical chart-target list while also exposing `app_tabs` so newly opened blank app tabs can be identified and cleaned up. This preserves practical tab lifecycle behavior while reducing accidental destructive session changes.
+
 ## Deferred larger surfaces
 
 These old CLI surfaces are not first in line, but they are not automatically out of scope:
@@ -86,8 +90,6 @@ These old CLI surfaces are not first in line, but they are not automatically out
 - alert editing / pause / resume commands
 - Pine editor commands
 - `draw clear`
-- `tab new`
-- `tab close`
 - stream commands
 - UI automation commands
 

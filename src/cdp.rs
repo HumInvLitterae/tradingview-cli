@@ -54,6 +54,7 @@ pub struct KeyEvent {
     pub key: &'static str,
     pub code: &'static str,
     pub windows_virtual_key_code: i64,
+    pub modifiers: i64,
 }
 
 pub struct CdpClient {
@@ -167,6 +168,7 @@ impl RuntimeEvaluator for CdpClient {
                 "key": event.key,
                 "code": event.code,
                 "windowsVirtualKeyCode": event.windows_virtual_key_code,
+                "modifiers": event.modifiers,
             }),
         )
         .await

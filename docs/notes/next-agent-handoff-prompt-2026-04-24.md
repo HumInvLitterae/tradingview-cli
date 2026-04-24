@@ -32,7 +32,7 @@ Keep the Rust-native `tv` CLI reliable and useful as a replacement path for prac
 - `pane layout`, `pane focus`, and `pane symbol` are implemented as explicit chart mutations using TradingView's chart widget collection
 - `indicator add/remove/toggle/set/get` is implemented as a complete chart-local lifecycle mutation and read surface
 - `draw shape/list/get/remove` is implemented as a chart-local drawing lifecycle surface; `draw clear` remains deferred as bulk destructive cleanup
-- `tab list/switch` is implemented as a CDP target-level surface for existing TradingView chart tabs; `tab new` and `tab close` remain deferred
+- `tab list/switch/new/close` is implemented as a bounded tab lifecycle surface; `tab list` preserves chart-target fields and adds app-tab fields, while `tab close` requires an explicit app-tab index and refuses to close the final app tab
 - `replay start/step/stop/status/autoplay/trade` is implemented as a bounded replay lifecycle surface
 
 ## Current v1 surface
@@ -73,6 +73,8 @@ The implemented commands are:
 - `tv draw remove <ENTITY_ID>`
 - `tv tab list`
 - `tv tab switch <INDEX>`
+- `tv tab new [--from <INDEX>]`
+- `tv tab close <INDEX>`
 - `tv replay start [--date <YYYY-MM-DD>]`
 - `tv replay step`
 - `tv replay stop`
@@ -138,7 +140,7 @@ Focus first on migration readiness:
 Deferred old CLI surfaces that need planned implementation or an explicit exclusion decision:
 
 - whether launch automation belongs in this CLI or should remain external runbook material
-- larger old CLI surfaces such as alert bulk deletion/editing, draw clear, tab new/close, Pine, stream, and UI automation
+- larger old CLI surfaces such as alert bulk deletion/editing, draw clear, Pine, stream, and UI automation
 
 ## Validation baseline
 

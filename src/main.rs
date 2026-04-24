@@ -431,6 +431,8 @@ async fn dispatch(command: Command) -> Result<serde_json::Value, AppError> {
         Command::Tab { command } => match command {
             TabCommand::List => ops::tab_list(&config).await,
             TabCommand::Switch { index } => ops::tab_switch(&config, index).await,
+            TabCommand::New { from } => ops::tab_new(&config, from).await,
+            TabCommand::Close { index } => ops::tab_close(&config, index).await,
         },
         Command::Replay { command } => match command {
             ReplayCommand::Start { date } => {

@@ -245,6 +245,13 @@ pub enum TabCommand {
     List,
     #[command(about = "Switch to a TradingView chart tab by zero-based index")]
     Switch { index: usize },
+    #[command(about = "Open a new TradingView app tab from a chart tab")]
+    New {
+        #[arg(long)]
+        from: Option<usize>,
+    },
+    #[command(about = "Close a TradingView app tab by zero-based index")]
+    Close { index: usize },
 }
 
 #[derive(Debug, Subcommand)]
