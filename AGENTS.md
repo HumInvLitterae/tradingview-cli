@@ -20,41 +20,42 @@ Read these in order before making major decisions:
 4. `docs/notes/next-agent-handoff-prompt-2026-04-24.md`
 5. `docs/notes/rust-cli-contract-migration-2026-04-24.md`
 6. `docs/notes/legacy-cli-command-migration-inventory-2026-04-24.md`
-7. `docs/plans/tradingview-cli-launch-v1-30.md`
-8. `docs/plans/tradingview-cli-stream-read-v1-29.md`
-9. `docs/plans/tradingview-cli-pine-new-open-v1-28.md`
-10. `docs/plans/tradingview-cli-pine-analyze-check-v1-27.md`
-11. `docs/plans/tradingview-cli-pine-compile-v1-26.md`
-12. `docs/plans/tradingview-cli-pine-set-v1-25.md`
-13. `docs/plans/tradingview-cli-pine-read-v1-24.md`
-14. `docs/plans/tradingview-cli-tab-new-close-v1-23.md`
-15. `docs/plans/tradingview-cli-replay-trade-v1-22.md`
-16. `docs/plans/tradingview-cli-replay-autoplay-v1-21.md`
-17. `docs/plans/tradingview-cli-replay-basic-controls-v1-20.md`
-18. `docs/plans/tradingview-cli-replay-status-v1-19.md`
-19. `docs/plans/tradingview-cli-tab-list-switch-v1-18.md`
-20. `docs/plans/tradingview-cli-drawing-commands-v1-17.md`
-21. `docs/plans/tradingview-cli-indicator-commands-v1-16.md`
-22. `docs/plans/tradingview-cli-watchlist-remove-v1-15.md`
-23. `docs/plans/tradingview-cli-alert-delete-v1-14.md`
-24. `docs/plans/tradingview-cli-pane-mutation-v1-13.md`
-25. `docs/plans/tradingview-cli-alert-create-v1-12.md`
-26. `docs/plans/tradingview-cli-watchlist-add-v1-11.md`
-27. `docs/plans/tradingview-cli-alert-list-v1-9.md`
-28. `docs/plans/tradingview-cli-data-module-refactor-v1-10.md`
-29. `docs/plans/tradingview-cli-data-depth-v1-8.md`
-30. `docs/plans/tradingview-cli-ops-module-refactor-v1-7.md`
-31. `docs/plans/tradingview-cli-chart-type-v1-6.md`
-32. `docs/plans/tradingview-cli-diagnostic-read-commands-v1-4.md`
-33. `docs/plans/tradingview-cli-chart-region-screenshot-v1-3.md`
-34. `docs/plans/tradingview-cli-read-utilities-v1-2.md`
-35. `docs/plans/tradingview-cli-read-provider-migration-v1-1.md`
-36. `docs/plans/tradingview-cli-rust-v1.md`
-37. `docs/notes/tradingview-mcp-investigation-2026-04-24.md`
-38. `docs/plans/tradingview-cli-bootstrap-and-bridge-replacement.md`
-39. `docs/notes/next-agent-handoff-prompt-2026-04-21.md`
-40. `.agents/PLANS.md`
-41. `.agents/skills/continuity/SKILL.md` when the continuity skill is active
+7. `docs/notes/remaining-deferred-surface-audit-2026-04-25.md`
+8. `docs/plans/tradingview-cli-launch-v1-30.md`
+9. `docs/plans/tradingview-cli-stream-read-v1-29.md`
+10. `docs/plans/tradingview-cli-pine-new-open-v1-28.md`
+11. `docs/plans/tradingview-cli-pine-analyze-check-v1-27.md`
+12. `docs/plans/tradingview-cli-pine-compile-v1-26.md`
+13. `docs/plans/tradingview-cli-pine-set-v1-25.md`
+14. `docs/plans/tradingview-cli-pine-read-v1-24.md`
+15. `docs/plans/tradingview-cli-tab-new-close-v1-23.md`
+16. `docs/plans/tradingview-cli-replay-trade-v1-22.md`
+17. `docs/plans/tradingview-cli-replay-autoplay-v1-21.md`
+18. `docs/plans/tradingview-cli-replay-basic-controls-v1-20.md`
+19. `docs/plans/tradingview-cli-replay-status-v1-19.md`
+20. `docs/plans/tradingview-cli-tab-list-switch-v1-18.md`
+21. `docs/plans/tradingview-cli-drawing-commands-v1-17.md`
+22. `docs/plans/tradingview-cli-indicator-commands-v1-16.md`
+23. `docs/plans/tradingview-cli-watchlist-remove-v1-15.md`
+24. `docs/plans/tradingview-cli-alert-delete-v1-14.md`
+25. `docs/plans/tradingview-cli-pane-mutation-v1-13.md`
+26. `docs/plans/tradingview-cli-alert-create-v1-12.md`
+27. `docs/plans/tradingview-cli-watchlist-add-v1-11.md`
+28. `docs/plans/tradingview-cli-alert-list-v1-9.md`
+29. `docs/plans/tradingview-cli-data-module-refactor-v1-10.md`
+30. `docs/plans/tradingview-cli-data-depth-v1-8.md`
+31. `docs/plans/tradingview-cli-ops-module-refactor-v1-7.md`
+32. `docs/plans/tradingview-cli-chart-type-v1-6.md`
+33. `docs/plans/tradingview-cli-diagnostic-read-commands-v1-4.md`
+34. `docs/plans/tradingview-cli-chart-region-screenshot-v1-3.md`
+35. `docs/plans/tradingview-cli-read-utilities-v1-2.md`
+36. `docs/plans/tradingview-cli-read-provider-migration-v1-1.md`
+37. `docs/plans/tradingview-cli-rust-v1.md`
+38. `docs/notes/tradingview-mcp-investigation-2026-04-24.md`
+39. `docs/plans/tradingview-cli-bootstrap-and-bridge-replacement.md`
+40. `docs/notes/next-agent-handoff-prompt-2026-04-21.md`
+41. `.agents/PLANS.md`
+42. `.agents/skills/continuity/SKILL.md` when the continuity skill is active
 
 If these sources disagree, preserve the higher-level user and system instructions, then update repository docs so the durable project state is clear again.
 
@@ -92,6 +93,7 @@ What is true right now:
 - the replay command lifecycle slice is complete
 - the read-only stream command slice is complete and emits newline-delimited JSON envelopes
 - the bounded launch command slice is complete with no-kill default behavior
+- the remaining deferred old CLI surfaces have been audited; `pine save` is the next candidate only with a dedicated safety ExecPlan
 - the operation layer has been split from one oversized `src/ops.rs` into a thin facade plus feature modules under `src/ops/`
 - the data operation layer has been split from one large `src/ops/data.rs` into a thin facade plus capability modules under `src/ops/data/`
 - repo-local development guidelines now record module layout, style, contract, and validation rules for future work

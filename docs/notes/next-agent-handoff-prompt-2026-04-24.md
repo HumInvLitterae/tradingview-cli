@@ -37,6 +37,7 @@ Keep the Rust-native `tv` CLI reliable and useful as a replacement path for prac
 - `replay start/step/stop/status/autoplay/trade` is implemented as a bounded replay lifecycle surface
 - `stream quote/bars/values/lines/labels/tables/all` is implemented as read-only JSONL polling for shell and external monitoring workflows
 - `launch` is implemented as a bounded local process-control command; it is no-kill by default, treats an already responding CDP endpoint as success, and requires explicit `--kill-existing` for process termination
+- remaining deferred surfaces have been audited in `docs/notes/remaining-deferred-surface-audit-2026-04-25.md`; `pine save` is the next implementation candidate only with a dedicated safety ExecPlan
 
 ## Current v1 surface
 
@@ -156,6 +157,7 @@ Focus first on migration readiness:
 - keep new operation code in the relevant `src/ops/` feature module
 - expand old CLI command coverage in planned slices, preserving information compatibility
 - use `docs/notes/command-lifecycle-balance-audit-2026-04-24.md` when evaluating mutation surfaces and cleanup gaps
+- use `docs/notes/remaining-deferred-surface-audit-2026-04-25.md` before choosing among the remaining high-risk old CLI surfaces
 - record evidence before starting any post-v1 ExecPlan
 
 Deferred old CLI surfaces that need planned implementation or an explicit exclusion decision:

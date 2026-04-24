@@ -115,6 +115,8 @@ These old CLI surfaces are not first in line, but they are not automatically out
 - `draw clear`
 - UI automation commands
 
+See `docs/notes/remaining-deferred-surface-audit-2026-04-25.md` for the current classification of these remaining surfaces. That audit treats `pine save` as the next implementation candidate only with a dedicated ExecPlan, treats `pine raw-compile` as a likely no-direct-clone surface, keeps bulk destructive commands deferred, and keeps generic UI automation in research-only status.
+
 Before implementing these, write or update an ExecPlan that explains the downstream need, safety constraints, expected information contract, and recovery behavior.
 
 ## Explicitly not planned
