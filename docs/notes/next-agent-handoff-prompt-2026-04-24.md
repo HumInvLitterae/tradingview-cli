@@ -19,6 +19,7 @@ Keep the Rust-native `tv` CLI reliable and useful as a replacement path for prac
 - chart-region screenshots have a first Rust implementation, but remain DOM-selector dependent
 - the high-priority planned read-only migration backlog is complete
 - the operation layer is split into a thin `src/ops.rs` facade plus feature modules under `src/ops/`; do not reintroduce a monolithic ops file or `mod.rs`
+- the data operation layer is split into a thin `src/ops/data.rs` facade plus `indicator`, `strategy`, and `drawings` modules under `src/ops/data/`
 - development guidelines are recorded in `docs/notes/development-guidelines-2026-04-24.md`
 - `data depth` is implemented as a read-only DOM-dependent slice and may require a visible DOM or Depth of Market panel
 - `alert list` is implemented as a read-only internal API slice; alert mutation remains deferred
