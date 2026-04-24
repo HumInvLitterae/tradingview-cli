@@ -129,32 +129,61 @@ pub async fn alert_create(
                     textarea.dispatchEvent(new Event('change', {{ bubbles: true }}));
                 }}
 
-                var openButton = document.querySelector('[aria-label="Create Alert"]')
+                function visibleRect(element) {{
+                    var rect = element.getBoundingClientRect();
+                    return rect.width > 0 && rect.height > 0 ? rect : null;
+                }}
+
+                function textOf(element) {{
+                    return (element.textContent || element.innerText || '').trim();
+                }}
+
+                function findAlertDialog() {{
+                    var dialogs = Array.from(document.querySelectorAll('[role="dialog"], [class*="dialog"], [class*="popup"]'));
+                    for (var i = 0; i < dialogs.length; i++) {{
+                        if (visibleRect(dialogs[i]) && /アラート|alert/i.test(textOf(dialogs[i]))) {{
+                            return dialogs[i];
+                        }}
+                    }}
+                    return document;
+                }}
+
+                var openButton = document.querySelector('[data-name="set-alert-button"]')
+                    || document.querySelector('[aria-label="Create Alert"]')
+                    || document.querySelector('[aria-label="アラート作成"]')
                     || document.querySelector('[data-name="alerts"]');
                 var opened = false;
                 var openSelector = null;
                 if (openButton) {{
-                    openSelector = openButton.getAttribute('aria-label') === 'Create Alert'
-                        ? '[aria-label="Create Alert"]'
-                        : '[data-name="alerts"]';
+                    var ariaLabel = openButton.getAttribute('aria-label');
+                    var dataName = openButton.getAttribute('data-name');
+                    if (dataName === 'set-alert-button') {{
+                        openSelector = '[data-name="set-alert-button"]';
+                    }} else if (ariaLabel === 'Create Alert') {{
+                        openSelector = '[aria-label="Create Alert"]';
+                    }} else if (ariaLabel === 'アラート作成') {{
+                        openSelector = '[aria-label="アラート作成"]';
+                    }} else {{
+                        openSelector = '[data-name="alerts"]';
+                    }}
                     openButton.click();
                     opened = true;
                 }}
 
                 await sleep(1000);
 
-                var inputs = Array.from(document.querySelectorAll('[class*="alert"] input[type="text"], [class*="alert"] input[type="number"]'));
+                var scope = findAlertDialog();
+                var inputs = Array.from(scope.querySelectorAll('input'));
                 var priceInput = null;
                 for (var i = 0; i < inputs.length; i++) {{
-                    var row = inputs[i].closest('[class*="row"]');
-                    var label = row && row.querySelector('[class*="label"]');
-                    if (label && /value|price/i.test(label.textContent || '')) {{
+                    var value = inputs[i].value || '';
+                    if (/^-?\d+([.,]\d+)?$/.test(value.trim())) {{
                         priceInput = inputs[i];
                         break;
                     }}
                 }}
                 if (!priceInput && inputs.length > 0) {{
-                    priceInput = inputs[0];
+                    priceInput = inputs[inputs.length - 1];
                 }}
 
                 var priceSet = false;
@@ -165,23 +194,65 @@ pub async fn alert_create(
 
                 var messageSet = false;
                 if ({should_set_message}) {{
-                    var textarea = document.querySelector('[class*="alert"] textarea')
-                        || document.querySelector('textarea[placeholder*="message"]');
+                    scope = findAlertDialog();
+                    var textarea = scope.querySelector('textarea');
+                    if (!textarea) {{
+                        var labels = Array.from(scope.querySelectorAll('*'));
+                        var messageLabel = null;
+                        for (var k = 0; k < labels.length; k++) {{
+                            if (/^(message|メッセージ)$/i.test(textOf(labels[k]))) {{
+                                messageLabel = labels[k];
+                                break;
+                            }}
+                        }}
+                        if (messageLabel) {{
+                            var labelRect = visibleRect(messageLabel);
+                            var candidates = Array.from(scope.querySelectorAll('button')).filter(function(button) {{
+                                var rect = visibleRect(button);
+                                if (!rect || !labelRect || rect.top <= labelRect.top) return false;
+                                return !/^(create|作成|cancel|キャンセル|apply|適用)$/i.test(textOf(button));
+                            }}).sort(function(left, right) {{
+                                return left.getBoundingClientRect().top - right.getBoundingClientRect().top;
+                            }});
+                            if (candidates.length > 0) {{
+                                candidates[0].click();
+                                await sleep(300);
+                            }}
+                        }}
+                    }}
+
+                    scope = findAlertDialog();
+                    textarea = scope.querySelector('textarea')
+                        || document.querySelector('textarea[placeholder*="message"], textarea[placeholder*="メッセージ"]');
                     if (textarea) {{
                         setTextAreaValue(textarea, {message_literal});
                         messageSet = true;
+                        await sleep(100);
+                        var applyButton = Array.from(scope.querySelectorAll('button[data-name="submit"], button')).find(function(button) {{
+                            return /^(apply|適用)$/i.test(textOf(button));
+                        }});
+                        if (applyButton) {{
+                            applyButton.click();
+                            await sleep(300);
+                        }}
                     }}
                 }}
 
                 await sleep(500);
 
                 var createButton = null;
-                var buttons = Array.from(document.querySelectorAll('button[data-name="submit"], button'));
+                scope = findAlertDialog();
+                var buttons = Array.from(scope.querySelectorAll('button[data-name="submit"], button'));
                 for (var j = 0; j < buttons.length; j++) {{
-                    if (/^create$/i.test((buttons[j].textContent || '').trim())) {{
+                    if (/^(create|作成)$/i.test(textOf(buttons[j]))) {{
                         createButton = buttons[j];
                         break;
                     }}
+                }}
+                if (!createButton) {{
+                    createButton = buttons.find(function(button) {{
+                        return button.getAttribute('type') === 'submit' && !/^(apply|適用)$/i.test(textOf(button));
+                    }});
                 }}
 
                 var created = false;
@@ -393,6 +464,7 @@ mod tests {
         assert_eq!(data["price_set"], true);
         assert_eq!(data["source"], "dom_fallback");
         assert!(runtime.evaluated[0].0.contains("Create Alert"));
+        assert!(runtime.evaluated[0].0.contains("set-alert-button"));
         assert!(runtime.evaluated[0].0.contains("\"Breakout\""));
         assert!(runtime.evaluated[0].1);
     }

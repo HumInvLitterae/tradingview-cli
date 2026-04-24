@@ -25,6 +25,9 @@ This is an explicit account mutation. The command must be narrow, documented, an
 - Observation: The old JavaScript `alert create` accepts `condition` and returns it, but the DOM fallback mainly fills the price and optional message before clicking Create.
   Evidence: `../tradingview-mcp/src/core/alerts.js` returns `{ success, price, condition, message, price_set, source }`; its DOM logic sets price and message, then clicks the Create button.
 
+- Observation: The live Japanese TradingView UI exposes alert creation through localized labels and a panel-local button.
+  Evidence: The first live smoke opened `[data-name="alerts"]` but could not find the price input; DOM inspection showed `[data-name="set-alert-button"]`, `aria-label="アラート作成"`, dialog-local inputs, and a Japanese `作成` submit button.
+
 ## Decision Log
 
 - Decision: Implement only `alert create` in this slice.
@@ -63,7 +66,7 @@ After implementing code and docs, run:
     cargo clippy --all-targets --all-features
     cargo test
     git diff --check
-    git grep -nE '(/Users/|C:\\)' -- README.md AGENTS.md docs .agents/skills || true
+    tracked-doc local absolute path scan
 
 If `cargo fmt --check` fails only because of formatting, run `cargo fmt` and repeat the baseline.
 
@@ -87,7 +90,10 @@ Observed final validation:
     result: no matches
 
     live smoke
-    result: not run; alert creation mutates the user's TradingView account alerts.
+    command: cargo run -- alert create --price 13.6 --condition crossing --message "tv-alert-create-smoke-20260424T085553Z BATS:LWLG"
+    result: success true, price_set true, message_set true, open_selector [data-name="set-alert-button"], created true.
+
+The live smoke created an alert on `BATS:LWLG` at price `13.6`. It can be identified by the message `tv-alert-create-smoke-20260424T085553Z BATS:LWLG`.
 
 ## Validation and Acceptance
 
