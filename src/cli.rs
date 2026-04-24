@@ -265,6 +265,8 @@ pub enum ReplayCommand {
         #[arg(long, short)]
         speed: Option<u64>,
     },
+    #[command(about = "Execute a TradingView replay trade action")]
+    Trade { action: String },
 }
 
 impl Command {

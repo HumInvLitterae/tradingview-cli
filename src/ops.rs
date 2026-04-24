@@ -41,8 +41,8 @@ pub use layout::{
 };
 pub use market::{ohlcv_bars, ohlcv_summary, quote, symbol_search};
 pub use replay::{
-    replay_autoplay, replay_start, replay_status, replay_step, replay_stop,
-    validate_replay_autoplay_speed, validate_replay_date,
+    replay_autoplay, replay_start, replay_status, replay_step, replay_stop, replay_trade,
+    validate_replay_autoplay_speed, validate_replay_date, validate_replay_trade_action,
 };
 pub use screenshot::{screenshot_chart, screenshot_full};
 pub use status::status;

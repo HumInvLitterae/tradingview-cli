@@ -51,6 +51,7 @@ Do not use `explicitly_not_planned` for ordinary missing old CLI commands unless
 - `replay stop`
 - `replay status`
 - `replay autoplay`
+- `replay trade`
 - `data indicator`
 - `data strategy`
 - `data trades`
@@ -87,7 +88,6 @@ These old CLI surfaces are not first in line, but they are not automatically out
 - `draw clear`
 - `tab new`
 - `tab close`
-- `replay trade`
 - stream commands
 - UI automation commands
 

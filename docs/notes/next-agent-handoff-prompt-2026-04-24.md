@@ -33,7 +33,7 @@ Keep the Rust-native `tv` CLI reliable and useful as a replacement path for prac
 - `indicator add/remove/toggle/set/get` is implemented as a complete chart-local lifecycle mutation and read surface
 - `draw shape/list/get/remove` is implemented as a chart-local drawing lifecycle surface; `draw clear` remains deferred as bulk destructive cleanup
 - `tab list/switch` is implemented as a CDP target-level surface for existing TradingView chart tabs; `tab new` and `tab close` remain deferred
-- `replay start/step/stop/status/autoplay` is implemented as a bounded replay lifecycle surface; replay trade remains deferred
+- `replay start/step/stop/status/autoplay/trade` is implemented as a bounded replay lifecycle surface
 
 ## Current v1 surface
 
@@ -78,6 +78,7 @@ The implemented commands are:
 - `tv replay stop`
 - `tv replay status`
 - `tv replay autoplay [--speed <MS>]`
+- `tv replay trade <buy|sell|close>`
 - `tv data indicator <ENTITY_ID>`
 - `tv data strategy`
 - `tv data trades [--max <N>]`
@@ -137,7 +138,7 @@ Focus first on migration readiness:
 Deferred old CLI surfaces that need planned implementation or an explicit exclusion decision:
 
 - whether launch automation belongs in this CLI or should remain external runbook material
-- larger old CLI surfaces such as alert bulk deletion/editing, draw clear, tab new/close, Pine, replay trade, stream, and UI automation
+- larger old CLI surfaces such as alert bulk deletion/editing, draw clear, tab new/close, Pine, stream, and UI automation
 
 ## Validation baseline
 

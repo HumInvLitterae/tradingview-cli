@@ -459,6 +459,11 @@ async fn dispatch(command: Command) -> Result<serde_json::Value, AppError> {
                 let mut runtime = connect_runtime().await?;
                 ops::replay_autoplay(&mut runtime, speed).await
             }
+            ReplayCommand::Trade { action } => {
+                ops::validate_replay_trade_action(&action)?;
+                let mut runtime = connect_runtime().await?;
+                ops::replay_trade(&mut runtime, &action).await
+            }
         },
         Command::Screenshot { region, output } => {
             if !matches!(region.as_str(), "full" | "chart") {

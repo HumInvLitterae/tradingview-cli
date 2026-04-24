@@ -20,16 +20,13 @@ Rust now implements both `tv watchlist add <SYMBOL>` and `tv watchlist remove <S
 
 `tab list/switch` is now implemented as a non-resource-destructive target operation surface. `tab list` reads existing TradingView chart targets from the CDP target list, and `tab switch` activates one existing chart target by index. These commands do not create or close tabs, so they do not introduce a new cleanup gap.
 
-`replay start/step/stop/status/autoplay` is now implemented as a bounded replay lifecycle surface. `start` enters replay mode, `step` advances one replay bar, `autoplay` toggles autoplay and can set only known safe delays, `stop` returns to realtime or reports `already_stopped`, and `status` reads the current state. Live smoke and downstream workflows must still disable autoplay if it was turned on and use `stop` after a successful `start`.
+`replay start/step/stop/status/autoplay/trade` is now implemented as a bounded replay lifecycle surface. `start` enters replay mode, `step` advances one replay bar, `autoplay` toggles autoplay and can set only known safe delays, `trade` can buy, sell, or close a replay position, `stop` returns to realtime or reports `already_stopped`, and `status` reads the current state. Live smoke and downstream workflows must still close any replay position, disable autoplay if it was turned on, and use `stop` after a successful `start`.
 
 ## Old CLI lifecycle pairs not yet migrated
 
-Some old JavaScript CLI areas expose lifecycle pairs, but those whole surfaces are still deferred in Rust. They should be planned as full high-risk surfaces, not treated as a single missing cleanup command for an already-implemented Rust mutation.
+No old JavaScript CLI lifecycle pair is currently half-migrated in Rust.
 
-- `tab new/close`
-- `replay trade`
-
-These surfaces can mutate chart state, account state, or UI session state. Each needs its own ExecPlan before implementation, with downstream need, safety constraints, information compatibility, live smoke strategy, and recovery behavior recorded.
+The remaining larger old CLI surfaces can still mutate chart state, account state, or UI session state. Each needs its own ExecPlan before implementation, with downstream need, safety constraints, information compatibility, live smoke strategy, and recovery behavior recorded.
 
 ## Deferred high-risk cleanup and control surfaces
 
@@ -40,7 +37,6 @@ The following are intentionally not next by default:
 - drawing `clear`
 - tab `new`
 - tab `close`
-- replay trade commands
 - generic UI automation commands
 
 These commands can remove many account or chart resources or depend heavily on localized UI state. They need stronger safety design than simple old CLI parity.
