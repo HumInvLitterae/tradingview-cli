@@ -88,7 +88,15 @@ fn alert_help_lists_read_subcommands() {
     tv().args(["alert", "--help"])
         .assert()
         .success()
-        .stdout(predicate::str::contains("list"));
+        .stdout(predicate::str::contains("list"))
+        .stdout(predicate::str::contains("create"));
+
+    tv().args(["alert", "create", "--help"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("--price"))
+        .stdout(predicate::str::contains("--condition"))
+        .stdout(predicate::str::contains("--message"));
 }
 
 #[test]
@@ -144,6 +152,14 @@ fn read_utilities_attempt_connection_when_cdp_is_unavailable() {
         vec!["watchlist", "get"],
         vec!["watchlist", "add", "NASDAQ:AAPL"],
         vec!["alert", "list"],
+        vec![
+            "alert",
+            "create",
+            "--price",
+            "100",
+            "--condition",
+            "crossing",
+        ],
         vec!["pane", "list"],
     ] {
         let assert = tv()
@@ -157,6 +173,51 @@ fn read_utilities_attempt_connection_when_cdp_is_unavailable() {
         assert_eq!(value["success"], false);
         assert_eq!(value["error"]["kind"], "connection");
     }
+}
+
+#[test]
+fn alert_create_requires_price() {
+    let assert = tv().args(["alert", "create"]).assert().failure().code(1);
+    let stderr = String::from_utf8(assert.get_output().stderr.clone()).unwrap();
+    let value: Value = serde_json::from_str(&stderr).unwrap();
+    assert_eq!(value["success"], false);
+    assert_eq!(value["command"], "tv");
+    assert_eq!(value["error"]["kind"], "validation");
+}
+
+#[test]
+fn alert_create_rejects_invalid_condition_before_connecting() {
+    let assert = tv()
+        .args(["alert", "create", "--price", "100", "--condition", "above"])
+        .assert()
+        .failure()
+        .code(1);
+    let stderr = String::from_utf8(assert.get_output().stderr.clone()).unwrap();
+    let value: Value = serde_json::from_str(&stderr).unwrap();
+    assert_eq!(value["success"], false);
+    assert_eq!(value["command"], "alert");
+    assert_eq!(value["error"]["kind"], "validation");
+    assert!(
+        value["error"]["details"]["supported"]
+            .as_array()
+            .expect("supported alert conditions should be listed")
+            .contains(&Value::String("crossing".to_string()))
+    );
+}
+
+#[test]
+fn alert_create_rejects_non_finite_price_before_connecting() {
+    let assert = tv()
+        .env("TV_CDP_PORT", "9")
+        .args(["alert", "create", "--price", "NaN"])
+        .assert()
+        .failure()
+        .code(1);
+    let stderr = String::from_utf8(assert.get_output().stderr.clone()).unwrap();
+    let value: Value = serde_json::from_str(&stderr).unwrap();
+    assert_eq!(value["success"], false);
+    assert_eq!(value["command"], "alert");
+    assert_eq!(value["error"]["kind"], "validation");
 }
 
 #[test]

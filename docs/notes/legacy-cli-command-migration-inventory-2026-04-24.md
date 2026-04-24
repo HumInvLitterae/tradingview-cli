@@ -29,6 +29,7 @@ Do not use `explicitly_not_planned` for ordinary missing old CLI commands unless
 - `watchlist add`
 - `pane list`
 - `alert list`
+- `alert create`
 - `data indicator`
 - `data strategy`
 - `data trades`
@@ -58,7 +59,6 @@ These old CLI surfaces are not first in line, but they are not automatically out
 - `pane layout`
 - `pane focus`
 - `pane symbol`
-- `alert create`
 - Pine editor commands
 - drawing commands
 - replay commands

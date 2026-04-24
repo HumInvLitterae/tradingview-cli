@@ -53,7 +53,7 @@ pub enum Command {
         #[command(subcommand)]
         command: WatchlistCommand,
     },
-    #[command(about = "Alert read tools")]
+    #[command(about = "Alert tools")]
     Alert {
         #[command(subcommand)]
         command: AlertCommand,
@@ -89,6 +89,15 @@ pub enum WatchlistCommand {
 pub enum AlertCommand {
     #[command(about = "List TradingView alerts")]
     List,
+    #[command(about = "Create a TradingView price alert")]
+    Create {
+        #[arg(long, short)]
+        price: f64,
+        #[arg(long, short, default_value = "crossing")]
+        condition: String,
+        #[arg(long, short)]
+        message: Option<String>,
+    },
 }
 
 #[derive(Debug, Subcommand)]

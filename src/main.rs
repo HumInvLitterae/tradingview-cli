@@ -184,12 +184,27 @@ async fn dispatch(command: Command) -> Result<serde_json::Value, AppError> {
                 ops::watchlist_add(&mut runtime, &symbol).await
             }
         },
-        Command::Alert { command } => {
-            let mut runtime = connect_runtime().await?;
-            match command {
-                AlertCommand::List => ops::alert_list(&mut runtime).await,
+        Command::Alert { command } => match command {
+            AlertCommand::List => {
+                let mut runtime = connect_runtime().await?;
+                ops::alert_list(&mut runtime).await
             }
-        }
+            AlertCommand::Create {
+                price,
+                condition,
+                message,
+            } => {
+                if !price.is_finite() {
+                    return Err(AppError::new(
+                        ErrorKind::Validation,
+                        "price must be a finite number",
+                    ));
+                }
+                ops::validate_alert_condition(&condition)?;
+                let mut runtime = connect_runtime().await?;
+                ops::alert_create(&mut runtime, price, &condition, message.as_deref()).await
+            }
+        },
         Command::Data { command } => {
             let mut runtime = connect_runtime().await?;
             match command {
