@@ -18,11 +18,12 @@ Use this skill to compare several TradingView symbols through the Rust `tv` CLI 
 1. Set the timeframe once with `tv timeframe <RESOLUTION>` when the scan uses a shared timeframe.
 2. For each symbol, run `tv symbol <SYMBOL>`, then gather `tv quote` and `tv ohlcv --summary`.
 3. Use `tv values` for visible studies and `tv data lines` / `tv data labels` / `tv data boxes` when existing Pine drawings provide useful scan criteria.
-4. Capture screenshots selectively for finalists or ambiguous cases with `tv screenshot --region chart --output <PATH>`.
-5. Present a ranked shortlist and explain which observations came from CLI data versus visual interpretation.
+4. Use `tv stream quote`, `tv stream bars`, or `tv stream all` only for short live-monitoring windows after the serial scan identifies symbols worth watching.
+5. Capture screenshots selectively for finalists or ambiguous cases with `tv screenshot --region chart --output <PATH>`.
+6. Present a ranked shortlist and explain which observations came from CLI data versus visual interpretation.
 
 ## Boundaries
 
-The Rust CLI can inspect the current watchlist and read some chart-model data, but it does not currently add symbols to a watchlist. It also does not compute arbitrary historical indicator series or run strategy batches.
+The Rust CLI can inspect and mutate the current watchlist, read chart-model data, and stream read-only chart samples as JSONL. It does not compute arbitrary historical indicator series, run strategy batches, or provide a bulk batch-run helper.
 
 Read `references/workflow.md` when the task needs the original MCP scan shape translated into the current CLI surface.

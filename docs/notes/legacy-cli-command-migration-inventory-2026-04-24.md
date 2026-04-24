@@ -64,6 +64,13 @@ Do not use `explicitly_not_planned` for ordinary missing old CLI commands unless
 - `replay status`
 - `replay autoplay`
 - `replay trade`
+- `stream quote`
+- `stream bars`
+- `stream values`
+- `stream lines`
+- `stream labels`
+- `stream tables`
+- `stream all`
 - `data indicator`
 - `data strategy`
 - `data trades`
@@ -93,6 +100,8 @@ No high-priority planned read-only backlog remains after the diagnostic read com
 
 `pine get`, `pine set`, `pine new`, `pine open`, `pine compile`, `pine errors`, and `pine console` may open the Pine Editor panel to make Monaco available. `pine set` changes only the local Pine Editor buffer from stdin or `--file`. `pine new` replaces the local Pine Editor buffer with a known indicator, strategy, or library template. `pine open` loads a saved Pine script by exact name or unique partial name into the local Pine Editor buffer. Neither `pine new` nor `pine open` saves, compiles, or adds a study. `pine compile` compiles the current editor buffer and may add or update a chart-local study, but it intentionally refuses save-related action buttons and does not save or open scripts. `pine analyze` runs local static analysis without TradingView Desktop or network access. `pine check` posts source to TradingView's pine-facade compile endpoint without CDP or editor mutation. `pine list` reads saved script metadata through TradingView's pine-facade endpoint from the current page session.
 
+`stream quote`, `stream bars`, `stream values`, `stream lines`, `stream labels`, `stream tables`, and `stream all` are implemented as read-only polling commands. They print newline-delimited JSON envelopes and emit only changed samples. They are intended for shell and external monitoring workflows rather than request-response adapters.
+
 ## Deferred larger surfaces
 
 These old CLI surfaces are not first in line, but they are not automatically out of scope:
@@ -102,7 +111,6 @@ These old CLI surfaces are not first in line, but they are not automatically out
 - alert editing / pause / resume commands
 - Pine editor raw compile / persistence commands: `pine raw-compile`, `pine save`
 - `draw clear`
-- stream commands
 - UI automation commands
 
 Before implementing these, write or update an ExecPlan that explains the downstream need, safety constraints, expected information contract, and recovery behavior.

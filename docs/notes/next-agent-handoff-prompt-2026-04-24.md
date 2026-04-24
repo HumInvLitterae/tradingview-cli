@@ -35,6 +35,7 @@ Keep the Rust-native `tv` CLI reliable and useful as a replacement path for prac
 - `pine get/set/new/open/compile/analyze/check/errors/console/list` is implemented as a Pine surface; `set`, `new`, and `open` change only the editor buffer, `compile` compiles the current buffer, may add or update a chart-local study, and refuses save-related buttons, while `analyze` and `check` validate source without CDP editor mutation
 - `tab list/switch/new/close` is implemented as a bounded tab lifecycle surface; `tab list` preserves chart-target fields and adds app-tab fields, while `tab close` requires an explicit app-tab index and refuses to close the final app tab
 - `replay start/step/stop/status/autoplay/trade` is implemented as a bounded replay lifecycle surface
+- `stream quote/bars/values/lines/labels/tables/all` is implemented as read-only JSONL polling for shell and external monitoring workflows
 
 ## Current v1 surface
 
@@ -92,6 +93,13 @@ The implemented commands are:
 - `tv replay status`
 - `tv replay autoplay [--speed <MS>]`
 - `tv replay trade <buy|sell|close>`
+- `tv stream quote [--interval <MS>]`
+- `tv stream bars [--interval <MS>]`
+- `tv stream values [--interval <MS>]`
+- `tv stream lines [--filter <TEXT>] [--interval <MS>]`
+- `tv stream labels [--filter <TEXT>] [--interval <MS>]`
+- `tv stream tables [--filter <TEXT>] [--interval <MS>]`
+- `tv stream all [--interval <MS>]`
 - `tv data indicator <ENTITY_ID>`
 - `tv data strategy`
 - `tv data trades [--max <N>]`
@@ -109,7 +117,7 @@ The implemented commands are:
 
 The default CDP endpoint is `localhost:9222`. `TV_CDP_HOST` and `TV_CDP_PORT` can override it.
 
-All commands use structured JSON envelopes. Successful commands print `success: true` to stdout. Failed commands print `success: false` to stderr.
+Commands use structured JSON envelopes. Most successful commands print one `success: true` envelope to stdout. Stream commands print newline-delimited `success: true` envelopes, one line per changed sample. Failed commands print `success: false` to stderr.
 
 The Rust CLI does not preserve the old JavaScript CLI's top-level payload wire shape. Command payloads live under `data`, and errors live under `error.kind` / `error.message` / `error.details`. Read `docs/notes/rust-cli-contract-migration-2026-04-24.md` before changing adapters.
 
@@ -151,7 +159,7 @@ Focus first on migration readiness:
 Deferred old CLI surfaces that need planned implementation or an explicit exclusion decision:
 
 - whether launch automation belongs in this CLI or should remain external runbook material
-- larger old CLI surfaces such as alert bulk deletion/editing, draw clear, Pine raw-compile/save helpers, stream, and UI automation
+- larger old CLI surfaces such as alert bulk deletion/editing, draw clear, Pine raw-compile/save helpers, and UI automation
 
 ## Validation baseline
 

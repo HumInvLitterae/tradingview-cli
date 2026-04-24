@@ -95,6 +95,11 @@ pub enum Command {
         #[command(subcommand)]
         command: ReplayCommand,
     },
+    #[command(about = "Monitor TradingView chart data as JSONL")]
+    Stream {
+        #[command(subcommand)]
+        command: StreamCommand,
+    },
     #[command(about = "Capture a full screenshot")]
     Screenshot {
         #[arg(long, short, default_value = "full")]
@@ -316,6 +321,51 @@ pub enum ReplayCommand {
     Trade { action: String },
 }
 
+#[derive(Debug, Subcommand)]
+pub enum StreamCommand {
+    #[command(about = "Stream real-time price ticks")]
+    Quote {
+        #[arg(long, short)]
+        interval: Option<u64>,
+    },
+    #[command(about = "Stream last bar updates")]
+    Bars {
+        #[arg(long, short)]
+        interval: Option<u64>,
+    },
+    #[command(about = "Stream visible indicator values")]
+    Values {
+        #[arg(long, short)]
+        interval: Option<u64>,
+    },
+    #[command(about = "Stream Pine Script line.new() price levels")]
+    Lines {
+        #[arg(long, short)]
+        filter: Option<String>,
+        #[arg(long, short)]
+        interval: Option<u64>,
+    },
+    #[command(about = "Stream Pine Script label.new() annotations")]
+    Labels {
+        #[arg(long, short)]
+        filter: Option<String>,
+        #[arg(long, short)]
+        interval: Option<u64>,
+    },
+    #[command(about = "Stream Pine Script table.new() data")]
+    Tables {
+        #[arg(long, short)]
+        filter: Option<String>,
+        #[arg(long, short)]
+        interval: Option<u64>,
+    },
+    #[command(about = "Stream all panes in the current layout")]
+    All {
+        #[arg(long, short)]
+        interval: Option<u64>,
+    },
+}
+
 impl Command {
     pub fn name(&self) -> &'static str {
         match self {
@@ -342,6 +392,7 @@ impl Command {
             Self::Pane { .. } => "pane",
             Self::Tab { .. } => "tab",
             Self::Replay { .. } => "replay",
+            Self::Stream { .. } => "stream",
             Self::Screenshot { .. } => "screenshot",
         }
     }

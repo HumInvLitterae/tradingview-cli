@@ -25,6 +25,7 @@ fn help_lists_v1_commands() {
         .stdout(predicate::str::contains("pine"))
         .stdout(predicate::str::contains("tab"))
         .stdout(predicate::str::contains("replay"))
+        .stdout(predicate::str::contains("stream"))
         .stdout(predicate::str::contains("data"))
         .stdout(predicate::str::contains("pane"))
         .stdout(predicate::str::contains("range"))
@@ -233,6 +234,26 @@ fn replay_help_lists_basic_lifecycle_subcommands() {
         .assert()
         .success()
         .stdout(predicate::str::contains("<ACTION>"));
+}
+
+#[test]
+fn stream_help_lists_read_subcommands() {
+    tv().args(["stream", "--help"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("quote"))
+        .stdout(predicate::str::contains("bars"))
+        .stdout(predicate::str::contains("values"))
+        .stdout(predicate::str::contains("lines"))
+        .stdout(predicate::str::contains("labels"))
+        .stdout(predicate::str::contains("tables"))
+        .stdout(predicate::str::contains("all"));
+
+    tv().args(["stream", "lines", "--help"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("--filter"))
+        .stdout(predicate::str::contains("--interval"));
 }
 
 #[test]
@@ -461,6 +482,39 @@ fn pine_set_with_file_attempts_connection_when_cdp_is_unavailable() {
     let value: Value = serde_json::from_str(&stderr).unwrap();
     assert_eq!(value["success"], false);
     assert_eq!(value["command"], "pine");
+    assert_eq!(value["error"]["kind"], "connection");
+}
+
+#[test]
+fn stream_rejects_too_small_interval_before_connecting() {
+    let assert = tv()
+        .env("TV_CDP_PORT", "9")
+        .args(["stream", "quote", "--interval", "99"])
+        .assert()
+        .failure()
+        .code(1);
+    let stderr = String::from_utf8(assert.get_output().stderr.clone()).unwrap();
+    let value: Value = serde_json::from_str(&stderr).unwrap();
+    assert_eq!(value["success"], false);
+    assert_eq!(value["command"], "stream");
+    assert_eq!(value["error"]["kind"], "validation");
+    assert_eq!(value["error"]["details"]["minimum_interval_ms"], 100);
+}
+
+#[test]
+fn stream_attempts_connection_when_cdp_is_unavailable() {
+    let assert = tv()
+        .env("TV_CDP_PORT", "9")
+        .args(["stream", "quote", "--interval", "100"])
+        .assert()
+        .failure()
+        .code(2);
+    let stderr = String::from_utf8(assert.get_output().stderr.clone()).unwrap();
+    let stdout = String::from_utf8(assert.get_output().stdout.clone()).unwrap();
+    let value: Value = serde_json::from_str(&stderr).unwrap();
+    assert_eq!(stdout, "");
+    assert_eq!(value["success"], false);
+    assert_eq!(value["command"], "stream");
     assert_eq!(value["error"]["kind"], "connection");
 }
 

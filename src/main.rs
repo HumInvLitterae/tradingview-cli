@@ -8,13 +8,14 @@ mod transport;
 use std::{
     io::{self, IsTerminal, Read},
     process::ExitCode,
+    time::Duration,
 };
 
 use cdp::CdpClient;
 use clap::{Parser, error::ErrorKind as ClapErrorKind};
 use cli::{
     AlertCommand, Cli, Command, DataCommand, DrawingCommand, IndicatorCommand, PaneCommand,
-    PineCommand, ReplayCommand, TabCommand, WatchlistCommand,
+    PineCommand, ReplayCommand, StreamCommand, TabCommand, WatchlistCommand,
 };
 use error::{AppError, ErrorKind};
 use output::{ErrorBody, ErrorEnvelope, SuccessEnvelope};
@@ -43,6 +44,19 @@ async fn main() -> ExitCode {
             return ExitCode::from(1);
         }
     };
+
+    if let Command::Stream { command } = cli.command {
+        return match run_stream_command(command).await {
+            Ok(()) => ExitCode::SUCCESS,
+            Err(err) => {
+                let code = err.exit_code();
+                let envelope = ErrorEnvelope::new("stream", ErrorBody::from(err));
+                print_json_stderr(&envelope);
+                ExitCode::from(code)
+            }
+        };
+    }
+
     let command_name = cli.command.name();
 
     match dispatch(cli.command).await {
@@ -522,6 +536,7 @@ async fn dispatch(command: Command) -> Result<serde_json::Value, AppError> {
                 ops::replay_trade(&mut runtime, &action).await
             }
         },
+        Command::Stream { .. } => unreachable!("stream commands use a dedicated JSONL runner"),
         Command::Screenshot { region, output } => {
             if !matches!(region.as_str(), "full" | "chart") {
                 return Err(AppError::new(
@@ -542,6 +557,56 @@ async fn dispatch(command: Command) -> Result<serde_json::Value, AppError> {
                 "chart" => ops::screenshot_chart(&mut runtime, &output).await,
                 _ => unreachable!("screenshot region should be validated"),
             }
+        }
+    }
+}
+
+async fn run_stream_command(command: StreamCommand) -> Result<(), AppError> {
+    let request = stream_request_from_command(command)?;
+    let mut runtime = connect_runtime().await?;
+    let mut dedupe = ops::StreamDedupe::default();
+    let interval = Duration::from_millis(request.interval_ms);
+
+    loop {
+        match ops::stream_sample(&mut runtime, &request).await {
+            Ok(sample) => {
+                if dedupe.should_emit(&sample) {
+                    let envelope = SuccessEnvelope::new("stream", sample);
+                    print_jsonl_stdout(&envelope);
+                }
+            }
+            Err(err) => {
+                let envelope = ErrorEnvelope::new("stream", ErrorBody::from(err));
+                print_jsonl_stderr(&envelope);
+            }
+        }
+
+        tokio::time::sleep(interval).await;
+    }
+}
+
+fn stream_request_from_command(command: StreamCommand) -> Result<ops::StreamRequest, AppError> {
+    match command {
+        StreamCommand::Quote { interval } => {
+            ops::StreamRequest::new(ops::StreamKind::Quote, interval, None)
+        }
+        StreamCommand::Bars { interval } => {
+            ops::StreamRequest::new(ops::StreamKind::Bars, interval, None)
+        }
+        StreamCommand::Values { interval } => {
+            ops::StreamRequest::new(ops::StreamKind::Values, interval, None)
+        }
+        StreamCommand::Lines { filter, interval } => {
+            ops::StreamRequest::new(ops::StreamKind::Lines, interval, filter)
+        }
+        StreamCommand::Labels { filter, interval } => {
+            ops::StreamRequest::new(ops::StreamKind::Labels, interval, filter)
+        }
+        StreamCommand::Tables { filter, interval } => {
+            ops::StreamRequest::new(ops::StreamKind::Tables, interval, filter)
+        }
+        StreamCommand::All { interval } => {
+            ops::StreamRequest::new(ops::StreamKind::All, interval, None)
         }
     }
 }
@@ -619,5 +684,19 @@ fn print_json_stderr<T: serde::Serialize>(value: &T) {
     eprintln!(
         "{}",
         serde_json::to_string_pretty(value).expect("JSON envelope serialization should not fail")
+    );
+}
+
+fn print_jsonl_stdout<T: serde::Serialize>(value: &T) {
+    println!(
+        "{}",
+        serde_json::to_string(value).expect("JSON envelope serialization should not fail")
+    );
+}
+
+fn print_jsonl_stderr<T: serde::Serialize>(value: &T) {
+    eprintln!(
+        "{}",
+        serde_json::to_string(value).expect("JSON envelope serialization should not fail")
     );
 }
