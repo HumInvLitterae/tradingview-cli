@@ -11,6 +11,7 @@ The original chart-analysis skill reviewed a TradingView chart by setting symbol
 | `chart_get_state` | `tv state` |
 | `chart_set_symbol` | `tv symbol <SYMBOL>` |
 | `chart_set_timeframe` | `tv timeframe <RESOLUTION>` |
+| Chart type read/set | `tv type [CHART_TYPE]` |
 | `chart_scroll_to_date` | `tv scroll <DATE>` |
 | `chart_set_visible_range` | `tv range --from <UNIX_SECONDS> --to <UNIX_SECONDS>` |
 | `chart_get_visible_range` | `tv range` |

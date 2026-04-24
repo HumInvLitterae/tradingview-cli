@@ -48,6 +48,7 @@ The implemented commands are:
 - `tv data boxes [--filter <TEXT>] [--verbose]`
 - `tv symbol [SYMBOL]`
 - `tv timeframe [RESOLUTION]`
+- `tv type [CHART_TYPE]`
 - `tv screenshot --region full --output <PATH>`
 - `tv screenshot --region chart --output <PATH>`
 
@@ -92,7 +93,7 @@ Deferred old CLI surfaces that need planned implementation or an explicit exclus
 
 - whether `data depth` deserves a DOM-dependent slice
 - whether launch automation belongs in this CLI or should remain external runbook material
-- larger old CLI surfaces such as Pine, alerts, replay, stream, and UI automation
+- larger old CLI surfaces such as pane mutation, watchlist mutation, Pine, alerts, replay, stream, and UI automation
 
 ## Validation baseline
 

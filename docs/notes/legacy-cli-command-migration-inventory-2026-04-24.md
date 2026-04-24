@@ -37,6 +37,7 @@ Do not use `explicitly_not_planned` for ordinary missing old CLI commands unless
 - `data boxes`
 - `symbol [SYMBOL]`
 - `timeframe [RESOLUTION]`
+- `type [CHART_TYPE]`
 - `screenshot --region full --output <PATH>`
 - `screenshot --region chart --output <PATH>`
 
@@ -51,7 +52,6 @@ No high-priority planned read-only backlog remains after the diagnostic read com
 These old CLI surfaces are not first in line, but they are not automatically out of scope:
 
 - `launch`
-- `type`
 - `pane layout`
 - `pane focus`
 - `pane symbol`

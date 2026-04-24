@@ -15,7 +15,7 @@ Use this skill for live TradingView chart review through the Rust `tv` CLI.
 
 ## Core Workflow
 
-1. Set the requested market context with `tv symbol <SYMBOL>` and `tv timeframe <RESOLUTION>` when needed.
+1. Set the requested market context with `tv symbol <SYMBOL>`, `tv timeframe <RESOLUTION>`, and `tv type <CHART_TYPE>` when needed.
 2. Read chart context with `tv state`, `tv quote`, and `tv ohlcv --summary`.
 3. Read visible study values with `tv values` when indicators already exist on the chart.
 4. Read Pine drawing-derived levels or zones with `tv data lines`, `tv data labels`, `tv data tables`, or `tv data boxes` when the chart includes such primitives.
