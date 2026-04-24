@@ -20,6 +20,7 @@ Keep the Rust-native `tv` CLI reliable and useful as a replacement path for prac
 - the high-priority planned read-only migration backlog is complete
 - the operation layer is split into a thin `src/ops.rs` facade plus feature modules under `src/ops/`; do not reintroduce a monolithic ops file or `mod.rs`
 - development guidelines are recorded in `docs/notes/development-guidelines-2026-04-24.md`
+- `data depth` is implemented as a read-only DOM-dependent slice and may require a visible DOM or Depth of Market panel
 
 ## Current v1 surface
 
@@ -48,6 +49,7 @@ The implemented commands are:
 - `tv data labels [--filter <TEXT>] [--max <N>] [--verbose]`
 - `tv data tables [--filter <TEXT>]`
 - `tv data boxes [--filter <TEXT>] [--verbose]`
+- `tv data depth`
 - `tv symbol [SYMBOL]`
 - `tv timeframe [RESOLUTION]`
 - `tv type [CHART_TYPE]`
@@ -95,7 +97,6 @@ Focus first on migration readiness:
 
 Deferred old CLI surfaces that need planned implementation or an explicit exclusion decision:
 
-- whether `data depth` deserves a DOM-dependent slice
 - whether launch automation belongs in this CLI or should remain external runbook material
 - larger old CLI surfaces such as pane mutation, watchlist mutation, Pine, alerts, replay, stream, and UI automation
 

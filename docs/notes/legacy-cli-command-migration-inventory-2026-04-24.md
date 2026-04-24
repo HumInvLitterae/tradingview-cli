@@ -35,6 +35,7 @@ Do not use `explicitly_not_planned` for ordinary missing old CLI commands unless
 - `data labels`
 - `data tables`
 - `data boxes`
+- `data depth`
 - `symbol [SYMBOL]`
 - `timeframe [RESOLUTION]`
 - `type [CHART_TYPE]`
@@ -58,7 +59,6 @@ These old CLI surfaces are not first in line, but they are not automatically out
 - `watchlist add`
 - `alert list`
 - `alert create`
-- `data depth`
 - Pine editor commands
 - drawing commands
 - replay commands
