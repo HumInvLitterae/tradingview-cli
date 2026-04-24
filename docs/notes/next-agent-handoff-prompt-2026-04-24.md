@@ -18,6 +18,7 @@ Keep the Rust-native `tv` CLI reliable and useful as a replacement path for prac
 - missing old CLI commands are migration backlog unless explicitly excluded
 - chart-region screenshots have a first Rust implementation, but remain DOM-selector dependent
 - the high-priority planned read-only migration backlog is complete
+- the operation layer is split into a thin `src/ops.rs` facade plus feature modules under `src/ops/`; do not reintroduce a monolithic ops file or `mod.rs`
 
 ## Current v1 surface
 
@@ -86,6 +87,7 @@ Focus first on migration readiness:
 - keep README and agent-facing docs aligned with the implemented v1 surface
 - smoke-test the CLI against real TradingView Desktop sessions when available
 - exercise the CLI from downstream workflows before deciding the next command slice
+- keep new operation code in the relevant `src/ops/` feature module
 - expand old CLI command coverage in planned slices, preserving information compatibility
 - record evidence before starting any post-v1 ExecPlan
 

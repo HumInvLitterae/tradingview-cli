@@ -19,17 +19,18 @@ Read these in order before making major decisions:
 3. `docs/notes/next-agent-handoff-prompt-2026-04-24.md`
 4. `docs/notes/rust-cli-contract-migration-2026-04-24.md`
 5. `docs/notes/legacy-cli-command-migration-inventory-2026-04-24.md`
-6. `docs/plans/tradingview-cli-chart-type-v1-6.md`
-7. `docs/plans/tradingview-cli-diagnostic-read-commands-v1-4.md`
-8. `docs/plans/tradingview-cli-chart-region-screenshot-v1-3.md`
-9. `docs/plans/tradingview-cli-read-utilities-v1-2.md`
-10. `docs/plans/tradingview-cli-read-provider-migration-v1-1.md`
-11. `docs/plans/tradingview-cli-rust-v1.md`
-12. `docs/notes/tradingview-mcp-investigation-2026-04-24.md`
-13. `docs/plans/tradingview-cli-bootstrap-and-bridge-replacement.md`
-14. `docs/notes/next-agent-handoff-prompt-2026-04-21.md`
-15. `.agents/PLANS.md`
-16. `.agents/skills/continuity/SKILL.md` when the continuity skill is active
+6. `docs/plans/tradingview-cli-ops-module-refactor-v1-7.md`
+7. `docs/plans/tradingview-cli-chart-type-v1-6.md`
+8. `docs/plans/tradingview-cli-diagnostic-read-commands-v1-4.md`
+9. `docs/plans/tradingview-cli-chart-region-screenshot-v1-3.md`
+10. `docs/plans/tradingview-cli-read-utilities-v1-2.md`
+11. `docs/plans/tradingview-cli-read-provider-migration-v1-1.md`
+12. `docs/plans/tradingview-cli-rust-v1.md`
+13. `docs/notes/tradingview-mcp-investigation-2026-04-24.md`
+14. `docs/plans/tradingview-cli-bootstrap-and-bridge-replacement.md`
+15. `docs/notes/next-agent-handoff-prompt-2026-04-21.md`
+16. `.agents/PLANS.md`
+17. `.agents/skills/continuity/SKILL.md` when the continuity skill is active
 
 If these sources disagree, preserve the higher-level user and system instructions, then update repository docs so the durable project state is clear again.
 
@@ -53,6 +54,7 @@ What is true right now:
 - the diagnostic read commands slice is complete
 - the advanced data reads slice is complete
 - the chart type slice is complete
+- the operation layer has been split from one oversized `src/ops.rs` into a thin facade plus feature modules under `src/ops/`
 - the original MCP workflow skills have been migrated into repo-local CLI skills with current capability gaps marked
 - this repository should stay narrower than a full reimplementation of the old bridge
 
@@ -104,6 +106,8 @@ If the answer still depends on unresolved bridge facts, investigate first and wr
 
 - `README.md`: project overview and current status
 - `CONTINUITY.md`: compaction-safe continuity ledger for current durable state
+- `src/ops.rs`: thin operation facade that re-exports feature modules
+- `src/ops/`: operation implementations grouped by capability
 - `docs/plans/`: bootstrap and successor ExecPlans
 - `docs/notes/`: handoff notes, research notes, inventories
 - `.agents/PLANS.md`: ExecPlan standard used by this repository

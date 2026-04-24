@@ -141,6 +141,7 @@ Exit codes are:
 - a diagnostic read commands ExecPlan and implementation slice
 - an advanced data reads ExecPlan and implementation slice
 - a chart type ExecPlan and implementation slice
+- an operation-layer module refactor ExecPlan and implementation slice
 - repo-local CLI skills migrated from the original MCP workflow split
 
 ## Where to start
@@ -150,14 +151,15 @@ Read these in order:
 1. `docs/notes/next-agent-handoff-prompt-2026-04-24.md`
 2. `docs/notes/rust-cli-contract-migration-2026-04-24.md`
 3. `docs/notes/legacy-cli-command-migration-inventory-2026-04-24.md`
-4. `docs/plans/tradingview-cli-chart-type-v1-6.md`
-5. `docs/plans/tradingview-cli-advanced-data-reads-v1-5.md`
-6. `docs/plans/tradingview-cli-diagnostic-read-commands-v1-4.md`
-7. `docs/plans/tradingview-cli-chart-region-screenshot-v1-3.md`
-8. `docs/plans/tradingview-cli-read-utilities-v1-2.md`
-9. `docs/plans/tradingview-cli-read-provider-migration-v1-1.md`
-10. `docs/plans/tradingview-cli-rust-v1.md`
-11. `docs/notes/tradingview-mcp-investigation-2026-04-24.md`
-12. `docs/plans/tradingview-cli-bootstrap-and-bridge-replacement.md`
+4. `docs/plans/tradingview-cli-ops-module-refactor-v1-7.md`
+5. `docs/plans/tradingview-cli-chart-type-v1-6.md`
+6. `docs/plans/tradingview-cli-advanced-data-reads-v1-5.md`
+7. `docs/plans/tradingview-cli-diagnostic-read-commands-v1-4.md`
+8. `docs/plans/tradingview-cli-chart-region-screenshot-v1-3.md`
+9. `docs/plans/tradingview-cli-read-utilities-v1-2.md`
+10. `docs/plans/tradingview-cli-read-provider-migration-v1-1.md`
+11. `docs/plans/tradingview-cli-rust-v1.md`
+12. `docs/notes/tradingview-mcp-investigation-2026-04-24.md`
+13. `docs/plans/tradingview-cli-bootstrap-and-bridge-replacement.md`
 
-The first capability and boundary research milestone, the Rust v1 implementation milestone, the first read/provider migration slice, the read utilities migration slice, the chart-region screenshot slice, the diagnostic read commands slice, the advanced data reads slice, and the chart type slice are complete. The next milestone is migration readiness: keep the improved Rust JSON contract documented, preserve information compatibility for migrated commands, and choose any deferred old CLI surfaces only after evidence shows they belong in this CLI.
+The first capability and boundary research milestone, the Rust v1 implementation milestone, the first read/provider migration slice, the read utilities migration slice, the chart-region screenshot slice, the diagnostic read commands slice, the advanced data reads slice, the chart type slice, and the operation-layer module refactor are complete. The next milestone is migration readiness: keep the improved Rust JSON contract documented, preserve information compatibility for migrated commands, and choose any deferred old CLI surfaces only after evidence shows they belong in this CLI.
