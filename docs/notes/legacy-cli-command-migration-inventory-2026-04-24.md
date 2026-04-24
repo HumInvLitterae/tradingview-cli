@@ -33,6 +33,7 @@ Do not use `explicitly_not_planned` for ordinary missing old CLI commands unless
 - `pane symbol`
 - `alert list`
 - `alert create`
+- `alert delete --id`
 - `data indicator`
 - `data strategy`
 - `data trades`
@@ -59,6 +60,8 @@ No high-priority planned read-only backlog remains after the diagnostic read com
 These old CLI surfaces are not first in line, but they are not automatically out of scope:
 
 - `launch`
+- `alert delete --all`
+- alert editing / pause / resume commands
 - Pine editor commands
 - drawing commands
 - replay commands

@@ -92,7 +92,8 @@ fn alert_help_lists_read_subcommands() {
         .assert()
         .success()
         .stdout(predicate::str::contains("list"))
-        .stdout(predicate::str::contains("create"));
+        .stdout(predicate::str::contains("create"))
+        .stdout(predicate::str::contains("delete"));
 
     tv().args(["alert", "create", "--help"])
         .assert()
@@ -100,6 +101,11 @@ fn alert_help_lists_read_subcommands() {
         .stdout(predicate::str::contains("--price"))
         .stdout(predicate::str::contains("--condition"))
         .stdout(predicate::str::contains("--message"));
+
+    tv().args(["alert", "delete", "--help"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("--id"));
 }
 
 #[test]
@@ -163,6 +169,7 @@ fn read_utilities_attempt_connection_when_cdp_is_unavailable() {
             "--condition",
             "crossing",
         ],
+        vec!["alert", "delete", "--id", "4546454367"],
         vec!["pane", "list"],
         vec!["pane", "layout", "s"],
         vec!["pane", "focus", "0"],
@@ -179,6 +186,16 @@ fn read_utilities_attempt_connection_when_cdp_is_unavailable() {
         assert_eq!(value["success"], false);
         assert_eq!(value["error"]["kind"], "connection");
     }
+}
+
+#[test]
+fn alert_delete_requires_id() {
+    let assert = tv().args(["alert", "delete"]).assert().failure().code(1);
+    let stderr = String::from_utf8(assert.get_output().stderr.clone()).unwrap();
+    let value: Value = serde_json::from_str(&stderr).unwrap();
+    assert_eq!(value["success"], false);
+    assert_eq!(value["command"], "tv");
+    assert_eq!(value["error"]["kind"], "validation");
 }
 
 #[test]

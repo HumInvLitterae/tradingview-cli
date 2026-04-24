@@ -68,7 +68,7 @@ From the repository root, edit the Rust command surface and operation implementa
     cargo clippy --all-targets --all-features
     cargo test
     git diff --check
-    git grep -nE '(/Users/|C:\\)' -- README.md AGENTS.md docs .agents/skills || true
+    tracked-doc local absolute path scan
 
 If TradingView Desktop is running with CDP enabled, run a restore-safe smoke:
 
@@ -100,7 +100,7 @@ Automated validation summary:
     cargo clippy --all-targets --all-features
     cargo test
     git diff --check
-    git grep -nE '(/Users/|C:\\)' -- README.md AGENTS.md docs .agents/skills || true
+    tracked-doc local absolute path scan
 
 All commands completed successfully. `cargo test` reported 64 unit tests and 23 CLI contract tests passing.
 

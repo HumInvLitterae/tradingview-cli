@@ -98,6 +98,11 @@ pub enum AlertCommand {
         #[arg(long, short)]
         message: Option<String>,
     },
+    #[command(about = "Delete a TradingView alert by alert ID")]
+    Delete {
+        #[arg(long)]
+        id: String,
+    },
 }
 
 #[derive(Debug, Subcommand)]

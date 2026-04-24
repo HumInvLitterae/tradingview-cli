@@ -24,6 +24,7 @@ Keep the Rust-native `tv` CLI reliable and useful as a replacement path for prac
 - `data depth` is implemented as a read-only DOM-dependent slice and may require a visible DOM or Depth of Market panel
 - `alert list` is implemented as a read-only internal API slice
 - `alert create` is implemented as an explicit account mutation; downstream workflow helpers remain outside the core CLI
+- `alert delete --id` is implemented as an explicit account mutation and is the cleanup pair for created alerts
 - `watchlist add` is implemented as an explicit operator mutation using DOM panel controls plus CDP input events
 - `pane layout`, `pane focus`, and `pane symbol` are implemented as explicit chart mutations using TradingView's chart widget collection
 
@@ -52,6 +53,7 @@ The implemented commands are:
 - `tv pane symbol <INDEX> <SYMBOL>`
 - `tv alert list`
 - `tv alert create --price <NUMBER> [--condition <CONDITION>] [--message <TEXT>]`
+- `tv alert delete --id <ALERT_ID>`
 - `tv data indicator <ENTITY_ID>`
 - `tv data strategy`
 - `tv data trades [--max <N>]`
@@ -109,7 +111,7 @@ Focus first on migration readiness:
 Deferred old CLI surfaces that need planned implementation or an explicit exclusion decision:
 
 - whether launch automation belongs in this CLI or should remain external runbook material
-- larger old CLI surfaces such as alert deletion/editing, Pine, replay, stream, and UI automation
+- larger old CLI surfaces such as alert bulk deletion/editing, Pine, replay, stream, and UI automation
 
 ## Validation baseline
 
@@ -122,4 +124,4 @@ cargo test
 git diff --check
 ```
 
-Manual smoke testing previously passed against a running TradingView Desktop CDP target for the earlier v1 command set. `alert create` was live-smoked with an explicit test alert after the user approved account mutation smoke testing.
+Manual smoke testing previously passed against a running TradingView Desktop CDP target for the earlier v1 command set. `alert create` was live-smoked with an explicit test alert after the user approved account mutation smoke testing; that smoke alert was later deleted while confirming the `alert delete --id` endpoint.

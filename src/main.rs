@@ -204,6 +204,16 @@ async fn dispatch(command: Command) -> Result<serde_json::Value, AppError> {
                 let mut runtime = connect_runtime().await?;
                 ops::alert_create(&mut runtime, price, &condition, message.as_deref()).await
             }
+            AlertCommand::Delete { id } => {
+                if id.trim().is_empty() {
+                    return Err(AppError::new(
+                        ErrorKind::Validation,
+                        "Alert ID must not be empty",
+                    ));
+                }
+                let mut runtime = connect_runtime().await?;
+                ops::alert_delete(&mut runtime, &id).await
+            }
         },
         Command::Data { command } => {
             let mut runtime = connect_runtime().await?;
