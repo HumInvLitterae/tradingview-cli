@@ -6,9 +6,9 @@ The goal is not to implement these commands immediately. The goal is to decide w
 
 ## Current recommendation
 
-The next implementation candidate is `pine save`, but only after a dedicated ExecPlan.
+`pine save` has been implemented through a dedicated ExecPlan.
 
-`pine save` is the clearest remaining practical workflow gap because the Rust CLI can already read, set, compile, analyze, check, create, open, list, and inspect Pine scripts. Saving is the missing persistence step in that workflow. It is still higher risk than the recently completed Pine commands because it writes to TradingView cloud state, can trigger a naming dialog for unsaved scripts, and may overwrite an existing saved script.
+That closes the clearest remaining practical Pine workflow gap: the Rust CLI can now read, set, compile, analyze, check, create, open, list, save, and inspect Pine scripts. `pine save` remains isolated as an explicit persistence command because it writes to TradingView cloud state and can trigger a naming dialog for unsaved scripts.
 
 Do not implement `pine save` as a side effect of another Pine command. Keep `pine compile`, `pine check`, and `pine analyze` non-persistent.
 
@@ -16,7 +16,7 @@ Do not implement `pine save` as a side effect of another Pine command. Keep `pin
 
 | Surface | Classification | Reason |
 | --- | --- | --- |
-| `pine save` | `candidate_next` | Completes the Pine development loop, but persists to TradingView cloud and needs explicit safety and smoke rules. |
+| `pine save` | `implemented` | Completes the Pine development loop as an explicit persistence command with named-save conflict checks. |
 | `pine raw-compile` | `likely_no_direct_clone` | The old implementation clicks compile/add buttons without the Rust safety checks and can click save-related actions. Rust already has safer `pine compile` and `pine check`. |
 | `draw clear` | `high_risk_deferred` | The old implementation calls `removeAllShapes()`, which removes every chart drawing. Rust already supports scoped `draw remove <ENTITY_ID>`. |
 | `alert delete --all` | `high_risk_deferred` | The old implementation only opens an alerts context menu for manual confirmation. It does not provide a reliable structured bulk-delete contract. Rust already supports scoped `alert delete --id`. |
@@ -35,15 +35,14 @@ The old drawing clear command directly calls the chart API's all-shapes removal 
 
 The old UI automation surface is broad and generic. It can click by label/text/class, open panels, dispatch keyboard input, type text, hover, scroll, click by coordinates, find elements, toggle fullscreen, and evaluate arbitrary JavaScript. Rust should not import this as a general CLI surface without a narrower workflow reason.
 
-## Next ExecPlan requirements
+## Completed Pine save contract
 
-If `pine save` is selected next, the ExecPlan must decide:
+`pine save` was implemented in `docs/plans/tradingview-cli-pine-save-v1-31.md` with these contract choices:
 
-- whether the command is `tv pine save` only, or whether it also accepts an explicit script name for unsaved buffers
-- how to detect saved, unsaved, dirty, and dialog states
-- how to avoid accidental overwrite when the current editor buffer belongs to an existing script
-- what payload fields prove the save happened, such as `saved`, `action`, `dialog_handled`, `script_id`, `name`, `dirty_before`, and `dirty_after`
-- how to live-smoke safely, including restoring the original editor source and using a clearly named disposable script only if a new save is required
+- `tv pine save` saves the current Pine Editor buffer through an explicit persistence command.
+- `tv pine save --name <NAME>` supports naming a new unsaved script and rejects existing saved script name conflicts.
+- The payload reports `saved`, `action`, `name`, `dialog_handled`, `source`, `editor_open_before`, `opened_editor`, `dirty_before`, and `dirty_after`.
+- Live smoke remains optional because it can create or overwrite TradingView cloud state.
 
 If `draw clear` or `alert delete --all` is reconsidered, the ExecPlan must require explicit destructive intent, preflight counts, post-action verification, and a recovery story. Old CLI parity alone is not enough.
 

@@ -51,6 +51,11 @@ const PINE_COMPILE_WAIT: Duration = Duration::from_millis(0);
 #[cfg(not(test))]
 const PINE_COMPILE_WAIT: Duration = Duration::from_millis(2500);
 
+#[cfg(test)]
+const PINE_SAVE_WAIT: Duration = Duration::from_millis(0);
+#[cfg(not(test))]
+const PINE_SAVE_WAIT: Duration = Duration::from_millis(800);
+
 pub async fn pine_get(runtime: &mut impl RuntimeEvaluator) -> Result<Value, AppError> {
     let open_state = ensure_pine_editor_open(runtime).await?;
     let value = runtime
@@ -281,6 +286,53 @@ pub async fn pine_compile(runtime: &mut impl RuntimeEvaluator) -> Result<Value, 
     }))
 }
 
+pub async fn pine_save(
+    runtime: &mut impl RuntimeEvaluator,
+    name: Option<&str>,
+) -> Result<Value, AppError> {
+    let open_state = ensure_pine_editor_open(runtime).await?;
+    let before = runtime
+        .evaluate(&pine_save_preflight_expression(name), true)
+        .await?;
+    if let Some(error) = before.get("error").and_then(Value::as_str) {
+        return Err(pine_save_error(error.to_string(), before));
+    }
+
+    dispatch_key(runtime, KeyEventType::KeyDown, "s", "KeyS", 83, 2).await?;
+    dispatch_key(runtime, KeyEventType::KeyUp, "s", "KeyS", 83, 0).await?;
+    tokio::time::sleep(PINE_SAVE_WAIT).await;
+
+    let raw = runtime
+        .evaluate(&pine_save_post_shortcut_expression(name, &before), true)
+        .await?;
+    if let Some(error) = raw.get("error").and_then(Value::as_str) {
+        return Err(pine_save_error(error.to_string(), raw));
+    }
+    if raw
+        .get("dirty_after")
+        .and_then(Value::as_bool)
+        .unwrap_or(false)
+    {
+        return Err(AppError::new(
+            ErrorKind::InternalApiUnavailable,
+            "Pine save did not clear the dirty state",
+        )
+        .with_details(raw));
+    }
+
+    Ok(json!({
+        "saved": raw.get("saved").and_then(Value::as_bool).unwrap_or(true),
+        "action": raw.get("action").cloned().unwrap_or_else(|| json!("saved")),
+        "name": raw.get("name").cloned().unwrap_or(Value::Null),
+        "dialog_handled": raw.get("dialog_handled").and_then(Value::as_bool).unwrap_or(false),
+        "source": raw.get("source").cloned().unwrap_or_else(|| json!("dom_fallback")),
+        "editor_open_before": open_state.editor_open_before,
+        "opened_editor": open_state.opened_editor,
+        "dirty_before": raw.get("dirty_before").cloned().unwrap_or_else(|| before.get("dirty_before").cloned().unwrap_or(Value::Null)),
+        "dirty_after": raw.get("dirty_after").cloned().unwrap_or(Value::Null),
+    }))
+}
+
 pub async fn pine_errors(runtime: &mut impl RuntimeEvaluator) -> Result<Value, AppError> {
     let open_state = ensure_pine_editor_open(runtime).await?;
     let errors = runtime
@@ -428,6 +480,14 @@ async fn dispatch_ctrl_enter(runtime: &mut impl RuntimeEvaluator) -> Result<(), 
     dispatch_key(runtime, KeyEventType::KeyUp, "Enter", "Enter", 13, 0).await
 }
 
+fn pine_save_error(message: String, details: Value) -> AppError {
+    let kind = match details.get("kind").and_then(Value::as_str) {
+        Some("validation") => ErrorKind::Validation,
+        _ => ErrorKind::InternalApiUnavailable,
+    };
+    AppError::new(kind, message).with_details(details)
+}
+
 async fn dispatch_key(
     runtime: &mut impl RuntimeEvaluator,
     event_type: KeyEventType,
@@ -524,6 +584,165 @@ return fetch('https://pine-facade.tradingview.com/pine-facade/list/?filter=saved
             }});
     }})
     .catch(function(e) {{ return {{ error: e.message, kind: "internal_api_unavailable" }}; }});
+"#
+    ))
+}
+
+fn pine_save_preflight_expression(name: Option<&str>) -> String {
+    let requested_name =
+        serde_json::to_string(&name.map(str::trim)).expect("string serialization should not fail");
+    with_monaco(&format!(
+        r#"
+var requestedName = {requested_name};
+function normalizeName(value) {{
+    return (value || '').trim().toLowerCase();
+}}
+function dirtyState() {{
+    try {{
+        var buttons = Array.from(document.querySelectorAll('button, [role="button"], span, div'));
+        var dirty = null;
+        for (var i = 0; i < buttons.length; i++) {{
+            var text = (buttons[i].textContent || buttons[i].getAttribute('aria-label') || buttons[i].getAttribute('title') || '').trim();
+            if (!text) continue;
+            if (/unsaved version/i.test(text) || /未保存/.test(text)) dirty = true;
+            if (/^saved$/i.test(text) || /^保存済み$/.test(text)) dirty = false;
+        }}
+        return dirty;
+    }} catch(e) {{
+        return null;
+    }}
+}}
+function finish() {{
+    if (!requestedName) return {{ ok: true, dirty_before: dirtyState(), requested_name: null }};
+    var target = normalizeName(requestedName);
+    return fetch('https://pine-facade.tradingview.com/pine-facade/list/?filter=saved', {{ credentials: 'include' }})
+        .then(function(r) {{ return r.json(); }})
+        .then(function(scripts) {{
+            if (!Array.isArray(scripts)) return {{ error: "pine-facade returned unexpected data", kind: "internal_api_unavailable" }};
+            for (var i = 0; i < scripts.length; i++) {{
+                var script = scripts[i] || {{}};
+                var scriptName = normalizeName(script.scriptName);
+                var scriptTitle = normalizeName(script.scriptTitle);
+                if (scriptName === target || scriptTitle === target) {{
+                    return {{
+                        error: 'Pine script "' + requestedName + '" already exists',
+                        kind: "validation",
+                        requested_name: requestedName,
+                        existing: {{ name: script.scriptName || script.scriptTitle || 'Untitled', id: script.scriptIdPart || null, version: script.version || null }}
+                    }};
+                }}
+            }}
+            return {{ ok: true, dirty_before: dirtyState(), requested_name: requestedName }};
+        }})
+        .catch(function(e) {{ return {{ error: e.message, kind: "internal_api_unavailable" }}; }});
+}}
+return finish();
+"#
+    ))
+}
+
+fn pine_save_post_shortcut_expression(name: Option<&str>, preflight: &Value) -> String {
+    let requested_name =
+        serde_json::to_string(&name.map(str::trim)).expect("string serialization should not fail");
+    let dirty_before = serde_json::to_string(
+        &preflight
+            .get("dirty_before")
+            .cloned()
+            .unwrap_or(Value::Null),
+    )
+    .expect("JSON serialization should not fail");
+    with_monaco(&format!(
+        r#"
+var requestedName = {requested_name};
+var dirtyBefore = {dirty_before};
+function visible(el) {{
+    if (!el) return false;
+    var rect = el.getBoundingClientRect();
+    return rect.width > 0 && rect.height > 0 && el.offsetParent !== null;
+}}
+function label(el) {{
+    return (el.textContent || el.getAttribute('aria-label') || el.getAttribute('title') || '').trim();
+}}
+function dirtyState() {{
+    try {{
+        var nodes = Array.from(document.querySelectorAll('button, [role="button"], span, div'));
+        var dirty = null;
+        for (var i = 0; i < nodes.length; i++) {{
+            var text = label(nodes[i]);
+            if (!text) continue;
+            if (/unsaved version/i.test(text) || /未保存/.test(text)) dirty = true;
+            if (/^saved$/i.test(text) || /^保存済み$/.test(text)) dirty = false;
+        }}
+        return dirty;
+    }} catch(e) {{
+        return null;
+    }}
+}}
+function nativeSetValue(input, value) {{
+    var proto = input instanceof HTMLTextAreaElement ? HTMLTextAreaElement.prototype : HTMLInputElement.prototype;
+    var setter = Object.getOwnPropertyDescriptor(proto, 'value').set;
+    setter.call(input, value);
+    input.dispatchEvent(new Event('input', {{ bubbles: true }}));
+    input.dispatchEvent(new Event('change', {{ bubbles: true }}));
+}}
+function saveDialog() {{
+    var dialogs = Array.from(document.querySelectorAll('[role="dialog"], [class*="dialog"], [class*="modal"], [class*="popup"]')).filter(visible);
+    for (var i = 0; i < dialogs.length; i++) {{
+        var text = dialogs[i].textContent || '';
+        var buttons = Array.from(dialogs[i].querySelectorAll('button')).filter(visible);
+        var hasSave = buttons.some(function(button) {{ return /^save$/i.test(label(button)) || /^保存$/.test(label(button)); }});
+        var hasInput = dialogs[i].querySelector('input, textarea');
+        if (hasSave && (hasInput || /save/i.test(text) || /保存/.test(text))) return dialogs[i];
+    }}
+    return null;
+}}
+function clickSaveInDialog(dialog) {{
+    var buttons = Array.from(dialog.querySelectorAll('button')).filter(visible);
+    for (var i = 0; i < buttons.length; i++) {{
+        var text = label(buttons[i]);
+        if (/^save$/i.test(text) || /^保存$/.test(text)) {{
+            buttons[i].click();
+            return text || 'Save';
+        }}
+    }}
+    return null;
+}}
+function finish() {{
+    var dialog = saveDialog();
+    var dialogHandled = false;
+    var action = "saved";
+    if (dialog) {{
+        if (!requestedName) {{
+            return {{ error: "Pine save requires --name for an unsaved script", kind: "validation", dialog_open: true, dirty_before: dirtyBefore }};
+        }}
+        var input = dialog.querySelector('input[type="text"], input:not([type]), textarea');
+        if (!input) {{
+            return {{ error: "Pine save dialog did not expose a name input", kind: "internal_api_unavailable", dialog_open: true, dirty_before: dirtyBefore }};
+        }}
+        nativeSetValue(input, requestedName);
+        var clicked = clickSaveInDialog(dialog);
+        if (!clicked) {{
+            return {{ error: "Pine save dialog did not expose a Save button", kind: "internal_api_unavailable", dialog_open: true, dirty_before: dirtyBefore }};
+        }}
+        dialogHandled = true;
+        action = "saved_with_name";
+    }}
+    return new Promise(function(resolve) {{
+        setTimeout(function() {{
+            var dirtyAfter = dirtyState();
+            resolve({{
+                saved: dirtyAfter !== true,
+                action: action,
+                name: requestedName || null,
+                dialog_handled: dialogHandled,
+                source: "dom_fallback",
+                dirty_before: dirtyBefore,
+                dirty_after: dirtyAfter
+            }});
+        }}, 800);
+    }});
+}}
+return finish();
 "#
     ))
 }
@@ -921,6 +1140,129 @@ mod tests {
             error.message,
             "Pine open payload did not include source text"
         );
+    }
+
+    #[tokio::test]
+    async fn pine_save_returns_success_payload_for_existing_script() {
+        let mut runtime = FakeRuntime::new([
+            json!(true),
+            json!({"ok": true, "dirty_before": true, "requested_name": null}),
+            json!({
+                "saved": true,
+                "action": "saved",
+                "name": null,
+                "dialog_handled": false,
+                "source": "dom_fallback",
+                "dirty_before": true,
+                "dirty_after": false
+            }),
+        ]);
+
+        let result = pine_save(&mut runtime, None).await.unwrap();
+
+        assert_eq!(result["saved"], true);
+        assert_eq!(result["action"], "saved");
+        assert_eq!(result["dialog_handled"], false);
+        assert_eq!(result["dirty_before"], true);
+        assert_eq!(result["dirty_after"], false);
+        assert_eq!(runtime.key_events.len(), 2);
+        assert_eq!(runtime.key_events[0].key, "s");
+        assert_eq!(runtime.key_events[0].code, "KeyS");
+        assert_eq!(runtime.key_events[0].modifiers, 2);
+    }
+
+    #[tokio::test]
+    async fn pine_save_requires_name_when_dialog_opens() {
+        let mut runtime = FakeRuntime::new([
+            json!(true),
+            json!({"ok": true, "dirty_before": true, "requested_name": null}),
+            json!({
+                "error": "Pine save requires --name for an unsaved script",
+                "kind": "validation",
+                "dialog_open": true,
+                "dirty_before": true
+            }),
+        ]);
+
+        let error = pine_save(&mut runtime, None).await.unwrap_err();
+
+        assert_eq!(error.kind, ErrorKind::Validation);
+        assert_eq!(
+            error.message,
+            "Pine save requires --name for an unsaved script"
+        );
+        assert_eq!(runtime.key_events.len(), 2);
+    }
+
+    #[tokio::test]
+    async fn pine_save_rejects_existing_named_script_before_shortcut() {
+        let mut runtime = FakeRuntime::new([
+            json!(true),
+            json!({
+                "error": "Pine script \"Existing\" already exists",
+                "kind": "validation",
+                "requested_name": "Existing",
+                "existing": {"name": "Existing", "id": "abc"}
+            }),
+        ]);
+
+        let error = pine_save(&mut runtime, Some("Existing")).await.unwrap_err();
+
+        assert_eq!(error.kind, ErrorKind::Validation);
+        assert!(error.message.contains("already exists"));
+        assert!(runtime.key_events.is_empty());
+        assert!(runtime.evaluated[1].0.contains("pine-facade/list"));
+    }
+
+    #[tokio::test]
+    async fn pine_save_with_name_handles_dialog_and_serializes_name() {
+        let mut runtime = FakeRuntime::new([
+            json!(true),
+            json!({"ok": true, "dirty_before": true, "requested_name": "Named \"Script\""}),
+            json!({
+                "saved": true,
+                "action": "saved_with_name",
+                "name": "Named \"Script\"",
+                "dialog_handled": true,
+                "source": "dom_fallback",
+                "dirty_before": true,
+                "dirty_after": false
+            }),
+        ]);
+
+        let result = pine_save(&mut runtime, Some("Named \"Script\""))
+            .await
+            .unwrap();
+
+        assert_eq!(result["saved"], true);
+        assert_eq!(result["action"], "saved_with_name");
+        assert_eq!(result["name"], "Named \"Script\"");
+        assert_eq!(result["dialog_handled"], true);
+        let serialized_name = serde_json::to_string(&Some("Named \"Script\"")).unwrap();
+        assert!(runtime.evaluated[1].0.contains(&serialized_name));
+        assert!(runtime.evaluated[2].0.contains(&serialized_name));
+    }
+
+    #[tokio::test]
+    async fn pine_save_errors_when_dirty_state_remains() {
+        let mut runtime = FakeRuntime::new([
+            json!(true),
+            json!({"ok": true, "dirty_before": true, "requested_name": null}),
+            json!({
+                "saved": false,
+                "action": "saved",
+                "name": null,
+                "dialog_handled": false,
+                "source": "dom_fallback",
+                "dirty_before": true,
+                "dirty_after": true
+            }),
+        ]);
+
+        let error = pine_save(&mut runtime, None).await.unwrap_err();
+
+        assert_eq!(error.kind, ErrorKind::InternalApiUnavailable);
+        assert_eq!(error.message, "Pine save did not clear the dirty state");
     }
 
     #[tokio::test]

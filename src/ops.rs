@@ -46,7 +46,7 @@ pub use layout::{
 pub use market::{ohlcv_bars, ohlcv_summary, quote, symbol_search};
 pub use pine::{
     pine_analyze, pine_check, pine_compile, pine_console, pine_errors, pine_get, pine_list,
-    pine_new, pine_open, pine_set, validate_pine_script_type,
+    pine_new, pine_open, pine_save, pine_set, validate_pine_script_type,
 };
 pub use replay::{
     replay_autoplay, replay_start, replay_status, replay_step, replay_stop, replay_trade,

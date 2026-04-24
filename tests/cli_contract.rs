@@ -213,13 +213,13 @@ fn pine_help_lists_current_subcommands() {
         .stdout(predicate::str::contains("compile"))
         .stdout(predicate::str::contains("new"))
         .stdout(predicate::str::contains("open"))
+        .stdout(predicate::str::contains("save"))
         .stdout(predicate::str::contains("analyze"))
         .stdout(predicate::str::contains("check"))
         .stdout(predicate::str::contains("errors"))
         .stdout(predicate::str::contains("console"))
         .stdout(predicate::str::contains("list"))
-        .stdout(predicate::str::contains("raw-compile").not())
-        .stdout(predicate::str::contains("\n  save").not());
+        .stdout(predicate::str::contains("raw-compile").not());
 
     tv().args(["pine", "set", "--help"])
         .assert()
@@ -235,6 +235,11 @@ fn pine_help_lists_current_subcommands() {
         .assert()
         .success()
         .stdout(predicate::str::contains("--file"));
+
+    tv().args(["pine", "save", "--help"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("--name"));
 }
 
 #[test]
@@ -445,6 +450,21 @@ fn pine_open_requires_name_before_connecting() {
 }
 
 #[test]
+fn pine_save_rejects_empty_name_before_connecting() {
+    let assert = tv()
+        .env("TV_CDP_PORT", "9")
+        .args(["pine", "save", "--name", ""])
+        .assert()
+        .failure()
+        .code(1);
+    let stderr = String::from_utf8(assert.get_output().stderr.clone()).unwrap();
+    let value: Value = serde_json::from_str(&stderr).unwrap();
+    assert_eq!(value["success"], false);
+    assert_eq!(value["command"], "pine");
+    assert_eq!(value["error"]["kind"], "validation");
+}
+
+#[test]
 fn pine_new_attempts_connection_when_cdp_is_unavailable() {
     let assert = tv()
         .env("TV_CDP_PORT", "9")
@@ -610,6 +630,7 @@ fn read_utilities_attempt_connection_when_cdp_is_unavailable() {
         vec!["draw", "remove", "shape-id"],
         vec!["pine", "get"],
         vec!["pine", "compile"],
+        vec!["pine", "save"],
         vec!["pine", "errors"],
         vec!["pine", "console"],
         vec!["pine", "list"],
