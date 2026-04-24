@@ -4,9 +4,11 @@ This note audits old JavaScript CLI surfaces and the current Rust CLI for asymme
 
 ## Current Rust CLI lifecycle state
 
-The highest-priority lifecycle gap is `watchlist add`.
+The highest-priority lifecycle gap has been closed by `watchlist remove`.
 
-Rust now implements `tv watchlist add <SYMBOL>`, but neither this Rust CLI nor the old JavaScript CLI currently has `watchlist remove`. This is not an old CLI migration backlog item in the narrow sense, because the source CLI only exposed `watchlist get` and `watchlist add`. It is still a Rust CLI safety consideration because live smoke tests and downstream operator workflows can add symbols to an account watchlist without a matching cleanup command.
+Rust now implements both `tv watchlist add <SYMBOL>` and `tv watchlist remove <SYMBOL>`. The remove command is not an old CLI migration backlog item in the narrow sense, because the source CLI only exposed `watchlist get` and `watchlist add`. It is a Rust CLI safety command: live smoke tests and downstream operator workflows can add symbols to an account watchlist, so the Rust CLI needs a matching cleanup command.
+
+`watchlist remove` is intentionally row-scoped and exact-match only. It must prove the requested `data-symbol-full` exists before deletion and prove it is absent afterward. If the row is missing, or if TradingView does not expose a safe row-scoped remove control, the command fails instead of attempting a broad cleanup.
 
 `alert create` no longer has the same gap. Rust now implements `tv alert delete --id <ALERT_ID>`, which is the cleanup pair for created alerts. Bulk alert deletion remains deferred because it has a much larger account-level blast radius than deleting one known alert ID.
 
@@ -37,9 +39,6 @@ These commands can remove many account or chart resources or depend heavily on l
 
 ## Recommended next candidate
 
-The next cleanup-oriented command candidate is `tv watchlist remove <SYMBOL>`.
+No immediate asymmetric lifecycle gap is known in the implemented Rust CLI after `watchlist remove`.
 
-Before implementing it, write an ExecPlan that treats it as a Rust-native operator cleanup command rather than an old CLI migration. The plan should determine whether a stable internal API or a sufficiently safe DOM path exists, how to match symbols exactly, how to verify the symbol was removed, and how to live-smoke without damaging a user's real watchlist.
-
-The acceptance bar should be higher than `watchlist add`: deletion must prove that the requested symbol existed before removal and is absent afterward, or fail clearly without touching unrelated rows.
-
+The next mutation surface should still be checked against this note before implementation. Account-level or destructive commands such as bulk alert deletion, drawing clear, tab close, and generic UI automation remain high-risk and need their own ExecPlan.

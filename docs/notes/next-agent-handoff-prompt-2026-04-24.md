@@ -26,7 +26,8 @@ Keep the Rust-native `tv` CLI reliable and useful as a replacement path for prac
 - `alert create` is implemented as an explicit account mutation; downstream workflow helpers remain outside the core CLI
 - `alert delete --id` is implemented as an explicit account mutation and is the cleanup pair for created alerts
 - `watchlist add` is implemented as an explicit operator mutation using DOM panel controls plus CDP input events
-- command lifecycle balance has been audited; `watchlist remove <SYMBOL>` is the main Rust-specific cleanup candidate because `watchlist add` has no matching cleanup command
+- `watchlist remove <SYMBOL>` is implemented as a Rust-specific cleanup command for `watchlist add`; it is exact-match and row-scoped
+- command lifecycle balance has been audited, and no immediate asymmetric lifecycle gap is known in the implemented Rust CLI
 - `pane layout`, `pane focus`, and `pane symbol` are implemented as explicit chart mutations using TradingView's chart widget collection
 
 ## Current v1 surface
@@ -48,6 +49,7 @@ The implemented commands are:
 - `tv scroll <DATE_OR_UNIX_SECONDS>`
 - `tv watchlist get`
 - `tv watchlist add <SYMBOL>`
+- `tv watchlist remove <SYMBOL>`
 - `tv pane list`
 - `tv pane layout <LAYOUT>`
 - `tv pane focus <INDEX>`
@@ -108,7 +110,6 @@ Focus first on migration readiness:
 - keep new operation code in the relevant `src/ops/` feature module
 - expand old CLI command coverage in planned slices, preserving information compatibility
 - use `docs/notes/command-lifecycle-balance-audit-2026-04-24.md` when evaluating mutation surfaces and cleanup gaps
-- investigate `watchlist remove <SYMBOL>` as a Rust-native operator cleanup command before adding more account mutations
 - record evidence before starting any post-v1 ExecPlan
 
 Deferred old CLI surfaces that need planned implementation or an explicit exclusion decision:

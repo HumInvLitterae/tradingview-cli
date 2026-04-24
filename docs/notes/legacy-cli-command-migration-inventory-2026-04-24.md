@@ -27,6 +27,7 @@ Do not use `explicitly_not_planned` for ordinary missing old CLI commands unless
 - `scroll`
 - `watchlist get`
 - `watchlist add`
+- `watchlist remove`
 - `pane list`
 - `pane layout`
 - `pane focus`
@@ -57,9 +58,7 @@ No high-priority planned read-only backlog remains after the diagnostic read com
 
 ## Rust-specific lifecycle considerations
 
-These surfaces are not direct old CLI migration items, but they may be needed because Rust has implemented a mutation that can leave account or workspace state behind:
-
-- `watchlist remove <SYMBOL>`: old JavaScript exposed `watchlist get` and `watchlist add`, but no remove command. Rust also has `watchlist add`, so a cleanup command should be investigated as an operator safety surface rather than old CLI parity.
+`watchlist remove <SYMBOL>` is implemented as a Rust-specific lifecycle command, not direct old CLI parity. The old JavaScript CLI exposed `watchlist get` and `watchlist add`, but no remove command. Rust includes remove because `watchlist add` can leave account watchlist state behind after live smoke or downstream operator workflows.
 
 ## Deferred larger surfaces
 
