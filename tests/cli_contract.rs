@@ -172,14 +172,14 @@ fn tab_help_lists_non_destructive_subcommands() {
 }
 
 #[test]
-fn replay_help_lists_read_only_subcommands() {
+fn replay_help_lists_basic_lifecycle_subcommands() {
     tv().args(["replay", "--help"])
         .assert()
         .success()
         .stdout(predicate::str::contains("status"))
-        .stdout(predicate::str::contains("start").not())
-        .stdout(predicate::str::contains("step").not())
-        .stdout(predicate::str::contains("stop").not())
+        .stdout(predicate::str::contains("start"))
+        .stdout(predicate::str::contains("step"))
+        .stdout(predicate::str::contains("stop"))
         .stdout(predicate::str::contains("autoplay").not())
         .stdout(predicate::str::contains("trade").not());
 }
@@ -278,6 +278,9 @@ fn read_utilities_attempt_connection_when_cdp_is_unavailable() {
         vec!["draw", "remove", "shape-id"],
         vec!["tab", "list"],
         vec!["tab", "switch", "0"],
+        vec!["replay", "start"],
+        vec!["replay", "step"],
+        vec!["replay", "stop"],
         vec!["replay", "status"],
         vec!["pane", "list"],
         vec!["pane", "layout", "s"],
@@ -316,6 +319,21 @@ fn tab_switch_requires_index() {
     let value: Value = serde_json::from_str(&stderr).unwrap();
     assert_eq!(value["success"], false);
     assert_eq!(value["command"], "tv");
+    assert_eq!(value["error"]["kind"], "validation");
+}
+
+#[test]
+fn replay_start_rejects_invalid_date_before_connecting() {
+    let assert = tv()
+        .env("TV_CDP_PORT", "9")
+        .args(["replay", "start", "--date", "2026-02-31"])
+        .assert()
+        .failure()
+        .code(1);
+    let stderr = String::from_utf8(assert.get_output().stderr.clone()).unwrap();
+    let value: Value = serde_json::from_str(&stderr).unwrap();
+    assert_eq!(value["success"], false);
+    assert_eq!(value["command"], "replay");
     assert_eq!(value["error"]["kind"], "validation");
 }
 

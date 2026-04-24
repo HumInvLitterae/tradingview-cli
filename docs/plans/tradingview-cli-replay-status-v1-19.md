@@ -21,7 +21,7 @@ This is intentionally a read-only migration slice. Replay start, stepping, autop
 - [x] (2026-04-24 00:00Z) Update README, migration inventory, lifecycle audit, contract note, handoff docs, and agent guide.
 - [x] (2026-04-24 00:00Z) Run automated validation baseline.
 - [x] (2026-04-24 00:00Z) Run live TradingView Desktop smoke if a CDP session is available and record the result.
-- [ ] Commit the completed slice.
+- [x] (2026-04-24 00:00Z) Commit the completed slice.
 
 ## Surprises & Discoveries
 

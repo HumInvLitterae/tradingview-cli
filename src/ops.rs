@@ -40,7 +40,7 @@ pub use layout::{
     watchlist_get, watchlist_remove,
 };
 pub use market::{ohlcv_bars, ohlcv_summary, quote, symbol_search};
-pub use replay::replay_status;
+pub use replay::{replay_start, replay_status, replay_step, replay_stop, validate_replay_date};
 pub use screenshot::{screenshot_chart, screenshot_full};
 pub use status::status;
 pub use tab::{tab_list, tab_switch};

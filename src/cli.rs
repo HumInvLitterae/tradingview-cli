@@ -249,6 +249,15 @@ pub enum TabCommand {
 
 #[derive(Debug, Subcommand)]
 pub enum ReplayCommand {
+    #[command(about = "Start TradingView replay mode")]
+    Start {
+        #[arg(long, short)]
+        date: Option<String>,
+    },
+    #[command(about = "Advance one replay bar")]
+    Step,
+    #[command(about = "Stop TradingView replay mode")]
+    Stop,
     #[command(about = "Get current TradingView replay state")]
     Status,
 }

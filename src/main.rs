@@ -433,6 +433,21 @@ async fn dispatch(command: Command) -> Result<serde_json::Value, AppError> {
             TabCommand::Switch { index } => ops::tab_switch(&config, index).await,
         },
         Command::Replay { command } => match command {
+            ReplayCommand::Start { date } => {
+                if let Some(date) = date.as_deref() {
+                    ops::validate_replay_date(date)?;
+                }
+                let mut runtime = connect_runtime().await?;
+                ops::replay_start(&mut runtime, date.as_deref()).await
+            }
+            ReplayCommand::Step => {
+                let mut runtime = connect_runtime().await?;
+                ops::replay_step(&mut runtime).await
+            }
+            ReplayCommand::Stop => {
+                let mut runtime = connect_runtime().await?;
+                ops::replay_stop(&mut runtime).await
+            }
             ReplayCommand::Status => {
                 let mut runtime = connect_runtime().await?;
                 ops::replay_status(&mut runtime).await
