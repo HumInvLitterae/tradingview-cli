@@ -260,6 +260,11 @@ pub enum ReplayCommand {
     Stop,
     #[command(about = "Get current TradingView replay state")]
     Status,
+    #[command(about = "Toggle TradingView replay autoplay")]
+    Autoplay {
+        #[arg(long, short)]
+        speed: Option<u64>,
+    },
 }
 
 impl Command {

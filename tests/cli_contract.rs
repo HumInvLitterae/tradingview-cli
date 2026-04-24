@@ -180,8 +180,13 @@ fn replay_help_lists_basic_lifecycle_subcommands() {
         .stdout(predicate::str::contains("start"))
         .stdout(predicate::str::contains("step"))
         .stdout(predicate::str::contains("stop"))
-        .stdout(predicate::str::contains("autoplay").not())
+        .stdout(predicate::str::contains("autoplay"))
         .stdout(predicate::str::contains("trade").not());
+
+    tv().args(["replay", "autoplay", "--help"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("--speed"));
 }
 
 #[test]
@@ -282,6 +287,7 @@ fn read_utilities_attempt_connection_when_cdp_is_unavailable() {
         vec!["replay", "step"],
         vec!["replay", "stop"],
         vec!["replay", "status"],
+        vec!["replay", "autoplay", "--speed", "1000"],
         vec!["pane", "list"],
         vec!["pane", "layout", "s"],
         vec!["pane", "focus", "0"],
@@ -319,6 +325,21 @@ fn tab_switch_requires_index() {
     let value: Value = serde_json::from_str(&stderr).unwrap();
     assert_eq!(value["success"], false);
     assert_eq!(value["command"], "tv");
+    assert_eq!(value["error"]["kind"], "validation");
+}
+
+#[test]
+fn replay_autoplay_rejects_invalid_speed_before_connecting() {
+    let assert = tv()
+        .env("TV_CDP_PORT", "9")
+        .args(["replay", "autoplay", "--speed", "500"])
+        .assert()
+        .failure()
+        .code(1);
+    let stderr = String::from_utf8(assert.get_output().stderr.clone()).unwrap();
+    let value: Value = serde_json::from_str(&stderr).unwrap();
+    assert_eq!(value["success"], false);
+    assert_eq!(value["command"], "replay");
     assert_eq!(value["error"]["kind"], "validation");
 }
 

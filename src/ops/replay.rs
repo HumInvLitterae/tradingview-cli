@@ -5,6 +5,8 @@ use crate::{
     error::{AppError, ErrorKind},
 };
 
+const VALID_AUTOPLAY_DELAYS: [u64; 9] = [100, 143, 200, 300, 1000, 2000, 3000, 5000, 10000];
+
 pub async fn replay_start(
     runtime: &mut impl RuntimeEvaluator,
     date: Option<&str>,
@@ -256,6 +258,132 @@ pub async fn replay_stop(runtime: &mut impl RuntimeEvaluator) -> Result<Value, A
 
 pub fn validate_replay_date(date: &str) -> Result<(), AppError> {
     parse_replay_date_ms(date).map(|_| ())
+}
+
+pub fn validate_replay_autoplay_speed(speed: u64) -> Result<(), AppError> {
+    if speed == 0 || VALID_AUTOPLAY_DELAYS.contains(&speed) {
+        return Ok(());
+    }
+
+    Err(AppError::new(
+        ErrorKind::Validation,
+        format!(
+            "Invalid replay autoplay delay: {speed}ms. Use 0 or one of: {}.",
+            VALID_AUTOPLAY_DELAYS
+                .iter()
+                .map(u64::to_string)
+                .collect::<Vec<_>>()
+                .join(", ")
+        ),
+    )
+    .with_details(json!({
+        "speed": speed,
+        "supported": VALID_AUTOPLAY_DELAYS,
+    })))
+}
+
+pub async fn replay_autoplay(
+    runtime: &mut impl RuntimeEvaluator,
+    speed: Option<u64>,
+) -> Result<Value, AppError> {
+    if let Some(speed) = speed {
+        validate_replay_autoplay_speed(speed)?;
+    }
+
+    let requested_delay = speed.filter(|speed| *speed > 0);
+    let requested_delay_js = requested_delay
+        .map(|speed| speed.to_string())
+        .unwrap_or_else(|| "null".to_string());
+    let change_delay_check = if requested_delay.is_some() {
+        r#"
+                    if (typeof replay.changeAutoplayDelay !== 'function') {
+                        return {
+                            ok: false,
+                            error_kind: 'internal_api_unavailable',
+                            message: 'TradingView replay API is missing method: changeAutoplayDelay',
+                            missing_method: 'changeAutoplayDelay'
+                        };
+                    }
+"#
+    } else {
+        ""
+    };
+    let change_delay_call = if requested_delay.is_some() {
+        r#"
+                    replay.changeAutoplayDelay(requestedDelay);
+"#
+    } else {
+        ""
+    };
+
+    let data = runtime
+        .evaluate(
+            &format!(
+                r#"
+            (function() {{
+                function unwrap(value) {{
+                    return value && typeof value === 'object' && typeof value.value === 'function'
+                        ? value.value()
+                        : value;
+                }}
+
+                try {{
+                    var replay = window.TradingViewApi && window.TradingViewApi._replayApi;
+                    if (!replay) {{
+                        return {{
+                            ok: false,
+                            error_kind: 'internal_api_unavailable',
+                            message: 'TradingView replay API is not available'
+                        }};
+                    }}
+
+                    var required = ['isReplayStarted', 'toggleAutoplay', 'isAutoplayStarted', 'autoplayDelay'];
+                    for (var i = 0; i < required.length; i++) {{
+                        if (typeof replay[required[i]] !== 'function') {{
+                            return {{
+                                ok: false,
+                                error_kind: 'internal_api_unavailable',
+                                message: 'TradingView replay API is missing method: ' + required[i],
+                                missing_method: required[i]
+                            }};
+                        }}
+                    }}
+{change_delay_check}
+                    var started = !!unwrap(replay.isReplayStarted());
+                    if (!started) {{
+                        return {{
+                            ok: false,
+                            error_kind: 'validation',
+                            message: 'Replay is not started. Use replay start first.'
+                        }};
+                    }}
+
+                    var requestedDelay = {requested_delay_js};
+{change_delay_call}
+                    replay.toggleAutoplay();
+                    return {{
+                        ok: true,
+                        action: 'autoplay',
+                        autoplay_active: !!unwrap(replay.isAutoplayStarted()),
+                        delay_ms: unwrap(replay.autoplayDelay()),
+                        requested_delay_ms: requestedDelay,
+                        source: 'internal_api'
+                    }};
+                }} catch (error) {{
+                    return {{
+                        ok: false,
+                        error_kind: 'internal_api_unavailable',
+                        message: error && error.message ? error.message : String(error)
+                    }};
+                }}
+            }})()
+            "#
+            ),
+            false,
+        )
+        .await?;
+
+    normalize_replay_action(data)
 }
 
 pub async fn replay_status(runtime: &mut impl RuntimeEvaluator) -> Result<Value, AppError> {
@@ -556,6 +684,89 @@ mod tests {
         let result = replay_stop(&mut runtime).await.unwrap();
 
         assert_eq!(result["action"], "replay_stopped");
+    }
+
+    #[tokio::test]
+    async fn replay_autoplay_accepts_known_delays() {
+        for speed in VALID_AUTOPLAY_DELAYS {
+            let mut runtime = FakeRuntime::new([json!({
+                "ok": true,
+                "action": "autoplay",
+                "autoplay_active": true,
+                "delay_ms": speed,
+                "requested_delay_ms": speed,
+                "source": "internal_api"
+            })]);
+
+            let result = replay_autoplay(&mut runtime, Some(speed)).await.unwrap();
+
+            assert_eq!(result["action"], "autoplay");
+            assert_eq!(result["autoplay_active"], true);
+            assert_eq!(result["delay_ms"], speed);
+            assert_eq!(result["requested_delay_ms"], speed);
+            assert!(runtime.evaluated[0].0.contains("changeAutoplayDelay"));
+        }
+    }
+
+    #[tokio::test]
+    async fn replay_autoplay_rejects_invalid_speed_before_evaluating() {
+        for speed in [50, 99, 101, 500, 750, 1500, 9999, 20000] {
+            let mut runtime = FakeRuntime::new([]);
+
+            let error = replay_autoplay(&mut runtime, Some(speed))
+                .await
+                .unwrap_err();
+
+            assert_eq!(error.kind, ErrorKind::Validation);
+            assert!(runtime.evaluated.is_empty());
+        }
+    }
+
+    #[tokio::test]
+    async fn replay_autoplay_toggles_without_speed_change_when_omitted_or_zero() {
+        for speed in [None, Some(0)] {
+            let mut runtime = FakeRuntime::new([json!({
+                "ok": true,
+                "action": "autoplay",
+                "autoplay_active": false,
+                "delay_ms": 300,
+                "requested_delay_ms": null,
+                "source": "internal_api"
+            })]);
+
+            let result = replay_autoplay(&mut runtime, speed).await.unwrap();
+
+            assert_eq!(result["action"], "autoplay");
+            assert_eq!(result["requested_delay_ms"], Value::Null);
+            assert!(runtime.evaluated[0].0.contains("var requestedDelay = null"));
+            assert!(!runtime.evaluated[0].0.contains("changeAutoplayDelay"));
+        }
+    }
+
+    #[tokio::test]
+    async fn replay_autoplay_requires_started_replay() {
+        let mut runtime = FakeRuntime::new([json!({
+            "ok": false,
+            "error_kind": "validation",
+            "message": "Replay is not started. Use replay start first."
+        })]);
+
+        let error = replay_autoplay(&mut runtime, Some(1000)).await.unwrap_err();
+
+        assert_eq!(error.kind, ErrorKind::Validation);
+    }
+
+    #[tokio::test]
+    async fn replay_autoplay_maps_missing_api_to_internal_api_unavailable() {
+        let mut runtime = FakeRuntime::new([json!({
+            "ok": false,
+            "error_kind": "internal_api_unavailable",
+            "message": "TradingView replay API is not available"
+        })]);
+
+        let error = replay_autoplay(&mut runtime, None).await.unwrap_err();
+
+        assert_eq!(error.kind, ErrorKind::InternalApiUnavailable);
     }
 
     #[tokio::test]
