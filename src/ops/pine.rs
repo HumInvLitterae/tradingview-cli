@@ -1,7 +1,8 @@
 use serde_json::{Value, json};
+use std::time::Duration;
 
 use crate::{
-    cdp::RuntimeEvaluator,
+    cdp::{KeyEvent, KeyEventType, RuntimeEvaluator},
     error::{AppError, ErrorKind},
 };
 
@@ -44,6 +45,11 @@ struct EditorOpenState {
     editor_open_before: bool,
     opened_editor: bool,
 }
+
+#[cfg(test)]
+const PINE_COMPILE_WAIT: Duration = Duration::from_millis(0);
+#[cfg(not(test))]
+const PINE_COMPILE_WAIT: Duration = Duration::from_millis(2500);
 
 pub async fn pine_get(runtime: &mut impl RuntimeEvaluator) -> Result<Value, AppError> {
     let open_state = ensure_pine_editor_open(runtime).await?;
@@ -99,6 +105,67 @@ pub async fn pine_set(
         "lines_set": source.split('\n').count(),
         "char_count": source.chars().count(),
         "input_source": input_source,
+        "editor_open_before": open_state.editor_open_before,
+        "opened_editor": open_state.opened_editor,
+    }))
+}
+
+pub async fn pine_compile(runtime: &mut impl RuntimeEvaluator) -> Result<Value, AppError> {
+    let open_state = ensure_pine_editor_open(runtime).await?;
+    let studies_before = pine_study_count(runtime).await?;
+    let button_result = runtime
+        .evaluate(PINE_COMPILE_BUTTON_EXPRESSION, false)
+        .await?;
+
+    if button_result
+        .get("blocked_save")
+        .and_then(Value::as_bool)
+        .unwrap_or(false)
+    {
+        return Err(AppError::new(
+            ErrorKind::InternalApiUnavailable,
+            "Pine compile found only a save-related action button",
+        )
+        .with_details(button_result));
+    }
+
+    let clicked = button_result
+        .get("clicked")
+        .and_then(Value::as_bool)
+        .unwrap_or(false);
+    let button_clicked = button_result
+        .get("button_text")
+        .and_then(Value::as_str)
+        .filter(|text| !text.trim().is_empty())
+        .map(normalize_button_text);
+
+    let action = if clicked {
+        button_clicked.unwrap_or_else(|| "compile_button".to_string())
+    } else {
+        dispatch_ctrl_enter(runtime).await?;
+        "keyboard_shortcut".to_string()
+    };
+
+    tokio::time::sleep(PINE_COMPILE_WAIT).await;
+
+    let errors = runtime
+        .evaluate(&with_monaco(PINE_ERRORS_EXPRESSION), false)
+        .await?;
+    let errors = normalize_array(errors, "Pine marker payload was not an array")?;
+    let studies_after = pine_study_count(runtime).await?;
+    let study_added = match (studies_before, studies_after) {
+        (Some(before), Some(after)) => Some(after > before),
+        _ => None,
+    };
+
+    Ok(json!({
+        "button_clicked": action,
+        "has_errors": !errors.is_empty(),
+        "error_count": errors.len(),
+        "errors": errors,
+        "study_added": study_added,
+        "studies_before": studies_before,
+        "studies_after": studies_after,
         "editor_open_before": open_state.editor_open_before,
         "opened_editor": open_state.opened_editor,
     }))
@@ -229,6 +296,47 @@ fn normalize_array(value: Value, error_message: &str) -> Result<Vec<Value>, AppE
     })
 }
 
+fn normalize_button_text(text: &str) -> String {
+    let trimmed = text.trim();
+    let chars = trimmed.chars().collect::<Vec<_>>();
+    if chars.len() % 2 == 0 {
+        let midpoint = chars.len() / 2;
+        if chars[..midpoint] == chars[midpoint..] {
+            return chars[..midpoint].iter().collect();
+        }
+    }
+    trimmed.to_string()
+}
+
+async fn pine_study_count(runtime: &mut impl RuntimeEvaluator) -> Result<Option<i64>, AppError> {
+    let value = runtime.evaluate(PINE_STUDY_COUNT_EXPRESSION, false).await?;
+    Ok(value.as_i64())
+}
+
+async fn dispatch_ctrl_enter(runtime: &mut impl RuntimeEvaluator) -> Result<(), AppError> {
+    dispatch_key(runtime, KeyEventType::KeyDown, "Enter", "Enter", 13, 2).await?;
+    dispatch_key(runtime, KeyEventType::KeyUp, "Enter", "Enter", 13, 0).await
+}
+
+async fn dispatch_key(
+    runtime: &mut impl RuntimeEvaluator,
+    event_type: KeyEventType,
+    key: &'static str,
+    code: &'static str,
+    windows_virtual_key_code: i64,
+    modifiers: i64,
+) -> Result<(), AppError> {
+    runtime
+        .dispatch_key_event(KeyEvent {
+            event_type,
+            key,
+            code,
+            windows_virtual_key_code,
+            modifiers,
+        })
+        .await
+}
+
 fn pine_set_source_expression(source: &str) -> String {
     let source = serde_json::to_string(source).expect("string serialization should not fail");
     with_monaco(&format!(
@@ -261,6 +369,72 @@ return markers.map(function(mk) {
         severity: mk.severity
     };
 });
+"#;
+
+const PINE_STUDY_COUNT_EXPRESSION: &str = r#"
+(function() {
+    try {
+        var chart = window.TradingViewApi && window.TradingViewApi._activeChartWidgetWV && window.TradingViewApi._activeChartWidgetWV.value();
+        if (chart && typeof chart.getAllStudies === 'function') return chart.getAllStudies().length;
+    } catch(e) {}
+    return null;
+})()
+"#;
+
+const PINE_COMPILE_BUTTON_EXPRESSION: &str = r#"
+(function() {
+    var editor = document.querySelector('.monaco-editor.pine-editor-monaco');
+    var scope = editor && (
+        editor.closest('[data-name="pine-dialog"]')
+        || editor.closest('[class*="dialog"]')
+        || editor.closest('[class*="pine"]')
+    );
+    if (!scope) scope = document.querySelector('[data-name="pine-dialog"]') || document;
+    var buttons = Array.from(scope.querySelectorAll('button'));
+    var saveCandidate = null;
+    var compileCandidate = null;
+
+    function visible(button) {
+        var rect = button.getBoundingClientRect();
+        return rect.width > 0 && rect.height > 0 && button.offsetParent !== null;
+    }
+    function label(button) {
+        return (button.textContent || button.getAttribute('aria-label') || button.getAttribute('title') || '').trim();
+    }
+    function isSaveAction(text) {
+        return /save/i.test(text) || /保存/.test(text);
+    }
+    function isCompileAction(text) {
+        if (/^(Add to chart|Update on chart)$/i.test(text)) return true;
+        if (/チャート/.test(text) && /(追加|更新)/.test(text)) return true;
+        return false;
+    }
+
+    for (var i = 0; i < buttons.length; i++) {
+        var text = label(buttons[i]);
+        if (!text || !visible(buttons[i])) continue;
+        if (isCompileAction(text) && isSaveAction(text)) {
+            if (!saveCandidate) saveCandidate = { button: buttons[i], text: text };
+            continue;
+        }
+        if (isCompileAction(text)) {
+            compileCandidate = { button: buttons[i], text: text };
+            break;
+        }
+        if (!saveCandidate && isSaveAction(text) && /chart|チャート/.test(text)) {
+            saveCandidate = { button: buttons[i], text: text };
+        }
+    }
+
+    if (compileCandidate) {
+        compileCandidate.button.click();
+        return { clicked: true, button_text: compileCandidate.text, blocked_save: false };
+    }
+    if (saveCandidate) {
+        return { clicked: false, button_text: saveCandidate.text, blocked_save: true };
+    }
+    return { clicked: false, button_text: null, blocked_save: false };
+})()
 "#;
 
 const PINE_CONSOLE_EXPRESSION: &str = r#"
@@ -414,6 +588,86 @@ mod tests {
 
         assert_eq!(error.kind, ErrorKind::InternalApiUnavailable);
         assert_eq!(error.message, "Pine source set verification failed");
+    }
+
+    #[tokio::test]
+    async fn pine_compile_clicks_safe_button_and_returns_markers() {
+        let markers = json!([
+            {"line": 3, "column": 1, "message": "Syntax error", "severity": 8}
+        ]);
+        let mut runtime = FakeRuntime::new([
+            json!(true),
+            json!(4),
+            json!({"clicked": true, "button_text": "チャートに追加チャートに追加", "blocked_save": false}),
+            markers,
+            json!(4),
+        ]);
+
+        let result = pine_compile(&mut runtime).await.unwrap();
+
+        assert_eq!(result["button_clicked"], "チャートに追加");
+        assert_eq!(result["has_errors"], true);
+        assert_eq!(result["error_count"], 1);
+        assert_eq!(result["errors"][0]["message"], "Syntax error");
+        assert_eq!(result["study_added"], false);
+        assert_eq!(result["studies_before"], 4);
+        assert_eq!(result["studies_after"], 4);
+        assert!(runtime.evaluated[2].0.contains("blocked_save"));
+        assert!(runtime.key_events.is_empty());
+    }
+
+    #[tokio::test]
+    async fn pine_compile_rejects_save_related_button() {
+        let mut runtime = FakeRuntime::new([
+            json!(true),
+            json!(4),
+            json!({"clicked": false, "button_text": "Save and add to chart", "blocked_save": true}),
+        ]);
+
+        let error = pine_compile(&mut runtime).await.unwrap_err();
+
+        assert_eq!(error.kind, ErrorKind::InternalApiUnavailable);
+        assert_eq!(
+            error.message,
+            "Pine compile found only a save-related action button"
+        );
+        assert!(runtime.key_events.is_empty());
+    }
+
+    #[tokio::test]
+    async fn pine_compile_uses_ctrl_enter_fallback() {
+        let mut runtime = FakeRuntime::new([
+            json!(true),
+            json!(2),
+            json!({"clicked": false, "button_text": null, "blocked_save": false}),
+            json!([]),
+            json!(2),
+        ]);
+
+        let result = pine_compile(&mut runtime).await.unwrap();
+
+        assert_eq!(result["button_clicked"], "keyboard_shortcut");
+        assert_eq!(result["has_errors"], false);
+        assert_eq!(runtime.key_events.len(), 2);
+        assert_eq!(runtime.key_events[0].event_type, KeyEventType::KeyDown);
+        assert_eq!(runtime.key_events[0].key, "Enter");
+        assert_eq!(runtime.key_events[0].modifiers, 2);
+        assert_eq!(runtime.key_events[1].event_type, KeyEventType::KeyUp);
+    }
+
+    #[tokio::test]
+    async fn pine_compile_rejects_malformed_marker_payload() {
+        let mut runtime = FakeRuntime::new([
+            json!(true),
+            json!(2),
+            json!({"clicked": true, "button_text": "Update on chart", "blocked_save": false}),
+            json!({"bad": true}),
+        ]);
+
+        let error = pine_compile(&mut runtime).await.unwrap_err();
+
+        assert_eq!(error.kind, ErrorKind::InternalApiUnavailable);
+        assert_eq!(error.message, "Pine marker payload was not an array");
     }
 
     #[tokio::test]

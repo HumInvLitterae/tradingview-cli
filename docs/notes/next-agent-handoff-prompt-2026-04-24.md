@@ -32,7 +32,7 @@ Keep the Rust-native `tv` CLI reliable and useful as a replacement path for prac
 - `pane layout`, `pane focus`, and `pane symbol` are implemented as explicit chart mutations using TradingView's chart widget collection
 - `indicator add/remove/toggle/set/get` is implemented as a complete chart-local lifecycle mutation and read surface
 - `draw shape/list/get/remove` is implemented as a chart-local drawing lifecycle surface; `draw clear` remains deferred as bulk destructive cleanup
-- `pine get/set/errors/console/list` is implemented as a Pine surface; `set` changes only the editor buffer, while save, compile, new/open, analyze, and check remain deferred
+- `pine get/set/compile/errors/console/list` is implemented as a Pine surface; `set` changes only the editor buffer, while `compile` compiles the current buffer, may add or update a chart-local study, and refuses save-related buttons
 - `tab list/switch/new/close` is implemented as a bounded tab lifecycle surface; `tab list` preserves chart-target fields and adds app-tab fields, while `tab close` requires an explicit app-tab index and refuses to close the final app tab
 - `replay start/step/stop/status/autoplay/trade` is implemented as a bounded replay lifecycle surface
 
@@ -74,6 +74,7 @@ The implemented commands are:
 - `tv draw remove <ENTITY_ID>`
 - `tv pine get`
 - `tv pine set [--file <PATH>]`
+- `tv pine compile`
 - `tv pine errors`
 - `tv pine console`
 - `tv pine list`
@@ -146,7 +147,7 @@ Focus first on migration readiness:
 Deferred old CLI surfaces that need planned implementation or an explicit exclusion decision:
 
 - whether launch automation belongs in this CLI or should remain external runbook material
-- larger old CLI surfaces such as alert bulk deletion/editing, draw clear, Pine save/compile/new/open/analyze/check helpers, stream, and UI automation
+- larger old CLI surfaces such as alert bulk deletion/editing, draw clear, Pine raw-compile/save/new/open/analyze/check helpers, stream, and UI automation
 
 ## Validation baseline
 

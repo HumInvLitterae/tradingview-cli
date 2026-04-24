@@ -198,6 +198,8 @@ pub enum PineCommand {
         #[arg(long, short)]
         file: Option<PathBuf>,
     },
+    #[command(about = "Compile the current Pine Script editor source")]
+    Compile,
     #[command(about = "Get Pine Script editor diagnostics")]
     Errors,
     #[command(about = "Get Pine Script console output")]

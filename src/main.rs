@@ -384,6 +384,10 @@ async fn dispatch(command: Command) -> Result<serde_json::Value, AppError> {
                 let mut runtime = connect_runtime().await?;
                 ops::pine_set(&mut runtime, &source, input_source).await
             }
+            PineCommand::Compile => {
+                let mut runtime = connect_runtime().await?;
+                ops::pine_compile(&mut runtime).await
+            }
             PineCommand::Errors => {
                 let mut runtime = connect_runtime().await?;
                 ops::pine_errors(&mut runtime).await
