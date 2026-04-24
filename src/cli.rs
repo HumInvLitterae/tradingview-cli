@@ -94,6 +94,11 @@ pub enum Command {
         #[command(subcommand)]
         command: PaneCommand,
     },
+    #[command(about = "Saved chart layout tools")]
+    Layout {
+        #[command(subcommand)]
+        command: LayoutCommand,
+    },
     #[command(about = "Tab tools")]
     Tab {
         #[command(subcommand)]
@@ -301,6 +306,12 @@ pub enum PaneCommand {
 }
 
 #[derive(Debug, Subcommand)]
+pub enum LayoutCommand {
+    #[command(about = "List saved chart layouts")]
+    List,
+}
+
+#[derive(Debug, Subcommand)]
 pub enum TabCommand {
     #[command(about = "List open TradingView chart tabs")]
     List,
@@ -407,6 +418,7 @@ impl Command {
             Self::Pine { .. } => "pine",
             Self::Data { .. } => "data",
             Self::Pane { .. } => "pane",
+            Self::Layout { .. } => "layout",
             Self::Tab { .. } => "tab",
             Self::Replay { .. } => "replay",
             Self::Stream { .. } => "stream",

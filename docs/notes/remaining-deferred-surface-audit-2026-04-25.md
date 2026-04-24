@@ -6,7 +6,7 @@ The goal is not to implement these commands immediately. The goal is to decide w
 
 ## Current recommendation
 
-`pine save` and `draw clear` have been implemented through dedicated ExecPlans.
+`layout list`, `pine save`, and `draw clear` have been implemented through dedicated ExecPlans.
 
 That closes the clearest remaining practical Pine workflow gap: the Rust CLI can now read, set, compile, analyze, check, create, open, list, save already saved scripts, and inspect Pine scripts. `pine save` remains isolated as an explicit persistence command because it writes to TradingView cloud state. Explicit named new-save for unsaved scripts remains deferred because the TradingView naming dialog can be outside the CDP page target.
 
@@ -14,10 +14,14 @@ Do not implement `pine save` as a side effect of another Pine command. Keep `pin
 
 `draw clear` is now implemented as an explicit bulk chart-local cleanup command with `--dry-run`, preflight target reporting, and post-delete verification. It should not be used in live smoke when pre-existing user drawings are present.
 
+`layout list` is now implemented as a read-only saved chart layout command. `layout switch` remains deferred because it loads a saved chart layout and can trigger unsaved-changes UI.
+
 ## Deferred surface classification
 
 | Surface | Classification | Reason |
 | --- | --- | --- |
+| `layout list` | `implemented` | Restores the read-only saved layout inventory from the old CLI. |
+| `layout switch` | `research_only` | Loads a saved chart layout and can trigger unsaved-changes UI; it needs a separate mutation plan and restore story. |
 | `pine save` | `implemented` | Completes the Pine development loop as an explicit persistence command for the current saved script. |
 | Pine named new-save | `research_only` | Current TradingView Desktop live smoke showed the naming dialog for unsaved scripts can be outside the CDP page target. |
 | `pine raw-compile` | `likely_no_direct_clone` | The old implementation clicks compile/add buttons without the Rust safety checks and can click save-related actions. Rust already has safer `pine compile` and `pine check`. |
@@ -33,6 +37,8 @@ The old Pine CLI exposes `raw-compile` and `save`. `raw-compile` calls the broad
 The old broad compile paths are not a good Rust contract to clone directly. They may click "Save and add to chart", a save button fallback, or keyboard shortcuts. The Rust `pine compile` command intentionally avoids save-related buttons, reports diagnostics, and keeps persistence out of compile behavior.
 
 The old alert bulk deletion command does not actually delete all alerts through a structured API. It opens the alerts UI and a context menu, then returns a note that manual confirmation is required. Rust already chose a safer cleanup path by implementing `alert delete --id` through the current page session.
+
+The old layout list command reads saved chart layouts through `window.TradingViewApi.getSavedCharts`. Rust implements this as `tv layout list`. The old layout switch command calls `loadChartFromServer` and dismisses unsaved-change prompts, so it remains deferred until a separate plan defines restore-safe behavior.
 
 The old drawing clear command directly calls the chart API's all-shapes removal method. Rust implements `draw clear` as the explicit counterpart to that old capability, but it exposes `--dry-run`, reports the entities it would clear, and rejects a non-empty post-delete state as `internal_api_unavailable`.
 
@@ -54,6 +60,14 @@ The old UI automation surface is broad and generic. It can click by label/text/c
 - `tv draw clear --dry-run` is read-only and reports `before_count`, `would_clear_count`, and `cleared_entities`.
 - `tv draw clear` removes all chart-local drawings through TradingView's chart API and verifies the post-clear drawing count is zero.
 - Live smoke must stop after dry-run when pre-existing drawings are present.
+
+## Completed saved layout list contract
+
+`layout list` has been implemented through `docs/plans/tradingview-cli-layout-list-v1-33.md`.
+
+- `tv layout list` is read-only and reports `layout_count`, `source`, and `layouts`.
+- Layout rows expose `id`, `name`, `symbol`, `resolution`, and `modified`.
+- Read failures remain visible as `data.error` with an empty layout list.
 
 If `alert delete --all` is reconsidered, the ExecPlan must require explicit destructive intent, preflight counts, post-action verification, and a recovery story. Old CLI parity alone is not enough.
 

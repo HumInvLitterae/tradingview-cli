@@ -29,6 +29,7 @@ fn help_lists_v1_commands() {
         .stdout(predicate::str::contains("stream"))
         .stdout(predicate::str::contains("data"))
         .stdout(predicate::str::contains("pane"))
+        .stdout(predicate::str::contains("layout"))
         .stdout(predicate::str::contains("range"))
         .stdout(predicate::str::contains("type"))
         .stdout(predicate::str::contains("scroll"))
@@ -131,6 +132,15 @@ fn watchlist_and_pane_help_list_read_subcommands() {
         .stdout(predicate::str::contains("layout"))
         .stdout(predicate::str::contains("focus"))
         .stdout(predicate::str::contains("symbol"));
+}
+
+#[test]
+fn layout_help_lists_read_subcommands_only() {
+    tv().args(["layout", "--help"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("list"))
+        .stdout(predicate::str::contains("switch").not());
 }
 
 #[test]
@@ -640,6 +650,7 @@ fn read_utilities_attempt_connection_when_cdp_is_unavailable() {
         vec!["pane", "layout", "s"],
         vec!["pane", "focus", "0"],
         vec!["pane", "symbol", "0", "NASDAQ:AAPL"],
+        vec!["layout", "list"],
     ] {
         let assert = tv()
             .env("TV_CDP_PORT", "9")

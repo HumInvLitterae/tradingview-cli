@@ -14,8 +14,8 @@ use std::{
 use cdp::CdpClient;
 use clap::{Parser, error::ErrorKind as ClapErrorKind};
 use cli::{
-    AlertCommand, Cli, Command, DataCommand, DrawingCommand, IndicatorCommand, PaneCommand,
-    PineCommand, ReplayCommand, StreamCommand, TabCommand, WatchlistCommand,
+    AlertCommand, Cli, Command, DataCommand, DrawingCommand, IndicatorCommand, LayoutCommand,
+    PaneCommand, PineCommand, ReplayCommand, StreamCommand, TabCommand, WatchlistCommand,
 };
 use error::{AppError, ErrorKind};
 use output::{ErrorBody, ErrorEnvelope, SuccessEnvelope};
@@ -511,6 +511,12 @@ async fn dispatch(command: Command) -> Result<serde_json::Value, AppError> {
                 }
                 let mut runtime = connect_runtime().await?;
                 ops::pane_symbol(&mut runtime, index, &symbol).await
+            }
+        },
+        Command::Layout { command } => match command {
+            LayoutCommand::List => {
+                let mut runtime = connect_runtime().await?;
+                ops::saved_layout_list(&mut runtime).await
             }
         },
         Command::Tab { command } => match command {

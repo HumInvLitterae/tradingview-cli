@@ -11,6 +11,7 @@ mod layout;
 mod market;
 mod pine;
 mod replay;
+mod saved_layout;
 mod screenshot;
 mod status;
 mod stream;
@@ -52,6 +53,7 @@ pub use replay::{
     replay_autoplay, replay_start, replay_status, replay_step, replay_stop, replay_trade,
     validate_replay_autoplay_speed, validate_replay_date, validate_replay_trade_action,
 };
+pub use saved_layout::saved_layout_list;
 pub use screenshot::{screenshot_chart, screenshot_full};
 pub use status::status;
 pub use stream::{StreamDedupe, StreamKind, StreamRequest, stream_sample};
