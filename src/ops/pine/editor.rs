@@ -286,13 +286,10 @@ pub async fn pine_compile(runtime: &mut impl RuntimeEvaluator) -> Result<Value, 
     }))
 }
 
-pub async fn pine_save(
-    runtime: &mut impl RuntimeEvaluator,
-    name: Option<&str>,
-) -> Result<Value, AppError> {
+pub async fn pine_save(runtime: &mut impl RuntimeEvaluator) -> Result<Value, AppError> {
     let open_state = ensure_pine_editor_open(runtime).await?;
     let before = runtime
-        .evaluate(&pine_save_preflight_expression(name), true)
+        .evaluate(&pine_save_preflight_expression(), false)
         .await?;
     if let Some(error) = before.get("error").and_then(Value::as_str) {
         return Err(pine_save_error(error.to_string(), before));
@@ -303,7 +300,7 @@ pub async fn pine_save(
     tokio::time::sleep(PINE_SAVE_WAIT).await;
 
     let raw = runtime
-        .evaluate(&pine_save_post_shortcut_expression(name, &before), true)
+        .evaluate(&pine_save_post_shortcut_expression(&before), true)
         .await?;
     if let Some(error) = raw.get("error").and_then(Value::as_str) {
         return Err(pine_save_error(error.to_string(), raw));
@@ -326,9 +323,6 @@ pub async fn pine_save(
         "name": raw.get("name").cloned().unwrap_or(Value::Null),
         "dialog_handled": raw.get("dialog_handled").and_then(Value::as_bool).unwrap_or(false),
         "source": raw.get("source").cloned().unwrap_or_else(|| json!("dom_fallback")),
-        "script_id": raw.get("script_id").cloned().unwrap_or(Value::Null),
-        "version": raw.get("version").cloned().unwrap_or(Value::Null),
-        "clicked_save_button": raw.get("clicked_save_button").and_then(Value::as_bool).unwrap_or(false),
         "editor_open_before": open_state.editor_open_before,
         "opened_editor": open_state.opened_editor,
         "dirty_before": raw.get("dirty_before").cloned().unwrap_or_else(|| before.get("dirty_before").cloned().unwrap_or(Value::Null)),
@@ -591,15 +585,9 @@ return fetch('https://pine-facade.tradingview.com/pine-facade/list/?filter=saved
     ))
 }
 
-fn pine_save_preflight_expression(name: Option<&str>) -> String {
-    let requested_name =
-        serde_json::to_string(&name.map(str::trim)).expect("string serialization should not fail");
-    with_monaco(&format!(
+fn pine_save_preflight_expression() -> String {
+    with_monaco(
         r#"
-var requestedName = {requested_name};
-function normalizeName(value) {{
-    return (value || '').trim().toLowerCase();
-}}
 function dirtyState() {{
     try {{
         var buttons = Array.from(document.querySelectorAll('button, [role="button"], span, div'));
@@ -616,37 +604,14 @@ function dirtyState() {{
     }}
 }}
 function finish() {{
-    if (!requestedName) return {{ ok: true, dirty_before: dirtyState(), requested_name: null }};
-    var target = normalizeName(requestedName);
-    return fetch('https://pine-facade.tradingview.com/pine-facade/list/?filter=saved', {{ credentials: 'include' }})
-        .then(function(r) {{ return r.json(); }})
-        .then(function(scripts) {{
-            if (!Array.isArray(scripts)) return {{ error: "pine-facade returned unexpected data", kind: "internal_api_unavailable" }};
-            for (var i = 0; i < scripts.length; i++) {{
-                var script = scripts[i] || {{}};
-                var scriptName = normalizeName(script.scriptName);
-                var scriptTitle = normalizeName(script.scriptTitle);
-                if (scriptName === target || scriptTitle === target) {{
-                    return {{
-                        error: 'Pine script "' + requestedName + '" already exists',
-                        kind: "validation",
-                        requested_name: requestedName,
-                        existing: {{ name: script.scriptName || script.scriptTitle || 'Untitled', id: script.scriptIdPart || null, version: script.version || null }}
-                    }};
-                }}
-            }}
-            return {{ ok: true, dirty_before: dirtyState(), requested_name: requestedName }};
-        }})
-        .catch(function(e) {{ return {{ error: e.message, kind: "internal_api_unavailable" }}; }});
+    return {{ ok: true, dirty_before: dirtyState() }};
 }}
 return finish();
-"#
-    ))
+"#,
+    )
 }
 
-fn pine_save_post_shortcut_expression(name: Option<&str>, preflight: &Value) -> String {
-    let requested_name =
-        serde_json::to_string(&name.map(str::trim)).expect("string serialization should not fail");
+fn pine_save_post_shortcut_expression(preflight: &Value) -> String {
     let dirty_before = serde_json::to_string(
         &preflight
             .get("dirty_before")
@@ -656,7 +621,6 @@ fn pine_save_post_shortcut_expression(name: Option<&str>, preflight: &Value) -> 
     .expect("JSON serialization should not fail");
     with_monaco(&format!(
         r#"
-var requestedName = {requested_name};
 var dirtyBefore = {dirty_before};
 function visible(el) {{
     if (!el) return false;
@@ -682,13 +646,6 @@ function dirtyState() {{
         return null;
     }}
 }}
-function nativeSetValue(input, value) {{
-    var proto = input instanceof HTMLTextAreaElement ? HTMLTextAreaElement.prototype : HTMLInputElement.prototype;
-    var setter = Object.getOwnPropertyDescriptor(proto, 'value').set;
-    setter.call(input, value);
-    input.dispatchEvent(new Event('input', {{ bubbles: true }}));
-    input.dispatchEvent(new Event('change', {{ bubbles: true }}));
-}}
 function saveDialog() {{
     var dialogs = Array.from(document.querySelectorAll('[role="dialog"], [class*="dialog"], [class*="modal"], [class*="popup"]')).filter(visible);
     for (var i = 0; i < dialogs.length; i++) {{
@@ -710,108 +667,24 @@ function saveDialog() {{
     }}
     return null;
 }}
-function standaloneSaveButton() {{
-    var nodes = Array.from(document.querySelectorAll('button, [role="button"], [tabindex], span, div')).filter(visible);
-    for (var i = 0; i < nodes.length; i++) {{
-        var text = label(nodes[i]);
-        if (/^save$/i.test(text) || /^保存$/.test(text)) {{
-            return nodes[i].closest('button, [role="button"], [tabindex]') || nodes[i];
-        }}
-    }}
-    return null;
-}}
-function clickSaveInDialog(dialog) {{
-    var buttons = Array.from(dialog.querySelectorAll('button')).filter(visible);
-    for (var i = 0; i < buttons.length; i++) {{
-        var text = label(buttons[i]);
-        if (/^save$/i.test(text) || /^保存$/.test(text)) {{
-            buttons[i].click();
-            return text || 'Save';
-        }}
-    }}
-    return null;
-}}
-function normalizeName(value) {{
-    return (value || '').trim().toLowerCase();
-}}
-function verifySavedName(attempt) {{
-    if (!requestedName) return Promise.resolve(null);
-    return fetch('https://pine-facade.tradingview.com/pine-facade/list/?filter=saved', {{ credentials: 'include' }})
-        .then(function(r) {{ return r.json(); }})
-        .then(function(scripts) {{
-            if (!Array.isArray(scripts)) return {{ error: "pine-facade returned unexpected data", kind: "internal_api_unavailable" }};
-            var target = normalizeName(requestedName);
-            for (var i = 0; i < scripts.length; i++) {{
-                var script = scripts[i] || {{}};
-                if (normalizeName(script.scriptName) === target || normalizeName(script.scriptTitle) === target) {{
-                    return {{ verified: true, script_id: script.scriptIdPart || null, version: script.version || null }};
-                }}
-            }}
-            if (attempt >= 5) {{
-                return {{ error: 'Pine save did not appear in the saved script list: "' + requestedName + '"', kind: "internal_api_unavailable" }};
-            }}
-            return new Promise(function(resolve) {{
-                setTimeout(function() {{ resolve(verifySavedName(attempt + 1)); }}, 1000);
-            }});
-        }})
-        .catch(function(e) {{ return {{ error: e.message, kind: "internal_api_unavailable" }}; }});
-}}
-function finishAfterDialogAttempt(openedByButton) {{
+function finish() {{
     var dialog = saveDialog();
-    var dialogHandled = false;
-    var action = "saved";
     if (dialog) {{
-        if (!requestedName) {{
-            return {{ error: "Pine save requires --name for an unsaved script", kind: "validation", dialog_open: true, dirty_before: dirtyBefore }};
-        }}
-        var input = dialog.querySelector('input[type="text"], input:not([type]), textarea');
-        if (!input) {{
-            return {{ error: "Pine save dialog did not expose a name input", kind: "internal_api_unavailable", dialog_open: true, dirty_before: dirtyBefore }};
-        }}
-        nativeSetValue(input, requestedName);
-        var clicked = clickSaveInDialog(dialog);
-        if (!clicked) {{
-            return {{ error: "Pine save dialog did not expose a Save button", kind: "internal_api_unavailable", dialog_open: true, dirty_before: dirtyBefore }};
-        }}
-        dialogHandled = true;
-        action = "saved_with_name";
-    }} else if (requestedName) {{
-        return {{ error: "Pine save did not expose a naming dialog to CDP", kind: "internal_api_unavailable", dialog_open: false, clicked_save_button: openedByButton, dirty_before: dirtyBefore }};
+        return {{ error: "Pine save requires an already saved script; naming unsaved scripts is deferred", kind: "validation", dialog_open: true, dirty_before: dirtyBefore }};
     }}
     return new Promise(function(resolve) {{
         setTimeout(function() {{
             var dirtyAfter = dirtyState();
-            verifySavedName(0).then(function(verified) {{
-                if (verified && verified.error) {{
-                    resolve(verified);
-                    return;
-                }}
-                resolve({{
-                    saved: dirtyAfter !== true,
-                    action: action,
-                    name: requestedName || null,
-                    dialog_handled: dialogHandled,
-                    source: requestedName ? "internal_api_verified" : "dom_fallback",
-                    script_id: verified && verified.script_id ? verified.script_id : null,
-                    version: verified && verified.version ? verified.version : null,
-                    clicked_save_button: openedByButton,
-                    dirty_before: dirtyBefore,
-                    dirty_after: dirtyAfter
-                }});
+            resolve({{
+                saved: dirtyAfter !== true,
+                action: "saved",
+                name: null,
+                dialog_handled: false,
+                source: "dom_fallback",
+                dirty_before: dirtyBefore,
+                dirty_after: dirtyAfter
             }});
         }}, 1200);
-    }});
-}}
-function finish() {{
-    if (!requestedName) return finishAfterDialogAttempt(false);
-    if (saveDialog()) return finishAfterDialogAttempt(false);
-    var button = standaloneSaveButton();
-    if (!button) {{
-        return {{ error: "Pine save button was not available for named save", kind: "internal_api_unavailable", dirty_before: dirtyBefore }};
-    }}
-    button.click();
-    return new Promise(function(resolve) {{
-        setTimeout(function() {{ resolve(finishAfterDialogAttempt(true)); }}, 800);
     }});
 }}
 return finish();
@@ -1218,7 +1091,7 @@ mod tests {
     async fn pine_save_returns_success_payload_for_existing_script() {
         let mut runtime = FakeRuntime::new([
             json!(true),
-            json!({"ok": true, "dirty_before": true, "requested_name": null}),
+            json!({"ok": true, "dirty_before": true}),
             json!({
                 "saved": true,
                 "action": "saved",
@@ -1230,7 +1103,7 @@ mod tests {
             }),
         ]);
 
-        let result = pine_save(&mut runtime, None).await.unwrap();
+        let result = pine_save(&mut runtime).await.unwrap();
 
         assert_eq!(result["saved"], true);
         assert_eq!(result["action"], "saved");
@@ -1244,82 +1117,59 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn pine_save_requires_name_when_dialog_opens() {
+    async fn pine_save_rejects_unsaved_script_dialog() {
         let mut runtime = FakeRuntime::new([
             json!(true),
-            json!({"ok": true, "dirty_before": true, "requested_name": null}),
+            json!({"ok": true, "dirty_before": true}),
             json!({
-                "error": "Pine save requires --name for an unsaved script",
+                "error": "Pine save requires an already saved script; naming unsaved scripts is deferred",
                 "kind": "validation",
                 "dialog_open": true,
                 "dirty_before": true
             }),
         ]);
 
-        let error = pine_save(&mut runtime, None).await.unwrap_err();
+        let error = pine_save(&mut runtime).await.unwrap_err();
 
         assert_eq!(error.kind, ErrorKind::Validation);
         assert_eq!(
             error.message,
-            "Pine save requires --name for an unsaved script"
+            "Pine save requires an already saved script; naming unsaved scripts is deferred"
         );
         assert_eq!(runtime.key_events.len(), 2);
     }
 
     #[tokio::test]
-    async fn pine_save_rejects_existing_named_script_before_shortcut() {
+    async fn pine_save_serializes_no_user_script_name() {
         let mut runtime = FakeRuntime::new([
             json!(true),
-            json!({
-                "error": "Pine script \"Existing\" already exists",
-                "kind": "validation",
-                "requested_name": "Existing",
-                "existing": {"name": "Existing", "id": "abc"}
-            }),
-        ]);
-
-        let error = pine_save(&mut runtime, Some("Existing")).await.unwrap_err();
-
-        assert_eq!(error.kind, ErrorKind::Validation);
-        assert!(error.message.contains("already exists"));
-        assert!(runtime.key_events.is_empty());
-        assert!(runtime.evaluated[1].0.contains("pine-facade/list"));
-    }
-
-    #[tokio::test]
-    async fn pine_save_with_name_handles_dialog_and_serializes_name() {
-        let mut runtime = FakeRuntime::new([
-            json!(true),
-            json!({"ok": true, "dirty_before": true, "requested_name": "Named \"Script\""}),
+            json!({"ok": true, "dirty_before": true}),
             json!({
                 "saved": true,
-                "action": "saved_with_name",
-                "name": "Named \"Script\"",
-                "dialog_handled": true,
+                "action": "saved",
+                "name": null,
+                "dialog_handled": false,
                 "source": "dom_fallback",
                 "dirty_before": true,
                 "dirty_after": false
             }),
         ]);
 
-        let result = pine_save(&mut runtime, Some("Named \"Script\""))
-            .await
-            .unwrap();
+        let result = pine_save(&mut runtime).await.unwrap();
 
         assert_eq!(result["saved"], true);
-        assert_eq!(result["action"], "saved_with_name");
-        assert_eq!(result["name"], "Named \"Script\"");
-        assert_eq!(result["dialog_handled"], true);
-        let serialized_name = serde_json::to_string(&Some("Named \"Script\"")).unwrap();
-        assert!(runtime.evaluated[1].0.contains(&serialized_name));
-        assert!(runtime.evaluated[2].0.contains(&serialized_name));
+        assert_eq!(result["action"], "saved");
+        assert_eq!(result["name"], Value::Null);
+        assert_eq!(result["dialog_handled"], false);
+        assert!(!runtime.evaluated[1].0.contains("pine-facade/list"));
+        assert!(!runtime.evaluated[2].0.contains("requestedName"));
     }
 
     #[tokio::test]
     async fn pine_save_errors_when_dirty_state_remains() {
         let mut runtime = FakeRuntime::new([
             json!(true),
-            json!({"ok": true, "dirty_before": true, "requested_name": null}),
+            json!({"ok": true, "dirty_before": true}),
             json!({
                 "saved": false,
                 "action": "saved",
@@ -1331,7 +1181,7 @@ mod tests {
             }),
         ]);
 
-        let error = pine_save(&mut runtime, None).await.unwrap_err();
+        let error = pine_save(&mut runtime).await.unwrap_err();
 
         assert_eq!(error.kind, ErrorKind::InternalApiUnavailable);
         assert_eq!(error.message, "Pine save did not clear the dirty state");

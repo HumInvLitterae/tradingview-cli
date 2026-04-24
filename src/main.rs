@@ -410,15 +410,9 @@ async fn dispatch(command: Command) -> Result<serde_json::Value, AppError> {
                 let mut runtime = connect_runtime().await?;
                 ops::pine_compile(&mut runtime).await
             }
-            PineCommand::Save { name } => {
-                if name.as_deref().is_some_and(|name| name.trim().is_empty()) {
-                    return Err(AppError::new(
-                        ErrorKind::Validation,
-                        "Pine script name must not be empty",
-                    ));
-                }
+            PineCommand::Save => {
                 let mut runtime = connect_runtime().await?;
-                ops::pine_save(&mut runtime, name.as_deref()).await
+                ops::pine_save(&mut runtime).await
             }
             PineCommand::New { script_type } => {
                 let script_type =

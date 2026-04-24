@@ -8,7 +8,7 @@ The goal is not to implement these commands immediately. The goal is to decide w
 
 `pine save` has been implemented through a dedicated ExecPlan.
 
-That closes the clearest remaining practical Pine workflow gap: the Rust CLI can now read, set, compile, analyze, check, create, open, list, save, and inspect Pine scripts. `pine save` remains isolated as an explicit persistence command because it writes to TradingView cloud state and can trigger a naming dialog for unsaved scripts.
+That closes the clearest remaining practical Pine workflow gap: the Rust CLI can now read, set, compile, analyze, check, create, open, list, save already saved scripts, and inspect Pine scripts. `pine save` remains isolated as an explicit persistence command because it writes to TradingView cloud state. Explicit named new-save for unsaved scripts remains deferred because the TradingView naming dialog can be outside the CDP page target.
 
 Do not implement `pine save` as a side effect of another Pine command. Keep `pine compile`, `pine check`, and `pine analyze` non-persistent.
 
@@ -16,7 +16,8 @@ Do not implement `pine save` as a side effect of another Pine command. Keep `pin
 
 | Surface | Classification | Reason |
 | --- | --- | --- |
-| `pine save` | `implemented` | Completes the Pine development loop as an explicit persistence command with named-save conflict checks. |
+| `pine save` | `implemented` | Completes the Pine development loop as an explicit persistence command for the current saved script. |
+| Pine named new-save | `research_only` | Current TradingView Desktop live smoke showed the naming dialog for unsaved scripts can be outside the CDP page target. |
 | `pine raw-compile` | `likely_no_direct_clone` | The old implementation clicks compile/add buttons without the Rust safety checks and can click save-related actions. Rust already has safer `pine compile` and `pine check`. |
 | `draw clear` | `high_risk_deferred` | The old implementation calls `removeAllShapes()`, which removes every chart drawing. Rust already supports scoped `draw remove <ENTITY_ID>`. |
 | `alert delete --all` | `high_risk_deferred` | The old implementation only opens an alerts context menu for manual confirmation. It does not provide a reliable structured bulk-delete contract. Rust already supports scoped `alert delete --id`. |
@@ -39,8 +40,8 @@ The old UI automation surface is broad and generic. It can click by label/text/c
 
 `pine save` was implemented in `docs/plans/tradingview-cli-pine-save-v1-31.md` with these contract choices:
 
-- `tv pine save` saves the current Pine Editor buffer through an explicit persistence command.
-- `tv pine save --name <NAME>` rejects existing saved script name conflicts before attempting a named save, but current TradingView Desktop live smoke found the naming dialog can be outside the CDP page target. The command must fail rather than keyboard-type into an unverified focus target when that happens.
+- `tv pine save` saves the current Pine Editor buffer through an explicit persistence command when that buffer already belongs to a saved script.
+- If a naming dialog appears for an unsaved script, the command must fail rather than keyboard-type into an unverified focus target.
 - The payload reports `saved`, `action`, `name`, `dialog_handled`, `source`, `editor_open_before`, `opened_editor`, `dirty_before`, and `dirty_after`.
 - Live smoke created a default-named script during a rejected keyboard fallback experiment; see the Pine save ExecPlan for the exact leftover name and id.
 

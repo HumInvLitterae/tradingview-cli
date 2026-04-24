@@ -239,7 +239,7 @@ fn pine_help_lists_current_subcommands() {
     tv().args(["pine", "save", "--help"])
         .assert()
         .success()
-        .stdout(predicate::str::contains("--name"));
+        .stdout(predicate::str::contains("--name").not());
 }
 
 #[test]
@@ -439,21 +439,6 @@ fn pine_open_requires_name_before_connecting() {
     let assert = tv()
         .env("TV_CDP_PORT", "9")
         .args(["pine", "open"])
-        .assert()
-        .failure()
-        .code(1);
-    let stderr = String::from_utf8(assert.get_output().stderr.clone()).unwrap();
-    let value: Value = serde_json::from_str(&stderr).unwrap();
-    assert_eq!(value["success"], false);
-    assert_eq!(value["command"], "pine");
-    assert_eq!(value["error"]["kind"], "validation");
-}
-
-#[test]
-fn pine_save_rejects_empty_name_before_connecting() {
-    let assert = tv()
-        .env("TV_CDP_PORT", "9")
-        .args(["pine", "save", "--name", ""])
         .assert()
         .failure()
         .code(1);

@@ -215,10 +215,7 @@ pub enum PineCommand {
     #[command(about = "Compile the current Pine Script editor source")]
     Compile,
     #[command(about = "Save the current Pine Script editor source")]
-    Save {
-        #[arg(long, short)]
-        name: Option<String>,
-    },
+    Save,
     #[command(about = "Create a new Pine Script template in the editor")]
     New { script_type: Option<String> },
     #[command(about = "Open a saved Pine Script by name into the editor")]

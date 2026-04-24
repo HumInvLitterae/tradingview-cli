@@ -6,7 +6,7 @@ This document follows `.agents/PLANS.md`.
 
 ## Purpose / Big Picture
 
-After this change, a user can run `tv pine save` to save the currently open saved Pine Script in TradingView, or `tv pine save --name <NAME>` to save a currently unsaved Pine Editor buffer under a new name. This closes the next Pine workflow gap after Rust already learned how to read, set, compile, analyze, check, create, open, and list Pine scripts.
+After this change, a user can run `tv pine save` to save the currently open saved Pine Script in TradingView. This closes the next Pine workflow gap after Rust already learned how to read, set, compile, analyze, check, create, open, and list Pine scripts.
 
 This command writes to TradingView cloud state, so it is intentionally isolated from `tv pine compile`. Compile must continue to avoid save-related buttons. `pine save` is the only command in this slice that persists a Pine script.
 
@@ -22,6 +22,7 @@ This command writes to TradingView cloud state, so it is intentionally isolated 
 - [x] (2026-04-24 19:08Z) Live smoke initially skipped because it would persist TradingView cloud state and no explicit save-smoke approval was given for this slice.
 - [x] (2026-04-24 19:31Z) Live smoke attempted after explicit user approval; named save did not pass in the current TradingView Desktop session.
 - [x] (2026-04-24 19:20Z) Commit the completed slice.
+- [x] (2026-04-25 09:45Z) Narrow public contract by removing `--name` after live smoke showed the naming dialog is not reliably available through CDP.
 
 ## Surprises & Discoveries
 
@@ -38,25 +39,29 @@ This command writes to TradingView cloud state, so it is intentionally isolated 
   Rationale: The user selected named save support, and rejecting existing names avoids accidental overwrite. Existing saved scripts can be opened and saved with plain `tv pine save`.
   Date/Author: 2026-04-24 / Codex.
 
+- Decision: Remove `--name <NAME>` from the public CLI and defer named new-save for unsaved scripts.
+  Rationale: Live smoke showed the TradingView naming dialog can be outside the CDP page target. A keyboard fallback can type into Monaco instead of the dialog, so exposing named new-save is less safe than failing when an unsaved-script naming dialog appears.
+  Date/Author: 2026-04-25 / Codex.
+
 - Decision: Do not implement `pine raw-compile` in this slice.
   Rationale: The old raw compile can click save/add actions without the Rust safety checks, and the remaining deferred surface audit classified it as likely no-direct-clone.
   Date/Author: 2026-04-24 / Codex.
 
 ## Outcomes & Retrospective
 
-Implemented `tv pine save [--name <NAME>]` as an explicit Pine persistence command. Plain `pine save` saves the current editor buffer. `--name` rejects existing saved-script conflicts before attempting a named save, but it must not keyboard-type into an unverified focus target if the naming dialog is outside the CDP page context. The command reports save state under `data` and keeps `pine compile` non-persistent.
+Implemented `tv pine save` as an explicit Pine persistence command for the current saved script. If an unsaved-script naming dialog appears, the command fails instead of typing into an unverified focus target. Named new-save remains deferred. The command reports save state under `data` and keeps `pine compile` non-persistent.
 
 ## Context and Orientation
 
 The Rust binary is named `tv`. Command-line shape is defined in `src/cli.rs`. Runtime dispatch is in `src/main.rs`. Pine operations are grouped under `src/ops/pine.rs`, with Pine Editor behavior implemented in `src/ops/pine/editor.rs`. The Pine Editor is the TradingView code editor backed by Monaco. The current helper `ensure_pine_editor_open` opens the Pine panel and waits until Monaco can be reached through the page's JavaScript state.
 
-Existing Pine commands already use the Rust JSON envelope, where successful command-specific fields live under top-level `data`. The old JavaScript `pine save` sent Ctrl+S and optionally clicked a visible Save button in a dialog. This Rust implementation should preserve the practical saving capability while adding safer preflight and verification around named saves.
+Existing Pine commands already use the Rust JSON envelope, where successful command-specific fields live under top-level `data`. The old JavaScript `pine save` sent Ctrl+S and optionally clicked a visible Save button in a dialog. This Rust implementation preserves the practical saving capability for already saved scripts while refusing unsafe named new-save fallback behavior.
 
 ## Plan of Work
 
-First add `Save { name: Option<String> }` to `PineCommand` in `src/cli.rs`, with `--name` as an optional string argument. Update `src/main.rs` so empty or whitespace-only names fail before connecting to Chrome DevTools Protocol. Dispatch valid requests to `ops::pine_save`.
+First add `Save` to `PineCommand` in `src/cli.rs`. Update `src/main.rs` to dispatch valid requests to `ops::pine_save`.
 
-Then implement `pine_save` in `src/ops/pine/editor.rs` and re-export it through `src/ops/pine.rs` and `src/ops.rs`. The operation should call `ensure_pine_editor_open`, evaluate one awaitable JavaScript expression, and map returned `{ error, kind }` objects into `AppError`. Without `--name`, the expression should trigger Ctrl+S or a visible save action and fail if a Save Script dialog requires a name. With `--name`, it should fetch saved Pine scripts through `pine-facade/list/?filter=saved`, reject exact case-insensitive name/title conflicts, trigger save, fill the dialog name field with a JSON-serialized string, click the dialog Save button, and verify that the editor no longer appears dirty when that signal is available.
+Then implement `pine_save` in `src/ops/pine/editor.rs` and re-export it through `src/ops/pine.rs` and `src/ops.rs`. The operation should call `ensure_pine_editor_open`, evaluate JavaScript for preflight and post-shortcut verification, and map returned `{ error, kind }` objects into `AppError`. The expression should trigger Ctrl+S and fail if a Save Script naming dialog appears, because naming unsaved scripts is deferred until a verified CDP-visible contract exists.
 
 The success payload should include `saved`, `action`, `name`, `dialog_handled`, `source`, `editor_open_before`, `opened_editor`, `dirty_before`, and `dirty_after`. Unknown dirty state should be `null`; a known dirty state that remains true after save should be an `internal_api_unavailable` error.
 
@@ -83,9 +88,9 @@ Because `.agents/skills/pine-develop` changes, run the skill validator against t
 
 ## Validation and Acceptance
 
-Automated acceptance is that tests prove help output, connection error behavior, empty name validation, existing save payload normalization, missing name validation for a dialog, named save conflict rejection, named save success when the dialog is CDP-visible, and dirty-after-save failure handling.
+Automated acceptance is that tests prove help output, connection error behavior, existing save payload normalization, unsaved-script dialog rejection, absence of user-provided script-name serialization, and dirty-after-save failure handling.
 
-Live smoke is optional and should not create or overwrite TradingView cloud state without explicit approval. If live smoke is approved, use a unique disposable name, run `tv pine new indicator`, then `tv pine save --name <NAME>`, then `tv pine list` and confirm the disposable name appears. Record the created name in this plan and the final response. Do not smoke `pine raw-compile`.
+Live smoke is optional and should not create or overwrite TradingView cloud state without explicit approval. If live smoke is approved for the narrowed contract, open an existing disposable saved script, make a harmless identifiable edit if needed, run `tv pine save`, and record any saved artifact or mutation clearly. Do not smoke `pine raw-compile` or named new-save.
 
 Live smoke after approval:
 
@@ -104,7 +109,7 @@ Source and docs edits are ordinary additive changes and can be rerun. Automated 
 
 ## Artifacts and Notes
 
-- Targeted Pine save unit and CLI contract tests were added for payload normalization, dialog-name validation, named-save conflict rejection, named-save success, dirty-after-save failure, empty-name validation, and connection-attempt behavior.
+- Targeted Pine save unit and CLI contract tests were updated for payload normalization, unsaved-script dialog rejection, no user-provided script-name serialization, dirty-after-save failure, help output, and connection-attempt behavior.
 - Validation passed: `cargo fmt --check`, `cargo clippy --all-targets --all-features -- -D warnings`, `cargo test`, `git diff --check`, tracked docs local absolute path scan, and the Pine develop skill validator.
 - Live smoke found a named-save blocker in the current TradingView Desktop session and left one identifiable default-named disposable script; the account-local script id is intentionally omitted from this public archive note.
 
@@ -112,11 +117,11 @@ Source and docs edits are ordinary additive changes and can be rerun. Automated 
 
 At completion, the CLI exposes:
 
-    tv pine save [--name <NAME>]
+    tv pine save
 
 At completion, `src/ops/pine/editor.rs` exposes:
 
-    pub async fn pine_save(runtime: &mut impl RuntimeEvaluator, name: Option<&str>) -> Result<Value, AppError>
+    pub async fn pine_save(runtime: &mut impl RuntimeEvaluator) -> Result<Value, AppError>
 
 No new crates are required.
 
