@@ -20,11 +20,14 @@ The old JavaScript CLI exposed `draw clear` as a direct `removeAllShapes()` call
 - [x] (2026-04-25 01:28Z) Update README, AGENTS, migration inventory, lifecycle audit, contract notes, handoff note, and remaining deferred audit.
 - [x] (2026-04-25 01:34Z) Run automated validation.
 - [x] (2026-04-25 01:36Z) Run conditional live smoke; destructive smoke skipped because dry-run found two existing drawings.
+- [x] (2026-04-25 01:50Z) Run approved AAPL destructive live smoke with one identifiable smoke drawing.
 - [x] (2026-04-25 01:42Z) Commit the completed slice.
 
 ## Surprises & Discoveries
 
-Live dry-run found two existing drawings in the current TradingView chart. Because they were pre-existing, destructive smoke correctly stopped before calling `tv draw clear`.
+The first live dry-run found two existing drawings in the current TradingView chart. Because they were pre-existing, destructive smoke correctly stopped before calling `tv draw clear`.
+
+After explicit approval to smoke AAPL without preserving leftover drawings, the CLI switched to an AAPL chart, created one identifiable horizontal-line smoke drawing, cleared it with `tv draw clear`, and confirmed `tv draw list` returned zero shapes.
 
 ## Decision Log
 
@@ -104,6 +107,12 @@ If live smoke creates a disposable drawing and `draw clear` fails, use the recor
 - Tracked docs local absolute path scan passed with `rg -n '(/[U]sers/|[C]:\\\\)' README.md AGENTS.md docs .agents/skills || true`.
 - Live smoke dry-run passed and reported two existing drawings: `dMlruO` and `vlHUFh`, both named `trend_line`.
 - Destructive live smoke was skipped to avoid deleting pre-existing drawings.
+- Approved AAPL destructive smoke passed:
+  - `tv symbol NASDAQ:AAPL` observed `BATS:AAPL`.
+  - `tv draw clear --dry-run` reported `before_count: 0`.
+  - `tv draw shape --type horizontal_line --price 271.06 --time 1777037400 --text "Codex draw clear smoke AAPL 20260425"` created entity `dyTHP5`.
+  - `tv draw clear` returned `cleared: true`, `before_count: 1`, `after_count: 0`, and `cleared_entities[0].id: "dyTHP5"`.
+  - `tv draw list` returned `count: 0`.
 
 ## Interfaces and Dependencies
 
