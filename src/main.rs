@@ -15,8 +15,9 @@ use cdp::CdpClient;
 use clap::{Parser, error::ErrorKind as ClapErrorKind};
 use cli::{
     AlertCommand, Cli, Command, DataCommand, DrawingCommand, IndicatorCommand, LayoutCommand,
-    PaneCommand, PineCommand, ReplayCommand, ScannerCommand, ScreenerCommand, StreamCommand,
-    TabCommand, UiCommand, WatchlistCommand,
+    PaneCommand, PineCommand, ReplayCommand, ScannerCommand, ScreenerColumnsCommand,
+    ScreenerCommand, ScreenerFiltersCommand, ScreenerScreensCommand, StreamCommand, TabCommand,
+    UiCommand, WatchlistCommand,
 };
 use error::{AppError, ErrorKind};
 use output::{ErrorBody, ErrorEnvelope, SuccessEnvelope};
@@ -159,6 +160,17 @@ async fn dispatch(command: Command) -> Result<serde_json::Value, AppError> {
                 ScreenerCommand::Status => ops::screener_status(&mut runtime).await,
                 ScreenerCommand::Open => ops::screener_open(&mut runtime).await,
                 ScreenerCommand::Get { limit } => ops::screener_get(&mut runtime, limit).await,
+                ScreenerCommand::Screens { command } => match command {
+                    ScreenerScreensCommand::Active => {
+                        ops::screener_screens_active(&mut runtime).await
+                    }
+                },
+                ScreenerCommand::Filters { command } => match command {
+                    ScreenerFiltersCommand::List => ops::screener_filters_list(&mut runtime).await,
+                },
+                ScreenerCommand::Columns { command } => match command {
+                    ScreenerColumnsCommand::List => ops::screener_columns_list(&mut runtime).await,
+                },
                 ScreenerCommand::Close => ops::screener_close(&mut runtime).await,
             }
         }

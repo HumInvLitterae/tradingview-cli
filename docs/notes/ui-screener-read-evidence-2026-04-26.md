@@ -70,6 +70,9 @@ The implemented surface is:
 - `tv screener status`
 - `tv screener open`
 - `tv screener get [--limit <N>]`
+- `tv screener screens active`
+- `tv screener filters list`
+- `tv screener columns list`
 - `tv screener close`
 
 The implementation does not depend only on `[class*="screenerContainer"]`.
@@ -79,8 +82,10 @@ as visible Screener heading text, `[class*="screener"]`, visible Screener
 that restored the live session safely.
 
 `get` should document that it reads the currently visible Screener rows and
-localized display text. It should not present the result as a stable REST
-scanner schema.
+localized display text. The metadata commands should document that they read the
+active screen title, visible filter pills, and visible columns from the same UI
+state. None of these commands should present the result as a stable REST scanner
+schema.
 
 ## Still deferred
 

@@ -41,43 +41,63 @@ pub async fn screener_get(
     limit: Option<usize>,
 ) -> Result<Value, AppError> {
     let limit = validate_screener_limit(limit)?;
-    let initial = read_screener_state(runtime, None).await?;
-    let was_open = value_bool(&initial, "open");
-    let mut opened_for_read = false;
+    let read = read_screener_with_restore(runtime, Some(limit)).await?;
 
-    if !was_open {
-        let opened = screener_open(runtime).await;
-        match opened {
-            Ok(_) => opened_for_read = true,
-            Err(err) => return Err(err),
-        }
-    }
-
-    let read_result = read_screener_state(runtime, Some(limit)).await;
-    let close_result = if opened_for_read {
-        Some(screener_close(runtime).await)
-    } else {
-        None
-    };
-
-    let state = match read_result {
-        Ok(state) => state,
-        Err(err) => return Err(err),
-    };
-    if let Some(Err(err)) = close_result {
-        return Err(err);
-    }
-    ensure_dialog_open(&state)?;
-
-    let mut payload = object_payload(state)?;
+    let mut payload = object_payload(read.state)?;
     payload.insert(
         "source".to_string(),
         Value::String(SCREENER_SOURCE.to_string()),
     );
     payload.insert("limit".to_string(), Value::from(limit));
-    payload.insert("opened_for_read".to_string(), Value::Bool(opened_for_read));
-    payload.insert("restored_open_state".to_string(), Value::Bool(was_open));
+    payload.insert(
+        "opened_for_read".to_string(),
+        Value::Bool(read.opened_for_read),
+    );
+    payload.insert(
+        "restored_open_state".to_string(),
+        Value::Bool(read.restored_open_state),
+    );
     Ok(Value::Object(payload))
+}
+
+pub async fn screener_screens_active(
+    runtime: &mut impl RuntimeEvaluator,
+) -> Result<Value, AppError> {
+    let read = read_screener_with_restore(runtime, None).await?;
+    Ok(json!({
+        "source": SCREENER_SOURCE,
+        "open": value_bool(&read.state, "open"),
+        "opened_for_read": read.opened_for_read,
+        "restored_open_state": read.restored_open_state,
+        "dialog_title": read.state.get("dialog_title").cloned().unwrap_or(Value::Null),
+        "screen_title": read.state.get("screen_title").cloned().unwrap_or(Value::Null),
+    }))
+}
+
+pub async fn screener_filters_list(runtime: &mut impl RuntimeEvaluator) -> Result<Value, AppError> {
+    let read = read_screener_with_restore(runtime, None).await?;
+    let filters = normalize_filters(read.state.get("filters"));
+    Ok(json!({
+        "source": SCREENER_SOURCE,
+        "open": value_bool(&read.state, "open"),
+        "opened_for_read": read.opened_for_read,
+        "restored_open_state": read.restored_open_state,
+        "filter_count": filters.len(),
+        "filters": filters,
+    }))
+}
+
+pub async fn screener_columns_list(runtime: &mut impl RuntimeEvaluator) -> Result<Value, AppError> {
+    let read = read_screener_with_restore(runtime, None).await?;
+    let columns = normalize_columns(read.state.get("columns"));
+    Ok(json!({
+        "source": SCREENER_SOURCE,
+        "open": value_bool(&read.state, "open"),
+        "opened_for_read": read.opened_for_read,
+        "restored_open_state": read.restored_open_state,
+        "column_count": columns.len(),
+        "columns": columns,
+    }))
 }
 
 pub async fn screener_close(runtime: &mut impl RuntimeEvaluator) -> Result<Value, AppError> {
@@ -121,6 +141,45 @@ async fn read_screener_state(
     };
     let state = runtime.evaluate(&expression, true).await?;
     Ok(state)
+}
+
+struct ScreenerReadState {
+    state: Value,
+    opened_for_read: bool,
+    restored_open_state: bool,
+}
+
+async fn read_screener_with_restore(
+    runtime: &mut impl RuntimeEvaluator,
+    limit: Option<usize>,
+) -> Result<ScreenerReadState, AppError> {
+    let initial = read_screener_state(runtime, None).await?;
+    let restored_open_state = value_bool(&initial, "open");
+    let mut opened_for_read = false;
+
+    if !restored_open_state {
+        screener_open(runtime).await?;
+        opened_for_read = true;
+    }
+
+    let read_result = read_screener_state(runtime, limit).await;
+    let close_result = if opened_for_read {
+        Some(screener_close(runtime).await)
+    } else {
+        None
+    };
+
+    let state = read_result?;
+    if let Some(Err(err)) = close_result {
+        return Err(err);
+    }
+    ensure_dialog_open(&state)?;
+
+    Ok(ScreenerReadState {
+        state,
+        opened_for_read,
+        restored_open_state,
+    })
 }
 
 fn status_payload(state: &Value) -> Value {
@@ -188,6 +247,46 @@ fn object_payload(value: Value) -> Result<Map<String, Value>, AppError> {
 
 fn value_bool(value: &Value, key: &str) -> bool {
     value.get(key).and_then(Value::as_bool).unwrap_or(false)
+}
+
+fn normalize_filters(filters: Option<&Value>) -> Vec<Value> {
+    filters
+        .and_then(Value::as_array)
+        .map(|filters| {
+            filters
+                .iter()
+                .enumerate()
+                .map(|(index, filter)| {
+                    json!({
+                        "index": index,
+                        "text": filter.get("text").cloned().unwrap_or(Value::Null),
+                        "data_name": filter.get("data_name").cloned().unwrap_or(Value::Null),
+                        "visible": filter.get("visible").and_then(Value::as_bool).unwrap_or(false),
+                    })
+                })
+                .collect()
+        })
+        .unwrap_or_default()
+}
+
+fn normalize_columns(columns: Option<&Value>) -> Vec<Value> {
+    columns
+        .and_then(Value::as_array)
+        .map(|columns| {
+            columns
+                .iter()
+                .enumerate()
+                .filter_map(|(index, column)| {
+                    column.as_str().map(|name| {
+                        json!({
+                            "index": index,
+                            "name": name,
+                        })
+                    })
+                })
+                .collect()
+        })
+        .unwrap_or_default()
 }
 
 fn screener_state_expression(limit: usize) -> String {
@@ -421,6 +520,83 @@ mod tests {
 
         let result = screener_get(&mut runtime, Some(5)).await.unwrap();
 
+        assert_eq!(result["opened_for_read"], false);
+        assert_eq!(result["restored_open_state"], true);
+        assert!(runtime.key_events.is_empty());
+    }
+
+    #[tokio::test]
+    async fn screener_screens_active_returns_titles() {
+        let mut runtime = FakeRuntime::new([
+            json!({ "button_found": true, "open": true }),
+            json!({
+                "button_found": true,
+                "open": true,
+                "dialog_title": "Stock Screener",
+                "screen_title": "My Screen"
+            }),
+        ]);
+
+        let result = screener_screens_active(&mut runtime).await.unwrap();
+
+        assert_eq!(result["source"], SCREENER_SOURCE);
+        assert_eq!(result["dialog_title"], "Stock Screener");
+        assert_eq!(result["screen_title"], "My Screen");
+        assert_eq!(result["opened_for_read"], false);
+        assert_eq!(result["restored_open_state"], true);
+    }
+
+    #[tokio::test]
+    async fn screener_filters_list_indexes_filters_and_restores_closed_state() {
+        let mut runtime = FakeRuntime::new([
+            json!({ "button_found": true, "open": false }),
+            json!({ "button_found": true, "open": true, "opened": true }),
+            json!({
+                "button_found": true,
+                "open": true,
+                "filters": [
+                    { "text": "Market cap", "data_name": "screener-filter-pill-market_cap", "visible": true },
+                    { "text": "Exchange", "data_name": "screener-filter-pill-exchange", "visible": true }
+                ],
+                "filter_count": 2
+            }),
+            json!({ "button_found": true, "open": true }),
+            json!({ "button_found": true, "open": false }),
+        ]);
+
+        let result = screener_filters_list(&mut runtime).await.unwrap();
+
+        assert_eq!(result["source"], SCREENER_SOURCE);
+        assert_eq!(result["filter_count"], 2);
+        assert_eq!(result["filters"][0]["index"], 0);
+        assert_eq!(result["filters"][0]["text"], "Market cap");
+        assert_eq!(
+            result["filters"][1]["data_name"],
+            "screener-filter-pill-exchange"
+        );
+        assert_eq!(result["opened_for_read"], true);
+        assert_eq!(result["restored_open_state"], false);
+        assert_eq!(runtime.key_events.len(), 2);
+    }
+
+    #[tokio::test]
+    async fn screener_columns_list_indexes_columns_and_keeps_open_state() {
+        let mut runtime = FakeRuntime::new([
+            json!({ "button_found": true, "open": true }),
+            json!({
+                "button_found": true,
+                "open": true,
+                "columns": ["Symbol", "Price", "Change %"],
+                "column_count": 3
+            }),
+        ]);
+
+        let result = screener_columns_list(&mut runtime).await.unwrap();
+
+        assert_eq!(result["source"], SCREENER_SOURCE);
+        assert_eq!(result["column_count"], 3);
+        assert_eq!(result["columns"][0]["index"], 0);
+        assert_eq!(result["columns"][2]["name"], "Change %");
         assert_eq!(result["opened_for_read"], false);
         assert_eq!(result["restored_open_state"], true);
         assert!(runtime.key_events.is_empty());

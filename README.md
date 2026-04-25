@@ -132,6 +132,8 @@ Then run commands against the active TradingView Desktop session:
 tv status
 tv scanner hotlist volume_gainers --limit 10
 tv screener get --limit 10
+tv screener filters list
+tv screener columns list
 tv quote
 tv ohlcv --summary --count 100
 tv watchlist get
@@ -202,7 +204,7 @@ baseline remains the commands run by CI.
 - `CHANGELOG.md` release notes for public versions
 - user-facing agent guides and runtime skills in release archives
 - read-only TradingView scanner Hotlist preset reads through `tv scanner hotlist`
-- read-only TradingView Stock Screener dialog reads through `tv screener status/open/get/close`
+- read-only TradingView Stock Screener dialog reads through `tv screener status/open/get/screens active/filters list/columns list/close`
 - old JavaScript CLI command migration coverage for the known CLI surface
 - command contract, migration, lifecycle, and deferred-surface notes under `docs/notes/`
 - historical implementation ExecPlans archived under `docs/plans/archives/`
@@ -226,7 +228,7 @@ Read these in order:
 11. `docs/plans/README.md`
 12. `docs/notes/tradingview-mcp-investigation-2026-04-24.md`
 
-The first capability and boundary research milestone, the Rust v1 implementation milestone, the read/provider migration slices, chart/pane/watchlist/alert/layout/indicator/drawing/Pine/tab/replay/stream/launch slices, command lifecycle balance audit, remaining deferred surface audit, operation-layer and data-operation module refactors, development guideline pass, remaining old CLI migration closure slice, and first release readiness pass are complete. Upstream pull request follow-up has addressed the initial narrow Rust fixes and read-only additions, including `tv data shapes`, `tv data labels` truncation metadata, `tv scanner hotlist`, and read-only `tv screener` dialog commands. Remaining upstream-derived candidates require fresh evidence before implementation.
+The first capability and boundary research milestone, the Rust v1 implementation milestone, the read/provider migration slices, chart/pane/watchlist/alert/layout/indicator/drawing/Pine/tab/replay/stream/launch slices, command lifecycle balance audit, remaining deferred surface audit, operation-layer and data-operation module refactors, development guideline pass, remaining old CLI migration closure slice, and first release readiness pass are complete. Upstream pull request follow-up has addressed the initial narrow Rust fixes and read-only additions, including `tv data shapes`, `tv data labels` truncation metadata, `tv scanner hotlist`, and read-only `tv screener` dialog and metadata commands. Remaining upstream-derived candidates require fresh evidence before implementation.
 
 ## License
 

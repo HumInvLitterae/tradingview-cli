@@ -65,12 +65,30 @@ fn screener_help_lists_read_subcommands() {
         .stdout(predicate::str::contains("status"))
         .stdout(predicate::str::contains("open"))
         .stdout(predicate::str::contains("get"))
+        .stdout(predicate::str::contains("screens"))
+        .stdout(predicate::str::contains("filters"))
+        .stdout(predicate::str::contains("columns"))
         .stdout(predicate::str::contains("close"));
 
     tv().args(["screener", "get", "--help"])
         .assert()
         .success()
         .stdout(predicate::str::contains("--limit"));
+
+    tv().args(["screener", "screens", "--help"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("active"));
+
+    tv().args(["screener", "filters", "--help"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("list"));
+
+    tv().args(["screener", "columns", "--help"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("list"));
 }
 
 #[test]

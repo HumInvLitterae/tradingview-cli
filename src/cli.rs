@@ -169,8 +169,41 @@ pub enum ScreenerCommand {
         #[arg(long, short = 'n')]
         limit: Option<usize>,
     },
+    #[command(about = "Read Stock Screener screen metadata")]
+    Screens {
+        #[command(subcommand)]
+        command: ScreenerScreensCommand,
+    },
+    #[command(about = "Read Stock Screener filter metadata")]
+    Filters {
+        #[command(subcommand)]
+        command: ScreenerFiltersCommand,
+    },
+    #[command(about = "Read Stock Screener column metadata")]
+    Columns {
+        #[command(subcommand)]
+        command: ScreenerColumnsCommand,
+    },
     #[command(about = "Close the Stock Screener dialog")]
     Close,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum ScreenerScreensCommand {
+    #[command(about = "Get the active Stock Screener screen title")]
+    Active,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum ScreenerFiltersCommand {
+    #[command(about = "List visible Stock Screener filters")]
+    List,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum ScreenerColumnsCommand {
+    #[command(about = "List visible Stock Screener columns")]
+    List,
 }
 
 #[derive(Debug, Subcommand)]

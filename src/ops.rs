@@ -62,7 +62,8 @@ pub use replay::{
 pub use saved_layout::{saved_layout_list, saved_layout_switch};
 pub use scanner::scanner_hotlist;
 pub use screener::{
-    screener_close, screener_get, screener_open, screener_status, validate_screener_limit,
+    screener_close, screener_columns_list, screener_filters_list, screener_get, screener_open,
+    screener_screens_active, screener_status, validate_screener_limit,
 };
 pub use screenshot::{screenshot_chart, screenshot_full};
 pub use status::status;
