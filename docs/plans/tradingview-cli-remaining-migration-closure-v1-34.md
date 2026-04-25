@@ -85,7 +85,7 @@ After each implementation slice, run the targeted tests for the changed module. 
     cargo clippy --all-targets --all-features
     cargo test
     git diff --check
-    git grep -nE '(/Users/|C:\\)' -- README.md AGENTS.md docs .agents/skills || true
+    run the tracked-doc absolute local path scan
     git status --short
 
 ## Validation and Acceptance

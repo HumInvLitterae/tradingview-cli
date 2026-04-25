@@ -27,6 +27,7 @@ pub enum TargetSelection {
 pub struct TransportConfig {
     pub host: String,
     pub port: u16,
+    pub target_id: Option<String>,
 }
 
 impl Default for TransportConfig {
@@ -34,6 +35,7 @@ impl Default for TransportConfig {
         Self {
             host: "localhost".to_string(),
             port: 9222,
+            target_id: None,
         }
     }
 }
@@ -50,7 +52,15 @@ impl TransportConfig {
             })?,
             Err(_) => 9222,
         };
-        Ok(Self { host, port })
+        let target_id = std::env::var("TV_CDP_TARGET_ID")
+            .ok()
+            .map(|value| value.trim().to_string())
+            .filter(|value| !value.is_empty());
+        Ok(Self {
+            host,
+            port,
+            target_id,
+        })
     }
 
     pub fn list_url(&self) -> String {
@@ -111,6 +121,19 @@ pub fn select_target(targets: &[Target]) -> TargetSelection {
 
 pub async fn discover_target(config: &TransportConfig) -> Result<Target, AppError> {
     let targets = fetch_targets(config).await?;
+    if let Some(target_id) = config.target_id.as_deref() {
+        return targets
+            .iter()
+            .find(|target| target.id == target_id)
+            .cloned()
+            .ok_or_else(|| {
+                AppError::new(
+                    ErrorKind::Validation,
+                    format!("TV_CDP_TARGET_ID did not match any CDP target: {target_id}"),
+                )
+                .with_details(json!({ "target_id": target_id, "targets": targets }))
+            });
+    }
     match select_target(&targets) {
         TargetSelection::Selected(target) => Ok(target),
         TargetSelection::None => Err(AppError::new(
@@ -182,6 +205,18 @@ mod tests {
             select_target(&targets),
             TargetSelection::Ambiguous(targets) if targets.len() == 2
         ));
+    }
+
+    #[test]
+    fn config_reads_optional_target_id_from_env() {
+        unsafe {
+            std::env::set_var("TV_CDP_TARGET_ID", "target-1");
+        }
+        let config = TransportConfig::from_env().unwrap();
+        assert_eq!(config.target_id.as_deref(), Some("target-1"));
+        unsafe {
+            std::env::remove_var("TV_CDP_TARGET_ID");
+        }
     }
 
     #[test]

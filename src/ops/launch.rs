@@ -52,6 +52,7 @@ impl LaunchRequest {
         TransportConfig {
             host: self.host.clone(),
             port: self.port,
+            target_id: None,
         }
     }
 }
@@ -364,6 +365,7 @@ mod tests {
         let config = TransportConfig {
             host: "localhost".to_string(),
             port: 9333,
+            target_id: None,
         };
 
         let request = LaunchRequest::new(&config, None, None, false).unwrap();

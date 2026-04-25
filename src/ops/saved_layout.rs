@@ -46,6 +46,7 @@ pub async fn saved_layout_list(runtime: &mut impl RuntimeEvaluator) -> Result<Va
                             return {
                                 id: chart.id || chart.chartId || null,
                                 name: chart.name || chart.title || 'Untitled',
+                                url: chart.url || chart.image_url || null,
                                 symbol: chart.symbol || null,
                                 resolution: chart.resolution || null,
                                 modified: chart.timestamp || chart.modified || null
@@ -132,6 +133,7 @@ pub async fn saved_layout_switch(
                         return {{
                             id: chart.id || chart.chartId || null,
                             name: chart.name || chart.title || 'Untitled',
+                            url: chart.url || chart.image_url || null,
                             symbol: chart.symbol || null,
                             resolution: chart.resolution || null,
                             modified: chart.timestamp || chart.modified || null
@@ -192,6 +194,7 @@ pub async fn saved_layout_switch(
                         }}
 
                         var match = matches[0];
+                        var rawMatch = charts[normalized.indexOf(match)];
                         if (match.id === null || match.id === undefined || String(match.id).trim() === '') {{
                             finish({{
                                 error: 'Matched layout does not include an id',
@@ -216,7 +219,33 @@ pub async fn saved_layout_switch(
                             return;
                         }}
 
-                        api.loadChartFromServer(String(match.id));
+                        var method = 'loadChartFromServer';
+                        var chartUrl = match.url === null || match.url === undefined ? '' : String(match.url).trim();
+                        if (/^[A-Za-z0-9_-]+$/.test(chartUrl)) {{
+                            method = 'location.assign';
+                            setTimeout(function() {{
+                                window.location.assign('/chart/' + chartUrl + '/');
+                            }}, 50);
+                            finish({{
+                                action: 'switched',
+                                dry_run: false,
+                                target: target,
+                                layout: match,
+                                layout_id: match.id,
+                                layout_url: chartUrl,
+                                source: 'internal_api',
+                                method: method,
+                                navigation_expected: true,
+                                unsaved_dialog_observed: findUnsavedDialog(),
+                                unsaved_dialog_dismissed: false
+                            }});
+                            return;
+                        }} else if (api._loadChartService && typeof api._loadChartService.loadChart === 'function' && rawMatch) {{
+                            method = '_loadChartService.loadChart';
+                            api._loadChartService.loadChart(rawMatch, false, false);
+                        }} else {{
+                            api.loadChartFromServer(String(match.id));
+                        }}
                         setTimeout(function() {{
                             finish({{
                                 action: 'switched',
@@ -224,8 +253,10 @@ pub async fn saved_layout_switch(
                                 target: target,
                                 layout: match,
                                 layout_id: match.id,
+                                layout_url: chartUrl || null,
                                 source: 'internal_api',
-                                method: 'loadChartFromServer',
+                                method: method,
+                                navigation_expected: method === 'location.assign',
                                 unsaved_dialog_observed: findUnsavedDialog(),
                                 unsaved_dialog_dismissed: false
                             }});
@@ -306,8 +337,13 @@ fn normalize_saved_layout_switch_payload(data: Value) -> Result<Value, AppError>
         "target": data.get("target").cloned().unwrap_or(Value::Null),
         "layout": data.get("layout").cloned().unwrap_or(Value::Null),
         "layout_id": layout_id,
+        "layout_url": data.get("layout_url").cloned().unwrap_or(Value::Null),
         "source": data.get("source").and_then(Value::as_str).unwrap_or("internal_api"),
         "method": data.get("method").cloned().unwrap_or(Value::Null),
+        "navigation_expected": data
+            .get("navigation_expected")
+            .and_then(Value::as_bool)
+            .unwrap_or(false),
         "layout_count": data.get("layout_count").cloned().unwrap_or(Value::Null),
         "unsaved_dialog_observed": data
             .get("unsaved_dialog_observed")
@@ -336,6 +372,7 @@ mod tests {
                 {
                     "id": "chart-1",
                     "name": "Swing Layout",
+                    "url": "abc123",
                     "symbol": "NASDAQ:AAPL",
                     "resolution": "1D",
                     "modified": 1777000000
@@ -343,6 +380,7 @@ mod tests {
                 {
                     "id": "chart-2",
                     "name": "Intraday",
+                    "url": "def456",
                     "symbol": null,
                     "resolution": "15",
                     "modified": null
@@ -397,9 +435,11 @@ mod tests {
             "target": "Swing Layout",
             "layout": {
                 "id": "chart-1",
-                "name": "Swing Layout"
+                "name": "Swing Layout",
+                "url": "abc123"
             },
             "layout_id": "chart-1",
+            "layout_url": "abc123",
             "source": "internal_api",
             "layout_count": 2
         })]);
@@ -411,6 +451,7 @@ mod tests {
         assert_eq!(result["action"], "dry_run");
         assert_eq!(result["dry_run"], true);
         assert_eq!(result["layout_id"], "chart-1");
+        assert_eq!(result["layout_url"], "abc123");
         assert_eq!(result["layout"]["name"], "Swing Layout");
         assert!(runtime.evaluated[0].0.contains("getSavedCharts"));
         assert!(runtime.evaluated[0].0.contains("loadChartFromServer"));
@@ -426,11 +467,14 @@ mod tests {
             "target": "chart-1",
             "layout": {
                 "id": "chart-1",
-                "name": "Swing Layout"
+                "name": "Swing Layout",
+                "url": "abc123"
             },
             "layout_id": "chart-1",
+            "layout_url": "abc123",
             "source": "internal_api",
-            "method": "loadChartFromServer",
+            "method": "location.assign",
+            "navigation_expected": true,
             "unsaved_dialog_observed": true,
             "unsaved_dialog_dismissed": false
         })]);
@@ -442,7 +486,9 @@ mod tests {
         assert_eq!(result["action"], "switched");
         assert_eq!(result["dry_run"], false);
         assert_eq!(result["layout_id"], "chart-1");
-        assert_eq!(result["method"], "loadChartFromServer");
+        assert_eq!(result["layout_url"], "abc123");
+        assert_eq!(result["method"], "location.assign");
+        assert_eq!(result["navigation_expected"], true);
         assert_eq!(result["unsaved_dialog_observed"], true);
         assert_eq!(result["unsaved_dialog_dismissed"], false);
     }

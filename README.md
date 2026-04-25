@@ -195,7 +195,7 @@ cargo install --path .
 tv status
 ```
 
-The default CDP endpoint is `localhost:9222`. Override it with `TV_CDP_HOST` and `TV_CDP_PORT` when needed.
+The default CDP endpoint is `localhost:9222`. Override it with `TV_CDP_HOST` and `TV_CDP_PORT` when needed. If more than one TradingView chart target is open, run `tv tab list` and set `TV_CDP_TARGET_ID` to the desired target id for chart-specific commands.
 
 Commands print structured JSON. Most successful commands print one `success: true` envelope to stdout. `tv stream ...` commands are intentionally long-running and print newline-delimited JSON envelopes, one line per changed sample. Failed commands print a `success: false` envelope to stderr.
 

@@ -176,17 +176,20 @@ async fn dispatch(command: Command) -> Result<serde_json::Value, AppError> {
                 ops::current_chart_type(&mut runtime).await
             }
         },
-        Command::Range { from, to } => {
-            let mut runtime = connect_runtime().await?;
-            match (from, to) {
-                (Some(from), Some(to)) => ops::set_visible_range(&mut runtime, from, to).await,
-                (None, None) => ops::visible_range(&mut runtime).await,
-                _ => Err(AppError::new(
-                    ErrorKind::Validation,
-                    "Both --from and --to are required when setting range",
-                )),
+        Command::Range { from, to } => match (from, to) {
+            (Some(from), Some(to)) => {
+                let mut runtime = connect_runtime().await?;
+                ops::set_visible_range(&mut runtime, from, to).await
             }
-        }
+            (None, None) => {
+                let mut runtime = connect_runtime().await?;
+                ops::visible_range(&mut runtime).await
+            }
+            _ => Err(AppError::new(
+                ErrorKind::Validation,
+                "Both --from and --to are required when setting range",
+            )),
+        },
         Command::Scroll { date } => {
             if date.trim().is_empty() {
                 return Err(AppError::new(

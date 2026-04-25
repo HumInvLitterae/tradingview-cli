@@ -10,6 +10,28 @@ use super::common::{CHART_API, merge_object};
 
 pub async fn status(config: &TransportConfig) -> Result<Value, AppError> {
     let targets = transport::fetch_targets(config).await?;
+    if config.target_id.is_some() {
+        let target = transport::discover_target(config).await?;
+        let mut data = json!({
+            "connected": true,
+            "cdp_connected": true,
+            "target_id": target.id,
+            "target_url": target.url,
+            "target_title": target.title,
+            "target_selected_by": "TV_CDP_TARGET_ID",
+            "cdp_host": config.host,
+            "cdp_port": config.port,
+            "chart_symbol": "unknown",
+            "chart_resolution": "unknown",
+            "chart_type": null,
+            "api_available": false,
+        });
+        let mut runtime = CdpClient::connect(&target).await?;
+        if let Ok(chart) = chart_status(&mut runtime).await {
+            merge_object(&mut data, chart);
+        }
+        return Ok(data);
+    }
     let data = match transport::select_target(&targets) {
         TargetSelection::Selected(target) => {
             let mut data = json!({
