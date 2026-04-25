@@ -55,12 +55,12 @@ As of this pass, the upstream repository has 45 open PRs.
    `pine compile` non-persistent.
 
 5. Existing command hardening and modest capability additions.
-   `#43` has possible Rust value, but it is lower priority than the security and
-   known-breakage clusters above. `#65` is now partially addressed through Rust
-   watchlist click hardening and post-add verification, while `watchlist
-   add-bulk` remains deferred. `#40` is addressed for Rust as an explicit
-   `tab switch` target handoff instead of persistent CDP reconnect logic; `#43`
-   is mostly already covered by explicit screenshot output paths.
+   `#65` is now partially addressed through Rust watchlist click hardening and
+   post-add verification, while `watchlist add-bulk` remains deferred. `#40` is
+   addressed for Rust as an explicit `tab switch` target handoff instead of
+   persistent CDP reconnect logic. `#43` is addressed by the existing explicit
+   `tv screenshot --output <PATH>` contract plus tests that parent directories
+   are created and `--output` is required before connecting.
 
 6. Keep workflow packs, dashboards, and Node-only maintenance outside the Rust
    CLI unless a separate investigation proves core CLI value. This includes
@@ -107,7 +107,7 @@ As of this pass, the upstream repository has 45 open PRs.
 | [#47](https://github.com/tradesdontlie/tradingview-mcp/pull/47) `Add development scripts, MCP config, and .DS_Store to gitignore` | `workflow/helper` | Do not add. It mixes local strategy scripts, MCP config, and repo hygiene for the original Node project. |
 | [#46](https://github.com/tradesdontlie/tradingview-mcp/pull/46) `Add Apex Scalp Scanner` | `workflow/helper` | Do not add to core CLI. External APIs, scanners, and strategy packs belong downstream. |
 | [#45](https://github.com/tradesdontlie/tradingview-mcp/pull/45) `Init ESLint and debugging capabilities` | `maintenance/node-only` | Not applicable except as historical reminder that JS evaluate helpers were introduced for development, not Rust CLI design. |
-| [#43](https://github.com/tradesdontlie/tradingview-mcp/pull/43) `feat: add output_dir parameter to screenshot tools` | `feature` | Mostly covered by Rust `tv screenshot --output <PATH>`. No immediate action. |
+| [#43](https://github.com/tradesdontlie/tradingview-mcp/pull/43) `feat: add output_dir parameter to screenshot tools` | `feature` | Addressed for Rust by the existing explicit `tv screenshot --output <PATH>` file path contract. Rust does not add `--output-dir`; tests now lock that parent directories are created and `--output` is required before CDP connection. |
 | [#40](https://github.com/tradesdontlie/tradingview-mcp/pull/40) `fix: reconnect CDP client after tab switch` | `bugfix` | Addressed for Rust as explicit target handoff: Rust commands reconnect per process, and `tv tab switch` now returns `target_id`, `target_env.TV_CDP_TARGET_ID`, and `next_command_hint` so follow-up commands can avoid ambiguity without persistent reconnect logic. |
 | [#39](https://github.com/tradesdontlie/tradingview-mcp/pull/39) `fix: default screenshot region to 'full' when unspecified` | `bugfix` | Not applicable. Rust requires explicit screenshot region through clap. |
 | [#35](https://github.com/tradesdontlie/tradingview-mcp/pull/35) `feat: add data_get_pine_shapes for reading plotshape/plotchar signals` | `feature` | Addressed as Rust `tv data shapes`, a read-only command that complements current line/label/table/box reads by returning visible Pine `plotshape()` / `plotchar()` signal metadata and bar OHLC when available. |
@@ -126,10 +126,9 @@ As of this pass, the upstream repository has 45 open PRs.
    `IApplicationActivationManager` evidence from upstream `#76`.
 
 2. Existing command hardening and modest capability additions.
-   Revisit `#43` only when there is concrete downstream value or live smoke
-   evidence that the current Rust screenshot output path is insufficient.
    Revisit the bulk-add part of `#65` only if a downstream workflow needs
-   batched account watchlist mutation.
+   batched account watchlist mutation. No current screenshot-output PR follow-up
+   remains from `#43`.
 
 ## Assumptions
 

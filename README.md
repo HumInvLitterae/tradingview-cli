@@ -143,6 +143,8 @@ tv screenshot --region chart --output target/tv-chart.png
 
 Most commands operate on the current chart target. Mutation commands such as `watchlist add`, `alert create`, `draw position`, `draw clear`, `pine save`, `layout switch`, and generic `ui` automation can change TradingView account, chart, editor, or UI state; prefer their read-only or `--dry-run` forms when available. `tv draw position` returns an `entity_id`; clean up test drawings with `tv draw remove <ENTITY_ID>` rather than `draw clear`. `tv ui eval` is a dangerous old-CLI compatibility command that runs arbitrary JavaScript in the authenticated TradingView page context and is disabled unless `TV_ALLOW_UNSAFE_UI_EVAL=1` is set.
 
+Screenshots require an explicit `--output <PATH>` file path. Parent directories are created automatically, so agent or Claude Desktop workflows should choose a readable output path directly instead of relying on a default screenshots directory.
+
 The default CDP endpoint is `localhost:9222`. Override it with `TV_CDP_HOST` and `TV_CDP_PORT` when needed. If more than one TradingView chart target is open, run `tv tab list` and set `TV_CDP_TARGET_ID` to the desired target id for chart-specific commands. `tv tab switch <INDEX>` also returns a `target_env` value that can be used for the next command.
 
 Commands print structured JSON. Most successful commands print one `success: true` envelope to stdout. `tv stream ...` commands are intentionally long-running and print newline-delimited JSON envelopes, one line per changed sample. Failed commands print a `success: false` envelope to stderr.

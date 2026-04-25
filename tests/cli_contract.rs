@@ -813,6 +813,20 @@ fn tab_close_requires_index() {
 }
 
 #[test]
+fn screenshot_requires_output_before_connecting() {
+    let assert = tv()
+        .args(["screenshot", "--region", "full"])
+        .assert()
+        .failure()
+        .code(1);
+    let stderr = String::from_utf8(assert.get_output().stderr.clone()).unwrap();
+    let value: Value = serde_json::from_str(&stderr).unwrap();
+    assert_eq!(value["success"], false);
+    assert_eq!(value["command"], "tv");
+    assert_eq!(value["error"]["kind"], "validation");
+}
+
+#[test]
 fn replay_trade_rejects_invalid_action_before_connecting() {
     let assert = tv()
         .env("TV_CDP_PORT", "9")

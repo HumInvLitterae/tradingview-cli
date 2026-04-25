@@ -243,6 +243,23 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn screenshot_full_creates_parent_output_directory() {
+        let dir = tempdir().unwrap();
+        let output = dir.path().join("agent-readable").join("full.png");
+        let mut runtime = FakeRuntime::new([]);
+
+        let data = screenshot_full(&mut runtime, output.to_str().unwrap())
+            .await
+            .unwrap();
+
+        assert_eq!(data["file_path"], output.to_str().unwrap());
+        assert_eq!(data["output_path"], output.to_str().unwrap());
+        assert_eq!(data["size_bytes"], 4);
+        assert_eq!(runtime.screenshot_count, 1);
+        assert_eq!(fs::read(output).unwrap(), vec![137, 80, 78, 71]);
+    }
+
+    #[tokio::test]
     async fn screenshot_chart_writes_clipped_png_bytes() {
         let dir = tempdir().unwrap();
         let output = dir.path().join("chart.png");
