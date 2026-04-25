@@ -57,6 +57,10 @@ CLI contract tests belong under `tests/cli_contract.rs`. They should cover argum
 
 Live CDP smoke checks are useful but environment-dependent. Keep them separate from automated tests, and record meaningful smoke results in the relevant ExecPlan or note.
 
+When recording live smoke results, preserve the behavior evidence but scrub operator-specific metadata. Do not write real TradingView saved-script ids, saved-script names, alert ids, layout ids, chart target ids, usernames, account names, emails, machine-local paths, or other account-local identifiers into tracked files unless they are intentionally public example data. Prefer placeholders such as `<saved script name>`, `<account-local-script-id>`, `<alert-id>`, `<layout-id>`, and `<target-id>`.
+
+Before committing public-release docs or smoke notes, run targeted scans for the concrete values observed during smoke in addition to the usual generic secret scan. If a sensitive or account-local value lands in git history before the repository is public, scrub it from current files and rewrite local history before pushing.
+
 The default validation baseline before committing code changes is:
 
     cargo fmt --check

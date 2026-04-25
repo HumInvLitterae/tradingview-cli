@@ -91,12 +91,13 @@ Supporting notes are welcome when they reduce ambiguity, but avoid speculative d
 3. Do not start implementation just because a capability exists in the old bridge. First justify why it belongs in the new CLI.
 4. When inspecting external or sibling repositories, summarize the relevant findings in this repository. Do not depend on private local memory.
 5. Never write machine-specific absolute filesystem paths into tracked repository files.
-6. Mark uncertainty as `UNCONFIRMED` instead of guessing.
-7. Keep the repo boundary clean. Downstream workflow helpers, skills, and adapters should stay outside the core CLI unless investigation proves they belong in the Rust CLI migration surface.
-8. Do not describe unimplemented old CLI commands as non-goals unless a project decision explicitly excludes them.
-9. Preserve information compatibility for migrated commands. Field names and envelope shape may change, but practical information available from the old CLI must remain available in the Rust CLI.
-10. Commit related changes in sensible batches when files are changed. Do not accumulate a large mixed set of unrelated edits.
-11. Never push to a remote unless the user explicitly asks in the current turn.
+6. Never write live account-local identifiers or private operational metadata into tracked repository files. When recording live smoke, scrub saved-script ids, saved-script names, alert ids, layout ids, chart target ids, usernames, emails, account names, local file paths, and any other value that identifies the operator's TradingView account or machine unless the value is intentionally public example data.
+7. Mark uncertainty as `UNCONFIRMED` instead of guessing.
+8. Keep the repo boundary clean. Downstream workflow helpers, skills, and adapters should stay outside the core CLI unless investigation proves they belong in the Rust CLI migration surface.
+9. Do not describe unimplemented old CLI commands as non-goals unless a project decision explicitly excludes them.
+10. Preserve information compatibility for migrated commands. Field names and envelope shape may change, but practical information available from the old CLI must remain available in the Rust CLI.
+11. Commit related changes in sensible batches when files are changed. Do not accumulate a large mixed set of unrelated edits.
+12. Never push to a remote unless the user explicitly asks in the current turn.
 
 ## Documentation Policy
 
