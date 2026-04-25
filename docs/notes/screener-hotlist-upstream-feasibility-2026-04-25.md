@@ -93,15 +93,15 @@ Classify the remaining Screener/Hotlist ideas as follows:
 | Generic Stock Scanner REST reads | implemented as `tv scanner scan` | Read-only, no CDP, no UI mutation, and useful for basic market discovery before considering high-risk UI Screener mutation. |
 | UI Screener status/get/open/close | implemented as `tv screener` | Useful but DOM-fragile and changes visible UI state. Implemented as a narrow read-only UI dialog slice after live evidence in `docs/notes/ui-screener-read-evidence-2026-04-26.md`. |
 | UI filter list / column list / active screen read | implemented as `tv screener` metadata reads | Read-only after opening the dialog, implemented as lightweight metadata commands that restore the initial open/closed dialog state. |
-| UI filter remove/clear | defer | Mutates the active Screener screen and can persist through TradingView behavior. |
+| UI filter remove/clear | implemented as guarded `tv screener filters remove/clear` | Mutates the active Screener screen, so remove supports dry-run target reporting and clear requires explicit confirmation. |
 | UI screen save/switch/save-as/delete/rename/create | defer | Cloud-state and modal-flow risk; upstream mostly uses stubs for these. |
 | UI column add/remove/reorder/reset | defer | Catalog and drag/drop UI automation; likely too brittle for core CLI now. |
 | Scanner/product workflow packs | keep downstream | Rules packs and dashboards are workflow products, not core bridge replacement. |
 
-Hotlist REST, generic scanner REST, and the read-only UI Screener dialog slice
-are now implemented.
-Any next implementation plan should not bundle Screener filter/screen/column
-mutation, watchlist bulk mutation, or downstream scanner workflow rules.
+Hotlist REST, generic scanner REST, the read-oriented UI Screener dialog slice,
+and guarded filter cleanup are now implemented. Any next implementation plan
+should not bundle Screener screen/column mutation or downstream scanner workflow
+rules.
 
 ## Implemented REST scanner contract
 
@@ -130,13 +130,18 @@ The Rust implementation is separate from Hotlist REST and starts with only:
 - `tv screener get [--limit <N>]`
 - `tv screener screens active`
 - `tv screener filters list`
+- `tv screener filters remove --index <N>|--text <TEXT> [--dry-run]`
+- `tv screener filters clear [--dry-run] --confirm-clear`
 - `tv screener columns list`
 - `tv screener close`
 
-It depends on TradingView Desktop DOM selectors. It does not save screens,
-clear filters, remove filters, or change columns in this slice. Metadata reads
-return the active screen title, visible filter pills, and visible table column
-names without reading table rows.
+It depends on TradingView Desktop DOM selectors. It does not save screens or
+change columns in this slice. Metadata reads return the active screen title,
+visible filter pills, and visible table column names without reading table rows.
+Filter remove/clear commands operate on visible UI filter pills, not a stable
+REST schema. `remove` resolves exactly one visible filter before clicking the
+pill's popover remove button. `clear` is intentionally confirmation-gated
+because it can remove every visible filter from the active screen.
 
 The 2026-04-26 live evidence pass found that the upstream
 `[class*="screenerContainer"]` selector did not match the current dialog. A Rust

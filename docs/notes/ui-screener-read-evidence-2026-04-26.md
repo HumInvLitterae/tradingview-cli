@@ -72,6 +72,8 @@ The implemented surface is:
 - `tv screener get [--limit <N>]`
 - `tv screener screens active`
 - `tv screener filters list`
+- `tv screener filters remove --index <N>|--text <TEXT> [--dry-run]`
+- `tv screener filters clear [--dry-run] --confirm-clear`
 - `tv screener columns list`
 - `tv screener close`
 
@@ -87,9 +89,13 @@ active screen title, visible filter pills, and visible columns from the same UI
 state. None of these commands should present the result as a stable REST scanner
 schema.
 
+The guarded filter mutation follow-up uses the same visible filter pill surface.
+Live evidence showed that opening a filter pill exposes a popover button whose
+class includes `removeButton`; the Rust command clicks that button and then
+verifies the target filter disappeared.
+
 ## Still deferred
 
-- filter remove / clear
 - screen save / switch / save-as / rename / create / delete
 - column add / remove / reorder / reset
 - workflow scanner rules, dashboards, or downstream strategy packs
@@ -99,6 +105,7 @@ belong in the core Rust CLI.
 
 ## Validation
 
-The live smoke changed only visible UI state and restored the Screener dialog to
-its initial closed state. No TradingView layout, watchlist, alert, drawing,
-Pine script, filter, screen, or column setting was intentionally modified.
+The original read-only live smoke changed only visible UI state and restored the
+Screener dialog to its initial closed state. No TradingView layout, watchlist,
+alert, drawing, Pine script, filter, screen, or column setting was intentionally
+modified during that read evidence pass.

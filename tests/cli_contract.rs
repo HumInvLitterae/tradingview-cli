@@ -111,7 +111,20 @@ fn screener_help_lists_read_subcommands() {
     tv().args(["screener", "filters", "--help"])
         .assert()
         .success()
-        .stdout(predicate::str::contains("list"));
+        .stdout(predicate::str::contains("list"))
+        .stdout(predicate::str::contains("remove"))
+        .stdout(predicate::str::contains("clear"));
+    tv().args(["screener", "filters", "remove", "--help"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("--index"))
+        .stdout(predicate::str::contains("--text"))
+        .stdout(predicate::str::contains("--dry-run"));
+    tv().args(["screener", "filters", "clear", "--help"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("--dry-run"))
+        .stdout(predicate::str::contains("--confirm-clear"));
 
     tv().args(["screener", "columns", "--help"])
         .assert()
@@ -130,6 +143,45 @@ fn screener_get_rejects_zero_limit_before_connecting() {
     let stderr = String::from_utf8(assert.get_output().stderr.clone()).unwrap();
     let value: Value = serde_json::from_str(&stderr).unwrap();
     assert_eq!(value["success"], false);
+    assert_eq!(value["command"], "screener");
+    assert_eq!(value["error"]["kind"], "validation");
+}
+
+#[test]
+fn screener_filter_mutations_reject_invalid_inputs_before_connecting() {
+    let missing_target = tv()
+        .env("TV_CDP_PORT", "9")
+        .args(["screener", "filters", "remove"])
+        .assert()
+        .failure()
+        .code(1);
+    let stderr = String::from_utf8(missing_target.get_output().stderr.clone()).unwrap();
+    let value: Value = serde_json::from_str(&stderr).unwrap();
+    assert_eq!(value["success"], false);
+    assert_eq!(value["command"], "screener");
+    assert_eq!(value["error"]["kind"], "validation");
+
+    let conflicting_target = tv()
+        .env("TV_CDP_PORT", "9")
+        .args([
+            "screener", "filters", "remove", "--index", "0", "--text", "PER",
+        ])
+        .assert()
+        .failure()
+        .code(1);
+    let stderr = String::from_utf8(conflicting_target.get_output().stderr.clone()).unwrap();
+    let value: Value = serde_json::from_str(&stderr).unwrap();
+    assert_eq!(value["command"], "screener");
+    assert_eq!(value["error"]["kind"], "validation");
+
+    let clear_without_confirmation = tv()
+        .env("TV_CDP_PORT", "9")
+        .args(["screener", "filters", "clear"])
+        .assert()
+        .failure()
+        .code(1);
+    let stderr = String::from_utf8(clear_without_confirmation.get_output().stderr.clone()).unwrap();
+    let value: Value = serde_json::from_str(&stderr).unwrap();
     assert_eq!(value["command"], "screener");
     assert_eq!(value["error"]["kind"], "validation");
 }

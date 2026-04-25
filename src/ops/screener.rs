@@ -5,11 +5,25 @@ use crate::{
     error::{AppError, ErrorKind},
 };
 
-use super::ui::ui_keyboard;
+use super::{common::js_string, ui::ui_keyboard};
 
 const SCREENER_SOURCE: &str = "ui_screener_dialog";
 const DEFAULT_SCREENER_LIMIT: usize = 20;
 const MAX_SCREENER_LIMIT: usize = 100;
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum ScreenerFilterSelector {
+    Index(usize),
+    Text(String),
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+struct ScreenerFilterTarget {
+    index: usize,
+    text: String,
+    data_name: String,
+    visible: bool,
+}
 
 pub fn validate_screener_limit(limit: Option<usize>) -> Result<usize, AppError> {
     match limit {
@@ -20,6 +34,35 @@ pub fn validate_screener_limit(limit: Option<usize>) -> Result<usize, AppError> 
         Some(limit) => Ok(limit.min(MAX_SCREENER_LIMIT)),
         None => Ok(DEFAULT_SCREENER_LIMIT),
     }
+}
+
+pub fn validate_screener_filter_selector(
+    index: Option<usize>,
+    text: Option<&str>,
+) -> Result<ScreenerFilterSelector, AppError> {
+    let text = text.map(str::trim).filter(|value| !value.is_empty());
+    match (index, text) {
+        (Some(_), Some(_)) => Err(AppError::new(
+            ErrorKind::Validation,
+            "--index and --text are mutually exclusive",
+        )),
+        (Some(index), None) => Ok(ScreenerFilterSelector::Index(index)),
+        (None, Some(text)) => Ok(ScreenerFilterSelector::Text(text.to_string())),
+        (None, None) => Err(AppError::new(
+            ErrorKind::Validation,
+            "Either --index or --text is required",
+        )),
+    }
+}
+
+pub fn validate_screener_filter_clear(dry_run: bool, confirm_clear: bool) -> Result<(), AppError> {
+    if !dry_run && !confirm_clear {
+        return Err(AppError::new(
+            ErrorKind::Validation,
+            "screener filters clear requires --confirm-clear unless --dry-run is used",
+        ));
+    }
+    Ok(())
 }
 
 pub async fn screener_status(runtime: &mut impl RuntimeEvaluator) -> Result<Value, AppError> {
@@ -87,6 +130,120 @@ pub async fn screener_filters_list(runtime: &mut impl RuntimeEvaluator) -> Resul
     }))
 }
 
+pub async fn screener_filters_remove(
+    runtime: &mut impl RuntimeEvaluator,
+    selector: ScreenerFilterSelector,
+    dry_run: bool,
+) -> Result<Value, AppError> {
+    let mut session = ScreenerMutationSession::open(runtime).await?;
+    let before_state = read_screener_state(session.runtime, None).await?;
+    ensure_dialog_open(&before_state)?;
+    let before_filters = filter_targets_from_state(&before_state);
+    let target = resolve_filter_target(&before_filters, &selector)?;
+
+    if dry_run {
+        let close_result = session.restore().await;
+        close_result?;
+        return Ok(json!({
+            "source": SCREENER_SOURCE,
+            "action": "filter_remove",
+            "dry_run": true,
+            "removed": false,
+            "open": value_bool(&before_state, "open"),
+            "opened_for_mutation": session.opened_for_mutation,
+            "restored_open_state": session.restored_open_state,
+            "before_filter_count": before_filters.len(),
+            "after_filter_count": before_filters.len(),
+            "target_filter": filter_target_payload(&target),
+        }));
+    }
+
+    click_filter_remove_button(session.runtime, &target).await?;
+    let after_state =
+        wait_for_filter_removed(session.runtime, &target.data_name, before_filters.len()).await?;
+    let after_filters = filter_targets_from_state(&after_state);
+    let close_result = session.restore().await;
+    close_result?;
+
+    Ok(json!({
+        "source": SCREENER_SOURCE,
+        "action": "filter_remove",
+        "dry_run": false,
+        "removed": true,
+        "open": value_bool(&after_state, "open"),
+        "opened_for_mutation": session.opened_for_mutation,
+        "restored_open_state": session.restored_open_state,
+        "before_filter_count": before_filters.len(),
+        "after_filter_count": after_filters.len(),
+        "target_filter": filter_target_payload(&target),
+    }))
+}
+
+pub async fn screener_filters_clear(
+    runtime: &mut impl RuntimeEvaluator,
+    dry_run: bool,
+    confirm_clear: bool,
+) -> Result<Value, AppError> {
+    validate_screener_filter_clear(dry_run, confirm_clear)?;
+
+    let mut session = ScreenerMutationSession::open(runtime).await?;
+    let before_state = read_screener_state(session.runtime, None).await?;
+    ensure_dialog_open(&before_state)?;
+    let before_filters = filter_targets_from_state(&before_state);
+    let targets = before_filters
+        .iter()
+        .map(filter_target_payload)
+        .collect::<Vec<_>>();
+
+    if dry_run {
+        let close_result = session.restore().await;
+        close_result?;
+        return Ok(json!({
+            "source": SCREENER_SOURCE,
+            "action": "filters_clear",
+            "dry_run": true,
+            "cleared": false,
+            "open": value_bool(&before_state, "open"),
+            "opened_for_mutation": session.opened_for_mutation,
+            "restored_open_state": session.restored_open_state,
+            "before_filter_count": before_filters.len(),
+            "after_filter_count": before_filters.len(),
+            "target_filters": targets,
+            "removed_filters": [],
+        }));
+    }
+
+    let mut removed_filters = Vec::new();
+    let mut current_filters = before_filters;
+    while let Some(target) = current_filters.first().cloned() {
+        click_filter_remove_button(session.runtime, &target).await?;
+        let state =
+            wait_for_filter_removed(session.runtime, &target.data_name, current_filters.len())
+                .await?;
+        removed_filters.push(filter_target_payload(&target));
+        current_filters = filter_targets_from_state(&state);
+    }
+
+    let after_state = read_screener_state(session.runtime, None).await?;
+    let after_filters = filter_targets_from_state(&after_state);
+    let close_result = session.restore().await;
+    close_result?;
+
+    Ok(json!({
+        "source": SCREENER_SOURCE,
+        "action": "filters_clear",
+        "dry_run": false,
+        "cleared": true,
+        "open": value_bool(&after_state, "open"),
+        "opened_for_mutation": session.opened_for_mutation,
+        "restored_open_state": session.restored_open_state,
+        "before_filter_count": targets.len(),
+        "after_filter_count": after_filters.len(),
+        "target_filters": targets,
+        "removed_filters": removed_filters,
+    }))
+}
+
 pub async fn screener_columns_list(runtime: &mut impl RuntimeEvaluator) -> Result<Value, AppError> {
     let read = read_screener_with_restore(runtime, None).await?;
     let columns = normalize_columns(read.state.get("columns"));
@@ -147,6 +304,38 @@ struct ScreenerReadState {
     state: Value,
     opened_for_read: bool,
     restored_open_state: bool,
+}
+
+struct ScreenerMutationSession<'a, R: RuntimeEvaluator> {
+    runtime: &'a mut R,
+    opened_for_mutation: bool,
+    restored_open_state: bool,
+}
+
+impl<'a, R: RuntimeEvaluator> ScreenerMutationSession<'a, R> {
+    async fn open(runtime: &'a mut R) -> Result<Self, AppError> {
+        let initial = read_screener_state(runtime, None).await?;
+        let restored_open_state = value_bool(&initial, "open");
+        let mut opened_for_mutation = false;
+
+        if !restored_open_state {
+            screener_open(runtime).await?;
+            opened_for_mutation = true;
+        }
+
+        Ok(Self {
+            runtime,
+            opened_for_mutation,
+            restored_open_state,
+        })
+    }
+
+    async fn restore(&mut self) -> Result<(), AppError> {
+        if self.opened_for_mutation {
+            screener_close(self.runtime).await?;
+        }
+        Ok(())
+    }
 }
 
 async fn read_screener_with_restore(
@@ -267,6 +456,209 @@ fn normalize_filters(filters: Option<&Value>) -> Vec<Value> {
                 .collect()
         })
         .unwrap_or_default()
+}
+
+fn filter_targets_from_state(state: &Value) -> Vec<ScreenerFilterTarget> {
+    state
+        .get("filters")
+        .and_then(Value::as_array)
+        .map(|filters| {
+            filters
+                .iter()
+                .enumerate()
+                .filter_map(|(fallback_index, filter)| {
+                    let data_name = filter.get("data_name").and_then(Value::as_str)?;
+                    let text = filter
+                        .get("text")
+                        .and_then(Value::as_str)
+                        .unwrap_or("")
+                        .trim();
+                    Some(ScreenerFilterTarget {
+                        index: filter
+                            .get("index")
+                            .and_then(Value::as_u64)
+                            .and_then(|value| usize::try_from(value).ok())
+                            .unwrap_or(fallback_index),
+                        text: text.to_string(),
+                        data_name: data_name.to_string(),
+                        visible: filter
+                            .get("visible")
+                            .and_then(Value::as_bool)
+                            .unwrap_or(false),
+                    })
+                })
+                .collect()
+        })
+        .unwrap_or_default()
+}
+
+fn resolve_filter_target(
+    filters: &[ScreenerFilterTarget],
+    selector: &ScreenerFilterSelector,
+) -> Result<ScreenerFilterTarget, AppError> {
+    match selector {
+        ScreenerFilterSelector::Index(index) => filters
+            .iter()
+            .find(|filter| filter.index == *index)
+            .cloned()
+            .ok_or_else(|| {
+                AppError::new(
+                    ErrorKind::Validation,
+                    format!("No visible Screener filter found at index {index}"),
+                )
+                .with_details(json!({ "filters": filter_targets_payload(filters) }))
+            }),
+        ScreenerFilterSelector::Text(text) => {
+            let needle = text.to_lowercase();
+            let matches = filters
+                .iter()
+                .filter(|filter| filter.text.to_lowercase().contains(&needle))
+                .cloned()
+                .collect::<Vec<_>>();
+            match matches.len() {
+                0 => Err(AppError::new(
+                    ErrorKind::Validation,
+                    format!("No visible Screener filter matched text {text:?}"),
+                )
+                .with_details(json!({ "filters": filter_targets_payload(filters) }))),
+                1 => Ok(matches[0].clone()),
+                _ => Err(AppError::new(
+                    ErrorKind::Validation,
+                    format!("Screener filter text {text:?} matched multiple filters"),
+                )
+                .with_details(json!({ "matches": filter_targets_payload(&matches) }))),
+            }
+        }
+    }
+}
+
+fn filter_target_payload(filter: &ScreenerFilterTarget) -> Value {
+    json!({
+        "index": filter.index,
+        "text": filter.text,
+        "data_name": filter.data_name,
+        "visible": filter.visible,
+    })
+}
+
+fn filter_targets_payload(filters: &[ScreenerFilterTarget]) -> Vec<Value> {
+    filters.iter().map(filter_target_payload).collect()
+}
+
+async fn click_filter_remove_button(
+    runtime: &mut impl RuntimeEvaluator,
+    target: &ScreenerFilterTarget,
+) -> Result<(), AppError> {
+    let data_name = js_string(&target.data_name)?;
+    let result = runtime
+        .evaluate(
+            &expanded_expression(&format!(
+                r#"
+                (async function() {{
+                    function sleep(ms) {{
+                        return new Promise(function(resolve) {{ setTimeout(resolve, ms); }});
+                    }}
+                    REPLACE_HELPERS
+                    function mouseClick(el) {{
+                        var rect = el.getBoundingClientRect();
+                        var x = rect.left + rect.width / 2;
+                        var y = rect.top + rect.height / 2;
+                        ['mouseover', 'mousedown', 'mouseup', 'click'].forEach(function(type) {{
+                            el.dispatchEvent(new MouseEvent(type, {{
+                                bubbles: true,
+                                cancelable: true,
+                                clientX: x,
+                                clientY: y,
+                                view: window
+                            }}));
+                        }});
+                    }}
+                    var pill = document.querySelector('[data-name=' + {data_name} + ']');
+                    if (!pill || !visible(pill)) {{
+                        return {{ found: false, removed: false, data_name: {data_name} }};
+                    }}
+                    mouseClick(pill);
+                    for (var i = 0; i < 20; i++) {{
+                        await sleep(100);
+                        var buttons = Array.from(document.querySelectorAll('button')).filter(visible);
+                        var remove = buttons.find(function(button) {{
+                            return String(button.className || '').indexOf('removeButton') >= 0;
+                        }});
+                        if (remove) {{
+                            setTimeout(function() {{ mouseClick(remove); }}, 0);
+                            return {{ found: true, remove_button_found: true, click_scheduled: true, data_name: {data_name} }};
+                        }}
+                    }}
+                    return {{ found: true, remove_button_found: false, clicked: false, data_name: {data_name} }};
+                }})()
+                "#
+            )),
+            true,
+        )
+        .await?;
+
+    if !value_bool(&result, "found") {
+        return Err(AppError::new(
+            ErrorKind::InternalApiUnavailable,
+            "Screener filter pill not found",
+        )
+        .with_details(result));
+    }
+    if !value_bool(&result, "remove_button_found") {
+        return Err(AppError::new(
+            ErrorKind::InternalApiUnavailable,
+            "Screener filter remove button not found",
+        )
+        .with_details(result));
+    }
+    Ok(())
+}
+
+async fn wait_for_filter_removed(
+    runtime: &mut impl RuntimeEvaluator,
+    data_name: &str,
+    before_count: usize,
+) -> Result<Value, AppError> {
+    let raw_data_name = data_name.to_string();
+    let data_name = js_string(data_name)?;
+    let result = runtime
+        .evaluate(
+            &expanded_expression(&format!(
+                r#"
+                (async function() {{
+                    function sleep(ms) {{
+                        return new Promise(function(resolve) {{ setTimeout(resolve, ms); }});
+                    }}
+                    REPLACE_HELPERS
+                    for (var i = 0; i < 30; i++) {{
+                        var state = readScreenerState(0);
+                        var stillPresent = state.filters.some(function(filter) {{
+                            return filter.data_name === {data_name};
+                        }});
+                        if (!stillPresent || state.filter_count < {before_count}) return state;
+                        await sleep(150);
+                    }}
+                    return readScreenerState(0);
+                }})()
+                "#
+            )),
+            true,
+        )
+        .await?;
+
+    let after_filters = filter_targets_from_state(&result);
+    let still_present = after_filters
+        .iter()
+        .any(|filter| filter.data_name == raw_data_name);
+    if still_present && after_filters.len() >= before_count {
+        return Err(AppError::new(
+            ErrorKind::InternalApiUnavailable,
+            "Screener filter still appears after remove",
+        )
+        .with_details(result));
+    }
+
+    Ok(result)
 }
 
 fn normalize_columns(columns: Option<&Value>) -> Vec<Value> {
@@ -453,6 +845,42 @@ mod tests {
         assert_eq!(error.kind, ErrorKind::Validation);
     }
 
+    #[test]
+    fn validate_screener_filter_selector_requires_one_target() {
+        assert_eq!(
+            validate_screener_filter_selector(Some(2), None).unwrap(),
+            ScreenerFilterSelector::Index(2)
+        );
+        assert_eq!(
+            validate_screener_filter_selector(None, Some(" PER ")).unwrap(),
+            ScreenerFilterSelector::Text("PER".to_string())
+        );
+        assert_eq!(
+            validate_screener_filter_selector(None, None)
+                .unwrap_err()
+                .kind,
+            ErrorKind::Validation
+        );
+        assert_eq!(
+            validate_screener_filter_selector(Some(0), Some("PER"))
+                .unwrap_err()
+                .kind,
+            ErrorKind::Validation
+        );
+    }
+
+    #[test]
+    fn validate_screener_filter_clear_requires_confirmation_for_mutation() {
+        assert!(validate_screener_filter_clear(true, false).is_ok());
+        assert!(validate_screener_filter_clear(false, true).is_ok());
+        assert_eq!(
+            validate_screener_filter_clear(false, false)
+                .unwrap_err()
+                .kind,
+            ErrorKind::Validation
+        );
+    }
+
     #[tokio::test]
     async fn screener_status_maps_closed_state() {
         let mut runtime = FakeRuntime::new([json!({
@@ -577,6 +1005,150 @@ mod tests {
         assert_eq!(result["opened_for_read"], true);
         assert_eq!(result["restored_open_state"], false);
         assert_eq!(runtime.key_events.len(), 2);
+    }
+
+    #[tokio::test]
+    async fn screener_filters_remove_dry_run_returns_target_without_mutation() {
+        let mut runtime = FakeRuntime::new([
+            json!({ "button_found": true, "open": true }),
+            json!({
+                "button_found": true,
+                "open": true,
+                "filters": [
+                    { "index": 0, "text": "Market cap", "data_name": "screener-filter-pill-market_cap", "visible": true },
+                    { "index": 1, "text": "PER", "data_name": "screener-filter-pill-pe", "visible": true }
+                ],
+                "filter_count": 2
+            }),
+        ]);
+
+        let result = screener_filters_remove(
+            &mut runtime,
+            ScreenerFilterSelector::Text("per".to_string()),
+            true,
+        )
+        .await
+        .unwrap();
+
+        assert_eq!(result["action"], "filter_remove");
+        assert_eq!(result["dry_run"], true);
+        assert_eq!(result["removed"], false);
+        assert_eq!(result["target_filter"]["text"], "PER");
+        assert_eq!(result["before_filter_count"], 2);
+        assert_eq!(result["after_filter_count"], 2);
+    }
+
+    #[tokio::test]
+    async fn screener_filters_remove_clicks_target_and_reports_counts() {
+        let mut runtime = FakeRuntime::new([
+            json!({ "button_found": true, "open": true }),
+            json!({
+                "button_found": true,
+                "open": true,
+                "filters": [
+                    { "index": 0, "text": "Market cap", "data_name": "screener-filter-pill-market_cap", "visible": true },
+                    { "index": 1, "text": "PER", "data_name": "screener-filter-pill-pe", "visible": true }
+                ],
+                "filter_count": 2
+            }),
+            json!({ "found": true, "remove_button_found": true, "clicked": true }),
+            json!({
+                "button_found": true,
+                "open": true,
+                "filters": [
+                    { "index": 0, "text": "Market cap", "data_name": "screener-filter-pill-market_cap", "visible": true }
+                ],
+                "filter_count": 1
+            }),
+        ]);
+
+        let result = screener_filters_remove(&mut runtime, ScreenerFilterSelector::Index(1), false)
+            .await
+            .unwrap();
+
+        assert_eq!(result["dry_run"], false);
+        assert_eq!(result["removed"], true);
+        assert_eq!(
+            result["target_filter"]["data_name"],
+            "screener-filter-pill-pe"
+        );
+        assert_eq!(result["before_filter_count"], 2);
+        assert_eq!(result["after_filter_count"], 1);
+    }
+
+    #[tokio::test]
+    async fn screener_filters_remove_rejects_ambiguous_text() {
+        let mut runtime = FakeRuntime::new([
+            json!({ "button_found": true, "open": true }),
+            json!({
+                "button_found": true,
+                "open": true,
+                "filters": [
+                    { "index": 0, "text": "Price", "data_name": "screener-filter-pill-price", "visible": true },
+                    { "index": 1, "text": "Price EMA", "data_name": "screener-filter-pill-price_ema", "visible": true }
+                ],
+                "filter_count": 2
+            }),
+        ]);
+
+        let error = screener_filters_remove(
+            &mut runtime,
+            ScreenerFilterSelector::Text("price".to_string()),
+            true,
+        )
+        .await
+        .unwrap_err();
+
+        assert_eq!(error.kind, ErrorKind::Validation);
+        assert!(error.details.is_some());
+    }
+
+    #[tokio::test]
+    async fn screener_filters_clear_requires_confirmation_and_removes_all() {
+        let mut runtime = FakeRuntime::new([
+            json!({ "button_found": true, "open": true }),
+            json!({
+                "button_found": true,
+                "open": true,
+                "filters": [
+                    { "index": 0, "text": "Market cap", "data_name": "screener-filter-pill-market_cap", "visible": true },
+                    { "index": 1, "text": "PER", "data_name": "screener-filter-pill-pe", "visible": true }
+                ],
+                "filter_count": 2
+            }),
+            json!({ "found": true, "remove_button_found": true, "clicked": true }),
+            json!({
+                "button_found": true,
+                "open": true,
+                "filters": [
+                    { "index": 0, "text": "PER", "data_name": "screener-filter-pill-pe", "visible": true }
+                ],
+                "filter_count": 1
+            }),
+            json!({ "found": true, "remove_button_found": true, "clicked": true }),
+            json!({
+                "button_found": true,
+                "open": true,
+                "filters": [],
+                "filter_count": 0
+            }),
+            json!({
+                "button_found": true,
+                "open": true,
+                "filters": [],
+                "filter_count": 0
+            }),
+        ]);
+
+        let result = screener_filters_clear(&mut runtime, false, true)
+            .await
+            .unwrap();
+
+        assert_eq!(result["action"], "filters_clear");
+        assert_eq!(result["cleared"], true);
+        assert_eq!(result["before_filter_count"], 2);
+        assert_eq!(result["after_filter_count"], 0);
+        assert_eq!(result["removed_filters"].as_array().unwrap().len(), 2);
     }
 
     #[tokio::test]

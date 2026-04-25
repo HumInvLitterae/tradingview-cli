@@ -221,6 +221,20 @@ async fn dispatch(command: Command) -> Result<serde_json::Value, AppError> {
             if let ScreenerCommand::Get { limit } = &command {
                 ops::validate_screener_limit(*limit)?;
             }
+            if let ScreenerCommand::Filters { command } = &command {
+                match command {
+                    ScreenerFiltersCommand::Remove { index, text, .. } => {
+                        ops::validate_screener_filter_selector(*index, text.as_deref())?;
+                    }
+                    ScreenerFiltersCommand::Clear {
+                        dry_run,
+                        confirm_clear,
+                    } => {
+                        ops::validate_screener_filter_clear(*dry_run, *confirm_clear)?;
+                    }
+                    ScreenerFiltersCommand::List => {}
+                }
+            }
             let mut runtime = connect_runtime().await?;
             match command {
                 ScreenerCommand::Status => ops::screener_status(&mut runtime).await,
@@ -233,6 +247,19 @@ async fn dispatch(command: Command) -> Result<serde_json::Value, AppError> {
                 },
                 ScreenerCommand::Filters { command } => match command {
                     ScreenerFiltersCommand::List => ops::screener_filters_list(&mut runtime).await,
+                    ScreenerFiltersCommand::Remove {
+                        index,
+                        text,
+                        dry_run,
+                    } => {
+                        let selector =
+                            ops::validate_screener_filter_selector(index, text.as_deref())?;
+                        ops::screener_filters_remove(&mut runtime, selector, dry_run).await
+                    }
+                    ScreenerFiltersCommand::Clear {
+                        dry_run,
+                        confirm_clear,
+                    } => ops::screener_filters_clear(&mut runtime, dry_run, confirm_clear).await,
                 },
                 ScreenerCommand::Columns { command } => match command {
                     ScreenerColumnsCommand::List => ops::screener_columns_list(&mut runtime).await,

@@ -271,6 +271,22 @@ pub enum ScreenerScreensCommand {
 pub enum ScreenerFiltersCommand {
     #[command(about = "List visible Stock Screener filters")]
     List,
+    #[command(about = "Remove a visible Stock Screener filter")]
+    Remove {
+        #[arg(long)]
+        index: Option<usize>,
+        #[arg(long)]
+        text: Option<String>,
+        #[arg(long)]
+        dry_run: bool,
+    },
+    #[command(about = "Clear visible Stock Screener filters")]
+    Clear {
+        #[arg(long)]
+        dry_run: bool,
+        #[arg(long)]
+        confirm_clear: bool,
+    },
 }
 
 #[derive(Debug, Subcommand)]
