@@ -8,6 +8,19 @@ use crate::{
 
 const FIND_MONACO: &str = r#"
 (function findMonacoEditor() {
+    try {
+        if (window.monaco && window.monaco.editor && typeof window.monaco.editor.getEditors === 'function') {
+            var globalEditors = window.monaco.editor.getEditors();
+            for (var g = 0; g < globalEditors.length; g++) {
+                var editor = globalEditors[g];
+                var node = typeof editor.getContainerDomNode === 'function' ? editor.getContainerDomNode() : null;
+                if (node && node.closest && node.closest('.pine-editor-monaco')) {
+                    return { editor: editor, env: { editor: window.monaco.editor } };
+                }
+            }
+        }
+    } catch(e) {}
+
     var container = document.querySelector('.monaco-editor.pine-editor-monaco');
     if (!container) return null;
     var el = container;
@@ -35,6 +48,37 @@ const FIND_MONACO: &str = r#"
             }
         }
         current = current.return;
+    }
+    return null;
+})()
+"#;
+
+const OPEN_PINE_PANEL_EXPRESSION: &str = r#"
+(function() {
+    var bwb = window.TradingView && window.TradingView.bottomWidgetBar;
+    if (bwb) {
+        if (typeof bwb.activateScriptEditorTab === 'function') {
+            bwb.activateScriptEditorTab();
+            return 'activateScriptEditorTab';
+        }
+        if (typeof bwb.showWidget === 'function') {
+            bwb.showWidget('pine-editor');
+            return 'showWidget';
+        }
+        if (typeof bwb.open === 'function') {
+            bwb.open('pine-editor');
+            return 'open';
+        }
+        if (typeof bwb.show === 'function') {
+            bwb.show('pine-editor');
+            return 'show';
+        }
+    }
+    var btn = document.querySelector('[aria-label="Pine"]')
+        || document.querySelector('[data-name="pine-dialog-button"]');
+    if (btn) {
+        btn.click();
+        return 'button-click';
     }
     return null;
 })()
@@ -426,28 +470,9 @@ async fn ensure_pine_editor_open(
         });
     }
 
-    runtime
-        .evaluate(
-            r#"
-            (function() {
-                var bwb = window.TradingView && window.TradingView.bottomWidgetBar;
-                if (bwb) {
-                    if (typeof bwb.activateScriptEditorTab === 'function') bwb.activateScriptEditorTab();
-                    else if (typeof bwb.showWidget === 'function') bwb.showWidget('pine-editor');
-                    else if (typeof bwb.open === 'function') bwb.open('pine-editor');
-                    else if (typeof bwb.show === 'function') bwb.show('pine-editor');
-                }
-                var btn = document.querySelector('[aria-label="Pine"]')
-                    || document.querySelector('[data-name="pine-dialog-button"]');
-                if (btn) btn.click();
-                return true;
-            })()
-            "#,
-            false,
-        )
-        .await?;
+    runtime.evaluate(OPEN_PINE_PANEL_EXPRESSION, false).await?;
 
-    for _ in 0..50 {
+    for attempt in 0..50 {
         tokio::time::sleep(std::time::Duration::from_millis(200)).await;
         let ready = runtime
             .evaluate(
@@ -462,6 +487,9 @@ async fn ensure_pine_editor_open(
                 editor_open_before,
                 opened_editor: true,
             });
+        }
+        if attempt > 0 && attempt % 10 == 0 {
+            runtime.evaluate(OPEN_PINE_PANEL_EXPRESSION, false).await?;
         }
     }
 
@@ -783,6 +811,7 @@ const PINE_COMPILE_BUTTON_EXPRESSION: &str = r#"
     function isCompileAction(text) {
         if (/^(Add to chart|Update on chart)$/i.test(text)) return true;
         if (/チャート/.test(text) && /(追加|更新)/.test(text)) return true;
+        if (/^(차트에 넣기|차트 업데이트)$/.test(text)) return true;
         return false;
     }
 
@@ -797,7 +826,7 @@ const PINE_COMPILE_BUTTON_EXPRESSION: &str = r#"
             compileCandidate = { button: buttons[i], text: text };
             break;
         }
-        if (!saveCandidate && isSaveAction(text) && /chart|チャート/.test(text)) {
+        if (!saveCandidate && isSaveAction(text) && /chart|チャート|차트/.test(text)) {
             saveCandidate = { button: buttons[i], text: text };
         }
     }
@@ -838,6 +867,9 @@ const PINE_RAW_COMPILE_BUTTON_EXPRESSION: &str = r#"
             fallback = buttons[i];
         }
         if (!fallback && /チャート/.test(text) && /(追加|更新)/.test(text)) {
+            fallback = buttons[i];
+        }
+        if (!fallback && /^(차트에 넣기|차트 업데이트)$/.test(text)) {
             fallback = buttons[i];
         }
         if (!saveButton && String(buttons[i].className || '').indexOf('saveButton') !== -1) {
@@ -1291,6 +1323,24 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn pine_compile_accepts_korean_compile_button_label() {
+        let mut runtime = FakeRuntime::new([
+            json!(true),
+            json!(4),
+            json!({"clicked": true, "button_text": "차트 업데이트", "blocked_save": false}),
+            json!([]),
+            json!(4),
+        ]);
+
+        let result = pine_compile(&mut runtime).await.unwrap();
+
+        assert_eq!(result["button_clicked"], "차트 업데이트");
+        assert!(runtime.evaluated[2].0.contains("차트에 넣기"));
+        assert!(runtime.evaluated[2].0.contains("차트 업데이트"));
+        assert!(runtime.key_events.is_empty());
+    }
+
+    #[tokio::test]
     async fn pine_compile_rejects_save_related_button() {
         let mut runtime = FakeRuntime::new([
             json!(true),
@@ -1343,6 +1393,16 @@ mod tests {
         assert_eq!(result["source"], "dom_fallback");
         assert!(runtime.evaluated[1].0.contains("Save and add to chart"));
         assert!(runtime.key_events.is_empty());
+    }
+
+    #[tokio::test]
+    async fn pine_raw_compile_includes_korean_compile_fallback_labels() {
+        let mut runtime = FakeRuntime::new([json!(true), json!({"clicked": false})]);
+
+        let _ = pine_raw_compile(&mut runtime).await.unwrap();
+
+        assert!(runtime.evaluated[1].0.contains("차트에 넣기"));
+        assert!(runtime.evaluated[1].0.contains("차트 업데이트"));
     }
 
     #[tokio::test]
@@ -1422,5 +1482,19 @@ mod tests {
 
         assert_eq!(error.kind, ErrorKind::InternalApiUnavailable);
         assert!(error.message.contains("Could not open Pine Editor"));
+        let open_attempts = runtime
+            .evaluated
+            .iter()
+            .filter(|(expression, _)| expression.contains("activateScriptEditorTab"))
+            .count();
+        assert_eq!(open_attempts, 5);
+    }
+
+    #[test]
+    fn find_monaco_includes_global_monaco_fast_path_and_fiber_fallback() {
+        assert!(FIND_MONACO.contains("window.monaco.editor.getEditors"));
+        assert!(FIND_MONACO.contains("getContainerDomNode"));
+        assert!(FIND_MONACO.contains("__reactFiber$"));
+        assert!(FIND_MONACO.contains("memoizedProps.value.monacoEnv"));
     }
 }

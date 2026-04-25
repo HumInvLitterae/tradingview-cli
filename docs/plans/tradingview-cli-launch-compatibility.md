@@ -75,7 +75,9 @@ From the repository root:
 
 For docs hygiene:
 
-    git grep -nE '(/Users/|C:\\)' -- README.md docs .agents/skills || true
+    git grep -n 'USER'';' -- README.md docs .agents/skills || true
+
+Also inspect the diff for local absolute paths before committing.
 
 Do not run any command that pushes to a remote.
 

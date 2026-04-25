@@ -45,12 +45,14 @@ As of this pass, the upstream repository has 45 open PRs.
    make CDP ready. Windows COM/AUMID activation remains a future enhancement if
    Windows live smoke proves direct AppX executable launch is still insufficient.
 
-4. Pine Editor robustness.
+4. Pine Editor robustness. Addressed with Rust-side editor detection and
+   compile-label hardening.
    Upstream `#97`, `#95`, and `#50` describe Pine Editor detection and
    button-matching problems in recent TradingView Desktop builds and non-English
-   locales. Rust already checks `textContent`, `aria-label`, and `title`, and it
-   has Japanese button matching. It does not clearly cover the state-transition
-   race from `#97` or Korean text from `#50`.
+   locales. Rust now tries the global Monaco editor API before falling back to
+   React fiber traversal, re-runs the Pine panel open trigger during the Monaco
+   polling loop, and recognizes Korean Add/Update-on-chart labels while keeping
+   `pine compile` non-persistent.
 
 5. Existing command hardening and modest capability additions.
    `#65`, `#40`, `#35`, `#60`, and `#43` have possible Rust value, but they are
@@ -71,9 +73,9 @@ As of this pass, the upstream repository has 45 open PRs.
 | --- | --- | --- |
 | [#100](https://github.com/tradesdontlie/tradingview-mcp/pull/100) `fix(launch): detect TradingView Microsoft Store install on Windows` | `bugfix` | Addressed as Rust launch discovery input. Rust now checks running-process and `Get-AppxPackage` paths without changing the no-kill default. |
 | [#98](https://github.com/tradesdontlie/tradingview-mcp/pull/98) `Add crypto swing-trading rules config` | `workflow/helper` | Do not add to core CLI. This is a personal rules/config pack better suited to downstream repos or user-facing examples outside the binary. |
-| [#97](https://github.com/tradesdontlie/tradingview-mcp/pull/97) `fix(pine): resilient Pine Editor detection during state transitions` | `bugfix` | Candidate Pine hardening. Rust has explicit Monaco polling, but the reported state-transition failure should be checked against live `pine set/new/compile` smoke before changing logic. |
+| [#97](https://github.com/tradesdontlie/tradingview-mcp/pull/97) `fix(pine): resilient Pine Editor detection during state transitions` | `bugfix` | Addressed by Rust Pine Editor hardening: direct Monaco fast path plus repeated panel-open trigger during polling. |
 | [#96](https://github.com/tradesdontlie/tradingview-mcp/pull/96) `fix(data): DOM-scrape fallback for strategy results + trades` | `bugfix` | Partially addressed. Rust keeps internal strategy data reads as the fast path and adds visible Strategy Tester DOM fallback for strategy metrics and trades. |
-| [#95](https://github.com/tradesdontlie/tradingview-mcp/pull/95) `fix(pine): match Add/Update-on-chart buttons by title attr` | `bugfix` | Mostly covered: Rust already includes `aria-label` and `title` in Pine button labels. Keep as evidence for tests and live smoke expectations. |
+| [#95](https://github.com/tradesdontlie/tradingview-mcp/pull/95) `fix(pine): match Add/Update-on-chart buttons by title attr` | `bugfix` | Covered. Rust already reads `textContent`, `aria-label`, and `title` in Pine button labels; the hardening slice kept that behavior under test. |
 | [#94](https://github.com/tradesdontlie/tradingview-mcp/pull/94) `chore(cdp): env-var overrides for TV CDP host/port` | `maintenance` | Already covered by Rust `TV_CDP_HOST` and `TV_CDP_PORT`. No action unless future evidence shows a missing target-specific path. |
 | [#93](https://github.com/tradesdontlie/tradingview-mcp/pull/93) `fix: detect MSIX/WindowsApps TradingView install using PowerShell` | `bugfix` | Addressed by the same Rust launch discovery slice as `#100`. |
 | [#92](https://github.com/tradesdontlie/tradingview-mcp/pull/92) `feat: make CDP host/port configurable via environment variables` | `feature` | Already covered by Rust transport config. No action. |
@@ -100,7 +102,7 @@ As of this pass, the upstream repository has 45 open PRs.
 | [#53](https://github.com/tradesdontlie/tradingview-mcp/pull/53) `feat: support running MCP server inside a Docker container` | `feature/node-only` | Mostly not applicable. MCP server and containerized Node connection are outside this Rust CLI. Host-header behavior is only relevant if Rust later supports non-local CDP hosts. |
 | [#52](https://github.com/tradesdontlie/tradingview-mcp/pull/52) `Fix Windows MSIX install detection in tv_launch` | `bugfix` | Covered by the Rust launch discovery slice. |
 | [#51](https://github.com/tradesdontlie/tradingview-mcp/pull/51) `feat: improve strategy detection and add DOM metrics fallback` | `bugfix/feature` | Partially addressed through improved strategy detection and DOM metric fallback, without adding the upstream debug/evaluate-js surface. |
-| [#50](https://github.com/tradesdontlie/tradingview-mcp/pull/50) `feat: add Korean locale support for Pine compile buttons` | `bugfix` | Candidate Pine locale hardening. Rust currently handles English and Japanese chart text, but not the Korean labels documented here. |
+| [#50](https://github.com/tradesdontlie/tradingview-mcp/pull/50) `feat: add Korean locale support for Pine compile buttons` | `bugfix` | Addressed by adding Korean Add/Update-on-chart labels to safe `pine compile` and broad `pine raw-compile` matching. |
 | [#49](https://github.com/tradesdontlie/tradingview-mcp/pull/49) `Fix getChartApi not defined in drawing management functions` | `bugfix` | JavaScript DI regression. Rust drawing implementation is separate; no direct action unless live drawing smoke reveals a similar problem. |
 | [#47](https://github.com/tradesdontlie/tradingview-mcp/pull/47) `Add development scripts, MCP config, and .DS_Store to gitignore` | `workflow/helper` | Do not add. It mixes local strategy scripts, MCP config, and repo hygiene for the original Node project. |
 | [#46](https://github.com/tradesdontlie/tradingview-mcp/pull/46) `Add Apex Scalp Scanner` | `workflow/helper` | Do not add to core CLI. External APIs, scanners, and strategy packs belong downstream. |
@@ -117,15 +119,16 @@ As of this pass, the upstream repository has 45 open PRs.
 
 ## Next implementation candidates
 
-1. Pine Editor robustness.
-   Create a narrower hardening plan only after a live smoke or code comparison
-   shows current Rust behavior still misses a reported state or locale.
-
-2. Windows COM/AUMID launch activation, only if needed.
+1. Windows COM/AUMID launch activation, only if needed.
    Rust now discovers Windows AppX/MSIX installs and attempts a direct executable
    launch. If Windows live smoke shows packaged-app direct launch cannot pass
    the debug port, plan a Windows-specific activation slice based on
    `IApplicationActivationManager` evidence from upstream `#76`.
+
+2. Existing command hardening and modest capability additions.
+   Revisit `#65`, `#40`, `#35`, `#60`, and `#43` only when there is concrete
+   downstream value or live smoke evidence that the current Rust implementation
+   is fragile.
 
 ## Assumptions
 
