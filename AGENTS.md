@@ -68,7 +68,7 @@ What is true right now:
 - the read-only stream command slice is complete and emits newline-delimited JSON envelopes
 - the bounded launch command slice is complete with no-kill default behavior
 - the remaining old CLI migration closure slice is complete; `layout switch`, `alert delete --all`, `pine raw-compile`, and generic `ui` commands are implemented
-- upstream PR follow-up has addressed the first narrow Rust fixes and read-only additions, including `tv data shapes`, `tv data labels` truncation metadata, and `tv scanner hotlist`
+- upstream PR follow-up has addressed the first narrow Rust fixes, read-only additions, and guardrails, including `tv data shapes`, `tv data labels` truncation metadata, `tv scanner hotlist`, and optional Git 2.54 config-based hooks
 - the operation layer has been split from one oversized `src/ops.rs` into a thin facade plus feature modules under `src/ops/`
 - the data operation layer has been split from one large `src/ops/data.rs` into a thin facade plus capability modules under `src/ops/data/`
 - repo-local development guidelines now record module layout, style, contract, and validation rules for future work
@@ -142,6 +142,7 @@ If the answer still depends on unresolved bridge facts, investigate first and wr
 - `src/ops/ui.rs`: generic UI automation compatibility command implementation
 - `src/ops/data.rs`: thin data operation facade
 - `src/ops/data/`: data operation implementations grouped by indicator, strategy, and drawing-derived reads
+- `scripts/git-hooks/`: optional local Git 2.54 config-based hook scripts
 - `docs/plans/`: active plan index and current ExecPlans
 - `docs/plans/archives/`: completed historical ExecPlans
 - `docs/notes/`: handoff notes, research notes, inventories

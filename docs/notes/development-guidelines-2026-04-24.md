@@ -68,6 +68,11 @@ The default validation baseline before committing code changes is:
     cargo test
     git diff --check
 
+Git 2.54 config-based hooks are available as optional local guardrails. Install
+them with `mise run hooks:install`, `scripts/install-config-hooks.sh`, or
+`scripts/install-config-hooks.ps1`. These hooks are convenience checks, not a
+replacement for the validation baseline above or GitHub Actions.
+
 For docs-only changes, at minimum run:
 
     git diff --check

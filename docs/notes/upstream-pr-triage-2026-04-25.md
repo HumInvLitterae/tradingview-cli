@@ -18,6 +18,9 @@ the Rust CLI backlog.
 - Refresh check after the `tv data labels` hardening slice:
   `gh pr list -R tradesdontlie/tradingview-mcp --state open --limit 20 --json number,title,updatedAt,url`
   still showed `#100` as the newest open PR.
+- Refresh check after the Hotlist REST slice:
+  `gh pr list -R tradesdontlie/tradingview-mcp --state open --limit 20 --json number,title,updatedAt,url`
+  showed `#102` as the newest open PR.
 
 As of this pass, the upstream repository has 45 open PRs.
 
@@ -73,10 +76,19 @@ As of this pass, the upstream repository has 45 open PRs.
    strategy/rules JSON packs, custom scanners, MCP/Docker support, npm lockfile
    fixes, ESLint setup, and JavaScript dependency updates.
 
+7. CI and agent guardrails. Addressed for Rust with equivalent repo-native
+   guardrails.
+   Upstream `#102` adds Node CI, pre-commit hooks, and agent instructions. Rust
+   already had CI and agent instructions, so the Rust follow-up adds read-only
+   CI permissions, workflow concurrency, optional Git 2.54 config-based local
+   hooks, Windows PowerShell hook scripts, and `mise` task shortcuts without
+   importing Node or Python pre-commit dependencies.
+
 ## Newest-first triage
 
 | PR | Category | Rust disposition |
 | --- | --- | --- |
+| [#102](https://github.com/tradesdontlie/tradingview-mcp/pull/102) `Add CI and agent guardrails` | `maintenance/guardrails` | Addressed with Rust-native CI permission/concurrency hardening, optional Git 2.54 config-based hooks, Windows PowerShell hook scripts, and `mise` task shortcuts. Node CI, npm scripts, and Python `pre-commit` are not imported. |
 | [#100](https://github.com/tradesdontlie/tradingview-mcp/pull/100) `fix(launch): detect TradingView Microsoft Store install on Windows` | `bugfix` | Addressed as Rust launch discovery input. Rust now checks running-process and `Get-AppxPackage` paths without changing the no-kill default. |
 | [#98](https://github.com/tradesdontlie/tradingview-mcp/pull/98) `Add crypto swing-trading rules config` | `workflow/helper` | Do not add to core CLI. This is a personal rules/config pack better suited to downstream repos or user-facing examples outside the binary. |
 | [#97](https://github.com/tradesdontlie/tradingview-mcp/pull/97) `fix(pine): resilient Pine Editor detection during state transitions` | `bugfix` | Addressed by Rust Pine Editor hardening: direct Monaco fast path plus repeated panel-open trigger during polling. |

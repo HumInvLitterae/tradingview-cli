@@ -42,6 +42,7 @@ Keep the Rust-native `tv` CLI reliable and useful as a replacement path for prac
 - upstream pull requests on the original repository have been triaged in `docs/notes/upstream-pr-triage-2026-04-25.md`; use that note before choosing post-release fixes or additions.
 - `tv ui eval` is default-disabled as a dangerous compatibility command; it runs only when `TV_ALLOW_UNSAFE_UI_EVAL=1` is set.
 - `tv data strategy`, `tv data trades`, and `tv data equity` use `StrategyScript` marker detection and `_reportData` fallbacks for TradingView Desktop 3.1.0-style strategy data.
+- upstream PR #102 guardrail follow-up is addressed through CI permission/concurrency hardening, optional Git 2.54 config-based hooks, and `mise` task shortcuts. The hooks are local helpers, not a replacement for CI or the standard validation baseline.
 
 ## Current v1 surface
 
@@ -170,7 +171,7 @@ Focus first on migration readiness:
 - use `docs/notes/screener-hotlist-upstream-feasibility-2026-04-25.md` before implementing Stock Screener, Hotlist, or scanner-like features
 - record evidence before starting any post-v1 ExecPlan
 
-Old CLI migration is closed except for MCP server implementation, which remains explicitly not planned. Narrow upstream PR follow-up is also partly complete: launch compatibility, strategy/Pine hardening, screenshot contract tests, tab target handoff, watchlist click hardening, `tv data shapes`, `tv data labels` truncation metadata, and read-only `tv scanner hotlist` have all been addressed. Remaining upstream-derived candidates are evidence-gated: Windows COM/AUMID launch activation only if Windows smoke proves current launch insufficient, `watchlist add-bulk` only if a real batched account-mutation workflow needs it, and layout-dialog behavior only after separate research shows core CLI value and safe operating policy. For Screener-like work, Hotlist REST is already implemented; UI Screener automation remains separate, and UI filter/screen/column mutations remain deferred.
+Old CLI migration is closed except for MCP server implementation, which remains explicitly not planned. Narrow upstream PR follow-up is also partly complete: launch compatibility, strategy/Pine hardening, screenshot contract tests, tab target handoff, watchlist click hardening, `tv data shapes`, `tv data labels` truncation metadata, read-only `tv scanner hotlist`, and PR #102-style CI/agent guardrails have all been addressed. Remaining upstream-derived candidates are evidence-gated: Windows COM/AUMID launch activation only if Windows smoke proves current launch insufficient, `watchlist add-bulk` only if a real batched account-mutation workflow needs it, and layout-dialog behavior only after separate research shows core CLI value and safe operating policy. For Screener-like work, Hotlist REST is already implemented; UI Screener automation remains separate, and UI filter/screen/column mutations remain deferred.
 
 ## Validation baseline
 

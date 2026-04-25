@@ -1,0 +1,41 @@
+[tasks."check:fast"]
+description = "Run fast local checks used by the pre-commit hook"
+run = "bash scripts/git-hooks/pre-commit-fast.sh"
+run_windows = "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/git-hooks/pre-commit-fast.ps1"
+
+[tasks."check:baseline"]
+description = "Run the full local baseline used by the pre-push hook"
+run = "bash scripts/git-hooks/pre-push-baseline.sh"
+run_windows = "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/git-hooks/pre-push-baseline.ps1"
+
+[tasks."hooks:install"]
+description = "Install Git 2.54 config-based hooks into local git config"
+run = '''
+bash scripts/install-config-hooks.sh
+'''
+run_windows = "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/install-config-hooks.ps1"
+
+[tasks."hooks:list"]
+description = "List configured local Git hooks for this repository"
+run = '''
+git hook list pre-commit || true
+git hook list pre-push || true
+'''
+
+[tasks."hooks:disable"]
+description = "Disable repo-local config-based hooks"
+run = '''
+git config --local hook.tv-fast.enabled false
+git config --local hook.tv-baseline.enabled false
+git hook list pre-commit || true
+git hook list pre-push || true
+'''
+
+[tasks."hooks:enable"]
+description = "Enable repo-local config-based hooks"
+run = '''
+git config --local hook.tv-fast.enabled true
+git config --local hook.tv-baseline.enabled true
+git hook list pre-commit || true
+git hook list pre-push || true
+'''

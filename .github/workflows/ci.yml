@@ -4,10 +4,49 @@ on:
   push:
   pull_request:
 
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   CARGO_TERM_COLOR: always
 
 jobs:
+  script-check:
+    name: Script checks
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+          - windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Check shell scripts
+        if: runner.os != 'Windows'
+        run: |
+          bash -n scripts/git-hooks/pre-commit-fast.sh
+          bash -n scripts/git-hooks/pre-push-baseline.sh
+          bash -n scripts/install-config-hooks.sh
+      - name: Check PowerShell scripts
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          $tokens = $null
+          $errors = $null
+          [System.Management.Automation.Language.Parser]::ParseFile("scripts/git-hooks/pre-commit-fast.ps1", [ref]$tokens, [ref]$errors) | Out-Null
+          if ($errors.Count -gt 0) { throw $errors[0] }
+          [System.Management.Automation.Language.Parser]::ParseFile("scripts/git-hooks/pre-push-baseline.ps1", [ref]$tokens, [ref]$errors) | Out-Null
+          if ($errors.Count -gt 0) { throw $errors[0] }
+          [System.Management.Automation.Language.Parser]::ParseFile("scripts/install-config-hooks.ps1", [ref]$tokens, [ref]$errors) | Out-Null
+          if ($errors.Count -gt 0) { throw $errors[0] }
+
   fmt:
     name: Format
     runs-on: ubuntu-latest

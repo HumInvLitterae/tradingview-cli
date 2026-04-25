@@ -170,11 +170,34 @@ cargo run -- quote
 
 Use `tv --help` or `cargo run -- --help` for the full command list.
 
+Optional local Git guardrails can be installed with Git 2.54 or newer. If you
+use `mise`, run:
+
+```bash
+mise run hooks:install
+```
+
+Without `mise`, run the installer directly:
+
+```bash
+scripts/install-config-hooks.sh
+```
+
+On Windows, use PowerShell:
+
+```powershell
+./scripts/install-config-hooks.ps1
+```
+
+These hooks are local development helpers only. The authoritative validation
+baseline remains the commands run by CI.
+
 ## What is included
 
 - a Rust v1 `tv` CLI implementation
 - a GitHub Actions CI baseline for Rust formatting, linting, and tests
 - a GitHub Actions release workflow for tag-triggered native binary archives
+- optional Git 2.54 config-based local hooks with `mise` task shortcuts
 - `CHANGELOG.md` release notes for public versions
 - user-facing agent guides and runtime skills in release archives
 - read-only TradingView scanner Hotlist preset reads through `tv scanner hotlist`
