@@ -110,7 +110,21 @@ jobs:
           notes_file="docs/releases/${GITHUB_REF_NAME}.md"
           notes_args=(--generate-notes)
           if [ -f "$notes_file" ]; then
-            notes_args=(--notes-file "$notes_file")
+            release_notes="$(mktemp)"
+            awk '
+              NR == 1 && /^# / {
+                skipping_leading_blank = 1
+                next
+              }
+              skipping_leading_blank && NF == 0 {
+                next
+              }
+              {
+                skipping_leading_blank = 0
+                print
+              }
+            ' "$notes_file" > "$release_notes"
+            notes_args=(--notes-file "$release_notes")
           fi
 
           gh release create "$GITHUB_REF_NAME" dist/* \
