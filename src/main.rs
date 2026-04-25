@@ -162,6 +162,14 @@ async fn dispatch(command: Command) -> Result<serde_json::Value, AppError> {
                 max_price,
                 min_volume,
                 min_market_cap,
+                sector,
+                industry,
+                symbol_type,
+                subtype,
+                min_change,
+                max_change,
+                min_relative_volume,
+                max_pe,
             } => {
                 let request = ops::ScannerScanRequest {
                     market,
@@ -175,6 +183,14 @@ async fn dispatch(command: Command) -> Result<serde_json::Value, AppError> {
                     max_price,
                     min_volume,
                     min_market_cap,
+                    sectors: sector,
+                    industries: industry,
+                    symbol_types: symbol_type,
+                    subtypes: subtype,
+                    min_change,
+                    max_change,
+                    min_relative_volume,
+                    max_pe,
                 };
                 ops::scanner_scan(request).await
             }

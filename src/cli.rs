@@ -11,6 +11,7 @@ pub struct Cli {
 }
 
 #[derive(Debug, Subcommand)]
+#[allow(clippy::large_enum_variant)]
 pub enum Command {
     #[command(about = "Check CDP connection to TradingView")]
     Status,
@@ -149,6 +150,7 @@ pub enum WatchlistCommand {
 }
 
 #[derive(Debug, Subcommand)]
+#[allow(clippy::large_enum_variant)]
 pub enum ScannerCommand {
     #[command(about = "Get a TradingView Hotlist scanner preset")]
     Hotlist {
@@ -180,6 +182,22 @@ pub enum ScannerCommand {
         min_volume: Option<f64>,
         #[arg(long)]
         min_market_cap: Option<f64>,
+        #[arg(long)]
+        sector: Vec<String>,
+        #[arg(long)]
+        industry: Vec<String>,
+        #[arg(long = "type")]
+        symbol_type: Vec<String>,
+        #[arg(long)]
+        subtype: Vec<String>,
+        #[arg(long)]
+        min_change: Option<f64>,
+        #[arg(long)]
+        max_change: Option<f64>,
+        #[arg(long)]
+        min_relative_volume: Option<f64>,
+        #[arg(long)]
+        max_pe: Option<f64>,
     },
 }
 

@@ -56,9 +56,17 @@ fn scanner_help_lists_hotlist_subcommand() {
         .assert()
         .success()
         .stdout(predicate::str::contains("--exchange"))
+        .stdout(predicate::str::contains("--sector"))
+        .stdout(predicate::str::contains("--industry"))
+        .stdout(predicate::str::contains("--type"))
+        .stdout(predicate::str::contains("--subtype"))
         .stdout(predicate::str::contains("--columns"))
         .stdout(predicate::str::contains("--sort"))
-        .stdout(predicate::str::contains("--min-price"));
+        .stdout(predicate::str::contains("--min-price"))
+        .stdout(predicate::str::contains("--min-change"))
+        .stdout(predicate::str::contains("--max-change"))
+        .stdout(predicate::str::contains("--min-relative-volume"))
+        .stdout(predicate::str::contains("--max-pe"));
 }
 
 #[test]
@@ -176,6 +184,16 @@ fn scanner_scan_rejects_invalid_inputs_before_network() {
         .failure()
         .code(1);
     let stderr = String::from_utf8(invalid_limit.get_output().stderr.clone()).unwrap();
+    let value: Value = serde_json::from_str(&stderr).unwrap();
+    assert_eq!(value["error"]["kind"], "validation");
+
+    let invalid_sector = tv()
+        .env("TV_CDP_PORT", "9")
+        .args(["scanner", "scan", "--sector", " "])
+        .assert()
+        .failure()
+        .code(1);
+    let stderr = String::from_utf8(invalid_sector.get_output().stderr.clone()).unwrap();
     let value: Value = serde_json::from_str(&stderr).unwrap();
     assert_eq!(value["error"]["kind"], "validation");
 }

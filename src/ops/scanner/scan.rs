@@ -26,6 +26,8 @@ const SUPPORTED_SCAN_COLUMNS: &[&str] = &[
     "relative_volume_10d_calc",
     "market_cap_basic",
     "exchange",
+    "type",
+    "subtype",
     "sector",
     "industry",
     "open",
@@ -49,6 +51,14 @@ pub struct ScannerScanRequest {
     pub max_price: Option<f64>,
     pub min_volume: Option<f64>,
     pub min_market_cap: Option<f64>,
+    pub sectors: Vec<String>,
+    pub industries: Vec<String>,
+    pub symbol_types: Vec<String>,
+    pub subtypes: Vec<String>,
+    pub min_change: Option<f64>,
+    pub max_change: Option<f64>,
+    pub min_relative_volume: Option<f64>,
+    pub max_pe: Option<f64>,
 }
 
 pub async fn scanner_scan(request: ScannerScanRequest) -> Result<Value, AppError> {
@@ -213,6 +223,10 @@ fn scan_filters(request: &ScannerScanRequest) -> Result<Vec<Value>, AppError> {
             "right": exchanges,
         }));
     }
+    push_string_filter(&mut filters, "sector", &request.sectors, "--sector")?;
+    push_string_filter(&mut filters, "industry", &request.industries, "--industry")?;
+    push_string_filter(&mut filters, "type", &request.symbol_types, "--type")?;
+    push_string_filter(&mut filters, "subtype", &request.subtypes, "--subtype")?;
 
     push_min_filter(&mut filters, "close", request.min_price, "--min-price")?;
     push_max_filter(&mut filters, "close", request.max_price, "--max-price")?;
@@ -223,7 +237,51 @@ fn scan_filters(request: &ScannerScanRequest) -> Result<Vec<Value>, AppError> {
         request.min_market_cap,
         "--min-market-cap",
     )?;
+    push_min_filter(&mut filters, "change", request.min_change, "--min-change")?;
+    push_max_filter(&mut filters, "change", request.max_change, "--max-change")?;
+    push_min_filter(
+        &mut filters,
+        "relative_volume_10d_calc",
+        request.min_relative_volume,
+        "--min-relative-volume",
+    )?;
+    push_max_filter(
+        &mut filters,
+        "price_earnings_ttm",
+        request.max_pe,
+        "--max-pe",
+    )?;
     Ok(filters)
+}
+
+fn push_string_filter(
+    filters: &mut Vec<Value>,
+    field: &str,
+    values: &[String],
+    label: &str,
+) -> Result<(), AppError> {
+    let values = values
+        .iter()
+        .map(|value| value.trim())
+        .map(|value| {
+            if value.is_empty() {
+                Err(AppError::new(
+                    ErrorKind::Validation,
+                    format!("{label} values must not be empty"),
+                ))
+            } else {
+                Ok(value.to_string())
+            }
+        })
+        .collect::<Result<Vec<_>, _>>()?;
+    if !values.is_empty() {
+        filters.push(json!({
+            "left": field,
+            "operation": "in_range",
+            "right": values,
+        }));
+    }
+    Ok(())
 }
 
 fn push_min_filter(
@@ -363,6 +421,14 @@ mod tests {
             max_price: None,
             min_volume: None,
             min_market_cap: None,
+            sectors: Vec::new(),
+            industries: Vec::new(),
+            symbol_types: Vec::new(),
+            subtypes: Vec::new(),
+            min_change: None,
+            max_change: None,
+            min_relative_volume: None,
+            max_pe: None,
         };
 
         let normalized = normalize_scan_request(request).unwrap();
@@ -400,6 +466,14 @@ mod tests {
             max_price: Some(500.0),
             min_volume: Some(1_000_000.0),
             min_market_cap: Some(10_000_000_000.0),
+            sectors: Vec::new(),
+            industries: Vec::new(),
+            symbol_types: Vec::new(),
+            subtypes: Vec::new(),
+            min_change: None,
+            max_change: None,
+            min_relative_volume: None,
+            max_pe: None,
         };
 
         let normalized = normalize_scan_request(request).unwrap();
@@ -421,6 +495,82 @@ mod tests {
     }
 
     #[test]
+    fn normalize_scan_request_builds_string_and_extra_numeric_filters() {
+        let request = ScannerScanRequest {
+            market: "america".to_string(),
+            exchanges: Vec::new(),
+            columns: Some("name,type,subtype,sector,relative_volume_10d_calc".to_string()),
+            sort: Some("relative_volume_10d_calc".to_string()),
+            asc: false,
+            desc: true,
+            limit: Some(10),
+            min_price: None,
+            max_price: None,
+            min_volume: None,
+            min_market_cap: None,
+            sectors: vec![
+                "Technology Services".to_string(),
+                "Electronic Technology".to_string(),
+            ],
+            industries: vec!["Packaged Software".to_string()],
+            symbol_types: vec!["stock".to_string()],
+            subtypes: vec!["common".to_string()],
+            min_change: Some(2.0),
+            max_change: Some(20.0),
+            min_relative_volume: Some(1.5),
+            max_pe: Some(50.0),
+        };
+
+        let normalized = normalize_scan_request(request).unwrap();
+
+        assert_eq!(
+            normalized.columns,
+            [
+                "name",
+                "type",
+                "subtype",
+                "sector",
+                "relative_volume_10d_calc"
+            ]
+        );
+        assert_eq!(normalized.sort_field, "relative_volume_10d_calc");
+        assert_eq!(normalized.sort_order, "desc");
+        assert_eq!(normalized.filters.len(), 8);
+        assert_eq!(
+            normalized.filters[0],
+            json!({
+                "left": "sector",
+                "operation": "in_range",
+                "right": ["Technology Services", "Electronic Technology"]
+            })
+        );
+        assert_eq!(
+            normalized.filters[2],
+            json!({
+                "left": "type",
+                "operation": "in_range",
+                "right": ["stock"]
+            })
+        );
+        assert_eq!(
+            normalized.filters[6],
+            json!({
+                "left": "relative_volume_10d_calc",
+                "operation": "greater",
+                "right": 1.5
+            })
+        );
+        assert_eq!(
+            normalized.filters[7],
+            json!({
+                "left": "price_earnings_ttm",
+                "operation": "less",
+                "right": 50.0
+            })
+        );
+    }
+
+    #[test]
     fn normalize_scan_request_rejects_invalid_inputs() {
         let base = || ScannerScanRequest {
             market: "america".to_string(),
@@ -434,6 +584,14 @@ mod tests {
             max_price: None,
             min_volume: None,
             min_market_cap: None,
+            sectors: Vec::new(),
+            industries: Vec::new(),
+            symbol_types: Vec::new(),
+            subtypes: Vec::new(),
+            min_change: None,
+            max_change: None,
+            min_relative_volume: None,
+            max_pe: None,
         };
 
         let mut invalid_market = base();
@@ -478,6 +636,13 @@ mod tests {
             normalize_scan_request(invalid_number).unwrap_err().kind,
             ErrorKind::Validation
         );
+
+        let mut invalid_string = base();
+        invalid_string.sectors = vec![" ".to_string()];
+        assert_eq!(
+            normalize_scan_request(invalid_string).unwrap_err().kind,
+            ErrorKind::Validation
+        );
     }
 
     #[test]
@@ -494,6 +659,14 @@ mod tests {
             max_price: None,
             min_volume: None,
             min_market_cap: None,
+            sectors: Vec::new(),
+            industries: Vec::new(),
+            symbol_types: Vec::new(),
+            subtypes: Vec::new(),
+            min_change: None,
+            max_change: None,
+            min_relative_volume: None,
+            max_pe: None,
         })
         .unwrap();
         let payload = json!({
@@ -534,6 +707,14 @@ mod tests {
             max_price: None,
             min_volume: None,
             min_market_cap: None,
+            sectors: Vec::new(),
+            industries: Vec::new(),
+            symbol_types: Vec::new(),
+            subtypes: Vec::new(),
+            min_change: None,
+            max_change: None,
+            min_relative_volume: None,
+            max_pe: None,
         })
         .unwrap();
 
