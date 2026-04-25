@@ -93,7 +93,7 @@ Run validation from the repository root:
     cargo test
     cargo build --release --locked
     git diff --check
-    git grep -nE '(/Users/|C:\\)' -- README.md AGENTS.md docs .agents/skills || true
+    git grep -nE '(/[U]sers/|[C]:\\)' -- README.md AGENTS.md docs .agents/skills || true
     git status --short
 
 Because this workflow only runs on GitHub after a tag is pushed, final end-to-end validation happens by creating and pushing a tag such as `v0.1.0` after the repository owner is ready:

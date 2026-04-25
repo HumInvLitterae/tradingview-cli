@@ -4,6 +4,8 @@ TradingView CLI is a Rust-native command-line replacement for the current Tradin
 
 This project is inspired by practical workflows built around [TradingView MCP Bridge](https://github.com/tradesdontlie/tradingview-mcp) by `tradesdontlie`. That project established the useful bridge pattern this repository is now narrowing into a CLI-first tool. This repository is not affiliated with TradingView Inc.
 
+This tool requires the user's own valid TradingView Desktop installation, logged-in session, and data entitlements. It does not bypass TradingView access controls, subscriptions, paywalls, or exchange/data-provider licensing. It controls the locally running desktop app through Chrome DevTools Protocol and undocumented TradingView application interfaces, which may change or break without notice. Market data, Pine scripts, and TradingView account state remain subject to TradingView, exchange, data-provider, and script-author terms.
+
 ## Current status
 
 This repository now contains the first Rust-native `tv` CLI implementation.

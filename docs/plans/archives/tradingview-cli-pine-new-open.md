@@ -103,7 +103,7 @@ Source and docs edits are ordinary additive changes. The live smoke mutates only
 - `git diff --check` passed.
 - `rg -n '(/[U]sers/|[C]:\\\\)' README.md AGENTS.md docs .agents/skills || true` returned no tracked-doc absolute local paths.
 - The skill validator passed for `.agents/skills/pine-develop`.
-- Live smoke passed against TradingView Desktop: `pine get` saved the original source, `pine new indicator` produced the indicator template, `pine list` returned one saved script, `pine open "<saved script name>"` loaded 115 lines from `<account-local-script-id>` version `1.0`, and `pine set --file target/pine-new-open-restore.pine` restored the original 8-line source.
+- Live smoke passed against TradingView Desktop: `pine get` saved the original source, `pine new indicator` produced the indicator template, `pine list` returned one saved script, `pine open "<saved script name>"` loaded 115 lines from an account-local saved-script id, and `pine set --file target/pine-new-open-restore.pine` restored the original 8-line source.
 
 ## Interfaces and Dependencies
 

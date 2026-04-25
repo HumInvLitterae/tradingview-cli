@@ -99,7 +99,7 @@ Live smoke after approval:
   - `Codex Pine Save Smoke 20260424-190635`
   - `Codex Pine Save Smoke 20260424-190739`
 - None of those intended disposable names appeared in `tv pine list`.
-- A rejected keyboard fallback experiment caused TradingView to save the script under the default dialog name `My script`.
+- A rejected keyboard fallback experiment caused TradingView to save the script under a default dialog name.
 - Leftover saved script: one default-named disposable script, with its account-local script id intentionally omitted from this public archive note.
 - The original Pine Editor source was restored with `tv pine set --file ...` and verified with `tv pine get`.
 
