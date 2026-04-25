@@ -6,6 +6,8 @@ use crate::{cdp::RuntimeEvaluator, error::AppError};
 
 use super::super::common::{CHART_API, js_string, round2};
 
+const DEFAULT_LABEL_LIMIT: usize = 500;
+
 pub async fn data_lines(
     runtime: &mut impl RuntimeEvaluator,
     filter: Option<&str>,
@@ -26,7 +28,7 @@ pub async fn data_labels(
     max_labels: Option<usize>,
     verbose: bool,
 ) -> Result<Value, AppError> {
-    let limit = max_labels.unwrap_or(50);
+    let limit = max_labels.unwrap_or(DEFAULT_LABEL_LIMIT);
     runtime
         .evaluate(
             &build_graphics_expression("dwglabels", "labels", filter.unwrap_or(""))?,
@@ -209,13 +211,17 @@ fn summarize_pine_labels(raw: Value, limit: usize, verbose: bool) -> Value {
                     }
                 })
                 .collect::<Vec<_>>();
+            let available_labels = labels.len();
             if labels.len() > limit {
                 labels = labels.split_off(labels.len() - limit);
             }
             json!({
                 "name": study.get("name").cloned().unwrap_or(Value::Null),
                 "total_labels": study.get("count").cloned().unwrap_or(Value::Null),
+                "available_labels": available_labels,
+                "limit": limit,
                 "showing": labels.len(),
+                "truncated": available_labels > labels.len(),
                 "labels": labels,
             })
         })
@@ -389,8 +395,58 @@ mod tests {
             .unwrap();
 
         assert_eq!(result["studies"][0]["showing"], 2);
+        assert_eq!(result["studies"][0]["available_labels"], 3);
+        assert_eq!(result["studies"][0]["limit"], 2);
+        assert_eq!(result["studies"][0]["truncated"], true);
         assert_eq!(result["studies"][0]["labels"][0]["text"], "B");
         assert_eq!(result["studies"][0]["labels"][0]["id"], "b");
+    }
+
+    #[tokio::test]
+    async fn data_labels_defaults_to_500_without_truncating_small_inputs() {
+        let raw = json!([{
+            "name": "Signals",
+            "count": 2,
+            "items": [
+                {"id": "a", "raw": {"t": "A", "y": 1.0}},
+                {"id": "b", "raw": {"t": "B", "y": 2.0}}
+            ]
+        }]);
+        let mut runtime = FakeRuntime::new([raw]);
+
+        let result = data_labels(&mut runtime, None, None, false).await.unwrap();
+
+        assert_eq!(result["studies"][0]["showing"], 2);
+        assert_eq!(result["studies"][0]["available_labels"], 2);
+        assert_eq!(result["studies"][0]["limit"], 500);
+        assert_eq!(result["studies"][0]["truncated"], false);
+    }
+
+    #[tokio::test]
+    async fn data_labels_reports_default_truncation() {
+        let items = (0..501)
+            .map(|index| {
+                json!({
+                    "id": format!("label-{index}"),
+                    "raw": {"t": format!("L{index}"), "y": index as f64}
+                })
+            })
+            .collect::<Vec<_>>();
+        let raw = json!([{
+            "name": "Dense Signals",
+            "count": 501,
+            "items": items
+        }]);
+        let mut runtime = FakeRuntime::new([raw]);
+
+        let result = data_labels(&mut runtime, None, None, false).await.unwrap();
+
+        assert_eq!(result["studies"][0]["showing"], 500);
+        assert_eq!(result["studies"][0]["available_labels"], 501);
+        assert_eq!(result["studies"][0]["limit"], 500);
+        assert_eq!(result["studies"][0]["truncated"], true);
+        assert_eq!(result["studies"][0]["labels"][0]["text"], "L1");
+        assert_eq!(result["studies"][0]["labels"][499]["text"], "L500");
     }
 
     #[tokio::test]

@@ -83,7 +83,7 @@ As of this pass, the upstream repository has 45 open PRs.
 | [#92](https://github.com/tradesdontlie/tradingview-mcp/pull/92) `feat: make CDP host/port configurable via environment variables` | `feature` | Already covered by Rust transport config. No action. |
 | [#91](https://github.com/tradesdontlie/tradingview-mcp/pull/91) `fix: layout_switch dismisses unsaved-changes dialog in non-English locales` | `bugfix` | Rust deliberately does not auto-dismiss unsaved-change dialogs for `layout switch`. Treat as future policy research, not an immediate bugfix. |
 | [#90](https://github.com/tradesdontlie/tradingview-mcp/pull/90) `fix: TV Desktop 3.1.0 compat for data.trades / data.strategy / data.equity` | `bugfix` | Addressed in Rust by preferring `StrategyScript` source detection and `_reportData.performance`, `_reportData.trades`, and `_reportData.buyHold` when available. |
-| [#89](https://github.com/tradesdontlie/tradingview-mcp/pull/89) `Add dependency injection to drawing functions and update tests` | `mixed` | Audited in `docs/notes/upstream-pr-89-hidden-surface-audit-2026-04-25.md`. Do not cherry-pick the fork bundle. Near-term Rust candidate is only the read-only `tv data labels` default/truncation hardening; alert REST rewrites, watchlist REST management, and hotlist reads need separate evidence and plans. |
+| [#89](https://github.com/tradesdontlie/tradingview-mcp/pull/89) `Add dependency injection to drawing functions and update tests` | `mixed` | Audited in `docs/notes/upstream-pr-89-hidden-surface-audit-2026-04-25.md`. Do not cherry-pick the fork bundle. The read-only `tv data labels` default/truncation hardening has been addressed in Rust; alert REST rewrites, watchlist REST management, and hotlist reads need separate evidence and plans. |
 | [#86](https://github.com/tradesdontlie/tradingview-mcp/pull/86) `Feat/frankie candles pine scripts` | `workflow/helper` | Do not add to core CLI. Pine script packs belong outside this Rust binary. |
 | [#80](https://github.com/tradesdontlie/tradingview-mcp/pull/80) `Fix tv_launch for TradingView v2.14.0+ (Electron 38 / Node 22)` | `bugfix` | Addressed as macOS fallback evidence. Rust now tries `open -a TradingView --args ...` after direct spawn does not make CDP ready. |
 | [#79](https://github.com/tradesdontlie/tradingview-mcp/pull/79) `Fix Windows launch script for MSIX / Microsoft Store TradingView installs` | `bugfix` | Covered by the Rust launch discovery slice; script-level Chrome fallback remains out of scope. |
@@ -128,10 +128,10 @@ As of this pass, the upstream repository has 45 open PRs.
    `IApplicationActivationManager` evidence from upstream `#76`.
 
 2. Existing command hardening and modest capability additions.
-   Plan a small `tv data labels` default/truncation hardening slice from `#89`.
    Revisit the bulk-add part of `#65` only if a downstream workflow needs
    batched account watchlist mutation. No current screenshot-output PR follow-up
-   remains from `#43`.
+   remains from `#43`, and the `tv data labels` default/truncation follow-up
+   from `#89` has been addressed.
 
 ## Assumptions
 

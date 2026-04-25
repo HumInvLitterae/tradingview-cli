@@ -32,11 +32,11 @@ patches:
 - quote/data REST fallback evidence
 - source-audit and sanitization test updates
 
-Rust should not cherry-pick the PR. The only near-term Rust implementation
-candidate from this audit is a small read-only data-label contract improvement:
-raise the default `tv data labels` cap from 50 to 500 and report whether results
-were truncated. Mutation-heavy REST rewrites should be planned separately only
-after stronger Rust-specific evidence.
+Rust should not cherry-pick the PR. The small read-only data-label contract
+improvement from this audit has been addressed in Rust: `tv data labels` now
+defaults to 500 returned labels and reports whether results were truncated.
+Mutation-heavy REST rewrites should be planned separately only after stronger
+Rust-specific evidence.
 
 ## Capability findings
 
@@ -53,15 +53,12 @@ continue to have operation-level tests for list/get/remove/clear behavior.
 ### Data labels default cap and truncation
 
 Upstream reports that a default cap of 50 labels silently drops useful older
-labels in dense indicators and adds a `truncated` signal. Rust currently uses
-`max_labels.unwrap_or(50)` in `tv data labels`, while `tv data shapes` already
-defaults to the shared OHLCV count and caps at 500.
+labels in dense indicators and adds a `truncated` signal.
 
-Disposition: small Rust follow-up candidate. Plan a read-only slice that changes
-the default `tv data labels` cap to 500, preserves `--max <N>`, and reports a
-clear truncation field when total labels exceed the returned count. This should
-be a separate implementation plan because it changes a public default and JSON
-payload.
+Disposition: addressed in Rust. `tv data labels` now defaults to 500 labels when
+`--max <N>` is omitted, preserves `--max <N>` as an override, and reports
+per-study `available_labels`, `limit`, and `truncated` metadata so downstream
+callers can tell when older labels were omitted.
 
 ### Watchlist lazy render and REST list management
 
@@ -131,21 +128,15 @@ touching user-input-to-JavaScript paths.
 
 ## Recommended next work
 
-The next implementation candidate from PR #89 is:
-
-`tv data labels` default/truncation hardening.
-
-This is read-only, small, and directly maps to an existing Rust command. The
-implementation should raise the default cap to 500, keep `--max <N>` as the
-override, and add explicit truncation metadata so downstream callers can tell
-when labels were omitted.
-
-Do not combine that with alert REST rewrites, watchlist REST management, hotlist
-reads, or layout unsaved-dialog policy changes.
+No immediate PR #89 implementation candidate remains after the `tv data labels`
+hardening slice. Do not combine future work with alert REST rewrites, watchlist
+REST management, hotlist reads, or layout unsaved-dialog policy changes without
+separate evidence and a dedicated plan.
 
 ## Assumptions
 
-- This audit classifies PR #89 only. It does not implement any Rust code.
+- This audit classifies PR #89 only. The read-only data-label follow-up has been
+  implemented separately in Rust.
 - PR #89's fork notes contain downstream workflow needs that are useful evidence
   but not automatically core CLI scope.
 - MCP server implementation remains not planned.
