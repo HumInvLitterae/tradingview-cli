@@ -4,7 +4,7 @@ Use this repository as the starting point for a Rust-native TradingView CLI proj
 
 ## Mission
 
-Keep the Rust-native `tv` CLI reliable and useful as a replacement path for practical TradingView bridge usage in sibling trading-analysis projects. The first implementation is intentionally narrow, but the broader old CLI migration is still in progress. Do not confuse unimplemented commands with rejected commands.
+Keep the Rust-native `tv` CLI reliable and useful as a replacement path for practical TradingView bridge usage in sibling trading-analysis projects. The known old JavaScript CLI command migration is closed; if new evidence shows a missed old CLI command, treat it as migration backlog unless a durable decision explicitly excludes it.
 
 ## What has already been decided
 
@@ -30,15 +30,15 @@ Keep the Rust-native `tv` CLI reliable and useful as a replacement path for prac
 - command lifecycle balance has been audited, and no immediate asymmetric lifecycle gap is known in the implemented Rust CLI
 - GitHub Actions CI is configured for the automated Rust baseline
 - `pane layout`, `pane focus`, and `pane symbol` are implemented as explicit chart mutations using TradingView's chart widget collection
-- `layout list` is implemented as a read-only saved chart layout inventory; `layout switch` remains deferred
+- `layout list` and `layout switch` are implemented; `layout switch` supports `--dry-run`
 - `indicator add/remove/toggle/set/get` is implemented as a complete chart-local lifecycle mutation and read surface
 - `draw shape/list/get/remove/clear` is implemented as a chart-local drawing lifecycle surface; `draw clear` includes a read-only dry-run and post-clear verification
-- `pine get/set/new/open/save/compile/analyze/check/errors/console/list` is implemented as a Pine surface; `set`, `new`, and `open` change only the editor buffer, `save` explicitly persists the current saved script to TradingView cloud state, `compile` compiles the current buffer, may add or update a chart-local study, and refuses save-related buttons, while `analyze` and `check` validate source without CDP editor mutation. Named new-save for unsaved scripts is deferred because current live smoke showed the TradingView naming dialog can be outside the CDP page target.
+- `pine get/set/new/open/save/compile/raw-compile/analyze/check/errors/console/list` is implemented as a Pine surface; `set`, `new`, and `open` change only the editor buffer, `save` explicitly persists the current saved script to TradingView cloud state, `compile` compiles the current buffer, may add or update a chart-local study, and refuses save-related buttons, while `raw-compile` preserves the old broad button behavior and may click save-related Pine actions. Named new-save for unsaved scripts is deferred because current live smoke showed the TradingView naming dialog can be outside the CDP page target.
 - `tab list/switch/new/close` is implemented as a bounded tab lifecycle surface; `tab list` preserves chart-target fields and adds app-tab fields, while `tab close` requires an explicit app-tab index and refuses to close the final app tab
 - `replay start/step/stop/status/autoplay/trade` is implemented as a bounded replay lifecycle surface
 - `stream quote/bars/values/lines/labels/tables/all` is implemented as read-only JSONL polling for shell and external monitoring workflows
 - `launch` is implemented as a bounded local process-control command; it is no-kill by default, treats an already responding CDP endpoint as success, and requires explicit `--kill-existing` for process termination
-- remaining deferred surfaces have been audited in `docs/notes/remaining-deferred-surface-audit-2026-04-25.md`; `layout switch`, `pine raw-compile`, alert bulk destructive commands, alert edit/pause/resume, and generic UI automation remain deferred
+- remaining old CLI migration closure is recorded in `docs/plans/tradingview-cli-remaining-migration-closure-v1-34.md`; `layout switch`, `alert delete --all`, `pine raw-compile`, and generic `ui` commands are implemented. Alert edit/pause/resume are future feature research, not confirmed old CLI backlog.
 
 ## Current v1 surface
 
@@ -159,14 +159,12 @@ Focus first on migration readiness:
 - keep GitHub Actions CI aligned with the local baseline
 - exercise the CLI from downstream workflows before deciding the next command slice
 - keep new operation code in the relevant `src/ops/` feature module
-- expand old CLI command coverage in planned slices, preserving information compatibility
+- treat old CLI command coverage as closed unless new evidence shows a missed command; preserve information compatibility for any future compatibility work
 - use `docs/notes/command-lifecycle-balance-audit-2026-04-24.md` when evaluating mutation surfaces and cleanup gaps
-- use `docs/notes/remaining-deferred-surface-audit-2026-04-25.md` before choosing among the remaining high-risk old CLI surfaces
+- use `docs/plans/tradingview-cli-remaining-migration-closure-v1-34.md` and `docs/notes/remaining-deferred-surface-audit-2026-04-25.md` when checking old CLI migration closure
 - record evidence before starting any post-v1 ExecPlan
 
-Deferred old CLI surfaces that need planned implementation or an explicit exclusion decision:
-
-- larger old CLI surfaces such as layout switching, alert bulk deletion/editing, Pine raw-compile helpers, and UI automation
+Old CLI migration is closed except for MCP server implementation, which remains explicitly not planned. The next priority should be release readiness, downstream process-invocation validation, and then original upstream pull request triage for fixes or useful additions.
 
 ## Validation baseline
 

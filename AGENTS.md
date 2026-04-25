@@ -8,7 +8,7 @@ Build and maintain a Rust-native TradingView CLI that replaces the currently use
 
 The repository now contains the first Rust-native `tv` CLI implementation. The immediate goal is to keep that narrow v1 surface reliable, document the real operating contract, and choose any post-v1 work only after evidence shows it belongs in the core CLI.
 
-The broader CLI migration is not complete just because v1 is implemented. Missing old CLI commands are migration backlog unless a durable project decision explicitly excludes them. The MCP server remains separate from that backlog and is not planned.
+The known old JavaScript CLI command migration is now closed. If new evidence shows a missed old CLI command, treat it as migration backlog unless a durable project decision explicitly excludes it. The MCP server remains separate from that backlog and is not planned.
 
 ## Sources of Truth
 
@@ -21,44 +21,45 @@ Read these in order before making major decisions:
 5. `docs/notes/rust-cli-contract-migration-2026-04-24.md`
 6. `docs/notes/legacy-cli-command-migration-inventory-2026-04-24.md`
 7. `docs/notes/remaining-deferred-surface-audit-2026-04-25.md`
-8. `docs/plans/tradingview-cli-layout-list-v1-33.md`
-9. `docs/plans/tradingview-cli-draw-clear-v1-32.md`
-10. `docs/plans/tradingview-cli-pine-save-v1-31.md`
-11. `docs/plans/tradingview-cli-launch-v1-30.md`
-12. `docs/plans/tradingview-cli-stream-read-v1-29.md`
-13. `docs/plans/tradingview-cli-pine-new-open-v1-28.md`
-14. `docs/plans/tradingview-cli-pine-analyze-check-v1-27.md`
-15. `docs/plans/tradingview-cli-pine-compile-v1-26.md`
-16. `docs/plans/tradingview-cli-pine-set-v1-25.md`
-17. `docs/plans/tradingview-cli-pine-read-v1-24.md`
-18. `docs/plans/tradingview-cli-tab-new-close-v1-23.md`
-19. `docs/plans/tradingview-cli-replay-trade-v1-22.md`
-20. `docs/plans/tradingview-cli-replay-autoplay-v1-21.md`
-21. `docs/plans/tradingview-cli-replay-basic-controls-v1-20.md`
-22. `docs/plans/tradingview-cli-replay-status-v1-19.md`
-23. `docs/plans/tradingview-cli-tab-list-switch-v1-18.md`
-24. `docs/plans/tradingview-cli-drawing-commands-v1-17.md`
-25. `docs/plans/tradingview-cli-indicator-commands-v1-16.md`
-26. `docs/plans/tradingview-cli-watchlist-remove-v1-15.md`
-27. `docs/plans/tradingview-cli-alert-delete-v1-14.md`
-28. `docs/plans/tradingview-cli-pane-mutation-v1-13.md`
-29. `docs/plans/tradingview-cli-alert-create-v1-12.md`
-30. `docs/plans/tradingview-cli-watchlist-add-v1-11.md`
-31. `docs/plans/tradingview-cli-alert-list-v1-9.md`
-32. `docs/plans/tradingview-cli-data-module-refactor-v1-10.md`
-33. `docs/plans/tradingview-cli-data-depth-v1-8.md`
-34. `docs/plans/tradingview-cli-ops-module-refactor-v1-7.md`
-35. `docs/plans/tradingview-cli-chart-type-v1-6.md`
-36. `docs/plans/tradingview-cli-diagnostic-read-commands-v1-4.md`
-37. `docs/plans/tradingview-cli-chart-region-screenshot-v1-3.md`
-38. `docs/plans/tradingview-cli-read-utilities-v1-2.md`
-39. `docs/plans/tradingview-cli-read-provider-migration-v1-1.md`
-40. `docs/plans/tradingview-cli-rust-v1.md`
-41. `docs/notes/tradingview-mcp-investigation-2026-04-24.md`
-42. `docs/plans/tradingview-cli-bootstrap-and-bridge-replacement.md`
-43. `docs/notes/next-agent-handoff-prompt-2026-04-21.md`
-44. `.agents/PLANS.md`
-45. `.agents/skills/continuity/SKILL.md` when the continuity skill is active
+8. `docs/plans/tradingview-cli-remaining-migration-closure-v1-34.md`
+9. `docs/plans/tradingview-cli-layout-list-v1-33.md`
+10. `docs/plans/tradingview-cli-draw-clear-v1-32.md`
+11. `docs/plans/tradingview-cli-pine-save-v1-31.md`
+12. `docs/plans/tradingview-cli-launch-v1-30.md`
+13. `docs/plans/tradingview-cli-stream-read-v1-29.md`
+14. `docs/plans/tradingview-cli-pine-new-open-v1-28.md`
+15. `docs/plans/tradingview-cli-pine-analyze-check-v1-27.md`
+16. `docs/plans/tradingview-cli-pine-compile-v1-26.md`
+17. `docs/plans/tradingview-cli-pine-set-v1-25.md`
+18. `docs/plans/tradingview-cli-pine-read-v1-24.md`
+19. `docs/plans/tradingview-cli-tab-new-close-v1-23.md`
+20. `docs/plans/tradingview-cli-replay-trade-v1-22.md`
+21. `docs/plans/tradingview-cli-replay-autoplay-v1-21.md`
+22. `docs/plans/tradingview-cli-replay-basic-controls-v1-20.md`
+23. `docs/plans/tradingview-cli-replay-status-v1-19.md`
+24. `docs/plans/tradingview-cli-tab-list-switch-v1-18.md`
+25. `docs/plans/tradingview-cli-drawing-commands-v1-17.md`
+26. `docs/plans/tradingview-cli-indicator-commands-v1-16.md`
+27. `docs/plans/tradingview-cli-watchlist-remove-v1-15.md`
+28. `docs/plans/tradingview-cli-alert-delete-v1-14.md`
+29. `docs/plans/tradingview-cli-pane-mutation-v1-13.md`
+30. `docs/plans/tradingview-cli-alert-create-v1-12.md`
+31. `docs/plans/tradingview-cli-watchlist-add-v1-11.md`
+32. `docs/plans/tradingview-cli-alert-list-v1-9.md`
+33. `docs/plans/tradingview-cli-data-module-refactor-v1-10.md`
+34. `docs/plans/tradingview-cli-data-depth-v1-8.md`
+35. `docs/plans/tradingview-cli-ops-module-refactor-v1-7.md`
+36. `docs/plans/tradingview-cli-chart-type-v1-6.md`
+37. `docs/plans/tradingview-cli-diagnostic-read-commands-v1-4.md`
+38. `docs/plans/tradingview-cli-chart-region-screenshot-v1-3.md`
+39. `docs/plans/tradingview-cli-read-utilities-v1-2.md`
+40. `docs/plans/tradingview-cli-read-provider-migration-v1-1.md`
+41. `docs/plans/tradingview-cli-rust-v1.md`
+42. `docs/notes/tradingview-mcp-investigation-2026-04-24.md`
+43. `docs/plans/tradingview-cli-bootstrap-and-bridge-replacement.md`
+44. `docs/notes/next-agent-handoff-prompt-2026-04-21.md`
+45. `.agents/PLANS.md`
+46. `.agents/skills/continuity/SKILL.md` when the continuity skill is active
 
 If these sources disagree, preserve the higher-level user and system instructions, then update repository docs so the durable project state is clear again.
 
@@ -73,7 +74,7 @@ What is true right now:
 - MCP server implementation is not planned
 - the Rust JSON wire shape intentionally differs from the old JavaScript CLI
 - migrated commands must preserve the practical information available from the old CLI
-- old CLI commands not yet implemented remain migration backlog unless explicitly excluded
+- newly discovered old CLI commands remain migration backlog unless explicitly excluded
 - the first capability and boundary research milestone is complete
 - the first Rust v1 implementation milestone is complete
 - the first read/provider migration slice is complete
@@ -89,15 +90,15 @@ What is true right now:
 - the alert create slice is complete
 - the pane mutation slice is complete
 - the alert delete slice is complete
-- the saved layout list slice is complete; saved layout switching remains deferred
+- the saved layout list and switch slice is complete; switching supports `--dry-run`
 - the indicator command lifecycle slice is complete
 - the drawing command lifecycle slice is complete, including bulk `draw clear --dry-run` preflight and post-clear verification
-- the Pine read, source set, compile, analyze, check, new, open, and save slices are complete, excluding raw compile
+- the Pine read, source set, compile, raw-compile compatibility, analyze, check, new, open, and save slices are complete
 - the tab command lifecycle slice is complete with explicit-index app-tab close safety
 - the replay command lifecycle slice is complete
 - the read-only stream command slice is complete and emits newline-delimited JSON envelopes
 - the bounded launch command slice is complete with no-kill default behavior
-- the remaining deferred old CLI surfaces have been audited; `layout switch`, `pine raw-compile`, alert bulk destructive commands, alert edit/pause/resume, and generic UI automation remain deferred
+- the remaining old CLI migration closure slice is complete; `layout switch`, `alert delete --all`, `pine raw-compile`, and generic `ui` commands are implemented
 - the operation layer has been split from one oversized `src/ops.rs` into a thin facade plus feature modules under `src/ops/`
 - the data operation layer has been split from one large `src/ops/data.rs` into a thin facade plus capability modules under `src/ops/data/`
 - repo-local development guidelines now record module layout, style, contract, and validation rules for future work
@@ -164,6 +165,7 @@ If the answer still depends on unresolved bridge facts, investigate first and wr
 - `src/ops/stream.rs`: read-only JSONL stream operation implementation
 - `src/ops/launch.rs`: bounded TradingView Desktop launch operation implementation
 - `src/ops/saved_layout.rs`: saved chart layout list operation implementation
+- `src/ops/ui.rs`: generic UI automation compatibility command implementation
 - `src/ops/data.rs`: thin data operation facade
 - `src/ops/data/`: data operation implementations grouped by indicator, strategy, and drawing-derived reads
 - `docs/plans/`: bootstrap and successor ExecPlans

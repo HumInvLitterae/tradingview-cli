@@ -451,6 +451,191 @@ pub async fn alert_delete(
     normalize_alert_delete_payload(result)
 }
 
+pub async fn alert_delete_all(
+    runtime: &mut impl RuntimeEvaluator,
+    dry_run: bool,
+) -> Result<Value, AppError> {
+    let result = runtime
+        .evaluate(
+            &format!(
+                r#"
+            (async function() {{
+                const dryRun = {dry_run};
+
+                function normalizeAlert(alert) {{
+                    return {{
+                        alert_id: alert.alert_id || alert.id || null,
+                        symbol: alert.symbol || (alert.condition && alert.condition.symbol) || null,
+                        type: alert.type || null,
+                        message: alert.message || alert.description || '',
+                        active: alert.active !== false,
+                        condition: alert.condition || null,
+                        resolution: alert.resolution || alert.interval || null,
+                        created: alert.created || alert.create_time || null,
+                        last_fired: alert.last_fired || alert.last_fire_time || null,
+                        expiration: alert.expiration || alert.expire_time || null
+                    }};
+                }}
+
+                async function listAlerts() {{
+                    const response = await fetch('https://pricealerts.tradingview.com/list_alerts', {{
+                        credentials: 'include',
+                        headers: {{ 'accept': 'application/json' }}
+                    }});
+                    if (!response.ok) {{
+                        return {{
+                            ok: false,
+                            error: 'HTTP ' + response.status + ': ' + response.statusText,
+                            alerts: []
+                        }};
+                    }}
+                    const data = await response.json();
+                    if (data.err) {{
+                        return {{
+                            ok: false,
+                            error: data.errmsg || (data.err && data.err.code) || 'Alert list failed',
+                            alerts: []
+                        }};
+                    }}
+                    const rows = Array.isArray(data.r) ? data.r : [];
+                    return {{ ok: true, alerts: rows.map(normalizeAlert) }};
+                }}
+
+                function alertIds(alerts) {{
+                    return alerts
+                        .map(function(alert) {{ return alert.alert_id; }})
+                        .filter(function(id) {{ return id !== null && id !== undefined && String(id).trim() !== ''; }});
+                }}
+
+                function wireAlertId(id) {{
+                    return /^\\d+$/.test(String(id)) ? Number(id) : id;
+                }}
+
+                try {{
+                    const before = await listAlerts();
+                    if (!before.ok) {{
+                        return {{
+                            error: before.error,
+                            error_kind: 'internal_api_unavailable',
+                            source: 'internal_api'
+                        }};
+                    }}
+
+                    const targetIds = alertIds(before.alerts);
+                    if (targetIds.length !== before.alerts.length) {{
+                        return {{
+                            error: 'Alert list contained alerts without alert_id',
+                            error_kind: 'internal_api_unavailable',
+                            source: 'internal_api',
+                            before_count: before.alerts.length,
+                            target_alert_ids: targetIds,
+                            target_alerts: before.alerts
+                        }};
+                    }}
+
+                    if (dryRun) {{
+                        return {{
+                            action: 'dry_run',
+                            dry_run: true,
+                            deleted: false,
+                            source: 'internal_api',
+                            before_count: before.alerts.length,
+                            after_count: before.alerts.length,
+                            target_alert_ids: targetIds,
+                            target_alerts: before.alerts
+                        }};
+                    }}
+
+                    if (targetIds.length === 0) {{
+                        return {{
+                            action: 'noop',
+                            dry_run: false,
+                            deleted: false,
+                            source: 'internal_api',
+                            before_count: 0,
+                            after_count: 0,
+                            target_alert_ids: [],
+                            target_alerts: []
+                        }};
+                    }}
+
+                    const deleteUrl = new URL('https://pricealerts.tradingview.com/delete_alerts', location.origin);
+                    deleteUrl.searchParams.set('build_time', String(window.BUILD_TIME || ''));
+                    deleteUrl.searchParams.set('log_username', String((window.user && window.user.username) || ''));
+                    const deleteResponse = await fetch(deleteUrl.toString(), {{
+                        method: 'POST',
+                        credentials: 'include',
+                        headers: {{ 'accept': 'application/json' }},
+                        body: JSON.stringify({{ payload: {{ alert_ids: targetIds.map(wireAlertId) }} }})
+                    }});
+                    if (!deleteResponse.ok) {{
+                        return {{
+                            error: 'HTTP ' + deleteResponse.status + ': ' + deleteResponse.statusText,
+                            error_kind: 'internal_api_unavailable',
+                            source: 'internal_api',
+                            before_count: before.alerts.length,
+                            target_alert_ids: targetIds,
+                            target_alerts: before.alerts
+                        }};
+                    }}
+
+                    const deleteData = await deleteResponse.json();
+                    if (deleteData.err) {{
+                        return {{
+                            error: deleteData.errmsg || (deleteData.err && deleteData.err.code) || 'Alert delete failed',
+                            error_kind: 'internal_api_unavailable',
+                            source: 'internal_api',
+                            before_count: before.alerts.length,
+                            target_alert_ids: targetIds,
+                            target_alerts: before.alerts,
+                            delete_response: deleteData
+                        }};
+                    }}
+
+                    const after = await listAlerts();
+                    if (!after.ok) {{
+                        return {{
+                            error: after.error,
+                            error_kind: 'internal_api_unavailable',
+                            source: 'internal_api',
+                            before_count: before.alerts.length,
+                            target_alert_ids: targetIds,
+                            target_alerts: before.alerts,
+                            delete_response: deleteData
+                        }};
+                    }}
+
+                    const remainingTargetIds = new Set(alertIds(after.alerts).map(String));
+                    const stillPresent = targetIds.filter(function(id) {{ return remainingTargetIds.has(String(id)); }});
+                    return {{
+                        action: 'delete_all',
+                        dry_run: false,
+                        deleted: stillPresent.length === 0,
+                        source: 'internal_api',
+                        before_count: before.alerts.length,
+                        after_count: after.alerts.length,
+                        target_alert_ids: targetIds,
+                        target_alerts: before.alerts,
+                        remaining_target_alert_ids: stillPresent,
+                        delete_response: deleteData
+                    }};
+                }} catch (error) {{
+                    return {{
+                        error: error && error.message ? error.message : String(error),
+                        error_kind: 'internal_api_unavailable',
+                        source: 'internal_api'
+                    }};
+                }}
+            }})()
+            "#
+            ),
+            true,
+        )
+        .await?;
+
+    normalize_alert_delete_all_payload(result)
+}
+
 fn normalize_alert_list_payload(data: Value) -> Value {
     let alerts = data
         .get("alerts")
@@ -568,6 +753,47 @@ fn normalize_alert_delete_payload(data: Value) -> Result<Value, AppError> {
             .and_then(Value::as_bool)
             .unwrap_or(false),
         "matched_alert": data.get("matched_alert").cloned().unwrap_or(Value::Null),
+    }))
+}
+
+fn normalize_alert_delete_all_payload(data: Value) -> Result<Value, AppError> {
+    if let Some(message) = data.get("error").and_then(Value::as_str) {
+        let kind = match data.get("error_kind").and_then(Value::as_str) {
+            Some("validation") => ErrorKind::Validation,
+            _ => ErrorKind::InternalApiUnavailable,
+        };
+        return Err(AppError::new(kind, message.to_string()).with_details(data));
+    }
+
+    if data
+        .get("action")
+        .and_then(Value::as_str)
+        .is_some_and(|action| action == "delete_all")
+        && !data
+            .get("deleted")
+            .and_then(Value::as_bool)
+            .unwrap_or(false)
+    {
+        return Err(AppError::new(
+            ErrorKind::InternalApiUnavailable,
+            "Alert delete --all did not remove all target alerts",
+        )
+        .with_details(data));
+    }
+
+    Ok(json!({
+        "action": data.get("action").cloned().unwrap_or_else(|| json!("delete_all")),
+        "dry_run": data.get("dry_run").and_then(Value::as_bool).unwrap_or(false),
+        "deleted": data.get("deleted").and_then(Value::as_bool).unwrap_or(false),
+        "source": data.get("source").and_then(Value::as_str).unwrap_or("internal_api"),
+        "before_count": data.get("before_count").cloned().unwrap_or(Value::Null),
+        "after_count": data.get("after_count").cloned().unwrap_or(Value::Null),
+        "target_alert_ids": data.get("target_alert_ids").cloned().unwrap_or_else(|| json!([])),
+        "target_alerts": data.get("target_alerts").cloned().unwrap_or_else(|| json!([])),
+        "remaining_target_alert_ids": data
+            .get("remaining_target_alert_ids")
+            .cloned()
+            .unwrap_or_else(|| json!([])),
     }))
 }
 
@@ -834,5 +1060,109 @@ mod tests {
         let error = alert_delete(&mut runtime, "4546454367").await.unwrap_err();
 
         assert_eq!(error.kind, ErrorKind::InternalApiUnavailable);
+    }
+
+    #[tokio::test]
+    async fn alert_delete_all_returns_dry_run_targets() {
+        let mut runtime = FakeRuntime::new(VecDeque::from([json!({
+            "action": "dry_run",
+            "dry_run": true,
+            "deleted": false,
+            "source": "internal_api",
+            "before_count": 2,
+            "after_count": 2,
+            "target_alert_ids": ["1", "2"],
+            "target_alerts": [
+                { "alert_id": "1", "message": "one" },
+                { "alert_id": "2", "message": "two" }
+            ]
+        })]));
+
+        let data = alert_delete_all(&mut runtime, true).await.unwrap();
+
+        assert_eq!(data["action"], "dry_run");
+        assert_eq!(data["dry_run"], true);
+        assert_eq!(data["deleted"], false);
+        assert_eq!(data["before_count"], 2);
+        assert_eq!(data["target_alert_ids"][0], "1");
+        assert!(runtime.evaluated[0].0.contains("list_alerts"));
+        assert!(runtime.evaluated[0].0.contains("delete_alerts"));
+        assert!(runtime.evaluated[0].1);
+    }
+
+    #[tokio::test]
+    async fn alert_delete_all_returns_noop_when_empty() {
+        let mut runtime = FakeRuntime::new(VecDeque::from([json!({
+            "action": "noop",
+            "dry_run": false,
+            "deleted": false,
+            "source": "internal_api",
+            "before_count": 0,
+            "after_count": 0,
+            "target_alert_ids": [],
+            "target_alerts": []
+        })]));
+
+        let data = alert_delete_all(&mut runtime, false).await.unwrap();
+
+        assert_eq!(data["action"], "noop");
+        assert_eq!(data["deleted"], false);
+        assert_eq!(data["before_count"], 0);
+        assert_eq!(data["after_count"], 0);
+    }
+
+    #[tokio::test]
+    async fn alert_delete_all_returns_success_payload() {
+        let mut runtime = FakeRuntime::new(VecDeque::from([json!({
+            "action": "delete_all",
+            "dry_run": false,
+            "deleted": true,
+            "source": "internal_api",
+            "before_count": 2,
+            "after_count": 0,
+            "target_alert_ids": ["1", "2"],
+            "target_alerts": [
+                { "alert_id": "1", "message": "one" },
+                { "alert_id": "2", "message": "two" }
+            ],
+            "remaining_target_alert_ids": [],
+            "delete_response": { "s": "ok" }
+        })]));
+
+        let data = alert_delete_all(&mut runtime, false).await.unwrap();
+
+        assert_eq!(data["action"], "delete_all");
+        assert_eq!(data["deleted"], true);
+        assert_eq!(data["after_count"], 0);
+        assert_eq!(
+            data["remaining_target_alert_ids"].as_array().unwrap().len(),
+            0
+        );
+    }
+
+    #[tokio::test]
+    async fn alert_delete_all_requires_target_absence_after_delete() {
+        let mut runtime = FakeRuntime::new(VecDeque::from([json!({
+            "action": "delete_all",
+            "dry_run": false,
+            "deleted": false,
+            "source": "internal_api",
+            "before_count": 2,
+            "after_count": 1,
+            "target_alert_ids": ["1", "2"],
+            "target_alerts": [
+                { "alert_id": "1", "message": "one" },
+                { "alert_id": "2", "message": "two" }
+            ],
+            "remaining_target_alert_ids": ["2"]
+        })]));
+
+        let error = alert_delete_all(&mut runtime, false).await.unwrap_err();
+
+        assert_eq!(error.kind, ErrorKind::InternalApiUnavailable);
+        assert_eq!(
+            error.message,
+            "Alert delete --all did not remove all target alerts"
+        );
     }
 }

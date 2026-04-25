@@ -4,7 +4,7 @@ use image::{ImageBuffer, ImageFormat, Rgba};
 use serde_json::Value;
 
 use crate::{
-    cdp::{KeyEvent, RuntimeEvaluator, ScreenshotClip},
+    cdp::{KeyEvent, MouseEvent, RuntimeEvaluator, ScreenshotClip},
     error::{AppError, ErrorKind},
 };
 
@@ -17,6 +17,7 @@ pub(super) struct FakeRuntime {
     pub(super) clipped_screenshot_count: usize,
     pub(super) inserted_text: Vec<String>,
     pub(super) key_events: Vec<KeyEvent>,
+    pub(super) mouse_events: Vec<MouseEvent>,
 }
 
 impl FakeRuntime {
@@ -30,6 +31,7 @@ impl FakeRuntime {
             clipped_screenshot_count: 0,
             inserted_text: Vec::new(),
             key_events: Vec::new(),
+            mouse_events: Vec::new(),
         }
     }
 
@@ -77,6 +79,11 @@ impl RuntimeEvaluator for FakeRuntime {
 
     async fn dispatch_key_event(&mut self, event: KeyEvent) -> Result<(), AppError> {
         self.key_events.push(event);
+        Ok(())
+    }
+
+    async fn dispatch_mouse_event(&mut self, event: MouseEvent) -> Result<(), AppError> {
+        self.mouse_events.push(event);
         Ok(())
     }
 }

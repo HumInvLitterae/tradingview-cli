@@ -16,11 +16,14 @@ mod screenshot;
 mod status;
 mod stream;
 mod tab;
+mod ui;
 
 #[cfg(test)]
 mod test_support;
 
-pub use alert::{alert_create, alert_delete, alert_list, validate_alert_condition};
+pub use alert::{
+    alert_create, alert_delete, alert_delete_all, alert_list, validate_alert_condition,
+};
 pub use chart::{
     current_chart_type, current_symbol, current_timeframe, scroll_to_date, set_chart_type,
     set_symbol, set_timeframe, set_visible_range, state, symbol_info, validate_chart_type,
@@ -47,14 +50,18 @@ pub use layout::{
 pub use market::{ohlcv_bars, ohlcv_summary, quote, symbol_search};
 pub use pine::{
     pine_analyze, pine_check, pine_compile, pine_console, pine_errors, pine_get, pine_list,
-    pine_new, pine_open, pine_save, pine_set, validate_pine_script_type,
+    pine_new, pine_open, pine_raw_compile, pine_save, pine_set, validate_pine_script_type,
 };
 pub use replay::{
     replay_autoplay, replay_start, replay_status, replay_step, replay_stop, replay_trade,
     validate_replay_autoplay_speed, validate_replay_date, validate_replay_trade_action,
 };
-pub use saved_layout::saved_layout_list;
+pub use saved_layout::{saved_layout_list, saved_layout_switch};
 pub use screenshot::{screenshot_chart, screenshot_full};
 pub use status::status;
 pub use stream::{StreamDedupe, StreamKind, StreamRequest, stream_sample};
 pub use tab::{tab_close, tab_list, tab_new, tab_switch};
+pub use ui::{
+    ui_click, ui_eval, ui_find, ui_fullscreen, ui_hover, ui_keyboard, ui_mouse, ui_panel,
+    ui_scroll, ui_type,
+};

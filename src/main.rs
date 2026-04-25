@@ -15,7 +15,8 @@ use cdp::CdpClient;
 use clap::{Parser, error::ErrorKind as ClapErrorKind};
 use cli::{
     AlertCommand, Cli, Command, DataCommand, DrawingCommand, IndicatorCommand, LayoutCommand,
-    PaneCommand, PineCommand, ReplayCommand, StreamCommand, TabCommand, WatchlistCommand,
+    PaneCommand, PineCommand, ReplayCommand, StreamCommand, TabCommand, UiCommand,
+    WatchlistCommand,
 };
 use error::{AppError, ErrorKind};
 use output::{ErrorBody, ErrorEnvelope, SuccessEnvelope};
@@ -242,15 +243,33 @@ async fn dispatch(command: Command) -> Result<serde_json::Value, AppError> {
                 let mut runtime = connect_runtime().await?;
                 ops::alert_create(&mut runtime, price, &condition, message.as_deref()).await
             }
-            AlertCommand::Delete { id } => {
-                if id.trim().is_empty() {
+            AlertCommand::Delete { id, all, dry_run } => {
+                if id.is_some() == all {
                     return Err(AppError::new(
                         ErrorKind::Validation,
-                        "Alert ID must not be empty",
+                        "Use exactly one of --id <ID> or --all",
                     ));
                 }
-                let mut runtime = connect_runtime().await?;
-                ops::alert_delete(&mut runtime, &id).await
+                if all {
+                    let mut runtime = connect_runtime().await?;
+                    ops::alert_delete_all(&mut runtime, dry_run).await
+                } else {
+                    let id = id.unwrap_or_default();
+                    if id.trim().is_empty() {
+                        return Err(AppError::new(
+                            ErrorKind::Validation,
+                            "Alert ID must not be empty",
+                        ));
+                    }
+                    if dry_run {
+                        return Err(AppError::new(
+                            ErrorKind::Validation,
+                            "--dry-run is only supported with --all",
+                        ));
+                    }
+                    let mut runtime = connect_runtime().await?;
+                    ops::alert_delete(&mut runtime, &id).await
+                }
             }
         },
         Command::Indicator { command } => match command {
@@ -414,6 +433,10 @@ async fn dispatch(command: Command) -> Result<serde_json::Value, AppError> {
                 let mut runtime = connect_runtime().await?;
                 ops::pine_compile(&mut runtime).await
             }
+            PineCommand::RawCompile => {
+                let mut runtime = connect_runtime().await?;
+                ops::pine_raw_compile(&mut runtime).await
+            }
             PineCommand::Save => {
                 let mut runtime = connect_runtime().await?;
                 ops::pine_save(&mut runtime).await
@@ -518,6 +541,17 @@ async fn dispatch(command: Command) -> Result<serde_json::Value, AppError> {
                 let mut runtime = connect_runtime().await?;
                 ops::saved_layout_list(&mut runtime).await
             }
+            LayoutCommand::Switch { target, dry_run } => {
+                let target = target.join(" ");
+                if target.trim().is_empty() {
+                    return Err(AppError::new(
+                        ErrorKind::Validation,
+                        "Layout target required. Usage: tv layout switch \"My Layout\"",
+                    ));
+                }
+                let mut runtime = connect_runtime().await?;
+                ops::saved_layout_switch(&mut runtime, &target, dry_run).await
+            }
         },
         Command::Tab { command } => match command {
             TabCommand::List => ops::tab_list(&config).await,
@@ -559,6 +593,71 @@ async fn dispatch(command: Command) -> Result<serde_json::Value, AppError> {
             }
         },
         Command::Stream { .. } => unreachable!("stream commands use a dedicated JSONL runner"),
+        Command::Ui { command } => {
+            let mut runtime = connect_runtime().await?;
+            match command {
+                UiCommand::Click { by, value } => ops::ui_click(&mut runtime, &by, &value).await,
+                UiCommand::Keyboard {
+                    key,
+                    ctrl,
+                    shift,
+                    alt,
+                    meta,
+                } => ops::ui_keyboard(&mut runtime, &key, ctrl, shift, alt, meta).await,
+                UiCommand::Hover { by, value } => ops::ui_hover(&mut runtime, &by, &value).await,
+                UiCommand::Scroll { direction, amount } => {
+                    if let Some(amount) = amount {
+                        validate_finite(amount, "amount")?;
+                    }
+                    ops::ui_scroll(&mut runtime, direction.as_deref().unwrap_or("down"), amount)
+                        .await
+                }
+                UiCommand::Find { query, strategy } => {
+                    let query = query.join(" ");
+                    if query.trim().is_empty() {
+                        return Err(AppError::new(
+                            ErrorKind::Validation,
+                            "Query required. Usage: tv ui find \"Indicators\"",
+                        ));
+                    }
+                    ops::ui_find(&mut runtime, &query, strategy.as_deref()).await
+                }
+                UiCommand::Eval { expression } => {
+                    let expression = expression.join(" ");
+                    if expression.trim().is_empty() {
+                        return Err(AppError::new(
+                            ErrorKind::Validation,
+                            "Expression required. Usage: tv ui eval \"1+1\"",
+                        ));
+                    }
+                    ops::ui_eval(&mut runtime, &expression).await
+                }
+                UiCommand::Type { text } => {
+                    let text = text.join(" ");
+                    if text.is_empty() {
+                        return Err(AppError::new(
+                            ErrorKind::Validation,
+                            "Text required. Usage: tv ui type \"hello\"",
+                        ));
+                    }
+                    ops::ui_type(&mut runtime, &text).await
+                }
+                UiCommand::Panel { panel, action } => {
+                    ops::ui_panel(&mut runtime, &panel, action.as_deref().unwrap_or("toggle")).await
+                }
+                UiCommand::Fullscreen => ops::ui_fullscreen(&mut runtime).await,
+                UiCommand::Mouse {
+                    x,
+                    y,
+                    right,
+                    double,
+                } => {
+                    validate_finite(x, "x")?;
+                    validate_finite(y, "y")?;
+                    ops::ui_mouse(&mut runtime, x, y, right, double).await
+                }
+            }
+        }
         Command::Screenshot { region, output } => {
             if !matches!(region.as_str(), "full" | "chart") {
                 return Err(AppError::new(

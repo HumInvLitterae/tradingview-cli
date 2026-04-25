@@ -286,6 +286,39 @@ pub async fn pine_compile(runtime: &mut impl RuntimeEvaluator) -> Result<Value, 
     }))
 }
 
+pub async fn pine_raw_compile(runtime: &mut impl RuntimeEvaluator) -> Result<Value, AppError> {
+    let open_state = ensure_pine_editor_open(runtime).await?;
+    let button_result = runtime
+        .evaluate(PINE_RAW_COMPILE_BUTTON_EXPRESSION, false)
+        .await?;
+    let clicked = button_result
+        .get("clicked")
+        .and_then(Value::as_bool)
+        .unwrap_or(false);
+    let button_clicked = button_result
+        .get("button_text")
+        .and_then(Value::as_str)
+        .filter(|text| !text.trim().is_empty())
+        .map(normalize_button_text);
+
+    let action = if clicked {
+        button_clicked.unwrap_or_else(|| "raw_compile_button".to_string())
+    } else {
+        dispatch_ctrl_enter(runtime).await?;
+        "keyboard_shortcut".to_string()
+    };
+
+    tokio::time::sleep(PINE_COMPILE_WAIT).await;
+
+    Ok(json!({
+        "button_clicked": action,
+        "source": "dom_fallback",
+        "editor_open_before": open_state.editor_open_before,
+        "opened_editor": open_state.opened_editor,
+        "raw_compile": true,
+    }))
+}
+
 pub async fn pine_save(runtime: &mut impl RuntimeEvaluator) -> Result<Value, AppError> {
     let open_state = ensure_pine_editor_open(runtime).await?;
     let before = runtime
@@ -780,6 +813,50 @@ const PINE_COMPILE_BUTTON_EXPRESSION: &str = r#"
 })()
 "#;
 
+const PINE_RAW_COMPILE_BUTTON_EXPRESSION: &str = r#"
+(function() {
+    var buttons = Array.from(document.querySelectorAll('button'));
+    var fallback = null;
+    var saveButton = null;
+
+    function visible(button) {
+        var rect = button.getBoundingClientRect();
+        return rect.width > 0 && rect.height > 0 && button.offsetParent !== null;
+    }
+    function label(button) {
+        return (button.textContent || button.getAttribute('aria-label') || button.getAttribute('title') || '').trim();
+    }
+
+    for (var i = 0; i < buttons.length; i++) {
+        if (!visible(buttons[i])) continue;
+        var text = label(buttons[i]);
+        if (/save and add to chart/i.test(text) || (/保存/.test(text) && /チャート/.test(text))) {
+            buttons[i].click();
+            return { clicked: true, button_text: text || 'Save and add to chart' };
+        }
+        if (!fallback && /^(Add to chart|Update on chart)/i.test(text)) {
+            fallback = buttons[i];
+        }
+        if (!fallback && /チャート/.test(text) && /(追加|更新)/.test(text)) {
+            fallback = buttons[i];
+        }
+        if (!saveButton && String(buttons[i].className || '').indexOf('saveButton') !== -1) {
+            saveButton = buttons[i];
+        }
+    }
+
+    if (fallback) {
+        fallback.click();
+        return { clicked: true, button_text: label(fallback) || 'Add to chart' };
+    }
+    if (saveButton) {
+        saveButton.click();
+        return { clicked: true, button_text: 'Pine Save' };
+    }
+    return { clicked: false, button_text: null };
+})()
+"#;
+
 const PINE_CONSOLE_EXPRESSION: &str = r#"
 (function() {
     var results = [];
@@ -1250,6 +1327,34 @@ mod tests {
         assert_eq!(runtime.key_events[0].key, "Enter");
         assert_eq!(runtime.key_events[0].modifiers, 2);
         assert_eq!(runtime.key_events[1].event_type, KeyEventType::KeyUp);
+    }
+
+    #[tokio::test]
+    async fn pine_raw_compile_clicks_save_related_button() {
+        let mut runtime = FakeRuntime::new([
+            json!(true),
+            json!({"clicked": true, "button_text": "Save and add to chart"}),
+        ]);
+
+        let result = pine_raw_compile(&mut runtime).await.unwrap();
+
+        assert_eq!(result["button_clicked"], "Save and add to chart");
+        assert_eq!(result["raw_compile"], true);
+        assert_eq!(result["source"], "dom_fallback");
+        assert!(runtime.evaluated[1].0.contains("Save and add to chart"));
+        assert!(runtime.key_events.is_empty());
+    }
+
+    #[tokio::test]
+    async fn pine_raw_compile_uses_ctrl_enter_fallback() {
+        let mut runtime = FakeRuntime::new([json!(true), json!({"clicked": false})]);
+
+        let result = pine_raw_compile(&mut runtime).await.unwrap();
+
+        assert_eq!(result["button_clicked"], "keyboard_shortcut");
+        assert_eq!(runtime.key_events.len(), 2);
+        assert_eq!(runtime.key_events[0].key, "Enter");
+        assert_eq!(runtime.key_events[0].modifiers, 2);
     }
 
     #[tokio::test]

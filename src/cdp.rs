@@ -22,6 +22,7 @@ pub trait RuntimeEvaluator {
     async fn capture_screenshot_clip(&mut self, clip: ScreenshotClip) -> Result<Vec<u8>, AppError>;
     async fn insert_text(&mut self, text: &str) -> Result<(), AppError>;
     async fn dispatch_key_event(&mut self, event: KeyEvent) -> Result<(), AppError>;
+    async fn dispatch_mouse_event(&mut self, event: MouseEvent) -> Result<(), AppError>;
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, serde::Serialize)]
@@ -55,6 +56,37 @@ pub struct KeyEvent {
     pub code: &'static str,
     pub windows_virtual_key_code: i64,
     pub modifiers: i64,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum MouseEventType {
+    Moved,
+    Pressed,
+    Released,
+    Wheel,
+}
+
+impl MouseEventType {
+    fn as_cdp_type(self) -> &'static str {
+        match self {
+            Self::Moved => "mouseMoved",
+            Self::Pressed => "mousePressed",
+            Self::Released => "mouseReleased",
+            Self::Wheel => "mouseWheel",
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct MouseEvent {
+    pub event_type: MouseEventType,
+    pub x: f64,
+    pub y: f64,
+    pub button: Option<&'static str>,
+    pub buttons: Option<i64>,
+    pub click_count: Option<i64>,
+    pub delta_x: Option<f64>,
+    pub delta_y: Option<f64>,
 }
 
 pub struct CdpClient {
@@ -173,6 +205,32 @@ impl RuntimeEvaluator for CdpClient {
         )
         .await
         .map(|_| ())
+    }
+
+    async fn dispatch_mouse_event(&mut self, event: MouseEvent) -> Result<(), AppError> {
+        let mut params = json!({
+            "type": event.event_type.as_cdp_type(),
+            "x": event.x,
+            "y": event.y,
+        });
+        if let Some(button) = event.button {
+            params["button"] = json!(button);
+        }
+        if let Some(buttons) = event.buttons {
+            params["buttons"] = json!(buttons);
+        }
+        if let Some(click_count) = event.click_count {
+            params["clickCount"] = json!(click_count);
+        }
+        if let Some(delta_x) = event.delta_x {
+            params["deltaX"] = json!(delta_x);
+        }
+        if let Some(delta_y) = event.delta_y {
+            params["deltaY"] = json!(delta_y);
+        }
+        self.call_method("Input.dispatchMouseEvent", params)
+            .await
+            .map(|_| ())
     }
 }
 

@@ -28,18 +28,17 @@ No old JavaScript CLI lifecycle pair is currently half-migrated in Rust.
 
 The remaining larger old CLI surfaces can still mutate chart state, account state, or UI session state. Each needs its own ExecPlan before implementation, with downstream need, safety constraints, information compatibility, live smoke strategy, and recovery behavior recorded.
 
-## Deferred high-risk cleanup and control surfaces
+## High-risk cleanup and control surfaces
 
-The following are intentionally not next by default:
+The previously deferred high-risk old CLI surfaces now have explicit Rust contracts:
 
-- `alert delete --all`
-- alert edit, pause, and resume commands
-- generic UI automation commands
+- `alert delete --all` includes `--dry-run`, target alert reporting, and post-delete verification.
+- generic `ui` automation commands are implemented as compatibility commands, but higher-level CLI commands remain preferred for durable workflows.
 
-These commands can remove many account or chart resources or depend heavily on localized UI state. They need stronger safety design than simple old CLI parity.
+Alert edit, pause, and resume were not found as old JavaScript CLI commands during the migration closure pass, so they are future feature research rather than remaining old CLI migration backlog.
 
 ## Recommended next candidate
 
-No immediate asymmetric lifecycle gap is known in the implemented Rust CLI after `watchlist remove` and `draw clear`.
+No immediate asymmetric lifecycle gap is known in the implemented Rust CLI after `watchlist remove`, `draw clear`, and `alert delete --all`.
 
-The next mutation surface should still be checked against this note before implementation. Account-level or destructive commands such as bulk alert deletion and generic UI automation remain high-risk and need their own ExecPlan.
+The next mutation surface should still be checked against this note before implementation. Account-level or broad UI automation remains high-risk even when a compatibility command exists.

@@ -114,6 +114,11 @@ pub enum Command {
         #[command(subcommand)]
         command: StreamCommand,
     },
+    #[command(about = "Generic TradingView UI automation tools")]
+    Ui {
+        #[command(subcommand)]
+        command: UiCommand,
+    },
     #[command(about = "Capture a full screenshot")]
     Screenshot {
         #[arg(long, short, default_value = "full")]
@@ -146,10 +151,14 @@ pub enum AlertCommand {
         #[arg(long, short)]
         message: Option<String>,
     },
-    #[command(about = "Delete a TradingView alert by alert ID")]
+    #[command(about = "Delete TradingView alerts")]
     Delete {
         #[arg(long)]
-        id: String,
+        id: Option<String>,
+        #[arg(long)]
+        all: bool,
+        #[arg(long)]
+        dry_run: bool,
     },
 }
 
@@ -224,6 +233,8 @@ pub enum PineCommand {
     },
     #[command(about = "Compile the current Pine Script editor source")]
     Compile,
+    #[command(about = "Raw compile/add current Pine Script using old CLI button behavior")]
+    RawCompile,
     #[command(about = "Save the current Pine Script editor source")]
     Save,
     #[command(about = "Create a new Pine Script template in the editor")]
@@ -309,6 +320,12 @@ pub enum PaneCommand {
 pub enum LayoutCommand {
     #[command(about = "List saved chart layouts")]
     List,
+    #[command(about = "Switch to a saved chart layout by ID or exact name")]
+    Switch {
+        target: Vec<String>,
+        #[arg(long)]
+        dry_run: bool,
+    },
 }
 
 #[derive(Debug, Subcommand)]
@@ -393,6 +410,68 @@ pub enum StreamCommand {
     },
 }
 
+#[derive(Debug, Subcommand)]
+pub enum UiCommand {
+    #[command(about = "Click a UI element")]
+    Click {
+        #[arg(long, short = 'b', default_value = "text")]
+        by: String,
+        #[arg(long, short = 'v')]
+        value: String,
+    },
+    #[command(about = "Press a keyboard key or shortcut")]
+    Keyboard {
+        key: String,
+        #[arg(long)]
+        ctrl: bool,
+        #[arg(long)]
+        shift: bool,
+        #[arg(long)]
+        alt: bool,
+        #[arg(long)]
+        meta: bool,
+    },
+    #[command(about = "Hover over a UI element")]
+    Hover {
+        #[arg(long, short = 'b', default_value = "text")]
+        by: String,
+        #[arg(long, short = 'v')]
+        value: String,
+    },
+    #[command(about = "Scroll the chart")]
+    Scroll {
+        direction: Option<String>,
+        #[arg(long, short = 'a')]
+        amount: Option<f64>,
+    },
+    #[command(about = "Find UI elements")]
+    Find {
+        query: Vec<String>,
+        #[arg(long, short = 's')]
+        strategy: Option<String>,
+    },
+    #[command(about = "Evaluate JavaScript in the page context")]
+    Eval { expression: Vec<String> },
+    #[command(about = "Type text into the focused input")]
+    Type { text: Vec<String> },
+    #[command(about = "Open, close, or toggle a panel")]
+    Panel {
+        panel: String,
+        action: Option<String>,
+    },
+    #[command(about = "Toggle fullscreen mode")]
+    Fullscreen,
+    #[command(about = "Click at x,y coordinates")]
+    Mouse {
+        x: f64,
+        y: f64,
+        #[arg(long)]
+        right: bool,
+        #[arg(long)]
+        double: bool,
+    },
+}
+
 impl Command {
     pub fn name(&self) -> &'static str {
         match self {
@@ -422,6 +501,7 @@ impl Command {
             Self::Tab { .. } => "tab",
             Self::Replay { .. } => "replay",
             Self::Stream { .. } => "stream",
+            Self::Ui { .. } => "ui",
             Self::Screenshot { .. } => "screenshot",
         }
     }

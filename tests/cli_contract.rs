@@ -27,6 +27,7 @@ fn help_lists_v1_commands() {
         .stdout(predicate::str::contains("tab"))
         .stdout(predicate::str::contains("replay"))
         .stdout(predicate::str::contains("stream"))
+        .stdout(predicate::str::contains("ui"))
         .stdout(predicate::str::contains("data"))
         .stdout(predicate::str::contains("pane"))
         .stdout(predicate::str::contains("layout"))
@@ -135,12 +136,12 @@ fn watchlist_and_pane_help_list_read_subcommands() {
 }
 
 #[test]
-fn layout_help_lists_read_subcommands_only() {
+fn layout_help_lists_subcommands() {
     tv().args(["layout", "--help"])
         .assert()
         .success()
         .stdout(predicate::str::contains("list"))
-        .stdout(predicate::str::contains("switch").not());
+        .stdout(predicate::str::contains("switch"));
 }
 
 #[test]
@@ -162,7 +163,9 @@ fn alert_help_lists_read_subcommands() {
     tv().args(["alert", "delete", "--help"])
         .assert()
         .success()
-        .stdout(predicate::str::contains("--id"));
+        .stdout(predicate::str::contains("--id"))
+        .stdout(predicate::str::contains("--all"))
+        .stdout(predicate::str::contains("--dry-run"));
 }
 
 #[test]
@@ -234,7 +237,7 @@ fn pine_help_lists_current_subcommands() {
         .stdout(predicate::str::contains("errors"))
         .stdout(predicate::str::contains("console"))
         .stdout(predicate::str::contains("list"))
-        .stdout(predicate::str::contains("raw-compile").not());
+        .stdout(predicate::str::contains("raw-compile"));
 
     tv().args(["pine", "set", "--help"])
         .assert()
@@ -255,6 +258,23 @@ fn pine_help_lists_current_subcommands() {
         .assert()
         .success()
         .stdout(predicate::str::contains("--name").not());
+}
+
+#[test]
+fn ui_help_lists_old_automation_subcommands() {
+    tv().args(["ui", "--help"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("click"))
+        .stdout(predicate::str::contains("keyboard"))
+        .stdout(predicate::str::contains("hover"))
+        .stdout(predicate::str::contains("scroll"))
+        .stdout(predicate::str::contains("find"))
+        .stdout(predicate::str::contains("eval"))
+        .stdout(predicate::str::contains("type"))
+        .stdout(predicate::str::contains("panel"))
+        .stdout(predicate::str::contains("fullscreen"))
+        .stdout(predicate::str::contains("mouse"));
 }
 
 #[test]
@@ -613,6 +633,7 @@ fn read_utilities_attempt_connection_when_cdp_is_unavailable() {
             "crossing",
         ],
         vec!["alert", "delete", "--id", "4546454367"],
+        vec!["alert", "delete", "--all", "--dry-run"],
         vec!["indicator", "add", "Volume"],
         vec!["indicator", "remove", "study-id"],
         vec!["indicator", "toggle", "study-id", "--hidden"],
@@ -632,6 +653,7 @@ fn read_utilities_attempt_connection_when_cdp_is_unavailable() {
         vec!["draw", "clear"],
         vec!["pine", "get"],
         vec!["pine", "compile"],
+        vec!["pine", "raw-compile"],
         vec!["pine", "save"],
         vec!["pine", "errors"],
         vec!["pine", "console"],
@@ -651,6 +673,17 @@ fn read_utilities_attempt_connection_when_cdp_is_unavailable() {
         vec!["pane", "focus", "0"],
         vec!["pane", "symbol", "0", "NASDAQ:AAPL"],
         vec!["layout", "list"],
+        vec!["layout", "switch", "Swing", "Layout", "--dry-run"],
+        vec!["ui", "find", "Chart"],
+        vec!["ui", "click", "--value", "Chart"],
+        vec!["ui", "keyboard", "Escape"],
+        vec!["ui", "hover", "--value", "Chart"],
+        vec!["ui", "scroll", "down"],
+        vec!["ui", "eval", "1+1"],
+        vec!["ui", "type", "hello"],
+        vec!["ui", "panel", "watchlist", "open"],
+        vec!["ui", "fullscreen"],
+        vec!["ui", "mouse", "1", "2"],
     ] {
         let assert = tv()
             .env("TV_CDP_PORT", "9")
@@ -844,7 +877,22 @@ fn alert_delete_requires_id() {
     let stderr = String::from_utf8(assert.get_output().stderr.clone()).unwrap();
     let value: Value = serde_json::from_str(&stderr).unwrap();
     assert_eq!(value["success"], false);
-    assert_eq!(value["command"], "tv");
+    assert_eq!(value["command"], "alert");
+    assert_eq!(value["error"]["kind"], "validation");
+}
+
+#[test]
+fn alert_delete_rejects_conflicting_targets_before_connecting() {
+    let assert = tv()
+        .env("TV_CDP_PORT", "9")
+        .args(["alert", "delete", "--id", "1", "--all"])
+        .assert()
+        .failure()
+        .code(1);
+    let stderr = String::from_utf8(assert.get_output().stderr.clone()).unwrap();
+    let value: Value = serde_json::from_str(&stderr).unwrap();
+    assert_eq!(value["success"], false);
+    assert_eq!(value["command"], "alert");
     assert_eq!(value["error"]["kind"], "validation");
 }
 

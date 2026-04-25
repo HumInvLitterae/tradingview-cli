@@ -1,6 +1,11 @@
 use serde_json::{Value, json};
 
-use crate::{cdp::RuntimeEvaluator, error::AppError};
+use crate::{
+    cdp::RuntimeEvaluator,
+    error::{AppError, ErrorKind},
+};
+
+use super::common::js_string;
 
 pub async fn saved_layout_list(runtime: &mut impl RuntimeEvaluator) -> Result<Value, AppError> {
     runtime
@@ -78,6 +83,179 @@ pub async fn saved_layout_list(runtime: &mut impl RuntimeEvaluator) -> Result<Va
         .map(normalize_saved_layout_list_payload)
 }
 
+pub async fn saved_layout_switch(
+    runtime: &mut impl RuntimeEvaluator,
+    target: &str,
+    dry_run: bool,
+) -> Result<Value, AppError> {
+    let target = target.trim();
+    if target.is_empty() {
+        return Err(AppError::new(
+            ErrorKind::Validation,
+            "Layout target must not be empty",
+        ));
+    }
+
+    let target_literal = js_string(target)?;
+    let expression = format!(
+        r#"
+            new Promise(function(resolve) {{
+                try {{
+                    var api = window.TradingViewApi;
+                    var target = {target_literal};
+                    var dryRun = {dry_run};
+                    if (!api || typeof api.getSavedCharts !== 'function') {{
+                        resolve({{
+                            error: 'getSavedCharts is unavailable',
+                            error_kind: 'internal_api_unavailable',
+                            source: 'internal_api'
+                        }});
+                        return;
+                    }}
+                    if (!dryRun && typeof api.loadChartFromServer !== 'function') {{
+                        resolve({{
+                            error: 'loadChartFromServer is unavailable',
+                            error_kind: 'internal_api_unavailable',
+                            source: 'internal_api'
+                        }});
+                        return;
+                    }}
+
+                    var settled = false;
+                    function finish(payload) {{
+                        if (settled) return;
+                        settled = true;
+                        resolve(payload);
+                    }}
+
+                    function normalizeChart(chart) {{
+                        return {{
+                            id: chart.id || chart.chartId || null,
+                            name: chart.name || chart.title || 'Untitled',
+                            symbol: chart.symbol || null,
+                            resolution: chart.resolution || null,
+                            modified: chart.timestamp || chart.modified || null
+                        }};
+                    }}
+
+                    function findUnsavedDialog() {{
+                        var dialogs = Array.from(document.querySelectorAll('[role="dialog"], [class*="dialog"], [class*="modal"], [class*="popup"]'));
+                        for (var i = 0; i < dialogs.length; i++) {{
+                            var text = (dialogs[i].textContent || '').trim();
+                            if (/unsaved|save changes|変更|保存/i.test(text)) return true;
+                        }}
+                        return false;
+                    }}
+
+                    api.getSavedCharts(function(charts) {{
+                        if (!Array.isArray(charts)) {{
+                            finish({{
+                                error: 'getSavedCharts returned no data',
+                                error_kind: 'internal_api_unavailable',
+                                source: 'internal_api',
+                                target: target
+                            }});
+                            return;
+                        }}
+
+                        var normalized = charts.map(normalizeChart);
+                        var matches = normalized.filter(function(layout) {{
+                            return layout.id !== null && String(layout.id) === String(target);
+                        }});
+
+                        if (matches.length === 0) {{
+                            var lowered = String(target).toLowerCase();
+                            matches = normalized.filter(function(layout) {{
+                                return String(layout.name || '').toLowerCase() === lowered;
+                            }});
+                        }}
+
+                        if (matches.length === 0) {{
+                            finish({{
+                                error: 'Layout not found: ' + target,
+                                error_kind: 'validation',
+                                source: 'internal_api',
+                                target: target,
+                                layout_count: normalized.length
+                            }});
+                            return;
+                        }}
+                        if (matches.length > 1) {{
+                            finish({{
+                                error: 'Multiple layouts match: ' + target,
+                                error_kind: 'validation',
+                                source: 'internal_api',
+                                target: target,
+                                matches: matches
+                            }});
+                            return;
+                        }}
+
+                        var match = matches[0];
+                        if (match.id === null || match.id === undefined || String(match.id).trim() === '') {{
+                            finish({{
+                                error: 'Matched layout does not include an id',
+                                error_kind: 'internal_api_unavailable',
+                                source: 'internal_api',
+                                target: target,
+                                layout: match
+                            }});
+                            return;
+                        }}
+
+                        if (dryRun) {{
+                            finish({{
+                                action: 'dry_run',
+                                dry_run: true,
+                                target: target,
+                                layout: match,
+                                layout_id: match.id,
+                                source: 'internal_api',
+                                layout_count: normalized.length
+                            }});
+                            return;
+                        }}
+
+                        api.loadChartFromServer(String(match.id));
+                        setTimeout(function() {{
+                            finish({{
+                                action: 'switched',
+                                dry_run: false,
+                                target: target,
+                                layout: match,
+                                layout_id: match.id,
+                                source: 'internal_api',
+                                method: 'loadChartFromServer',
+                                unsaved_dialog_observed: findUnsavedDialog(),
+                                unsaved_dialog_dismissed: false
+                            }});
+                        }}, 500);
+                    }});
+
+                    setTimeout(function() {{
+                        finish({{
+                            error: 'getSavedCharts timed out',
+                            error_kind: 'internal_api_unavailable',
+                            source: 'internal_api',
+                            target: target
+                        }});
+                    }}, 5000);
+                }} catch (error) {{
+                    resolve({{
+                        error: error && error.message ? error.message : String(error),
+                        error_kind: 'internal_api_unavailable',
+                        source: 'internal_api',
+                        target: {target_literal}
+                    }});
+                }}
+            }})
+            "#
+    );
+
+    let data = runtime.evaluate(&expression, true).await?;
+    normalize_saved_layout_switch_payload(data)
+}
+
 fn normalize_saved_layout_list_payload(data: Value) -> Value {
     let layouts = data
         .get("layouts")
@@ -102,6 +280,44 @@ fn normalize_saved_layout_list_payload(data: Value) -> Value {
     }
 
     payload
+}
+
+fn normalize_saved_layout_switch_payload(data: Value) -> Result<Value, AppError> {
+    if let Some(message) = data.get("error").and_then(Value::as_str) {
+        let kind = match data.get("error_kind").and_then(Value::as_str) {
+            Some("validation") => ErrorKind::Validation,
+            _ => ErrorKind::InternalApiUnavailable,
+        };
+        return Err(AppError::new(kind, message.to_string()).with_details(data));
+    }
+
+    let layout_id = data.get("layout_id").cloned().unwrap_or(Value::Null);
+    if layout_id.is_null() {
+        return Err(AppError::new(
+            ErrorKind::InternalApiUnavailable,
+            "Layout switch payload did not include layout_id",
+        )
+        .with_details(data));
+    }
+
+    Ok(json!({
+        "action": data.get("action").cloned().unwrap_or_else(|| json!("switched")),
+        "dry_run": data.get("dry_run").and_then(Value::as_bool).unwrap_or(false),
+        "target": data.get("target").cloned().unwrap_or(Value::Null),
+        "layout": data.get("layout").cloned().unwrap_or(Value::Null),
+        "layout_id": layout_id,
+        "source": data.get("source").and_then(Value::as_str).unwrap_or("internal_api"),
+        "method": data.get("method").cloned().unwrap_or(Value::Null),
+        "layout_count": data.get("layout_count").cloned().unwrap_or(Value::Null),
+        "unsaved_dialog_observed": data
+            .get("unsaved_dialog_observed")
+            .and_then(Value::as_bool)
+            .unwrap_or(false),
+        "unsaved_dialog_dismissed": data
+            .get("unsaved_dialog_dismissed")
+            .and_then(Value::as_bool)
+            .unwrap_or(false),
+    }))
 }
 
 #[cfg(test)]
@@ -171,5 +387,91 @@ mod tests {
         assert_eq!(result["layout_count"], 0);
         assert_eq!(result["source"], "internal_api");
         assert_eq!(result["layouts"].as_array().unwrap().len(), 0);
+    }
+
+    #[tokio::test]
+    async fn saved_layout_switch_returns_dry_run_payload() {
+        let mut runtime = FakeRuntime::new([json!({
+            "action": "dry_run",
+            "dry_run": true,
+            "target": "Swing Layout",
+            "layout": {
+                "id": "chart-1",
+                "name": "Swing Layout"
+            },
+            "layout_id": "chart-1",
+            "source": "internal_api",
+            "layout_count": 2
+        })]);
+
+        let result = saved_layout_switch(&mut runtime, "Swing Layout", true)
+            .await
+            .unwrap();
+
+        assert_eq!(result["action"], "dry_run");
+        assert_eq!(result["dry_run"], true);
+        assert_eq!(result["layout_id"], "chart-1");
+        assert_eq!(result["layout"]["name"], "Swing Layout");
+        assert!(runtime.evaluated[0].0.contains("getSavedCharts"));
+        assert!(runtime.evaluated[0].0.contains("loadChartFromServer"));
+        assert!(runtime.evaluated[0].0.contains("\"Swing Layout\""));
+        assert!(runtime.evaluated[0].1);
+    }
+
+    #[tokio::test]
+    async fn saved_layout_switch_returns_switched_payload() {
+        let mut runtime = FakeRuntime::new([json!({
+            "action": "switched",
+            "dry_run": false,
+            "target": "chart-1",
+            "layout": {
+                "id": "chart-1",
+                "name": "Swing Layout"
+            },
+            "layout_id": "chart-1",
+            "source": "internal_api",
+            "method": "loadChartFromServer",
+            "unsaved_dialog_observed": true,
+            "unsaved_dialog_dismissed": false
+        })]);
+
+        let result = saved_layout_switch(&mut runtime, "chart-1", false)
+            .await
+            .unwrap();
+
+        assert_eq!(result["action"], "switched");
+        assert_eq!(result["dry_run"], false);
+        assert_eq!(result["layout_id"], "chart-1");
+        assert_eq!(result["method"], "loadChartFromServer");
+        assert_eq!(result["unsaved_dialog_observed"], true);
+        assert_eq!(result["unsaved_dialog_dismissed"], false);
+    }
+
+    #[tokio::test]
+    async fn saved_layout_switch_maps_missing_target_to_validation() {
+        let mut runtime = FakeRuntime::new([json!({
+            "error": "Layout not found: missing",
+            "error_kind": "validation",
+            "source": "internal_api",
+            "target": "missing"
+        })]);
+
+        let error = saved_layout_switch(&mut runtime, "missing", true)
+            .await
+            .unwrap_err();
+
+        assert_eq!(error.kind, ErrorKind::Validation);
+    }
+
+    #[tokio::test]
+    async fn saved_layout_switch_rejects_empty_target_before_evaluating() {
+        let mut runtime = FakeRuntime::new([]);
+
+        let error = saved_layout_switch(&mut runtime, " ", true)
+            .await
+            .unwrap_err();
+
+        assert_eq!(error.kind, ErrorKind::Validation);
+        assert!(runtime.evaluated.is_empty());
     }
 }

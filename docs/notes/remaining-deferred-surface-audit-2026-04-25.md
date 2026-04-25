@@ -2,11 +2,11 @@
 
 This note audits the old JavaScript CLI surfaces that remain deferred after the Rust `tv` CLI implemented the core read, chart setup, Pine, drawing, replay, tab, stream, and launch workflows.
 
-The goal is not to implement these commands immediately. The goal is to decide which remaining surfaces are worth a dedicated ExecPlan and which should remain deferred unless downstream evidence changes.
+The original goal was to decide which remaining surfaces were worth a dedicated ExecPlan. The remaining old CLI migration closure has since been implemented in `docs/plans/tradingview-cli-remaining-migration-closure-v1-34.md`.
 
 ## Current recommendation
 
-`layout list`, `pine save`, and `draw clear` have been implemented through dedicated ExecPlans.
+`layout list`, `pine save`, `draw clear`, `layout switch`, `alert delete --all`, `pine raw-compile`, and generic `ui` compatibility commands have been implemented through dedicated ExecPlans.
 
 That closes the clearest remaining practical Pine workflow gap: the Rust CLI can now read, set, compile, analyze, check, create, open, list, save already saved scripts, and inspect Pine scripts. `pine save` remains isolated as an explicit persistence command because it writes to TradingView cloud state. Explicit named new-save for unsaved scripts remains deferred because the TradingView naming dialog can be outside the CDP page target.
 
@@ -14,35 +14,35 @@ Do not implement `pine save` as a side effect of another Pine command. Keep `pin
 
 `draw clear` is now implemented as an explicit bulk chart-local cleanup command with `--dry-run`, preflight target reporting, and post-delete verification. It should not be used in live smoke when pre-existing user drawings are present.
 
-`layout list` is now implemented as a read-only saved chart layout command. `layout switch` remains deferred because it loads a saved chart layout and can trigger unsaved-changes UI.
+`layout switch` is implemented as an explicit saved chart layout mutation with `--dry-run` target reporting. It resolves layout ids and exact case-insensitive names, avoiding the old CLI's partial-match fallback. It does not automatically dismiss unsaved-change dialogs.
 
 ## Deferred surface classification
 
 | Surface | Classification | Reason |
 | --- | --- | --- |
 | `layout list` | `implemented` | Restores the read-only saved layout inventory from the old CLI. |
-| `layout switch` | `research_only` | Loads a saved chart layout and can trigger unsaved-changes UI; it needs a separate mutation plan and restore story. |
+| `layout switch` | `implemented` | Loads a saved chart layout by exact id/name and supports `--dry-run`; it avoids old partial matching and does not auto-dismiss unsaved-change dialogs. |
 | `pine save` | `implemented` | Completes the Pine development loop as an explicit persistence command for the current saved script. |
 | Pine named new-save | `research_only` | Current TradingView Desktop live smoke showed the naming dialog for unsaved scripts can be outside the CDP page target. |
-| `pine raw-compile` | `likely_no_direct_clone` | The old implementation clicks compile/add buttons without the Rust safety checks and can click save-related actions. Rust already has safer `pine compile` and `pine check`. |
+| `pine raw-compile` | `implemented` | Preserves the old broad button behavior as a separate compatibility command while keeping safer `pine compile` unchanged. |
 | `draw clear` | `implemented` | Rust preserves the old all-shapes cleanup capability but adds `--dry-run`, target reporting, and post-action verification. |
-| `alert delete --all` | `high_risk_deferred` | The old implementation only opens an alerts context menu for manual confirmation. It does not provide a reliable structured bulk-delete contract. Rust already supports scoped `alert delete --id`. |
-| alert edit / pause / resume | `research_only` | These are not currently implemented in Rust, and the old CLI evidence does not yet establish a safe scoped contract. |
-| generic UI automation | `research_only` | The old bridge exposes broad click, keyboard, hover, scroll, mouse, find, panel, fullscreen, and arbitrary eval tools. These are intentionally outside the core CLI unless a specific workflow proves they belong. |
+| `alert delete --all` | `implemented` | Rust implements a structured bulk-delete contract with `--dry-run`, target ids, and post-delete verification. |
+| alert edit / pause / resume | `not_old_cli_backlog` | These were not found as old JavaScript CLI commands during the migration closure pass. Treat them as future feature research, not remaining migration. |
+| generic UI automation | `implemented` | The old click, keyboard, hover, scroll, find, eval, type, panel, fullscreen, and mouse commands are implemented as compatibility commands. |
 
 ## Evidence from the old JavaScript CLI
 
 The old Pine CLI exposes `raw-compile` and `save`. `raw-compile` calls the broad compile path, while `save` sends Ctrl+S and may click a visible Save button inside a dialog.
 
-The old broad compile paths are not a good Rust contract to clone directly. They may click "Save and add to chart", a save button fallback, or keyboard shortcuts. The Rust `pine compile` command intentionally avoids save-related buttons, reports diagnostics, and keeps persistence out of compile behavior.
+The old broad compile paths may click "Save and add to chart", a save button fallback, or keyboard shortcuts. Rust keeps `pine compile` safe and adds `pine raw-compile` for compatibility with that broader old behavior.
 
-The old alert bulk deletion command does not actually delete all alerts through a structured API. It opens the alerts UI and a context menu, then returns a note that manual confirmation is required. Rust already chose a safer cleanup path by implementing `alert delete --id` through the current page session.
+The old alert bulk deletion command did not actually delete all alerts through a structured API. It opened the alerts UI and a context menu, then returned a note that manual confirmation was required. Rust implements `alert delete --all` through the same internal alert endpoint family used for `alert delete --id`, with dry-run target reporting and post-action verification.
 
-The old layout list command reads saved chart layouts through `window.TradingViewApi.getSavedCharts`. Rust implements this as `tv layout list`. The old layout switch command calls `loadChartFromServer` and dismisses unsaved-change prompts, so it remains deferred until a separate plan defines restore-safe behavior.
+The old layout list command reads saved chart layouts through `window.TradingViewApi.getSavedCharts`. Rust implements this as `tv layout list`. Rust also implements `tv layout switch <TARGET> [--dry-run]`, but deliberately avoids the old automatic unsaved-dialog dismissal.
 
 The old drawing clear command directly calls the chart API's all-shapes removal method. Rust implements `draw clear` as the explicit counterpart to that old capability, but it exposes `--dry-run`, reports the entities it would clear, and rejects a non-empty post-delete state as `internal_api_unavailable`.
 
-The old UI automation surface is broad and generic. It can click by label/text/class, open panels, dispatch keyboard input, type text, hover, scroll, click by coordinates, find elements, toggle fullscreen, and evaluate arbitrary JavaScript. Rust should not import this as a general CLI surface without a narrower workflow reason.
+The old UI automation surface is broad and generic. Rust now implements it as compatibility surface, but higher-level `tv` commands should remain preferred for stable workflows.
 
 ## Completed Pine save contract
 
@@ -69,12 +69,6 @@ The old UI automation surface is broad and generic. It can click by label/text/c
 - Layout rows expose `id`, `name`, `symbol`, `resolution`, and `modified`.
 - Read failures remain visible as `data.error` with an empty layout list.
 
-If `alert delete --all` is reconsidered, the ExecPlan must require explicit destructive intent, preflight counts, post-action verification, and a recovery story. Old CLI parity alone is not enough.
-
-If generic UI automation is reconsidered, start from one concrete downstream workflow. Do not add arbitrary JavaScript evaluation or coordinate clicking as a general-purpose escape hatch.
-
 ## Current status
 
-No remaining old JavaScript CLI lifecycle pair is half-migrated in Rust.
-
-The remaining surfaces are deferred because they are persistent, account-wide destructive, or too generic. They are not automatically out of scope, except that MCP server implementation remains explicitly not planned for this repository.
+No remaining old JavaScript CLI command surface is known to be unmigrated in Rust after the remaining migration closure slice. MCP server implementation remains explicitly not planned for this repository. Alert edit/pause/resume and Pine named new-save are future feature research topics rather than confirmed old CLI migration backlog.
