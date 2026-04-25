@@ -23,10 +23,13 @@ The original chart-analysis skill reviewed a TradingView chart by setting symbol
 | Pine labels | `tv data labels [--filter <TEXT>] [--max <N>] [--verbose]` |
 | Pine tables | `tv data tables [--filter <TEXT>]` |
 | Pine boxes | `tv data boxes [--filter <TEXT>] [--verbose]` |
+| Indicator lifecycle | `tv indicator add/remove/toggle/set` |
+| Drawing lifecycle | `tv draw shape/list/get/remove/clear` |
+| Replay controls | `tv replay status/start/step/autoplay/trade/stop` |
 | `capture_screenshot` | `tv screenshot --region full|chart --output <PATH>` |
 
-## Not Yet Available
+## Remaining Gaps
 
-Adding/removing indicators, changing indicator inputs, drawing annotations, removing drawings, and strategy tester screenshots are not implemented in the Rust CLI. Treat these as migration backlog unless the project later excludes them explicitly.
+Strategy tester panel screenshots and arbitrary historical indicator-series computation are not implemented in the Rust CLI. Prefer implemented high-level commands before generic UI automation.
 
 The MCP server itself is not planned.

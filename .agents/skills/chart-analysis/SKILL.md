@@ -29,6 +29,6 @@ Lead with the practical market read, then cite the observed CLI evidence. Separa
 
 ## Boundaries
 
-This Rust CLI can launch or reconnect to TradingView Desktop, read chart state, perform basic chart navigation, inspect chart-model data, manage indicators and drawings, list saved chart layouts, save the current Pine script when it already belongs to a saved script, and stream read-only chart samples as JSONL. It does not provide generic UI automation.
+This Rust CLI can launch or reconnect to TradingView Desktop, read chart state, perform chart navigation, inspect chart-model data, manage indicators and drawings, list and switch saved chart layouts, work with Pine Editor state, use replay controls, and stream read-only chart samples as JSONL. Generic UI automation exists for compatibility, but prefer higher-level commands and use generic UI commands only after explicit user approval.
 
 Read `references/workflow.md` when the task needs an old MCP-to-CLI command mapping or a reminder of unsupported chart-analysis features.

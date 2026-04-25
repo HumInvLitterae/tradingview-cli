@@ -5,7 +5,7 @@ description: Scan or compare a small set of TradingView symbols with the Rust `t
 
 # Multi-Symbol Scan
 
-Use this skill to compare several TradingView symbols through the Rust `tv` CLI without pretending unavailable batch or watchlist mutation tools exist.
+Use this skill to compare several TradingView symbols through the Rust `tv` CLI without pretending an unavailable bulk batch-run helper exists.
 
 ## Start With Scope
 

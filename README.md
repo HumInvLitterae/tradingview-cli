@@ -87,7 +87,9 @@ GitHub Releases are the first supported binary distribution path. Pushing a vers
 - `tv-<tag>-x86_64-pc-windows-msvc.zip`
 - `SHA256SUMS`
 
-Each archive contains the `tv` or `tv.exe` binary, `README.md`, and `LICENSE`. Verify the downloaded archive against `SHA256SUMS`, unpack it, and place the executable on your `PATH`.
+Each archive contains the `tv` or `tv.exe` binary, `README.md`, `LICENSE`, a user-facing `AGENTS.md` and `CLAUDE.md`, and runtime-oriented TradingView CLI skills under `.agents/skills/` and `.claude/skills/`. Verify the downloaded archive against `SHA256SUMS`, unpack it, and place the executable on your `PATH`.
+
+The repository root `AGENTS.md` and `CLAUDE.md` are contributor-facing development guides. Release archives instead include user-facing agent guides for operating `tv` safely through an AI agent.
 
 Package-manager installers, code signing, notarization, and crates.io publication are not part of the first release workflow.
 
@@ -161,6 +163,7 @@ Use `tv --help` or `cargo run -- --help` for the full command list.
 - a Rust v1 `tv` CLI implementation
 - a GitHub Actions CI baseline for Rust formatting, linting, and tests
 - a GitHub Actions release workflow for tag-triggered native binary archives
+- user-facing agent guides and runtime skills in release archives
 - old JavaScript CLI command migration coverage for the known CLI surface
 - command contract, migration, lifecycle, and deferred-surface notes under `docs/notes/`
 - historical implementation ExecPlans archived under `docs/plans/archives/`

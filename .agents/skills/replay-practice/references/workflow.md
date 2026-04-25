@@ -14,10 +14,10 @@ The original replay-practice skill automated TradingView bar replay: set up the 
 | Visible range setup | `tv range --from <UNIX_SECONDS> --to <UNIX_SECONDS>` |
 | Context reads | `tv state`, `tv quote`, `tv ohlcv --summary` |
 | Screenshots | `tv screenshot --region full|chart --output <PATH>` |
-| `replay_start`, `replay_step`, `replay_autoplay`, `replay_status`, `replay_trade`, `replay_stop` | Not implemented |
+| `replay_start`, `replay_step`, `replay_autoplay`, `replay_status`, `replay_trade`, `replay_stop` | `tv replay start`, `tv replay step`, `tv replay autoplay`, `tv replay status`, `tv replay trade`, `tv replay stop` |
 
 ## Working Pattern Today
 
-Use the CLI to position and document the chart. If replay mode is required, ask the user to operate replay manually and then use CLI reads/screenshots for observation.
+Use the CLI to position and document the chart, then use replay commands when the user wants CLI-controlled practice. Check `tv replay status` before and after mutation. If replay trade state is opened during practice, close it with `tv replay trade close` when cleanup is desired, then stop replay with `tv replay stop`.
 
-Replay automation is migration backlog. The MCP server itself is not planned.
+Replay automation is now available through the Rust CLI. The MCP server itself is not planned.
