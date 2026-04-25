@@ -102,9 +102,10 @@ endpoints. This is useful for downstream watchlist refresh workflows, but it is
 not old CLI migration backlog and is closer to scanner/product workflow surface
 than TradingView chart-control CLI surface.
 
-Disposition: future feature research only. Do not add to the Rust core CLI
-unless downstream workflow evidence shows it belongs in `tv` rather than a
-separate scanner/helper.
+Disposition: addressed as the narrow read-only Rust command
+`tv scanner hotlist <SLUG> [--limit <N>]`. This does not change the broader
+decision to keep scanner workflow packs and UI Screener automation outside this
+slice.
 
 ### Quote/data REST fallback evidence
 
@@ -129,14 +130,14 @@ touching user-input-to-JavaScript paths.
 ## Recommended next work
 
 No immediate PR #89 implementation candidate remains after the `tv data labels`
-hardening slice. Do not combine future work with alert REST rewrites, watchlist
-REST management, hotlist reads, or layout unsaved-dialog policy changes without
-separate evidence and a dedicated plan.
+hardening slice and `tv scanner hotlist`. Do not combine future work with alert
+REST rewrites, watchlist REST management, UI Screener automation, or layout
+unsaved-dialog policy changes without separate evidence and a dedicated plan.
 
 ## Assumptions
 
-- This audit classifies PR #89 only. The read-only data-label follow-up has been
-  implemented separately in Rust.
+- This audit classifies PR #89 only. The read-only data-label follow-up and
+  Hotlist REST read have been implemented separately in Rust.
 - PR #89's fork notes contain downstream workflow needs that are useful evidence
   but not automatically core CLI scope.
 - MCP server implementation remains not planned.

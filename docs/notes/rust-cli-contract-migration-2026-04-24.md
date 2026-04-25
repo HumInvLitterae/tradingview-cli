@@ -75,6 +75,7 @@ When an old field name is important to downstream workflows, prefer one of these
 - Raw `ohlcv --count`, `range`, and `scroll` are implemented in Rust. Their payloads still live under `data`.
 - `info` payload is under `data` in Rust and includes symbol metadata such as `symbol`, `full_name`, `exchange`, `description`, `type`, `pro_name`, `typespecs`, `resolution`, and `chart_type`.
 - `search` payload is under `data` in Rust and includes `query`, `source`, `count`, and normalized `results` rows with `symbol`, `description`, `exchange`, `type`, and `full_name`.
+- `scanner hotlist <SLUG> [--limit <N>]` is implemented in Rust as a read-only upstream-follow-up command, not as old JavaScript CLI migration parity. Its payload lives under `data` and includes `source: "scanner_preset_rest"`, `region`, `slug`, `limit`, `count`, `total_count`, `fields`, and normalized `symbols`. Each symbol row preserves the compact scanner values under `values` and maps known field names to values under `field_values`. The command validates a fixed Hotlist slug whitelist before network access, rejects `--limit 0`, and caps larger limits at 20.
 - `values` payload is under `data` in Rust and includes `study_count` plus `studies` rows with `name` and `values`.
 - `discover` payload is under `data` in Rust and includes `apis_available`, `apis_total`, and `apis`.
 - `ui-state` payload is under `data` in Rust and includes panel state, button groups, key buttons, chart summary, and replay state.

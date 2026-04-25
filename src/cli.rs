@@ -29,6 +29,11 @@ pub enum Command {
     Info,
     #[command(about = "Search TradingView symbols")]
     Search { query: Vec<String> },
+    #[command(about = "Read TradingView scanner preset data")]
+    Scanner {
+        #[command(subcommand)]
+        command: ScannerCommand,
+    },
     #[command(about = "Get real-time price quote")]
     Quote,
     #[command(about = "Get current indicator values")]
@@ -136,6 +141,16 @@ pub enum WatchlistCommand {
     Add { symbol: String },
     #[command(about = "Remove a symbol from the watchlist")]
     Remove { symbol: String },
+}
+
+#[derive(Debug, Subcommand)]
+pub enum ScannerCommand {
+    #[command(about = "Get a TradingView Hotlist scanner preset")]
+    Hotlist {
+        slug: String,
+        #[arg(long, short = 'n')]
+        limit: Option<usize>,
+    },
 }
 
 #[derive(Debug, Subcommand)]
@@ -507,6 +522,7 @@ impl Command {
             Self::State => "state",
             Self::Info => "info",
             Self::Search { .. } => "search",
+            Self::Scanner { .. } => "scanner",
             Self::Quote => "quote",
             Self::Values => "values",
             Self::Discover => "discover",

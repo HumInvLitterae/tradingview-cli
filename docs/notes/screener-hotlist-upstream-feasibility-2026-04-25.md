@@ -78,11 +78,9 @@ The upstream tool caps `limit` at 20 because the preset endpoint returns one
 page. The endpoint is closer to market-discovery input than active-chart control,
 but it is read-only and materially less fragile than the UI Screener dialog.
 
-Disposition: this is the strongest near-term candidate if the project wants
-Screener-like coverage. It should be implemented as a narrow read-only command
-only after a dedicated ExecPlan decides the command namespace and output
-contract. Likely namespace candidates are `tv screener hotlist` or
-`tv scanner hotlist`.
+Disposition: implemented as the narrow read-only Rust command
+`tv scanner hotlist <SLUG> [--limit <N>]`. This keeps Hotlist REST reads separate
+from future UI Screener dialog automation.
 
 ## Rust CLI boundary recommendation
 
@@ -90,7 +88,7 @@ Classify the remaining Screener/Hotlist ideas as follows:
 
 | Surface | Recommendation | Rationale |
 | --- | --- | --- |
-| Hotlist preset REST reads | near-term candidate | Read-only, no CDP, no UI mutation, small whitelistable surface. |
+| Hotlist preset REST reads | implemented as `tv scanner hotlist` | Read-only, no CDP, no UI mutation, small whitelistable surface. |
 | UI Screener status/get/open/close | needs live UI evidence | Useful but DOM-fragile and changes visible UI state. |
 | UI filter list / column list / active screen read | possible later | Read-only after opening the dialog, but depends on UI text and table structure. |
 | UI filter remove/clear | defer | Mutates the active Screener screen and can persist through TradingView behavior. |
@@ -98,23 +96,22 @@ Classify the remaining Screener/Hotlist ideas as follows:
 | UI column add/remove/reorder/reset | defer | Catalog and drag/drop UI automation; likely too brittle for core CLI now. |
 | Scanner/product workflow packs | keep downstream | Rules packs and dashboards are workflow products, not core bridge replacement. |
 
-The next implementation plan, if any, should prefer Hotlist REST first. It
-should not bundle UI Screener automation, watchlist bulk mutation, or downstream
-scanner workflow rules.
+Hotlist REST is now the first implemented Screener-like slice. Any next
+implementation plan should not bundle UI Screener automation, watchlist bulk
+mutation, or downstream scanner workflow rules.
 
-## Suggested Hotlist implementation outline
+## Implemented Hotlist contract
 
-A future Rust implementation should:
+The Rust implementation:
 
-- add one read-only command, likely `tv scanner hotlist <SLUG> [--limit <N>]`
-  or `tv screener hotlist <SLUG> [--limit <N>]`
+- adds the read-only command `tv scanner hotlist <SLUG> [--limit <N>]`
 - validate `SLUG` against the whitelist above before network access
-- normalize `limit` to `1..=20`
-- use `reqwest` outside CDP, similar in spirit to `tv search`
-- return the Rust JSON envelope with payload under `data`
-- include practical fields such as `slug`, `limit`, `count`, `total_count`,
+- rejects `--limit 0`, defaults omitted limit to 20, and caps larger limits at 20
+- uses `reqwest` outside CDP, similar in spirit to `tv search`
+- returns the Rust JSON envelope with payload under `data`
+- includes practical fields such as `slug`, `limit`, `count`, `total_count`,
   `fields`, and normalized `symbols`
-- avoid recording raw live scanner payloads in tracked docs
+- avoids recording raw live scanner payloads in tracked docs
 
 ## Suggested UI Screener implementation outline
 

@@ -12,6 +12,7 @@ mod market;
 mod pine;
 mod replay;
 mod saved_layout;
+mod scanner;
 mod screenshot;
 mod status;
 mod stream;
@@ -58,6 +59,7 @@ pub use replay::{
     validate_replay_autoplay_speed, validate_replay_date, validate_replay_trade_action,
 };
 pub use saved_layout::{saved_layout_list, saved_layout_switch};
+pub use scanner::scanner_hotlist;
 pub use screenshot::{screenshot_chart, screenshot_full};
 pub use status::status;
 pub use stream::{StreamDedupe, StreamKind, StreamRequest, stream_sample};

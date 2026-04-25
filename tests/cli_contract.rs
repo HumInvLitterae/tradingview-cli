@@ -16,6 +16,7 @@ fn help_lists_v1_commands() {
         .stdout(predicate::str::contains("launch"))
         .stdout(predicate::str::contains("info"))
         .stdout(predicate::str::contains("search"))
+        .stdout(predicate::str::contains("scanner"))
         .stdout(predicate::str::contains("values"))
         .stdout(predicate::str::contains("discover"))
         .stdout(predicate::str::contains("ui-state"))
@@ -35,6 +36,50 @@ fn help_lists_v1_commands() {
         .stdout(predicate::str::contains("type"))
         .stdout(predicate::str::contains("scroll"))
         .stdout(predicate::str::contains("screenshot"));
+}
+
+#[test]
+fn scanner_help_lists_hotlist_subcommand() {
+    tv().args(["scanner", "--help"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("hotlist"));
+
+    tv().args(["scanner", "hotlist", "--help"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("<SLUG>"))
+        .stdout(predicate::str::contains("--limit"));
+}
+
+#[test]
+fn scanner_hotlist_rejects_unknown_slug_before_network() {
+    let assert = tv()
+        .env("TV_CDP_PORT", "9")
+        .args(["scanner", "hotlist", "unknown_slug"])
+        .assert()
+        .failure()
+        .code(1);
+    let stderr = String::from_utf8(assert.get_output().stderr.clone()).unwrap();
+    let value: Value = serde_json::from_str(&stderr).unwrap();
+    assert_eq!(value["success"], false);
+    assert_eq!(value["command"], "scanner");
+    assert_eq!(value["error"]["kind"], "validation");
+}
+
+#[test]
+fn scanner_hotlist_rejects_zero_limit_before_network() {
+    let assert = tv()
+        .env("TV_CDP_PORT", "9")
+        .args(["scanner", "hotlist", "volume_gainers", "--limit", "0"])
+        .assert()
+        .failure()
+        .code(1);
+    let stderr = String::from_utf8(assert.get_output().stderr.clone()).unwrap();
+    let value: Value = serde_json::from_str(&stderr).unwrap();
+    assert_eq!(value["success"], false);
+    assert_eq!(value["command"], "scanner");
+    assert_eq!(value["error"]["kind"], "validation");
 }
 
 #[test]

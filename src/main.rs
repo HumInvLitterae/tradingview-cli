@@ -15,7 +15,7 @@ use cdp::CdpClient;
 use clap::{Parser, error::ErrorKind as ClapErrorKind};
 use cli::{
     AlertCommand, Cli, Command, DataCommand, DrawingCommand, IndicatorCommand, LayoutCommand,
-    PaneCommand, PineCommand, ReplayCommand, StreamCommand, TabCommand, UiCommand,
+    PaneCommand, PineCommand, ReplayCommand, ScannerCommand, StreamCommand, TabCommand, UiCommand,
     WatchlistCommand,
 };
 use error::{AppError, ErrorKind};
@@ -147,6 +147,9 @@ async fn dispatch(command: Command) -> Result<serde_json::Value, AppError> {
             }
             ops::symbol_search(&query).await
         }
+        Command::Scanner { command } => match command {
+            ScannerCommand::Hotlist { slug, limit } => ops::scanner_hotlist(&slug, limit).await,
+        },
         Command::Quote => {
             let mut runtime = connect_runtime().await?;
             ops::quote(&mut runtime).await

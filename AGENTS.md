@@ -68,7 +68,7 @@ What is true right now:
 - the read-only stream command slice is complete and emits newline-delimited JSON envelopes
 - the bounded launch command slice is complete with no-kill default behavior
 - the remaining old CLI migration closure slice is complete; `layout switch`, `alert delete --all`, `pine raw-compile`, and generic `ui` commands are implemented
-- upstream PR follow-up has addressed the first narrow Rust fixes and read-only additions, including `tv data shapes` and `tv data labels` truncation metadata
+- upstream PR follow-up has addressed the first narrow Rust fixes and read-only additions, including `tv data shapes`, `tv data labels` truncation metadata, and `tv scanner hotlist`
 - the operation layer has been split from one oversized `src/ops.rs` into a thin facade plus feature modules under `src/ops/`
 - the data operation layer has been split from one large `src/ops/data.rs` into a thin facade plus capability modules under `src/ops/data/`
 - repo-local development guidelines now record module layout, style, contract, and validation rules for future work
@@ -137,6 +137,7 @@ If the answer still depends on unresolved bridge facts, investigate first and wr
 - `src/ops/replay.rs`: replay start/step/stop/status/autoplay/trade operation implementation
 - `src/ops/stream.rs`: read-only JSONL stream operation implementation
 - `src/ops/launch.rs`: bounded TradingView Desktop launch operation implementation
+- `src/ops/scanner.rs`: read-only TradingView scanner Hotlist REST operation implementation
 - `src/ops/saved_layout.rs`: saved chart layout list operation implementation
 - `src/ops/ui.rs`: generic UI automation compatibility command implementation
 - `src/ops/data.rs`: thin data operation facade
