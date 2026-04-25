@@ -55,12 +55,11 @@ As of this pass, the upstream repository has 45 open PRs.
    `pine compile` non-persistent.
 
 5. Existing command hardening and modest capability additions.
-   `#65`, `#40`, `#60`, and `#43` have possible Rust value, but they are
+   `#65`, `#40`, and `#43` have possible Rust value, but they are
    lower priority than the security and known-breakage clusters above. `#65`
    partially overlaps Rust's existing `watchlist add/remove`; `#40` should be
    compared against Rust's stateless target selection before changing transport;
-   `#60` is a feature addition rather than a migration blocker; `#43` is mostly
-   already covered by explicit screenshot output paths.
+   `#43` is mostly already covered by explicit screenshot output paths.
 
 6. Keep workflow packs, dashboards, and Node-only maintenance outside the Rust
    CLI unless a separate investigation proves core CLI value. This includes
@@ -97,7 +96,7 @@ As of this pass, the upstream repository has 45 open PRs.
 | [#65](https://github.com/tradesdontlie/tradingview-mcp/pull/65) `feat: add watchlist_remove, watchlist_add_bulk, fix click handling` | `feature/bugfix` | Partially covered: Rust has `watchlist add` and `watchlist remove`. Bulk add and Electron click-hardening can be considered later if live smoke shows current Rust click path is fragile. |
 | [#64](https://github.com/tradesdontlie/tradingview-mcp/pull/64) `feat: add tv_ensure and tv_reconnect tools` | `feature` | Defer. Rust `tv launch` and `tv status` cover the basic preflight path; reconnect/reload is a stronger side effect and needs separate safety design. |
 | [#62](https://github.com/tradesdontlie/tradingview-mcp/pull/62) `fix(drawing): restore DI in listDrawings, getProperties, removeOne, clearAll` | `bugfix` | JavaScript DI regression. Rust drawing commands use a different implementation and tests; no direct action unless smoke shows equivalent failure. |
-| [#60](https://github.com/tradesdontlie/tradingview-mcp/pull/60) `feat: add draw_position tool for Long/Short position drawings` | `feature` | Candidate feature only. It may be valuable, but it expands drawing semantics beyond old migration closure and needs a dedicated plan. |
+| [#60](https://github.com/tradesdontlie/tradingview-mcp/pull/60) `feat: add draw_position tool for Long/Short position drawings` | `feature` | Addressed as Rust `tv draw position`, a chart-local mutation that creates native TradingView Long/Short position drawings from entry, stop, and target price levels and returns an `entity_id` for cleanup with `draw remove`. |
 | [#54](https://github.com/tradesdontlie/tradingview-mcp/pull/54) `security: remove ui_evaluate tool` | `security` | Addressed in Rust by default-disabling `tv ui eval` behind `TV_ALLOW_UNSAFE_UI_EVAL=1`, while retaining the old compatibility surface for explicit unsafe use. |
 | [#53](https://github.com/tradesdontlie/tradingview-mcp/pull/53) `feat: support running MCP server inside a Docker container` | `feature/node-only` | Mostly not applicable. MCP server and containerized Node connection are outside this Rust CLI. Host-header behavior is only relevant if Rust later supports non-local CDP hosts. |
 | [#52](https://github.com/tradesdontlie/tradingview-mcp/pull/52) `Fix Windows MSIX install detection in tv_launch` | `bugfix` | Covered by the Rust launch discovery slice. |
@@ -126,8 +125,8 @@ As of this pass, the upstream repository has 45 open PRs.
    `IApplicationActivationManager` evidence from upstream `#76`.
 
 2. Existing command hardening and modest capability additions.
-   Revisit `#65`, `#40`, `#60`, and `#43` only when there is concrete downstream
-   value or live smoke evidence that the current Rust implementation is fragile.
+   Revisit `#65`, `#40`, and `#43` only when there is concrete downstream value
+   or live smoke evidence that the current Rust implementation is fragile.
 
 ## Assumptions
 

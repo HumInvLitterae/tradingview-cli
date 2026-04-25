@@ -32,7 +32,7 @@ Keep the Rust-native `tv` CLI reliable and useful as a replacement path for prac
 - `pane layout`, `pane focus`, and `pane symbol` are implemented as explicit chart mutations using TradingView's chart widget collection
 - `layout list` and `layout switch` are implemented; `layout switch` supports `--dry-run`
 - `indicator add/remove/toggle/set/get` is implemented as a complete chart-local lifecycle mutation and read surface
-- `draw shape/list/get/remove/clear` is implemented as a chart-local drawing lifecycle surface; `draw clear` includes a read-only dry-run and post-clear verification
+- `draw shape/position/list/get/remove/clear` is implemented as a chart-local drawing lifecycle surface; `draw position` returns an `entity_id` for cleanup with `draw remove`, and `draw clear` includes a read-only dry-run and post-clear verification
 - `pine get/set/new/open/save/compile/raw-compile/analyze/check/errors/console/list` is implemented as a Pine surface; `set`, `new`, and `open` change only the editor buffer, `save` explicitly persists the current saved script to TradingView cloud state, `compile` compiles the current buffer, may add or update a chart-local study, and refuses save-related buttons, while `raw-compile` preserves the old broad button behavior and may click save-related Pine actions. Named new-save for unsaved scripts is deferred because current live smoke showed the TradingView naming dialog can be outside the CDP page target.
 - `tab list/switch/new/close` is implemented as a bounded tab lifecycle surface; `tab list` preserves chart-target fields and adds app-tab fields, while `tab close` requires an explicit app-tab index and refuses to close the final app tab
 - `replay start/step/stop/status/autoplay/trade` is implemented as a bounded replay lifecycle surface
@@ -78,6 +78,7 @@ The implemented commands are:
 - `tv indicator set <ENTITY_ID> --inputs <JSON>`
 - `tv indicator get <ENTITY_ID>`
 - `tv draw shape --type <TYPE> --price <NUMBER> --time <UNIX_SECONDS> [--price2 <NUMBER>] [--time2 <UNIX_SECONDS>] [--text <TEXT>] [--overrides <JSON>]`
+- `tv draw position <long|short> --entry-price <NUMBER> --stop-loss <NUMBER> --take-profit <NUMBER> [--entry-time <UNIX_SECONDS>] [--account-size <NUMBER>] [--risk <NUMBER>] [--lot-size <NUMBER>]`
 - `tv draw list`
 - `tv draw get <ENTITY_ID>`
 - `tv draw remove <ENTITY_ID>`

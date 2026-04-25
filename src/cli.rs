@@ -209,6 +209,24 @@ pub enum DrawingCommand {
         #[arg(long)]
         overrides: Option<String>,
     },
+    #[command(about = "Draw a native long/short position on the chart")]
+    Position {
+        direction: String,
+        #[arg(long)]
+        entry_price: f64,
+        #[arg(long)]
+        stop_loss: f64,
+        #[arg(long)]
+        take_profit: f64,
+        #[arg(long)]
+        entry_time: Option<f64>,
+        #[arg(long)]
+        account_size: Option<f64>,
+        #[arg(long)]
+        risk: Option<f64>,
+        #[arg(long)]
+        lot_size: Option<f64>,
+    },
     #[command(about = "List all drawings on the chart")]
     List,
     #[command(about = "Get drawing properties by entity ID")]

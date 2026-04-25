@@ -395,6 +395,31 @@ async fn dispatch(command: Command) -> Result<serde_json::Value, AppError> {
                 let mut runtime = connect_runtime().await?;
                 ops::drawing_shape(&mut runtime, request).await
             }
+            DrawingCommand::Position {
+                direction,
+                entry_price,
+                stop_loss,
+                take_profit,
+                entry_time,
+                account_size,
+                risk,
+                lot_size,
+            } => {
+                let direction = ops::PositionDirection::parse(&direction)?;
+                let request = ops::DrawingPositionRequest {
+                    direction,
+                    entry_price,
+                    stop_loss,
+                    take_profit,
+                    entry_time,
+                    account_size,
+                    risk,
+                    lot_size,
+                };
+                ops::validate_position_request(&request)?;
+                let mut runtime = connect_runtime().await?;
+                ops::drawing_position(&mut runtime, request).await
+            }
             DrawingCommand::List => {
                 let mut runtime = connect_runtime().await?;
                 ops::drawing_list(&mut runtime).await

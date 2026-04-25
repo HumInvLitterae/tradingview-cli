@@ -67,7 +67,7 @@ From the repository root, implement the code and docs, then run:
     cargo test
     git diff --check
     git grep -n 'USER'';' -- README.md docs .agents/skills || true
-    git grep -nE '(/Users/|C:\\)' -- README.md docs .agents/skills || true
+    git grep -nE '(/U[s]ers/|[A-Z]:\\)' -- README.md docs .agents/skills || true
 
 If TradingView Desktop is available, run read-only smoke:
 
@@ -82,7 +82,7 @@ Validation transcript from this implementation:
     cargo test
     git diff --check
     git grep -n 'USER'';' -- README.md docs .agents/skills || true
-    git grep -nE '(/Users/|C:\\)' -- README.md docs .agents/skills || true
+    git grep -nE '(/U[s]ers/|[A-Z]:\\)' -- README.md docs .agents/skills || true
 
 All commands completed successfully. Read-only smoke used an explicit target because multiple TradingView chart targets were open:
 

@@ -202,6 +202,7 @@ fn draw_help_lists_lifecycle_subcommands() {
         .assert()
         .success()
         .stdout(predicate::str::contains("shape"))
+        .stdout(predicate::str::contains("position"))
         .stdout(predicate::str::contains("list"))
         .stdout(predicate::str::contains("get"))
         .stdout(predicate::str::contains("remove"))
@@ -214,6 +215,17 @@ fn draw_help_lists_lifecycle_subcommands() {
         .stdout(predicate::str::contains("--price"))
         .stdout(predicate::str::contains("--time"))
         .stdout(predicate::str::contains("--overrides"));
+
+    tv().args(["draw", "position", "--help"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("--entry-price"))
+        .stdout(predicate::str::contains("--stop-loss"))
+        .stdout(predicate::str::contains("--take-profit"))
+        .stdout(predicate::str::contains("--entry-time"))
+        .stdout(predicate::str::contains("--account-size"))
+        .stdout(predicate::str::contains("--risk"))
+        .stdout(predicate::str::contains("--lot-size"));
 
     tv().args(["draw", "clear", "--help"])
         .assert()
@@ -669,6 +681,17 @@ fn read_utilities_attempt_connection_when_cdp_is_unavailable() {
         ],
         vec!["indicator", "get", "study-id"],
         vec!["draw", "shape", "--price", "100", "--time", "1700000000"],
+        vec![
+            "draw",
+            "position",
+            "long",
+            "--entry-price",
+            "100",
+            "--stop-loss",
+            "90",
+            "--take-profit",
+            "120",
+        ],
         vec!["draw", "list"],
         vec!["draw", "get", "shape-id"],
         vec!["draw", "remove", "shape-id"],
@@ -879,6 +902,103 @@ fn draw_shape_rejects_invalid_inputs_before_connecting() {
         let stderr = String::from_utf8(assert.get_output().stderr.clone()).unwrap();
         let value: Value = serde_json::from_str(&stderr).unwrap();
         assert_eq!(value["success"], false);
+        assert_eq!(value["error"]["kind"], "validation");
+    }
+}
+
+#[test]
+fn draw_position_rejects_invalid_inputs_before_connecting() {
+    for args in [
+        vec![
+            "draw",
+            "position",
+            "up",
+            "--entry-price",
+            "100",
+            "--stop-loss",
+            "90",
+            "--take-profit",
+            "120",
+        ],
+        vec![
+            "draw",
+            "position",
+            "long",
+            "--entry-price",
+            "100",
+            "--stop-loss",
+            "100",
+            "--take-profit",
+            "120",
+        ],
+        vec![
+            "draw",
+            "position",
+            "long",
+            "--entry-price",
+            "100",
+            "--stop-loss",
+            "90",
+            "--take-profit",
+            "99",
+        ],
+        vec![
+            "draw",
+            "position",
+            "short",
+            "--entry-price",
+            "100",
+            "--stop-loss",
+            "99",
+            "--take-profit",
+            "80",
+        ],
+        vec![
+            "draw",
+            "position",
+            "short",
+            "--entry-price",
+            "100",
+            "--stop-loss",
+            "110",
+            "--take-profit",
+            "100",
+        ],
+        vec![
+            "draw",
+            "position",
+            "long",
+            "--entry-price",
+            "NaN",
+            "--stop-loss",
+            "90",
+            "--take-profit",
+            "120",
+        ],
+        vec![
+            "draw",
+            "position",
+            "long",
+            "--entry-price",
+            "100",
+            "--stop-loss",
+            "90",
+            "--take-profit",
+            "120",
+            "--risk",
+            "0",
+        ],
+    ] {
+        let assert = tv()
+            .env("TV_CDP_PORT", "9")
+            .args(args)
+            .assert()
+            .failure()
+            .code(1);
+        let stderr = String::from_utf8(assert.get_output().stderr.clone()).unwrap();
+        let value: Value = serde_json::from_str(&stderr).unwrap();
+        assert_eq!(value["success"], false);
+        assert_eq!(value["command"], "draw");
         assert_eq!(value["error"]["kind"], "validation");
     }
 }
