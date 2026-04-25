@@ -167,9 +167,10 @@ Focus first on migration readiness:
 - use `docs/notes/command-lifecycle-balance-audit-2026-04-24.md` when evaluating mutation surfaces and cleanup gaps
 - use `docs/plans/archives/tradingview-cli-remaining-migration-closure.md` and `docs/notes/remaining-deferred-surface-audit-2026-04-25.md` when checking old CLI migration closure
 - use `docs/notes/upstream-pr-triage-2026-04-25.md` before acting on original upstream pull requests
+- use `docs/notes/screener-hotlist-upstream-feasibility-2026-04-25.md` before implementing Stock Screener, Hotlist, or scanner-like features
 - record evidence before starting any post-v1 ExecPlan
 
-Old CLI migration is closed except for MCP server implementation, which remains explicitly not planned. Narrow upstream PR follow-up is also partly complete: launch compatibility, strategy/Pine hardening, screenshot contract tests, tab target handoff, watchlist click hardening, `tv data shapes`, and `tv data labels` truncation metadata have all been addressed. Remaining upstream-derived candidates are evidence-gated: Windows COM/AUMID launch activation only if Windows smoke proves current launch insufficient, `watchlist add-bulk` only if a real batched account-mutation workflow needs it, and scanner/hotlist/layout-dialog behavior only after separate research shows core CLI value and safe operating policy.
+Old CLI migration is closed except for MCP server implementation, which remains explicitly not planned. Narrow upstream PR follow-up is also partly complete: launch compatibility, strategy/Pine hardening, screenshot contract tests, tab target handoff, watchlist click hardening, `tv data shapes`, and `tv data labels` truncation metadata have all been addressed. Remaining upstream-derived candidates are evidence-gated: Windows COM/AUMID launch activation only if Windows smoke proves current launch insufficient, `watchlist add-bulk` only if a real batched account-mutation workflow needs it, and layout-dialog behavior only after separate research shows core CLI value and safe operating policy. For Screener-like work, prefer a separate Hotlist REST read plan before UI Screener automation; UI filter/screen/column mutations remain deferred.
 
 ## Validation baseline
 

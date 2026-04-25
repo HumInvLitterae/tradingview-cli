@@ -86,7 +86,7 @@ As of this pass, the upstream repository has 45 open PRs.
 | [#92](https://github.com/tradesdontlie/tradingview-mcp/pull/92) `feat: make CDP host/port configurable via environment variables` | `feature` | Already covered by Rust transport config. No action. |
 | [#91](https://github.com/tradesdontlie/tradingview-mcp/pull/91) `fix: layout_switch dismisses unsaved-changes dialog in non-English locales` | `bugfix` | Rust deliberately does not auto-dismiss unsaved-change dialogs for `layout switch`. Treat as future policy research, not an immediate bugfix. |
 | [#90](https://github.com/tradesdontlie/tradingview-mcp/pull/90) `fix: TV Desktop 3.1.0 compat for data.trades / data.strategy / data.equity` | `bugfix` | Addressed in Rust by preferring `StrategyScript` source detection and `_reportData.performance`, `_reportData.trades`, and `_reportData.buyHold` when available. |
-| [#89](https://github.com/tradesdontlie/tradingview-mcp/pull/89) `Add dependency injection to drawing functions and update tests` | `mixed` | Audited in `docs/notes/upstream-pr-89-hidden-surface-audit-2026-04-25.md`. Do not cherry-pick the fork bundle. The read-only `tv data labels` default/truncation hardening has been addressed in Rust; alert REST rewrites, watchlist REST management, and hotlist reads need separate evidence and plans. |
+| [#89](https://github.com/tradesdontlie/tradingview-mcp/pull/89) `Add dependency injection to drawing functions and update tests` | `mixed` | Audited in `docs/notes/upstream-pr-89-hidden-surface-audit-2026-04-25.md` and `docs/notes/screener-hotlist-upstream-feasibility-2026-04-25.md`. Do not cherry-pick the fork bundle. The read-only `tv data labels` default/truncation hardening has been addressed in Rust; Hotlist REST reads are now classified as a separate near-term read-only candidate. |
 | [#86](https://github.com/tradesdontlie/tradingview-mcp/pull/86) `Feat/frankie candles pine scripts` | `workflow/helper` | Do not add to core CLI. Pine script packs belong outside this Rust binary. |
 | [#80](https://github.com/tradesdontlie/tradingview-mcp/pull/80) `Fix tv_launch for TradingView v2.14.0+ (Electron 38 / Node 22)` | `bugfix` | Addressed as macOS fallback evidence. Rust now tries `open -a TradingView --args ...` after direct spawn does not make CDP ready. |
 | [#79](https://github.com/tradesdontlie/tradingview-mcp/pull/79) `Fix Windows launch script for MSIX / Microsoft Store TradingView installs` | `bugfix` | Covered by the Rust launch discovery slice; script-level Chrome fallback remains out of scope. |
@@ -98,7 +98,7 @@ As of this pass, the upstream repository has 45 open PRs.
 | [#70](https://github.com/tradesdontlie/tradingview-mcp/pull/70) `Fix Windows libuv assertion on CLI exit after fetch` | `maintenance/node-only` | Not applicable to Rust. Keep only as reminder to run Windows CI for commands that make HTTP requests. |
 | [#69](https://github.com/tradesdontlie/tradingview-mcp/pull/69) `Add real-time signal dashboard, price monitor, and Sn1P3r signal evaluator` | `workflow/helper` | Do not add to core CLI. This is a dashboard/scanner product surface, not bridge replacement surface. |
 | [#67](https://github.com/tradesdontlie/tradingview-mcp/pull/67) `fix: add missing bin entry in package-lock.json` | `maintenance/node-only` | Not applicable. Rust release archives and Cargo metadata are separate. |
-| [#66](https://github.com/tradesdontlie/tradingview-mcp/pull/66) `feat: Stock Screener tools + screen/filter/column management` | `feature` | Potential future research only. It is large UI automation surface, likely outside near-term core unless downstream workflows prove strong value. |
+| [#66](https://github.com/tradesdontlie/tradingview-mcp/pull/66) `feat: Stock Screener tools + screen/filter/column management` | `feature` | Investigated in `docs/notes/screener-hotlist-upstream-feasibility-2026-04-25.md`. Do not import the whole UI automation bundle. A read-oriented UI Screener slice needs live UI evidence; filter/screen/column mutations remain deferred. |
 | [#65](https://github.com/tradesdontlie/tradingview-mcp/pull/65) `feat: add watchlist_remove, watchlist_add_bulk, fix click handling` | `feature/bugfix` | Partially addressed: Rust has `watchlist add/remove`, watchlist controls now use coordinate-based `MouseEvent` dispatch, and `watchlist add` verifies the symbol afterward. Bulk add remains deferred as operator convenience. |
 | [#64](https://github.com/tradesdontlie/tradingview-mcp/pull/64) `feat: add tv_ensure and tv_reconnect tools` | `feature` | Defer. Rust `tv launch` and `tv status` cover the basic preflight path; reconnect/reload is a stronger side effect and needs separate safety design. |
 | [#62](https://github.com/tradesdontlie/tradingview-mcp/pull/62) `fix(drawing): restore DI in listDrawings, getProperties, removeOne, clearAll` | `bugfix` | JavaScript DI regression. Rust drawing commands use a different implementation and tests; no direct action unless smoke shows equivalent failure. |
@@ -137,13 +137,17 @@ As of this pass, the upstream repository has 45 open PRs.
    per-symbol verification, partial-failure reporting, and a cleanup story
    before implementation.
 
-3. Scanner, hotlist, and layout dialog behavior remain research topics.
-   `#66` stock screener, `#89` hotlist reads, and workflow scanner packs should
-   stay outside the core CLI unless separate evidence proves they belong here.
-   `#91` unsaved-layout dialog auto-dismiss should also remain deferred; Rust
-   should not dismiss unsaved-change dialogs unless a dedicated safety policy is
-   written. No current screenshot-output follow-up remains from `#43`, and the
-   `tv data labels` default/truncation follow-up from `#89` has been addressed.
+3. Scanner, hotlist, and layout dialog behavior remain evidence-gated.
+   `#66` stock screener and `#89` hotlist reads are separated in
+   `docs/notes/screener-hotlist-upstream-feasibility-2026-04-25.md`. The
+   strongest near-term candidate is a narrow read-only Hotlist REST command.
+   UI Screener dialog reads need live UI evidence, while filter/screen/column
+   mutations and workflow scanner packs should stay outside the core CLI unless
+   separate evidence proves they belong here. `#91` unsaved-layout dialog
+   auto-dismiss should also remain deferred; Rust should not dismiss
+   unsaved-change dialogs unless a dedicated safety policy is written. No
+   current screenshot-output follow-up remains from `#43`, and the `tv data
+   labels` default/truncation follow-up from `#89` has been addressed.
 
 ## Assumptions
 
