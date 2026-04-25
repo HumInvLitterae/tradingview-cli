@@ -41,6 +41,7 @@ Keep the Rust-native `tv` CLI reliable and useful as a replacement path for prac
 - remaining old CLI migration closure is recorded in `docs/plans/archives/tradingview-cli-remaining-migration-closure.md`; `layout switch`, `alert delete --all`, `pine raw-compile`, and generic `ui` commands are implemented. Alert edit/pause/resume are future feature research, not confirmed old CLI backlog.
 - upstream pull requests on the original repository have been triaged in `docs/notes/upstream-pr-triage-2026-04-25.md`; use that note before choosing post-release fixes or additions.
 - `tv ui eval` is default-disabled as a dangerous compatibility command; it runs only when `TV_ALLOW_UNSAFE_UI_EVAL=1` is set.
+- `tv data strategy`, `tv data trades`, and `tv data equity` use `StrategyScript` marker detection and `_reportData` fallbacks for TradingView Desktop 3.1.0-style strategy data.
 
 ## Current v1 surface
 
@@ -167,7 +168,7 @@ Focus first on migration readiness:
 - use `docs/notes/upstream-pr-triage-2026-04-25.md` before acting on original upstream pull requests
 - record evidence before starting any post-v1 ExecPlan
 
-Old CLI migration is closed except for MCP server implementation, which remains explicitly not planned. The next priority should be narrowly scoped follow-up from the upstream PR triage, starting with known-breakage fixes before broader feature additions.
+Old CLI migration is closed except for MCP server implementation, which remains explicitly not planned. The next priority should be narrowly scoped follow-up from the upstream PR triage, with `tv launch` Windows/MSIX and Electron compatibility next in line before broader feature additions.
 
 ## Validation baseline
 

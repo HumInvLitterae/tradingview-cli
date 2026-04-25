@@ -27,12 +27,12 @@ As of this pass, the upstream repository has 45 open PRs.
    compatibility command, but it now requires `TV_ALLOW_UNSAFE_UI_EVAL=1` before
    connecting to CDP.
 
-2. Strategy data compatibility.
+2. Strategy data compatibility. Addressed with Rust-side `StrategyScript`
+   detection and `_reportData` fallbacks.
    Upstream `#90`, `#96`, and older `#51` report concrete TradingView Desktop
-   3.1.0 breakage for strategy, trades, and equity reads. Rust currently still
-   finds strategies through `metaInfo().is_price_study === false` and public
-   `reportData` / `ordersData` / `equityData`-style accessors, so this evidence
-   maps directly to existing Rust commands.
+   3.1.0 breakage for strategy, trades, and equity reads. Rust now prefers
+   `metaInfo().id` values beginning with `StrategyScript`, reads `_reportData`
+   where available, and keeps legacy public accessors plus DOM fallbacks.
 
 3. Release-user launch compatibility.
    Upstream `#100`, `#93`, `#80`, `#79`, `#76`, `#73`, `#52`, `#27`, and `#18`
@@ -69,13 +69,13 @@ As of this pass, the upstream repository has 45 open PRs.
 | [#100](https://github.com/tradesdontlie/tradingview-mcp/pull/100) `fix(launch): detect TradingView Microsoft Store install on Windows` | `bugfix` | High-value input for a Rust `tv launch` Windows/MSIX ExecPlan. Combines running-process path detection and `Get-AppxPackage`; compare with older MSIX PRs before implementing. |
 | [#98](https://github.com/tradesdontlie/tradingview-mcp/pull/98) `Add crypto swing-trading rules config` | `workflow/helper` | Do not add to core CLI. This is a personal rules/config pack better suited to downstream repos or user-facing examples outside the binary. |
 | [#97](https://github.com/tradesdontlie/tradingview-mcp/pull/97) `fix(pine): resilient Pine Editor detection during state transitions` | `bugfix` | Candidate Pine hardening. Rust has explicit Monaco polling, but the reported state-transition failure should be checked against live `pine set/new/compile` smoke before changing logic. |
-| [#96](https://github.com/tradesdontlie/tradingview-mcp/pull/96) `fix(data): DOM-scrape fallback for strategy results + trades` | `bugfix` | High-value input for `tv data strategy` and `tv data trades`. Rust currently has no Strategy Tester DOM fallback for these commands. |
+| [#96](https://github.com/tradesdontlie/tradingview-mcp/pull/96) `fix(data): DOM-scrape fallback for strategy results + trades` | `bugfix` | Partially addressed. Rust keeps internal strategy data reads as the fast path and adds visible Strategy Tester DOM fallback for strategy metrics and trades. |
 | [#95](https://github.com/tradesdontlie/tradingview-mcp/pull/95) `fix(pine): match Add/Update-on-chart buttons by title attr` | `bugfix` | Mostly covered: Rust already includes `aria-label` and `title` in Pine button labels. Keep as evidence for tests and live smoke expectations. |
 | [#94](https://github.com/tradesdontlie/tradingview-mcp/pull/94) `chore(cdp): env-var overrides for TV CDP host/port` | `maintenance` | Already covered by Rust `TV_CDP_HOST` and `TV_CDP_PORT`. No action unless future evidence shows a missing target-specific path. |
 | [#93](https://github.com/tradesdontlie/tradingview-mcp/pull/93) `fix: detect MSIX/WindowsApps TradingView install using PowerShell` | `bugfix` | Same Windows/MSIX cluster as `#100`; useful implementation evidence but likely superseded by newer PRs. |
 | [#92](https://github.com/tradesdontlie/tradingview-mcp/pull/92) `feat: make CDP host/port configurable via environment variables` | `feature` | Already covered by Rust transport config. No action. |
 | [#91](https://github.com/tradesdontlie/tradingview-mcp/pull/91) `fix: layout_switch dismisses unsaved-changes dialog in non-English locales` | `bugfix` | Rust deliberately does not auto-dismiss unsaved-change dialogs for `layout switch`. Treat as future policy research, not an immediate bugfix. |
-| [#90](https://github.com/tradesdontlie/tradingview-mcp/pull/90) `fix: TV Desktop 3.1.0 compat for data.trades / data.strategy / data.equity` | `bugfix` | High priority. The reported root cause matches Rust's current strategy-source predicate and public accessor assumptions. |
+| [#90](https://github.com/tradesdontlie/tradingview-mcp/pull/90) `fix: TV Desktop 3.1.0 compat for data.trades / data.strategy / data.equity` | `bugfix` | Addressed in Rust by preferring `StrategyScript` source detection and `_reportData.performance`, `_reportData.trades`, and `_reportData.buyHold` when available. |
 | [#89](https://github.com/tradesdontlie/tradingview-mcp/pull/89) `Add dependency injection to drawing functions and update tests` | `maintenance` | Mostly JavaScript testability/regression structure. Rust already has operation-level fake runtime tests; inspect only for hidden data/watchlist/alert behavior before ignoring. |
 | [#86](https://github.com/tradesdontlie/tradingview-mcp/pull/86) `Feat/frankie candles pine scripts` | `workflow/helper` | Do not add to core CLI. Pine script packs belong outside this Rust binary. |
 | [#80](https://github.com/tradesdontlie/tradingview-mcp/pull/80) `Fix tv_launch for TradingView v2.14.0+ (Electron 38 / Node 22)` | `bugfix` | Launch cluster. Useful for macOS direct-spawn fallback research; compare with `#18` before implementing. |
@@ -96,7 +96,7 @@ As of this pass, the upstream repository has 45 open PRs.
 | [#54](https://github.com/tradesdontlie/tradingview-mcp/pull/54) `security: remove ui_evaluate tool` | `security` | Addressed in Rust by default-disabling `tv ui eval` behind `TV_ALLOW_UNSAFE_UI_EVAL=1`, while retaining the old compatibility surface for explicit unsafe use. |
 | [#53](https://github.com/tradesdontlie/tradingview-mcp/pull/53) `feat: support running MCP server inside a Docker container` | `feature/node-only` | Mostly not applicable. MCP server and containerized Node connection are outside this Rust CLI. Host-header behavior is only relevant if Rust later supports non-local CDP hosts. |
 | [#52](https://github.com/tradesdontlie/tradingview-mcp/pull/52) `Fix Windows MSIX install detection in tv_launch` | `bugfix` | Launch cluster. Older evidence for `Get-AppxPackage`; likely superseded by `#100`. |
-| [#51](https://github.com/tradesdontlie/tradingview-mcp/pull/51) `feat: improve strategy detection and add DOM metrics fallback` | `bugfix/feature` | Same data strategy cluster as `#90` and `#96`; useful for implementation comparison. |
+| [#51](https://github.com/tradesdontlie/tradingview-mcp/pull/51) `feat: improve strategy detection and add DOM metrics fallback` | `bugfix/feature` | Partially addressed through improved strategy detection and DOM metric fallback, without adding the upstream debug/evaluate-js surface. |
 | [#50](https://github.com/tradesdontlie/tradingview-mcp/pull/50) `feat: add Korean locale support for Pine compile buttons` | `bugfix` | Candidate Pine locale hardening. Rust currently handles English and Japanese chart text, but not the Korean labels documented here. |
 | [#49](https://github.com/tradesdontlie/tradingview-mcp/pull/49) `Fix getChartApi not defined in drawing management functions` | `bugfix` | JavaScript DI regression. Rust drawing implementation is separate; no direct action unless live drawing smoke reveals a similar problem. |
 | [#47](https://github.com/tradesdontlie/tradingview-mcp/pull/47) `Add development scripts, MCP config, and .DS_Store to gitignore` | `workflow/helper` | Do not add. It mixes local strategy scripts, MCP config, and repo hygiene for the original Node project. |
@@ -114,17 +114,12 @@ As of this pass, the upstream repository has 45 open PRs.
 
 ## Next implementation candidates
 
-1. `tv data strategy`, `tv data trades`, and `tv data equity` compatibility.
-   Create an ExecPlan that uses the upstream `#90` / `#96` / `#51` evidence to
-   improve strategy detection and add fallback paths while preserving Rust's
-   `{ success, command, data }` envelope.
-
-2. `tv launch` Windows/MSIX and Electron compatibility.
+1. `tv launch` Windows/MSIX and Electron compatibility.
    Create an ExecPlan that merges the duplicate launch PR evidence into a
    Rust-native design. It should keep the current no-kill default and include
    platform-specific tests for candidate discovery and fallback selection.
 
-3. Pine Editor robustness.
+2. Pine Editor robustness.
    Create a narrower hardening plan only after a live smoke or code comparison
    shows current Rust behavior still misses a reported state or locale.
 
