@@ -58,6 +58,8 @@ The old JavaScript CLI usually returned command fields at the top level, for exa
 
 The wire shape may differ, but information compatibility is required for migrated commands: information available from the old CLI should remain available from the Rust CLI once the corresponding command is implemented. New fields may be added. Removing old practical information requires an explicit decision and migration note.
 
+For a migration-focused summary, read `docs/breaking-changes-from-js-cli.md`.
+
 ## Non-goals
 
 - no copied JavaScript bridge code
@@ -152,12 +154,13 @@ Read these in order:
 
 1. `docs/notes/next-agent-handoff-prompt-2026-04-24.md`
 2. `docs/notes/development-guidelines-2026-04-24.md`
-3. `docs/notes/rust-cli-contract-migration-2026-04-24.md`
-4. `docs/notes/legacy-cli-command-migration-inventory-2026-04-24.md`
-5. `docs/notes/command-lifecycle-balance-audit-2026-04-24.md`
-6. `docs/notes/remaining-deferred-surface-audit-2026-04-25.md`
-7. `docs/plans/README.md`
-8. `docs/notes/tradingview-mcp-investigation-2026-04-24.md`
+3. `docs/breaking-changes-from-js-cli.md`
+4. `docs/notes/rust-cli-contract-migration-2026-04-24.md`
+5. `docs/notes/legacy-cli-command-migration-inventory-2026-04-24.md`
+6. `docs/notes/command-lifecycle-balance-audit-2026-04-24.md`
+7. `docs/notes/remaining-deferred-surface-audit-2026-04-25.md`
+8. `docs/plans/README.md`
+9. `docs/notes/tradingview-mcp-investigation-2026-04-24.md`
 
 The first capability and boundary research milestone, the Rust v1 implementation milestone, the read/provider migration slices, chart/pane/watchlist/alert/layout/indicator/drawing/Pine/tab/replay/stream/launch slices, command lifecycle balance audit, remaining deferred surface audit, operation-layer and data-operation module refactors, development guideline pass, and remaining old CLI migration closure slice are complete. The next milestone is release readiness: keep the improved Rust JSON contract documented, validate downstream process invocation, and prepare release/distribution work before checking original upstream pull requests for useful fixes or additions.
 

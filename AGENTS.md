@@ -16,15 +16,16 @@ Read these in order before making major decisions:
 
 1. `CONTINUITY.md`
 2. `README.md`
-3. `docs/notes/development-guidelines-2026-04-24.md`
-4. `docs/notes/next-agent-handoff-prompt-2026-04-24.md`
-5. `docs/notes/rust-cli-contract-migration-2026-04-24.md`
-6. `docs/notes/legacy-cli-command-migration-inventory-2026-04-24.md`
-7. `docs/notes/remaining-deferred-surface-audit-2026-04-25.md`
-8. `docs/plans/README.md`
-9. `docs/notes/tradingview-mcp-investigation-2026-04-24.md`
-10. `.agents/PLANS.md`
-11. `.agents/skills/continuity/SKILL.md` when the continuity skill is active
+3. `docs/breaking-changes-from-js-cli.md`
+4. `docs/notes/development-guidelines-2026-04-24.md`
+5. `docs/notes/next-agent-handoff-prompt-2026-04-24.md`
+6. `docs/notes/rust-cli-contract-migration-2026-04-24.md`
+7. `docs/notes/legacy-cli-command-migration-inventory-2026-04-24.md`
+8. `docs/notes/remaining-deferred-surface-audit-2026-04-25.md`
+9. `docs/plans/README.md`
+10. `docs/notes/tradingview-mcp-investigation-2026-04-24.md`
+11. `.agents/PLANS.md`
+12. `.agents/skills/continuity/SKILL.md` when the continuity skill is active
 
 Historical ExecPlans live under `docs/plans/archives/`. Read them only when you need slice-level implementation history or rationale that is not already summarized in the current notes.
 
