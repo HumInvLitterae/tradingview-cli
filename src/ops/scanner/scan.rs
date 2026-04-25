@@ -23,6 +23,7 @@ const SUPPORTED_SCAN_COLUMNS: &[&str] = &[
     "change",
     "change_abs",
     "volume",
+    "average_volume_10d_calc",
     "relative_volume_10d_calc",
     "market_cap_basic",
     "exchange",
@@ -36,6 +37,11 @@ const SUPPORTED_SCAN_COLUMNS: &[&str] = &[
     "price_earnings_ttm",
     "earnings_per_share_basic_ttm",
     "dividend_yield_recent",
+    "Perf.W",
+    "Perf.1M",
+    "Perf.3M",
+    "RSI",
+    "Recommend.All",
 ];
 
 #[derive(Debug)]
@@ -59,6 +65,17 @@ pub struct ScannerScanRequest {
     pub max_change: Option<f64>,
     pub min_relative_volume: Option<f64>,
     pub max_pe: Option<f64>,
+    pub min_average_volume: Option<f64>,
+    pub min_performance_week: Option<f64>,
+    pub max_performance_week: Option<f64>,
+    pub min_performance_month: Option<f64>,
+    pub max_performance_month: Option<f64>,
+    pub min_performance_quarter: Option<f64>,
+    pub max_performance_quarter: Option<f64>,
+    pub min_rsi: Option<f64>,
+    pub max_rsi: Option<f64>,
+    pub min_recommendation: Option<f64>,
+    pub max_recommendation: Option<f64>,
 }
 
 pub async fn scanner_scan(request: ScannerScanRequest) -> Result<Value, AppError> {
@@ -233,12 +250,18 @@ fn scan_filters(request: &ScannerScanRequest) -> Result<Vec<Value>, AppError> {
     push_min_filter(&mut filters, "volume", request.min_volume, "--min-volume")?;
     push_min_filter(
         &mut filters,
+        "average_volume_10d_calc",
+        request.min_average_volume,
+        "--min-average-volume",
+    )?;
+    push_min_filter(
+        &mut filters,
         "market_cap_basic",
         request.min_market_cap,
         "--min-market-cap",
     )?;
-    push_min_filter(&mut filters, "change", request.min_change, "--min-change")?;
-    push_max_filter(&mut filters, "change", request.max_change, "--max-change")?;
+    push_min_signed_filter(&mut filters, "change", request.min_change, "--min-change")?;
+    push_max_signed_filter(&mut filters, "change", request.max_change, "--max-change")?;
     push_min_filter(
         &mut filters,
         "relative_volume_10d_calc",
@@ -250,6 +273,74 @@ fn scan_filters(request: &ScannerScanRequest) -> Result<Vec<Value>, AppError> {
         "price_earnings_ttm",
         request.max_pe,
         "--max-pe",
+    )?;
+    push_min_signed_filter(
+        &mut filters,
+        "Perf.W",
+        request.min_performance_week,
+        "--min-performance-week",
+    )?;
+    push_max_signed_filter(
+        &mut filters,
+        "Perf.W",
+        request.max_performance_week,
+        "--max-performance-week",
+    )?;
+    push_min_signed_filter(
+        &mut filters,
+        "Perf.1M",
+        request.min_performance_month,
+        "--min-performance-month",
+    )?;
+    push_max_signed_filter(
+        &mut filters,
+        "Perf.1M",
+        request.max_performance_month,
+        "--max-performance-month",
+    )?;
+    push_min_signed_filter(
+        &mut filters,
+        "Perf.3M",
+        request.min_performance_quarter,
+        "--min-performance-quarter",
+    )?;
+    push_max_signed_filter(
+        &mut filters,
+        "Perf.3M",
+        request.max_performance_quarter,
+        "--max-performance-quarter",
+    )?;
+    push_min_bounded_filter(
+        &mut filters,
+        "RSI",
+        request.min_rsi,
+        "--min-rsi",
+        0.0,
+        100.0,
+    )?;
+    push_max_bounded_filter(
+        &mut filters,
+        "RSI",
+        request.max_rsi,
+        "--max-rsi",
+        0.0,
+        100.0,
+    )?;
+    push_min_bounded_filter(
+        &mut filters,
+        "Recommend.All",
+        request.min_recommendation,
+        "--min-recommendation",
+        -1.0,
+        1.0,
+    )?;
+    push_max_bounded_filter(
+        &mut filters,
+        "Recommend.All",
+        request.max_recommendation,
+        "--max-recommendation",
+        -1.0,
+        1.0,
     )?;
     Ok(filters)
 }
@@ -316,18 +407,113 @@ fn push_max_filter(
     Ok(())
 }
 
+fn push_min_signed_filter(
+    filters: &mut Vec<Value>,
+    field: &str,
+    value: Option<f64>,
+    label: &str,
+) -> Result<(), AppError> {
+    if let Some(value) = finite(value, label)? {
+        filters.push(json!({
+            "left": field,
+            "operation": "greater",
+            "right": value,
+        }));
+    }
+    Ok(())
+}
+
+fn push_max_signed_filter(
+    filters: &mut Vec<Value>,
+    field: &str,
+    value: Option<f64>,
+    label: &str,
+) -> Result<(), AppError> {
+    if let Some(value) = finite(value, label)? {
+        filters.push(json!({
+            "left": field,
+            "operation": "less",
+            "right": value,
+        }));
+    }
+    Ok(())
+}
+
+fn push_min_bounded_filter(
+    filters: &mut Vec<Value>,
+    field: &str,
+    value: Option<f64>,
+    label: &str,
+    min: f64,
+    max: f64,
+) -> Result<(), AppError> {
+    if let Some(value) = finite_in_range(value, label, min, max)? {
+        filters.push(json!({
+            "left": field,
+            "operation": "greater",
+            "right": value,
+        }));
+    }
+    Ok(())
+}
+
+fn push_max_bounded_filter(
+    filters: &mut Vec<Value>,
+    field: &str,
+    value: Option<f64>,
+    label: &str,
+    min: f64,
+    max: f64,
+) -> Result<(), AppError> {
+    if let Some(value) = finite_in_range(value, label, min, max)? {
+        filters.push(json!({
+            "left": field,
+            "operation": "less",
+            "right": value,
+        }));
+    }
+    Ok(())
+}
+
 fn finite_non_negative(value: Option<f64>, label: &str) -> Result<Option<f64>, AppError> {
+    if let Some(value) = finite(value, label)? {
+        if value < 0.0 {
+            return Err(AppError::new(
+                ErrorKind::Validation,
+                format!("{label} must be non-negative"),
+            ));
+        }
+        Ok(Some(value))
+    } else {
+        Ok(None)
+    }
+}
+
+fn finite_in_range(
+    value: Option<f64>,
+    label: &str,
+    min: f64,
+    max: f64,
+) -> Result<Option<f64>, AppError> {
+    if let Some(value) = finite(value, label)? {
+        if !(min..=max).contains(&value) {
+            return Err(AppError::new(
+                ErrorKind::Validation,
+                format!("{label} must be between {min} and {max}"),
+            ));
+        }
+        Ok(Some(value))
+    } else {
+        Ok(None)
+    }
+}
+
+fn finite(value: Option<f64>, label: &str) -> Result<Option<f64>, AppError> {
     if let Some(value) = value {
         if !value.is_finite() {
             return Err(AppError::new(
                 ErrorKind::Validation,
                 format!("{label} must be finite"),
-            ));
-        }
-        if value < 0.0 {
-            return Err(AppError::new(
-                ErrorKind::Validation,
-                format!("{label} must be non-negative"),
             ));
         }
         Ok(Some(value))
@@ -429,6 +615,17 @@ mod tests {
             max_change: None,
             min_relative_volume: None,
             max_pe: None,
+            min_average_volume: None,
+            min_performance_week: None,
+            max_performance_week: None,
+            min_performance_month: None,
+            max_performance_month: None,
+            min_performance_quarter: None,
+            max_performance_quarter: None,
+            min_rsi: None,
+            max_rsi: None,
+            min_recommendation: None,
+            max_recommendation: None,
         };
 
         let normalized = normalize_scan_request(request).unwrap();
@@ -474,6 +671,17 @@ mod tests {
             max_change: None,
             min_relative_volume: None,
             max_pe: None,
+            min_average_volume: None,
+            min_performance_week: None,
+            max_performance_week: None,
+            min_performance_month: None,
+            max_performance_month: None,
+            min_performance_quarter: None,
+            max_performance_quarter: None,
+            min_rsi: None,
+            max_rsi: None,
+            min_recommendation: None,
+            max_recommendation: None,
         };
 
         let normalized = normalize_scan_request(request).unwrap();
@@ -519,6 +727,17 @@ mod tests {
             max_change: Some(20.0),
             min_relative_volume: Some(1.5),
             max_pe: Some(50.0),
+            min_average_volume: None,
+            min_performance_week: None,
+            max_performance_week: None,
+            min_performance_month: None,
+            max_performance_month: None,
+            min_performance_quarter: None,
+            max_performance_quarter: None,
+            min_rsi: None,
+            max_rsi: None,
+            min_recommendation: None,
+            max_recommendation: None,
         };
 
         let normalized = normalize_scan_request(request).unwrap();
@@ -571,6 +790,105 @@ mod tests {
     }
 
     #[test]
+    fn normalize_scan_request_builds_technical_filters_with_signed_values() {
+        let request = ScannerScanRequest {
+            market: "america".to_string(),
+            exchanges: Vec::new(),
+            columns: Some("name,average_volume_10d_calc,Perf.W,RSI,Recommend.All".to_string()),
+            sort: Some("Perf.W".to_string()),
+            asc: false,
+            desc: true,
+            limit: Some(10),
+            min_price: None,
+            max_price: None,
+            min_volume: None,
+            min_market_cap: None,
+            sectors: Vec::new(),
+            industries: Vec::new(),
+            symbol_types: vec!["stock".to_string()],
+            subtypes: Vec::new(),
+            min_change: None,
+            max_change: Some(-5.0),
+            min_relative_volume: None,
+            max_pe: None,
+            min_average_volume: Some(1_000_000.0),
+            min_performance_week: Some(5.0),
+            max_performance_week: None,
+            min_performance_month: None,
+            max_performance_month: Some(-10.0),
+            min_performance_quarter: None,
+            max_performance_quarter: None,
+            min_rsi: None,
+            max_rsi: Some(70.0),
+            min_recommendation: Some(0.1),
+            max_recommendation: None,
+        };
+
+        let normalized = normalize_scan_request(request).unwrap();
+
+        assert_eq!(
+            normalized.columns,
+            [
+                "name",
+                "average_volume_10d_calc",
+                "Perf.W",
+                "RSI",
+                "Recommend.All"
+            ]
+        );
+        assert_eq!(normalized.sort_field, "Perf.W");
+        assert_eq!(normalized.filters.len(), 7);
+        assert_eq!(
+            normalized.filters[1],
+            json!({
+                "left": "average_volume_10d_calc",
+                "operation": "greater",
+                "right": 1_000_000.0
+            })
+        );
+        assert_eq!(
+            normalized.filters[2],
+            json!({
+                "left": "change",
+                "operation": "less",
+                "right": -5.0
+            })
+        );
+        assert_eq!(
+            normalized.filters[3],
+            json!({
+                "left": "Perf.W",
+                "operation": "greater",
+                "right": 5.0
+            })
+        );
+        assert_eq!(
+            normalized.filters[4],
+            json!({
+                "left": "Perf.1M",
+                "operation": "less",
+                "right": -10.0
+            })
+        );
+        assert_eq!(
+            normalized.filters[5],
+            json!({
+                "left": "RSI",
+                "operation": "less",
+                "right": 70.0
+            })
+        );
+        assert_eq!(
+            normalized.filters[6],
+            json!({
+                "left": "Recommend.All",
+                "operation": "greater",
+                "right": 0.1
+            })
+        );
+    }
+
+    #[test]
     fn normalize_scan_request_rejects_invalid_inputs() {
         let base = || ScannerScanRequest {
             market: "america".to_string(),
@@ -592,6 +910,17 @@ mod tests {
             max_change: None,
             min_relative_volume: None,
             max_pe: None,
+            min_average_volume: None,
+            min_performance_week: None,
+            max_performance_week: None,
+            min_performance_month: None,
+            max_performance_month: None,
+            min_performance_quarter: None,
+            max_performance_quarter: None,
+            min_rsi: None,
+            max_rsi: None,
+            min_recommendation: None,
+            max_recommendation: None,
         };
 
         let mut invalid_market = base();
@@ -637,6 +966,31 @@ mod tests {
             ErrorKind::Validation
         );
 
+        let mut invalid_non_negative = base();
+        invalid_non_negative.min_average_volume = Some(-1.0);
+        assert_eq!(
+            normalize_scan_request(invalid_non_negative)
+                .unwrap_err()
+                .kind,
+            ErrorKind::Validation
+        );
+
+        let mut invalid_rsi = base();
+        invalid_rsi.max_rsi = Some(101.0);
+        assert_eq!(
+            normalize_scan_request(invalid_rsi).unwrap_err().kind,
+            ErrorKind::Validation
+        );
+
+        let mut invalid_recommendation = base();
+        invalid_recommendation.min_recommendation = Some(-1.1);
+        assert_eq!(
+            normalize_scan_request(invalid_recommendation)
+                .unwrap_err()
+                .kind,
+            ErrorKind::Validation
+        );
+
         let mut invalid_string = base();
         invalid_string.sectors = vec![" ".to_string()];
         assert_eq!(
@@ -667,6 +1021,17 @@ mod tests {
             max_change: None,
             min_relative_volume: None,
             max_pe: None,
+            min_average_volume: None,
+            min_performance_week: None,
+            max_performance_week: None,
+            min_performance_month: None,
+            max_performance_month: None,
+            min_performance_quarter: None,
+            max_performance_quarter: None,
+            min_rsi: None,
+            max_rsi: None,
+            min_recommendation: None,
+            max_recommendation: None,
         })
         .unwrap();
         let payload = json!({
@@ -715,6 +1080,17 @@ mod tests {
             max_change: None,
             min_relative_volume: None,
             max_pe: None,
+            min_average_volume: None,
+            min_performance_week: None,
+            max_performance_week: None,
+            min_performance_month: None,
+            max_performance_month: None,
+            min_performance_quarter: None,
+            max_performance_quarter: None,
+            min_rsi: None,
+            max_rsi: None,
+            min_recommendation: None,
+            max_recommendation: None,
         })
         .unwrap();
 

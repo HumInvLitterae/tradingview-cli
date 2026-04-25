@@ -190,14 +190,36 @@ pub enum ScannerCommand {
         symbol_type: Vec<String>,
         #[arg(long)]
         subtype: Vec<String>,
-        #[arg(long)]
+        #[arg(long, allow_hyphen_values = true)]
         min_change: Option<f64>,
-        #[arg(long)]
+        #[arg(long, allow_hyphen_values = true)]
         max_change: Option<f64>,
         #[arg(long)]
         min_relative_volume: Option<f64>,
         #[arg(long)]
         max_pe: Option<f64>,
+        #[arg(long)]
+        min_average_volume: Option<f64>,
+        #[arg(long, allow_hyphen_values = true)]
+        min_performance_week: Option<f64>,
+        #[arg(long, allow_hyphen_values = true)]
+        max_performance_week: Option<f64>,
+        #[arg(long, allow_hyphen_values = true)]
+        min_performance_month: Option<f64>,
+        #[arg(long, allow_hyphen_values = true)]
+        max_performance_month: Option<f64>,
+        #[arg(long, allow_hyphen_values = true)]
+        min_performance_quarter: Option<f64>,
+        #[arg(long, allow_hyphen_values = true)]
+        max_performance_quarter: Option<f64>,
+        #[arg(long)]
+        min_rsi: Option<f64>,
+        #[arg(long)]
+        max_rsi: Option<f64>,
+        #[arg(long, allow_hyphen_values = true)]
+        min_recommendation: Option<f64>,
+        #[arg(long, allow_hyphen_values = true)]
+        max_recommendation: Option<f64>,
     },
 }
 

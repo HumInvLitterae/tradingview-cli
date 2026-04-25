@@ -170,6 +170,17 @@ async fn dispatch(command: Command) -> Result<serde_json::Value, AppError> {
                 max_change,
                 min_relative_volume,
                 max_pe,
+                min_average_volume,
+                min_performance_week,
+                max_performance_week,
+                min_performance_month,
+                max_performance_month,
+                min_performance_quarter,
+                max_performance_quarter,
+                min_rsi,
+                max_rsi,
+                min_recommendation,
+                max_recommendation,
             } => {
                 let request = ops::ScannerScanRequest {
                     market,
@@ -191,6 +202,17 @@ async fn dispatch(command: Command) -> Result<serde_json::Value, AppError> {
                     max_change,
                     min_relative_volume,
                     max_pe,
+                    min_average_volume,
+                    min_performance_week,
+                    max_performance_week,
+                    min_performance_month,
+                    max_performance_month,
+                    min_performance_quarter,
+                    max_performance_quarter,
+                    min_rsi,
+                    max_rsi,
+                    min_recommendation,
+                    max_recommendation,
                 };
                 ops::scanner_scan(request).await
             }

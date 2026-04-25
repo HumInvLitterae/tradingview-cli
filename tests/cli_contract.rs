@@ -66,7 +66,18 @@ fn scanner_help_lists_hotlist_subcommand() {
         .stdout(predicate::str::contains("--min-change"))
         .stdout(predicate::str::contains("--max-change"))
         .stdout(predicate::str::contains("--min-relative-volume"))
-        .stdout(predicate::str::contains("--max-pe"));
+        .stdout(predicate::str::contains("--max-pe"))
+        .stdout(predicate::str::contains("--min-average-volume"))
+        .stdout(predicate::str::contains("--min-performance-week"))
+        .stdout(predicate::str::contains("--max-performance-week"))
+        .stdout(predicate::str::contains("--min-performance-month"))
+        .stdout(predicate::str::contains("--max-performance-month"))
+        .stdout(predicate::str::contains("--min-performance-quarter"))
+        .stdout(predicate::str::contains("--max-performance-quarter"))
+        .stdout(predicate::str::contains("--min-rsi"))
+        .stdout(predicate::str::contains("--max-rsi"))
+        .stdout(predicate::str::contains("--min-recommendation"))
+        .stdout(predicate::str::contains("--max-recommendation"));
 }
 
 #[test]
@@ -196,6 +207,48 @@ fn scanner_scan_rejects_invalid_inputs_before_network() {
     let stderr = String::from_utf8(invalid_sector.get_output().stderr.clone()).unwrap();
     let value: Value = serde_json::from_str(&stderr).unwrap();
     assert_eq!(value["error"]["kind"], "validation");
+
+    let invalid_rsi = tv()
+        .env("TV_CDP_PORT", "9")
+        .args(["scanner", "scan", "--max-rsi", "101"])
+        .assert()
+        .failure()
+        .code(1);
+    let stderr = String::from_utf8(invalid_rsi.get_output().stderr.clone()).unwrap();
+    let value: Value = serde_json::from_str(&stderr).unwrap();
+    assert_eq!(value["error"]["kind"], "validation");
+
+    let invalid_recommendation = tv()
+        .env("TV_CDP_PORT", "9")
+        .args(["scanner", "scan", "--min-recommendation", "-1.1"])
+        .assert()
+        .failure()
+        .code(1);
+    let stderr = String::from_utf8(invalid_recommendation.get_output().stderr.clone()).unwrap();
+    let value: Value = serde_json::from_str(&stderr).unwrap();
+    assert_eq!(value["error"]["kind"], "validation");
+
+    let signed_change_reaches_scanner_validation = tv()
+        .env("TV_CDP_PORT", "9")
+        .args(["scanner", "scan", "--max-change", "-5", "--limit", "0"])
+        .assert()
+        .failure()
+        .code(1);
+    let stderr = String::from_utf8(
+        signed_change_reaches_scanner_validation
+            .get_output()
+            .stderr
+            .clone(),
+    )
+    .unwrap();
+    let value: Value = serde_json::from_str(&stderr).unwrap();
+    assert_eq!(value["error"]["kind"], "validation");
+    assert!(
+        value["error"]["message"]
+            .as_str()
+            .unwrap()
+            .contains("--limit")
+    );
 }
 
 #[test]

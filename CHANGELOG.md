@@ -13,6 +13,9 @@ package version omits the leading `v`.
   with exchange, column, sort, limit, and numeric filter options.
 - Added practical `tv scanner scan` filters for stock type, subtype, sector,
   industry, price change, relative volume, and price-to-earnings bounds.
+- Added technical `tv scanner scan` filters for average volume, weekly/monthly/
+  quarterly performance, RSI, and TradingView recommendation score, with signed
+  daily-change and performance bounds.
 
 ## v0.1.1 - 2026-04-25
 
