@@ -28,7 +28,7 @@ Do not implement `pine save` as a side effect of another Pine command. Keep `pin
 | `draw clear` | `implemented` | Rust preserves the old all-shapes cleanup capability but adds `--dry-run`, target reporting, and post-action verification. |
 | `alert delete --all` | `implemented` | Rust implements a structured bulk-delete contract with `--dry-run`, target ids, and post-delete verification. |
 | alert edit / pause / resume | `not_old_cli_backlog` | These were not found as old JavaScript CLI commands during the migration closure pass. Treat them as future feature research, not remaining migration. |
-| generic UI automation | `implemented` | The old click, keyboard, hover, scroll, find, eval, type, panel, fullscreen, and mouse commands are implemented as compatibility commands. |
+| generic UI automation | `implemented` | The old click, keyboard, hover, scroll, find, eval, type, panel, fullscreen, and mouse commands are implemented as compatibility commands. `ui eval` is default-disabled behind `TV_ALLOW_UNSAFE_UI_EVAL=1` because it runs arbitrary JavaScript in the authenticated TradingView page context. |
 
 ## Evidence from the old JavaScript CLI
 

@@ -23,6 +23,8 @@ use output::{ErrorBody, ErrorEnvelope, SuccessEnvelope};
 use serde_json::json;
 use transport::TransportConfig;
 
+const UNSAFE_UI_EVAL_ENV: &str = "TV_ALLOW_UNSAFE_UI_EVAL";
+
 #[tokio::main]
 async fn main() -> ExitCode {
     init_tracing();
@@ -596,9 +598,24 @@ async fn dispatch(command: Command) -> Result<serde_json::Value, AppError> {
             }
         },
         Command::Stream { .. } => unreachable!("stream commands use a dedicated JSONL runner"),
+        Command::Ui {
+            command: UiCommand::Eval { expression },
+        } => {
+            let expression = expression.join(" ");
+            if expression.trim().is_empty() {
+                return Err(AppError::new(
+                    ErrorKind::Validation,
+                    "Expression required. Usage: tv ui eval \"1+1\"",
+                ));
+            }
+            require_unsafe_ui_eval_enabled()?;
+            let mut runtime = connect_runtime().await?;
+            ops::ui_eval(&mut runtime, &expression).await
+        }
         Command::Ui { command } => {
             let mut runtime = connect_runtime().await?;
             match command {
+                UiCommand::Eval { .. } => unreachable!("ui eval is handled before CDP connection"),
                 UiCommand::Click { by, value } => ops::ui_click(&mut runtime, &by, &value).await,
                 UiCommand::Keyboard {
                     key,
@@ -624,16 +641,6 @@ async fn dispatch(command: Command) -> Result<serde_json::Value, AppError> {
                         ));
                     }
                     ops::ui_find(&mut runtime, &query, strategy.as_deref()).await
-                }
-                UiCommand::Eval { expression } => {
-                    let expression = expression.join(" ");
-                    if expression.trim().is_empty() {
-                        return Err(AppError::new(
-                            ErrorKind::Validation,
-                            "Expression required. Usage: tv ui eval \"1+1\"",
-                        ));
-                    }
-                    ops::ui_eval(&mut runtime, &expression).await
                 }
                 UiCommand::Type { text } => {
                     let text = text.join(" ");
@@ -735,6 +742,27 @@ fn stream_request_from_command(command: StreamCommand) -> Result<ops::StreamRequ
     }
 }
 
+fn require_unsafe_ui_eval_enabled() -> Result<(), AppError> {
+    if unsafe_ui_eval_enabled_from(std::env::var_os(UNSAFE_UI_EVAL_ENV).as_deref()) {
+        Ok(())
+    } else {
+        Err(unsafe_ui_eval_disabled_error())
+    }
+}
+
+fn unsafe_ui_eval_enabled_from(value: Option<&std::ffi::OsStr>) -> bool {
+    value == Some(std::ffi::OsStr::new("1"))
+}
+
+fn unsafe_ui_eval_disabled_error() -> AppError {
+    AppError::new(
+        ErrorKind::Validation,
+        format!(
+            "tv ui eval is disabled by default because it runs arbitrary JavaScript in the authenticated TradingView page context. Set {UNSAFE_UI_EVAL_ENV}=1 to enable this unsafe compatibility command explicitly."
+        ),
+    )
+}
+
 async fn connect_runtime() -> Result<CdpClient, AppError> {
     let target = transport::discover_target(&TransportConfig::from_env()?).await?;
     CdpClient::connect(&target).await
@@ -823,4 +851,34 @@ fn print_jsonl_stderr<T: serde::Serialize>(value: &T) {
         "{}",
         serde_json::to_string(value).expect("JSON envelope serialization should not fail")
     );
+}
+
+#[cfg(test)]
+mod tests {
+    use std::ffi::OsStr;
+
+    use super::*;
+
+    #[test]
+    fn unsafe_ui_eval_gate_only_accepts_one() {
+        assert!(unsafe_ui_eval_enabled_from(Some(OsStr::new("1"))));
+
+        for value in [
+            None,
+            Some(OsStr::new("")),
+            Some(OsStr::new("0")),
+            Some(OsStr::new("true")),
+        ] {
+            assert!(!unsafe_ui_eval_enabled_from(value));
+        }
+    }
+
+    #[test]
+    fn unsafe_ui_eval_disabled_error_names_env_gate() {
+        let error = unsafe_ui_eval_disabled_error();
+
+        assert_eq!(error.kind, ErrorKind::Validation);
+        assert!(error.message.contains("tv ui eval is disabled by default"));
+        assert!(error.message.contains(UNSAFE_UI_EVAL_ENV));
+    }
 }

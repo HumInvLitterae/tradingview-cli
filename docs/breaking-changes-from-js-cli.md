@@ -70,6 +70,7 @@ Some Rust commands are intentionally safer or more explicit than the old JavaScr
 - `pine save` persists only the current already-saved script; it fails rather than typing into an unverified naming dialog for unsaved scripts.
 - `stream ...` commands print newline-delimited JSON envelopes rather than one request-response JSON object.
 - generic `ui ...` commands are present for compatibility but can mutate the active TradingView UI session; prefer higher-level commands when available.
+- `ui eval` is present as a dangerous compatibility command but is disabled by default. Set `TV_ALLOW_UNSAFE_UI_EVAL=1` to run arbitrary JavaScript in the authenticated TradingView page context explicitly.
 
 ## Target selection
 

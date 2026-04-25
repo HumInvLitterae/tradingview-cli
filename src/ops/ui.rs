@@ -315,7 +315,10 @@ pub async fn ui_eval(
     expression: &str,
 ) -> Result<Value, AppError> {
     let result = runtime.evaluate(expression, true).await?;
-    Ok(json!({ "result": result }))
+    Ok(json!({
+        "result": result,
+        "unsafe_eval_enabled": true,
+    }))
 }
 
 pub async fn ui_panel(
@@ -798,6 +801,7 @@ mod tests {
         let result = ui_eval(&mut runtime, "1+1").await.unwrap();
 
         assert_eq!(result["result"], 2);
+        assert_eq!(result["unsafe_eval_enabled"], true);
         assert_eq!(runtime.evaluated[0].0, "1+1");
         assert!(runtime.evaluated[0].1);
     }

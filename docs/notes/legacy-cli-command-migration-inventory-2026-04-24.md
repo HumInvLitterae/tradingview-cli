@@ -123,7 +123,7 @@ No high-priority planned read-only backlog remains after the diagnostic read com
 
 `alert delete --all` is implemented as an explicit bulk account mutation with `--dry-run`, target alert reporting, and post-delete verification. This is stronger than the old JavaScript CLI, which only opened the alerts context menu for manual confirmation.
 
-`ui click`, `ui keyboard`, `ui hover`, `ui scroll`, `ui find`, `ui eval`, `ui type`, `ui panel`, `ui fullscreen`, and `ui mouse` are implemented as old CLI compatibility commands. They are generic UI automation commands and can mutate the active TradingView page, so downstream workflows should prefer specific higher-level commands when available.
+`ui click`, `ui keyboard`, `ui hover`, `ui scroll`, `ui find`, `ui eval`, `ui type`, `ui panel`, `ui fullscreen`, and `ui mouse` are implemented as old CLI compatibility commands. They are generic UI automation commands and can mutate the active TradingView page, so downstream workflows should prefer specific higher-level commands when available. `ui eval` is default-disabled and requires `TV_ALLOW_UNSAFE_UI_EVAL=1` because it runs arbitrary JavaScript in the authenticated TradingView page context.
 
 `stream quote`, `stream bars`, `stream values`, `stream lines`, `stream labels`, `stream tables`, and `stream all` are implemented as read-only polling commands. They print newline-delimited JSON envelopes and emit only changed samples. They are intended for shell and external monitoring workflows rather than request-response adapters.
 

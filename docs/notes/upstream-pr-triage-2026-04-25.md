@@ -20,11 +20,12 @@ As of this pass, the upstream repository has 45 open PRs.
 
 ## Recommended priority
 
-1. Security review for unrestricted page-context evaluation.
+1. Security review for unrestricted page-context evaluation. Completed as a
+   default-disabled gate.
    Upstream `#54` removes `ui_evaluate` because it can run arbitrary JavaScript in
-   an authenticated TradingView session. Rust currently exposes `tv ui eval` as
-   an old CLI compatibility command. This should be reviewed before adding more
-   feature surface.
+   an authenticated TradingView session. Rust keeps `tv ui eval` as an old CLI
+   compatibility command, but it now requires `TV_ALLOW_UNSAFE_UI_EVAL=1` before
+   connecting to CDP.
 
 2. Strategy data compatibility.
    Upstream `#90`, `#96`, and older `#51` report concrete TradingView Desktop
@@ -92,7 +93,7 @@ As of this pass, the upstream repository has 45 open PRs.
 | [#64](https://github.com/tradesdontlie/tradingview-mcp/pull/64) `feat: add tv_ensure and tv_reconnect tools` | `feature` | Defer. Rust `tv launch` and `tv status` cover the basic preflight path; reconnect/reload is a stronger side effect and needs separate safety design. |
 | [#62](https://github.com/tradesdontlie/tradingview-mcp/pull/62) `fix(drawing): restore DI in listDrawings, getProperties, removeOne, clearAll` | `bugfix` | JavaScript DI regression. Rust drawing commands use a different implementation and tests; no direct action unless smoke shows equivalent failure. |
 | [#60](https://github.com/tradesdontlie/tradingview-mcp/pull/60) `feat: add draw_position tool for Long/Short position drawings` | `feature` | Candidate feature only. It may be valuable, but it expands drawing semantics beyond old migration closure and needs a dedicated plan. |
-| [#54](https://github.com/tradesdontlie/tradingview-mcp/pull/54) `security: remove ui_evaluate tool` | `security` | Highest-priority safety review. Rust currently exposes `tv ui eval`; decide whether to remove it, gate it, or keep it with stronger public warnings before adding more surface. |
+| [#54](https://github.com/tradesdontlie/tradingview-mcp/pull/54) `security: remove ui_evaluate tool` | `security` | Addressed in Rust by default-disabling `tv ui eval` behind `TV_ALLOW_UNSAFE_UI_EVAL=1`, while retaining the old compatibility surface for explicit unsafe use. |
 | [#53](https://github.com/tradesdontlie/tradingview-mcp/pull/53) `feat: support running MCP server inside a Docker container` | `feature/node-only` | Mostly not applicable. MCP server and containerized Node connection are outside this Rust CLI. Host-header behavior is only relevant if Rust later supports non-local CDP hosts. |
 | [#52](https://github.com/tradesdontlie/tradingview-mcp/pull/52) `Fix Windows MSIX install detection in tv_launch` | `bugfix` | Launch cluster. Older evidence for `Get-AppxPackage`; likely superseded by `#100`. |
 | [#51](https://github.com/tradesdontlie/tradingview-mcp/pull/51) `feat: improve strategy detection and add DOM metrics fallback` | `bugfix/feature` | Same data strategy cluster as `#90` and `#96`; useful for implementation comparison. |
@@ -113,23 +114,17 @@ As of this pass, the upstream repository has 45 open PRs.
 
 ## Next implementation candidates
 
-1. `tv ui eval` safety decision.
-   Create a short ExecPlan to decide whether to remove `ui eval`, hide it behind
-   an explicit unsafe flag/environment gate, or keep it with stronger public
-   warnings. The upstream security PR is directly relevant because Rust currently
-   has the same class of capability.
-
-2. `tv data strategy`, `tv data trades`, and `tv data equity` compatibility.
+1. `tv data strategy`, `tv data trades`, and `tv data equity` compatibility.
    Create an ExecPlan that uses the upstream `#90` / `#96` / `#51` evidence to
    improve strategy detection and add fallback paths while preserving Rust's
    `{ success, command, data }` envelope.
 
-3. `tv launch` Windows/MSIX and Electron compatibility.
+2. `tv launch` Windows/MSIX and Electron compatibility.
    Create an ExecPlan that merges the duplicate launch PR evidence into a
    Rust-native design. It should keep the current no-kill default and include
    platform-specific tests for candidate discovery and fallback selection.
 
-4. Pine Editor robustness.
+3. Pine Editor robustness.
    Create a narrower hardening plan only after a live smoke or code comparison
    shows current Rust behavior still misses a reported state or locale.
 

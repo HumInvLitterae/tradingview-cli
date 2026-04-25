@@ -679,7 +679,6 @@ fn read_utilities_attempt_connection_when_cdp_is_unavailable() {
         vec!["ui", "keyboard", "Escape"],
         vec!["ui", "hover", "--value", "Chart"],
         vec!["ui", "scroll", "down"],
-        vec!["ui", "eval", "1+1"],
         vec!["ui", "type", "hello"],
         vec!["ui", "panel", "watchlist", "open"],
         vec!["ui", "fullscreen"],
@@ -696,6 +695,43 @@ fn read_utilities_attempt_connection_when_cdp_is_unavailable() {
         assert_eq!(value["success"], false);
         assert_eq!(value["error"]["kind"], "connection");
     }
+}
+
+#[test]
+fn ui_eval_is_disabled_before_connecting_without_env_gate() {
+    let assert = tv()
+        .env("TV_CDP_PORT", "9")
+        .args(["ui", "eval", "1+1"])
+        .assert()
+        .failure()
+        .code(1);
+    let stderr = String::from_utf8(assert.get_output().stderr.clone()).unwrap();
+    let value: Value = serde_json::from_str(&stderr).unwrap();
+    assert_eq!(value["success"], false);
+    assert_eq!(value["command"], "ui");
+    assert_eq!(value["error"]["kind"], "validation");
+    assert!(
+        value["error"]["message"]
+            .as_str()
+            .unwrap()
+            .contains("TV_ALLOW_UNSAFE_UI_EVAL=1")
+    );
+}
+
+#[test]
+fn ui_eval_attempts_connection_when_env_gate_is_enabled() {
+    let assert = tv()
+        .env("TV_CDP_PORT", "9")
+        .env("TV_ALLOW_UNSAFE_UI_EVAL", "1")
+        .args(["ui", "eval", "1+1"])
+        .assert()
+        .failure()
+        .code(2);
+    let stderr = String::from_utf8(assert.get_output().stderr.clone()).unwrap();
+    let value: Value = serde_json::from_str(&stderr).unwrap();
+    assert_eq!(value["success"], false);
+    assert_eq!(value["command"], "ui");
+    assert_eq!(value["error"]["kind"], "connection");
 }
 
 #[test]
