@@ -154,9 +154,11 @@ As of this pass, the upstream repository has 45 open PRs.
    `#66` stock screener and `#89` hotlist reads are separated in
    `docs/notes/screener-hotlist-upstream-feasibility-2026-04-25.md`. The narrow
    read-only Hotlist REST command is implemented as `tv scanner hotlist`. UI
-   Screener dialog reads still need live UI evidence, while
-   filter/screen/column mutations and workflow scanner packs should stay outside
-   the core CLI unless separate evidence proves they belong here. `#91`
+   Screener dialog reads now have live evidence in
+   `docs/notes/ui-screener-read-evidence-2026-04-26.md`, making
+   `tv screener status/open/get/close` a plausible next implementation slice.
+   Filter/screen/column mutations and workflow scanner packs should still stay
+   outside the core CLI unless separate evidence proves they belong here. `#91`
    unsaved-layout dialog auto-dismiss should also remain deferred; Rust should not dismiss
    unsaved-change dialogs unless a dedicated safety policy is written. No
    current screenshot-output follow-up remains from `#43`, and the `tv data

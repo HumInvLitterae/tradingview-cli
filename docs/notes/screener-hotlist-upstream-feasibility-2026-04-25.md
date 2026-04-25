@@ -9,6 +9,7 @@ request surfaces before adding any Rust CLI commands.
 - `gh pr diff 66 -R tradesdontlie/tradingview-mcp`
 - `gh pr view 89 -R tradesdontlie/tradingview-mcp --json number,title,body,files,updatedAt,url`
 - `gh pr diff 89 -R tradesdontlie/tradingview-mcp`
+- `docs/notes/ui-screener-read-evidence-2026-04-26.md`
 - Read-only probe:
   `https://scanner.tradingview.com/presets/US_volume_gainers?label-product=right-hotlists`
 
@@ -89,7 +90,7 @@ Classify the remaining Screener/Hotlist ideas as follows:
 | Surface | Recommendation | Rationale |
 | --- | --- | --- |
 | Hotlist preset REST reads | implemented as `tv scanner hotlist` | Read-only, no CDP, no UI mutation, small whitelistable surface. |
-| UI Screener status/get/open/close | needs live UI evidence | Useful but DOM-fragile and changes visible UI state. |
+| UI Screener status/get/open/close | evidence-backed next candidate | Useful but DOM-fragile and changes visible UI state. Live evidence exists in `docs/notes/ui-screener-read-evidence-2026-04-26.md`. |
 | UI filter list / column list / active screen read | possible later | Read-only after opening the dialog, but depends on UI text and table structure. |
 | UI filter remove/clear | defer | Mutates the active Screener screen and can persist through TradingView behavior. |
 | UI screen save/switch/save-as/delete/rename/create | defer | Cloud-state and modal-flow risk; upstream mostly uses stubs for these. |
@@ -127,11 +128,20 @@ It should require a live smoke plan because it depends on TradingView Desktop
 DOM selectors. It should not save screens, clear filters, remove filters, or
 change columns in the first slice.
 
-## Current CI note
+The 2026-04-26 live evidence pass found that the upstream
+`[class*="screenerContainer"]` selector did not match the current dialog. A Rust
+implementation should use broader current-state indicators such as visible
+Screener heading text, `[class*="screener"]`, visible Screener `data-name`
+attributes, and table presence. The live session opened from
+`[data-name="screener-dialog-button"]`; `Escape` closed and restored the
+initial closed state.
 
-While this feasibility pass was running, the pushed `v0.1.1` Release and CI
-runs were observed as failed. That failure is outside this note's scope and
-should be investigated as a separate CI/release task before more release work.
+## Historical CI note
+
+While the original feasibility pass was running, the pushed `v0.1.1` Release
+and CI runs were observed as failed. A later `fix(cli): Fix Windows CLI stack
+overflow` push was observed with successful `CI` and `Release` runs for
+`v0.1.1`.
 
 ## Assumptions
 
