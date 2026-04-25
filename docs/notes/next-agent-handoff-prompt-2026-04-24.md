@@ -39,6 +39,7 @@ Keep the Rust-native `tv` CLI reliable and useful as a replacement path for prac
 - `stream quote/bars/values/lines/labels/tables/all` is implemented as read-only JSONL polling for shell and external monitoring workflows
 - `launch` is implemented as a bounded local process-control command; it is no-kill by default, treats an already responding CDP endpoint as success, and requires explicit `--kill-existing` for process termination
 - remaining old CLI migration closure is recorded in `docs/plans/archives/tradingview-cli-remaining-migration-closure.md`; `layout switch`, `alert delete --all`, `pine raw-compile`, and generic `ui` commands are implemented. Alert edit/pause/resume are future feature research, not confirmed old CLI backlog.
+- upstream pull requests on the original repository have been triaged in `docs/notes/upstream-pr-triage-2026-04-25.md`; use that note before choosing post-release fixes or additions.
 
 ## Current v1 surface
 
@@ -162,9 +163,10 @@ Focus first on migration readiness:
 - treat old CLI command coverage as closed unless new evidence shows a missed command; preserve information compatibility for any future compatibility work
 - use `docs/notes/command-lifecycle-balance-audit-2026-04-24.md` when evaluating mutation surfaces and cleanup gaps
 - use `docs/plans/archives/tradingview-cli-remaining-migration-closure.md` and `docs/notes/remaining-deferred-surface-audit-2026-04-25.md` when checking old CLI migration closure
+- use `docs/notes/upstream-pr-triage-2026-04-25.md` before acting on original upstream pull requests
 - record evidence before starting any post-v1 ExecPlan
 
-Old CLI migration is closed except for MCP server implementation, which remains explicitly not planned. The next priority should be release readiness, downstream process-invocation validation, and then original upstream pull request triage for fixes or useful additions.
+Old CLI migration is closed except for MCP server implementation, which remains explicitly not planned. The next priority should be narrowly scoped follow-up from the upstream PR triage, starting with safety and known-breakage fixes before broader feature additions.
 
 ## Validation baseline
 

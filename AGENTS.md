@@ -22,10 +22,11 @@ Read these in order before making major decisions:
 6. `docs/notes/rust-cli-contract-migration-2026-04-24.md`
 7. `docs/notes/legacy-cli-command-migration-inventory-2026-04-24.md`
 8. `docs/notes/remaining-deferred-surface-audit-2026-04-25.md`
-9. `docs/plans/README.md`
-10. `docs/notes/tradingview-mcp-investigation-2026-04-24.md`
-11. `.agents/PLANS.md`
-12. `.agents/skills/continuity/SKILL.md` when the continuity skill is active
+9. `docs/notes/upstream-pr-triage-2026-04-25.md`
+10. `docs/plans/README.md`
+11. `docs/notes/tradingview-mcp-investigation-2026-04-24.md`
+12. `.agents/PLANS.md`
+13. `.agents/skills/continuity/SKILL.md` when the continuity skill is active
 
 Historical ExecPlans live under `docs/plans/archives/`. Read them only when you need slice-level implementation history or rationale that is not already summarized in the current notes.
 
@@ -79,8 +80,8 @@ Prefer work that moves one of these forward:
 
 1. keeping `README.md`, handoff notes, and ExecPlans aligned with the implemented CLI
 2. validating the Rust CLI in real downstream provider, review, and operator workflows
-3. release readiness, including packaging, distribution, and public-facing documentation
-4. checking original upstream pull requests for fixes or additions after release readiness is in good shape
+3. maintaining release packaging, distribution, and public-facing documentation
+4. checking original upstream pull requests for fixes or additions now that the first release is in place
 
 Supporting notes are welcome when they reduce ambiguity, but avoid speculative design sprawl.
 
@@ -124,6 +125,7 @@ If the answer still depends on unresolved bridge facts, investigate first and wr
 - `README.md`: project overview and current status
 - `CONTINUITY.md`: compaction-safe continuity ledger for current durable state
 - `docs/notes/development-guidelines-2026-04-24.md`: module layout, coding style, and validation guide
+- `docs/notes/upstream-pr-triage-2026-04-25.md`: original upstream PR classification and Rust follow-up priorities
 - `src/ops.rs`: thin operation facade that re-exports feature modules
 - `src/ops/`: operation implementations grouped by capability
 - `src/ops/indicator.rs`: indicator add/remove/toggle/set operation implementation

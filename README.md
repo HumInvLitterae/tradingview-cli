@@ -181,10 +181,11 @@ Read these in order:
 5. `docs/notes/legacy-cli-command-migration-inventory-2026-04-24.md`
 6. `docs/notes/command-lifecycle-balance-audit-2026-04-24.md`
 7. `docs/notes/remaining-deferred-surface-audit-2026-04-25.md`
-8. `docs/plans/README.md`
-9. `docs/notes/tradingview-mcp-investigation-2026-04-24.md`
+8. `docs/notes/upstream-pr-triage-2026-04-25.md`
+9. `docs/plans/README.md`
+10. `docs/notes/tradingview-mcp-investigation-2026-04-24.md`
 
-The first capability and boundary research milestone, the Rust v1 implementation milestone, the read/provider migration slices, chart/pane/watchlist/alert/layout/indicator/drawing/Pine/tab/replay/stream/launch slices, command lifecycle balance audit, remaining deferred surface audit, operation-layer and data-operation module refactors, development guideline pass, and remaining old CLI migration closure slice are complete. The next milestone is release readiness: keep the improved Rust JSON contract documented, validate downstream process invocation, and prepare release/distribution work before checking original upstream pull requests for useful fixes or additions.
+The first capability and boundary research milestone, the Rust v1 implementation milestone, the read/provider migration slices, chart/pane/watchlist/alert/layout/indicator/drawing/Pine/tab/replay/stream/launch slices, command lifecycle balance audit, remaining deferred surface audit, operation-layer and data-operation module refactors, development guideline pass, remaining old CLI migration closure slice, and first release readiness pass are complete. The next milestone is upstream pull request follow-up: use the triage note to pick narrowly scoped Rust fixes before adding new feature surface.
 
 ## License
 
