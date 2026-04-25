@@ -21,45 +21,12 @@ Read these in order before making major decisions:
 5. `docs/notes/rust-cli-contract-migration-2026-04-24.md`
 6. `docs/notes/legacy-cli-command-migration-inventory-2026-04-24.md`
 7. `docs/notes/remaining-deferred-surface-audit-2026-04-25.md`
-8. `docs/plans/tradingview-cli-remaining-migration-closure-v1-34.md`
-9. `docs/plans/tradingview-cli-layout-list-v1-33.md`
-10. `docs/plans/tradingview-cli-draw-clear-v1-32.md`
-11. `docs/plans/tradingview-cli-pine-save-v1-31.md`
-12. `docs/plans/tradingview-cli-launch-v1-30.md`
-13. `docs/plans/tradingview-cli-stream-read-v1-29.md`
-14. `docs/plans/tradingview-cli-pine-new-open-v1-28.md`
-15. `docs/plans/tradingview-cli-pine-analyze-check-v1-27.md`
-16. `docs/plans/tradingview-cli-pine-compile-v1-26.md`
-17. `docs/plans/tradingview-cli-pine-set-v1-25.md`
-18. `docs/plans/tradingview-cli-pine-read-v1-24.md`
-19. `docs/plans/tradingview-cli-tab-new-close-v1-23.md`
-20. `docs/plans/tradingview-cli-replay-trade-v1-22.md`
-21. `docs/plans/tradingview-cli-replay-autoplay-v1-21.md`
-22. `docs/plans/tradingview-cli-replay-basic-controls-v1-20.md`
-23. `docs/plans/tradingview-cli-replay-status-v1-19.md`
-24. `docs/plans/tradingview-cli-tab-list-switch-v1-18.md`
-25. `docs/plans/tradingview-cli-drawing-commands-v1-17.md`
-26. `docs/plans/tradingview-cli-indicator-commands-v1-16.md`
-27. `docs/plans/tradingview-cli-watchlist-remove-v1-15.md`
-28. `docs/plans/tradingview-cli-alert-delete-v1-14.md`
-29. `docs/plans/tradingview-cli-pane-mutation-v1-13.md`
-30. `docs/plans/tradingview-cli-alert-create-v1-12.md`
-31. `docs/plans/tradingview-cli-watchlist-add-v1-11.md`
-32. `docs/plans/tradingview-cli-alert-list-v1-9.md`
-33. `docs/plans/tradingview-cli-data-module-refactor-v1-10.md`
-34. `docs/plans/tradingview-cli-data-depth-v1-8.md`
-35. `docs/plans/tradingview-cli-ops-module-refactor-v1-7.md`
-36. `docs/plans/tradingview-cli-chart-type-v1-6.md`
-37. `docs/plans/tradingview-cli-diagnostic-read-commands-v1-4.md`
-38. `docs/plans/tradingview-cli-chart-region-screenshot-v1-3.md`
-39. `docs/plans/tradingview-cli-read-utilities-v1-2.md`
-40. `docs/plans/tradingview-cli-read-provider-migration-v1-1.md`
-41. `docs/plans/tradingview-cli-rust-v1.md`
-42. `docs/notes/tradingview-mcp-investigation-2026-04-24.md`
-43. `docs/plans/tradingview-cli-bootstrap-and-bridge-replacement.md`
-44. `docs/notes/next-agent-handoff-prompt-2026-04-21.md`
-45. `.agents/PLANS.md`
-46. `.agents/skills/continuity/SKILL.md` when the continuity skill is active
+8. `docs/plans/README.md`
+9. `docs/notes/tradingview-mcp-investigation-2026-04-24.md`
+10. `.agents/PLANS.md`
+11. `.agents/skills/continuity/SKILL.md` when the continuity skill is active
+
+Historical ExecPlans live under `docs/plans/archives/`. Read them only when you need slice-level implementation history or rationale that is not already summarized in the current notes.
 
 If these sources disagree, preserve the higher-level user and system instructions, then update repository docs so the durable project state is clear again.
 
@@ -111,8 +78,8 @@ Prefer work that moves one of these forward:
 
 1. keeping `README.md`, handoff notes, and ExecPlans aligned with the implemented CLI
 2. validating the Rust CLI in real downstream provider, review, and operator workflows
-3. expanding old CLI command coverage in planned slices while preserving the improved Rust JSON envelope
-4. recording compatibility gaps before implementing or excluding them
+3. release readiness, including packaging, distribution, and public-facing documentation
+4. checking original upstream pull requests for fixes or additions after release readiness is in good shape
 
 Supporting notes are welcome when they reduce ambiguity, but avoid speculative design sprawl.
 
@@ -133,6 +100,7 @@ Supporting notes are welcome when they reduce ambiguity, but avoid speculative d
 ## Documentation Policy
 
 1. Keep planning documents under `docs/plans/`.
+   Historical completed plans belong under `docs/plans/archives/`.
 2. Keep research notes, inventories, and handoff material under `docs/notes/`.
 3. Keep agent-only workflow standards under `.agents/`.
 4. Prefer English for agent-facing repository documents unless an existing file is intentionally Japanese.
@@ -168,7 +136,8 @@ If the answer still depends on unresolved bridge facts, investigate first and wr
 - `src/ops/ui.rs`: generic UI automation compatibility command implementation
 - `src/ops/data.rs`: thin data operation facade
 - `src/ops/data/`: data operation implementations grouped by indicator, strategy, and drawing-derived reads
-- `docs/plans/`: bootstrap and successor ExecPlans
+- `docs/plans/`: active plan index and current ExecPlans
+- `docs/plans/archives/`: completed historical ExecPlans
 - `docs/notes/`: handoff notes, research notes, inventories
 - `.agents/PLANS.md`: ExecPlan standard used by this repository
 - `.agents/skills/`: repo-local skills and workflow helpers

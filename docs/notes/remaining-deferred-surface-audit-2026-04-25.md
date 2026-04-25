@@ -2,7 +2,7 @@
 
 This note audits the old JavaScript CLI surfaces that remain deferred after the Rust `tv` CLI implemented the core read, chart setup, Pine, drawing, replay, tab, stream, and launch workflows.
 
-The original goal was to decide which remaining surfaces were worth a dedicated ExecPlan. The remaining old CLI migration closure has since been implemented in `docs/plans/tradingview-cli-remaining-migration-closure-v1-34.md`.
+The original goal was to decide which remaining surfaces were worth a dedicated ExecPlan. The remaining old CLI migration closure has since been implemented in `docs/plans/archives/tradingview-cli-remaining-migration-closure.md`.
 
 ## Current recommendation
 
@@ -46,7 +46,7 @@ The old UI automation surface is broad and generic. Rust now implements it as co
 
 ## Completed Pine save contract
 
-`pine save` was implemented in `docs/plans/tradingview-cli-pine-save-v1-31.md` with these contract choices:
+`pine save` was implemented in `docs/plans/archives/tradingview-cli-pine-save.md` with these contract choices:
 
 - `tv pine save` saves the current Pine Editor buffer through an explicit persistence command when that buffer already belongs to a saved script.
 - If a naming dialog appears for an unsaved script, the command must fail rather than keyboard-type into an unverified focus target.
@@ -55,7 +55,7 @@ The old UI automation surface is broad and generic. Rust now implements it as co
 
 ## Completed drawing clear contract
 
-`draw clear` has now satisfied that requirement through `docs/plans/tradingview-cli-draw-clear-v1-32.md`.
+`draw clear` has now satisfied that requirement through `docs/plans/archives/tradingview-cli-draw-clear.md`.
 
 - `tv draw clear --dry-run` is read-only and reports `before_count`, `would_clear_count`, and `cleared_entities`.
 - `tv draw clear` removes all chart-local drawings through TradingView's chart API and verifies the post-clear drawing count is zero.
@@ -63,7 +63,7 @@ The old UI automation surface is broad and generic. Rust now implements it as co
 
 ## Completed saved layout list contract
 
-`layout list` has been implemented through `docs/plans/tradingview-cli-layout-list-v1-33.md`.
+`layout list` has been implemented through `docs/plans/archives/tradingview-cli-layout-list.md`.
 
 - `tv layout list` is read-only and reports `layout_count`, `source`, and `layouts`.
 - Layout rows expose `id`, `name`, `symbol`, `resolution`, and `modified`.

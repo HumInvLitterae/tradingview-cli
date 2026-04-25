@@ -61,9 +61,9 @@ The wire shape may differ, but information compatibility is required for migrate
 ## Non-goals
 
 - no copied JavaScript bridge code
-- no all-at-once feature parity promise
-- no release packaging
 - no MCP server implementation
+- no claim of JSON wire-format compatibility with the old JavaScript CLI
+- no bundled installer until release/distribution work is completed
 
 ## Validation
 
@@ -73,127 +73,45 @@ TradingView Desktop live smoke checks are intentionally separate from CI because
 
 ## Quick Start
 
-Launch TradingView Desktop with Chrome DevTools Protocol enabled, either manually:
-
-```bash
-/path/to/TradingView --remote-debugging-port=9222
-```
-
-Or through the bounded launcher:
-
-```bash
-cargo run -- launch
-```
-
-Then run the Rust CLI:
-
-```bash
-cargo build
-cargo run -- launch
-cargo run -- status
-cargo run -- state
-cargo run -- info
-cargo run -- search AAPL
-cargo run -- quote
-cargo run -- values
-cargo run -- discover
-cargo run -- ui-state
-cargo run -- ohlcv --summary --count 100
-cargo run -- ohlcv --count 5
-cargo run -- range
-cargo run -- watchlist get
-cargo run -- watchlist add NASDAQ:AAPL
-cargo run -- watchlist remove NASDAQ:AAPL
-cargo run -- pane list
-cargo run -- pane layout 2x2
-cargo run -- pane focus 0
-cargo run -- pane symbol 0 NASDAQ:AAPL
-cargo run -- layout list
-cargo run -- layout switch "My Layout" --dry-run
-cargo run -- layout switch "My Layout"
-cargo run -- alert list
-cargo run -- alert create --price 123.45 --condition crossing --message "Breakout"
-cargo run -- alert delete --id 4546454367
-cargo run -- alert delete --all --dry-run
-cargo run -- alert delete --all
-cargo run -- indicator add "Volume"
-cargo run -- indicator get <ENTITY_ID>
-cargo run -- indicator toggle <ENTITY_ID> --hidden
-cargo run -- indicator toggle <ENTITY_ID> --visible
-cargo run -- indicator set <ENTITY_ID> --inputs '{"length":20}'
-cargo run -- indicator remove <ENTITY_ID>
-cargo run -- draw shape --type horizontal_line --price 123.45 --time 1700000000
-cargo run -- draw list
-cargo run -- draw get <ENTITY_ID>
-cargo run -- draw remove <ENTITY_ID>
-cargo run -- draw clear --dry-run
-cargo run -- draw clear
-cargo run -- pine list
-cargo run -- pine get
-cargo run -- pine set --file script.pine
-cargo run -- pine new indicator
-cargo run -- pine open "My Script"
-cargo run -- pine compile
-cargo run -- pine raw-compile
-cargo run -- pine save
-cargo run -- pine analyze --file script.pine
-cargo run -- pine check --file script.pine
-cargo run -- pine errors
-cargo run -- pine console
-cargo run -- tab list
-cargo run -- tab switch 0
-cargo run -- tab new --from 0
-cargo run -- tab close 1
-cargo run -- replay start --date 2026-04-01
-cargo run -- replay step
-cargo run -- replay stop
-cargo run -- replay status
-cargo run -- replay autoplay
-cargo run -- replay autoplay --speed 1000
-cargo run -- replay trade buy
-cargo run -- replay trade close
-cargo run -- stream quote
-cargo run -- stream bars --interval 500
-cargo run -- stream values
-cargo run -- stream lines --filter "Levels"
-cargo run -- stream labels
-cargo run -- stream tables
-cargo run -- stream all
-cargo run -- ui find "Indicators"
-cargo run -- ui click --by text --value "Indicators"
-cargo run -- ui keyboard Escape
-cargo run -- ui hover --by text --value "Indicators"
-cargo run -- ui scroll down --amount 300
-cargo run -- ui eval "1+1"
-cargo run -- ui type "hello"
-cargo run -- ui panel watchlist open
-cargo run -- ui fullscreen
-cargo run -- ui mouse 400 400
-cargo run -- data strategy
-cargo run -- data trades --max 5
-cargo run -- data equity
-cargo run -- data lines --verbose
-cargo run -- data labels --max 5
-cargo run -- data tables
-cargo run -- data boxes
-cargo run -- data depth
-cargo run -- symbol BATS:IONQ
-cargo run -- symbol
-cargo run -- timeframe 15
-cargo run -- timeframe
-cargo run -- type Candles
-cargo run -- type
-cargo run -- scroll 2026-03-03
-cargo run -- screenshot --region full --output target/tv-full.png
-cargo run -- screenshot --region chart --output target/tv-chart.png
-```
-
-For local shell use, install the binary from the repository root:
+Install the `tv` binary from the repository root:
 
 ```bash
 cargo install --path .
-tv status
 ```
+
+Launch TradingView Desktop with Chrome DevTools Protocol enabled. The bounded launcher searches common install locations and defaults to `localhost:9222`:
+
+```bash
+tv launch
+```
+
+If the launcher cannot find TradingView Desktop, pass an explicit executable path:
+
+```bash
+tv launch --path "/Applications/TradingView.app/Contents/MacOS/TradingView"
+```
+
+Common TradingView Desktop executable paths include:
+
+- macOS: `/Applications/TradingView.app/Contents/MacOS/TradingView`
+- Windows: `%ProgramFiles%\TradingView\TradingView.exe`
+- Linux: `/opt/TradingView/tradingview`, `/opt/TradingView/TradingView`, or `/snap/tradingview/current/tradingview`
+
+Then run commands against the active TradingView Desktop session:
+
+```bash
+tv status
+tv quote
+tv ohlcv --summary --count 100
+tv watchlist get
+tv layout list
+tv alert list
+tv pane list
+tv pine get
+tv screenshot --region chart --output target/tv-chart.png
+```
+
+Most commands operate on the current chart target. Mutation commands such as `watchlist add`, `alert create`, `draw clear`, `pine save`, `layout switch`, and generic `ui` automation can change TradingView account, chart, editor, or UI state; prefer their read-only or `--dry-run` forms when available.
 
 The default CDP endpoint is `localhost:9222`. Override it with `TV_CDP_HOST` and `TV_CDP_PORT` when needed. If more than one TradingView chart target is open, run `tv tab list` and set `TV_CDP_TARGET_ID` to the desired target id for chart-specific commands.
 
@@ -207,51 +125,24 @@ Exit codes are:
 - `3`: TradingView internal API unavailable
 - `4`: timeout
 
+## Development
+
+During local development, you can run commands without installing the binary:
+
+```bash
+cargo run -- status
+cargo run -- quote
+```
+
+Use `tv --help` or `cargo run -- --help` for the full command list.
+
 ## What is included
 
-- a first bootstrap ExecPlan
-- a migration-source investigation note
-- a first Rust v1 implementation ExecPlan
 - a Rust v1 `tv` CLI implementation
-- a post-v1 handoff prompt
-- Rust CLI contract and command migration notes
-- a first read/provider migration ExecPlan and implementation slice
-- a read utilities migration ExecPlan and implementation slice
-- a chart-region screenshot ExecPlan and implementation slice
-- a diagnostic read commands ExecPlan and implementation slice
-- an advanced data reads ExecPlan and implementation slice
-- a chart type ExecPlan and implementation slice
-- a DOM-dependent data depth ExecPlan and implementation slice
-- a read-only alert list ExecPlan and implementation slice
-- a watchlist add ExecPlan and implementation slice
-- a watchlist remove ExecPlan and implementation slice
-- an alert create ExecPlan and implementation slice
-- a pane mutation ExecPlan and implementation slice
-- an alert delete ExecPlan and implementation slice
-- a saved layout list ExecPlan and implementation slice
-- a remaining old CLI migration closure ExecPlan and implementation slice
-- an indicator command ExecPlan and implementation slice
-- a drawing command ExecPlan and implementation slice
-- a drawing clear ExecPlan and implementation slice
-- a Pine read command ExecPlan and implementation slice
-- a Pine source set ExecPlan and implementation slice
-- a Pine compile ExecPlan and implementation slice
-- a Pine analyze/check ExecPlan and implementation slice
-- a Pine new/open ExecPlan and implementation slice
-- a Pine save ExecPlan and implementation slice
-- a tab list/switch ExecPlan and implementation slice
-- a tab new/close ExecPlan and implementation slice
-- a replay status ExecPlan and implementation slice
-- a replay basic controls ExecPlan and implementation slice
-- a replay autoplay ExecPlan and implementation slice
-- a replay trade ExecPlan and implementation slice
-- a read-only stream ExecPlan and implementation slice
-- a bounded launch ExecPlan and implementation slice
 - a GitHub Actions CI baseline for Rust formatting, linting, and tests
-- a command lifecycle balance audit note
-- a remaining deferred surface audit note
-- an operation-layer module refactor ExecPlan and implementation slice
-- a data-operation module refactor ExecPlan and implementation slice
+- old JavaScript CLI command migration coverage for the known CLI surface
+- command contract, migration, lifecycle, and deferred-surface notes under `docs/notes/`
+- historical implementation ExecPlans archived under `docs/plans/archives/`
 - a repo-local development guideline for module layout, style, and validation
 - repo-local CLI skills migrated from the original MCP workflow split
 
@@ -265,40 +156,11 @@ Read these in order:
 4. `docs/notes/legacy-cli-command-migration-inventory-2026-04-24.md`
 5. `docs/notes/command-lifecycle-balance-audit-2026-04-24.md`
 6. `docs/notes/remaining-deferred-surface-audit-2026-04-25.md`
-7. `docs/plans/tradingview-cli-remaining-migration-closure-v1-34.md`
-8. `docs/plans/tradingview-cli-layout-list-v1-33.md`
-9. `docs/plans/tradingview-cli-draw-clear-v1-32.md`
-10. `docs/plans/tradingview-cli-pine-save-v1-31.md`
-11. `docs/plans/tradingview-cli-launch-v1-30.md`
-12. `docs/plans/tradingview-cli-stream-read-v1-29.md`
-13. `docs/plans/tradingview-cli-pine-new-open-v1-28.md`
-14. `docs/plans/tradingview-cli-pine-analyze-check-v1-27.md`
-15. `docs/plans/tradingview-cli-pine-compile-v1-26.md`
-16. `docs/plans/tradingview-cli-pine-set-v1-25.md`
-17. `docs/plans/tradingview-cli-pine-read-v1-24.md`
-18. `docs/plans/tradingview-cli-tab-new-close-v1-23.md`
-19. `docs/plans/tradingview-cli-replay-trade-v1-22.md`
-20. `docs/plans/tradingview-cli-replay-autoplay-v1-21.md`
-21. `docs/plans/tradingview-cli-replay-basic-controls-v1-20.md`
-22. `docs/plans/tradingview-cli-replay-status-v1-19.md`
-23. `docs/plans/tradingview-cli-tab-list-switch-v1-18.md`
-24. `docs/plans/tradingview-cli-watchlist-remove-v1-15.md`
-25. `docs/plans/tradingview-cli-alert-delete-v1-14.md`
-26. `docs/plans/tradingview-cli-pane-mutation-v1-13.md`
-27. `docs/plans/tradingview-cli-alert-create-v1-12.md`
-28. `docs/plans/tradingview-cli-watchlist-add-v1-11.md`
-29. `docs/plans/tradingview-cli-data-module-refactor-v1-10.md`
-30. `docs/plans/tradingview-cli-alert-list-v1-9.md`
-31. `docs/plans/tradingview-cli-data-depth-v1-8.md`
-32. `docs/plans/tradingview-cli-ops-module-refactor-v1-7.md`
-33. `docs/plans/tradingview-cli-chart-type-v1-6.md`
-34. `docs/plans/tradingview-cli-advanced-data-reads-v1-5.md`
-35. `docs/plans/tradingview-cli-diagnostic-read-commands-v1-4.md`
-36. `docs/plans/tradingview-cli-chart-region-screenshot-v1-3.md`
-37. `docs/plans/tradingview-cli-read-utilities-v1-2.md`
-38. `docs/plans/tradingview-cli-read-provider-migration-v1-1.md`
-39. `docs/plans/tradingview-cli-rust-v1.md`
-40. `docs/notes/tradingview-mcp-investigation-2026-04-24.md`
-41. `docs/plans/tradingview-cli-bootstrap-and-bridge-replacement.md`
+7. `docs/plans/README.md`
+8. `docs/notes/tradingview-mcp-investigation-2026-04-24.md`
 
 The first capability and boundary research milestone, the Rust v1 implementation milestone, the read/provider migration slices, chart/pane/watchlist/alert/layout/indicator/drawing/Pine/tab/replay/stream/launch slices, command lifecycle balance audit, remaining deferred surface audit, operation-layer and data-operation module refactors, development guideline pass, and remaining old CLI migration closure slice are complete. The next milestone is release readiness: keep the improved Rust JSON contract documented, validate downstream process invocation, and prepare release/distribution work before checking original upstream pull requests for useful fixes or additions.
+
+## License
+
+This project is licensed under the MIT License. See `LICENSE`.

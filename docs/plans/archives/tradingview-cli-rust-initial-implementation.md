@@ -79,7 +79,7 @@ The Rust v1 implementation is complete as of 2026-04-24 04:09 JST. The repositor
 
 ## Context and Orientation
 
-This repository currently contains documentation and agent instructions, not Rust source code. The seed planning document is `docs/plans/tradingview-cli-bootstrap-and-bridge-replacement.md`. The investigation note is `docs/notes/tradingview-mcp-investigation-2026-04-24.md`. This document is the first implementation-ready plan.
+This repository currently contains documentation and agent instructions, not Rust source code. The seed planning document is `docs/plans/archives/tradingview-cli-bootstrap-and-bridge-replacement.md`. The investigation note is `docs/notes/tradingview-mcp-investigation-2026-04-24.md`. This document is the first implementation-ready plan.
 
 The migration source is [`tradesdontlie/tradingview-mcp`](https://github.com/tradesdontlie/tradingview-mcp). It is a Node.js project with an MCP server and a CLI. Its CLI binary is named `tv`; its CDP connection layer talks to `localhost:9222`, fetches `/json/list`, selects a TradingView page target, enables `Runtime`, `Page`, and `DOM`, and evaluates JavaScript in the page. Its important TradingView internal path for chart operations is `window.TradingViewApi._activeChartWidgetWV.value()`.
 

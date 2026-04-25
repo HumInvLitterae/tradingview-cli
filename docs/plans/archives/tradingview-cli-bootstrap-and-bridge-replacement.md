@@ -48,13 +48,13 @@ After this change, the repository will have a clean, decision-oriented foundatio
   Rationale: The replacement target is a Rust-native CLI. Downstream integration should use ordinary process invocation and JSON CLI output. Recreating the original MCP server would compete with the narrower operational goal and has lower priority than post-v1 CLI capabilities.
   Date/Author: 2026-04-24 / Codex
 
-- Decision: Use `docs/plans/tradingview-cli-rust-v1.md` as the first implementation-ready successor ExecPlan.
+- Decision: Use `docs/plans/archives/tradingview-cli-rust-initial-implementation.md` as the first implementation-ready successor ExecPlan.
   Rationale: The bootstrap plan should remain the seed and investigation record, while the successor plan should be the place where coding begins.
   Date/Author: 2026-04-24 / Codex
 
 ## Outcomes & Retrospective
 
-The bootstrap phase completed on 2026-04-24. The repository now has attribution to the migration source in `README.md`, a migration-source investigation note at `docs/notes/tradingview-mcp-investigation-2026-04-24.md`, and a first implementation-ready successor ExecPlan at `docs/plans/tradingview-cli-rust-v1.md`.
+The bootstrap phase completed on 2026-04-24. The repository now has attribution to the migration source in `README.md`, a migration-source investigation note at `docs/notes/tradingview-mcp-investigation-2026-04-24.md`, and a first implementation-ready successor ExecPlan at `docs/plans/archives/tradingview-cli-rust-initial-implementation.md`.
 
 The main lesson from this bootstrap phase is that the old bridge's breadth is evidence for narrowing, not for feature parity. The Rust v1 should preserve the useful `tv` CLI name and JSON command-line posture, but it should not recreate the MCP server and should not inherit Pine, pane, replay, stream, UI automation, or chart-region screenshot complexity before the core CLI proves reliable.
 
@@ -115,7 +115,7 @@ Expected successful output for this bootstrap phase is not a binary. It is an up
 This bootstrap phase has produced those outputs. Continue with:
 
     sed -n '1,260p' docs/notes/tradingview-mcp-investigation-2026-04-24.md
-    sed -n '1,320p' docs/plans/tradingview-cli-rust-v1.md
+    sed -n '1,320p' docs/plans/archives/tradingview-cli-rust-initial-implementation.md
 
 ## Validation and Acceptance
 
@@ -146,7 +146,7 @@ Keep all external findings summarized here or in a sibling repository note. Do n
 The completed artifacts are:
 
 - `docs/notes/tradingview-mcp-investigation-2026-04-24.md`
-- `docs/plans/tradingview-cli-rust-v1.md`
+- `docs/plans/archives/tradingview-cli-rust-initial-implementation.md`
 - updated `README.md` attribution to the migration source
 
 ## Interfaces and Dependencies
@@ -168,7 +168,7 @@ The next contributor must resolve these during investigation:
 - Resolved: Should the first Rust CLI own only session/control primitives, or should it also expose provider-friendly data reads in v1?
 - Resolved: Which parts should remain in downstream skills or consumer repositories rather than in the core CLI?
 
-Remaining non-blocking questions are captured in `docs/plans/tradingview-cli-rust-v1.md`.
+Remaining non-blocking questions are captured in `docs/plans/archives/tradingview-cli-rust-initial-implementation.md`.
 
 Revision note: created as the initial seed plan for a separate Rust-native TradingView CLI repository, intentionally before any implementation begins.
 

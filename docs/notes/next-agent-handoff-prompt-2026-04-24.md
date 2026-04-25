@@ -38,7 +38,7 @@ Keep the Rust-native `tv` CLI reliable and useful as a replacement path for prac
 - `replay start/step/stop/status/autoplay/trade` is implemented as a bounded replay lifecycle surface
 - `stream quote/bars/values/lines/labels/tables/all` is implemented as read-only JSONL polling for shell and external monitoring workflows
 - `launch` is implemented as a bounded local process-control command; it is no-kill by default, treats an already responding CDP endpoint as success, and requires explicit `--kill-existing` for process termination
-- remaining old CLI migration closure is recorded in `docs/plans/tradingview-cli-remaining-migration-closure-v1-34.md`; `layout switch`, `alert delete --all`, `pine raw-compile`, and generic `ui` commands are implemented. Alert edit/pause/resume are future feature research, not confirmed old CLI backlog.
+- remaining old CLI migration closure is recorded in `docs/plans/archives/tradingview-cli-remaining-migration-closure.md`; `layout switch`, `alert delete --all`, `pine raw-compile`, and generic `ui` commands are implemented. Alert edit/pause/resume are future feature research, not confirmed old CLI backlog.
 
 ## Current v1 surface
 
@@ -134,7 +134,7 @@ The Rust CLI does not preserve the old JavaScript CLI's top-level payload wire s
 2. Read `docs/notes/development-guidelines-2026-04-24.md`
 3. Read `docs/notes/rust-cli-contract-migration-2026-04-24.md`
 4. Read `docs/notes/legacy-cli-command-migration-inventory-2026-04-24.md`
-5. Read `docs/plans/tradingview-cli-rust-v1.md`
+5. Read `docs/plans/archives/tradingview-cli-rust-initial-implementation.md`
 6. Read `docs/notes/tradingview-mcp-investigation-2026-04-24.md`
 7. Check `git status --short`
 8. Run targeted validation before changing behavior
@@ -161,7 +161,7 @@ Focus first on migration readiness:
 - keep new operation code in the relevant `src/ops/` feature module
 - treat old CLI command coverage as closed unless new evidence shows a missed command; preserve information compatibility for any future compatibility work
 - use `docs/notes/command-lifecycle-balance-audit-2026-04-24.md` when evaluating mutation surfaces and cleanup gaps
-- use `docs/plans/tradingview-cli-remaining-migration-closure-v1-34.md` and `docs/notes/remaining-deferred-surface-audit-2026-04-25.md` when checking old CLI migration closure
+- use `docs/plans/archives/tradingview-cli-remaining-migration-closure.md` and `docs/notes/remaining-deferred-surface-audit-2026-04-25.md` when checking old CLI migration closure
 - record evidence before starting any post-v1 ExecPlan
 
 Old CLI migration is closed except for MCP server implementation, which remains explicitly not planned. The next priority should be release readiness, downstream process-invocation validation, and then original upstream pull request triage for fixes or useful additions.

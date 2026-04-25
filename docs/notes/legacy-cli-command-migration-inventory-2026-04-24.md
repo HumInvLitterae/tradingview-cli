@@ -131,7 +131,7 @@ No high-priority planned read-only backlog remains after the diagnostic read com
 
 ## Deferred larger surfaces
 
-The old CLI migration backlog is closed after `docs/plans/tradingview-cli-remaining-migration-closure-v1-34.md`, except for MCP server implementation, which is explicitly not planned.
+The old CLI migration backlog is closed after `docs/plans/archives/tradingview-cli-remaining-migration-closure.md`, except for MCP server implementation, which is explicitly not planned.
 
 The only known Pine gap is explicit named new-save for unsaved scripts. This is not a separate old CLI command; it is a risky save-dialog behavior. It remains deferred because current TradingView Desktop live smoke showed that dialog can be outside the CDP page target.
 
