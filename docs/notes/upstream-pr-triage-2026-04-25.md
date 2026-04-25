@@ -55,12 +55,12 @@ As of this pass, the upstream repository has 45 open PRs.
    `pine compile` non-persistent.
 
 5. Existing command hardening and modest capability additions.
-   `#65`, `#40`, `#35`, `#60`, and `#43` have possible Rust value, but they are
+   `#65`, `#40`, `#60`, and `#43` have possible Rust value, but they are
    lower priority than the security and known-breakage clusters above. `#65`
    partially overlaps Rust's existing `watchlist add/remove`; `#40` should be
    compared against Rust's stateless target selection before changing transport;
-   `#35` and `#60` are feature additions rather than migration blockers; `#43`
-   is mostly already covered by explicit screenshot output paths.
+   `#60` is a feature addition rather than a migration blocker; `#43` is mostly
+   already covered by explicit screenshot output paths.
 
 6. Keep workflow packs, dashboards, and Node-only maintenance outside the Rust
    CLI unless a separate investigation proves core CLI value. This includes
@@ -110,7 +110,7 @@ As of this pass, the upstream repository has 45 open PRs.
 | [#43](https://github.com/tradesdontlie/tradingview-mcp/pull/43) `feat: add output_dir parameter to screenshot tools` | `feature` | Mostly covered by Rust `tv screenshot --output <PATH>`. No immediate action. |
 | [#40](https://github.com/tradesdontlie/tradingview-mcp/pull/40) `fix: reconnect CDP client after tab switch` | `bugfix` | Compare before changing Rust. Rust commands reconnect per process and support `TV_CDP_TARGET_ID`, so the stale-client bug may not apply directly. |
 | [#39](https://github.com/tradesdontlie/tradingview-mcp/pull/39) `fix: default screenshot region to 'full' when unspecified` | `bugfix` | Not applicable. Rust requires explicit screenshot region through clap. |
-| [#35](https://github.com/tradesdontlie/tradingview-mcp/pull/35) `feat: add data_get_pine_shapes for reading plotshape/plotchar signals` | `feature` | Candidate data-read feature. It could complement current line/label/table/box reads, but needs evidence that downstream workflows need plotshape/plotchar reads. |
+| [#35](https://github.com/tradesdontlie/tradingview-mcp/pull/35) `feat: add data_get_pine_shapes for reading plotshape/plotchar signals` | `feature` | Addressed as Rust `tv data shapes`, a read-only command that complements current line/label/table/box reads by returning visible Pine `plotshape()` / `plotchar()` signal metadata and bar OHLC when available. |
 | [#34](https://github.com/tradesdontlie/tradingview-mcp/pull/34) `feat: rename draw_shape to draw, expand to 80+ tools` | `feature` | Defer. Rust already has a narrower drawing lifecycle surface; expanding to many drawing tools risks API sprawl without a concrete workflow. |
 | [#33](https://github.com/tradesdontlie/tradingview-mcp/pull/33) `fix: input sanitization and JS injection prevention` | `security` | Mostly already covered by Rust serialization and finite-number helpers. Keep as regression-test inspiration when touching command inputs. |
 | [#27](https://github.com/tradesdontlie/tradingview-mcp/pull/27) `Improve Windows detection and runtime validation` | `bugfix/feature` | Windows detection evidence is covered by the Rust launch discovery slice. Runtime chart-type/layout/replay validation remains separate and should only be added if Rust's current validation blocks valid TradingView states. |
@@ -126,9 +126,8 @@ As of this pass, the upstream repository has 45 open PRs.
    `IApplicationActivationManager` evidence from upstream `#76`.
 
 2. Existing command hardening and modest capability additions.
-   Revisit `#65`, `#40`, `#35`, `#60`, and `#43` only when there is concrete
-   downstream value or live smoke evidence that the current Rust implementation
-   is fragile.
+   Revisit `#65`, `#40`, `#60`, and `#43` only when there is concrete downstream
+   value or live smoke evidence that the current Rust implementation is fragile.
 
 ## Assumptions
 

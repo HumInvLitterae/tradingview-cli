@@ -484,38 +484,68 @@ async fn dispatch(command: Command) -> Result<serde_json::Value, AppError> {
                 ops::pine_list(&mut runtime).await
             }
         },
-        Command::Data { command } => {
-            let mut runtime = connect_runtime().await?;
-            match command {
-                DataCommand::Indicator { entity_id } => {
-                    if entity_id.trim().is_empty() {
-                        return Err(AppError::new(
-                            ErrorKind::Validation,
-                            "Entity ID must not be empty",
-                        ));
-                    }
-                    ops::data_indicator(&mut runtime, &entity_id).await
+        Command::Data { command } => match command {
+            DataCommand::Indicator { entity_id } => {
+                if entity_id.trim().is_empty() {
+                    return Err(AppError::new(
+                        ErrorKind::Validation,
+                        "Entity ID must not be empty",
+                    ));
                 }
-                DataCommand::Depth => ops::data_depth(&mut runtime).await,
-                DataCommand::Strategy => ops::data_strategy(&mut runtime).await,
-                DataCommand::Trades { max } => ops::data_trades(&mut runtime, max).await,
-                DataCommand::Equity => ops::data_equity(&mut runtime).await,
-                DataCommand::Lines { filter, verbose } => {
-                    ops::data_lines(&mut runtime, filter.as_deref(), verbose).await
-                }
-                DataCommand::Labels {
-                    filter,
-                    max,
-                    verbose,
-                } => ops::data_labels(&mut runtime, filter.as_deref(), max, verbose).await,
-                DataCommand::Tables { filter } => {
-                    ops::data_tables(&mut runtime, filter.as_deref()).await
-                }
-                DataCommand::Boxes { filter, verbose } => {
-                    ops::data_boxes(&mut runtime, filter.as_deref(), verbose).await
-                }
+                let mut runtime = connect_runtime().await?;
+                ops::data_indicator(&mut runtime, &entity_id).await
             }
-        }
+            DataCommand::Depth => {
+                let mut runtime = connect_runtime().await?;
+                ops::data_depth(&mut runtime).await
+            }
+            DataCommand::Strategy => {
+                let mut runtime = connect_runtime().await?;
+                ops::data_strategy(&mut runtime).await
+            }
+            DataCommand::Trades { max } => {
+                let mut runtime = connect_runtime().await?;
+                ops::data_trades(&mut runtime, max).await
+            }
+            DataCommand::Equity => {
+                let mut runtime = connect_runtime().await?;
+                ops::data_equity(&mut runtime).await
+            }
+            DataCommand::Lines { filter, verbose } => {
+                let mut runtime = connect_runtime().await?;
+                ops::data_lines(&mut runtime, filter.as_deref(), verbose).await
+            }
+            DataCommand::Labels {
+                filter,
+                max,
+                verbose,
+            } => {
+                let mut runtime = connect_runtime().await?;
+                ops::data_labels(&mut runtime, filter.as_deref(), max, verbose).await
+            }
+            DataCommand::Tables { filter } => {
+                let mut runtime = connect_runtime().await?;
+                ops::data_tables(&mut runtime, filter.as_deref()).await
+            }
+            DataCommand::Boxes { filter, verbose } => {
+                let mut runtime = connect_runtime().await?;
+                ops::data_boxes(&mut runtime, filter.as_deref(), verbose).await
+            }
+            DataCommand::Shapes {
+                filter,
+                count,
+                verbose,
+            } => {
+                if count == Some(0) {
+                    return Err(AppError::new(
+                        ErrorKind::Validation,
+                        "--count must be greater than 0",
+                    ));
+                }
+                let mut runtime = connect_runtime().await?;
+                ops::data_shapes(&mut runtime, filter.as_deref(), count, verbose).await
+            }
+        },
         Command::Pane { command } => match command {
             PaneCommand::List => {
                 let mut runtime = connect_runtime().await?;

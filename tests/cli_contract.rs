@@ -349,13 +349,21 @@ fn data_help_lists_advanced_read_subcommands() {
         .stdout(predicate::str::contains("lines"))
         .stdout(predicate::str::contains("labels"))
         .stdout(predicate::str::contains("tables"))
-        .stdout(predicate::str::contains("boxes"));
+        .stdout(predicate::str::contains("boxes"))
+        .stdout(predicate::str::contains("shapes"));
 
     tv().args(["data", "labels", "--help"])
         .assert()
         .success()
         .stdout(predicate::str::contains("--filter"))
         .stdout(predicate::str::contains("--max"))
+        .stdout(predicate::str::contains("--verbose"));
+
+    tv().args(["data", "shapes", "--help"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("--filter"))
+        .stdout(predicate::str::contains("--count"))
         .stdout(predicate::str::contains("--verbose"));
 }
 
@@ -366,6 +374,21 @@ fn data_indicator_requires_entity_id() {
     let value: Value = serde_json::from_str(&stderr).unwrap();
     assert_eq!(value["success"], false);
     assert_eq!(value["command"], "tv");
+    assert_eq!(value["error"]["kind"], "validation");
+}
+
+#[test]
+fn data_shapes_rejects_zero_count_before_connecting() {
+    let assert = tv()
+        .env("TV_CDP_PORT", "9")
+        .args(["data", "shapes", "--count", "0"])
+        .assert()
+        .failure()
+        .code(1);
+    let stderr = String::from_utf8(assert.get_output().stderr.clone()).unwrap();
+    let value: Value = serde_json::from_str(&stderr).unwrap();
+    assert_eq!(value["success"], false);
+    assert_eq!(value["command"], "data");
     assert_eq!(value["error"]["kind"], "validation");
 }
 
@@ -1010,6 +1033,7 @@ fn data_read_commands_attempt_connection_when_cdp_is_unavailable() {
         vec!["data", "labels", "--max", "5"],
         vec!["data", "tables"],
         vec!["data", "boxes", "--verbose"],
+        vec!["data", "shapes", "--count", "5", "--verbose"],
     ] {
         let assert = tv()
             .env("TV_CDP_PORT", "9")

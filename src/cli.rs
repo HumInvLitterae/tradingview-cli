@@ -302,6 +302,15 @@ pub enum DataCommand {
         #[arg(long, short)]
         verbose: bool,
     },
+    #[command(about = "Get Pine Script plotshape()/plotchar() signals")]
+    Shapes {
+        #[arg(long, short)]
+        filter: Option<String>,
+        #[arg(long, short = 'n')]
+        count: Option<usize>,
+        #[arg(long, short)]
+        verbose: bool,
+    },
 }
 
 #[derive(Debug, Subcommand)]

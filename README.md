@@ -135,6 +135,7 @@ tv watchlist get
 tv layout list
 tv alert list
 tv pane list
+tv data shapes --count 100
 tv pine get
 tv screenshot --region chart --output target/tv-chart.png
 ```
@@ -191,7 +192,7 @@ Read these in order:
 9. `docs/plans/README.md`
 10. `docs/notes/tradingview-mcp-investigation-2026-04-24.md`
 
-The first capability and boundary research milestone, the Rust v1 implementation milestone, the read/provider migration slices, chart/pane/watchlist/alert/layout/indicator/drawing/Pine/tab/replay/stream/launch slices, command lifecycle balance audit, remaining deferred surface audit, operation-layer and data-operation module refactors, development guideline pass, remaining old CLI migration closure slice, and first release readiness pass are complete. The next milestone is upstream pull request follow-up: use the triage note to pick narrowly scoped Rust fixes before adding new feature surface.
+The first capability and boundary research milestone, the Rust v1 implementation milestone, the read/provider migration slices, chart/pane/watchlist/alert/layout/indicator/drawing/Pine/tab/replay/stream/launch slices, command lifecycle balance audit, remaining deferred surface audit, operation-layer and data-operation module refactors, development guideline pass, remaining old CLI migration closure slice, and first release readiness pass are complete. Upstream pull request follow-up is now in progress through narrow Rust fixes and read-only capability additions such as `tv data shapes`.
 
 ## License
 

@@ -30,8 +30,8 @@ pub use chart::{
     visible_range,
 };
 pub use data::{
-    data_boxes, data_equity, data_indicator, data_labels, data_lines, data_strategy, data_tables,
-    data_trades, study_values,
+    data_boxes, data_equity, data_indicator, data_labels, data_lines, data_shapes, data_strategy,
+    data_tables, data_trades, study_values,
 };
 pub use data_depth::data_depth;
 pub use diagnostics::{discover, ui_state};
