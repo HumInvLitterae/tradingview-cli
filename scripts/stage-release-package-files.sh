@@ -27,6 +27,8 @@ cp packaging/agent/AGENTS.md "$package_dir/AGENTS.md"
 cp packaging/agent/AGENTS.md "$package_dir/CLAUDE.md"
 
 skills=(
+  # Runtime user-facing skills only. Do not copy development-only skills such as
+  # continuity, conventional-commits, discovering-skills, or release-prep.
   chart-analysis
   multi-symbol-scan
   pine-develop
