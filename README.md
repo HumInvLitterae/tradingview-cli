@@ -65,17 +65,33 @@ For a migration-focused summary, read `docs/breaking-changes-from-js-cli.md`.
 - no copied JavaScript bridge code
 - no MCP server implementation
 - no claim of JSON wire-format compatibility with the old JavaScript CLI
-- no bundled installer until release/distribution work is completed
+- no package-manager installer yet
 
 ## Validation
 
 GitHub Actions runs the automated Rust baseline on push and pull request: `cargo fmt --check`, `cargo clippy --all-targets --all-features -- -D warnings`, and `cargo test` across Linux, macOS, and Windows.
 
+Tagged releases matching `v*` build native release archives for Linux, macOS, and Windows and publish them to GitHub Releases with `SHA256SUMS`.
+
 TradingView Desktop live smoke checks are intentionally separate from CI because they require a logged-in desktop session with Chrome DevTools Protocol enabled.
+
+## Release Builds
+
+GitHub Releases are the first supported binary distribution path. Pushing a version tag such as `v0.1.0` creates release assets named:
+
+- `tv-<tag>-x86_64-unknown-linux-gnu.tar.gz`
+- `tv-<tag>-x86_64-apple-darwin.tar.gz`
+- `tv-<tag>-aarch64-apple-darwin.tar.gz`
+- `tv-<tag>-x86_64-pc-windows-msvc.zip`
+- `SHA256SUMS`
+
+Each archive contains the `tv` or `tv.exe` binary, `README.md`, and `LICENSE`. Verify the downloaded archive against `SHA256SUMS`, unpack it, and place the executable on your `PATH`.
+
+Package-manager installers, code signing, notarization, and crates.io publication are not part of the first release workflow.
 
 ## Quick Start
 
-Install the `tv` binary from the repository root:
+Install `tv` from a GitHub Release archive for your OS, or build it from the repository root while developing:
 
 ```bash
 cargo install --path .
@@ -142,6 +158,7 @@ Use `tv --help` or `cargo run -- --help` for the full command list.
 
 - a Rust v1 `tv` CLI implementation
 - a GitHub Actions CI baseline for Rust formatting, linting, and tests
+- a GitHub Actions release workflow for tag-triggered native binary archives
 - old JavaScript CLI command migration coverage for the known CLI surface
 - command contract, migration, lifecycle, and deferred-surface notes under `docs/notes/`
 - historical implementation ExecPlans archived under `docs/plans/archives/`

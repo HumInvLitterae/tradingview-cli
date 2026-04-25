@@ -4,6 +4,10 @@ This directory contains implementation plans for the Rust-native `tv` CLI.
 
 ## Current plan
 
+- `tradingview-cli-release-builds.md`: tag-triggered GitHub Release builds for Linux, macOS, and Windows binaries.
+
+## Completed release-readiness plans
+
 - `tradingview-cli-docs-release-readiness-cleanup.md`: public README, plan archive, and MIT license cleanup.
 
 ## Archived plans

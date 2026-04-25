@@ -1,0 +1,105 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    name: Build ${{ matrix.target }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: x86_64-unknown-linux-gnu
+            os: ubuntu-24.04
+            archive: tar.gz
+          - target: x86_64-apple-darwin
+            os: macos-15-intel
+            archive: tar.gz
+          - target: aarch64-apple-darwin
+            os: macos-15
+            archive: tar.gz
+          - target: x86_64-pc-windows-msvc
+            os: windows-2025
+            archive: zip
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Run tests
+        run: cargo test --locked
+
+      - name: Build release binary
+        run: cargo build --release --locked --target ${{ matrix.target }}
+
+      - name: Package Unix binary
+        if: matrix.archive == 'tar.gz'
+        shell: bash
+        env:
+          ASSET_NAME: tv-${{ github.ref_name }}-${{ matrix.target }}.${{ matrix.archive }}
+        run: |
+          set -euo pipefail
+          mkdir -p package dist
+          cp "target/${{ matrix.target }}/release/tv" package/tv
+          cp README.md LICENSE package/
+          tar -czf "dist/${ASSET_NAME}" -C package .
+
+      - name: Package Windows binary
+        if: matrix.archive == 'zip'
+        shell: pwsh
+        env:
+          ASSET_NAME: tv-${{ github.ref_name }}-${{ matrix.target }}.${{ matrix.archive }}
+        run: |
+          New-Item -ItemType Directory -Force -Path package, dist
+          Copy-Item "target/${{ matrix.target }}/release/tv.exe" package/tv.exe
+          Copy-Item README.md package/README.md
+          Copy-Item LICENSE package/LICENSE
+          Compress-Archive -Path package/* -DestinationPath "dist/$env:ASSET_NAME"
+
+      - name: Upload release asset
+        uses: actions/upload-artifact@v4
+        with:
+          name: tv-${{ github.ref_name }}-${{ matrix.target }}.${{ matrix.archive }}
+          path: dist/tv-${{ github.ref_name }}-${{ matrix.target }}.${{ matrix.archive }}
+          if-no-files-found: error
+
+  publish:
+    name: Publish GitHub Release
+    runs-on: ubuntu-24.04
+    needs: build
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download release assets
+        uses: actions/download-artifact@v4
+        with:
+          path: dist
+          pattern: tv-${{ github.ref_name }}-*
+          merge-multiple: true
+
+      - name: Generate checksums
+        run: |
+          cd dist
+          sha256sum tv-${{ github.ref_name }}-* > SHA256SUMS
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" dist/* \
+            --title "$GITHUB_REF_NAME" \
+            --generate-notes \
+            --verify-tag
