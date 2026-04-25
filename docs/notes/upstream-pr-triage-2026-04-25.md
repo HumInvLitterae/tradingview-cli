@@ -34,13 +34,16 @@ As of this pass, the upstream repository has 45 open PRs.
    `metaInfo().id` values beginning with `StrategyScript`, reads `_reportData`
    where available, and keeps legacy public accessors plus DOM fallbacks.
 
-3. Release-user launch compatibility.
+3. Release-user launch compatibility. Addressed with bounded Rust-side discovery
+   and fallback metadata.
    Upstream `#100`, `#93`, `#80`, `#79`, `#76`, `#73`, `#52`, `#27`, and `#18`
    all point at launch fragility around Windows MSIX / WindowsApps installs and
-   newer TradingView Desktop / Electron behavior. Rust `tv launch` already uses
-   `TV_CDP_HOST` / `TV_CDP_PORT` and is bounded/no-kill by default, but it does
-   not yet have a Windows MSIX discovery path or macOS fallback for rejected
-   `--remote-debugging-port` direct spawn.
+   newer TradingView Desktop / Electron behavior. Rust `tv launch` now keeps its
+   bounded/no-kill default, adds PowerShell-based Windows process/AppX discovery,
+   reports `launch_method`, `resolved_by`, and `fallback_used`, and tries a
+   macOS `open -a TradingView --args ...` fallback when direct spawn does not
+   make CDP ready. Windows COM/AUMID activation remains a future enhancement if
+   Windows live smoke proves direct AppX executable launch is still insufficient.
 
 4. Pine Editor robustness.
    Upstream `#97`, `#95`, and `#50` describe Pine Editor detection and
@@ -66,23 +69,23 @@ As of this pass, the upstream repository has 45 open PRs.
 
 | PR | Category | Rust disposition |
 | --- | --- | --- |
-| [#100](https://github.com/tradesdontlie/tradingview-mcp/pull/100) `fix(launch): detect TradingView Microsoft Store install on Windows` | `bugfix` | High-value input for a Rust `tv launch` Windows/MSIX ExecPlan. Combines running-process path detection and `Get-AppxPackage`; compare with older MSIX PRs before implementing. |
+| [#100](https://github.com/tradesdontlie/tradingview-mcp/pull/100) `fix(launch): detect TradingView Microsoft Store install on Windows` | `bugfix` | Addressed as Rust launch discovery input. Rust now checks running-process and `Get-AppxPackage` paths without changing the no-kill default. |
 | [#98](https://github.com/tradesdontlie/tradingview-mcp/pull/98) `Add crypto swing-trading rules config` | `workflow/helper` | Do not add to core CLI. This is a personal rules/config pack better suited to downstream repos or user-facing examples outside the binary. |
 | [#97](https://github.com/tradesdontlie/tradingview-mcp/pull/97) `fix(pine): resilient Pine Editor detection during state transitions` | `bugfix` | Candidate Pine hardening. Rust has explicit Monaco polling, but the reported state-transition failure should be checked against live `pine set/new/compile` smoke before changing logic. |
 | [#96](https://github.com/tradesdontlie/tradingview-mcp/pull/96) `fix(data): DOM-scrape fallback for strategy results + trades` | `bugfix` | Partially addressed. Rust keeps internal strategy data reads as the fast path and adds visible Strategy Tester DOM fallback for strategy metrics and trades. |
 | [#95](https://github.com/tradesdontlie/tradingview-mcp/pull/95) `fix(pine): match Add/Update-on-chart buttons by title attr` | `bugfix` | Mostly covered: Rust already includes `aria-label` and `title` in Pine button labels. Keep as evidence for tests and live smoke expectations. |
 | [#94](https://github.com/tradesdontlie/tradingview-mcp/pull/94) `chore(cdp): env-var overrides for TV CDP host/port` | `maintenance` | Already covered by Rust `TV_CDP_HOST` and `TV_CDP_PORT`. No action unless future evidence shows a missing target-specific path. |
-| [#93](https://github.com/tradesdontlie/tradingview-mcp/pull/93) `fix: detect MSIX/WindowsApps TradingView install using PowerShell` | `bugfix` | Same Windows/MSIX cluster as `#100`; useful implementation evidence but likely superseded by newer PRs. |
+| [#93](https://github.com/tradesdontlie/tradingview-mcp/pull/93) `fix: detect MSIX/WindowsApps TradingView install using PowerShell` | `bugfix` | Addressed by the same Rust launch discovery slice as `#100`. |
 | [#92](https://github.com/tradesdontlie/tradingview-mcp/pull/92) `feat: make CDP host/port configurable via environment variables` | `feature` | Already covered by Rust transport config. No action. |
 | [#91](https://github.com/tradesdontlie/tradingview-mcp/pull/91) `fix: layout_switch dismisses unsaved-changes dialog in non-English locales` | `bugfix` | Rust deliberately does not auto-dismiss unsaved-change dialogs for `layout switch`. Treat as future policy research, not an immediate bugfix. |
 | [#90](https://github.com/tradesdontlie/tradingview-mcp/pull/90) `fix: TV Desktop 3.1.0 compat for data.trades / data.strategy / data.equity` | `bugfix` | Addressed in Rust by preferring `StrategyScript` source detection and `_reportData.performance`, `_reportData.trades`, and `_reportData.buyHold` when available. |
 | [#89](https://github.com/tradesdontlie/tradingview-mcp/pull/89) `Add dependency injection to drawing functions and update tests` | `maintenance` | Mostly JavaScript testability/regression structure. Rust already has operation-level fake runtime tests; inspect only for hidden data/watchlist/alert behavior before ignoring. |
 | [#86](https://github.com/tradesdontlie/tradingview-mcp/pull/86) `Feat/frankie candles pine scripts` | `workflow/helper` | Do not add to core CLI. Pine script packs belong outside this Rust binary. |
-| [#80](https://github.com/tradesdontlie/tradingview-mcp/pull/80) `Fix tv_launch for TradingView v2.14.0+ (Electron 38 / Node 22)` | `bugfix` | Launch cluster. Useful for macOS direct-spawn fallback research; compare with `#18` before implementing. |
-| [#79](https://github.com/tradesdontlie/tradingview-mcp/pull/79) `Fix Windows launch script for MSIX / Microsoft Store TradingView installs` | `bugfix` | Launch cluster. Older script-level Windows evidence; likely superseded by `#100`. |
-| [#76](https://github.com/tradesdontlie/tradingview-mcp/pull/76) `fix(windows): support MSIX-packaged TradingView Desktop in tv_launch` | `bugfix` | Launch cluster. Contains broader Rust-relevant problem statement and PowerShell helper idea. |
+| [#80](https://github.com/tradesdontlie/tradingview-mcp/pull/80) `Fix tv_launch for TradingView v2.14.0+ (Electron 38 / Node 22)` | `bugfix` | Addressed as macOS fallback evidence. Rust now tries `open -a TradingView --args ...` after direct spawn does not make CDP ready. |
+| [#79](https://github.com/tradesdontlie/tradingview-mcp/pull/79) `Fix Windows launch script for MSIX / Microsoft Store TradingView installs` | `bugfix` | Covered by the Rust launch discovery slice; script-level Chrome fallback remains out of scope. |
+| [#76](https://github.com/tradesdontlie/tradingview-mcp/pull/76) `fix(windows): support MSIX-packaged TradingView Desktop in tv_launch` | `bugfix` | Partially addressed. Rust adopted the Windows MSIX discovery evidence but did not add COM/AUMID activation in this slice. |
 | [#74](https://github.com/tradesdontlie/tradingview-mcp/pull/74) `Add 12hr watchlist scanner workflow and rules config` | `workflow/helper` | Keep outside core CLI. This is downstream workflow material, not a `tv` command surface. |
-| [#73](https://github.com/tradesdontlie/tradingview-mcp/pull/73) `Auto-detect TradingView when installed as MSIX (Microsoft Store)` | `bugfix` | Launch cluster. Older `Get-AppxPackage` evidence; likely superseded. |
+| [#73](https://github.com/tradesdontlie/tradingview-mcp/pull/73) `Auto-detect TradingView when installed as MSIX (Microsoft Store)` | `bugfix` | Covered by the Rust launch discovery slice. |
 | [#72](https://github.com/tradesdontlie/tradingview-mcp/pull/72) `Fix symbolInfo() throwing 'evaluate is not defined'` | `bugfix` | JavaScript DI regression. Rust `tv info` uses its own evaluator path, so no direct action unless live `tv info` shows equivalent failure. |
 | [#71](https://github.com/tradesdontlie/tradingview-mcp/pull/71) `Bump hono and @hono/node-server to patch moderate CVEs` | `maintenance/node-only` | Not applicable. Rust does not depend on the original MCP Node server packages. |
 | [#70](https://github.com/tradesdontlie/tradingview-mcp/pull/70) `Fix Windows libuv assertion on CLI exit after fetch` | `maintenance/node-only` | Not applicable to Rust. Keep only as reminder to run Windows CI for commands that make HTTP requests. |
@@ -95,7 +98,7 @@ As of this pass, the upstream repository has 45 open PRs.
 | [#60](https://github.com/tradesdontlie/tradingview-mcp/pull/60) `feat: add draw_position tool for Long/Short position drawings` | `feature` | Candidate feature only. It may be valuable, but it expands drawing semantics beyond old migration closure and needs a dedicated plan. |
 | [#54](https://github.com/tradesdontlie/tradingview-mcp/pull/54) `security: remove ui_evaluate tool` | `security` | Addressed in Rust by default-disabling `tv ui eval` behind `TV_ALLOW_UNSAFE_UI_EVAL=1`, while retaining the old compatibility surface for explicit unsafe use. |
 | [#53](https://github.com/tradesdontlie/tradingview-mcp/pull/53) `feat: support running MCP server inside a Docker container` | `feature/node-only` | Mostly not applicable. MCP server and containerized Node connection are outside this Rust CLI. Host-header behavior is only relevant if Rust later supports non-local CDP hosts. |
-| [#52](https://github.com/tradesdontlie/tradingview-mcp/pull/52) `Fix Windows MSIX install detection in tv_launch` | `bugfix` | Launch cluster. Older evidence for `Get-AppxPackage`; likely superseded by `#100`. |
+| [#52](https://github.com/tradesdontlie/tradingview-mcp/pull/52) `Fix Windows MSIX install detection in tv_launch` | `bugfix` | Covered by the Rust launch discovery slice. |
 | [#51](https://github.com/tradesdontlie/tradingview-mcp/pull/51) `feat: improve strategy detection and add DOM metrics fallback` | `bugfix/feature` | Partially addressed through improved strategy detection and DOM metric fallback, without adding the upstream debug/evaluate-js surface. |
 | [#50](https://github.com/tradesdontlie/tradingview-mcp/pull/50) `feat: add Korean locale support for Pine compile buttons` | `bugfix` | Candidate Pine locale hardening. Rust currently handles English and Japanese chart text, but not the Korean labels documented here. |
 | [#49](https://github.com/tradesdontlie/tradingview-mcp/pull/49) `Fix getChartApi not defined in drawing management functions` | `bugfix` | JavaScript DI regression. Rust drawing implementation is separate; no direct action unless live drawing smoke reveals a similar problem. |
@@ -108,20 +111,21 @@ As of this pass, the upstream repository has 45 open PRs.
 | [#35](https://github.com/tradesdontlie/tradingview-mcp/pull/35) `feat: add data_get_pine_shapes for reading plotshape/plotchar signals` | `feature` | Candidate data-read feature. It could complement current line/label/table/box reads, but needs evidence that downstream workflows need plotshape/plotchar reads. |
 | [#34](https://github.com/tradesdontlie/tradingview-mcp/pull/34) `feat: rename draw_shape to draw, expand to 80+ tools` | `feature` | Defer. Rust already has a narrower drawing lifecycle surface; expanding to many drawing tools risks API sprawl without a concrete workflow. |
 | [#33](https://github.com/tradesdontlie/tradingview-mcp/pull/33) `fix: input sanitization and JS injection prevention` | `security` | Mostly already covered by Rust serialization and finite-number helpers. Keep as regression-test inspiration when touching command inputs. |
-| [#27](https://github.com/tradesdontlie/tradingview-mcp/pull/27) `Improve Windows detection and runtime validation` | `bugfix/feature` | Split the evidence: Windows detection belongs to the launch cluster; runtime chart-type/layout/replay validation should only be added if Rust's current validation blocks valid TradingView states. |
-| [#18](https://github.com/tradesdontlie/tradingview-mcp/pull/18) `Fix tv_launch for TradingView v2.14.0+` | `bugfix` | Launch cluster. Older but useful macOS/Electron fallback evidence; compare with `#80`. |
+| [#27](https://github.com/tradesdontlie/tradingview-mcp/pull/27) `Improve Windows detection and runtime validation` | `bugfix/feature` | Windows detection evidence is covered by the Rust launch discovery slice. Runtime chart-type/layout/replay validation remains separate and should only be added if Rust's current validation blocks valid TradingView states. |
+| [#18](https://github.com/tradesdontlie/tradingview-mcp/pull/18) `Fix tv_launch for TradingView v2.14.0+` | `bugfix` | Addressed as older macOS/Electron fallback evidence alongside `#80`. |
 | [#12](https://github.com/tradesdontlie/tradingview-mcp/pull/12) `Add trading tools and trade journaling documentation` | `feature/workflow` | Defer. Broker account positions/orders and trade journaling are outside the current safe core CLI boundary unless a separate investigation proves user value and safety. |
 
 ## Next implementation candidates
 
-1. `tv launch` Windows/MSIX and Electron compatibility.
-   Create an ExecPlan that merges the duplicate launch PR evidence into a
-   Rust-native design. It should keep the current no-kill default and include
-   platform-specific tests for candidate discovery and fallback selection.
-
-2. Pine Editor robustness.
+1. Pine Editor robustness.
    Create a narrower hardening plan only after a live smoke or code comparison
    shows current Rust behavior still misses a reported state or locale.
+
+2. Windows COM/AUMID launch activation, only if needed.
+   Rust now discovers Windows AppX/MSIX installs and attempts a direct executable
+   launch. If Windows live smoke shows packaged-app direct launch cannot pass
+   the debug port, plan a Windows-specific activation slice based on
+   `IApplicationActivationManager` evidence from upstream `#76`.
 
 ## Assumptions
 
