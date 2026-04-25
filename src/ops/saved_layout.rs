@@ -213,6 +213,7 @@ pub async fn saved_layout_switch(
                                 target: target,
                                 layout: match,
                                 layout_id: match.id,
+                                layout_url: match.url,
                                 source: 'internal_api',
                                 layout_count: normalized.length
                             }});
