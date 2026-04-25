@@ -25,7 +25,7 @@ Keep the Rust-native `tv` CLI reliable and useful as a replacement path for prac
 - `alert list` is implemented as a read-only internal API slice
 - `alert create` is implemented as an explicit account mutation; downstream workflow helpers remain outside the core CLI
 - `alert delete --id` is implemented as an explicit account mutation and is the cleanup pair for created alerts
-- `watchlist add` is implemented as an explicit operator mutation using DOM panel controls plus CDP input events
+- `watchlist add` is implemented as an explicit operator mutation using DOM panel controls plus CDP input events; it uses coordinate-based mouse events for watchlist controls, reports `already_present` when applicable, and verifies newly added symbols are visible before returning success
 - `watchlist remove <SYMBOL>` is implemented as a Rust-specific cleanup command for `watchlist add`; it is exact-match and row-scoped
 - command lifecycle balance has been audited, and no immediate asymmetric lifecycle gap is known in the implemented Rust CLI
 - GitHub Actions CI is configured for the automated Rust baseline

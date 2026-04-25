@@ -197,13 +197,81 @@ pub async fn watchlist_add(
     runtime: &mut impl RuntimeEvaluator,
     symbol: &str,
 ) -> Result<Value, AppError> {
+    let symbol = symbol.trim();
+    if symbol.is_empty() {
+        return Err(AppError::new(
+            ErrorKind::Validation,
+            "Symbol must not be empty",
+        ));
+    }
+
     let panel_state = ensure_watchlist_panel_open(runtime).await?;
     wait_after_panel_open(runtime, &panel_state).await?;
 
-    let add_clicked = runtime
-        .evaluate(
-            r#"
-            (function() {
+    let symbol_literal = js_string(symbol)?;
+    let mut add_expression = format!(
+        r#"
+            (function() {{
+                var requestedSymbol = {};
+        "#,
+        symbol_literal
+    );
+    add_expression.push_str(
+        r#"
+                function isVisible(element) {
+                    if (!element) return false;
+                    const rect = element.getBoundingClientRect();
+                    return rect.width > 0 && rect.height > 0 && window.getComputedStyle(element).visibility !== 'hidden';
+                }
+                function rowForSymbolElement(element) {
+                    return element.closest('[role="row"], [class*="row"], [data-role="list-item"], [class*="item"]')
+                        || element.closest('tr')
+                        || element.parentElement;
+                }
+                function readRows() {
+                    const container = document.querySelector('[class*="layout__area--right"]');
+                    if (!container) return { container: null, rows: [] };
+                    const seen = {};
+                    const rows = Array.from(container.querySelectorAll('[data-symbol-full]'))
+                        .map(function(element) {
+                            const symbol = element.getAttribute('data-symbol-full');
+                            if (!symbol || seen[symbol]) return null;
+                            seen[symbol] = true;
+                            return { symbol: symbol, element: element, row: rowForSymbolElement(element) };
+                        })
+                        .filter(function(entry) { return entry && entry.row; });
+                    return { container: container, rows: rows };
+                }
+                function dispatchMouseClick(element) {
+                    const rect = element.getBoundingClientRect();
+                    const eventOptions = {
+                        bubbles: true,
+                        cancelable: true,
+                        view: window,
+                        clientX: rect.left + (rect.width / 2),
+                        clientY: rect.top + (rect.height / 2)
+                    };
+                    ['mousedown', 'mouseup', 'click'].forEach(function(type) {
+                        element.dispatchEvent(new MouseEvent(type, eventOptions));
+                    });
+                    return 'mouse_event';
+                }
+
+                var before = readRows();
+                var matchedBefore = before.rows.some(function(entry) { return entry.symbol === requestedSymbol; });
+                if (matchedBefore) {
+                    return {
+                        found: true,
+                        skipped: true,
+                        action: 'already_present',
+                        before_count: before.rows.length,
+                        after_count: before.rows.length,
+                        matched_before: true,
+                        matched_after: true,
+                        click_method: null
+                    };
+                }
+
                 var selectors = [
                     '[data-name="add-symbol-button"]',
                     '[aria-label="Add symbol"]',
@@ -212,9 +280,16 @@ pub async fn watchlist_add(
                 ];
                 for (var s = 0; s < selectors.length; s++) {
                     var btn = document.querySelector(selectors[s]);
-                    if (btn && btn.offsetParent !== null) {
-                        btn.click();
-                        return { found: true, selector: selectors[s] };
+                    if (btn && isVisible(btn)) {
+                        var clickMethod = dispatchMouseClick(btn);
+                        return {
+                            found: true,
+                            skipped: false,
+                            selector: selectors[s],
+                            before_count: before.rows.length,
+                            matched_before: false,
+                            click_method: clickMethod
+                        };
                     }
                 }
                 var container = document.querySelector('[class*="layout__area--right"]');
@@ -223,17 +298,48 @@ pub async fn watchlist_add(
                     for (var i = 0; i < buttons.length; i++) {
                         var ariaLabel = buttons[i].getAttribute('aria-label') || '';
                         if (/add.*symbol/i.test(ariaLabel) || buttons[i].textContent.trim() === '+') {
-                            buttons[i].click();
-                            return { found: true, method: 'fallback' };
+                            var fallbackClickMethod = dispatchMouseClick(buttons[i]);
+                            return {
+                                found: true,
+                                skipped: false,
+                                method: 'fallback',
+                                before_count: before.rows.length,
+                                matched_before: false,
+                                click_method: fallbackClickMethod
+                            };
                         }
                     }
                 }
-                return { found: false };
+                return {
+                    found: false,
+                    before_count: before.rows.length,
+                    matched_before: false,
+                    click_method: null
+                };
             })()
-            "#,
-            false,
-        )
-        .await?;
+        "#,
+    );
+    let add_clicked = runtime.evaluate(&add_expression, false).await?;
+
+    if add_clicked
+        .get("skipped")
+        .and_then(Value::as_bool)
+        .unwrap_or(false)
+    {
+        return Ok(json!({
+            "symbol": symbol,
+            "requested_symbol": symbol,
+            "action": "already_present",
+            "source": "dom_input",
+            "opened_panel": panel_state.get("opened").cloned().unwrap_or(Value::Bool(false)),
+            "add_button": add_clicked,
+            "before_count": add_clicked.get("before_count").cloned().unwrap_or(Value::Null),
+            "after_count": add_clicked.get("after_count").cloned().unwrap_or(Value::Null),
+            "matched_before": true,
+            "matched_after": true,
+            "click_method": Value::Null,
+        }));
+    }
 
     if !add_clicked
         .get("found")
@@ -270,6 +376,61 @@ pub async fn watchlist_add(
     dispatch_key(runtime, KeyEventType::KeyDown, "Escape", "Escape", 27).await?;
     dispatch_key(runtime, KeyEventType::KeyUp, "Escape", "Escape", 27).await?;
 
+    let verify = runtime
+        .evaluate(
+            &format!(
+                r#"
+                (function() {{
+                    var requestedSymbol = {symbol_literal};
+                    function rowForSymbolElement(element) {{
+                        return element.closest('[role="row"], [class*="row"], [data-role="list-item"], [class*="item"]')
+                            || element.closest('tr')
+                            || element.parentElement;
+                    }}
+                    function readRows() {{
+                        const container = document.querySelector('[class*="layout__area--right"]');
+                        if (!container) return {{ container: null, rows: [] }};
+                        const seen = {{}};
+                        const rows = Array.from(container.querySelectorAll('[data-symbol-full]'))
+                            .map(function(element) {{
+                                const symbol = element.getAttribute('data-symbol-full');
+                                if (!symbol || seen[symbol]) return null;
+                                seen[symbol] = true;
+                                return {{ symbol: symbol, element: element, row: rowForSymbolElement(element) }};
+                            }})
+                            .filter(function(entry) {{ return entry && entry.row; }});
+                        return {{ container: container, rows: rows }};
+                    }}
+                    var after = readRows();
+                    var matchedAfter = after.rows.some(function(entry) {{ return entry.symbol === requestedSymbol; }});
+                    return {{
+                        after_count: after.rows.length,
+                        matched_after: matchedAfter
+                    }};
+                }})()
+                "#
+            ),
+            false,
+        )
+        .await?;
+
+    if verify.get("matched_after").and_then(Value::as_bool) != Some(true) {
+        let details = json!({
+            "symbol": symbol,
+            "requested_symbol": symbol,
+            "action": "add_unverified",
+            "source": "dom_input",
+            "opened_panel": panel_state.get("opened").cloned().unwrap_or(Value::Bool(false)),
+            "add_button": add_clicked,
+            "verify": verify,
+        });
+        return Err(AppError::new(
+            ErrorKind::InternalApiUnavailable,
+            format!("Watchlist add did not confirm symbol after input: {symbol}"),
+        )
+        .with_details(details));
+    }
+
     Ok(json!({
         "symbol": symbol,
         "requested_symbol": symbol,
@@ -277,6 +438,11 @@ pub async fn watchlist_add(
         "source": "dom_input",
         "opened_panel": panel_state.get("opened").cloned().unwrap_or(Value::Bool(false)),
         "add_button": add_clicked,
+        "before_count": add_clicked.get("before_count").cloned().unwrap_or(Value::Null),
+        "after_count": verify.get("after_count").cloned().unwrap_or(Value::Null),
+        "matched_before": add_clicked.get("matched_before").and_then(Value::as_bool).unwrap_or(false),
+        "matched_after": true,
+        "click_method": add_clicked.get("click_method").cloned().unwrap_or(Value::Null),
     }))
 }
 
@@ -370,6 +536,21 @@ pub async fn watchlist_remove(
                     await sleep(300);
                 }
 
+                function dispatchMouseClick(element) {
+                    const rect = element.getBoundingClientRect();
+                    const eventOptions = {
+                        bubbles: true,
+                        cancelable: true,
+                        view: window,
+                        clientX: rect.left + (rect.width / 2),
+                        clientY: rect.top + (rect.height / 2)
+                    };
+                    ['mousedown', 'mouseup', 'click'].forEach(function(type) {
+                        element.dispatchEvent(new MouseEvent(type, eventOptions));
+                    });
+                    return 'mouse_event';
+                }
+
                 function findRemoveButton(row) {
                     const candidates = Array.from(row.querySelectorAll('button, [role="button"], [aria-label], [title], [class*="removeButton"]'));
                     for (let i = 0; i < candidates.length; i++) {
@@ -411,10 +592,11 @@ pub async fn watchlist_remove(
                 }
 
                 let method = null;
+                let clickMethod = null;
                 await revealRowControls(matched.row);
                 const button = findRemoveButton(matched.row);
                 if (button) {
-                    button.click();
+                    clickMethod = dispatchMouseClick(button);
                     method = 'row_remove_button';
                 }
 
@@ -448,6 +630,7 @@ pub async fn watchlist_remove(
                     matched_before: true,
                     matched_after: matchedAfter,
                     remove_method: method,
+                    click_method: clickMethod,
                     confirmation_clicked: false
                 };
             })()
@@ -499,6 +682,7 @@ fn normalize_watchlist_remove_payload(data: Value) -> Result<Value, AppError> {
             .and_then(Value::as_bool)
             .unwrap_or(false),
         "remove_method": data.get("remove_method").cloned().unwrap_or(Value::Null),
+        "click_method": data.get("click_method").cloned().unwrap_or(Value::Null),
         "confirmation_clicked": data
             .get("confirmation_clicked")
             .and_then(Value::as_bool)
@@ -513,6 +697,20 @@ async fn ensure_watchlist_panel_open(
         .evaluate(
             r#"
             (function() {
+                function dispatchMouseClick(element) {
+                    const rect = element.getBoundingClientRect();
+                    const eventOptions = {
+                        bubbles: true,
+                        cancelable: true,
+                        view: window,
+                        clientX: rect.left + (rect.width / 2),
+                        clientY: rect.top + (rect.height / 2)
+                    };
+                    ['mousedown', 'mouseup', 'click'].forEach(function(type) {
+                        element.dispatchEvent(new MouseEvent(type, eventOptions));
+                    });
+                    return 'mouse_event';
+                }
                 function isWatchlistLabel(label) {
                     return /Watchlist/i.test(label || '') || /ウォッチリスト/.test(label || '');
                 }
@@ -536,8 +734,7 @@ async fn ensure_watchlist_panel_open(
                     || btn.classList.toString().indexOf('Active') !== -1
                     || btn.classList.toString().indexOf('active') !== -1;
                 if (!isActive) {
-                    btn.click();
-                    return { opened: true, source: 'watchlist_button', label: btn.getAttribute('aria-label') || null };
+                    return { opened: true, source: 'watchlist_button', label: btn.getAttribute('aria-label') || null, click_method: dispatchMouseClick(btn) };
                 }
                 return { opened: false, source: 'watchlist_button', label: btn.getAttribute('aria-label') || null };
             })()
@@ -892,18 +1089,31 @@ mod tests {
     #[tokio::test]
     async fn watchlist_add_opens_panel_clicks_add_and_sends_input() {
         let mut runtime = FakeRuntime::new([
-            json!({"opened": true}),
+            json!({"opened": true, "click_method": "mouse_event"}),
             json!(true),
-            json!({"found": true, "selector": "[data-name=\"add-symbol-button\"]"}),
+            json!({
+                "found": true,
+                "skipped": false,
+                "selector": "[data-name=\"add-symbol-button\"]",
+                "before_count": 0,
+                "matched_before": false,
+                "click_method": "mouse_event"
+            }),
             json!(true),
             json!(true),
             json!(true),
+            json!({"after_count": 1, "matched_after": true}),
         ]);
 
         let result = watchlist_add(&mut runtime, "NASDAQ:AAPL").await.unwrap();
 
         assert_eq!(result["symbol"], "NASDAQ:AAPL");
         assert_eq!(result["action"], "added");
+        assert_eq!(result["before_count"], 0);
+        assert_eq!(result["after_count"], 1);
+        assert_eq!(result["matched_before"], false);
+        assert_eq!(result["matched_after"], true);
+        assert_eq!(result["click_method"], "mouse_event");
         assert_eq!(runtime.inserted_text, vec!["NASDAQ:AAPL"]);
         assert_eq!(runtime.key_events.len(), 4);
         assert_eq!(runtime.key_events[0].event_type, KeyEventType::KeyDown);
@@ -916,24 +1126,90 @@ mod tests {
                 .contains("base-watchlist-widget-button")
         );
         assert!(runtime.evaluated[2].0.contains("add-symbol-button"));
+        assert!(runtime.evaluated[2].0.contains("new MouseEvent"));
+        assert!(!runtime.evaluated[2].0.contains(".click()"));
     }
 
     #[tokio::test]
     async fn watchlist_add_continues_when_watchlist_rows_are_already_visible() {
         let mut runtime = FakeRuntime::new([
             json!({"opened": false, "already_open": true, "source": "visible_watchlist_rows"}),
-            json!({"found": true, "method": "fallback"}),
+            json!({
+                "found": true,
+                "skipped": false,
+                "method": "fallback",
+                "before_count": 2,
+                "matched_before": false,
+                "click_method": "mouse_event"
+            }),
             json!(true),
             json!(true),
             json!(true),
+            json!({"after_count": 3, "matched_after": true}),
         ]);
 
         let result = watchlist_add(&mut runtime, "NASDAQ:AAPL").await.unwrap();
 
         assert_eq!(result["symbol"], "NASDAQ:AAPL");
         assert_eq!(result["opened_panel"], false);
+        assert_eq!(result["before_count"], 2);
+        assert_eq!(result["after_count"], 3);
         assert_eq!(runtime.inserted_text, vec!["NASDAQ:AAPL"]);
         assert_eq!(runtime.key_events.len(), 4);
+    }
+
+    #[tokio::test]
+    async fn watchlist_add_returns_already_present_without_input() {
+        let mut runtime = FakeRuntime::new([
+            json!({"opened": false, "already_open": true, "source": "visible_watchlist_rows"}),
+            json!({
+                "found": true,
+                "skipped": true,
+                "action": "already_present",
+                "before_count": 1,
+                "after_count": 1,
+                "matched_before": true,
+                "matched_after": true,
+                "click_method": null
+            }),
+        ]);
+
+        let result = watchlist_add(&mut runtime, "NASDAQ:AAPL").await.unwrap();
+
+        assert_eq!(result["action"], "already_present");
+        assert_eq!(result["matched_before"], true);
+        assert_eq!(result["matched_after"], true);
+        assert!(runtime.inserted_text.is_empty());
+        assert!(runtime.key_events.is_empty());
+    }
+
+    #[tokio::test]
+    async fn watchlist_add_requires_post_add_confirmation() {
+        let mut runtime = FakeRuntime::new([
+            json!({"opened": false, "already_open": true, "source": "visible_watchlist_rows"}),
+            json!({
+                "found": true,
+                "skipped": false,
+                "selector": "[data-name=\"add-symbol-button\"]",
+                "before_count": 0,
+                "matched_before": false,
+                "click_method": "mouse_event"
+            }),
+            json!(true),
+            json!(true),
+            json!(true),
+            json!({"after_count": 0, "matched_after": false}),
+        ]);
+
+        let err = watchlist_add(&mut runtime, "NASDAQ:AAPL")
+            .await
+            .unwrap_err();
+
+        assert_eq!(err.kind, ErrorKind::InternalApiUnavailable);
+        assert_eq!(
+            err.details.as_ref().unwrap()["verify"]["matched_after"],
+            false
+        );
     }
 
     #[tokio::test]
@@ -975,6 +1251,7 @@ mod tests {
                 "matched_before": true,
                 "matched_after": false,
                 "remove_method": "row_remove_button",
+                "click_method": "mouse_event",
                 "confirmation_clicked": false
             }),
         ]);
@@ -988,12 +1265,15 @@ mod tests {
         assert_eq!(result["before_count"], 2);
         assert_eq!(result["after_count"], 1);
         assert_eq!(result["remove_method"], "row_remove_button");
+        assert_eq!(result["click_method"], "mouse_event");
         assert!(
             runtime.evaluated[1]
                 .0
                 .contains("entry.symbol === requestedSymbol")
         );
         assert!(runtime.evaluated[1].0.contains("removeButton"));
+        assert!(runtime.evaluated[1].0.contains("new MouseEvent"));
+        assert!(!runtime.evaluated[1].0.contains("button.click"));
         assert!(!runtime.evaluated[1].0.contains("contextmenu"));
     }
 

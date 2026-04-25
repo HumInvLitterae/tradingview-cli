@@ -10,6 +10,8 @@ Rust now implements both `tv watchlist add <SYMBOL>` and `tv watchlist remove <S
 
 `watchlist remove` is intentionally row-scoped and exact-match only. It must prove the requested `data-symbol-full` exists before deletion and prove it is absent afterward. If the row is missing, or if TradingView does not expose a safe row-scoped remove control, the command fails instead of attempting a broad cleanup.
 
+`watchlist add` now also has post-action verification. If the exact requested symbol is already present, it returns `action: "already_present"` without typing into the add dialog. If the symbol is newly added, the command must prove the symbol is visible afterward before returning success.
+
 `alert create` no longer has the same gap. Rust now implements `tv alert delete --id <ALERT_ID>`, which is the cleanup pair for created alerts. Bulk alert deletion remains deferred because it has a much larger account-level blast radius than deleting one known alert ID.
 
 `pane layout`, `pane focus`, `pane symbol`, `symbol`, `timeframe`, `type`, `range`, and `scroll` are chart state mutations rather than account resource creation. Their recovery model is to read the previous value and restore it after smoke or downstream workflows. They do not require a delete command, but tests and live smoke should keep using restore-safe patterns.

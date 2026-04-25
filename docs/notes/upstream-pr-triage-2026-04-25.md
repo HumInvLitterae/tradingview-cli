@@ -55,11 +55,13 @@ As of this pass, the upstream repository has 45 open PRs.
    `pine compile` non-persistent.
 
 5. Existing command hardening and modest capability additions.
-   `#65`, `#40`, and `#43` have possible Rust value, but they are
+   `#40` and `#43` have possible Rust value, but they are
    lower priority than the security and known-breakage clusters above. `#65`
-   partially overlaps Rust's existing `watchlist add/remove`; `#40` should be
-   compared against Rust's stateless target selection before changing transport;
-   `#43` is mostly already covered by explicit screenshot output paths.
+   is now partially addressed through Rust watchlist click hardening and
+   post-add verification, while `watchlist add-bulk` remains deferred. `#40`
+   should be compared against Rust's stateless target selection before changing
+   transport; `#43` is mostly already covered by explicit screenshot output
+   paths.
 
 6. Keep workflow packs, dashboards, and Node-only maintenance outside the Rust
    CLI unless a separate investigation proves core CLI value. This includes
@@ -93,7 +95,7 @@ As of this pass, the upstream repository has 45 open PRs.
 | [#69](https://github.com/tradesdontlie/tradingview-mcp/pull/69) `Add real-time signal dashboard, price monitor, and Sn1P3r signal evaluator` | `workflow/helper` | Do not add to core CLI. This is a dashboard/scanner product surface, not bridge replacement surface. |
 | [#67](https://github.com/tradesdontlie/tradingview-mcp/pull/67) `fix: add missing bin entry in package-lock.json` | `maintenance/node-only` | Not applicable. Rust release archives and Cargo metadata are separate. |
 | [#66](https://github.com/tradesdontlie/tradingview-mcp/pull/66) `feat: Stock Screener tools + screen/filter/column management` | `feature` | Potential future research only. It is large UI automation surface, likely outside near-term core unless downstream workflows prove strong value. |
-| [#65](https://github.com/tradesdontlie/tradingview-mcp/pull/65) `feat: add watchlist_remove, watchlist_add_bulk, fix click handling` | `feature/bugfix` | Partially covered: Rust has `watchlist add` and `watchlist remove`. Bulk add and Electron click-hardening can be considered later if live smoke shows current Rust click path is fragile. |
+| [#65](https://github.com/tradesdontlie/tradingview-mcp/pull/65) `feat: add watchlist_remove, watchlist_add_bulk, fix click handling` | `feature/bugfix` | Partially addressed: Rust has `watchlist add/remove`, watchlist controls now use coordinate-based `MouseEvent` dispatch, and `watchlist add` verifies the symbol afterward. Bulk add remains deferred as operator convenience. |
 | [#64](https://github.com/tradesdontlie/tradingview-mcp/pull/64) `feat: add tv_ensure and tv_reconnect tools` | `feature` | Defer. Rust `tv launch` and `tv status` cover the basic preflight path; reconnect/reload is a stronger side effect and needs separate safety design. |
 | [#62](https://github.com/tradesdontlie/tradingview-mcp/pull/62) `fix(drawing): restore DI in listDrawings, getProperties, removeOne, clearAll` | `bugfix` | JavaScript DI regression. Rust drawing commands use a different implementation and tests; no direct action unless smoke shows equivalent failure. |
 | [#60](https://github.com/tradesdontlie/tradingview-mcp/pull/60) `feat: add draw_position tool for Long/Short position drawings` | `feature` | Addressed as Rust `tv draw position`, a chart-local mutation that creates native TradingView Long/Short position drawings from entry, stop, and target price levels and returns an `entity_id` for cleanup with `draw remove`. |
@@ -125,8 +127,10 @@ As of this pass, the upstream repository has 45 open PRs.
    `IApplicationActivationManager` evidence from upstream `#76`.
 
 2. Existing command hardening and modest capability additions.
-   Revisit `#65`, `#40`, and `#43` only when there is concrete downstream value
-   or live smoke evidence that the current Rust implementation is fragile.
+   Revisit `#40` and `#43` only when there is concrete downstream value or live
+   smoke evidence that the current Rust implementation is fragile. Revisit the
+   bulk-add part of `#65` only if a downstream workflow needs batched account
+   watchlist mutation.
 
 ## Assumptions
 
