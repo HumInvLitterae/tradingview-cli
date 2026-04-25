@@ -34,6 +34,11 @@ pub enum Command {
         #[command(subcommand)]
         command: ScannerCommand,
     },
+    #[command(about = "Read TradingView Stock Screener dialog data")]
+    Screener {
+        #[command(subcommand)]
+        command: ScreenerCommand,
+    },
     #[command(about = "Get real-time price quote")]
     Quote,
     #[command(about = "Get current indicator values")]
@@ -151,6 +156,21 @@ pub enum ScannerCommand {
         #[arg(long, short = 'n')]
         limit: Option<usize>,
     },
+}
+
+#[derive(Debug, Subcommand)]
+pub enum ScreenerCommand {
+    #[command(about = "Get current Stock Screener dialog state")]
+    Status,
+    #[command(about = "Open the Stock Screener dialog")]
+    Open,
+    #[command(about = "Get visible Stock Screener rows")]
+    Get {
+        #[arg(long, short = 'n')]
+        limit: Option<usize>,
+    },
+    #[command(about = "Close the Stock Screener dialog")]
+    Close,
 }
 
 #[derive(Debug, Subcommand)]
@@ -523,6 +543,7 @@ impl Command {
             Self::Info => "info",
             Self::Search { .. } => "search",
             Self::Scanner { .. } => "scanner",
+            Self::Screener { .. } => "screener",
             Self::Quote => "quote",
             Self::Values => "values",
             Self::Discover => "discover",

@@ -62,22 +62,21 @@ tv ui keyboard Escape
 
 ## Recommendation
 
-UI Screener reads are now evidence-backed enough for a narrow implementation
-plan, but they should remain separate from `tv scanner hotlist`.
+UI Screener reads are now implemented as a narrow Rust CLI slice, but they
+remain separate from `tv scanner hotlist`.
 
-The next implementation, if chosen, should only add:
+The implemented surface is:
 
 - `tv screener status`
 - `tv screener open`
 - `tv screener get [--limit <N>]`
 - `tv screener close`
 
-The implementation should not depend only on `[class*="screenerContainer"]`.
-It should detect the current dialog with a small set of current indicators such
+The implementation does not depend only on `[class*="screenerContainer"]`.
+It detects the current dialog with a small set of current indicators such
 as visible Screener heading text, `[class*="screener"]`, visible Screener
-`data-name` attributes, and the table presence. `close` should prefer an
-explicit close affordance if discovered, but must support `Escape` because that
-restored the live session safely.
+`data-name` attributes, and the table presence. `close` uses `Escape` because
+that restored the live session safely.
 
 `get` should document that it reads the currently visible Screener rows and
 localized display text. It should not present the result as a stable REST

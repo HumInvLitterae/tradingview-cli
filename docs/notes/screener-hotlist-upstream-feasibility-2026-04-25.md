@@ -90,16 +90,16 @@ Classify the remaining Screener/Hotlist ideas as follows:
 | Surface | Recommendation | Rationale |
 | --- | --- | --- |
 | Hotlist preset REST reads | implemented as `tv scanner hotlist` | Read-only, no CDP, no UI mutation, small whitelistable surface. |
-| UI Screener status/get/open/close | evidence-backed next candidate | Useful but DOM-fragile and changes visible UI state. Live evidence exists in `docs/notes/ui-screener-read-evidence-2026-04-26.md`. |
+| UI Screener status/get/open/close | implemented as `tv screener` | Useful but DOM-fragile and changes visible UI state. Implemented as a narrow read-only UI dialog slice after live evidence in `docs/notes/ui-screener-read-evidence-2026-04-26.md`. |
 | UI filter list / column list / active screen read | possible later | Read-only after opening the dialog, but depends on UI text and table structure. |
 | UI filter remove/clear | defer | Mutates the active Screener screen and can persist through TradingView behavior. |
 | UI screen save/switch/save-as/delete/rename/create | defer | Cloud-state and modal-flow risk; upstream mostly uses stubs for these. |
 | UI column add/remove/reorder/reset | defer | Catalog and drag/drop UI automation; likely too brittle for core CLI now. |
 | Scanner/product workflow packs | keep downstream | Rules packs and dashboards are workflow products, not core bridge replacement. |
 
-Hotlist REST is now the first implemented Screener-like slice. Any next
-implementation plan should not bundle UI Screener automation, watchlist bulk
-mutation, or downstream scanner workflow rules.
+Hotlist REST and the read-only UI Screener dialog slice are now implemented.
+Any next implementation plan should not bundle Screener filter/screen/column
+mutation, watchlist bulk mutation, or downstream scanner workflow rules.
 
 ## Implemented Hotlist contract
 
@@ -114,19 +114,17 @@ The Rust implementation:
   `fields`, and normalized `symbols`
 - avoids recording raw live scanner payloads in tracked docs
 
-## Suggested UI Screener implementation outline
+## Implemented UI Screener read contract
 
-A future UI Screener implementation should be separate from Hotlist REST. It
-should start with only:
+The Rust implementation is separate from Hotlist REST and starts with only:
 
 - `tv screener status`
 - `tv screener open`
 - `tv screener get [--limit <N>]`
 - `tv screener close`
 
-It should require a live smoke plan because it depends on TradingView Desktop
-DOM selectors. It should not save screens, clear filters, remove filters, or
-change columns in the first slice.
+It depends on TradingView Desktop DOM selectors. It does not save screens,
+clear filters, remove filters, or change columns in this slice.
 
 The 2026-04-26 live evidence pass found that the upstream
 `[class*="screenerContainer"]` selector did not match the current dialog. A Rust

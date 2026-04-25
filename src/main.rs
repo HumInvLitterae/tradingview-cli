@@ -15,8 +15,8 @@ use cdp::CdpClient;
 use clap::{Parser, error::ErrorKind as ClapErrorKind};
 use cli::{
     AlertCommand, Cli, Command, DataCommand, DrawingCommand, IndicatorCommand, LayoutCommand,
-    PaneCommand, PineCommand, ReplayCommand, ScannerCommand, StreamCommand, TabCommand, UiCommand,
-    WatchlistCommand,
+    PaneCommand, PineCommand, ReplayCommand, ScannerCommand, ScreenerCommand, StreamCommand,
+    TabCommand, UiCommand, WatchlistCommand,
 };
 use error::{AppError, ErrorKind};
 use output::{ErrorBody, ErrorEnvelope, SuccessEnvelope};
@@ -150,6 +150,18 @@ async fn dispatch(command: Command) -> Result<serde_json::Value, AppError> {
         Command::Scanner { command } => match command {
             ScannerCommand::Hotlist { slug, limit } => ops::scanner_hotlist(&slug, limit).await,
         },
+        Command::Screener { command } => {
+            if let ScreenerCommand::Get { limit } = &command {
+                ops::validate_screener_limit(*limit)?;
+            }
+            let mut runtime = connect_runtime().await?;
+            match command {
+                ScreenerCommand::Status => ops::screener_status(&mut runtime).await,
+                ScreenerCommand::Open => ops::screener_open(&mut runtime).await,
+                ScreenerCommand::Get { limit } => ops::screener_get(&mut runtime, limit).await,
+                ScreenerCommand::Close => ops::screener_close(&mut runtime).await,
+            }
+        }
         Command::Quote => {
             let mut runtime = connect_runtime().await?;
             ops::quote(&mut runtime).await

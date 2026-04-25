@@ -13,6 +13,7 @@ mod pine;
 mod replay;
 mod saved_layout;
 mod scanner;
+mod screener;
 mod screenshot;
 mod status;
 mod stream;
@@ -60,6 +61,9 @@ pub use replay::{
 };
 pub use saved_layout::{saved_layout_list, saved_layout_switch};
 pub use scanner::scanner_hotlist;
+pub use screener::{
+    screener_close, screener_get, screener_open, screener_status, validate_screener_limit,
+};
 pub use screenshot::{screenshot_chart, screenshot_full};
 pub use status::status;
 pub use stream::{StreamDedupe, StreamKind, StreamRequest, stream_sample};

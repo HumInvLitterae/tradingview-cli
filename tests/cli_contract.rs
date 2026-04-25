@@ -53,6 +53,42 @@ fn scanner_help_lists_hotlist_subcommand() {
 }
 
 #[test]
+fn screener_help_lists_read_subcommands() {
+    tv().args(["--help"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("screener"));
+
+    tv().args(["screener", "--help"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("status"))
+        .stdout(predicate::str::contains("open"))
+        .stdout(predicate::str::contains("get"))
+        .stdout(predicate::str::contains("close"));
+
+    tv().args(["screener", "get", "--help"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("--limit"));
+}
+
+#[test]
+fn screener_get_rejects_zero_limit_before_connecting() {
+    let assert = tv()
+        .env("TV_CDP_PORT", "9")
+        .args(["screener", "get", "--limit", "0"])
+        .assert()
+        .failure()
+        .code(1);
+    let stderr = String::from_utf8(assert.get_output().stderr.clone()).unwrap();
+    let value: Value = serde_json::from_str(&stderr).unwrap();
+    assert_eq!(value["success"], false);
+    assert_eq!(value["command"], "screener");
+    assert_eq!(value["error"]["kind"], "validation");
+}
+
+#[test]
 fn scanner_hotlist_rejects_unknown_slug_before_network() {
     let assert = tv()
         .env("TV_CDP_PORT", "9")
