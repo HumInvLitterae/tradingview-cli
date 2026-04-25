@@ -43,13 +43,22 @@ fn scanner_help_lists_hotlist_subcommand() {
     tv().args(["scanner", "--help"])
         .assert()
         .success()
-        .stdout(predicate::str::contains("hotlist"));
+        .stdout(predicate::str::contains("hotlist"))
+        .stdout(predicate::str::contains("scan"));
 
     tv().args(["scanner", "hotlist", "--help"])
         .assert()
         .success()
         .stdout(predicate::str::contains("<SLUG>"))
         .stdout(predicate::str::contains("--limit"));
+
+    tv().args(["scanner", "scan", "--help"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("--exchange"))
+        .stdout(predicate::str::contains("--columns"))
+        .stdout(predicate::str::contains("--sort"))
+        .stdout(predicate::str::contains("--min-price"));
 }
 
 #[test]
@@ -133,6 +142,41 @@ fn scanner_hotlist_rejects_zero_limit_before_network() {
     let value: Value = serde_json::from_str(&stderr).unwrap();
     assert_eq!(value["success"], false);
     assert_eq!(value["command"], "scanner");
+    assert_eq!(value["error"]["kind"], "validation");
+}
+
+#[test]
+fn scanner_scan_rejects_invalid_inputs_before_network() {
+    let invalid_market = tv()
+        .env("TV_CDP_PORT", "9")
+        .args(["scanner", "scan", "--market", "global"])
+        .assert()
+        .failure()
+        .code(1);
+    let stderr = String::from_utf8(invalid_market.get_output().stderr.clone()).unwrap();
+    let value: Value = serde_json::from_str(&stderr).unwrap();
+    assert_eq!(value["success"], false);
+    assert_eq!(value["command"], "scanner");
+    assert_eq!(value["error"]["kind"], "validation");
+
+    let invalid_column = tv()
+        .env("TV_CDP_PORT", "9")
+        .args(["scanner", "scan", "--columns", "name,unknown"])
+        .assert()
+        .failure()
+        .code(1);
+    let stderr = String::from_utf8(invalid_column.get_output().stderr.clone()).unwrap();
+    let value: Value = serde_json::from_str(&stderr).unwrap();
+    assert_eq!(value["error"]["kind"], "validation");
+
+    let invalid_limit = tv()
+        .env("TV_CDP_PORT", "9")
+        .args(["scanner", "scan", "--limit", "0"])
+        .assert()
+        .failure()
+        .code(1);
+    let stderr = String::from_utf8(invalid_limit.get_output().stderr.clone()).unwrap();
+    let value: Value = serde_json::from_str(&stderr).unwrap();
     assert_eq!(value["error"]["kind"], "validation");
 }
 

@@ -90,6 +90,7 @@ Classify the remaining Screener/Hotlist ideas as follows:
 | Surface | Recommendation | Rationale |
 | --- | --- | --- |
 | Hotlist preset REST reads | implemented as `tv scanner hotlist` | Read-only, no CDP, no UI mutation, small whitelistable surface. |
+| Generic Stock Scanner REST reads | implemented as `tv scanner scan` | Read-only, no CDP, no UI mutation, and useful for basic market discovery before considering high-risk UI Screener mutation. |
 | UI Screener status/get/open/close | implemented as `tv screener` | Useful but DOM-fragile and changes visible UI state. Implemented as a narrow read-only UI dialog slice after live evidence in `docs/notes/ui-screener-read-evidence-2026-04-26.md`. |
 | UI filter list / column list / active screen read | implemented as `tv screener` metadata reads | Read-only after opening the dialog, implemented as lightweight metadata commands that restore the initial open/closed dialog state. |
 | UI filter remove/clear | defer | Mutates the active Screener screen and can persist through TradingView behavior. |
@@ -97,21 +98,27 @@ Classify the remaining Screener/Hotlist ideas as follows:
 | UI column add/remove/reorder/reset | defer | Catalog and drag/drop UI automation; likely too brittle for core CLI now. |
 | Scanner/product workflow packs | keep downstream | Rules packs and dashboards are workflow products, not core bridge replacement. |
 
-Hotlist REST and the read-only UI Screener dialog slice are now implemented.
+Hotlist REST, generic scanner REST, and the read-only UI Screener dialog slice
+are now implemented.
 Any next implementation plan should not bundle Screener filter/screen/column
 mutation, watchlist bulk mutation, or downstream scanner workflow rules.
 
-## Implemented Hotlist contract
+## Implemented REST scanner contract
 
 The Rust implementation:
 
 - adds the read-only command `tv scanner hotlist <SLUG> [--limit <N>]`
+- adds the read-only command `tv scanner scan` for the `america` scanner market
 - validate `SLUG` against the whitelist above before network access
 - rejects `--limit 0`, defaults omitted limit to 20, and caps larger limits at 20
+- rejects invalid scan market, columns, sort field, order flags, and non-finite
+  numeric filters before network access
 - uses `reqwest` outside CDP, similar in spirit to `tv search`
 - returns the Rust JSON envelope with payload under `data`
 - includes practical fields such as `slug`, `limit`, `count`, `total_count`,
   `fields`, and normalized `symbols`
+- scan payloads include `source: "scanner_scan_rest"`, `market`, `columns`,
+  `sort`, `filters`, `total_count`, and normalized `symbols`
 - avoids recording raw live scanner payloads in tracked docs
 
 ## Implemented UI Screener read contract

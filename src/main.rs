@@ -150,6 +150,34 @@ async fn dispatch(command: Command) -> Result<serde_json::Value, AppError> {
         }
         Command::Scanner { command } => match command {
             ScannerCommand::Hotlist { slug, limit } => ops::scanner_hotlist(&slug, limit).await,
+            ScannerCommand::Scan {
+                market,
+                exchange,
+                columns,
+                sort,
+                asc,
+                desc,
+                limit,
+                min_price,
+                max_price,
+                min_volume,
+                min_market_cap,
+            } => {
+                let request = ops::ScannerScanRequest {
+                    market,
+                    exchanges: exchange,
+                    columns,
+                    sort,
+                    asc,
+                    desc,
+                    limit,
+                    min_price,
+                    max_price,
+                    min_volume,
+                    min_market_cap,
+                };
+                ops::scanner_scan(request).await
+            }
         },
         Command::Screener { command } => {
             if let ScreenerCommand::Get { limit } = &command {

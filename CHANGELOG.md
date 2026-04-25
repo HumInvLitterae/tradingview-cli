@@ -5,6 +5,13 @@ All notable changes to this project are recorded here.
 This project uses Git tags such as `v0.1.1` for public releases. The Cargo
 package version omits the leading `v`.
 
+## Unreleased
+
+### Added
+
+- Added read-only `tv scanner scan` for basic TradingView scanner REST reads
+  with exchange, column, sort, limit, and numeric filter options.
+
 ## v0.1.1 - 2026-04-25
 
 This is a stability and compatibility release after the first public `v0.1.0`

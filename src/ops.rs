@@ -60,7 +60,7 @@ pub use replay::{
     validate_replay_autoplay_speed, validate_replay_date, validate_replay_trade_action,
 };
 pub use saved_layout::{saved_layout_list, saved_layout_switch};
-pub use scanner::scanner_hotlist;
+pub use scanner::{ScannerScanRequest, scanner_hotlist, scanner_scan};
 pub use screener::{
     screener_close, screener_columns_list, screener_filters_list, screener_get, screener_open,
     screener_screens_active, screener_status, validate_screener_limit,

@@ -156,6 +156,31 @@ pub enum ScannerCommand {
         #[arg(long, short = 'n')]
         limit: Option<usize>,
     },
+    #[command(about = "Run a read-only TradingView Stock Screener REST scan")]
+    Scan {
+        #[arg(long, default_value = "america")]
+        market: String,
+        #[arg(long)]
+        exchange: Vec<String>,
+        #[arg(long)]
+        columns: Option<String>,
+        #[arg(long)]
+        sort: Option<String>,
+        #[arg(long)]
+        asc: bool,
+        #[arg(long)]
+        desc: bool,
+        #[arg(long, short = 'n')]
+        limit: Option<usize>,
+        #[arg(long)]
+        min_price: Option<f64>,
+        #[arg(long)]
+        max_price: Option<f64>,
+        #[arg(long)]
+        min_volume: Option<f64>,
+        #[arg(long)]
+        min_market_cap: Option<f64>,
+    },
 }
 
 #[derive(Debug, Subcommand)]

@@ -109,7 +109,7 @@ As of this pass, the upstream repository has 45 open PRs.
 | [#72](https://github.com/tradesdontlie/tradingview-mcp/pull/72) `Fix symbolInfo() throwing 'evaluate is not defined'` | `bugfix` | JavaScript DI regression. Rust `tv info` uses its own evaluator path, so no direct action unless live `tv info` shows equivalent failure. |
 | [#71](https://github.com/tradesdontlie/tradingview-mcp/pull/71) `Bump hono and @hono/node-server to patch moderate CVEs` | `maintenance/node-only` | Not applicable. Rust does not depend on the original MCP Node server packages. |
 | [#70](https://github.com/tradesdontlie/tradingview-mcp/pull/70) `Fix Windows libuv assertion on CLI exit after fetch` | `maintenance/node-only` | Not applicable to Rust. Keep only as reminder to run Windows CI for commands that make HTTP requests. |
-| [#69](https://github.com/tradesdontlie/tradingview-mcp/pull/69) `Add real-time signal dashboard, price monitor, and Sn1P3r signal evaluator` | `workflow/helper` | Do not add to core CLI. This is a dashboard/scanner product surface, not bridge replacement surface. |
+| [#69](https://github.com/tradesdontlie/tradingview-mcp/pull/69) `Add real-time signal dashboard, price monitor, and Sn1P3r signal evaluator` | `workflow/helper` | Do not add dashboard/rules packs to core CLI. The safe read-only scanner foundation is addressed separately by `tv scanner scan`. |
 | [#67](https://github.com/tradesdontlie/tradingview-mcp/pull/67) `fix: add missing bin entry in package-lock.json` | `maintenance/node-only` | Not applicable. Rust release archives and Cargo metadata are separate. |
 | [#66](https://github.com/tradesdontlie/tradingview-mcp/pull/66) `feat: Stock Screener tools + screen/filter/column management` | `feature` | Investigated in `docs/notes/screener-hotlist-upstream-feasibility-2026-04-25.md`. Do not import the whole UI automation bundle. Read-oriented UI Screener dialog and metadata commands are implemented; filter/screen/column mutations remain deferred. |
 | [#65](https://github.com/tradesdontlie/tradingview-mcp/pull/65) `feat: add watchlist_remove, watchlist_add_bulk, fix click handling` | `feature/bugfix` | Partially addressed: Rust has `watchlist add/remove`, watchlist controls now use coordinate-based `MouseEvent` dispatch, and `watchlist add` verifies the symbol afterward. Bulk add remains deferred as operator convenience. |
@@ -153,7 +153,8 @@ As of this pass, the upstream repository has 45 open PRs.
 3. UI Screener and layout dialog behavior remain evidence-gated.
    `#66` stock screener and `#89` hotlist reads are separated in
    `docs/notes/screener-hotlist-upstream-feasibility-2026-04-25.md`. The narrow
-   read-only Hotlist REST command is implemented as `tv scanner hotlist`. UI
+   read-only Hotlist REST command is implemented as `tv scanner hotlist`, and
+   basic generic scanner REST reads are implemented as `tv scanner scan`. UI
    Screener dialog reads now have live evidence in
    `docs/notes/ui-screener-read-evidence-2026-04-26.md` and are implemented as
    `tv screener status/open/get/screens active/filters list/columns list/close`. Filter/screen/column mutations and
