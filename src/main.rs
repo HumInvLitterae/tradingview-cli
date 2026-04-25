@@ -350,6 +350,15 @@ async fn dispatch(command: Command) -> Result<serde_json::Value, AppError> {
                 let mut runtime = connect_runtime().await?;
                 ops::watchlist_add(&mut runtime, &symbol).await
             }
+            WatchlistCommand::AddBulk {
+                symbols,
+                delay_ms,
+                allow_partial,
+            } => {
+                ops::validate_watchlist_add_bulk_request(&symbols, delay_ms)?;
+                let mut runtime = connect_runtime().await?;
+                ops::watchlist_add_bulk(&mut runtime, &symbols, delay_ms, allow_partial).await
+            }
             WatchlistCommand::Remove { symbol } => {
                 if symbol.trim().is_empty() {
                     return Err(AppError::new(

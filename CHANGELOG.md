@@ -16,6 +16,8 @@ package version omits the leading `v`.
 - Added technical `tv scanner scan` filters for average volume, weekly/monthly/
   quarterly performance, RSI, and TradingView recommendation score, with signed
   daily-change and performance bounds.
+- Added `tv watchlist add-bulk` for bounded, verified batch watchlist additions
+  with duplicate reporting and optional partial-success output.
 
 ## v0.1.1 - 2026-04-25
 

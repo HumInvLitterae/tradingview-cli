@@ -61,8 +61,8 @@ As of this pass, the upstream repository has 45 open PRs.
    `pine compile` non-persistent.
 
 5. Existing command hardening and modest capability additions.
-   `#65` is now partially addressed through Rust watchlist click hardening and
-   post-add verification, while `watchlist add-bulk` remains deferred. `#40` is
+   `#65` is now addressed through Rust watchlist add/remove, watchlist click
+   hardening, post-add verification, and bounded `watchlist add-bulk`. `#40` is
    addressed for Rust as an explicit `tab switch` target handoff instead of
    persistent CDP reconnect logic. `#43` is addressed by the existing explicit
    `tv screenshot --output <PATH>` contract plus tests that parent directories
@@ -112,7 +112,7 @@ As of this pass, the upstream repository has 45 open PRs.
 | [#69](https://github.com/tradesdontlie/tradingview-mcp/pull/69) `Add real-time signal dashboard, price monitor, and Sn1P3r signal evaluator` | `workflow/helper` | Do not add dashboard/rules packs to core CLI. The safe read-only scanner foundation is addressed separately by `tv scanner scan`. |
 | [#67](https://github.com/tradesdontlie/tradingview-mcp/pull/67) `fix: add missing bin entry in package-lock.json` | `maintenance/node-only` | Not applicable. Rust release archives and Cargo metadata are separate. |
 | [#66](https://github.com/tradesdontlie/tradingview-mcp/pull/66) `feat: Stock Screener tools + screen/filter/column management` | `feature` | Investigated in `docs/notes/screener-hotlist-upstream-feasibility-2026-04-25.md`. Do not import the whole UI automation bundle. Read-oriented UI Screener dialog and metadata commands are implemented; filter/screen/column mutations remain deferred. |
-| [#65](https://github.com/tradesdontlie/tradingview-mcp/pull/65) `feat: add watchlist_remove, watchlist_add_bulk, fix click handling` | `feature/bugfix` | Partially addressed: Rust has `watchlist add/remove`, watchlist controls now use coordinate-based `MouseEvent` dispatch, and `watchlist add` verifies the symbol afterward. Bulk add remains deferred as operator convenience. |
+| [#65](https://github.com/tradesdontlie/tradingview-mcp/pull/65) `feat: add watchlist_remove, watchlist_add_bulk, fix click handling` | `feature/bugfix` | Addressed. Rust has `watchlist add/remove`, watchlist controls use coordinate-based `MouseEvent` dispatch, `watchlist add` verifies the symbol afterward, and `watchlist add-bulk` provides bounded sequential batch additions with per-symbol reporting. |
 | [#64](https://github.com/tradesdontlie/tradingview-mcp/pull/64) `feat: add tv_ensure and tv_reconnect tools` | `feature` | Defer. Rust `tv launch` and `tv status` cover the basic preflight path; reconnect/reload is a stronger side effect and needs separate safety design. |
 | [#62](https://github.com/tradesdontlie/tradingview-mcp/pull/62) `fix(drawing): restore DI in listDrawings, getProperties, removeOne, clearAll` | `bugfix` | JavaScript DI regression. Rust drawing commands use a different implementation and tests; no direct action unless smoke shows equivalent failure. |
 | [#60](https://github.com/tradesdontlie/tradingview-mcp/pull/60) `feat: add draw_position tool for Long/Short position drawings` | `feature` | Addressed as Rust `tv draw position`, a chart-local mutation that creates native TradingView Long/Short position drawings from entry, stop, and target price levels and returns an `entity_id` for cleanup with `draw remove`. |
@@ -143,14 +143,7 @@ As of this pass, the upstream repository has 45 open PRs.
    the debug port, plan a Windows-specific activation slice based on
    `IApplicationActivationManager` evidence from upstream `#76`.
 
-2. Watchlist bulk add, only if a downstream/operator workflow needs batched
-   account mutation.
-   Revisit the bulk-add part of `#65` only if a downstream workflow needs
-   batched account watchlist mutation. It should include duplicate handling,
-   per-symbol verification, partial-failure reporting, and a cleanup story
-   before implementation.
-
-3. UI Screener and layout dialog behavior remain evidence-gated.
+2. UI Screener and layout dialog behavior remain evidence-gated.
    `#66` stock screener and `#89` hotlist reads are separated in
    `docs/notes/screener-hotlist-upstream-feasibility-2026-04-25.md`. The narrow
    read-only Hotlist REST command is implemented as `tv scanner hotlist`, and

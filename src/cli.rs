@@ -145,6 +145,14 @@ pub enum WatchlistCommand {
     Get,
     #[command(about = "Add a symbol to the watchlist")]
     Add { symbol: String },
+    #[command(about = "Add multiple symbols to the watchlist")]
+    AddBulk {
+        symbols: Vec<String>,
+        #[arg(long, default_value_t = 750)]
+        delay_ms: u64,
+        #[arg(long)]
+        allow_partial: bool,
+    },
     #[command(about = "Remove a symbol from the watchlist")]
     Remove { symbol: String },
 }

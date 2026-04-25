@@ -339,7 +339,14 @@ fn watchlist_and_pane_help_list_read_subcommands() {
         .assert()
         .success()
         .stdout(predicate::str::contains("get"))
-        .stdout(predicate::str::contains("add"));
+        .stdout(predicate::str::contains("add"))
+        .stdout(predicate::str::contains("add-bulk"))
+        .stdout(predicate::str::contains("remove"));
+    tv().args(["watchlist", "add-bulk", "--help"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("--delay-ms"))
+        .stdout(predicate::str::contains("--allow-partial"));
     tv().args(["pane", "--help"])
         .assert()
         .success()
@@ -625,6 +632,51 @@ fn watchlist_add_requires_symbol() {
     let value: Value = serde_json::from_str(&stderr).unwrap();
     assert_eq!(value["success"], false);
     assert_eq!(value["command"], "tv");
+    assert_eq!(value["error"]["kind"], "validation");
+}
+
+#[test]
+fn watchlist_add_bulk_rejects_invalid_inputs_before_connecting() {
+    let no_symbols = tv()
+        .env("TV_CDP_PORT", "9")
+        .args(["watchlist", "add-bulk"])
+        .assert()
+        .failure()
+        .code(1);
+    let stderr = String::from_utf8(no_symbols.get_output().stderr.clone()).unwrap();
+    let value: Value = serde_json::from_str(&stderr).unwrap();
+    assert_eq!(value["success"], false);
+    assert_eq!(value["command"], "watchlist");
+    assert_eq!(value["error"]["kind"], "validation");
+
+    let bad_delay = tv()
+        .env("TV_CDP_PORT", "9")
+        .args([
+            "watchlist",
+            "add-bulk",
+            "NASDAQ:AAPL",
+            "--delay-ms",
+            "10001",
+        ])
+        .assert()
+        .failure()
+        .code(1);
+    let stderr = String::from_utf8(bad_delay.get_output().stderr.clone()).unwrap();
+    let value: Value = serde_json::from_str(&stderr).unwrap();
+    assert_eq!(value["command"], "watchlist");
+    assert_eq!(value["error"]["kind"], "validation");
+
+    let mut args = vec!["watchlist".to_string(), "add-bulk".to_string()];
+    args.extend((0..51).map(|index| format!("NASDAQ:TEST{index}")));
+    let too_many = tv()
+        .env("TV_CDP_PORT", "9")
+        .args(args)
+        .assert()
+        .failure()
+        .code(1);
+    let stderr = String::from_utf8(too_many.get_output().stderr.clone()).unwrap();
+    let value: Value = serde_json::from_str(&stderr).unwrap();
+    assert_eq!(value["command"], "watchlist");
     assert_eq!(value["error"]["kind"], "validation");
 }
 

@@ -47,8 +47,9 @@ pub use indicator::{
 };
 pub use launch::{LaunchRequest, launch};
 pub use layout::{
-    pane_focus, pane_layout, pane_list, pane_symbol, validate_pane_layout, watchlist_add,
-    watchlist_get, watchlist_remove,
+    pane_focus, pane_layout, pane_list, pane_symbol, validate_pane_layout,
+    validate_watchlist_add_bulk_request, watchlist_add, watchlist_add_bulk, watchlist_get,
+    watchlist_remove,
 };
 pub use market::{ohlcv_bars, ohlcv_summary, quote, symbol_search};
 pub use pine::{
