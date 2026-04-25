@@ -24,9 +24,42 @@ use serde_json::json;
 use transport::TransportConfig;
 
 const UNSAFE_UI_EVAL_ENV: &str = "TV_ALLOW_UNSAFE_UI_EVAL";
+#[cfg(windows)]
+const WINDOWS_CLI_STACK_SIZE: usize = 8 * 1024 * 1024;
 
-#[tokio::main]
-async fn main() -> ExitCode {
+#[cfg(windows)]
+fn main() -> ExitCode {
+    match std::thread::Builder::new()
+        .name("tv-cli".to_string())
+        .stack_size(WINDOWS_CLI_STACK_SIZE)
+        .spawn(run_cli)
+    {
+        Ok(handle) => match handle.join() {
+            Ok(code) => code,
+            Err(_) => startup_error("tv CLI runtime thread panicked"),
+        },
+        Err(err) => startup_error(format!("Failed to start tv CLI runtime thread: {err}")),
+    }
+}
+
+#[cfg(not(windows))]
+fn main() -> ExitCode {
+    run_cli()
+}
+
+fn run_cli() -> ExitCode {
+    let runtime = match tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()
+    {
+        Ok(runtime) => runtime,
+        Err(err) => return startup_error(format!("Failed to start async runtime: {err}")),
+    };
+
+    runtime.block_on(async_main())
+}
+
+async fn async_main() -> ExitCode {
     init_tracing();
 
     let cli = match Cli::try_parse() {
@@ -75,6 +108,13 @@ async fn main() -> ExitCode {
             ExitCode::from(code)
         }
     }
+}
+
+fn startup_error(message: impl Into<String>) -> ExitCode {
+    let app_error = AppError::new(ErrorKind::Internal, message);
+    let envelope = ErrorEnvelope::new("tv", ErrorBody::from(app_error));
+    print_json_stderr(&envelope);
+    ExitCode::from(1)
 }
 
 async fn dispatch(command: Command) -> Result<serde_json::Value, AppError> {
