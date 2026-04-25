@@ -72,14 +72,23 @@ pub async fn tab_switch(config: &TransportConfig, index: usize) -> Result<Value,
         })));
     }
 
-    Ok(json!({
+    Ok(tab_switch_payload(tab))
+}
+
+fn tab_switch_payload(tab: &ChartTab) -> Value {
+    json!({
         "action": "switched",
         "index": tab.index,
         "tab_id": tab.id,
+        "target_id": tab.id,
+        "target_env": {
+            "TV_CDP_TARGET_ID": tab.id,
+        },
+        "next_command_hint": format!("TV_CDP_TARGET_ID={} tv <command>", tab.id),
         "chart_id": tab.chart_id,
         "title": tab.title,
         "url": tab.url,
-    }))
+    })
 }
 
 pub async fn tab_new(config: &TransportConfig, from: Option<usize>) -> Result<Value, AppError> {
@@ -551,6 +560,23 @@ mod tests {
         let error = resolve_source_tab(&tabs, Some(1)).unwrap_err();
         assert_eq!(error.kind, ErrorKind::Validation);
         assert!(error.message.contains("out of range"));
+    }
+
+    #[test]
+    fn tab_switch_payload_includes_next_target_handoff() {
+        let tab = chart_tab(2, "target-2");
+
+        let payload = tab_switch_payload(&tab);
+
+        assert_eq!(payload["action"], "switched");
+        assert_eq!(payload["tab_id"], "target-2");
+        assert_eq!(payload["target_id"], "target-2");
+        assert_eq!(payload["target_env"]["TV_CDP_TARGET_ID"], "target-2");
+        assert_eq!(
+            payload["next_command_hint"],
+            "TV_CDP_TARGET_ID=target-2 tv <command>"
+        );
+        assert_eq!(payload["chart_id"], "target-2");
     }
 
     #[test]
