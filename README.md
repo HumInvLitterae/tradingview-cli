@@ -74,20 +74,21 @@ For a migration-focused summary, read `docs/breaking-changes-from-js-cli.md`.
 GitHub Actions runs the automated Rust baseline on push and pull request: `cargo fmt --check`, `cargo clippy --all-targets --all-features -- -D warnings`, and `cargo test` across Linux, macOS, and Windows.
 
 Tagged releases matching `v*` build native release archives for Linux, macOS, and Windows and publish them to GitHub Releases with `SHA256SUMS`.
+If `docs/releases/<tag>.md` exists, the release workflow uses it as the GitHub Release body; otherwise it falls back to generated notes.
 
 TradingView Desktop live smoke checks are intentionally separate from CI because they require a logged-in desktop session with Chrome DevTools Protocol enabled.
 
 ## Release Builds
 
-GitHub Releases are the first supported binary distribution path. Pushing a version tag such as `v0.1.0` creates release assets named:
+GitHub Releases are the first supported binary distribution path. Pushing a version tag such as `v0.1.1` creates release assets named:
 
-- `tv-<tag>-x86_64-unknown-linux-gnu.tar.gz`
-- `tv-<tag>-x86_64-apple-darwin.tar.gz`
-- `tv-<tag>-aarch64-apple-darwin.tar.gz`
-- `tv-<tag>-x86_64-pc-windows-msvc.zip`
+- `tv-v0.1.1-x86_64-unknown-linux-gnu.tar.gz`
+- `tv-v0.1.1-x86_64-apple-darwin.tar.gz`
+- `tv-v0.1.1-aarch64-apple-darwin.tar.gz`
+- `tv-v0.1.1-x86_64-pc-windows-msvc.zip`
 - `SHA256SUMS`
 
-Each archive contains the `tv` or `tv.exe` binary, `README.md`, `LICENSE`, a user-facing `AGENTS.md` and `CLAUDE.md`, and runtime-oriented TradingView CLI skills under `.agents/skills/` and `.claude/skills/`. Verify the downloaded archive against `SHA256SUMS`, unpack it, and place the executable on your `PATH`.
+Each archive contains the `tv` or `tv.exe` binary, `README.md`, `CHANGELOG.md`, `LICENSE`, a user-facing `AGENTS.md` and `CLAUDE.md`, and runtime-oriented TradingView CLI skills under `.agents/skills/` and `.claude/skills/`. Verify the downloaded archive against `SHA256SUMS`, unpack it, and place the executable on your `PATH`.
 
 The repository root `AGENTS.md` and `CLAUDE.md` are contributor-facing development guides. Release archives instead include user-facing agent guides for operating `tv` safely through an AI agent.
 
@@ -173,6 +174,7 @@ Use `tv --help` or `cargo run -- --help` for the full command list.
 - a Rust v1 `tv` CLI implementation
 - a GitHub Actions CI baseline for Rust formatting, linting, and tests
 - a GitHub Actions release workflow for tag-triggered native binary archives
+- `CHANGELOG.md` release notes for public versions
 - user-facing agent guides and runtime skills in release archives
 - old JavaScript CLI command migration coverage for the known CLI surface
 - command contract, migration, lifecycle, and deferred-surface notes under `docs/notes/`

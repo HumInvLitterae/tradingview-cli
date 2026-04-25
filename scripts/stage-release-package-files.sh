@@ -22,7 +22,7 @@ case "$binary_path" in
   *) cp "$binary_path" "$package_dir/tv" ;;
 esac
 
-cp README.md LICENSE "$package_dir/"
+cp README.md CHANGELOG.md LICENSE "$package_dir/"
 cp packaging/agent/AGENTS.md "$package_dir/AGENTS.md"
 cp packaging/agent/AGENTS.md "$package_dir/CLAUDE.md"
 
