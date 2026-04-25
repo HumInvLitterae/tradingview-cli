@@ -169,7 +169,7 @@ Focus first on migration readiness:
 - use `docs/notes/upstream-pr-triage-2026-04-25.md` before acting on original upstream pull requests
 - record evidence before starting any post-v1 ExecPlan
 
-Old CLI migration is closed except for MCP server implementation, which remains explicitly not planned. The next priority should be narrowly scoped follow-up from the upstream PR triage, with `tv launch` Windows/MSIX and Electron compatibility next in line before broader feature additions.
+Old CLI migration is closed except for MCP server implementation, which remains explicitly not planned. Narrow upstream PR follow-up is also partly complete: launch compatibility, strategy/Pine hardening, screenshot contract tests, tab target handoff, watchlist click hardening, `tv data shapes`, and `tv data labels` truncation metadata have all been addressed. Remaining upstream-derived candidates are evidence-gated: Windows COM/AUMID launch activation only if Windows smoke proves current launch insufficient, `watchlist add-bulk` only if a real batched account-mutation workflow needs it, and scanner/hotlist/layout-dialog behavior only after separate research shows core CLI value and safe operating policy.
 
 ## Validation baseline
 

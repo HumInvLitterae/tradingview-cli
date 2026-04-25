@@ -15,6 +15,9 @@ the Rust CLI backlog.
 - Follow-up: `gh pr view` for the open PRs listed below
 - Rust comparison points: current `src/ops/launch.rs`, `src/ops/data/strategy.rs`,
   `src/ops/pine/editor.rs`, `src/ops/ui.rs`, `src/transport.rs`
+- Refresh check after the `tv data labels` hardening slice:
+  `gh pr list -R tradesdontlie/tradingview-mcp --state open --limit 20 --json number,title,updatedAt,url`
+  still showed `#100` as the newest open PR.
 
 As of this pass, the upstream repository has 45 open PRs.
 
@@ -61,8 +64,8 @@ As of this pass, the upstream repository has 45 open PRs.
    persistent CDP reconnect logic. `#43` is addressed by the existing explicit
    `tv screenshot --output <PATH>` contract plus tests that parent directories
    are created and `--output` is required before connecting. `#89` has been
-   audited as a mixed fork bundle; the only near-term Rust candidate from it is
-   a read-only `tv data labels` default/truncation hardening slice.
+   audited as a mixed fork bundle; its only near-term Rust candidate, the
+   read-only `tv data labels` default/truncation hardening slice, is addressed.
 
 6. Keep workflow packs, dashboards, and Node-only maintenance outside the Rust
    CLI unless a separate investigation proves core CLI value. This includes
@@ -119,7 +122,7 @@ As of this pass, the upstream repository has 45 open PRs.
 | [#18](https://github.com/tradesdontlie/tradingview-mcp/pull/18) `Fix tv_launch for TradingView v2.14.0+` | `bugfix` | Addressed as older macOS/Electron fallback evidence alongside `#80`. |
 | [#12](https://github.com/tradesdontlie/tradingview-mcp/pull/12) `Add trading tools and trade journaling documentation` | `feature/workflow` | Defer. Broker account positions/orders and trade journaling are outside the current safe core CLI boundary unless a separate investigation proves user value and safety. |
 
-## Next implementation candidates
+## Evidence-gated implementation candidates
 
 1. Windows COM/AUMID launch activation, only if needed.
    Rust now discovers Windows AppX/MSIX installs and attempts a direct executable
@@ -127,11 +130,20 @@ As of this pass, the upstream repository has 45 open PRs.
    the debug port, plan a Windows-specific activation slice based on
    `IApplicationActivationManager` evidence from upstream `#76`.
 
-2. Existing command hardening and modest capability additions.
+2. Watchlist bulk add, only if a downstream/operator workflow needs batched
+   account mutation.
    Revisit the bulk-add part of `#65` only if a downstream workflow needs
-   batched account watchlist mutation. No current screenshot-output PR follow-up
-   remains from `#43`, and the `tv data labels` default/truncation follow-up
-   from `#89` has been addressed.
+   batched account watchlist mutation. It should include duplicate handling,
+   per-symbol verification, partial-failure reporting, and a cleanup story
+   before implementation.
+
+3. Scanner, hotlist, and layout dialog behavior remain research topics.
+   `#66` stock screener, `#89` hotlist reads, and workflow scanner packs should
+   stay outside the core CLI unless separate evidence proves they belong here.
+   `#91` unsaved-layout dialog auto-dismiss should also remain deferred; Rust
+   should not dismiss unsaved-change dialogs unless a dedicated safety policy is
+   written. No current screenshot-output follow-up remains from `#43`, and the
+   `tv data labels` default/truncation follow-up from `#89` has been addressed.
 
 ## Assumptions
 
