@@ -18,6 +18,9 @@ package version omits the leading `v`.
   daily-change and performance bounds.
 - Added `tv watchlist add-bulk` for bounded, verified batch watchlist additions
   with duplicate reporting and optional partial-success output.
+- Added menu-visible `tv screener screens list` and
+  `tv screener screens switch --name <NAME> [--dry-run]` commands for prepared
+  Screener screen operation.
 - Added guarded `tv screener filters remove` and `tv screener filters clear`
   commands, including dry-run target reporting and clear-all confirmation.
 

@@ -106,7 +106,14 @@ fn screener_help_lists_read_subcommands() {
     tv().args(["screener", "screens", "--help"])
         .assert()
         .success()
-        .stdout(predicate::str::contains("active"));
+        .stdout(predicate::str::contains("active"))
+        .stdout(predicate::str::contains("list"))
+        .stdout(predicate::str::contains("switch"));
+    tv().args(["screener", "screens", "switch", "--help"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("--name"))
+        .stdout(predicate::str::contains("--dry-run"));
 
     tv().args(["screener", "filters", "--help"])
         .assert()
@@ -182,6 +189,21 @@ fn screener_filter_mutations_reject_invalid_inputs_before_connecting() {
         .code(1);
     let stderr = String::from_utf8(clear_without_confirmation.get_output().stderr.clone()).unwrap();
     let value: Value = serde_json::from_str(&stderr).unwrap();
+    assert_eq!(value["command"], "screener");
+    assert_eq!(value["error"]["kind"], "validation");
+}
+
+#[test]
+fn screener_screen_switch_rejects_empty_name_before_connecting() {
+    let assert = tv()
+        .env("TV_CDP_PORT", "9")
+        .args(["screener", "screens", "switch", "--name", "   "])
+        .assert()
+        .failure()
+        .code(1);
+    let stderr = String::from_utf8(assert.get_output().stderr.clone()).unwrap();
+    let value: Value = serde_json::from_str(&stderr).unwrap();
+    assert_eq!(value["success"], false);
     assert_eq!(value["command"], "screener");
     assert_eq!(value["error"]["kind"], "validation");
 }

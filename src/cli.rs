@@ -265,6 +265,15 @@ pub enum ScreenerCommand {
 pub enum ScreenerScreensCommand {
     #[command(about = "Get the active Stock Screener screen title")]
     Active,
+    #[command(about = "List visible Stock Screener screen menu entries")]
+    List,
+    #[command(about = "Switch to a visible Stock Screener screen menu entry by exact name")]
+    Switch {
+        #[arg(long)]
+        name: String,
+        #[arg(long)]
+        dry_run: bool,
+    },
 }
 
 #[derive(Debug, Subcommand)]
