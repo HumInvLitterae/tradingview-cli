@@ -346,13 +346,26 @@ changes the boundary:
 
 ## Cross-command replacement priorities
 
-Recommended order for future API/storage replacement work:
+The first high-value replacement candidates have been addressed:
 
-1. Alert create endpoint evidence.
-2. Screener filters add/modify storage schema evidence.
-3. Screener screen create/rename/save-as/save/switch storage or command
+- `watchlist add/remove` now prefer the logged-in symbols-list API.
+- `alert create` now prefers the alert endpoint and requires alert-list
+  readback.
+- Screener storage is already used for screen delete, filter remove/clear, and
+  column config/add/remove/reorder.
+
+Remaining replacement work is evidence-gated rather than urgent:
+
+1. Screener filters add/modify storage schema evidence.
+2. Screener screen create/rename/save-as/save/switch storage or command
    evidence.
-4. App-tab new/close non-DOM command evidence.
+3. App-tab new/close non-DOM command evidence.
+
+After the next release, `docs/plans/tradingview-cli-direct-http-feasibility.md`
+tracks a separate investigation into direct HTTP reads. That future work should
+prefer credential-safe read-only endpoints and should not move account
+mutations away from the user's logged-in page session without a separate safety
+plan.
 
 Do not start with `data depth`, chart screenshots, or generic UI automation;
 their current DOM dependency is part of their observable contract.

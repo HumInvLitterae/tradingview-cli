@@ -18,6 +18,8 @@ package version omits the leading `v`.
   and records which DOM boundaries should remain intentional.
 - Added a runtime `screener-workflow` skill and refreshed packaged agent
   guidance for current scanner, Screener, watchlist, and alert operation.
+- Added a post-next-release direct HTTP feasibility plan and refreshed the
+  internal API replacement notes after watchlist and alert API-backed work.
 - Added read-only `tv scanner scan` for basic TradingView scanner REST reads
   with exchange, column, sort, limit, and numeric filter options.
 - Added practical `tv scanner scan` filters for stock type, subtype, sector,

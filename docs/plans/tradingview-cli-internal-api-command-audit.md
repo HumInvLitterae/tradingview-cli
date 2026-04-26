@@ -120,11 +120,10 @@ No live mutation smoke is part of this audit. If future work runs live evidence 
 
 ## Artifacts and Notes
 
-Static evidence summary:
+Static evidence summary after later replacement slices:
 
-    alert list/delete: API-backed through pricealerts endpoints.
-    alert create: DOM-backed dialog operation; endpoint replacement is plausible but unproven.
-    watchlist add/remove: DOM-backed right-panel operation; API/storage replacement is plausible but currently unimplemented.
+    alert list/create/delete: API-backed through pricealerts endpoints.
+    watchlist add/remove: API-backed active custom watchlist mutation with DOM fallback before mutation only.
     screener storage: storage-backed for screen delete, filter remove/clear, and column add/remove/reorder.
     screener filters add/modify and screen create/rename/save-as/save/switch: DOM-backed or visible-UI-backed; storage replacement remains plausible but needs schema/action evidence.
     pine list/open/check: Pine facade and Monaco-backed.
@@ -142,11 +141,12 @@ Future implementation plans should name the exact command family they target and
 
 - account-state mutations require dry-run where practical, test/disposable guards where appropriate, and post-action verification;
 - page-session endpoints must be called only from the user's own logged-in TradingView page context unless the existing command already uses direct unauthenticated HTTP reads;
+- future direct HTTP work should start with credential-safe read-only endpoints and must not introduce cookie import, session export, login automation, or token storage without a separate explicit decision;
 - docs may describe endpoint categories and command dependencies but must not contain raw payloads or account-linked identifiers.
 
 ## Open Questions
 
-- UNCONFIRMED: whether TradingView exposes a stable watchlist storage or list-management endpoint suitable for exact add/remove with post-checks.
-- UNCONFIRMED: whether alert creation can be implemented safely through the same pricealerts endpoint family without losing current practical fields or creating malformed alerts.
+- RESOLVED: watchlist add/remove can use the active custom watchlist symbols-list API with readback post-checks.
+- RESOLVED: alert creation can use the alert endpoint family while preserving practical fields and readback post-checking created alerts.
 - UNCONFIRMED: whether Screener `filters add` and `filters modify` can be storage-backed for all currently supported numeric and option cases without synthesizing unsafe payload internals.
 - UNCONFIRMED: whether TradingView Desktop app tab creation/closure has a non-DOM command surface outside the visible app-window tab strip.
