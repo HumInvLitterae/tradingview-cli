@@ -21,8 +21,11 @@ the Rust CLI backlog.
 - Refresh check after the Hotlist REST slice:
   `gh pr list -R tradesdontlie/tradingview-mcp --state open --limit 20 --json number,title,updatedAt,url`
   showed `#102` as the newest open PR.
+- Refresh check after the Screener screen switch slice:
+  `gh pr list -R tradesdontlie/tradingview-mcp --state open --limit 30 --json number,title,updatedAt,url,author,headRefName`
+  showed `#105`, `#104`, and `#103` as newer open PRs.
 
-As of this pass, the upstream repository has 45 open PRs.
+As of this pass, the upstream repository has 47 open PRs.
 
 ## Recommended priority
 
@@ -69,7 +72,10 @@ As of this pass, the upstream repository has 45 open PRs.
    are created and `--output` is required before connecting. `#89` has been
    audited as a mixed fork bundle; its near-term Rust candidates, the read-only
    `tv data labels` default/truncation hardening slice and `tv scanner hotlist`,
-   are addressed.
+   are addressed. `#104` is addressed by Rust `tv quote [SYMBOL]`, which
+   performs a temporary chart switch only when needed, serializes symbol-targeted
+   quote commands with a short process lock, and verifies restoration before
+   success.
 
 6. Keep workflow packs, dashboards, and Node-only maintenance outside the Rust
    CLI unless a separate investigation proves core CLI value. This includes
@@ -88,6 +94,9 @@ As of this pass, the upstream repository has 45 open PRs.
 
 | PR | Category | Rust disposition |
 | --- | --- | --- |
+| [#105](https://github.com/tradesdontlie/tradingview-mcp/pull/105) `Fix ReferenceError in listDrawings/getProperties/removeOne/clearAll` | `bugfix` | JavaScript DI regression in drawing helpers. Rust drawing code is separate and already has automated coverage for list/get/remove/clear. Treat as a live drawing smoke candidate rather than a direct Rust code change unless Rust smoke reveals an equivalent failure. |
+| [#104](https://github.com/tradesdontlie/tradingview-mcp/pull/104) `fix(quote_get): honor symbol parameter via chart switch + restore` | `bugfix` | Addressed as Rust `tv quote [SYMBOL]`. Rust did not have the old false-label bug because `tv quote` was current-chart only, but it now supports an optional symbol by locking symbol-targeted quote commands, switching the chart temporarily, reading quote data, and verifying restore before success. |
+| [#103](https://github.com/tradesdontlie/tradingview-mcp/pull/103) `fix(launch): detect Windows Store (MSIX) TradingView install on Windows` | `bugfix` | Covered by the existing Rust launch discovery slice alongside `#100` and `#93`. No new action unless Windows smoke proves the current AppX/MSIX path handling is insufficient. |
 | [#102](https://github.com/tradesdontlie/tradingview-mcp/pull/102) `Add CI and agent guardrails` | `maintenance/guardrails` | Addressed with Rust-native CI permission/concurrency hardening, optional Git 2.54 config-based hooks, Windows PowerShell hook scripts, and `mise` task shortcuts. Node CI, npm scripts, and Python `pre-commit` are not imported. |
 | [#100](https://github.com/tradesdontlie/tradingview-mcp/pull/100) `fix(launch): detect TradingView Microsoft Store install on Windows` | `bugfix` | Addressed as Rust launch discovery input. Rust now checks running-process and `Get-AppxPackage` paths without changing the no-kill default. |
 | [#98](https://github.com/tradesdontlie/tradingview-mcp/pull/98) `Add crypto swing-trading rules config` | `workflow/helper` | Do not add to core CLI. This is a personal rules/config pack better suited to downstream repos or user-facing examples outside the binary. |

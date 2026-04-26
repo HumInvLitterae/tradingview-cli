@@ -278,9 +278,19 @@ async fn dispatch(command: Command) -> Result<serde_json::Value, AppError> {
                 ScreenerCommand::Close => ops::screener_close(&mut runtime).await,
             }
         }
-        Command::Quote => {
+        Command::Quote { symbol } => {
+            let symbol = match symbol.as_deref() {
+                Some(symbol) if symbol.trim().is_empty() => {
+                    return Err(AppError::new(
+                        ErrorKind::Validation,
+                        "quote symbol must not be empty",
+                    ));
+                }
+                Some(symbol) => Some(symbol),
+                None => None,
+            };
             let mut runtime = connect_runtime().await?;
-            ops::quote(&mut runtime).await
+            ops::quote(&mut runtime, symbol).await
         }
         Command::Values => {
             let mut runtime = connect_runtime().await?;

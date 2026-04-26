@@ -41,7 +41,7 @@ pub enum Command {
         command: ScreenerCommand,
     },
     #[command(about = "Get real-time price quote")]
-    Quote,
+    Quote { symbol: Option<String> },
     #[command(about = "Get current indicator values")]
     Values,
     #[command(about = "Report available TradingView internal API paths")]
@@ -675,7 +675,7 @@ impl Command {
             Self::Search { .. } => "search",
             Self::Scanner { .. } => "scanner",
             Self::Screener { .. } => "screener",
-            Self::Quote => "quote",
+            Self::Quote { .. } => "quote",
             Self::Values => "values",
             Self::Discover => "discover",
             Self::UiState => "ui-state",

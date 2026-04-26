@@ -38,6 +38,7 @@ Keep the Rust-native `tv` CLI reliable and useful as a replacement path for prac
 - `replay start/step/stop/status/autoplay/trade` is implemented as a bounded replay lifecycle surface
 - `stream quote/bars/values/lines/labels/tables/all` is implemented as read-only JSONL polling for shell and external monitoring workflows
 - `launch` is implemented as a bounded local process-control command; it is no-kill by default, treats an already responding CDP endpoint as success, and requires explicit `--kill-existing` for process termination
+- `tv quote [SYMBOL]` supports symbol-targeted quote reads by temporarily switching the chart only when needed, serializing symbol-targeted quote commands with a short process lock, and verifying restoration before success
 - remaining old CLI migration closure is recorded in `docs/plans/archives/tradingview-cli-remaining-migration-closure.md`; `layout switch`, `alert delete --all`, `pine raw-compile`, and generic `ui` commands are implemented. Alert edit/pause/resume are future feature research, not confirmed old CLI backlog.
 - upstream pull requests on the original repository have been triaged in `docs/notes/upstream-pr-triage-2026-04-25.md`; use that note before choosing post-release fixes or additions.
 - `tv ui eval` is default-disabled as a dangerous compatibility command; it runs only when `TV_ALLOW_UNSAFE_UI_EVAL=1` is set.
@@ -53,7 +54,7 @@ The implemented commands are:
 - `tv state`
 - `tv info`
 - `tv search <QUERY>`
-- `tv quote`
+- `tv quote [SYMBOL]`
 - `tv values`
 - `tv discover`
 - `tv ui-state`
@@ -172,7 +173,7 @@ Focus first on migration readiness:
 - use `docs/notes/ui-screener-read-evidence-2026-04-26.md` before planning UI Screener commands
 - record evidence before starting any post-v1 ExecPlan
 
-Old CLI migration is closed except for MCP server implementation, which remains explicitly not planned. Narrow upstream PR follow-up is also partly complete: launch compatibility, strategy/Pine hardening, screenshot contract tests, tab target handoff, watchlist click hardening, `tv data shapes`, `tv data labels` truncation metadata, read-only `tv scanner hotlist`, read-only `tv scanner scan`, `tv screener status/open/get/screens active/list/switch/filters list/remove/clear/columns list/close`, `tv watchlist add-bulk`, and PR #102-style CI/agent guardrails have all been addressed. Remaining upstream-derived candidates are evidence-gated: Windows COM/AUMID launch activation only if Windows smoke proves current launch insufficient, layout-dialog behavior only after separate research shows core CLI value and safe operating policy, and full Screener catalog management or column mutations only after a separate safety plan.
+Old CLI migration is closed except for MCP server implementation, which remains explicitly not planned. Narrow upstream PR follow-up is also partly complete: launch compatibility, strategy/Pine hardening, screenshot contract tests, tab target handoff, watchlist click hardening, `tv data shapes`, `tv data labels` truncation metadata, read-only `tv scanner hotlist`, read-only `tv scanner scan`, `tv screener status/open/get/screens active/list/switch/filters list/remove/clear/columns list/close`, `tv watchlist add-bulk`, `tv quote [SYMBOL]`, and PR #102-style CI/agent guardrails have all been addressed. Remaining upstream-derived candidates are evidence-gated: Windows COM/AUMID launch activation only if Windows smoke proves current launch insufficient, layout-dialog behavior only after separate research shows core CLI value and safe operating policy, full Screener catalog management or column mutations only after a separate safety plan, and drawing smoke follow-up only if live Rust drawing reads show an issue similar to upstream PR #105.
 
 ## Validation baseline
 

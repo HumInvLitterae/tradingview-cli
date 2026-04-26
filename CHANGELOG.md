@@ -23,6 +23,8 @@ package version omits the leading `v`.
   Screener screen operation.
 - Added guarded `tv screener filters remove` and `tv screener filters clear`
   commands, including dry-run target reporting and clear-all confirmation.
+- Added `tv quote [SYMBOL]` for symbol-targeted quote reads with temporary chart
+  switching and verified restoration.
 
 ## v0.1.1 - 2026-04-25
 

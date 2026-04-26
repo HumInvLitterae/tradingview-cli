@@ -39,6 +39,14 @@ fn help_lists_v1_commands() {
 }
 
 #[test]
+fn quote_help_lists_optional_symbol() {
+    tv().args(["quote", "--help"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("[SYMBOL]"));
+}
+
+#[test]
 fn scanner_help_lists_hotlist_subcommand() {
     tv().args(["scanner", "--help"])
         .assert()
@@ -954,6 +962,36 @@ fn stream_rejects_too_small_interval_before_connecting() {
     assert_eq!(value["command"], "stream");
     assert_eq!(value["error"]["kind"], "validation");
     assert_eq!(value["error"]["details"]["minimum_interval_ms"], 100);
+}
+
+#[test]
+fn quote_rejects_empty_symbol_before_connecting() {
+    let assert = tv()
+        .env("TV_CDP_PORT", "9")
+        .args(["quote", " "])
+        .assert()
+        .failure()
+        .code(1);
+    let stderr = String::from_utf8(assert.get_output().stderr.clone()).unwrap();
+    let value: Value = serde_json::from_str(&stderr).unwrap();
+    assert_eq!(value["success"], false);
+    assert_eq!(value["command"], "quote");
+    assert_eq!(value["error"]["kind"], "validation");
+}
+
+#[test]
+fn quote_with_symbol_attempts_connection_when_cdp_is_unavailable() {
+    let assert = tv()
+        .env("TV_CDP_PORT", "9")
+        .args(["quote", "NASDAQ:AAPL"])
+        .assert()
+        .failure()
+        .code(2);
+    let stderr = String::from_utf8(assert.get_output().stderr.clone()).unwrap();
+    let value: Value = serde_json::from_str(&stderr).unwrap();
+    assert_eq!(value["success"], false);
+    assert_eq!(value["command"], "quote");
+    assert_eq!(value["error"]["kind"], "connection");
 }
 
 #[test]
