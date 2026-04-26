@@ -25,6 +25,9 @@ package version omits the leading `v`.
   daily-change and performance bounds.
 - Added `tv watchlist add-bulk` for bounded, verified batch watchlist additions
   with duplicate reporting and optional partial-success output.
+- Added API-backed `tv watchlist add` and `tv watchlist remove` mutation paths
+  for the active custom watchlist, with readback post-checks and DOM fallback
+  when the symbols-list API cannot be used before mutation.
 - Added menu-visible `tv screener screens list` and
   `tv screener screens switch --name <NAME> [--dry-run]` commands for prepared
   Screener screen operation.

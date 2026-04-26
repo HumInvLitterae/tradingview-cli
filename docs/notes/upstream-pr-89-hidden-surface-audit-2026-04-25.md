@@ -67,18 +67,21 @@ empty data when another sidebar panel is active because TradingView lazily
 renders the watchlist DOM. Second, the PR adds REST-backed watchlist list,
 switch, insert, remove, create, rename, and delete flows.
 
-Rust already has `watchlist get/add/remove`. `watchlist add/remove` can open the
-panel and now use coordinate-based mouse events plus post-action verification.
-`watchlist get` remains a read command that reports the currently visible
-sidebar state and does not force-open the watchlist panel.
+Rust already has `watchlist get/add/remove/add-bulk`. `watchlist add/remove`
+now prefer TradingView's logged-in symbols-list API for the active custom
+watchlist, with a readback post-check before success. If the API list or active
+list is unavailable before mutation, the previous DOM panel path remains as a
+fallback. `watchlist add-bulk` inherits this path because it calls single-symbol
+add sequentially.
 
-Disposition: do not implement the large REST management surface now. The lazy
-render evidence is real, but changing `watchlist get` to click/open panels would
-make a read command mutate UI state. Treat a safer future option as research:
-either add an explicit `--open-panel` mode or add a separate read note explaining
-that `watchlist get` is a visible-sidebar read. Targeted REST insert/remove
-could be useful later for downstream list automation, but it is account
-mutation, not old CLI migration closure.
+Disposition: targeted REST add/remove has been adopted as a reliability
+improvement for existing Rust watchlist mutations. Do not implement the large
+REST management surface from PR #89 in this note. The lazy render evidence is
+real, but changing `watchlist get` to click/open panels would make a read
+command mutate UI state, and changing it to account-list API output would change
+its visible-sidebar meaning. Broader watchlist list/switch/create/rename/delete
+commands remain future feature research and need their own safety design,
+especially destructive delete.
 
 ### Alert create/delete REST rewrites
 

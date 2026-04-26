@@ -210,6 +210,12 @@ pub async fn watchlist_add(
         ));
     }
 
+    match watchlist_add_via_api(runtime, symbol).await {
+        Ok(data) => return Ok(data),
+        Err(error) if watchlist_api_error_allows_fallback(&error) => {}
+        Err(error) => return Err(error),
+    }
+
     let panel_state = ensure_watchlist_panel_open(runtime).await?;
     wait_after_panel_open(runtime, &panel_state).await?;
 
@@ -592,6 +598,335 @@ fn normalize_watchlist_symbol(symbol: &str) -> Result<String, AppError> {
     Ok(symbol.to_string())
 }
 
+pub async fn watchlist_add_via_api(
+    runtime: &mut impl RuntimeEvaluator,
+    symbol: &str,
+) -> Result<Value, AppError> {
+    watchlist_mutate_via_api(runtime, symbol, "add").await
+}
+
+pub async fn watchlist_remove_via_api(
+    runtime: &mut impl RuntimeEvaluator,
+    symbol: &str,
+) -> Result<Value, AppError> {
+    watchlist_mutate_via_api(runtime, symbol, "remove").await
+}
+
+async fn watchlist_mutate_via_api(
+    runtime: &mut impl RuntimeEvaluator,
+    symbol: &str,
+    action: &str,
+) -> Result<Value, AppError> {
+    let symbol = normalize_watchlist_symbol(symbol)?;
+    let action_literal = js_string(action)?;
+    let symbol_literal = js_string(&symbol)?;
+    let expression = format!(
+        r#"
+        (async function() {{
+            const requestedSymbol = {symbol_literal};
+            const requestedAction = {action_literal};
+            const source = 'watchlist_api';
+
+            function sleep(ms) {{
+                return new Promise(function(resolve) {{ setTimeout(resolve, ms); }});
+            }}
+
+            function safeListName(list) {{
+                return list && (list.name || list.color || null);
+            }}
+
+            function publicList(list) {{
+                if (!list) return null;
+                return {{
+                    name: safeListName(list),
+                    type: list.type || null,
+                    color: list.color || null,
+                    symbol_count: Array.isArray(list.symbols) ? list.symbols.length : null,
+                    active: !!list.active
+                }};
+            }}
+
+            function hasSymbol(list, symbol) {{
+                return Array.isArray(list && list.symbols) && list.symbols.indexOf(symbol) >= 0;
+            }}
+
+            async function fetchLists() {{
+                let response;
+                let text;
+                try {{
+                    response = await fetch('/api/v1/symbols_list/all/?source=web-tvd', {{
+                        credentials: 'include'
+                    }});
+                    text = await response.text();
+                }} catch (error) {{
+                    return {{
+                        error: error && error.message ? error.message : String(error),
+                        error_kind: 'internal_api_unavailable',
+                        phase: 'list_unavailable',
+                        api_fallback_allowed: true,
+                        source
+                    }};
+                }}
+
+                let parsed = null;
+                try {{
+                    parsed = text ? JSON.parse(text) : null;
+                }} catch (error) {{
+                    return {{
+                        error: 'Watchlist API list response was not JSON',
+                        error_kind: 'internal_api_unavailable',
+                        phase: 'list_unavailable',
+                        status: response.status,
+                        api_fallback_allowed: true,
+                        source
+                    }};
+                }}
+
+                if (!response.ok || !Array.isArray(parsed)) {{
+                    return {{
+                        error: 'Watchlist API list request failed',
+                        error_kind: 'internal_api_unavailable',
+                        phase: 'list_unavailable',
+                        status: response.status,
+                        api_fallback_allowed: true,
+                        source
+                    }};
+                }}
+
+                return {{ lists: parsed }};
+            }}
+
+            function activeList(lists) {{
+                return (lists || []).find(function(list) {{ return list && list.active; }}) || null;
+            }}
+
+            function sameList(candidate, previous) {{
+                return candidate && previous && String(candidate.id) === String(previous.id);
+            }}
+
+            const beforeResult = await fetchLists();
+            if (beforeResult.error) return beforeResult;
+
+            const beforeActive = activeList(beforeResult.lists);
+            if (!beforeActive) {{
+                return {{
+                    error: 'No active watchlist found in API response',
+                    error_kind: 'internal_api_unavailable',
+                    phase: 'active_list_missing',
+                    api_fallback_allowed: true,
+                    source
+                }};
+            }}
+
+            if (beforeActive.type !== 'custom' || beforeActive.id == null) {{
+                return {{
+                    error: 'Active watchlist is not a custom API list',
+                    error_kind: 'internal_api_unavailable',
+                    phase: 'active_list_unsupported',
+                    active_list: publicList(beforeActive),
+                    api_fallback_allowed: true,
+                    source
+                }};
+            }}
+
+            const beforeCount = Array.isArray(beforeActive.symbols) ? beforeActive.symbols.length : null;
+            const matchedBefore = hasSymbol(beforeActive, requestedSymbol);
+            if (requestedAction === 'add' && matchedBefore) {{
+                return {{
+                    symbol: requestedSymbol,
+                    requested_symbol: requestedSymbol,
+                    action: 'already_present',
+                    source,
+                    target_list: publicList(beforeActive),
+                    before_count: beforeCount,
+                    after_count: beforeCount,
+                    matched_before: true,
+                    matched_after: true
+                }};
+            }}
+            if (requestedAction === 'remove' && !matchedBefore) {{
+                return {{
+                    error: 'Watchlist symbol not found: ' + requestedSymbol,
+                    error_kind: 'validation',
+                    phase: 'precheck_absent',
+                    symbol: requestedSymbol,
+                    requested_symbol: requestedSymbol,
+                    source,
+                    target_list: publicList(beforeActive),
+                    before_count: beforeCount,
+                    matched_before: false,
+                    api_fallback_allowed: false
+                }};
+            }}
+
+            const endpointAction = requestedAction === 'add' ? 'append' : 'remove';
+            const endpoint = '/api/v1/symbols_list/custom/' +
+                encodeURIComponent(String(beforeActive.id)) + '/' + endpointAction + '/?source=web-tvd';
+            let mutationResponse;
+            let mutationText;
+            try {{
+                mutationResponse = await fetch(endpoint, {{
+                    method: 'POST',
+                    credentials: 'include',
+                    headers: {{ 'Content-Type': 'application/json' }},
+                    body: JSON.stringify([requestedSymbol])
+                }});
+                mutationText = await mutationResponse.text();
+            }} catch (error) {{
+                return {{
+                    error: error && error.message ? error.message : String(error),
+                    error_kind: 'internal_api_unavailable',
+                    phase: 'mutation_unavailable',
+                    symbol: requestedSymbol,
+                    requested_symbol: requestedSymbol,
+                    source,
+                    target_list: publicList(beforeActive),
+                    before_count: beforeCount,
+                    matched_before: matchedBefore,
+                    api_fallback_allowed: true
+                }};
+            }}
+
+            if (!mutationResponse.ok) {{
+                return {{
+                    error: 'Watchlist API mutation failed',
+                    error_kind: 'internal_api_unavailable',
+                    phase: 'mutation_unavailable',
+                    status: mutationResponse.status,
+                    body_excerpt: String(mutationText || '').slice(0, 120),
+                    symbol: requestedSymbol,
+                    requested_symbol: requestedSymbol,
+                    source,
+                    target_list: publicList(beforeActive),
+                    before_count: beforeCount,
+                    matched_before: matchedBefore,
+                    api_fallback_allowed: true
+                }};
+            }}
+
+            await sleep(250);
+            const afterResult = await fetchLists();
+            if (afterResult.error) {{
+                afterResult.phase = 'post_check_unavailable';
+                afterResult.api_fallback_allowed = false;
+                afterResult.symbol = requestedSymbol;
+                afterResult.requested_symbol = requestedSymbol;
+                afterResult.target_list = publicList(beforeActive);
+                afterResult.before_count = beforeCount;
+                afterResult.matched_before = matchedBefore;
+                return afterResult;
+            }}
+
+            const afterActive = (afterResult.lists || []).find(function(list) {{
+                return sameList(list, beforeActive);
+            }}) || activeList(afterResult.lists);
+            const afterCount = Array.isArray(afterActive && afterActive.symbols) ? afterActive.symbols.length : null;
+            const matchedAfter = hasSymbol(afterActive, requestedSymbol);
+
+            if (requestedAction === 'add' && !matchedAfter) {{
+                return {{
+                    error: 'Watchlist API add did not confirm symbol after mutation: ' + requestedSymbol,
+                    error_kind: 'internal_api_unavailable',
+                    phase: 'post_check_failed',
+                    symbol: requestedSymbol,
+                    requested_symbol: requestedSymbol,
+                    source,
+                    target_list: publicList(beforeActive),
+                    before_count: beforeCount,
+                    after_count: afterCount,
+                    matched_before: matchedBefore,
+                    matched_after: matchedAfter,
+                    api_fallback_allowed: false
+                }};
+            }}
+            if (requestedAction === 'remove' && matchedAfter) {{
+                return {{
+                    error: 'Watchlist API remove did not remove the requested symbol: ' + requestedSymbol,
+                    error_kind: 'internal_api_unavailable',
+                    phase: 'post_check_failed',
+                    symbol: requestedSymbol,
+                    requested_symbol: requestedSymbol,
+                    source,
+                    target_list: publicList(beforeActive),
+                    before_count: beforeCount,
+                    after_count: afterCount,
+                    matched_before: matchedBefore,
+                    matched_after: matchedAfter,
+                    api_fallback_allowed: false
+                }};
+            }}
+
+            if (requestedAction === 'add') {{
+                return {{
+                    symbol: requestedSymbol,
+                    requested_symbol: requestedSymbol,
+                    action: 'added',
+                    source,
+                    target_list: publicList(beforeActive),
+                    before_count: beforeCount,
+                    after_count: afterCount,
+                    matched_before: matchedBefore,
+                    matched_after: true,
+                    click_method: null
+                }};
+            }}
+
+            return {{
+                symbol: requestedSymbol,
+                requested_symbol: requestedSymbol,
+                action: 'removed',
+                removed: true,
+                source,
+                target_list: publicList(beforeActive),
+                before_count: beforeCount,
+                after_count: afterCount,
+                matched_before: true,
+                matched_after: false,
+                remove_method: 'api',
+                click_method: null,
+                confirmation_clicked: false
+            }};
+        }})()
+        "#
+    );
+
+    let result = runtime.evaluate(&expression, true).await?;
+    normalize_watchlist_api_payload(result)
+}
+
+fn normalize_watchlist_api_payload(data: Value) -> Result<Value, AppError> {
+    if let Some(message) = data.get("error").and_then(Value::as_str) {
+        let kind = match data.get("error_kind").and_then(Value::as_str) {
+            Some("validation") => ErrorKind::Validation,
+            _ => ErrorKind::InternalApiUnavailable,
+        };
+        return Err(AppError::new(kind, message.to_string()).with_details(data));
+    }
+
+    if data.get("source").and_then(Value::as_str) != Some("watchlist_api") {
+        return Err(AppError::new(
+            ErrorKind::InternalApiUnavailable,
+            "Watchlist API response shape was not recognized",
+        )
+        .with_details(json!({
+            "phase": "unrecognized_response",
+            "api_fallback_allowed": true,
+            "source": data.get("source").cloned().unwrap_or(Value::Null),
+        })));
+    }
+
+    Ok(data)
+}
+
+fn watchlist_api_error_allows_fallback(error: &AppError) -> bool {
+    error
+        .details
+        .as_ref()
+        .and_then(|details| details.get("api_fallback_allowed"))
+        .and_then(Value::as_bool)
+        .unwrap_or(false)
+}
+
 pub async fn watchlist_remove(
     runtime: &mut impl RuntimeEvaluator,
     symbol: &str,
@@ -602,6 +937,12 @@ pub async fn watchlist_remove(
             ErrorKind::Validation,
             "Symbol must not be empty",
         ));
+    }
+
+    match watchlist_remove_via_api(runtime, symbol).await {
+        Ok(data) => return Ok(data),
+        Err(error) if watchlist_api_error_allows_fallback(&error) => {}
+        Err(error) => return Err(error),
     }
 
     let panel_state = ensure_watchlist_panel_open(runtime).await?;
@@ -1217,6 +1558,16 @@ mod tests {
     use super::super::test_support::FakeRuntime;
     use super::*;
 
+    fn watchlist_api_fallback() -> serde_json::Value {
+        json!({
+            "error": "Watchlist API unavailable in test",
+            "error_kind": "internal_api_unavailable",
+            "phase": "list_unavailable",
+            "api_fallback_allowed": true,
+            "source": "watchlist_api"
+        })
+    }
+
     #[tokio::test]
     async fn watchlist_get_returns_runtime_payload() {
         let payload = json!({
@@ -1235,6 +1586,7 @@ mod tests {
     #[tokio::test]
     async fn watchlist_add_opens_panel_clicks_add_and_sends_input() {
         let mut runtime = FakeRuntime::new([
+            watchlist_api_fallback(),
             json!({"opened": true, "click_method": "mouse_event"}),
             json!(true),
             json!({
@@ -1267,18 +1619,67 @@ mod tests {
         assert_eq!(runtime.key_events[1].event_type, KeyEventType::KeyUp);
         assert_eq!(runtime.key_events[2].key, "Escape");
         assert!(
-            runtime.evaluated[0]
+            runtime.evaluated[1]
                 .0
                 .contains("base-watchlist-widget-button")
         );
-        assert!(runtime.evaluated[2].0.contains("add-symbol-button"));
-        assert!(runtime.evaluated[2].0.contains("new MouseEvent"));
-        assert!(!runtime.evaluated[2].0.contains(".click()"));
+        assert!(runtime.evaluated[3].0.contains("add-symbol-button"));
+        assert!(runtime.evaluated[3].0.contains("new MouseEvent"));
+        assert!(!runtime.evaluated[3].0.contains(".click()"));
+    }
+
+    #[tokio::test]
+    async fn watchlist_add_uses_api_when_post_check_confirms_symbol() {
+        let mut runtime = FakeRuntime::new([json!({
+            "symbol": "NASDAQ:AAPL",
+            "requested_symbol": "NASDAQ:AAPL",
+            "action": "added",
+            "source": "watchlist_api",
+            "target_list": {"name": "Test", "type": "custom", "symbol_count": 1, "active": true},
+            "before_count": 1,
+            "after_count": 2,
+            "matched_before": false,
+            "matched_after": true,
+            "click_method": null
+        })]);
+
+        let result = watchlist_add(&mut runtime, "NASDAQ:AAPL").await.unwrap();
+
+        assert_eq!(result["action"], "added");
+        assert_eq!(result["source"], "watchlist_api");
+        assert_eq!(result["before_count"], 1);
+        assert_eq!(result["after_count"], 2);
+        assert!(runtime.inserted_text.is_empty());
+        assert!(runtime.key_events.is_empty());
+        assert!(runtime.evaluated[0].0.contains("symbols_list/all"));
+        assert!(runtime.evaluated[0].0.contains("'append'"));
+    }
+
+    #[tokio::test]
+    async fn watchlist_add_api_returns_already_present_without_dom_input() {
+        let mut runtime = FakeRuntime::new([json!({
+            "symbol": "NASDAQ:AAPL",
+            "requested_symbol": "NASDAQ:AAPL",
+            "action": "already_present",
+            "source": "watchlist_api",
+            "before_count": 2,
+            "after_count": 2,
+            "matched_before": true,
+            "matched_after": true
+        })]);
+
+        let result = watchlist_add(&mut runtime, "NASDAQ:AAPL").await.unwrap();
+
+        assert_eq!(result["action"], "already_present");
+        assert_eq!(result["source"], "watchlist_api");
+        assert!(runtime.inserted_text.is_empty());
+        assert!(runtime.key_events.is_empty());
     }
 
     #[tokio::test]
     async fn watchlist_add_continues_when_watchlist_rows_are_already_visible() {
         let mut runtime = FakeRuntime::new([
+            watchlist_api_fallback(),
             json!({"opened": false, "already_open": true, "source": "visible_watchlist_rows"}),
             json!({
                 "found": true,
@@ -1307,6 +1708,7 @@ mod tests {
     #[tokio::test]
     async fn watchlist_add_returns_already_present_without_input() {
         let mut runtime = FakeRuntime::new([
+            watchlist_api_fallback(),
             json!({"opened": false, "already_open": true, "source": "visible_watchlist_rows"}),
             json!({
                 "found": true,
@@ -1332,6 +1734,7 @@ mod tests {
     #[tokio::test]
     async fn watchlist_add_requires_post_add_confirmation() {
         let mut runtime = FakeRuntime::new([
+            watchlist_api_fallback(),
             json!({"opened": false, "already_open": true, "source": "visible_watchlist_rows"}),
             json!({
                 "found": true,
@@ -1360,7 +1763,10 @@ mod tests {
 
     #[tokio::test]
     async fn watchlist_add_maps_missing_watchlist_ui_to_internal_api_error() {
-        let mut runtime = FakeRuntime::new([json!({"error": "Watchlist button not found"})]);
+        let mut runtime = FakeRuntime::new([
+            watchlist_api_fallback(),
+            json!({"error": "Watchlist button not found"}),
+        ]);
 
         let err = watchlist_add(&mut runtime, "NASDAQ:AAPL")
             .await
@@ -1372,7 +1778,11 @@ mod tests {
 
     #[tokio::test]
     async fn watchlist_add_maps_missing_add_button_to_internal_api_error() {
-        let mut runtime = FakeRuntime::new([json!({"opened": false}), json!({"found": false})]);
+        let mut runtime = FakeRuntime::new([
+            watchlist_api_fallback(),
+            json!({"opened": false}),
+            json!({"found": false}),
+        ]);
 
         let err = watchlist_add(&mut runtime, "NASDAQ:AAPL")
             .await
@@ -1385,6 +1795,7 @@ mod tests {
     #[tokio::test]
     async fn watchlist_add_bulk_aggregates_added_present_and_duplicates() {
         let mut runtime = FakeRuntime::new([
+            watchlist_api_fallback(),
             json!({"opened": false, "already_open": true, "source": "visible_watchlist_rows"}),
             json!({
                 "found": true,
@@ -1398,6 +1809,7 @@ mod tests {
             json!(true),
             json!(true),
             json!({"after_count": 1, "matched_after": true}),
+            watchlist_api_fallback(),
             json!({"opened": false, "already_open": true, "source": "visible_watchlist_rows"}),
             json!({
                 "found": true,
@@ -1435,7 +1847,11 @@ mod tests {
 
     #[tokio::test]
     async fn watchlist_add_bulk_returns_partial_payload_when_allowed() {
-        let mut runtime = FakeRuntime::new([json!({"opened": false}), json!({"found": false})]);
+        let mut runtime = FakeRuntime::new([
+            watchlist_api_fallback(),
+            json!({"opened": false}),
+            json!({"found": false}),
+        ]);
         let symbols = vec!["NASDAQ:AAPL".to_string()];
 
         let result = watchlist_add_bulk(&mut runtime, &symbols, 0, true)
@@ -1452,7 +1868,11 @@ mod tests {
 
     #[tokio::test]
     async fn watchlist_add_bulk_fails_strictly_after_attempting_symbols() {
-        let mut runtime = FakeRuntime::new([json!({"opened": false}), json!({"found": false})]);
+        let mut runtime = FakeRuntime::new([
+            watchlist_api_fallback(),
+            json!({"opened": false}),
+            json!({"found": false}),
+        ]);
         let symbols = vec!["NASDAQ:AAPL".to_string()];
 
         let err = watchlist_add_bulk(&mut runtime, &symbols, 0, false)
@@ -1502,6 +1922,7 @@ mod tests {
     #[tokio::test]
     async fn watchlist_remove_removes_exact_symbol() {
         let mut runtime = FakeRuntime::new([
+            watchlist_api_fallback(),
             json!({"opened": false, "already_open": true, "source": "visible_watchlist_rows"}),
             json!({
                 "symbol": "NASDAQ:AAPL",
@@ -1530,14 +1951,65 @@ mod tests {
         assert_eq!(result["remove_method"], "row_remove_button");
         assert_eq!(result["click_method"], "mouse_event");
         assert!(
-            runtime.evaluated[1]
+            runtime.evaluated[2]
                 .0
                 .contains("entry.symbol === requestedSymbol")
         );
-        assert!(runtime.evaluated[1].0.contains("removeButton"));
-        assert!(runtime.evaluated[1].0.contains("new MouseEvent"));
-        assert!(!runtime.evaluated[1].0.contains("button.click"));
-        assert!(!runtime.evaluated[1].0.contains("contextmenu"));
+        assert!(runtime.evaluated[2].0.contains("removeButton"));
+        assert!(runtime.evaluated[2].0.contains("new MouseEvent"));
+        assert!(!runtime.evaluated[2].0.contains("button.click"));
+        assert!(!runtime.evaluated[2].0.contains("contextmenu"));
+    }
+
+    #[tokio::test]
+    async fn watchlist_remove_uses_api_when_post_check_confirms_absence() {
+        let mut runtime = FakeRuntime::new([json!({
+            "symbol": "NASDAQ:AAPL",
+            "requested_symbol": "NASDAQ:AAPL",
+            "action": "removed",
+            "removed": true,
+            "source": "watchlist_api",
+            "target_list": {"name": "Test", "type": "custom", "symbol_count": 2, "active": true},
+            "before_count": 2,
+            "after_count": 1,
+            "matched_before": true,
+            "matched_after": false,
+            "remove_method": "api",
+            "click_method": null,
+            "confirmation_clicked": false
+        })]);
+
+        let result = watchlist_remove(&mut runtime, "NASDAQ:AAPL").await.unwrap();
+
+        assert_eq!(result["action"], "removed");
+        assert_eq!(result["removed"], true);
+        assert_eq!(result["source"], "watchlist_api");
+        assert_eq!(result["remove_method"], "api");
+        assert!(runtime.evaluated[0].0.contains("symbols_list/all"));
+        assert!(runtime.evaluated[0].0.contains("'remove'"));
+    }
+
+    #[tokio::test]
+    async fn watchlist_remove_api_absent_symbol_is_validation_without_dom_fallback() {
+        let mut runtime = FakeRuntime::new([json!({
+            "error": "Watchlist symbol not found: NASDAQ:AAPL",
+            "error_kind": "validation",
+            "phase": "precheck_absent",
+            "symbol": "NASDAQ:AAPL",
+            "requested_symbol": "NASDAQ:AAPL",
+            "source": "watchlist_api",
+            "before_count": 1,
+            "matched_before": false,
+            "api_fallback_allowed": false
+        })]);
+
+        let error = watchlist_remove(&mut runtime, "NASDAQ:AAPL")
+            .await
+            .unwrap_err();
+
+        assert_eq!(error.kind, ErrorKind::Validation);
+        assert_eq!(error.details.as_ref().unwrap()["source"], "watchlist_api");
+        assert_eq!(runtime.evaluated.len(), 1);
     }
 
     #[tokio::test]
@@ -1553,6 +2025,7 @@ mod tests {
     #[tokio::test]
     async fn watchlist_remove_maps_absent_symbol_to_validation() {
         let mut runtime = FakeRuntime::new([
+            watchlist_api_fallback(),
             json!({"opened": false, "already_open": true, "source": "visible_watchlist_rows"}),
             json!({
                 "error": "Watchlist symbol not found: NASDAQ:AAPL",
@@ -1580,6 +2053,7 @@ mod tests {
     #[tokio::test]
     async fn watchlist_remove_maps_missing_remove_control_to_internal_api_error() {
         let mut runtime = FakeRuntime::new([
+            watchlist_api_fallback(),
             json!({"opened": false, "already_open": true, "source": "visible_watchlist_rows"}),
             json!({
                 "error": "Remove control not found for watchlist symbol: NASDAQ:AAPL",
@@ -1604,6 +2078,7 @@ mod tests {
     #[tokio::test]
     async fn watchlist_remove_fails_when_symbol_remains_after_delete() {
         let mut runtime = FakeRuntime::new([
+            watchlist_api_fallback(),
             json!({"opened": false, "already_open": true, "source": "visible_watchlist_rows"}),
             json!({
                 "symbol": "NASDAQ:AAPL",

@@ -178,10 +178,10 @@ Safety boundary:
 - supported markets and field names are intentionally explicit
 - unexpected response shapes are rejected rather than normalized by guesswork
 
-## Watchlist DOM surface
+## Watchlist page-session API and DOM surface
 
-Category: visible right-panel watchlist UI controlled through DOM and CDP input
-events.
+Category: logged-in page-session watchlist API for mutations, plus visible
+right-panel watchlist UI for readback.
 
 Current command family:
 
@@ -191,19 +191,33 @@ Replacement classification:
 
 - `watchlist get` is visible UI readback and may remain DOM-backed when the
   user wants the current visible watchlist.
-- `watchlist add`, `watchlist add-bulk`, and `watchlist remove` are
-  `replace_candidate` account mutations. They are among the highest-value
-  candidates for a future page-session storage/API evidence slice because they
-  currently depend on panel visibility, add/remove buttons, CDP text input, and
-  row-level post-checks.
+- `watchlist add` and `watchlist remove` are API-backed account mutations when
+  TradingView's logged-in symbols-list API is available for the active custom
+  watchlist. They still verify presence or absence by re-fetching the active
+  list before reporting success.
+- `watchlist add-bulk` inherits the API-backed path because it calls the
+  single-symbol add operation sequentially.
+- DOM fallback remains for add/remove only when the API list or active list
+  cannot be used before mutation. Post-check failures do not fall back.
+
+Endpoint category:
+
+- TradingView symbols-list API under the logged-in `www.tradingview.com`
+  page session.
+- Read shape: saved lists include custom and colored list records, active-list
+  state, and symbol arrays.
+- Mutation shape: append/remove accepts a symbol array against the active custom
+  list, followed by a readback post-check.
 
 Safety boundary:
 
-- do not infer a watchlist storage endpoint from URL names alone
+- do not expose raw watchlist payloads, list ids, or live list names in tracked
+  docs
 - normal add/remove must still verify the symbol's presence or absence after
   mutation
 - bulk add must preserve per-symbol result reporting and partial-success policy
-- do not write live watchlist ids or list names to tracked docs
+- broader watchlist list/switch/create/rename/delete commands remain future
+  feature research with separate safety requirements
 
 ## Screener page-session storage API
 
@@ -325,12 +339,11 @@ changes the boundary:
 
 Recommended order for future API/storage replacement work:
 
-1. Watchlist add/remove storage or page-session API evidence.
-2. Alert create endpoint evidence.
-3. Screener filters add/modify storage schema evidence.
-4. Screener screen create/rename/save-as/save/switch storage or command
+1. Alert create endpoint evidence.
+2. Screener filters add/modify storage schema evidence.
+3. Screener screen create/rename/save-as/save/switch storage or command
    evidence.
-5. App-tab new/close non-DOM command evidence.
+4. App-tab new/close non-DOM command evidence.
 
 Do not start with `data depth`, chart screenshots, or generic UI automation;
 their current DOM dependency is part of their observable contract.
