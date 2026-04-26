@@ -147,6 +147,7 @@ Current command families:
 
 - `screener screens delete`
 - `screener columns config/add/remove/reorder`
+- `screener filters remove/clear`
 
 Observed high-level shape:
 
@@ -163,6 +164,8 @@ Safety boundary:
 - mutation is limited to prepared test or disposable screen names when the
   command edits saved account state
 - storage writes must be followed by a re-fetch and exact post-check
+- full-page Screener targets may be refreshed after storage-backed filter
+  writes so the visible UI catches up with saved storage
 - commands must not write raw storage payloads or account-linked ids to tracked
   docs
 - missing storage init data, failed fetches, failed saves, or failed post-checks
@@ -192,14 +195,13 @@ Storage/API-backed today:
 
 - `screener screens delete`
 - `screener columns config/add/remove/reorder`
+- `screener filters remove/clear`
 
 High-value storage/API audit candidates:
 
 - `screener filters add`
 - `screener filters modify --min/--max`
 - `screener filters modify --option`
-- `screener filters remove`
-- `screener filters clear`
 - `screener screens create/rename/save-as/save/switch`
 - `screener columns reset`
 

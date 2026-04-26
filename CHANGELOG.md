@@ -39,6 +39,9 @@ package version omits the leading `v`.
   active screens, and verifies post-delete absence.
 - Added guarded `tv screener filters remove` and `tv screener filters clear`
   commands, including dry-run target reporting and clear-all confirmation.
+  Normal remove and clear now use the saved-screen storage API on test or
+  disposable screens, require storage re-fetch post-checks, and request a
+  full-page Screener refresh when available.
 - Added `tv screener filters actions` and preset-backed
   `tv screener filters modify --index <N>|--text <TEXT> --min <N>|--max <N>`
   for visible numeric range filters. Modify supports dry-run target reporting,

@@ -67,9 +67,13 @@ deferred commands above. The highest-value checks are:
 - Prefer a full-page Screener target discovered through `tv tab list` and
   `screener_targets[].target_env.TV_CDP_TARGET_ID` for live smoke.
 - Run read-only and `--dry-run` commands before normal mutations.
-- Keep normal screen lifecycle and column storage mutations limited to prepared
-  test or disposable screens whose names contain `CLI-Test` or `テスト`.
-- Keep filter mutations guarded by visible filter-pill post-checks.
+- Keep normal screen lifecycle, storage-backed filter remove/clear, and column
+  storage mutations limited to prepared test or disposable screens whose names
+  contain `CLI-Test` or `テスト`.
+- Keep filter add/modify mutations guarded by visible filter-pill post-checks.
+- Keep storage-backed filter remove/clear guarded by storage re-fetch
+  post-checks; full-page Screener targets may need a refresh before visible
+  filter pills catch up with saved storage.
 - Keep column storage mutations guarded by storage re-fetch and exact id/params
   order post-checks.
 - Close stale transient popups before opening filter edit popovers, because

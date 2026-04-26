@@ -52,6 +52,8 @@ After this slice, a future contributor should know which Screener commands are a
 
 This audit found a promising path for future filter stabilization: filters are present in the active saved screen storage payload. It did not prove a safe write schema, so no command implementation changed. The recommended next implementation slice is a bounded `filters storage-backed mutation feasibility` plan that starts with dry-run storage filter parsing and one reversible test-screen mutation only if the schema can be mapped without guessing.
 
+Follow-up implementation in `docs/plans/tradingview-cli-screener-filter-storage-mutations.md` adopted storage-backed `filters remove` and `filters clear` only. `filters add` and `filters modify` remain DOM/post-check guarded because they still require schema-aware filter payload creation or editing.
+
 ## Context and Orientation
 
 The Rust CLI is the `tv` binary. Screener command parsing lives in `src/cli.rs`, dispatch lives in `src/main.rs`, and Screener operations live in `src/ops/screener.rs`. Screener commands use Chrome DevTools Protocol, abbreviated CDP, to evaluate JavaScript in a running TradingView Desktop page.
