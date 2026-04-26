@@ -3568,6 +3568,9 @@ function screenerScreenActionKind(text) {
     if (/^(最近使用した項目|Recent)$/i.test(text)) return 'recent';
     return 'unknown';
 }
+function screenerScreenShortcutText(text) {
+    return /^(⌘\s*S|Ctrl\s*\+\s*S|⇧\s*N|Shift\s*\+\s*N|ドット|Dot)$/i.test(text);
+}
 function screenerElementLabel(el) {
     return {
         text: textOf(el),
@@ -3691,6 +3694,7 @@ function collectScreenerScreenEntries(menu, activeTitle) {
     nodes.forEach(function(el) {
         var name = textOf(el);
         if (!name || name.length > 120 || screenerScreenActionText(name)) return;
+        if (screenerScreenShortcutText(name)) return;
         if (name.indexOf('\n') >= 0) return;
         if (name.indexOf(activeTitle + ' ') === 0) return;
         if (seen[name]) return;
