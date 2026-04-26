@@ -246,6 +246,7 @@ async fn dispatch(command: Command) -> Result<serde_json::Value, AppError> {
                         text,
                         min,
                         max,
+                        option,
                         dry_run,
                     } => {
                         ops::validate_screener_filter_modify_request(
@@ -253,6 +254,7 @@ async fn dispatch(command: Command) -> Result<serde_json::Value, AppError> {
                             text.as_deref(),
                             *min,
                             *max,
+                            option.as_deref(),
                             *dry_run,
                         )?;
                     }
@@ -425,6 +427,7 @@ async fn dispatch(command: Command) -> Result<serde_json::Value, AppError> {
                         text,
                         min,
                         max,
+                        option,
                         dry_run,
                     } => {
                         let request = ops::validate_screener_filter_modify_request(
@@ -432,6 +435,7 @@ async fn dispatch(command: Command) -> Result<serde_json::Value, AppError> {
                             text.as_deref(),
                             min,
                             max,
+                            option.as_deref(),
                             dry_run,
                         )?;
                         ops::screener_filters_modify(&mut runtime, request).await

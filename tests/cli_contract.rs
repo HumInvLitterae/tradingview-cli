@@ -182,6 +182,7 @@ fn screener_help_lists_read_subcommands() {
         .stdout(predicate::str::contains("--text"))
         .stdout(predicate::str::contains("--min"))
         .stdout(predicate::str::contains("--max"))
+        .stdout(predicate::str::contains("--option"))
         .stdout(predicate::str::contains("--dry-run"));
     tv().args(["screener", "filters", "add", "--help"])
         .assert()
@@ -309,6 +310,32 @@ fn screener_filter_mutations_reject_invalid_inputs_before_connecting() {
         .failure()
         .code(1);
     let stderr = String::from_utf8(modify_missing_range.get_output().stderr.clone()).unwrap();
+    let value: Value = serde_json::from_str(&stderr).unwrap();
+    assert_eq!(value["command"], "screener");
+    assert_eq!(value["error"]["kind"], "validation");
+
+    let modify_blank_option = tv()
+        .env("TV_CDP_PORT", "9")
+        .args([
+            "screener", "filters", "modify", "--text", "EMA", "--option", " ",
+        ])
+        .assert()
+        .failure()
+        .code(1);
+    let stderr = String::from_utf8(modify_blank_option.get_output().stderr.clone()).unwrap();
+    let value: Value = serde_json::from_str(&stderr).unwrap();
+    assert_eq!(value["command"], "screener");
+    assert_eq!(value["error"]["kind"], "validation");
+
+    let modify_option_with_range = tv()
+        .env("TV_CDP_PORT", "9")
+        .args([
+            "screener", "filters", "modify", "--text", "EMA", "--option", "買い", "--min", "0",
+        ])
+        .assert()
+        .failure()
+        .code(1);
+    let stderr = String::from_utf8(modify_option_with_range.get_output().stderr.clone()).unwrap();
     let value: Value = serde_json::from_str(&stderr).unwrap();
     assert_eq!(value["command"], "screener");
     assert_eq!(value["error"]["kind"], "validation");

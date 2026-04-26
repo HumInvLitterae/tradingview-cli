@@ -101,7 +101,7 @@ Classify the remaining Screener/Hotlist ideas as follows:
 | UI Screener status/get/open/close | implemented as `tv screener` | Useful but DOM-fragile and changes visible UI state. Implemented as a narrow read-only UI dialog slice after live evidence in `docs/notes/ui-screener-read-evidence-2026-04-26.md`. |
 | UI filter list / column list / active screen read | implemented as `tv screener` metadata reads | Read-only after opening the dialog, implemented as lightweight metadata commands that restore the initial open/closed dialog state. |
 | UI filter remove/clear | implemented as guarded `tv screener filters remove/clear` | Mutates the active Screener screen, so remove supports dry-run target reporting and clear requires explicit confirmation. |
-| UI filter actions/add/modify | implemented as guarded `tv screener filters actions/add/modify` | `actions` reports visible add/edit capability and numeric preset options. `add` searches the visible add-filter catalog, supports dry-run candidate reporting, validates finite values before CDP, clicks candidate/range options through CDP mouse events, and verifies a new visible filter pill after mutation. `modify` is limited to existing visible numeric range presets, supports dry-run target reporting, validates finite values before CDP, treats already-matching presets as no-op, and verifies visible filter text after mutation. Generic non-numeric filter editing remains deferred. |
+| UI filter actions/add/modify | implemented as guarded `tv screener filters actions/add/modify` | `actions` reports visible add/edit capability and numeric preset options. `add` searches the visible add-filter catalog, supports dry-run candidate reporting, validates finite values before CDP, clicks candidate/range options through CDP mouse events, and verifies a new visible filter pill after mutation. `modify` supports existing visible numeric range presets and single visible option selection. The option path supports dry-run option reporting, clears other selected options when TradingView exposes selection state, and verifies visible filter text after mutation. Broader multi-option add/remove/replace semantics and free-text filter editing remain deferred. |
 | UI menu-visible screen list/switch | implemented as guarded `tv screener screens list/switch` | Lists exact visible menu names and supports dry-run target reporting. Non-dry-run switch verifies the active title and fails safely if TradingView does not activate the clicked row. |
 | UI saved-screen catalog list/switch | implemented as guarded `tv screener screens list/switch --catalog` | Uses the saved-screen catalog for exact-name targeting, supports dry-run target reporting, and verifies the active title after mutation. |
 | UI screen actions/save | implemented as guarded `tv screener screens actions/save` | Lists visible screen menu actions and clicks only exact `Save screen` / `スクリーンを保存`; dry-run reports the target action before mutation. |
@@ -111,11 +111,12 @@ Classify the remaining Screener/Hotlist ideas as follows:
 | Scanner/product workflow packs | keep downstream | Rules packs and dashboards are workflow products, not core bridge replacement. |
 
 Hotlist REST, generic scanner REST, the read-oriented UI Screener dialog slice,
-guarded filter cleanup, preset-backed filter modify, guarded filter add,
-guarded screen lifecycle commands, and storage-backed column config/add/remove/
-reorder are now implemented. Any next implementation plan should not bundle
-column reset, generic non-numeric filter editing, or downstream scanner
-workflow rules without fresh evidence.
+guarded filter cleanup, preset-backed filter modify, single-option filter
+editing, guarded filter add, guarded screen lifecycle commands, and
+storage-backed column config/add/remove/reorder are now implemented. Any next
+implementation plan should not bundle column reset, broader multi-option or
+free-text filter editing, or downstream scanner workflow rules without fresh
+evidence.
 
 ## Implemented REST scanner contract
 
@@ -151,6 +152,7 @@ The Rust implementation is separate from Hotlist REST and currently includes:
 - `tv screener filters actions`
 - `tv screener filters add --name <TEXT> --min <N>|--max <N> [--dry-run]`
 - `tv screener filters modify --index <N>|--text <TEXT> --min <N>|--max <N> [--dry-run]`
+- `tv screener filters modify --index <N>|--text <TEXT> --option <TEXT> [--dry-run]`
 - `tv screener filters remove --index <N>|--text <TEXT> [--dry-run]`
 - `tv screener filters clear [--dry-run] --confirm-clear`
 - `tv screener columns list`
@@ -205,7 +207,10 @@ for the current test screen, `EMA (21)` exposes `0% 〜 10%`, `10%以上`, and
 `filters modify` remains guarded by visible-text post-check and should be
 treated as evidence-gated in live UI. The add-filter button opens a searchable
 catalog. `filters add` is now implemented for visible numeric range presets
-with dry-run candidate reporting and visible-pill post-checks.
+with dry-run candidate reporting and visible-pill post-checks. The first
+non-numeric editing surface is now implemented as `filters modify --option` for
+single visible option selection on an existing filter pill; multi-option
+workflow semantics remain deferred.
 
 The 2026-04-26 live evidence pass found that the upstream
 `[class*="screenerContainer"]` selector did not match the current dialog. A Rust

@@ -81,6 +81,7 @@ The implemented surface is:
 - `tv screener filters actions`
 - `tv screener filters add --name <TEXT> --min <N>|--max <N> [--dry-run]`
 - `tv screener filters modify --index <N>|--text <TEXT> --min <N>|--max <N> [--dry-run]`
+- `tv screener filters modify --index <N>|--text <TEXT> --option <TEXT> [--dry-run]`
 - `tv screener filters remove --index <N>|--text <TEXT> [--dry-run]`
 - `tv screener filters clear [--dry-run] --confirm-clear`
 - `tv screener columns list`
@@ -137,6 +138,15 @@ reliable parts of this surface; normal modify must fail with
 `internal_api_unavailable` rather than claiming success when the visible pill
 does not change.
 
+The 2026-04-27 option-editing pass added the first narrow non-numeric filter
+surface: `tv screener filters modify --option`. Live evidence on the prepared
+`米国株（テスト用）` screen found that `アナリストの評価` exposes visible options
+such as `買い` and `強い買い`. Dry-run resolved `強い買い`, normal mutation changed
+the visible text to `アナリストの評価強い買い`, and a second normal mutation restored
+the visible text to `アナリストの評価買い`. A transient popover state produced one
+timeout during restore, so this remains guarded by visible-text post-checks
+rather than being treated as generic stable UI automation.
+
 The filter add follow-up confirmed that the add-filter button opens a searchable
 catalog whose input responds to real inserted text. Selecting `RSI` opened a
 numeric preset list, selecting `> 70` added a visible `RSI (14)` filter pill,
@@ -165,7 +175,7 @@ or preset column source beyond the current active screen's
 ## Still deferred
 
 - column reset
-- generic non-numeric filter editing
+- broader multi-option or free-text filter editing
 - workflow scanner rules, dashboards, or downstream strategy packs
 
 These surfaces need separate safety policy and workflow evidence before they

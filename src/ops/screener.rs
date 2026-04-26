@@ -24,10 +24,20 @@ pub enum ScreenerFilterSelector {
 #[derive(Clone, Debug, PartialEq)]
 pub struct ScreenerFilterModifyRequest {
     pub selector: ScreenerFilterSelector,
-    pub min: Option<f64>,
-    pub max: Option<f64>,
     pub dry_run: bool,
-    preset_label: String,
+    mode: ScreenerFilterModifyMode,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+enum ScreenerFilterModifyMode {
+    Range {
+        min: Option<f64>,
+        max: Option<f64>,
+        preset_label: String,
+    },
+    Option {
+        option: String,
+    },
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -136,16 +146,44 @@ pub fn validate_screener_filter_modify_request(
     text: Option<&str>,
     min: Option<f64>,
     max: Option<f64>,
+    option: Option<&str>,
     dry_run: bool,
 ) -> Result<ScreenerFilterModifyRequest, AppError> {
     let selector = validate_screener_filter_selector(index, text)?;
-    let preset_label = screener_filter_range_preset_label(min, max)?;
+    let option = match option {
+        Some(value) => {
+            let value = value.trim();
+            if value.is_empty() {
+                return Err(AppError::new(
+                    ErrorKind::Validation,
+                    "--option must not be empty",
+                ));
+            }
+            Some(value.to_string())
+        }
+        None => None,
+    };
+    let mode = if let Some(option) = option {
+        if min.is_some() || max.is_some() {
+            return Err(AppError::new(
+                ErrorKind::Validation,
+                "--option cannot be used with --min or --max",
+            ));
+        }
+        ScreenerFilterModifyMode::Option { option }
+    } else {
+        let preset_label = screener_filter_range_preset_label(min, max)?;
+        ScreenerFilterModifyMode::Range {
+            min,
+            max,
+            preset_label,
+        }
+    };
+
     Ok(ScreenerFilterModifyRequest {
         selector,
-        min,
-        max,
         dry_run,
-        preset_label,
+        mode,
     })
 }
 
@@ -1107,71 +1145,151 @@ pub async fn screener_filters_modify(
     ensure_dialog_open(&before_state)?;
     let before_filters = filter_targets_from_state(&before_state);
     let target = resolve_filter_target(&before_filters, &request.selector)?;
-    let requested_range = filter_modify_range_payload(&request);
 
-    if request.dry_run {
-        let close_result = session.restore().await;
-        close_result?;
-        return Ok(json!({
-            "source": SCREENER_SOURCE,
-            "action": "filter_modify",
-            "dry_run": true,
-            "modified": false,
-            "open": value_bool(&before_state, "open"),
-            "opened_for_mutation": session.opened_for_mutation,
-            "restored_open_state": session.restored_open_state,
-            "before_filter_count": before_filters.len(),
-            "after_filter_count": before_filters.len(),
-            "target_filter": filter_target_payload(&target),
-            "requested_range": requested_range,
-        }));
+    match &request.mode {
+        ScreenerFilterModifyMode::Range { preset_label, .. } => {
+            let requested_range = filter_modify_range_payload(&request);
+
+            if request.dry_run {
+                let close_result = session.restore().await;
+                close_result?;
+                return Ok(json!({
+                    "source": SCREENER_SOURCE,
+                    "action": "filter_modify",
+                    "dry_run": true,
+                    "modified": false,
+                    "open": value_bool(&before_state, "open"),
+                    "opened_for_mutation": session.opened_for_mutation,
+                    "restored_open_state": session.restored_open_state,
+                    "before_filter_count": before_filters.len(),
+                    "after_filter_count": before_filters.len(),
+                    "target_filter": filter_target_payload(&target),
+                    "requested_range": requested_range,
+                }));
+            }
+
+            if normalize_screener_text(&target.text).contains(preset_label) {
+                let close_result = session.restore().await;
+                close_result?;
+                return Ok(json!({
+                    "source": SCREENER_SOURCE,
+                    "action": "filter_modify",
+                    "dry_run": false,
+                    "modified": false,
+                    "already_matching": true,
+                    "open": value_bool(&before_state, "open"),
+                    "opened_for_mutation": session.opened_for_mutation,
+                    "restored_open_state": session.restored_open_state,
+                    "before_filter_count": before_filters.len(),
+                    "after_filter_count": before_filters.len(),
+                    "target_filter": filter_target_payload(&target),
+                    "after_filter": filter_target_payload(&target),
+                    "requested_range": requested_range,
+                }));
+            }
+
+            click_filter_range_preset(session.runtime, &target, preset_label).await?;
+            let after_state =
+                wait_for_filter_modified(session.runtime, &target.data_name, preset_label).await?;
+            let after_filters = filter_targets_from_state(&after_state);
+            let after_target = after_filters
+                .iter()
+                .find(|filter| filter.data_name == target.data_name)
+                .cloned();
+            let close_result = session.restore().await;
+            close_result?;
+
+            Ok(json!({
+                "source": SCREENER_SOURCE,
+                "action": "filter_modify",
+                "dry_run": false,
+                "modified": true,
+                "open": value_bool(&after_state, "open"),
+                "opened_for_mutation": session.opened_for_mutation,
+                "restored_open_state": session.restored_open_state,
+                "before_filter_count": before_filters.len(),
+                "after_filter_count": after_filters.len(),
+                "target_filter": filter_target_payload(&target),
+                "after_filter": after_target.as_ref().map(filter_target_payload).unwrap_or(Value::Null),
+                "requested_range": requested_range,
+            }))
+        }
+        ScreenerFilterModifyMode::Option { option } => {
+            if request.dry_run {
+                let matched = resolve_filter_option(session.runtime, &target, option).await?;
+                let requested_option = filter_modify_option_payload(option, Some(&matched));
+                let close_result = session.restore().await;
+                close_result?;
+                return Ok(json!({
+                    "source": SCREENER_SOURCE,
+                    "action": "filter_modify",
+                    "dry_run": true,
+                    "modified": false,
+                    "open": value_bool(&before_state, "open"),
+                    "opened_for_mutation": session.opened_for_mutation,
+                    "restored_open_state": session.restored_open_state,
+                    "before_filter_count": before_filters.len(),
+                    "after_filter_count": before_filters.len(),
+                    "target_filter": filter_target_payload(&target),
+                    "current_filter_text": target.text,
+                    "expected_filter_text": option,
+                    "requested_option": requested_option,
+                }));
+            }
+
+            if screener_filter_text_matches_option(&target.text, option) {
+                let requested_option = filter_modify_option_payload(option, None);
+                let close_result = session.restore().await;
+                close_result?;
+                return Ok(json!({
+                    "source": SCREENER_SOURCE,
+                    "action": "filter_modify",
+                    "dry_run": false,
+                    "modified": false,
+                    "already_matching": true,
+                    "open": value_bool(&before_state, "open"),
+                    "opened_for_mutation": session.opened_for_mutation,
+                    "restored_open_state": session.restored_open_state,
+                    "before_filter_count": before_filters.len(),
+                    "after_filter_count": before_filters.len(),
+                    "target_filter": filter_target_payload(&target),
+                    "after_filter": filter_target_payload(&target),
+                    "current_filter_text": target.text,
+                    "expected_filter_text": option,
+                    "requested_option": requested_option,
+                }));
+            }
+
+            let matched = click_filter_option(session.runtime, &target, option).await?;
+            let requested_option = filter_modify_option_payload(option, Some(&matched));
+            let after_state =
+                wait_for_filter_option_modified(session.runtime, &target.data_name, option).await?;
+            let after_filters = filter_targets_from_state(&after_state);
+            let after_target = after_filters
+                .iter()
+                .find(|filter| filter.data_name == target.data_name)
+                .cloned();
+            let close_result = session.restore().await;
+            close_result?;
+
+            Ok(json!({
+                "source": SCREENER_SOURCE,
+                "action": "filter_modify",
+                "dry_run": false,
+                "modified": true,
+                "open": value_bool(&after_state, "open"),
+                "opened_for_mutation": session.opened_for_mutation,
+                "restored_open_state": session.restored_open_state,
+                "before_filter_count": before_filters.len(),
+                "after_filter_count": after_filters.len(),
+                "target_filter": filter_target_payload(&target),
+                "after_filter": after_target.as_ref().map(filter_target_payload).unwrap_or(Value::Null),
+                "current_filter_text": target.text,
+                "expected_filter_text": option,
+                "requested_option": requested_option,
+            }))
+        }
     }
-
-    if normalize_screener_text(&target.text).contains(&request.preset_label) {
-        let close_result = session.restore().await;
-        close_result?;
-        return Ok(json!({
-            "source": SCREENER_SOURCE,
-            "action": "filter_modify",
-            "dry_run": false,
-            "modified": false,
-            "already_matching": true,
-            "open": value_bool(&before_state, "open"),
-            "opened_for_mutation": session.opened_for_mutation,
-            "restored_open_state": session.restored_open_state,
-            "before_filter_count": before_filters.len(),
-            "after_filter_count": before_filters.len(),
-            "target_filter": filter_target_payload(&target),
-            "after_filter": filter_target_payload(&target),
-            "requested_range": requested_range,
-        }));
-    }
-
-    click_filter_range_preset(session.runtime, &target, &request.preset_label).await?;
-    let after_state =
-        wait_for_filter_modified(session.runtime, &target.data_name, &request.preset_label).await?;
-    let after_filters = filter_targets_from_state(&after_state);
-    let after_target = after_filters
-        .iter()
-        .find(|filter| filter.data_name == target.data_name)
-        .cloned();
-    let close_result = session.restore().await;
-    close_result?;
-
-    Ok(json!({
-        "source": SCREENER_SOURCE,
-        "action": "filter_modify",
-        "dry_run": false,
-        "modified": true,
-        "open": value_bool(&after_state, "open"),
-        "opened_for_mutation": session.opened_for_mutation,
-        "restored_open_state": session.restored_open_state,
-        "before_filter_count": before_filters.len(),
-        "after_filter_count": after_filters.len(),
-        "target_filter": filter_target_payload(&target),
-        "after_filter": after_target.as_ref().map(filter_target_payload).unwrap_or(Value::Null),
-        "requested_range": requested_range,
-    }))
 }
 
 pub async fn screener_filters_clear(
@@ -1813,10 +1931,24 @@ fn filter_targets_payload(filters: &[ScreenerFilterTarget]) -> Vec<Value> {
 }
 
 fn filter_modify_range_payload(request: &ScreenerFilterModifyRequest) -> Value {
+    match &request.mode {
+        ScreenerFilterModifyMode::Range {
+            min,
+            max,
+            preset_label,
+        } => json!({
+            "min": min,
+            "max": max,
+            "preset_label": preset_label,
+        }),
+        ScreenerFilterModifyMode::Option { .. } => Value::Null,
+    }
+}
+
+fn filter_modify_option_payload(option: &str, matched_option: Option<&Value>) -> Value {
     json!({
-        "min": request.min,
-        "max": request.max,
-        "preset_label": request.preset_label,
+        "option": option,
+        "matched_option": matched_option.cloned().unwrap_or(Value::Null),
     })
 }
 
@@ -3079,19 +3211,23 @@ fn screener_click_point(value: &Value, field: &str) -> Result<ScreenerClickPoint
         )
         .with_details(value.clone())
     })?;
+    screener_click_point_from_value(point)
+}
+
+fn screener_click_point_from_value(point: &Value) -> Result<ScreenerClickPoint, AppError> {
     let x = point.get("x").and_then(Value::as_f64).ok_or_else(|| {
         AppError::new(
             ErrorKind::InternalApiUnavailable,
             "Screener click x coordinate missing",
         )
-        .with_details(value.clone())
+        .with_details(point.clone())
     })?;
     let y = point.get("y").and_then(Value::as_f64).ok_or_else(|| {
         AppError::new(
             ErrorKind::InternalApiUnavailable,
             "Screener click y coordinate missing",
         )
-        .with_details(value.clone())
+        .with_details(point.clone())
     })?;
     Ok(ScreenMenuClickPoint { x, y })
 }
@@ -3734,6 +3870,195 @@ async fn click_filter_range_preset(
     Ok(())
 }
 
+async fn resolve_filter_option(
+    runtime: &mut impl RuntimeEvaluator,
+    target: &ScreenerFilterTarget,
+    option: &str,
+) -> Result<Value, AppError> {
+    let result = filter_option_operation(runtime, target, option, false).await?;
+    Ok(result["matched_option"].clone())
+}
+
+async fn click_filter_option(
+    runtime: &mut impl RuntimeEvaluator,
+    target: &ScreenerFilterTarget,
+    option: &str,
+) -> Result<Value, AppError> {
+    let result = filter_option_operation(runtime, target, option, true).await?;
+    if let Some(points) = result.get("clear_click_points").and_then(Value::as_array) {
+        for point in points {
+            dispatch_screen_menu_click(runtime, screener_click_point_from_value(point)?).await?;
+            sleep(Duration::from_millis(150)).await;
+        }
+    }
+    let selected = result
+        .get("matched_option")
+        .and_then(|value| value.get("selected"))
+        .and_then(Value::as_bool)
+        .unwrap_or(false);
+    if !selected {
+        let point = screener_click_point(&result, "click_point")?;
+        dispatch_screen_menu_click(runtime, point).await?;
+    }
+    sleep(Duration::from_millis(250)).await;
+    Ok(result["matched_option"].clone())
+}
+
+async fn filter_option_operation(
+    runtime: &mut impl RuntimeEvaluator,
+    target: &ScreenerFilterTarget,
+    option: &str,
+    click_option: bool,
+) -> Result<Value, AppError> {
+    let data_name = js_string(&target.data_name)?;
+    let option = js_string(option)?;
+    let click_option = if click_option { "true" } else { "false" };
+    let result = runtime
+        .evaluate(
+            &expanded_expression(&format!(
+                r#"
+                (async function() {{
+                    function sleep(ms) {{
+                        return new Promise(function(resolve) {{ setTimeout(resolve, ms); }});
+                    }}
+                    REPLACE_HELPERS
+                    function clickPointFor(el) {{
+                        var rect = el.getBoundingClientRect();
+                        return {{
+                            x: rect.left + rect.width / 2,
+                            y: rect.top + rect.height / 2
+                        }};
+                    }}
+                    var requestedOption = {option};
+                    var pill = document.querySelector('[data-name=' + {data_name} + ']');
+                    if (!pill || !visible(pill)) {{
+                        return {{ found: false, data_name: {data_name}, reason: 'filter_pill_not_found' }};
+                    }}
+                    mouseClick(pill);
+                    var editScope = null;
+                    var options = [];
+                    for (var i = 0; i < 10; i++) {{
+                        editScope = findScreenerOptionPopoverForPill(pill, requestedOption);
+                        options = collectScreenerOptionChoices(editScope);
+                        if (options.length > 0) break;
+                        await sleep(100);
+                    }}
+                    if (!editScope) {{
+                        closeScreenerTransientPopups();
+                        return {{
+                            found: true,
+                            option_popover_found: false,
+                            option_found: false,
+                            requested_option: requestedOption,
+                            data_name: {data_name}
+                        }};
+                    }}
+                    var normalizedRequested = normalizeScreenerFilterText(requestedOption).toLowerCase();
+                    var exact = options.filter(function(candidate) {{
+                        return candidate.normalized_text.toLowerCase() === normalizedRequested;
+                    }});
+                    var matches = exact;
+                    if (matches.length === 0) {{
+                        matches = options.filter(function(candidate) {{
+                            var text = candidate.normalized_text.toLowerCase();
+                            return text.indexOf(normalizedRequested) >= 0 || normalizedRequested.indexOf(text) >= 0;
+                        }});
+                    }}
+                    if (matches.length !== 1) {{
+                        closeScreenerTransientPopups();
+                        return {{
+                            found: true,
+                            option_popover_found: true,
+                            option_found: false,
+                            ambiguous: matches.length > 1,
+                            requested_option: requestedOption,
+                            available_options: options.map(function(candidate) {{
+                                return candidate.normalized_text;
+                            }}),
+                            matches: matches.map(function(candidate) {{
+                                return candidate.normalized_text;
+                            }}),
+                            data_name: {data_name}
+                        }};
+                    }}
+                    var match = matches[0];
+                    var payload = {{
+                        found: true,
+                        option_popover_found: true,
+                        option_found: true,
+                        requested_option: requestedOption,
+                        matched_option: {{
+                            index: match.index,
+                            text: match.text,
+                            normalized_text: match.normalized_text,
+                            selected: match.selected
+                        }},
+                        click_point: clickPointFor(match.element),
+                        available_options: options.map(function(candidate) {{
+                            return candidate.normalized_text;
+                        }}),
+                        data_name: {data_name}
+                    }};
+                    if ({click_option}) {{
+                        var selectedToClear = options.filter(function(candidate) {{
+                            return candidate.selected && candidate.normalized_text !== match.normalized_text;
+                        }});
+                        payload.clear_click_points = selectedToClear.map(function(candidate) {{
+                            return clickPointFor(candidate.element);
+                        }});
+                        payload.cleared_selected_options = selectedToClear.map(function(candidate) {{
+                            return candidate.normalized_text;
+                        }});
+                        payload.click_scheduled = true;
+                    }} else {{
+                        closeScreenerTransientPopups();
+                        payload.click_scheduled = false;
+                    }}
+                    return payload;
+                }})()
+                "#
+            )),
+            true,
+        )
+        .await?;
+
+    if !value_bool(&result, "found") {
+        return Err(AppError::new(
+            ErrorKind::InternalApiUnavailable,
+            "Screener filter pill not found",
+        )
+        .with_details(result));
+    }
+    if !value_bool(&result, "option_popover_found") {
+        return Err(AppError::new(
+            ErrorKind::InternalApiUnavailable,
+            "Screener filter option popover not found",
+        )
+        .with_details(result));
+    }
+    if !value_bool(&result, "option_found") {
+        let kind = if value_bool(&result, "ambiguous") {
+            ErrorKind::Validation
+        } else {
+            ErrorKind::InternalApiUnavailable
+        };
+        let message = if kind == ErrorKind::Validation {
+            "Screener filter option matched multiple visible options"
+        } else {
+            "Screener filter option not found"
+        };
+        return Err(AppError::new(kind, message).with_details(result));
+    }
+    if click_option == "true" && !value_bool(&result, "click_scheduled") {
+        return Err(AppError::new(
+            ErrorKind::InternalApiUnavailable,
+            "Screener filter option click was not scheduled",
+        )
+        .with_details(result));
+    }
+    Ok(result)
+}
+
 async fn wait_for_filter_removed(
     runtime: &mut impl RuntimeEvaluator,
     data_name: &str,
@@ -3805,6 +4130,34 @@ async fn wait_for_filter_modified(
     Err(AppError::new(
         ErrorKind::InternalApiUnavailable,
         "Screener filter text did not reflect requested range preset",
+    )
+    .with_details(last_state))
+}
+
+async fn wait_for_filter_option_modified(
+    runtime: &mut impl RuntimeEvaluator,
+    data_name: &str,
+    option: &str,
+) -> Result<Value, AppError> {
+    let raw_data_name = data_name.to_string();
+    let raw_option = option.to_string();
+    let mut last_state = Value::Null;
+    for _ in 0..12 {
+        let state = read_screener_state(runtime, None).await?;
+        let modified = filter_targets_from_state(&state).iter().any(|filter| {
+            filter.data_name == raw_data_name
+                && screener_filter_text_matches_option(&filter.text, &raw_option)
+        });
+        if modified {
+            return Ok(state);
+        }
+        last_state = state;
+        sleep(Duration::from_millis(250)).await;
+    }
+
+    Err(AppError::new(
+        ErrorKind::InternalApiUnavailable,
+        "Screener filter text did not reflect requested option",
     )
     .with_details(last_state))
 }
@@ -3895,6 +4248,24 @@ fn normalize_screener_text(value: &str) -> String {
         .split_whitespace()
         .collect::<Vec<_>>()
         .join(" ")
+}
+
+fn screener_filter_text_matches_option(filter_text: &str, option: &str) -> bool {
+    let option = normalize_screener_text(option);
+    if option.is_empty() {
+        return false;
+    }
+    let text = normalize_screener_text(filter_text);
+    if text == option || text.split_whitespace().any(|token| token == option) {
+        return true;
+    }
+    if option == "買い" && text.ends_with("強い買い") {
+        return false;
+    }
+    if option == "売り" && text.ends_with("強い売り") {
+        return false;
+    }
+    text.ends_with(&option)
 }
 
 fn normalize_columns(columns: Option<&Value>) -> Vec<Value> {
@@ -4866,6 +5237,29 @@ function findScreenerFilterEditPopoverForPill(pill) {
     });
     return scored.length > 0 ? scored[0].popover : null;
 }
+function findScreenerOptionPopoverForPill(pill, requestedOption) {
+    if (!pill) return null;
+    var pillRect = pill.getBoundingClientRect();
+    var requested = normalizeScreenerFilterText(requestedOption).toLowerCase();
+    var popovers = visibleElements('[role="dialog"], [class*="popover"], [class*="contentDefaultAppearance"], [role="listbox"]').filter(function(el) {
+        var rect = el.getBoundingClientRect();
+        if (rect.width < 120 || rect.height < 60) return false;
+        if (rect.bottom < pillRect.bottom - 4) return false;
+        if (rect.left > pillRect.right + 260) return false;
+        if (rect.right < pillRect.left - 40) return false;
+        var text = normalizeScreenerFilterText(textOf(el)).toLowerCase();
+        return !requested || text.indexOf(requested) >= 0 || el.querySelector('[role="option"], [role="listbox"]');
+    });
+    popovers.sort(function(a, b) {
+        var ar = a.getBoundingClientRect();
+        var br = b.getBoundingClientRect();
+        var ad = Math.abs(ar.left - pillRect.left) + Math.abs(ar.top - pillRect.bottom);
+        var bd = Math.abs(br.left - pillRect.left) + Math.abs(br.top - pillRect.bottom);
+        if (ad !== bd) return ad - bd;
+        return (ar.width * ar.height) - (br.width * br.height);
+    });
+    return popovers[0] || null;
+}
 function findScreenerManualFilterButton(scope) {
     return scopedVisibleElements(scope, 'button, [role="button"], [role="menuitem"], div, span').find(function(el) {
         var text = textOf(el);
@@ -4934,6 +5328,54 @@ function collectScreenerRangeOptions(scope) {
             text: label,
             normalized_text: label,
             element: optionClickTarget(el, label)
+        });
+    });
+    return options;
+}
+function collectScreenerOptionChoices(scope) {
+    if (!scope) return [];
+    var seen = {};
+    var options = [];
+    function optionClickTarget(el, label) {
+        var current = el;
+        while (current && current !== document.body) {
+            var role = current.getAttribute && (current.getAttribute('role') || '');
+            var cls = String(current.className || '');
+            if (textOf(current).indexOf(label) >= 0 &&
+                (role === 'option' || role === 'menuitem' || role === 'button' ||
+                 current.tagName === 'BUTTON' || /item|option|row|button/i.test(cls))) {
+                return current;
+            }
+            if (current === scope) break;
+            current = current.parentElement;
+        }
+        return el;
+    }
+    var choiceScopes = scopedVisibleElements(scope, '[role="listbox"], [role="menu"]').filter(function(candidateScope) {
+        var rect = candidateScope.getBoundingClientRect();
+        return rect.width >= 80 && rect.height >= 30;
+    });
+    if (choiceScopes.length === 0) choiceScopes = [scope];
+    var nodes = [];
+    choiceScopes.forEach(function(choiceScope) {
+        nodes = nodes.concat(scopedVisibleElements(choiceScope, '[role="option"], [role="menuitem"], button, [role="button"]'));
+    });
+    nodes.forEach(function(el) {
+        var text = normalizeScreenerFilterText(textOf(el));
+        if (!text || text.length > 80) return;
+        if (/%/.test(text) && /〜|以上|以下|未満|to|or more|less/i.test(text)) return;
+        if (/手動で設定|Set manually|Manual|削除|Remove|Delete/i.test(text)) return;
+        if (text.indexOf('\n') >= 0) return;
+        if (seen[text]) return;
+        var rect = el.getBoundingClientRect();
+        if (rect.width < 8 || rect.height < 8) return;
+        seen[text] = true;
+        options.push({
+            index: options.length,
+            text: text,
+            normalized_text: text,
+            selected: el.getAttribute('aria-selected') === 'true' || el.getAttribute('aria-checked') === 'true',
+            element: optionClickTarget(el, text)
         });
     });
     return options;
@@ -5111,32 +5553,61 @@ mod tests {
 
     #[test]
     fn validate_screener_filter_modify_accepts_visible_presets() {
-        let request =
-            validate_screener_filter_modify_request(None, Some("EMA"), Some(0.0), Some(5.0), true)
-                .unwrap();
+        let request = validate_screener_filter_modify_request(
+            None,
+            Some("EMA"),
+            Some(0.0),
+            Some(5.0),
+            None,
+            true,
+        )
+        .unwrap();
 
         assert_eq!(
             request.selector,
             ScreenerFilterSelector::Text("EMA".to_string())
         );
-        assert_eq!(request.preset_label, "0% 〜 5%");
         assert_eq!(
             filter_modify_range_payload(&request)["preset_label"],
             "0% 〜 5%"
         );
 
         let request =
-            validate_screener_filter_modify_request(Some(1), None, Some(15.0), None, false)
+            validate_screener_filter_modify_request(Some(1), None, Some(15.0), None, None, false)
                 .unwrap();
 
         assert_eq!(request.selector, ScreenerFilterSelector::Index(1));
-        assert_eq!(request.preset_label, "15%以上");
+        assert_eq!(
+            filter_modify_range_payload(&request)["preset_label"],
+            "15%以上"
+        );
+    }
+
+    #[test]
+    fn validate_screener_filter_modify_accepts_option_mode() {
+        let request = validate_screener_filter_modify_request(
+            Some(7),
+            None,
+            None,
+            None,
+            Some(" 買い "),
+            true,
+        )
+        .unwrap();
+
+        assert_eq!(request.selector, ScreenerFilterSelector::Index(7));
+        assert_eq!(
+            request.mode,
+            ScreenerFilterModifyMode::Option {
+                option: "買い".to_string()
+            }
+        );
     }
 
     #[test]
     fn validate_screener_filter_modify_rejects_unsafe_inputs() {
         assert_eq!(
-            validate_screener_filter_modify_request(None, None, Some(0.0), Some(5.0), true)
+            validate_screener_filter_modify_request(None, None, Some(0.0), Some(5.0), None, true)
                 .unwrap_err()
                 .kind,
             ErrorKind::Validation
@@ -5147,34 +5618,68 @@ mod tests {
                 Some("EMA"),
                 Some(0.0),
                 Some(5.0),
-                true
+                None,
+                true,
             )
             .unwrap_err()
             .kind,
             ErrorKind::Validation
         );
         assert_eq!(
-            validate_screener_filter_modify_request(Some(0), None, None, None, true)
+            validate_screener_filter_modify_request(Some(0), None, None, None, None, true)
                 .unwrap_err()
                 .kind,
             ErrorKind::Validation
         );
         assert_eq!(
-            validate_screener_filter_modify_request(Some(0), None, None, Some(5.0), true)
+            validate_screener_filter_modify_request(Some(0), None, None, Some(5.0), None, true)
                 .unwrap_err()
                 .kind,
             ErrorKind::Validation
         );
         assert_eq!(
-            validate_screener_filter_modify_request(Some(0), None, Some(f64::NAN), Some(5.0), true)
+            validate_screener_filter_modify_request(
+                Some(0),
+                None,
+                Some(f64::NAN),
+                Some(5.0),
+                None,
+                true,
+            )
+            .unwrap_err()
+            .kind,
+            ErrorKind::Validation
+        );
+        assert_eq!(
+            validate_screener_filter_modify_request(
+                Some(0),
+                None,
+                Some(0.0),
+                Some(7.0),
+                None,
+                true,
+            )
+            .unwrap_err()
+            .kind,
+            ErrorKind::Validation
+        );
+        assert_eq!(
+            validate_screener_filter_modify_request(Some(0), None, None, None, Some(" "), true)
                 .unwrap_err()
                 .kind,
             ErrorKind::Validation
         );
         assert_eq!(
-            validate_screener_filter_modify_request(Some(0), None, Some(0.0), Some(7.0), true)
-                .unwrap_err()
-                .kind,
+            validate_screener_filter_modify_request(
+                Some(0),
+                None,
+                Some(0.0),
+                None,
+                Some("買い"),
+                true,
+            )
+            .unwrap_err()
+            .kind,
             ErrorKind::Validation
         );
     }
@@ -6276,9 +6781,15 @@ mod tests {
                 "filter_count": 2
             }),
         ]);
-        let request =
-            validate_screener_filter_modify_request(None, Some("EMA"), Some(0.0), Some(5.0), true)
-                .unwrap();
+        let request = validate_screener_filter_modify_request(
+            None,
+            Some("EMA"),
+            Some(0.0),
+            Some(5.0),
+            None,
+            true,
+        )
+        .unwrap();
 
         let result = screener_filters_modify(&mut runtime, request)
             .await
@@ -6325,9 +6836,15 @@ mod tests {
                 "filter_count": 1
             }),
         ]);
-        let request =
-            validate_screener_filter_modify_request(Some(0), None, Some(0.0), Some(5.0), false)
-                .unwrap();
+        let request = validate_screener_filter_modify_request(
+            Some(0),
+            None,
+            Some(0.0),
+            Some(5.0),
+            None,
+            false,
+        )
+        .unwrap();
 
         let result = screener_filters_modify(&mut runtime, request)
             .await
@@ -6347,6 +6864,186 @@ mod tests {
         assert_eq!(result["before_filter_count"], 1);
         assert_eq!(result["after_filter_count"], 1);
         assert_eq!(runtime.mouse_events.len(), 0);
+    }
+
+    #[tokio::test]
+    async fn screener_filters_modify_option_dry_run_returns_matched_option() {
+        let mut runtime = FakeRuntime::new([
+            json!({ "button_found": true, "open": true }),
+            json!({
+                "button_found": true,
+                "open": true,
+                "filters": [
+                    { "index": 0, "text": "アナリストの評価", "data_name": "screener-filter-pill-rating", "visible": true }
+                ],
+                "filter_count": 1
+            }),
+            json!({
+                "found": true,
+                "option_popover_found": true,
+                "option_found": true,
+                "requested_option": "買い",
+                "matched_option": { "index": 3, "text": "買い", "normalized_text": "買い" },
+                "available_options": ["強い売り", "売り", "中立", "買い", "強い買い"],
+                "click_scheduled": false
+            }),
+        ]);
+        let request =
+            validate_screener_filter_modify_request(Some(0), None, None, None, Some("買い"), true)
+                .unwrap();
+
+        let result = screener_filters_modify(&mut runtime, request)
+            .await
+            .unwrap();
+
+        assert_eq!(result["action"], "filter_modify");
+        assert_eq!(result["dry_run"], true);
+        assert_eq!(result["modified"], false);
+        assert_eq!(result["target_filter"]["text"], "アナリストの評価");
+        assert_eq!(result["requested_option"]["option"], "買い");
+        assert_eq!(
+            result["requested_option"]["matched_option"]["normalized_text"],
+            "買い"
+        );
+        assert_eq!(result["before_filter_count"], 1);
+        assert_eq!(result["after_filter_count"], 1);
+    }
+
+    #[tokio::test]
+    async fn screener_filters_modify_option_clicks_and_verifies_text() {
+        let mut runtime = FakeRuntime::new([
+            json!({ "button_found": true, "open": true }),
+            json!({
+                "button_found": true,
+                "open": true,
+                "filters": [
+                    { "index": 0, "text": "アナリストの評価", "data_name": "screener-filter-pill-rating", "visible": true }
+                ],
+                "filter_count": 1
+            }),
+            json!({
+                "found": true,
+                "option_popover_found": true,
+                "option_found": true,
+                "requested_option": "強い買い",
+                "matched_option": { "index": 4, "text": "強い買い", "normalized_text": "強い買い", "selected": false },
+                "click_point": { "x": 320.0, "y": 280.0 },
+                "clear_click_points": [],
+                "available_options": ["強い売り", "売り", "中立", "買い", "強い買い"],
+                "click_scheduled": true
+            }),
+            json!({
+                "button_found": true,
+                "open": true,
+                "filters": [
+                    { "index": 0, "text": "アナリストの評価 強い買い", "data_name": "screener-filter-pill-rating", "visible": true }
+                ],
+                "filter_count": 1
+            }),
+        ]);
+        let request = validate_screener_filter_modify_request(
+            Some(0),
+            None,
+            None,
+            None,
+            Some("強い買い"),
+            false,
+        )
+        .unwrap();
+
+        let result = screener_filters_modify(&mut runtime, request)
+            .await
+            .unwrap();
+
+        assert_eq!(result["action"], "filter_modify");
+        assert_eq!(result["dry_run"], false);
+        assert_eq!(result["modified"], true);
+        assert_eq!(result["after_filter"]["text"], "アナリストの評価 強い買い");
+        assert_eq!(
+            result["requested_option"]["matched_option"]["normalized_text"],
+            "強い買い"
+        );
+    }
+
+    #[tokio::test]
+    async fn screener_filters_modify_option_rejects_ambiguous_match() {
+        let mut runtime = FakeRuntime::new([
+            json!({ "button_found": true, "open": true }),
+            json!({
+                "button_found": true,
+                "open": true,
+                "filters": [
+                    { "index": 0, "text": "アナリストの評価", "data_name": "screener-filter-pill-rating", "visible": true }
+                ],
+                "filter_count": 1
+            }),
+            json!({
+                "found": true,
+                "option_popover_found": true,
+                "option_found": false,
+                "ambiguous": true,
+                "requested_option": "買",
+                "available_options": ["買い", "強い買い"],
+                "matches": ["買い", "強い買い"]
+            }),
+        ]);
+        let request =
+            validate_screener_filter_modify_request(Some(0), None, None, None, Some("買"), true)
+                .unwrap();
+
+        let error = screener_filters_modify(&mut runtime, request)
+            .await
+            .unwrap_err();
+
+        assert_eq!(error.kind, ErrorKind::Validation);
+    }
+
+    #[tokio::test]
+    async fn screener_filters_modify_option_fails_without_post_check() {
+        let mut runtime = FakeRuntime::new([
+            json!({ "button_found": true, "open": true }),
+            json!({
+                "button_found": true,
+                "open": true,
+                "filters": [
+                    { "index": 0, "text": "アナリストの評価", "data_name": "screener-filter-pill-rating", "visible": true }
+                ],
+                "filter_count": 1
+            }),
+            json!({
+                "found": true,
+                "option_popover_found": true,
+                "option_found": true,
+                "requested_option": "強い買い",
+                "matched_option": { "index": 4, "text": "強い買い", "normalized_text": "強い買い", "selected": false },
+                "click_point": { "x": 320.0, "y": 280.0 },
+                "clear_click_points": [],
+                "click_scheduled": true
+            }),
+            json!({
+                "button_found": true,
+                "open": true,
+                "filters": [
+                    { "index": 0, "text": "アナリストの評価", "data_name": "screener-filter-pill-rating", "visible": true }
+                ],
+                "filter_count": 1
+            }),
+        ]);
+        let request = validate_screener_filter_modify_request(
+            Some(0),
+            None,
+            None,
+            None,
+            Some("強い買い"),
+            false,
+        )
+        .unwrap();
+
+        let error = screener_filters_modify(&mut runtime, request)
+            .await
+            .unwrap_err();
+
+        assert_eq!(error.kind, ErrorKind::InternalApiUnavailable);
     }
 
     #[tokio::test]

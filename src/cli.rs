@@ -353,7 +353,7 @@ pub enum ScreenerFiltersCommand {
         #[arg(long)]
         confirm_clear: bool,
     },
-    #[command(about = "Modify a visible numeric Stock Screener filter preset")]
+    #[command(about = "Modify a visible Stock Screener filter preset or option")]
     Modify {
         #[arg(long)]
         index: Option<usize>,
@@ -363,6 +363,8 @@ pub enum ScreenerFiltersCommand {
         min: Option<f64>,
         #[arg(long)]
         max: Option<f64>,
+        #[arg(long)]
+        option: Option<String>,
         #[arg(long)]
         dry_run: bool,
     },

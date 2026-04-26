@@ -40,6 +40,11 @@ package version omits the leading `v`.
   for visible numeric range filters. Modify supports dry-run target reporting,
   finite input validation before CDP connection, and post-mutation visible-text
   verification.
+- Extended `tv screener filters modify` with
+  `--option <TEXT>` for single visible option selection on existing filter
+  pills. The option path rejects mixed range/option input, reports the matched
+  option in dry-run mode, clears other selected options when the UI exposes
+  them, and still requires a visible-text post-check before success.
 - Added guarded `tv screener filters add --name <TEXT> --min <N>|--max <N>
   [--dry-run]` for visible add-filter catalog numeric presets. The command
   validates finite input before CDP connection and reports success only after a
