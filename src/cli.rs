@@ -604,7 +604,7 @@ pub enum LayoutCommand {
 
 #[derive(Debug, Subcommand)]
 pub enum TabCommand {
-    #[command(about = "List open TradingView chart tabs")]
+    #[command(about = "List open TradingView chart tabs and Screener targets")]
     List,
     #[command(about = "Switch to a TradingView chart tab by zero-based index")]
     Switch { index: usize },

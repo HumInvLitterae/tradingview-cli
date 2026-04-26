@@ -29,14 +29,32 @@ struct AppTab {
     closable: bool,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+struct TargetEnv {
+    #[serde(rename = "TV_CDP_TARGET_ID")]
+    tv_cdp_target_id: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+struct ScreenerTarget {
+    index: usize,
+    id: String,
+    title: String,
+    url: String,
+    target_env: TargetEnv,
+}
+
 pub async fn tab_list(config: &TransportConfig) -> Result<Value, AppError> {
     let targets = transport::fetch_targets(config).await?;
     let tabs = chart_tabs_from_targets(&targets);
+    let screener_targets = screener_targets_from_targets(&targets);
     let app_tabs = app_tabs_from_targets(&targets).await;
 
     Ok(json!({
         "tab_count": tabs.len(),
         "tabs": tabs,
+        "screener_target_count": screener_targets.len(),
+        "screener_targets": screener_targets,
         "app_tab_count": app_tabs.len(),
         "app_tabs": app_tabs,
         "cdp_host": config.host,
@@ -192,6 +210,28 @@ fn chart_tabs_from_targets(targets: &[Target]) -> Vec<ChartTab> {
             chart_id: chart_id_from_url(&target.url),
         })
         .collect()
+}
+
+fn screener_targets_from_targets(targets: &[Target]) -> Vec<ScreenerTarget> {
+    targets
+        .iter()
+        .filter(|target| target.kind == "page")
+        .filter(|target| is_screener_url(&target.url))
+        .enumerate()
+        .map(|(index, target)| ScreenerTarget {
+            index,
+            id: target.id.clone(),
+            title: clean_title(&target.title),
+            url: target.url.clone(),
+            target_env: TargetEnv {
+                tv_cdp_target_id: target.id.clone(),
+            },
+        })
+        .collect()
+}
+
+fn is_screener_url(url: &str) -> bool {
+    url.to_lowercase().contains("tradingview.com/screener")
 }
 
 async fn activate_tab(config: &TransportConfig, tab: &ChartTab) -> Result<(), AppError> {
@@ -522,6 +562,42 @@ mod tests {
         assert_eq!(tabs[0].chart_id.as_deref(), Some("abcd1234"));
         assert_eq!(tabs[1].index, 1);
         assert_eq!(tabs[1].chart_id.as_deref(), Some("efgh5678"));
+    }
+
+    #[test]
+    fn screener_targets_include_explicit_handoff() {
+        let targets = vec![
+            target(
+                "chart",
+                "page",
+                "https://www.tradingview.com/chart/abcd1234/",
+                "Live stock charts on AAPL",
+            ),
+            target(
+                "screener",
+                "page",
+                "https://www.tradingview.com/screener/qq4NFtlO/",
+                "US stocks test copy",
+            ),
+            target(
+                "window",
+                "page",
+                "file:///TradingView.app/Contents/Resources/app.asar/app/window/index.html",
+                "index.html",
+            ),
+            target(
+                "worker",
+                "worker",
+                "https://www.tradingview.com/screener/worker",
+                "worker",
+            ),
+        ];
+
+        let screener_targets = screener_targets_from_targets(&targets);
+
+        assert_eq!(screener_targets.len(), 1);
+        assert_eq!(screener_targets[0].id, "screener");
+        assert_eq!(screener_targets[0].target_env.tv_cdp_target_id, "screener");
     }
 
     #[test]

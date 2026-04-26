@@ -172,7 +172,7 @@ Most commands operate on the current chart target. Mutation commands such as `qu
 
 Screenshots require an explicit `--output <PATH>` file path. Parent directories are created automatically, so agent or Claude Desktop workflows should choose a readable output path directly instead of relying on a default screenshots directory.
 
-The default CDP endpoint is `localhost:9222`. Override it with `TV_CDP_HOST` and `TV_CDP_PORT` when needed. If more than one TradingView chart target is open, run `tv tab list` and set `TV_CDP_TARGET_ID` to the desired target id for chart-specific commands. `tv tab switch <INDEX>` also returns a `target_env` value that can be used for the next command.
+The default CDP endpoint is `localhost:9222`. Override it with `TV_CDP_HOST` and `TV_CDP_PORT` when needed. If more than one TradingView chart target is open, run `tv tab list` and set `TV_CDP_TARGET_ID` to the desired target id for chart-specific commands. `tv tab switch <INDEX>` also returns a `target_env` value that can be used for the next command. When a Stock Screener is open as its own TradingView Desktop tab, `tv tab list` also returns `screener_targets`; use their `target_env.TV_CDP_TARGET_ID` value for `tv screener ...` commands against the full-page Screener target.
 
 Commands print structured JSON. Most successful commands print one `success: true` envelope to stdout. `tv stream ...` commands are intentionally long-running and print newline-delimited JSON envelopes, one line per changed sample. Failed commands print a `success: false` envelope to stderr.
 
