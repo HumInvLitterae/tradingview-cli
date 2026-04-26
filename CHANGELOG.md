@@ -38,6 +38,8 @@ package version omits the leading `v`.
   [--dry-run]` for visible add-filter catalog numeric presets. The command
   validates finite input before CDP connection and reports success only after a
   new visible filter pill appears.
+- Hardened Screener open-state detection so off-screen tables, toolbar buttons,
+  and unrelated right-panel content do not count as an open Screener panel.
 - Added `tv screener columns actions` and dry-run target resolution for
   `tv screener columns remove`; current TradingView Desktop evidence does not
   expose a safe visible column-remove action, so normal removal remains

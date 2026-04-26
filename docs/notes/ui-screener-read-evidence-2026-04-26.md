@@ -90,6 +90,10 @@ as visible Screener heading text, `[class*="screener"]`, visible Screener
 `data-name` attributes, and the table presence. `close` uses `Escape` because
 that restored the live session safely.
 
+Later hardening narrowed that detection to a visible, in-viewport Screener panel
+root. The right-toolbar Screener button, unrelated right-panel content, and
+off-viewport tables no longer count as `open: true`.
+
 `get` should document that it reads the currently visible Screener rows and
 localized display text. The metadata commands should document that they read the
 active screen title, visible filter pills, and visible columns from the same UI

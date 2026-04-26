@@ -223,7 +223,7 @@ baseline remains the commands run by CI.
 - user-facing agent guides and runtime skills in release archives
 - symbol-targeted quote reads through `tv quote [SYMBOL]`
 - read-only TradingView scanner REST reads through `tv scanner hotlist` and `tv scanner scan`
-- TradingView Stock Screener dialog reads, menu-visible and catalog screen switching, exact screen action/save support, guarded filter cleanup and preset-range filter modification, and evidence-gated column inspection through `tv screener status/open/get/screens active/actions/list/switch/save/filters list/actions/modify/remove/clear/columns list/actions/remove --dry-run/close`
+- TradingView Stock Screener dialog reads, menu-visible and catalog screen switching, exact screen action/save support, guarded filter cleanup, filter add, preset-range filter modification, and evidence-gated column inspection through `tv screener status/open/get/screens active/actions/list/switch/save/filters list/actions/add/modify/remove/clear/columns list/actions/remove --dry-run/close`
 - old JavaScript CLI command migration coverage for the known CLI surface
 - command contract, migration, lifecycle, and deferred-surface notes under `docs/notes/`
 - historical implementation ExecPlans archived under `docs/plans/archives/`

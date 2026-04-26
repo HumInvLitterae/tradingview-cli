@@ -42,6 +42,7 @@ Keep the Rust-native `tv` CLI reliable and useful as a replacement path for prac
 - `tv screener screens list --catalog` and `tv screener screens switch --name <NAME> --catalog [--dry-run]` support exact saved-screen catalog targeting while preserving the older title-menu default path
 - `tv screener screens actions` and `tv screener screens save [--dry-run]` support visible screen-menu inspection and exact save-action clicking for prepared test screens
 - `tv screener filters add --name <TEXT> --min <N>|--max <N> [--dry-run]` supports visible add-filter catalog numeric presets with dry-run candidate reporting and visible-pill post-checks
+- Screener open-state detection requires a visible, in-viewport Screener panel root; toolbar buttons and unrelated right-panel content should not count as `open: true`
 - upstream PR #105 drawing wrapper regression was live-smoked against Rust; `draw shape/list/get/remove/clear` worked on disposable drawings, so no Rust code change was needed
 - remaining old CLI migration closure is recorded in `docs/plans/archives/tradingview-cli-remaining-migration-closure.md`; `layout switch`, `alert delete --all`, `pine raw-compile`, and generic `ui` commands are implemented. Alert edit/pause/resume are future feature research, not confirmed old CLI backlog.
 - upstream pull requests on the original repository have been triaged in `docs/notes/upstream-pr-triage-2026-04-25.md`; use that note before choosing post-release fixes or additions.

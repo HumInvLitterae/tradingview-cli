@@ -2875,7 +2875,7 @@ const SCREENER_OPEN_EXPRESSION: &str = r#"
     if (before.open) return Object.assign({ opened: false, already_open: true }, before);
     var button = document.querySelector('[data-name="screener-dialog-button"]');
     if (!button) return before;
-    button.click();
+    mouseClick(button);
     for (var i = 0; i < 20; i++) {
         await sleep(200);
         var state = readScreenerState(0);
@@ -3043,7 +3043,9 @@ const SCREENER_HELPERS: &str = r#"
 function visible(el) {
     if (!el || !el.getBoundingClientRect) return false;
     var rect = el.getBoundingClientRect();
-    return rect.width > 0 && rect.height > 0;
+    var style = window.getComputedStyle ? window.getComputedStyle(el) : null;
+    var inViewport = rect.bottom > 0 && rect.right > 0 && rect.top < window.innerHeight && rect.left < window.innerWidth;
+    return rect.width > 0 && rect.height > 0 && inViewport && (!style || (style.visibility !== 'hidden' && style.display !== 'none'));
 }
 function textOf(el) {
     return (el && (el.textContent || el.innerText) || '').replace(/\s+/g, ' ').trim();
@@ -3563,34 +3565,65 @@ function closeScreenerTransientPopups() {
         document.dispatchEvent(new KeyboardEvent('keyup', { key: 'Escape', code: 'Escape', keyCode: 27, which: 27, bubbles: true, cancelable: true }));
     }
 }
+function nearestScreenerPanelRoot(el) {
+    var current = el;
+    while (current && current !== document.body && current !== document.documentElement) {
+        var rect = current.getBoundingClientRect();
+        if (rect.width >= 260 && rect.height >= 160) {
+            var hasTitle = !!current.querySelector('[data-name="screener-topbar-screen-title"]');
+            var hasFilters = !!current.querySelector('[data-name^="screener-filter-pill-"]');
+            var hasTable = !!current.querySelector('table');
+            var dataName = current.getAttribute('data-name') || '';
+            var className = String(current.className || '');
+            if (hasTitle || hasFilters || hasTable || /screenerContainer|screener-container/i.test(className) || /screener/i.test(dataName)) {
+                return current;
+            }
+        }
+        current = current.parentElement;
+    }
+    return null;
+}
+function findScreenerPanelRoot(button) {
+    var roots = visibleElements('[class*="screenerContainer"], [class*="screener-container"]').filter(function(el) {
+        return el !== button && el.getBoundingClientRect().width >= 260 && el.getBoundingClientRect().height >= 160;
+    });
+    if (roots.length > 0) return roots[0];
+    var anchors = visibleElements('[data-name="screener-topbar-screen-title"], [data-name^="screener-filter-pill-"], table').filter(function(el) {
+        return el !== button && !buttonContains(button, el);
+    });
+    for (var i = 0; i < anchors.length; i++) {
+        var root = nearestScreenerPanelRoot(anchors[i]);
+        if (root) return root;
+    }
+    return null;
+}
+function buttonContains(button, el) {
+    return !!(button && el && button !== el && button.contains(el));
+}
 function readScreenerState(limit) {
     var button = document.querySelector('[data-name="screener-dialog-button"]');
-    var screenerDataElements = visibleElements('[data-name*="screener"]');
-    var classElements = visibleElements('[class*="screener"]');
-    var container = visibleElements('[class*="screenerContainer"], [class*="screener-container"]').find(function(el) {
-        return el !== button;
-    }) || null;
-    var heading = Array.from(document.querySelectorAll('h1, h2, h3'))
+    var panelRoot = findScreenerPanelRoot(button);
+    var screenerDataElements = panelRoot ? scopedVisibleElements(panelRoot, '[data-name*="screener"]') : [];
+    var classElements = panelRoot ? scopedVisibleElements(panelRoot, '[class*="screener"]') : [];
+    var heading = panelRoot ? Array.from(panelRoot.querySelectorAll('h1, h2, h3'))
         .find(function(el) {
             var text = textOf(el);
             return visible(el) && text.length <= 120 && /screener|スクリーナー/i.test(text);
-        }) || Array.from(document.querySelectorAll('button, div, span'))
+        }) || Array.from(panelRoot.querySelectorAll('button, div, span'))
         .find(function(el) {
             var text = textOf(el);
             return visible(el) && text.length <= 120 && /screener|スクリーナー/i.test(text);
-        }) || null;
-    var table = container ? (Array.from(container.querySelectorAll('table')).filter(visible)[0] || null) : null;
-    var title = container ? container.querySelector('[data-name="screener-topbar-screen-title"]') : document.querySelector('[data-name="screener-topbar-screen-title"]');
-    var open = !!(container || heading || screenerDataElements.some(function(el) {
-        return el !== button && (el.getAttribute('data-name') || '').indexOf('screener') >= 0;
-    }));
-    var filters = visibleElements('[data-name^="screener-filter-pill-"]').map(function(el) {
+        }) || null : null;
+    var table = panelRoot ? (Array.from(panelRoot.querySelectorAll('table')).filter(visible)[0] || null) : null;
+    var title = panelRoot ? panelRoot.querySelector('[data-name="screener-topbar-screen-title"]') : null;
+    var open = !!panelRoot;
+    var filters = panelRoot ? scopedVisibleElements(panelRoot, '[data-name^="screener-filter-pill-"]').map(function(el) {
         return {
             text: textOf(el),
             data_name: el.getAttribute('data-name') || null,
             visible: visible(el)
         };
-    });
+    }) : [];
     var columns = table ? Array.from(table.querySelectorAll('th')).map(textOf).filter(function(text) {
         return text.length > 0;
     }) : [];
@@ -3623,6 +3656,7 @@ function readScreenerState(limit) {
         row_count: rows.length,
         visible_row_count: visibleRowCount,
         table_found: !!table,
+        panel_root_found: !!panelRoot,
         class_match_count: classElements.length,
         data_name_match_count: screenerDataElements.length
     };
@@ -4888,6 +4922,39 @@ mod tests {
         let mut runtime = FakeRuntime::new([json!({ "button_found": false, "open": false })]);
 
         let error = screener_open(&mut runtime).await.unwrap_err();
+
+        assert_eq!(error.kind, ErrorKind::InternalApiUnavailable);
+    }
+
+    #[tokio::test]
+    async fn screener_open_rejects_toolbar_only_false_positive() {
+        let mut runtime = FakeRuntime::new([json!({
+            "button_found": true,
+            "open": false,
+            "panel_root_found": false,
+            "filter_count": 0,
+            "column_count": 0
+        })]);
+
+        let error = screener_open(&mut runtime).await.unwrap_err();
+
+        assert_eq!(error.kind, ErrorKind::InternalApiUnavailable);
+        assert!(error.details.is_some());
+    }
+
+    #[test]
+    fn ensure_dialog_open_rejects_toolbar_only_state() {
+        let value = json!({
+            "button_found": true,
+            "open": false,
+            "panel_root_found": false,
+            "dialog_title": null,
+            "screen_title": null,
+            "filter_count": 0,
+            "column_count": 0
+        });
+
+        let error = ensure_dialog_open(&value).unwrap_err();
 
         assert_eq!(error.kind, ErrorKind::InternalApiUnavailable);
     }
