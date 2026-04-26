@@ -9,6 +9,8 @@ package version omits the leading `v`.
 
 ### Added
 
+- Added a durable Screener completion and stabilization note that records the
+  implemented Screener surface, deferred boundaries, and live-smoke priorities.
 - Added read-only `tv scanner scan` for basic TradingView scanner REST reads
   with exchange, column, sort, limit, and numeric filter options.
 - Added practical `tv scanner scan` filters for stock type, subtype, sector,
@@ -51,6 +53,8 @@ package version omits the leading `v`.
   new visible filter pill appears.
 - Hardened Screener open-state detection so off-screen tables, toolbar buttons,
   and unrelated right-panel content do not count as an open Screener panel.
+- Hardened Screener option-filter editing by closing stale transient popups
+  before opening the target filter option popover.
 - Added storage-backed `tv screener columns config`,
   `tv screener columns add`, normal `tv screener columns remove`, and
   `tv screener columns reorder` for active saved test screens. Normal column

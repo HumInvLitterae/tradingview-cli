@@ -235,6 +235,7 @@ baseline remains the commands run by CI.
 - TradingView Stock Screener dialog reads, menu-visible and catalog screen switching, exact screen action/save support, guarded test-screen lifecycle commands, guarded filter cleanup, filter add, preset-range filter modification, and storage-backed column inspection/add/remove/reorder through `tv screener status/open/get/screens active/actions/list/switch/save/create/rename/save-as/delete/filters list/actions/add/modify/remove/clear/columns list/config/actions/add/remove/reorder/close`
 - old JavaScript CLI command migration coverage for the known CLI surface
 - command contract, migration, lifecycle, and deferred-surface notes under `docs/notes/`
+- a Screener completion and stabilization boundary note at `docs/notes/screener-surface-completion-and-stabilization.md`
 - historical implementation ExecPlans archived under `docs/plans/archives/`
 - a repo-local development guideline for module layout, style, and validation
 - repo-local CLI skills migrated from the original MCP workflow split
@@ -253,10 +254,11 @@ Read these in order:
 8. `docs/notes/upstream-pr-triage-2026-04-25.md`
 9. `docs/notes/screener-hotlist-upstream-feasibility-2026-04-25.md`
 10. `docs/notes/ui-screener-read-evidence-2026-04-26.md`
-11. `docs/plans/README.md`
-12. `docs/notes/tradingview-mcp-investigation-2026-04-24.md`
+11. `docs/notes/screener-surface-completion-and-stabilization.md`
+12. `docs/plans/README.md`
+13. `docs/notes/tradingview-mcp-investigation-2026-04-24.md`
 
-The first capability and boundary research milestone, the Rust v1 implementation milestone, the read/provider migration slices, chart/pane/watchlist/alert/layout/indicator/drawing/Pine/tab/replay/stream/launch slices, command lifecycle balance audit, remaining deferred surface audit, operation-layer and data-operation module refactors, development guideline pass, remaining old CLI migration closure slice, and first release readiness pass are complete. Upstream pull request follow-up has addressed the initial narrow Rust fixes and additions, including `tv data shapes`, `tv data labels` truncation metadata, `tv scanner hotlist`, `tv scanner scan`, read-oriented `tv screener` dialog and metadata commands, menu-visible and catalog Screener screen switching, Screener screen action/save support, guarded Screener screen create/rename/save-as dry-run capable lifecycle support, guarded Screener filter cleanup, preset-range Screener filter modify support, storage-backed Screener column config/add/remove/reorder, and symbol-targeted `tv quote [SYMBOL]`. Remaining upstream-derived candidates require fresh evidence before implementation.
+The first capability and boundary research milestone, the Rust v1 implementation milestone, the read/provider migration slices, chart/pane/watchlist/alert/layout/indicator/drawing/Pine/tab/replay/stream/launch slices, command lifecycle balance audit, remaining deferred surface audit, operation-layer and data-operation module refactors, development guideline pass, remaining old CLI migration closure slice, and first release readiness pass are complete. Upstream pull request follow-up has addressed the initial narrow Rust fixes and additions, including `tv data shapes`, `tv data labels` truncation metadata, `tv scanner hotlist`, `tv scanner scan`, read-oriented `tv screener` dialog and metadata commands, menu-visible and catalog Screener screen switching, Screener screen action/save support, guarded Screener screen lifecycle, guarded Screener filter add/modify/remove/clear, storage-backed Screener column config/add/remove/reorder, and symbol-targeted `tv quote [SYMBOL]`. The main planned Screener surface is now in stabilization; `columns reset` and broader multi-option/free-text filter editing remain evidence-gated.
 
 ## License
 

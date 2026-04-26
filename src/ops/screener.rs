@@ -3934,6 +3934,8 @@ async fn filter_option_operation(
                     if (!pill || !visible(pill)) {{
                         return {{ found: false, data_name: {data_name}, reason: 'filter_pill_not_found' }};
                     }}
+                    closeScreenerTransientPopups();
+                    await sleep(80);
                     mouseClick(pill);
                     var editScope = null;
                     var options = [];
@@ -6907,6 +6909,18 @@ mod tests {
         );
         assert_eq!(result["before_filter_count"], 1);
         assert_eq!(result["after_filter_count"], 1);
+
+        let option_script = &runtime.evaluated[2].0;
+        let cleanup_index = option_script
+            .find("closeScreenerTransientPopups();")
+            .expect("option editor should close stale transient popups");
+        let click_index = option_script
+            .find("mouseClick(pill);")
+            .expect("option editor should click the target pill");
+        assert!(
+            cleanup_index < click_index,
+            "stale popup cleanup should happen before opening the target option popover"
+        );
     }
 
     #[tokio::test]
