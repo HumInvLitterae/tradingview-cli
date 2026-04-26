@@ -80,12 +80,12 @@ TradingView Desktop live smoke checks are intentionally separate from CI because
 
 ## Release Builds
 
-GitHub Releases are the first supported binary distribution path. Pushing a version tag such as `v0.1.1` creates release assets named:
+GitHub Releases are the first supported binary distribution path. Pushing a version tag such as `v0.2.0` creates release assets named:
 
-- `tv-v0.1.1-x86_64-unknown-linux-gnu.tar.gz`
-- `tv-v0.1.1-x86_64-apple-darwin.tar.gz`
-- `tv-v0.1.1-aarch64-apple-darwin.tar.gz`
-- `tv-v0.1.1-x86_64-pc-windows-msvc.zip`
+- `tv-v0.2.0-x86_64-unknown-linux-gnu.tar.gz`
+- `tv-v0.2.0-x86_64-apple-darwin.tar.gz`
+- `tv-v0.2.0-aarch64-apple-darwin.tar.gz`
+- `tv-v0.2.0-x86_64-pc-windows-msvc.zip`
 - `SHA256SUMS`
 
 Each archive contains the `tv` or `tv.exe` binary, `README.md`, `CHANGELOG.md`, `LICENSE`, a user-facing `AGENTS.md` and `CLAUDE.md`, and runtime-oriented TradingView CLI skills under `.agents/skills/` and `.claude/skills/`, including chart analysis, multi-symbol scanning, Pine, replay, Screener, and strategy workflows. Verify the downloaded archive against `SHA256SUMS`, unpack it, and place the executable on your `PATH`.

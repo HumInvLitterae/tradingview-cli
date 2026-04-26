@@ -2,10 +2,18 @@
 
 All notable changes to this project are recorded here.
 
-This project uses Git tags such as `v0.1.1` for public releases. The Cargo
+This project uses Git tags such as `v0.2.0` for public releases. The Cargo
 package version omits the leading `v`.
 
 ## Unreleased
+
+No unreleased changes.
+
+## v0.2.0 - 2026-04-27
+
+This feature release expands market discovery, Stock Screener operation, and
+API-backed account mutations after `v0.1.1`. It also refreshes release
+packaging and project documentation before the next investigation phase.
 
 ### Added
 
