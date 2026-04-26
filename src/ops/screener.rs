@@ -56,8 +56,11 @@ struct ScreenerFilterTarget {
 #[derive(Clone, Debug, PartialEq, Eq)]
 struct ScreenerScreenTarget {
     index: usize,
+    id: Option<String>,
     name: String,
     active: bool,
+    owner: Option<bool>,
+    shared: Option<bool>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -723,53 +726,75 @@ pub async fn screener_screens_delete(
     dry_run: bool,
     confirm_delete: bool,
 ) -> Result<Value, AppError> {
-    let mut session = ScreenerMutationSession::open(runtime).await?;
-    let before_state = read_screener_state(session.runtime, None).await?;
-    ensure_dialog_open(&before_state)?;
-    open_screen_catalog_from_menu(session.runtime).await?;
-    let catalog = session
-        .runtime
-        .evaluate(
-            &expanded_expression(SCREENER_SCREEN_CATALOG_LIST_EXPRESSION),
-            true,
-        )
-        .await?;
-    ensure_screen_catalog_opened(&catalog)?;
-    let screens = screen_targets_from_menu(&catalog);
+    let before_state = read_screener_state(runtime, None).await?;
+    let before_screen_title = before_state
+        .get("screen_title")
+        .and_then(Value::as_str)
+        .map(str::trim)
+        .filter(|title| !title.is_empty())
+        .map(str::to_string);
+    let storage = fetch_screener_storage_screens(runtime, before_screen_title.as_deref()).await?;
+    let screens = screen_targets_from_menu(&storage);
     let target = resolve_screen_target(&screens, name)?;
 
     if dry_run {
-        close_screener_screen_lifecycle_popups(session.runtime).await?;
-        let close_result = session.restore().await;
-        close_result?;
         return Ok(json!({
             "source": SCREENER_SOURCE,
             "action": "screen_delete",
-            "scope": "screen_catalog",
+            "scope": "screen_storage_api",
             "dry_run": true,
             "deleted": false,
             "confirmed": false,
-            "opened_for_mutation": session.opened_for_mutation,
-            "restored_open_state": session.restored_open_state,
+            "before_screen_title": before_screen_title,
             "target_screen": screen_target_payload(&target),
             "screen_count": screens.len(),
             "screens": screen_targets_payload(&screens),
-            "delete_supported": false,
-            "unavailable_reason": "exact_screen_delete_action_not_verified",
+            "delete_supported": true,
         }));
     }
 
+    if target.active {
+        return Err(AppError::new(
+            ErrorKind::Validation,
+            "Refusing to delete the active Screener screen; switch to another screen first",
+        )
+        .with_details(json!({ "target_screen": screen_target_payload(&target) })));
+    }
+
     let _ = confirm_delete;
-    close_screener_screen_lifecycle_popups(session.runtime).await?;
-    let _ = session.restore().await;
-    Err(AppError::new(
-        ErrorKind::InternalApiUnavailable,
-        "Normal Screener screen delete is not supported by the current verified UI path",
-    )
-    .with_details(json!({
+    let deleted = delete_screener_storage_screen(runtime, &target).await?;
+    let after_storage =
+        fetch_screener_storage_screens(runtime, before_screen_title.as_deref()).await?;
+    let after_screens = screen_targets_from_menu(&after_storage);
+    if after_screens
+        .iter()
+        .any(|screen| screen.name == target.name)
+    {
+        return Err(AppError::new(
+            ErrorKind::InternalApiUnavailable,
+            "Screener screen still appears after delete",
+        )
+        .with_details(json!({
+            "target_screen": screen_target_payload(&target),
+            "delete_result": deleted,
+            "screens": screen_targets_payload(&after_screens),
+        })));
+    }
+
+    Ok(json!({
+        "source": SCREENER_SOURCE,
+        "action": "screen_delete",
+        "scope": "screen_storage_api",
+        "dry_run": false,
+        "deleted": true,
+        "confirmed": true,
+        "before_screen_title": before_screen_title,
         "target_screen": screen_target_payload(&target),
-        "reason": "exact_screen_delete_action_not_verified"
-    })))
+        "delete_result": deleted,
+        "before_screen_count": screens.len(),
+        "after_screen_count": after_screens.len(),
+        "screens": screen_targets_payload(&after_screens),
+    }))
 }
 
 async fn screener_screens_name_dialog_mutation(
@@ -1820,11 +1845,14 @@ fn screen_targets_from_menu(value: &Value) -> Vec<ScreenerScreenTarget> {
                             .and_then(Value::as_u64)
                             .and_then(|value| usize::try_from(value).ok())
                             .unwrap_or(fallback_index),
+                        id: screen.get("id").and_then(Value::as_str).map(str::to_string),
                         name: name.to_string(),
                         active: screen
                             .get("active")
                             .and_then(Value::as_bool)
                             .unwrap_or(false),
+                        owner: screen.get("owner").and_then(Value::as_bool),
+                        shared: screen.get("shared").and_then(Value::as_bool),
                     })
                 })
                 .collect()
@@ -1859,8 +1887,11 @@ fn resolve_screen_target(
 fn screen_target_payload(screen: &ScreenerScreenTarget) -> Value {
     json!({
         "index": screen.index,
+        "id": screen.id,
         "name": screen.name,
         "active": screen.active,
+        "owner": screen.owner,
+        "shared": screen.shared,
     })
 }
 
@@ -2106,6 +2137,141 @@ fn screen_action_payload(action: &ScreenerScreenAction) -> Value {
 
 fn screen_actions_payload(actions: &[ScreenerScreenAction]) -> Vec<Value> {
     actions.iter().map(screen_action_payload).collect()
+}
+
+async fn fetch_screener_storage_screens(
+    runtime: &mut impl RuntimeEvaluator,
+    active_title: Option<&str>,
+) -> Result<Value, AppError> {
+    let active_title = active_title.map(js_string).transpose()?;
+    let active_title = active_title.unwrap_or_else(|| "null".to_string());
+    let result = runtime
+        .evaluate(
+            &expanded_expression(&format!(
+                r#"
+                (async function() {{
+                    REPLACE_HELPERS
+                    var initData = window.initData || {{}};
+                    var storageUrl = initData.SCREENER_STORAGE_URL;
+                    var version = initData.screener_storage_release_version;
+                    var screenerKey = initData.standalone_type ||
+                        (initData.screen_data && initData.screen_data.screener_key) ||
+                        'stock';
+                    if (!storageUrl || !version || !screenerKey) {{
+                        return {{
+                            storage_available: false,
+                            reason: 'missing_screener_storage_init_data',
+                            screens: []
+                        }};
+                    }}
+                    var activeTitle = {active_title};
+                    var base = String(storageUrl).replace(/\/$/, '') + '/api/v2/screens/';
+                    var url = base + '?screener_key=' + encodeURIComponent(screenerKey) +
+                        '&version=' + encodeURIComponent(version) +
+                        '&sort_by=updated&sort_order=desc';
+                    var response = await fetch(url, {{ credentials: 'include' }});
+                    var body = await response.json().catch(function() {{ return null; }});
+                    if (!response.ok || !Array.isArray(body)) {{
+                        return {{
+                            storage_available: true,
+                            fetch_ok: response.ok,
+                            status: response.status,
+                            status_text: response.statusText,
+                            reason: 'custom_screens_fetch_failed',
+                            screens: []
+                        }};
+                    }}
+                    return {{
+                        storage_available: true,
+                        fetch_ok: true,
+                        status: response.status,
+                        screener_key: screenerKey,
+                        screen_title: activeTitle,
+                        screen_count: body.length,
+                        screens: body.map(function(screen, index) {{
+                            return {{
+                                index: index,
+                                id: String(screen.id || ''),
+                                name: String(screen.title || ''),
+                                active: !!activeTitle && String(screen.title || '') === activeTitle,
+                                owner: screen.is_owner === undefined ? null : !!screen.is_owner,
+                                shared: screen.is_shared === undefined ? null : !!screen.is_shared
+                            }};
+                        }}).filter(function(screen) {{ return screen.id && screen.name; }})
+                    }};
+                }})()
+                "#
+            )),
+            true,
+        )
+        .await?;
+
+    if value_bool(&result, "storage_available") && value_bool(&result, "fetch_ok") {
+        Ok(result)
+    } else {
+        Err(AppError::new(
+            ErrorKind::InternalApiUnavailable,
+            "Screener custom screen storage API was not available",
+        )
+        .with_details(result))
+    }
+}
+
+async fn delete_screener_storage_screen(
+    runtime: &mut impl RuntimeEvaluator,
+    target: &ScreenerScreenTarget,
+) -> Result<Value, AppError> {
+    let target_id = target.id.as_deref().ok_or_else(|| {
+        AppError::new(
+            ErrorKind::InternalApiUnavailable,
+            "Screener screen storage id was not available",
+        )
+        .with_details(json!({ "target_screen": screen_target_payload(target) }))
+    })?;
+    let target_id = js_string(target_id)?;
+    let result = runtime
+        .evaluate(
+            &expanded_expression(&format!(
+                r#"
+                (async function() {{
+                    REPLACE_HELPERS
+                    var initData = window.initData || {{}};
+                    var storageUrl = initData.SCREENER_STORAGE_URL;
+                    if (!storageUrl) {{
+                        return {{
+                            deleted: false,
+                            reason: 'missing_screener_storage_init_data'
+                        }};
+                    }}
+                    var base = String(storageUrl).replace(/\/$/, '') + '/api/v2/screens/';
+                    var targetId = {target_id};
+                    var response = await fetch(base + encodeURIComponent(targetId) + '/', {{
+                        method: 'DELETE',
+                        credentials: 'include',
+                        headers: {{ 'Content-Type': 'application/json' }}
+                    }});
+                    return {{
+                        deleted: response.ok,
+                        status: response.status,
+                        status_text: response.statusText,
+                        id: targetId
+                    }};
+                }})()
+                "#
+            )),
+            true,
+        )
+        .await?;
+
+    if value_bool(&result, "deleted") {
+        Ok(result)
+    } else {
+        Err(AppError::new(
+            ErrorKind::InternalApiUnavailable,
+            "Screener custom screen delete request failed",
+        )
+        .with_details(result))
+    }
 }
 
 async fn open_screen_catalog_from_menu(
@@ -4881,37 +5047,21 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn screener_screens_delete_dry_run_resolves_catalog_target() {
+    async fn screener_screens_delete_dry_run_resolves_storage_target() {
         let mut runtime = FakeRuntime::new([
-            json!({ "button_found": true, "open": true }),
             json!({
                 "button_found": true,
                 "open": true,
                 "screen_title": "CLI-Test1"
             }),
             json!({
-                "found": true,
-                "already_open": true
-            }),
-            json!({
-                "catalog_opened": true,
+                "storage_available": true,
+                "fetch_ok": true,
                 "screens": [
-                    { "index": 0, "name": "CLI-Test1", "active": true },
-                    { "index": 1, "name": "CLI-Test-Delete", "active": false }
-                ]
-            }),
-            json!({
-                "catalog_opened": true,
-                "found": true,
-                "target_name": "CLI-Test-Delete",
-                "delete_action": { "title": "Delete" },
-                "screens": [
-                    { "index": 0, "name": "CLI-Test1", "active": true },
-                    { "index": 1, "name": "CLI-Test-Delete", "active": false }
+                    { "index": 0, "id": "screen-1", "name": "CLI-Test1", "active": true, "owner": true, "shared": false },
+                    { "index": 1, "id": "screen-2", "name": "CLI-Test-Delete", "active": false, "owner": true, "shared": false }
                 ],
-                "click_point": { "x": 100.0, "y": 200.0 }
             }),
-            json!({ "closed": true }),
         ]);
 
         let result = screener_screens_delete(&mut runtime, "CLI-Test-Delete", true, false)
@@ -4919,9 +5069,80 @@ mod tests {
             .unwrap();
 
         assert_eq!(result["action"], "screen_delete");
+        assert_eq!(result["scope"], "screen_storage_api");
         assert_eq!(result["dry_run"], true);
         assert_eq!(result["deleted"], false);
         assert_eq!(result["target_screen"]["name"], "CLI-Test-Delete");
+        assert_eq!(result["target_screen"]["id"], "screen-2");
+        assert!(runtime.mouse_events.is_empty());
+    }
+
+    #[tokio::test]
+    async fn screener_screens_delete_uses_storage_api_and_post_checks_absence() {
+        let mut runtime = FakeRuntime::new([
+            json!({
+                "button_found": true,
+                "open": true,
+                "screen_title": "CLI-Test1"
+            }),
+            json!({
+                "storage_available": true,
+                "fetch_ok": true,
+                "screens": [
+                    { "index": 0, "id": "screen-1", "name": "CLI-Test1", "active": true, "owner": true, "shared": false },
+                    { "index": 1, "id": "screen-2", "name": "CLI-Test-Delete", "active": false, "owner": true, "shared": false }
+                ],
+            }),
+            json!({
+                "deleted": true,
+                "status": 204,
+                "id": "screen-2"
+            }),
+            json!({
+                "storage_available": true,
+                "fetch_ok": true,
+                "screens": [
+                    { "index": 0, "id": "screen-1", "name": "CLI-Test1", "active": true, "owner": true, "shared": false }
+                ],
+            }),
+        ]);
+
+        let result = screener_screens_delete(&mut runtime, "CLI-Test-Delete", false, true)
+            .await
+            .unwrap();
+
+        assert_eq!(result["action"], "screen_delete");
+        assert_eq!(result["scope"], "screen_storage_api");
+        assert_eq!(result["dry_run"], false);
+        assert_eq!(result["deleted"], true);
+        assert_eq!(result["target_screen"]["name"], "CLI-Test-Delete");
+        assert_eq!(result["before_screen_count"], 2);
+        assert_eq!(result["after_screen_count"], 1);
+        assert!(runtime.mouse_events.is_empty());
+    }
+
+    #[tokio::test]
+    async fn screener_screens_delete_refuses_active_storage_target() {
+        let mut runtime = FakeRuntime::new([
+            json!({
+                "button_found": true,
+                "open": true,
+                "screen_title": "CLI-Test-Delete"
+            }),
+            json!({
+                "storage_available": true,
+                "fetch_ok": true,
+                "screens": [
+                    { "index": 0, "id": "screen-2", "name": "CLI-Test-Delete", "active": true, "owner": true, "shared": false }
+                ],
+            }),
+        ]);
+
+        let error = screener_screens_delete(&mut runtime, "CLI-Test-Delete", false, true)
+            .await
+            .unwrap_err();
+
+        assert_eq!(error.kind, ErrorKind::Validation);
         assert!(runtime.mouse_events.is_empty());
     }
 

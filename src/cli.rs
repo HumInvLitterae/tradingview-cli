@@ -309,7 +309,7 @@ pub enum ScreenerScreensCommand {
         #[arg(long)]
         dry_run: bool,
     },
-    #[command(about = "Delete a test Stock Screener screen by exact catalog name")]
+    #[command(about = "Delete a test Stock Screener screen by exact saved-screen name")]
     Delete {
         #[arg(long)]
         name: String,
