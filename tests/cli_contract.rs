@@ -206,13 +206,24 @@ fn screener_help_lists_read_subcommands() {
         .assert()
         .success()
         .stdout(predicate::str::contains("list"))
+        .stdout(predicate::str::contains("config"))
         .stdout(predicate::str::contains("actions"))
-        .stdout(predicate::str::contains("remove"));
+        .stdout(predicate::str::contains("remove"))
+        .stdout(predicate::str::contains("reorder"));
+    tv().args(["screener", "columns", "config", "--help"])
+        .assert()
+        .success();
     tv().args(["screener", "columns", "remove", "--help"])
         .assert()
         .success()
         .stdout(predicate::str::contains("--index"))
         .stdout(predicate::str::contains("--name"))
+        .stdout(predicate::str::contains("--dry-run"));
+    tv().args(["screener", "columns", "reorder", "--help"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("--from-index"))
+        .stdout(predicate::str::contains("--to-index"))
         .stdout(predicate::str::contains("--dry-run"));
 }
 
@@ -336,6 +347,25 @@ fn screener_filter_mutations_reject_invalid_inputs_before_connecting() {
         .failure()
         .code(1);
     let stderr = String::from_utf8(clear_without_confirmation.get_output().stderr.clone()).unwrap();
+    let value: Value = serde_json::from_str(&stderr).unwrap();
+    assert_eq!(value["command"], "screener");
+    assert_eq!(value["error"]["kind"], "validation");
+
+    let same_index_reorder = tv()
+        .env("TV_CDP_PORT", "9")
+        .args([
+            "screener",
+            "columns",
+            "reorder",
+            "--from-index",
+            "1",
+            "--to-index",
+            "1",
+        ])
+        .assert()
+        .failure()
+        .code(1);
+    let stderr = String::from_utf8(same_index_reorder.get_output().stderr.clone()).unwrap();
     let value: Value = serde_json::from_str(&stderr).unwrap();
     assert_eq!(value["command"], "screener");
     assert_eq!(value["error"]["kind"], "validation");

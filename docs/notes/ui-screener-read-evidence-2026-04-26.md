@@ -84,8 +84,10 @@ The implemented surface is:
 - `tv screener filters remove --index <N>|--text <TEXT> [--dry-run]`
 - `tv screener filters clear [--dry-run] --confirm-clear`
 - `tv screener columns list`
+- `tv screener columns config`
 - `tv screener columns actions`
-- `tv screener columns remove --index <N>|--name <TEXT> --dry-run`
+- `tv screener columns remove --index <N>|--name <TEXT> [--dry-run]`
+- `tv screener columns reorder --from-index <N> --to-index <N> [--dry-run]`
 - `tv screener close`
 
 The implementation does not depend only on `[class*="screenerContainer"]`.
@@ -144,17 +146,14 @@ rename, CSV download, create, recent, and open. The current UI exposes name
 dialogs for create, rename, and copy/save-as; Rust now exposes guarded
 `screens create`, `screens rename`, and `screens save-as` commands with dry-run
 dialog reporting, test-name validation for normal mutations, and active-title
-post-checks before success. Delete is intentionally narrower: Rust resolves an
-exact saved-screen catalog target in dry-run mode, but normal delete returns
-`internal_api_unavailable` until a safe exact-screen delete action and
-confirmation path are verified. One disposable live screen named
-`CLI-Test-Codex-426A` was created during smoke and remained visible because
-normal delete was not verified.
+post-checks before success. Later storage-backed follow-ups added guarded
+normal screen delete and storage-backed column config/remove/reorder. The
+column commands use the saved screen's custom column set instead of the visible
+column-settings dialog.
 
 ## Still deferred
 
-- normal screen delete
-- column add / normal remove / reorder / reset
+- column add / reset
 - generic non-numeric filter editing
 - workflow scanner rules, dashboards, or downstream strategy packs
 

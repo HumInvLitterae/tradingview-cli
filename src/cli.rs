@@ -372,14 +372,25 @@ pub enum ScreenerFiltersCommand {
 pub enum ScreenerColumnsCommand {
     #[command(about = "List visible Stock Screener columns")]
     List,
+    #[command(about = "Read active saved Screener screen column configuration")]
+    Config,
     #[command(about = "List visible Stock Screener column-management actions")]
     Actions,
-    #[command(about = "Resolve a visible Stock Screener column for removal")]
+    #[command(about = "Remove a visible Stock Screener column from the active test screen")]
     Remove {
         #[arg(long)]
         index: Option<usize>,
         #[arg(long)]
         name: Option<String>,
+        #[arg(long)]
+        dry_run: bool,
+    },
+    #[command(about = "Reorder active test Screener screen columns by index")]
+    Reorder {
+        #[arg(long)]
+        from_index: usize,
+        #[arg(long)]
+        to_index: usize,
         #[arg(long)]
         dry_run: bool,
     },

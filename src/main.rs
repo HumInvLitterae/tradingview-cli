@@ -265,6 +265,17 @@ async fn dispatch(command: Command) -> Result<serde_json::Value, AppError> {
             {
                 ops::validate_screener_column_selector(*index, name.as_deref())?;
             }
+            if let ScreenerCommand::Columns {
+                command:
+                    ScreenerColumnsCommand::Reorder {
+                        from_index,
+                        to_index,
+                        ..
+                    },
+            } = &command
+            {
+                ops::validate_screener_column_reorder_request(*from_index, *to_index)?;
+            }
             if let ScreenerCommand::Screens { command } = &command {
                 match command {
                     ScreenerScreensCommand::Switch { name, .. } => {
@@ -411,6 +422,9 @@ async fn dispatch(command: Command) -> Result<serde_json::Value, AppError> {
                 },
                 ScreenerCommand::Columns { command } => match command {
                     ScreenerColumnsCommand::List => ops::screener_columns_list(&mut runtime).await,
+                    ScreenerColumnsCommand::Config => {
+                        ops::screener_columns_config(&mut runtime).await
+                    }
                     ScreenerColumnsCommand::Actions => {
                         ops::screener_columns_actions(&mut runtime).await
                     }
@@ -422,6 +436,16 @@ async fn dispatch(command: Command) -> Result<serde_json::Value, AppError> {
                         let selector =
                             ops::validate_screener_column_selector(index, name.as_deref())?;
                         ops::screener_columns_remove(&mut runtime, selector, dry_run).await
+                    }
+                    ScreenerColumnsCommand::Reorder {
+                        from_index,
+                        to_index,
+                        dry_run,
+                    } => {
+                        let (from_index, to_index) =
+                            ops::validate_screener_column_reorder_request(from_index, to_index)?;
+                        ops::screener_columns_reorder(&mut runtime, from_index, to_index, dry_run)
+                            .await
                     }
                 },
                 ScreenerCommand::Close => ops::screener_close(&mut runtime).await,
