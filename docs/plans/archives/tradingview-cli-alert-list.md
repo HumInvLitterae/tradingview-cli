@@ -110,7 +110,7 @@ Important source evidence:
     old JavaScript CLI command group: https://github.com/tradesdontlie/tradingview-mcp/blob/main/src/cli/commands/alerts.js
     Rust CLI modules: src/cli.rs, src/main.rs, src/ops.rs, src/cdp.rs
     migration policy: docs/notes/rust-cli-contract-migration-2026-04-24.md
-    development guideline: docs/notes/development-guidelines-2026-04-24.md
+    development guideline: docs/development.md
 
 ## Interfaces and Dependencies
 

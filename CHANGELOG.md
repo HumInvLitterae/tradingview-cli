@@ -22,6 +22,8 @@ package version omits the leading `v`.
   internal API replacement notes after watchlist and alert API-backed work.
 - Archived completed planning documents so `docs/plans/` now keeps only
   active/future plans and the plan index at the root.
+- Added stable architecture, development, and release packaging guides under
+  `docs/`, and archived the older development guideline note.
 - Added read-only `tv scanner scan` for basic TradingView scanner REST reads
   with exchange, column, sort, limit, and numeric filter options.
 - Added practical `tv scanner scan` filters for stock type, subtype, sector,

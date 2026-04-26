@@ -16,17 +16,20 @@ Read these in order before making major decisions:
 
 1. `CONTINUITY.md`
 2. `README.md`
-3. `docs/breaking-changes-from-js-cli.md`
-4. `docs/notes/development-guidelines-2026-04-24.md`
-5. `docs/notes/next-agent-handoff-prompt-2026-04-24.md`
-6. `docs/notes/rust-cli-contract-migration-2026-04-24.md`
-7. `docs/notes/legacy-cli-command-migration-inventory-2026-04-24.md`
-8. `docs/notes/remaining-deferred-surface-audit-2026-04-25.md`
-9. `docs/notes/upstream-pr-triage-2026-04-25.md`
-10. `docs/plans/README.md`
-11. `docs/notes/tradingview-mcp-investigation-2026-04-24.md`
-12. `.agents/PLANS.md`
-13. `.agents/skills/continuity/SKILL.md` when the continuity skill is active
+3. `docs/architecture.md`
+4. `docs/development.md`
+5. `docs/release-packaging.md`
+6. `docs/breaking-changes-from-js-cli.md`
+7. `docs/internal-tradingview-apis.md`
+8. `docs/notes/next-agent-handoff-prompt-2026-04-24.md`
+9. `docs/notes/rust-cli-contract-migration-2026-04-24.md`
+10. `docs/notes/legacy-cli-command-migration-inventory-2026-04-24.md`
+11. `docs/notes/remaining-deferred-surface-audit-2026-04-25.md`
+12. `docs/notes/upstream-pr-triage-2026-04-25.md`
+13. `docs/plans/README.md`
+14. `docs/notes/tradingview-mcp-investigation-2026-04-24.md`
+15. `.agents/PLANS.md`
+16. `.agents/skills/continuity/SKILL.md` when the continuity skill is active
 
 Historical ExecPlans live under `docs/plans/archives/`. Read them only when you need slice-level implementation history or rationale that is not already summarized in the current notes.
 
@@ -103,12 +106,15 @@ Supporting notes are welcome when they reduce ambiguity, but avoid speculative d
 
 ## Documentation Policy
 
-1. Keep planning documents under `docs/plans/`.
+1. Keep stable architecture, development, release packaging, migration, and API
+   reference documents directly under `docs/`.
+2. Keep planning documents under `docs/plans/`.
    Historical completed plans belong under `docs/plans/archives/`.
-2. Keep research notes, inventories, and handoff material under `docs/notes/`.
-3. Keep agent-only workflow standards under `.agents/`.
-4. Prefer English for agent-facing repository documents unless an existing file is intentionally Japanese.
-5. User-facing responses should remain concise Japanese unless the user asks otherwise.
+3. Keep research notes, inventories, and handoff material under `docs/notes/`.
+   Historical notes belong under `docs/notes/archives/`.
+4. Keep agent-only workflow standards under `.agents/`.
+5. Prefer English for agent-facing repository documents unless an existing file is intentionally Japanese.
+6. User-facing responses should remain concise Japanese unless the user asks otherwise.
 
 ## Change Strategy
 
@@ -125,7 +131,11 @@ If the answer still depends on unresolved bridge facts, investigate first and wr
 
 - `README.md`: project overview and current status
 - `CONTINUITY.md`: compaction-safe continuity ledger for current durable state
-- `docs/notes/development-guidelines-2026-04-24.md`: module layout, coding style, and validation guide
+- `docs/architecture.md`: stable CLI architecture, module boundaries, JSON contract, and mutation safety model
+- `docs/development.md`: coding style, test style, validation, and commit guide
+- `docs/release-packaging.md`: GitHub Release archive contents, runtime skill packaging, and release validation guide
+- `docs/breaking-changes-from-js-cli.md`: short downstream migration guide for intentional old CLI differences
+- `docs/internal-tradingview-apis.md`: public-safe reference for non-public TradingView dependencies
 - `docs/notes/upstream-pr-triage-2026-04-25.md`: original upstream PR classification and Rust follow-up priorities
 - `src/ops.rs`: thin operation facade that re-exports feature modules
 - `src/ops/`: operation implementations grouped by capability

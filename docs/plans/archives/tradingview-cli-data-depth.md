@@ -26,7 +26,7 @@ This is intentionally a small read-only slice. The command depends on TradingVie
   Evidence: `src/core/data.js` in `tradesdontlie/tradingview-mcp` searches DOM selectors containing `depth`, `orderBook`, `dom-`, `DOM`, and `[data-name="dom"]`, then classifies rows as bid or ask.
 
 - Observation: The local development guideline says the next substantial data-related change should avoid further growing `src/ops/data.rs`.
-  Evidence: `docs/notes/development-guidelines-2026-04-24.md` names `src/ops/data.rs` as the main watch point and recommends splitting by sub-surface.
+  Evidence: `docs/development.md` names `src/ops/data.rs` as the main watch point and recommends splitting by sub-surface.
 
 - Observation: The available live TradingView Desktop session did not have a visible DOM or Depth of Market panel.
   Evidence: `cargo run -- data depth` connected and returned structured `internal_api_unavailable` with message `DOM / Depth of Market panel not found.`
@@ -116,7 +116,7 @@ Important source evidence:
     old JavaScript CLI command group: https://github.com/tradesdontlie/tradingview-mcp/blob/main/src/cli/commands/data.js
     Rust CLI modules: src/cli.rs, src/main.rs, src/ops.rs, src/ops/data.rs, src/cdp.rs
     migration policy: docs/notes/rust-cli-contract-migration-2026-04-24.md
-    development guideline: docs/notes/development-guidelines-2026-04-24.md
+    development guideline: docs/development.md
 
 ## Interfaces and Dependencies
 

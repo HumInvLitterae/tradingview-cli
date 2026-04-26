@@ -20,7 +20,8 @@ Keep the Rust-native `tv` CLI reliable and useful as a replacement path for prac
 - the high-priority planned read-only migration backlog is complete
 - the operation layer is split into a thin `src/ops.rs` facade plus feature modules under `src/ops/`; do not reintroduce a monolithic ops file or `mod.rs`
 - the data operation layer is split into a thin `src/ops/data.rs` facade plus `indicator`, `strategy`, and `drawings` modules under `src/ops/data/`
-- development guidelines are recorded in `docs/notes/development-guidelines-2026-04-24.md`
+- stable architecture, development, and release packaging guidance is now summarized under `docs/architecture.md`, `docs/development.md`, and `docs/release-packaging.md`
+- development guidelines are recorded in `docs/development.md`
 - `data depth` is implemented as a read-only DOM-dependent slice and may require a visible DOM or Depth of Market panel
 - `alert list` is implemented as a read-only internal API slice
 - `alert create` is implemented as an explicit account mutation; it now prefers the logged-in alert endpoint and verifies creation through alert-list readback before success
@@ -142,13 +143,15 @@ The Rust CLI does not preserve the old JavaScript CLI's top-level payload wire s
 ## Your first tasks
 
 1. Read `README.md`
-2. Read `docs/notes/development-guidelines-2026-04-24.md`
-3. Read `docs/notes/rust-cli-contract-migration-2026-04-24.md`
-4. Read `docs/notes/legacy-cli-command-migration-inventory-2026-04-24.md`
-5. Read `docs/plans/archives/tradingview-cli-rust-initial-implementation.md`
-6. Read `docs/notes/tradingview-mcp-investigation-2026-04-24.md`
-7. Check `git status --short`
-8. Run targeted validation before changing behavior
+2. Read `docs/architecture.md`
+3. Read `docs/development.md`
+4. Read `docs/release-packaging.md` if the task touches release archives or distribution
+5. Read `docs/notes/rust-cli-contract-migration-2026-04-24.md`
+6. Read `docs/notes/legacy-cli-command-migration-inventory-2026-04-24.md`
+7. Read `docs/plans/archives/tradingview-cli-rust-initial-implementation.md`
+8. Read `docs/notes/tradingview-mcp-investigation-2026-04-24.md`
+9. Check `git status --short`
+10. Run targeted validation before changing behavior
 
 ## Constraints
 

@@ -29,7 +29,7 @@ This is a refactor-only slice. It prepares the codebase for later scanner filter
 ## Decision Log
 
 - Decision: Split before adding more scanner filters.
-  Rationale: `docs/notes/development-guidelines-2026-04-24.md` says not to reintroduce monolithic operation files and to split a capability module before adding another command when it becomes hard to scan.
+  Rationale: `docs/development.md` says not to reintroduce monolithic operation files and to split a capability module before adding another command when it becomes hard to scan.
   Date/Author: 2026-04-25 / Codex.
 
 - Decision: Keep this refactor behavior-preserving.
