@@ -27,7 +27,7 @@ The behavior is visible through commands such as `tv screener columns config`, `
 - Observation: The active test screen stores the visible column set under saved screen storage as `default_custom_column_set`, with each entry carrying an `id` and optional `params`.
   Evidence: Read-only page-session inspection showed the active test screen has `active_column_set: custom` and 13 storage columns corresponding to the visible columns.
 - Observation: The same read-only inspection did not expose a safe column catalog or canonical default column set.
-  Evidence: `window.initData` did not expose useful column catalog keys for add/reset. Therefore `columns add` and `columns reset` remain deferred in this slice.
+  Evidence: `window.initData` did not expose useful column catalog or reset keys. Therefore this slice deferred both low-level add and reset; a later slice implemented known-id `columns add`, while reset remains deferred.
 - Observation: A reversible reorder smoke is safer than a normal remove smoke because this slice intentionally does not expose `columns add`.
   Evidence: Removing a live column would require a separate add/catalog implementation to restore it, while reordering adjacent columns can be immediately reversed with the same command.
 - Observation: The initial storage save result returned the whole saved screen response, including filters, which was more data than the column command needs.
@@ -49,7 +49,7 @@ The behavior is visible through commands such as `tv screener columns config`, `
 
 ## Outcomes & Retrospective
 
-The implementation now lets users inspect storage column ids and params, dry-run a remove or reorder, and normally remove/reorder columns only on prepared test screens. Live smoke used a reversible reorder on `米国株（テスト用）`, then reversed it and confirmed the final storage order returned to the original 13-column order. Full validation passed. Remaining column work after this slice is `columns add`, `columns reset`, and possibly a richer catalog/discovery command if TradingView exposes a stable source.
+The implementation now lets users inspect storage column ids and params, dry-run a remove or reorder, and normally remove/reorder columns only on prepared test screens. Live smoke used a reversible reorder on `米国株（テスト用）`, then reversed it and confirmed the final storage order returned to the original 13-column order. Full validation passed. A later slice added low-level storage id `columns add`; remaining column work after the reset boundary pass is `columns reset` only if TradingView exposes a reliable default source.
 
 ## Context and Orientation
 
@@ -69,7 +69,7 @@ Change `screener_columns_remove` so dry-run resolves one visible column, maps it
 
 Add `screener_columns_reorder` with the same storage API and post-check strategy. It rejects equal source/destination indices before connection and rejects out-of-range indices after reading storage columns.
 
-Update README, CHANGELOG, and Screener contract notes so they no longer describe normal column mutation as purely deferred. Keep `columns add/reset` deferred because the current evidence does not expose a reliable column catalog or default source.
+Update README, CHANGELOG, and Screener contract notes so they no longer describe normal column mutation as purely deferred. This plan originally kept both low-level add and reset deferred; a later column-add slice implemented low-level storage id insertion, while the reset boundary pass still keeps `columns reset` deferred until a reliable default source appears.
 
 ## Concrete Steps
 
@@ -106,7 +106,7 @@ Do not run normal `columns remove` during live smoke unless a disposable column 
 
 Acceptance requires all focused and full validation commands to pass. `tv screener columns config` must return `scope: "screen_storage_api"`, the active screen title, the active column set, and storage columns with ids and params. `tv screener columns remove --dry-run` must return the target storage column and the expected post-remove list without saving. Normal `columns remove` must refuse non-test screen names and must not report success unless the storage API post-check confirms the exact expected order.
 
-`tv screener columns reorder --from-index <N> --to-index <N> --dry-run` must return the expected post-reorder order without saving. Normal `columns reorder` must be limited to test/disposable screens and must report success only after the saved storage order matches the expected order. `columns add` and `columns reset` remain absent from the CLI in this slice.
+`tv screener columns reorder --from-index <N> --to-index <N> --dry-run` must return the expected post-reorder order without saving. Normal `columns reorder` must be limited to test/disposable screens and must report success only after the saved storage order matches the expected order. At the time of this slice, add and reset remain absent from the CLI; a later slice adds known-id insertion, while reset remains deferred.
 
 ## Idempotence and Recovery
 
@@ -144,6 +144,6 @@ The payloads keep the Rust envelope convention: the top-level CLI output contain
 
 ## Open Questions
 
-- UNCONFIRMED: Whether TradingView exposes a reliable column catalog suitable for `columns add --id <COLUMN_ID>`.
+- Resolved later: Low-level `columns add --id <COLUMN_ID>` is implemented for known storage ids and params; display-name catalog add remains intentionally unsupported.
 - UNCONFIRMED: Whether TradingView exposes a reliable default column set suitable for `columns reset --confirm-reset`.
 - UNCONFIRMED: Whether the full-page Screener target refreshes visible columns immediately after a storage API save, or whether a page refresh is needed for the visible table to reflect storage-only changes.

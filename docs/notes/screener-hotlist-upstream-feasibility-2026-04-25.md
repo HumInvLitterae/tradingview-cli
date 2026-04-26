@@ -177,6 +177,15 @@ post-save storage order checks. `columns add` is intentionally id-based and
 does not search a display-name catalog. The implementation does not include
 column reset because the current evidence does not expose a reliable default
 source.
+
+The column reset feasibility pass on 2026-04-27 checked the full-page test
+Screener target with read-only storage and DOM evidence. The active saved
+screen exposed only the current custom column set under
+`default_custom_column_set`; no separate default or preset column set was found
+in `window.initData`, `screen_data`, or the fetched saved-screen response.
+Visible column-management action discovery also reported `reset_supported:
+false`. Keep reset deferred unless a future UI/storage build exposes a
+post-checkable default source.
 Live smoke on 2026-04-25 showed that menu-visible
 entries were readable and dry-run targeting worked, but the current TradingView
 Desktop session did not activate a clicked visible screen row; non-dry-run

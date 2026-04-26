@@ -152,9 +152,15 @@ dialogs for create, rename, and copy/save-as; Rust now exposes guarded
 `screens create`, `screens rename`, and `screens save-as` commands with dry-run
 dialog reporting, test-name validation for normal mutations, and active-title
 post-checks before success. Later storage-backed follow-ups added guarded
-normal screen delete and storage-backed column config/remove/reorder. The
+normal screen delete and storage-backed column config/add/remove/reorder. The
 column commands use the saved screen's custom column set instead of the visible
 column-settings dialog.
+
+The column reset feasibility pass on 2026-04-27 used the full-page test
+Screener target and stayed read-only. `columns actions` still reported
+`reset_supported: false`, and read-only page-session summaries found no default
+or preset column source beyond the current active screen's
+`default_custom_column_set`. No `columns reset` CLI surface was added.
 
 ## Still deferred
 
