@@ -64,10 +64,10 @@ pub use saved_layout::{saved_layout_list, saved_layout_switch};
 pub use scanner::{ScannerScanRequest, scanner_hotlist, scanner_scan};
 pub use screener::{
     screener_close, screener_columns_list, screener_filters_clear, screener_filters_list,
-    screener_filters_remove, screener_get, screener_open, screener_screens_active,
-    screener_screens_list, screener_screens_switch, screener_status,
-    validate_screener_filter_clear, validate_screener_filter_selector, validate_screener_limit,
-    validate_screener_screen_name,
+    screener_filters_remove, screener_get, screener_open, screener_screens_actions,
+    screener_screens_active, screener_screens_list, screener_screens_save, screener_screens_switch,
+    screener_status, validate_screener_filter_clear, validate_screener_filter_selector,
+    validate_screener_limit, validate_screener_screen_name,
 };
 pub use screenshot::{screenshot_chart, screenshot_full};
 pub use status::status;

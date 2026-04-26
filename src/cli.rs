@@ -265,6 +265,8 @@ pub enum ScreenerCommand {
 pub enum ScreenerScreensCommand {
     #[command(about = "Get the active Stock Screener screen title")]
     Active,
+    #[command(about = "List visible Stock Screener screen menu actions")]
+    Actions,
     #[command(about = "List visible Stock Screener screen menu entries")]
     List {
         #[arg(long)]
@@ -278,6 +280,11 @@ pub enum ScreenerScreensCommand {
         dry_run: bool,
         #[arg(long)]
         catalog: bool,
+    },
+    #[command(about = "Save the active Stock Screener screen through the visible screen menu")]
+    Save {
+        #[arg(long)]
+        dry_run: bool,
     },
 }
 

@@ -33,6 +33,14 @@ struct ScreenerScreenTarget {
     active: bool,
 }
 
+#[derive(Clone, Debug, PartialEq, Eq)]
+struct ScreenerScreenAction {
+    index: usize,
+    text: String,
+    kind: String,
+    enabled: bool,
+}
+
 #[derive(Clone, Copy, Debug, PartialEq)]
 struct ScreenMenuClickPoint {
     x: f64,
@@ -139,6 +147,42 @@ pub async fn screener_screens_active(
         "restored_open_state": read.restored_open_state,
         "dialog_title": read.state.get("dialog_title").cloned().unwrap_or(Value::Null),
         "screen_title": read.state.get("screen_title").cloned().unwrap_or(Value::Null),
+    }))
+}
+
+pub async fn screener_screens_actions(
+    runtime: &mut impl RuntimeEvaluator,
+) -> Result<Value, AppError> {
+    let mut session = ScreenerMutationSession::open(runtime).await?;
+    let state = read_screener_state(session.runtime, None).await?;
+    ensure_dialog_open(&state)?;
+    let result = session
+        .runtime
+        .evaluate(
+            &expanded_expression(SCREENER_SCREEN_ACTIONS_EXPRESSION),
+            true,
+        )
+        .await?;
+    ensure_screen_menu_opened(&result)?;
+    let actions = screen_actions_from_menu(&result);
+    let save_actions = actions
+        .iter()
+        .filter(|action| action.kind == "save")
+        .collect::<Vec<_>>();
+    let opened_for_read = session.opened_for_mutation;
+    let restored_open_state = session.restored_open_state;
+    session.restore().await?;
+    Ok(json!({
+        "source": SCREENER_SOURCE,
+        "scope": "screen_title_menu",
+        "open": value_bool(&state, "open"),
+        "opened_for_read": opened_for_read,
+        "restored_open_state": restored_open_state,
+        "screen_title": state.get("screen_title").cloned().unwrap_or(Value::Null),
+        "action_count": actions.len(),
+        "save_available": !save_actions.is_empty(),
+        "save_enabled": save_actions.iter().any(|action| action.enabled),
+        "actions": screen_actions_payload(&actions),
     }))
 }
 
@@ -321,6 +365,94 @@ pub async fn screener_screens_switch(
         "target_screen": screen_target_payload(&target),
         "screen_count": screens.len(),
         "screens": screen_targets_payload(&screens),
+    }))
+}
+
+pub async fn screener_screens_save(
+    runtime: &mut impl RuntimeEvaluator,
+    dry_run: bool,
+) -> Result<Value, AppError> {
+    let mut session = ScreenerMutationSession::open(runtime).await?;
+    let before_state = read_screener_state(session.runtime, None).await?;
+    ensure_dialog_open(&before_state)?;
+
+    let result = session
+        .runtime
+        .evaluate(
+            &expanded_expression(SCREENER_SCREEN_SAVE_POINT_EXPRESSION),
+            true,
+        )
+        .await?;
+    ensure_screen_menu_opened(&result)?;
+    if !value_bool(&result, "found") {
+        let _ = session.restore().await;
+        return Err(AppError::new(
+            ErrorKind::InternalApiUnavailable,
+            "Screener screen save action was not found",
+        )
+        .with_details(result));
+    }
+    if !value_bool(&result, "enabled") {
+        let _ = session.restore().await;
+        return Err(AppError::new(
+            ErrorKind::InternalApiUnavailable,
+            "Screener screen save action is disabled",
+        )
+        .with_details(result));
+    }
+
+    let actions = screen_actions_from_menu(&result);
+    let target_action = resolve_save_screen_action(&actions)?;
+    let before_title = before_state
+        .get("screen_title")
+        .and_then(Value::as_str)
+        .unwrap_or("")
+        .trim()
+        .to_string();
+
+    if dry_run {
+        let close_result = session.restore().await;
+        close_result?;
+        return Ok(json!({
+            "source": SCREENER_SOURCE,
+            "action": "screen_save",
+            "scope": "screen_title_menu",
+            "dry_run": true,
+            "clicked": false,
+            "save_requested": false,
+            "confirmation": "dry_run",
+            "opened_for_mutation": session.opened_for_mutation,
+            "restored_open_state": session.restored_open_state,
+            "screen_title": before_title,
+            "target_action": screen_action_payload(&target_action),
+            "action_count": actions.len(),
+            "actions": screen_actions_payload(&actions),
+        }));
+    }
+
+    let point = screen_menu_click_point(&result)?;
+    dispatch_screen_menu_click(session.runtime, point).await?;
+    let after_state = wait_for_screen_save_post_check(session.runtime, &before_title).await;
+    let close_result = session.restore().await;
+    let after_state = after_state?;
+    close_result?;
+
+    Ok(json!({
+        "source": SCREENER_SOURCE,
+        "action": "screen_save",
+        "scope": "screen_title_menu",
+        "dry_run": false,
+        "clicked": true,
+        "save_requested": true,
+        "confirmation": "not_observable",
+        "opened_for_mutation": session.opened_for_mutation,
+        "restored_open_state": session.restored_open_state,
+        "screen_title": before_title,
+        "after_screen_title": after_state.get("screen_title").cloned().unwrap_or(Value::Null),
+        "blocking_dialog_found": value_bool(&after_state, "blocking_dialog_found"),
+        "target_action": screen_action_payload(&target_action),
+        "action_count": actions.len(),
+        "actions": screen_actions_payload(&actions),
     }))
 }
 
@@ -843,6 +975,79 @@ fn screen_targets_payload(screens: &[ScreenerScreenTarget]) -> Vec<Value> {
     screens.iter().map(screen_target_payload).collect()
 }
 
+fn screen_actions_from_menu(value: &Value) -> Vec<ScreenerScreenAction> {
+    value
+        .get("actions")
+        .and_then(Value::as_array)
+        .map(|actions| {
+            actions
+                .iter()
+                .enumerate()
+                .filter_map(|(fallback_index, action)| {
+                    let text = action.get("text").and_then(Value::as_str)?.trim();
+                    if text.is_empty() {
+                        return None;
+                    }
+                    let kind = action
+                        .get("kind")
+                        .and_then(Value::as_str)
+                        .unwrap_or("unknown")
+                        .trim();
+                    Some(ScreenerScreenAction {
+                        index: action
+                            .get("index")
+                            .and_then(Value::as_u64)
+                            .and_then(|value| usize::try_from(value).ok())
+                            .unwrap_or(fallback_index),
+                        text: text.to_string(),
+                        kind: kind.to_string(),
+                        enabled: action
+                            .get("enabled")
+                            .and_then(Value::as_bool)
+                            .unwrap_or(true),
+                    })
+                })
+                .collect()
+        })
+        .unwrap_or_default()
+}
+
+fn resolve_save_screen_action(
+    actions: &[ScreenerScreenAction],
+) -> Result<ScreenerScreenAction, AppError> {
+    let matches = actions
+        .iter()
+        .filter(|action| action.kind == "save")
+        .cloned()
+        .collect::<Vec<_>>();
+    match matches.len() {
+        0 => Err(AppError::new(
+            ErrorKind::InternalApiUnavailable,
+            "No visible Screener save action found",
+        )
+        .with_details(json!({ "actions": screen_actions_payload(actions) }))),
+        1 => Ok(matches[0].clone()),
+        _ => Err(AppError::new(
+            ErrorKind::InternalApiUnavailable,
+            "Multiple visible Screener save actions found",
+        )
+        .with_details(json!({ "matches": screen_actions_payload(&matches) }))),
+    }
+}
+
+fn screen_action_payload(action: &ScreenerScreenAction) -> Value {
+    json!({
+        "index": action.index,
+        "text": action.text,
+        "kind": action.kind,
+        "enabled": action.enabled,
+    })
+}
+
+fn screen_actions_payload(actions: &[ScreenerScreenAction]) -> Vec<Value> {
+    actions.iter().map(screen_action_payload).collect()
+}
+
 async fn open_screen_catalog_from_menu(
     runtime: &mut impl RuntimeEvaluator,
 ) -> Result<Value, AppError> {
@@ -1102,6 +1307,58 @@ async fn wait_for_screen_title(
         "expected_screen_title": expected_name,
         "last_state": last_state,
     })))
+}
+
+async fn wait_for_screen_save_post_check(
+    runtime: &mut impl RuntimeEvaluator,
+    expected_name: &str,
+) -> Result<Value, AppError> {
+    let expected_name = js_string(expected_name)?;
+    let result = runtime
+        .evaluate(
+            &expanded_expression(&format!(
+                r#"
+                (async function() {{
+                    function sleep(ms) {{
+                        return new Promise(function(resolve) {{ setTimeout(resolve, ms); }});
+                    }}
+                    REPLACE_HELPERS
+                    for (var i = 0; i < 12; i++) {{
+                        await sleep(150);
+                        var state = readScreenerState(0);
+                        var dialog = findBlockingScreenerMutationDialog();
+                        if (dialog) {{
+                            state.blocking_dialog_found = true;
+                            state.blocking_dialog_text = textOf(dialog).substring(0, 200);
+                            return state;
+                        }}
+                        var title = (state.screen_title || '').trim();
+                        if (title === {expected_name}) {{
+                            state.blocking_dialog_found = false;
+                            return state;
+                        }}
+                    }}
+                    var finalState = readScreenerState(0);
+                    var finalDialog = findBlockingScreenerMutationDialog();
+                    finalState.blocking_dialog_found = !!finalDialog;
+                    if (finalDialog) finalState.blocking_dialog_text = textOf(finalDialog).substring(0, 200);
+                    return finalState;
+                }})()
+                "#
+            )),
+            true,
+        )
+        .await?;
+
+    if value_bool(&result, "blocking_dialog_found") {
+        return Err(AppError::new(
+            ErrorKind::InternalApiUnavailable,
+            "Screener save opened an unexpected blocking dialog",
+        )
+        .with_details(result));
+    }
+
+    Ok(result)
 }
 
 async fn click_filter_remove_button(
@@ -1377,6 +1634,86 @@ const SCREENER_SCREEN_CATALOG_LIST_EXPRESSION: &str = r#"
 })()
 "#;
 
+const SCREENER_SCREEN_ACTIONS_EXPRESSION: &str = r#"
+(async function() {
+    function sleep(ms) {
+        return new Promise(function(resolve) { setTimeout(resolve, ms); });
+    }
+    REPLACE_HELPERS
+    var title = document.querySelector('[data-name="screener-topbar-screen-title"]');
+    if (!title || !visible(title)) {
+        return { menu_opened: false, reason: 'title_not_found', actions: [] };
+    }
+    var activeTitle = textOf(title);
+    mouseClick(title);
+    for (var i = 0; i < 10; i++) {
+        var menu = findScreenerScreenMenu();
+        if (menu) {
+            var result = {
+                menu_opened: true,
+                screen_title: activeTitle,
+                actions: collectScreenerScreenActions(menu)
+            };
+            closeScreenerScreenMenu();
+            return result;
+        }
+        await sleep(150);
+    }
+    closeScreenerScreenMenu();
+    return { menu_opened: false, reason: 'menu_not_found', screen_title: activeTitle, actions: [] };
+})()
+"#;
+
+const SCREENER_SCREEN_SAVE_POINT_EXPRESSION: &str = r#"
+(async function() {
+    function sleep(ms) {
+        return new Promise(function(resolve) { setTimeout(resolve, ms); });
+    }
+    REPLACE_HELPERS
+    var title = document.querySelector('[data-name="screener-topbar-screen-title"]');
+    if (!title || !visible(title)) {
+        return { menu_opened: false, found: false, reason: 'title_not_found', actions: [] };
+    }
+    var activeTitle = textOf(title);
+    mouseClick(title);
+    for (var i = 0; i < 10; i++) {
+        var menu = findScreenerScreenMenu();
+        if (menu) {
+            var actions = collectScreenerScreenActions(menu);
+            var saveItem = findScreenerScreenSaveItem(menu);
+            if (!saveItem) {
+                closeScreenerScreenMenu();
+                return {
+                    menu_opened: true,
+                    found: false,
+                    reason: 'save_action_not_found',
+                    screen_title: activeTitle,
+                    actions: actions
+                };
+            }
+            var rect = saveItem.getBoundingClientRect();
+            var disabled = saveItem.disabled ||
+                saveItem.getAttribute('aria-disabled') === 'true' ||
+                /disabled/i.test(String(saveItem.className || ''));
+            return {
+                menu_opened: true,
+                found: true,
+                enabled: !disabled,
+                screen_title: activeTitle,
+                actions: actions,
+                click_point: {
+                    x: rect.left + rect.width / 2,
+                    y: rect.top + rect.height / 2
+                }
+            };
+        }
+        await sleep(150);
+    }
+    closeScreenerScreenMenu();
+    return { menu_opened: false, found: false, reason: 'menu_not_found', screen_title: activeTitle, actions: [] };
+})()
+"#;
+
 const SCREENER_OPEN_EXPRESSION: &str = r#"
 (async function() {
     function sleep(ms) {
@@ -1447,6 +1784,67 @@ function closeScreenerScreenMenu() {
 }
 function screenerScreenActionText(text) {
     return /スクリーンを保存|スクリーンを共有|コピーを作成|名前を変更|CSV|新規スクリーン|最近使用した項目|スクリーンを開く|Save screen|Share screen|Make a copy|Rename|Download.*CSV|Create new screen|Recent|Open screen/i.test(text);
+}
+function screenerScreenExactActionText(text) {
+    return /^(スクリーンを保存|スクリーンを共有|コピーを作成…?|名前を変更…?|結果をCSVでダウンロード|新規スクリーンを作成…?|最近使用した項目|スクリーンを開く…?|Save screen|Share screen|Make a copy…?|Rename…?|Download.*CSV|Create new screen…?|Recent|Open screen…?)$/i.test(text);
+}
+function screenerScreenActionKind(text) {
+    if (/^(スクリーンを保存|Save screen)$/i.test(text)) return 'save';
+    if (/^(スクリーンを共有|Share screen)$/i.test(text)) return 'share';
+    if (/^(コピーを作成…?|Make a copy…?)$/i.test(text)) return 'make_copy';
+    if (/^(名前を変更…?|Rename…?)$/i.test(text)) return 'rename';
+    if (/^(新規スクリーンを作成…?|Create new screen…?)$/i.test(text)) return 'create';
+    if (/^(スクリーンを開く…?|Open screen…?)$/i.test(text)) return 'open';
+    if (/CSV/i.test(text)) return 'download_csv';
+    if (/^(最近使用した項目|Recent)$/i.test(text)) return 'recent';
+    return 'unknown';
+}
+function collectScreenerScreenActions(menu) {
+    var seen = {};
+    var actions = [];
+    var nodes = Array.from(menu.querySelectorAll('button, [role="menuitem"], [role="option"], [role="button"], div, span')).filter(visible);
+    nodes.forEach(function(el) {
+        var text = textOf(el);
+        if (!text || text.length > 120 || !screenerScreenExactActionText(text)) return;
+        if (seen[text]) return;
+        var disabled = el.disabled ||
+            el.getAttribute('aria-disabled') === 'true' ||
+            /disabled/i.test(String(el.className || ''));
+        seen[text] = true;
+        actions.push({
+            index: actions.length,
+            text: text,
+            kind: screenerScreenActionKind(text),
+            enabled: !disabled
+        });
+    });
+    return actions;
+}
+function findScreenerScreenSaveItem(menu) {
+    var candidates = Array.from(menu.querySelectorAll('button, [role="menuitem"], [role="option"], [role="button"], div, span')).filter(function(el) {
+        return visible(el) && /^(スクリーンを保存|Save screen)$/i.test(textOf(el));
+    });
+    candidates = candidates.map(function(el) {
+        var current = el;
+        while (current && current !== menu) {
+            var cls = String(current.className || '');
+            if (/^(スクリーンを保存|Save screen)$/i.test(textOf(current)) &&
+                (current.getAttribute('role') === 'menuitem' ||
+                 current.getAttribute('role') === 'button' ||
+                 current.tagName === 'BUTTON' ||
+                 /button|background|item|row/i.test(cls))) {
+                return current;
+            }
+            current = current.parentElement;
+        }
+        return el;
+    });
+    candidates.sort(function(a, b) {
+        var ar = a.getBoundingClientRect();
+        var br = b.getBoundingClientRect();
+        return (br.width * br.height) - (ar.width * ar.height);
+    });
+    return candidates[0] || null;
 }
 function collectScreenerScreenEntries(menu, activeTitle) {
     var seen = {};
@@ -1579,6 +1977,15 @@ function closeScreenerScreenCatalog() {
     }
     document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', code: 'Escape', keyCode: 27, which: 27, bubbles: true, cancelable: true }));
     document.dispatchEvent(new KeyboardEvent('keyup', { key: 'Escape', code: 'Escape', keyCode: 27, which: 27, bubbles: true, cancelable: true }));
+}
+function findBlockingScreenerMutationDialog() {
+    var containers = visibleElements('[role="dialog"], [class*="dialog"], [class*="Dialog"], [class*="modal"], [class*="Modal"], .portal-lATuqHRX');
+    return containers.find(function(container) {
+        if (container.querySelector && container.querySelector('table')) return false;
+        var text = textOf(container);
+        if (text.length > 3000) return false;
+        return /名前を変更|Rename|コピーを作成|Make a copy|新規スクリーン|Create new screen|削除|Delete|保存先|Save as/i.test(text);
+    }) || null;
 }
 function screenerCatalogActionText(text) {
     return /マイスクリーン|My screens|最近|Recent|スクリーンを開く|Open screen|スクリーンを保存|Save screen|スクリーンを共有|Share screen|コピーを作成|Make a copy|名前を変更|Rename|新規スクリーン|Create new screen|検索|Search|キャンセル|Cancel|閉じる|Close/i.test(text);
@@ -1937,6 +2344,173 @@ mod tests {
         assert_eq!(result["screen_count"], 2);
         assert_eq!(result["screens"][0]["name"], "米国株（テスト用）");
         assert_eq!(result["screens"][0]["active"], true);
+    }
+
+    #[tokio::test]
+    async fn screener_screens_actions_reports_visible_save_action() {
+        let mut runtime = FakeRuntime::new([
+            json!({ "button_found": true, "open": true }),
+            json!({
+                "button_found": true,
+                "open": true,
+                "dialog_title": "Stock Screener",
+                "screen_title": "CLI-Test1"
+            }),
+            json!({
+                "menu_opened": true,
+                "screen_title": "CLI-Test1",
+                "actions": [
+                    { "index": 0, "text": "Save screen", "kind": "save", "enabled": true },
+                    { "index": 1, "text": "Rename", "kind": "rename", "enabled": true }
+                ]
+            }),
+        ]);
+
+        let result = screener_screens_actions(&mut runtime).await.unwrap();
+
+        assert_eq!(result["source"], SCREENER_SOURCE);
+        assert_eq!(result["scope"], "screen_title_menu");
+        assert_eq!(result["screen_title"], "CLI-Test1");
+        assert_eq!(result["action_count"], 2);
+        assert_eq!(result["save_available"], true);
+        assert_eq!(result["save_enabled"], true);
+        assert_eq!(result["actions"][0]["kind"], "save");
+    }
+
+    #[tokio::test]
+    async fn screener_screens_save_dry_run_reports_target_without_clicking() {
+        let mut runtime = FakeRuntime::new([
+            json!({ "button_found": true, "open": true }),
+            json!({
+                "button_found": true,
+                "open": true,
+                "screen_title": "CLI-Test1"
+            }),
+            json!({
+                "menu_opened": true,
+                "found": true,
+                "enabled": true,
+                "screen_title": "CLI-Test1",
+                "actions": [
+                    { "index": 0, "text": "Save screen", "kind": "save", "enabled": true },
+                    { "index": 1, "text": "Rename", "kind": "rename", "enabled": true }
+                ],
+                "click_point": { "x": 100.0, "y": 200.0 }
+            }),
+        ]);
+
+        let result = screener_screens_save(&mut runtime, true).await.unwrap();
+
+        assert_eq!(result["action"], "screen_save");
+        assert_eq!(result["dry_run"], true);
+        assert_eq!(result["clicked"], false);
+        assert_eq!(result["save_requested"], false);
+        assert_eq!(result["confirmation"], "dry_run");
+        assert_eq!(result["target_action"]["kind"], "save");
+        assert_eq!(runtime.mouse_events.len(), 0);
+    }
+
+    #[tokio::test]
+    async fn screener_screens_save_clicks_exact_save_and_post_checks() {
+        let mut runtime = FakeRuntime::new([
+            json!({ "button_found": true, "open": true }),
+            json!({
+                "button_found": true,
+                "open": true,
+                "screen_title": "CLI-Test1"
+            }),
+            json!({
+                "menu_opened": true,
+                "found": true,
+                "enabled": true,
+                "screen_title": "CLI-Test1",
+                "actions": [
+                    { "index": 0, "text": "Save screen", "kind": "save", "enabled": true },
+                    { "index": 1, "text": "Make a copy", "kind": "make_copy", "enabled": true }
+                ],
+                "click_point": { "x": 100.0, "y": 200.0 }
+            }),
+            json!({
+                "button_found": true,
+                "open": true,
+                "screen_title": "CLI-Test1",
+                "blocking_dialog_found": false
+            }),
+        ]);
+
+        let result = screener_screens_save(&mut runtime, false).await.unwrap();
+
+        assert_eq!(result["action"], "screen_save");
+        assert_eq!(result["dry_run"], false);
+        assert_eq!(result["clicked"], true);
+        assert_eq!(result["save_requested"], true);
+        assert_eq!(result["confirmation"], "not_observable");
+        assert_eq!(result["after_screen_title"], "CLI-Test1");
+        assert_eq!(result["target_action"]["text"], "Save screen");
+        assert_eq!(runtime.mouse_events.len(), 3);
+    }
+
+    #[tokio::test]
+    async fn screener_screens_save_rejects_missing_save_action() {
+        let mut runtime = FakeRuntime::new([
+            json!({ "button_found": true, "open": true }),
+            json!({
+                "button_found": true,
+                "open": true,
+                "screen_title": "CLI-Test1"
+            }),
+            json!({
+                "menu_opened": true,
+                "found": false,
+                "enabled": false,
+                "screen_title": "CLI-Test1",
+                "actions": [
+                    { "index": 0, "text": "Rename", "kind": "rename", "enabled": true }
+                ]
+            }),
+        ]);
+
+        let error = screener_screens_save(&mut runtime, true).await.unwrap_err();
+
+        assert_eq!(error.kind, ErrorKind::InternalApiUnavailable);
+        assert!(error.details.is_some());
+    }
+
+    #[tokio::test]
+    async fn screener_screens_save_rejects_blocking_dialog_after_click() {
+        let mut runtime = FakeRuntime::new([
+            json!({ "button_found": true, "open": true }),
+            json!({
+                "button_found": true,
+                "open": true,
+                "screen_title": "CLI-Test1"
+            }),
+            json!({
+                "menu_opened": true,
+                "found": true,
+                "enabled": true,
+                "screen_title": "CLI-Test1",
+                "actions": [
+                    { "index": 0, "text": "Save screen", "kind": "save", "enabled": true }
+                ],
+                "click_point": { "x": 100.0, "y": 200.0 }
+            }),
+            json!({
+                "button_found": true,
+                "open": true,
+                "screen_title": "CLI-Test1",
+                "blocking_dialog_found": true,
+                "blocking_dialog_text": "Rename"
+            }),
+        ]);
+
+        let error = screener_screens_save(&mut runtime, false)
+            .await
+            .unwrap_err();
+
+        assert_eq!(error.kind, ErrorKind::InternalApiUnavailable);
+        assert!(error.details.is_some());
+        assert_eq!(runtime.mouse_events.len(), 3);
     }
 
     #[tokio::test]

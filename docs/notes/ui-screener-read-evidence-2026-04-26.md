@@ -71,6 +71,8 @@ The implemented surface is:
 - `tv screener open`
 - `tv screener get [--limit <N>]`
 - `tv screener screens active`
+- `tv screener screens actions`
+- `tv screener screens save [--dry-run]`
 - `tv screener filters list`
 - `tv screener filters remove --index <N>|--text <TEXT> [--dry-run]`
 - `tv screener filters clear [--dry-run] --confirm-clear`

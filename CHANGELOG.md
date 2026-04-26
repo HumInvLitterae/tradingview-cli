@@ -24,6 +24,9 @@ package version omits the leading `v`.
 - Added catalog-backed `tv screener screens list --catalog` and
   `tv screener screens switch --name <NAME> --catalog [--dry-run]` for exact
   saved-screen targeting.
+- Added `tv screener screens actions` and
+  `tv screener screens save [--dry-run]` for guarded active-screen menu
+  inspection and exact save-action clicking.
 - Added guarded `tv screener filters remove` and `tv screener filters clear`
   commands, including dry-run target reporting and clear-all confirmation.
 - Added `tv quote [SYMBOL]` for symbol-targeted quote reads with temporary chart
