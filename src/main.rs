@@ -267,6 +267,23 @@ async fn dispatch(command: Command) -> Result<serde_json::Value, AppError> {
             }
             if let ScreenerCommand::Columns {
                 command:
+                    ScreenerColumnsCommand::Add {
+                        id,
+                        params_json,
+                        after_index,
+                        dry_run,
+                    },
+            } = &command
+            {
+                ops::validate_screener_column_add_request(
+                    id,
+                    params_json.as_deref(),
+                    *after_index,
+                    *dry_run,
+                )?;
+            }
+            if let ScreenerCommand::Columns {
+                command:
                     ScreenerColumnsCommand::Reorder {
                         from_index,
                         to_index,
@@ -436,6 +453,20 @@ async fn dispatch(command: Command) -> Result<serde_json::Value, AppError> {
                         let selector =
                             ops::validate_screener_column_selector(index, name.as_deref())?;
                         ops::screener_columns_remove(&mut runtime, selector, dry_run).await
+                    }
+                    ScreenerColumnsCommand::Add {
+                        id,
+                        params_json,
+                        after_index,
+                        dry_run,
+                    } => {
+                        let request = ops::validate_screener_column_add_request(
+                            &id,
+                            params_json.as_deref(),
+                            after_index,
+                            dry_run,
+                        )?;
+                        ops::screener_columns_add(&mut runtime, request).await
                     }
                     ScreenerColumnsCommand::Reorder {
                         from_index,

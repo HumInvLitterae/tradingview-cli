@@ -385,6 +385,17 @@ pub enum ScreenerColumnsCommand {
         #[arg(long)]
         dry_run: bool,
     },
+    #[command(about = "Add a saved Screener storage column to the active test screen")]
+    Add {
+        #[arg(long)]
+        id: String,
+        #[arg(long)]
+        params_json: Option<String>,
+        #[arg(long)]
+        after_index: Option<usize>,
+        #[arg(long)]
+        dry_run: bool,
+    },
     #[command(about = "Reorder active test Screener screen columns by index")]
     Reorder {
         #[arg(long)]

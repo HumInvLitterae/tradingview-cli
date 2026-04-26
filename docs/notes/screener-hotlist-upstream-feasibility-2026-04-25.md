@@ -47,8 +47,9 @@ The mutation subset is riskier:
 
 - `filters remove` and `filters clear` mutate the active screen's filters
 - `screens save` can persist screen changes to TradingView cloud state
-- remaining column add/reset flows need a reliable storage catalog/default
-  source and should remain deferred unless separately planned
+- remaining column reset flows need a reliable default source and should remain
+  deferred unless separately planned; column add is implemented only as a
+  low-level storage id + params insertion command
 
 Disposition: do not implement PR #66 as a single Rust slice. If Rust adds UI
 Screener support, start with a small read-oriented dialog slice only:
@@ -105,15 +106,15 @@ Classify the remaining Screener/Hotlist ideas as follows:
 | UI saved-screen catalog list/switch | implemented as guarded `tv screener screens list/switch --catalog` | Uses the saved-screen catalog for exact-name targeting, supports dry-run target reporting, and verifies the active title after mutation. |
 | UI screen actions/save | implemented as guarded `tv screener screens actions/save` | Lists visible screen menu actions and clicks only exact `Save screen` / `スクリーンを保存`; dry-run reports the target action before mutation. |
 | UI screen create/rename/save-as/delete | implemented as guarded test-screen lifecycle commands | Create, rename, and save-as are guarded test-screen lifecycle commands with dry-run and active-title post-checks. Delete uses exact saved-screen storage API targeting, refuses non-test and active screens, and verifies post-delete absence. |
-| UI column config/remove/reorder | implemented as guarded storage-backed commands | `columns config` reads saved storage column ids and params. `columns remove` and `columns reorder` dry-run the expected storage order, limit normal mutation to test/disposable screens, save the custom column set through storage API, and verify the re-fetched order before success. |
-| UI column add/reset | defer | Requires a reliable column catalog/default column source that current evidence does not expose. |
+| UI column config/add/remove/reorder | implemented as guarded storage-backed commands | `columns config` reads saved storage column ids and params. `columns add` inserts a known storage id and JSON-object params. `columns remove` and `columns reorder` dry-run the expected storage order, limit normal mutation to test/disposable screens, save the custom column set through storage API, and verify the re-fetched order before success. |
+| UI column reset | defer | Requires a reliable default column source that current evidence does not expose. |
 | Scanner/product workflow packs | keep downstream | Rules packs and dashboards are workflow products, not core bridge replacement. |
 
 Hotlist REST, generic scanner REST, the read-oriented UI Screener dialog slice,
 guarded filter cleanup, preset-backed filter modify, guarded filter add,
-guarded screen lifecycle commands, and storage-backed column config/remove/
+guarded screen lifecycle commands, and storage-backed column config/add/remove/
 reorder are now implemented. Any next implementation plan should not bundle
-column add/reset, generic non-numeric filter editing, or downstream scanner
+column reset, generic non-numeric filter editing, or downstream scanner
 workflow rules without fresh evidence.
 
 ## Implemented REST scanner contract
@@ -155,6 +156,7 @@ The Rust implementation is separate from Hotlist REST and currently includes:
 - `tv screener columns list`
 - `tv screener columns actions`
 - `tv screener columns config`
+- `tv screener columns add --id <COLUMN_ID> [--params-json <JSON>] [--after-index <N>] [--dry-run]`
 - `tv screener columns remove --index <N>|--name <TEXT> [--dry-run]`
 - `tv screener columns reorder --from-index <N> --to-index <N> [--dry-run]`
 - `tv screener close`
@@ -168,11 +170,13 @@ they use the saved-screen catalog and return `scope: "screen_catalog"`.
 exact visible `Save screen` / `スクリーンを保存` action after optional dry-run
 target reporting. `columns actions` reads the visible column settings categories
 and reports whether safe visible remove/reset actions are present. `columns
-config`, `columns remove`, and `columns reorder` use the saved-screen storage
-API instead of the visible column settings dialog; normal remove/reorder are
-limited to test/disposable screen names and require post-save storage order
-checks. The implementation does not include column add or reset because the
-current evidence does not expose a reliable column catalog or default source.
+config`, `columns add`, `columns remove`, and `columns reorder` use the
+saved-screen storage API instead of the visible column settings dialog; normal
+add/remove/reorder are limited to test/disposable screen names and require
+post-save storage order checks. `columns add` is intentionally id-based and
+does not search a display-name catalog. The implementation does not include
+column reset because the current evidence does not expose a reliable default
+source.
 Live smoke on 2026-04-25 showed that menu-visible
 entries were readable and dry-run targeting worked, but the current TradingView
 Desktop session did not activate a clicked visible screen row; non-dry-run

@@ -46,11 +46,12 @@ package version omits the leading `v`.
   new visible filter pill appears.
 - Hardened Screener open-state detection so off-screen tables, toolbar buttons,
   and unrelated right-panel content do not count as an open Screener panel.
-- Added storage-backed `tv screener columns config`, normal
-  `tv screener columns remove`, and `tv screener columns reorder` for active
-  saved test screens. Normal column mutations use TradingView's saved-screen
-  storage payload, are limited to test/disposable screen names, and require a
-  post-save storage order check before success.
+- Added storage-backed `tv screener columns config`,
+  `tv screener columns add`, normal `tv screener columns remove`, and
+  `tv screener columns reorder` for active saved test screens. Normal column
+  mutations use TradingView's saved-screen storage payload, are limited to
+  test/disposable screen names, and require a post-save storage order check
+  before success.
 - Added `tv quote [SYMBOL]` for symbol-targeted quote reads with temporary chart
   switching and verified restoration.
 

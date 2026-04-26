@@ -86,6 +86,7 @@ The implemented surface is:
 - `tv screener columns list`
 - `tv screener columns config`
 - `tv screener columns actions`
+- `tv screener columns add --id <COLUMN_ID> [--params-json <JSON>] [--after-index <N>] [--dry-run]`
 - `tv screener columns remove --index <N>|--name <TEXT> [--dry-run]`
 - `tv screener columns reorder --from-index <N> --to-index <N> [--dry-run]`
 - `tv screener close`
@@ -110,8 +111,12 @@ The column-management follow-up can read the visible column settings categories
 and resolve a visible column target in dry-run mode. Live evidence on
 2026-04-26 found the settings categories, search, add-column configuration, and
 header sort/move menus, but did not expose a safe visible per-column remove
-action. Normal column remove, reset, add, and reorder therefore remain
-evidence-gated.
+action. Later storage-backed follow-ups implemented normal column config,
+add, remove, and reorder by editing the active saved screen's storage column
+set and post-checking the re-fetched order. `columns add` is intentionally a
+low-level storage id + params insertion command, not a display-name catalog
+search. Column reset remains evidence-gated because no reliable default column
+source is known.
 
 The guarded filter mutation follow-up uses the same visible filter pill surface.
 Live evidence showed that opening a filter pill exposes a popover button whose
@@ -153,7 +158,7 @@ column-settings dialog.
 
 ## Still deferred
 
-- column add / reset
+- column reset
 - generic non-numeric filter editing
 - workflow scanner rules, dashboards, or downstream strategy packs
 

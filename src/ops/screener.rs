@@ -39,6 +39,14 @@ pub struct ScreenerFilterAddRequest {
     range_matchers: Vec<String>,
 }
 
+#[derive(Clone, Debug, PartialEq)]
+pub struct ScreenerColumnAddRequest {
+    pub id: String,
+    pub params: Value,
+    pub after_index: Option<usize>,
+    pub dry_run: bool,
+}
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum ScreenerColumnSelector {
     Index(usize),
@@ -181,6 +189,46 @@ pub fn validate_screener_column_selector(
             "Either --index or --name is required",
         )),
     }
+}
+
+pub fn validate_screener_column_add_request(
+    id: &str,
+    params_json: Option<&str>,
+    after_index: Option<usize>,
+    dry_run: bool,
+) -> Result<ScreenerColumnAddRequest, AppError> {
+    let id = id.trim();
+    if id.is_empty() {
+        return Err(AppError::new(
+            ErrorKind::Validation,
+            "screener columns add requires a non-empty --id",
+        ));
+    }
+    let params = match params_json {
+        Some(raw) => {
+            let value: Value = serde_json::from_str(raw).map_err(|error| {
+                AppError::new(
+                    ErrorKind::Validation,
+                    format!("--params-json must be valid JSON: {error}"),
+                )
+            })?;
+            if !value.is_object() {
+                return Err(AppError::new(
+                    ErrorKind::Validation,
+                    "--params-json must be a JSON object",
+                )
+                .with_details(json!({ "params_json": value })));
+            }
+            value
+        }
+        None => Value::Object(Map::new()),
+    };
+    Ok(ScreenerColumnAddRequest {
+        id: id.to_string(),
+        params,
+        after_index,
+        dry_run,
+    })
 }
 
 pub fn validate_screener_column_reorder_request(
@@ -1326,6 +1374,81 @@ pub async fn screener_columns_remove(
     }))
 }
 
+pub async fn screener_columns_add(
+    runtime: &mut impl RuntimeEvaluator,
+    request: ScreenerColumnAddRequest,
+) -> Result<Value, AppError> {
+    let before_state = read_screener_state(runtime, None).await?;
+    ensure_dialog_open(&before_state)?;
+    let visible_columns = column_targets_from_state(&before_state);
+    let screen_title = require_active_screen_title(&before_state)?;
+    let before_config = fetch_active_screener_storage_config(runtime, &screen_title).await?;
+    let before_columns = storage_columns_from_config(&before_config, &visible_columns);
+    let expected_after_columns = add_storage_column(&before_columns, &request)?;
+    let inserted_index = request
+        .after_index
+        .map(|index| index + 1)
+        .unwrap_or(before_columns.len());
+    let target = expected_after_columns[inserted_index].clone();
+
+    if request.dry_run {
+        return Ok(json!({
+            "source": SCREENER_SOURCE,
+            "action": "columns_add",
+            "scope": "screen_storage_api",
+            "dry_run": true,
+            "added": false,
+            "screen_title": screen_title,
+            "screen_id": before_config.get("screen_id").cloned().unwrap_or(Value::Null),
+            "after_index": request.after_index,
+            "inserted_index": inserted_index,
+            "before_column_count": before_columns.len(),
+            "after_column_count": expected_after_columns.len(),
+            "target_column": storage_column_target_payload(&target),
+            "columns": storage_column_targets_payload(&before_columns),
+            "after_columns": storage_column_targets_payload(&expected_after_columns),
+        }));
+    }
+
+    ensure_test_screener_screen_for_column_mutation(&screen_title, "add")?;
+    let save_result =
+        save_screener_storage_columns(runtime, &before_config, &expected_after_columns).await?;
+    let after_config = fetch_active_screener_storage_config(runtime, &screen_title).await?;
+    let after_columns = storage_columns_from_config(&after_config, &visible_columns);
+    if !storage_column_order_matches(&after_columns, &expected_after_columns) {
+        return Err(AppError::new(
+            ErrorKind::InternalApiUnavailable,
+            "Screener storage columns did not match after add",
+        )
+        .with_details(json!({
+            "source": SCREENER_SOURCE,
+            "action": "columns_add",
+            "scope": "screen_storage_api",
+            "target_column": storage_column_target_payload(&target),
+            "expected_columns": storage_column_targets_payload(&expected_after_columns),
+            "after_columns": storage_column_targets_payload(&after_columns),
+            "save_result": save_result,
+        })));
+    }
+
+    Ok(json!({
+        "source": SCREENER_SOURCE,
+        "action": "columns_add",
+        "scope": "screen_storage_api",
+        "dry_run": false,
+        "added": true,
+        "screen_title": screen_title,
+        "screen_id": before_config.get("screen_id").cloned().unwrap_or(Value::Null),
+        "after_index": request.after_index,
+        "inserted_index": inserted_index,
+        "target_column": storage_column_target_payload(&target),
+        "before_column_count": before_columns.len(),
+        "after_column_count": expected_after_columns.len(),
+        "columns": storage_column_targets_payload(&expected_after_columns),
+        "save_result": save_result,
+    }))
+}
+
 pub async fn screener_columns_reorder(
     runtime: &mut impl RuntimeEvaluator,
     from_index: usize,
@@ -2051,6 +2174,37 @@ fn remove_storage_column(
             column
         })
         .collect()
+}
+
+fn add_storage_column(
+    columns: &[ScreenerStorageColumnTarget],
+    request: &ScreenerColumnAddRequest,
+) -> Result<Vec<ScreenerStorageColumnTarget>, AppError> {
+    if let Some(after_index) = request.after_index {
+        ensure_storage_column_index(columns, after_index)?;
+    }
+    let insert_index = request
+        .after_index
+        .map(|index| index + 1)
+        .unwrap_or(columns.len());
+    let mut added = columns.to_vec();
+    added.insert(
+        insert_index,
+        ScreenerStorageColumnTarget {
+            index: insert_index,
+            id: request.id.clone(),
+            name: None,
+            params: request.params.clone(),
+        },
+    );
+    Ok(added
+        .into_iter()
+        .enumerate()
+        .map(|(index, mut column)| {
+            column.index = index;
+            column
+        })
+        .collect())
 }
 
 fn reorder_storage_columns(
@@ -5113,6 +5267,41 @@ mod tests {
     }
 
     #[test]
+    fn validate_screener_column_add_rejects_unsafe_inputs() {
+        let request = validate_screener_column_add_request(
+            " TechnicalRating ",
+            Some(r#"{"resolution":"TimeResolution1D"}"#),
+            Some(11),
+            true,
+        )
+        .unwrap();
+
+        assert_eq!(request.id, "TechnicalRating");
+        assert_eq!(request.params["resolution"], "TimeResolution1D");
+        assert_eq!(request.after_index, Some(11));
+        assert!(request.dry_run);
+
+        assert_eq!(
+            validate_screener_column_add_request("   ", None, None, true)
+                .unwrap_err()
+                .kind,
+            ErrorKind::Validation
+        );
+        assert_eq!(
+            validate_screener_column_add_request("Price", Some("{bad"), None, true)
+                .unwrap_err()
+                .kind,
+            ErrorKind::Validation
+        );
+        assert_eq!(
+            validate_screener_column_add_request("Price", Some("[]"), None, true)
+                .unwrap_err()
+                .kind,
+            ErrorKind::Validation
+        );
+    }
+
+    #[test]
     fn validate_screener_filter_clear_requires_confirmation_for_mutation() {
         assert!(validate_screener_filter_clear(true, false).is_ok());
         assert!(validate_screener_filter_clear(false, true).is_ok());
@@ -6468,6 +6657,143 @@ mod tests {
         ]);
 
         let error = screener_columns_remove(&mut runtime, ScreenerColumnSelector::Index(1), false)
+            .await
+            .unwrap_err();
+
+        assert_eq!(error.kind, ErrorKind::Validation);
+    }
+
+    #[tokio::test]
+    async fn screener_columns_add_dry_run_returns_expected_order() {
+        let mut runtime = FakeRuntime::new([
+            json!({
+                "button_found": true,
+                "open": true,
+                "screen_title": "米国株（テスト用）",
+                "columns": ["Symbol", "Price"],
+                "column_count": 2
+            }),
+            storage_config(
+                "米国株（テスト用）",
+                vec![storage_column("TickerUniversal"), storage_column("Price")],
+            ),
+        ]);
+        let request = validate_screener_column_add_request(
+            "Change",
+            Some(r#"{"resolution":"TimeResolution1D"}"#),
+            Some(1),
+            true,
+        )
+        .unwrap();
+
+        let result = screener_columns_add(&mut runtime, request).await.unwrap();
+
+        assert_eq!(result["action"], "columns_add");
+        assert_eq!(result["scope"], "screen_storage_api");
+        assert_eq!(result["dry_run"], true);
+        assert_eq!(result["added"], false);
+        assert_eq!(result["inserted_index"], 2);
+        assert_eq!(result["target_column"]["id"], "Change");
+        assert_eq!(
+            result["target_column"]["params"]["resolution"],
+            "TimeResolution1D"
+        );
+        assert_eq!(result["after_column_count"], 3);
+        assert_eq!(result["after_columns"][2]["id"], "Change");
+    }
+
+    #[tokio::test]
+    async fn screener_columns_add_rejects_out_of_range_after_index() {
+        let mut runtime = FakeRuntime::new([
+            json!({
+                "button_found": true,
+                "open": true,
+                "screen_title": "米国株（テスト用）",
+                "columns": ["Symbol", "Price"],
+                "column_count": 2
+            }),
+            storage_config(
+                "米国株（テスト用）",
+                vec![storage_column("TickerUniversal"), storage_column("Price")],
+            ),
+        ]);
+        let request = validate_screener_column_add_request("Change", None, Some(2), true).unwrap();
+
+        let error = screener_columns_add(&mut runtime, request)
+            .await
+            .unwrap_err();
+
+        assert_eq!(error.kind, ErrorKind::Validation);
+    }
+
+    #[tokio::test]
+    async fn screener_columns_add_saves_storage_and_post_checks() {
+        let mut runtime = FakeRuntime::new([
+            json!({
+                "button_found": true,
+                "open": true,
+                "screen_title": "CLI-Test1",
+                "columns": ["Symbol", "Price"],
+                "column_count": 2
+            }),
+            storage_config(
+                "CLI-Test1",
+                vec![storage_column("TickerUniversal"), storage_column("Price")],
+            ),
+            json!({ "saved": true, "screen_id": "screen-test", "column_count": 3 }),
+            storage_config(
+                "CLI-Test1",
+                vec![
+                    storage_column("TickerUniversal"),
+                    storage_column("Price"),
+                    json!({ "id": "Change", "params": { "resolution": "TimeResolution1D" } }),
+                ],
+            ),
+        ]);
+        let request = validate_screener_column_add_request(
+            "Change",
+            Some(r#"{"resolution":"TimeResolution1D"}"#),
+            Some(1),
+            false,
+        )
+        .unwrap();
+
+        let result = screener_columns_add(&mut runtime, request).await.unwrap();
+
+        assert_eq!(result["action"], "columns_add");
+        assert_eq!(result["dry_run"], false);
+        assert_eq!(result["added"], true);
+        assert_eq!(result["screen_title"], "CLI-Test1");
+        assert_eq!(result["inserted_index"], 2);
+        assert_eq!(result["target_column"]["id"], "Change");
+        assert_eq!(result["before_column_count"], 2);
+        assert_eq!(result["after_column_count"], 3);
+        assert_eq!(result["columns"][2]["id"], "Change");
+        assert!(runtime.evaluated.iter().any(|(expression, _)| {
+            expression.contains("default_custom_column_set")
+                && expression.contains("\"Change\"")
+                && expression.contains("TimeResolution1D")
+        }));
+    }
+
+    #[tokio::test]
+    async fn screener_columns_add_refuses_non_test_screen_mutation() {
+        let mut runtime = FakeRuntime::new([
+            json!({
+                "button_found": true,
+                "open": true,
+                "screen_title": "Production",
+                "columns": ["Symbol", "Price"],
+                "column_count": 2
+            }),
+            storage_config(
+                "Production",
+                vec![storage_column("TickerUniversal"), storage_column("Price")],
+            ),
+        ]);
+        let request = validate_screener_column_add_request("Change", None, None, false).unwrap();
+
+        let error = screener_columns_add(&mut runtime, request)
             .await
             .unwrap_err();
 

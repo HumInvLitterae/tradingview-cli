@@ -209,6 +209,7 @@ fn screener_help_lists_read_subcommands() {
         .stdout(predicate::str::contains("config"))
         .stdout(predicate::str::contains("actions"))
         .stdout(predicate::str::contains("remove"))
+        .stdout(predicate::str::contains("add"))
         .stdout(predicate::str::contains("reorder"));
     tv().args(["screener", "columns", "config", "--help"])
         .assert()
@@ -218,6 +219,13 @@ fn screener_help_lists_read_subcommands() {
         .success()
         .stdout(predicate::str::contains("--index"))
         .stdout(predicate::str::contains("--name"))
+        .stdout(predicate::str::contains("--dry-run"));
+    tv().args(["screener", "columns", "add", "--help"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("--id"))
+        .stdout(predicate::str::contains("--params-json"))
+        .stdout(predicate::str::contains("--after-index"))
         .stdout(predicate::str::contains("--dry-run"));
     tv().args(["screener", "columns", "reorder", "--help"])
         .assert()
@@ -394,6 +402,36 @@ fn screener_column_remove_rejects_invalid_inputs_before_connecting() {
         .failure()
         .code(1);
     let stderr = String::from_utf8(conflicting_target.get_output().stderr.clone()).unwrap();
+    let value: Value = serde_json::from_str(&stderr).unwrap();
+    assert_eq!(value["command"], "screener");
+    assert_eq!(value["error"]["kind"], "validation");
+
+    let blank_add_id = tv()
+        .env("TV_CDP_PORT", "9")
+        .args(["screener", "columns", "add", "--id", " "])
+        .assert()
+        .failure()
+        .code(1);
+    let stderr = String::from_utf8(blank_add_id.get_output().stderr.clone()).unwrap();
+    let value: Value = serde_json::from_str(&stderr).unwrap();
+    assert_eq!(value["command"], "screener");
+    assert_eq!(value["error"]["kind"], "validation");
+
+    let invalid_params = tv()
+        .env("TV_CDP_PORT", "9")
+        .args([
+            "screener",
+            "columns",
+            "add",
+            "--id",
+            "Change",
+            "--params-json",
+            "[]",
+        ])
+        .assert()
+        .failure()
+        .code(1);
+    let stderr = String::from_utf8(invalid_params.get_output().stderr.clone()).unwrap();
     let value: Value = serde_json::from_str(&stderr).unwrap();
     assert_eq!(value["command"], "screener");
     assert_eq!(value["error"]["kind"], "validation");
