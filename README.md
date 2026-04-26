@@ -137,7 +137,9 @@ tv scanner scan --type stock --min-average-volume 1000000 --min-performance-week
 tv scanner scan --type stock --max-change -5 --sort change --asc --columns name,change,volume --limit 10
 tv screener get --limit 10
 tv screener screens list
+tv screener screens list --catalog
 tv screener screens switch --name "米国株（テスト用）" --dry-run
+tv screener screens switch --name "CLI-Test2" --catalog --dry-run
 tv screener filters list
 tv screener filters remove --text PER --dry-run
 tv screener columns list
@@ -155,7 +157,7 @@ tv pine get
 tv screenshot --region chart --output target/tv-chart.png
 ```
 
-Most commands operate on the current chart target. Mutation commands such as `quote <SYMBOL>`, `watchlist add`, `watchlist add-bulk`, `screener screens switch`, `screener filters remove`, `screener filters clear`, `alert create`, `draw position`, `draw clear`, `pine save`, `layout switch`, and generic `ui` automation can change TradingView account, chart, editor, or UI state; prefer their read-only or `--dry-run` forms when available. `tv quote <SYMBOL>` briefly switches the chart when the requested symbol differs from the current chart, serializes symbol-targeted quote commands with a short process lock, and reports success only after restoring the original symbol. `tv screener screens switch` only targets exact screen names visible in the active screen title menu and verifies the active title after clicking; if TradingView does not activate the row, it fails instead of reporting success. `tv screener filters clear` requires `--confirm-clear` unless it is a dry run. `tv draw position` returns an `entity_id`; clean up test drawings with `tv draw remove <ENTITY_ID>` rather than `draw clear`. `tv ui eval` is a dangerous old-CLI compatibility command that runs arbitrary JavaScript in the authenticated TradingView page context and is disabled unless `TV_ALLOW_UNSAFE_UI_EVAL=1` is set.
+Most commands operate on the current chart target. Mutation commands such as `quote <SYMBOL>`, `watchlist add`, `watchlist add-bulk`, `screener screens switch`, `screener filters remove`, `screener filters clear`, `alert create`, `draw position`, `draw clear`, `pine save`, `layout switch`, and generic `ui` automation can change TradingView account, chart, editor, or UI state; prefer their read-only or `--dry-run` forms when available. `tv quote <SYMBOL>` briefly switches the chart when the requested symbol differs from the current chart, serializes symbol-targeted quote commands with a short process lock, and reports success only after restoring the original symbol. `tv screener screens switch` targets exact screen names and verifies the active title after clicking; by default it uses the active screen title menu, while `--catalog` uses the saved-screen catalog. If TradingView does not activate the target, it fails instead of reporting success. `tv screener filters clear` requires `--confirm-clear` unless it is a dry run. `tv draw position` returns an `entity_id`; clean up test drawings with `tv draw remove <ENTITY_ID>` rather than `draw clear`. `tv ui eval` is a dangerous old-CLI compatibility command that runs arbitrary JavaScript in the authenticated TradingView page context and is disabled unless `TV_ALLOW_UNSAFE_UI_EVAL=1` is set.
 
 Screenshots require an explicit `--output <PATH>` file path. Parent directories are created automatically, so agent or Claude Desktop workflows should choose a readable output path directly instead of relying on a default screenshots directory.
 
@@ -214,7 +216,7 @@ baseline remains the commands run by CI.
 - user-facing agent guides and runtime skills in release archives
 - symbol-targeted quote reads through `tv quote [SYMBOL]`
 - read-only TradingView scanner REST reads through `tv scanner hotlist` and `tv scanner scan`
-- TradingView Stock Screener dialog reads, menu-visible screen switching, and guarded filter cleanup through `tv screener status/open/get/screens active/list/switch/filters list/remove/clear/columns list/close`
+- TradingView Stock Screener dialog reads, menu-visible and catalog screen switching, and guarded filter cleanup through `tv screener status/open/get/screens active/list/switch/filters list/remove/clear/columns list/close`
 - old JavaScript CLI command migration coverage for the known CLI surface
 - command contract, migration, lifecycle, and deferred-surface notes under `docs/notes/`
 - historical implementation ExecPlans archived under `docs/plans/archives/`
@@ -238,7 +240,7 @@ Read these in order:
 11. `docs/plans/README.md`
 12. `docs/notes/tradingview-mcp-investigation-2026-04-24.md`
 
-The first capability and boundary research milestone, the Rust v1 implementation milestone, the read/provider migration slices, chart/pane/watchlist/alert/layout/indicator/drawing/Pine/tab/replay/stream/launch slices, command lifecycle balance audit, remaining deferred surface audit, operation-layer and data-operation module refactors, development guideline pass, remaining old CLI migration closure slice, and first release readiness pass are complete. Upstream pull request follow-up has addressed the initial narrow Rust fixes and additions, including `tv data shapes`, `tv data labels` truncation metadata, `tv scanner hotlist`, `tv scanner scan`, read-oriented `tv screener` dialog and metadata commands, menu-visible Screener screen switching, guarded Screener filter cleanup, and symbol-targeted `tv quote [SYMBOL]`. Remaining upstream-derived candidates require fresh evidence before implementation.
+The first capability and boundary research milestone, the Rust v1 implementation milestone, the read/provider migration slices, chart/pane/watchlist/alert/layout/indicator/drawing/Pine/tab/replay/stream/launch slices, command lifecycle balance audit, remaining deferred surface audit, operation-layer and data-operation module refactors, development guideline pass, remaining old CLI migration closure slice, and first release readiness pass are complete. Upstream pull request follow-up has addressed the initial narrow Rust fixes and additions, including `tv data shapes`, `tv data labels` truncation metadata, `tv scanner hotlist`, `tv scanner scan`, read-oriented `tv screener` dialog and metadata commands, menu-visible and catalog Screener screen switching, guarded Screener filter cleanup, and symbol-targeted `tv quote [SYMBOL]`. Remaining upstream-derived candidates require fresh evidence before implementation.
 
 ## License
 

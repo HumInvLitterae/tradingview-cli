@@ -250,10 +250,16 @@ async fn dispatch(command: Command) -> Result<serde_json::Value, AppError> {
                     ScreenerScreensCommand::Active => {
                         ops::screener_screens_active(&mut runtime).await
                     }
-                    ScreenerScreensCommand::List => ops::screener_screens_list(&mut runtime).await,
-                    ScreenerScreensCommand::Switch { name, dry_run } => {
+                    ScreenerScreensCommand::List { catalog } => {
+                        ops::screener_screens_list(&mut runtime, catalog).await
+                    }
+                    ScreenerScreensCommand::Switch {
+                        name,
+                        dry_run,
+                        catalog,
+                    } => {
                         let name = ops::validate_screener_screen_name(&name)?;
-                        ops::screener_screens_switch(&mut runtime, &name, dry_run).await
+                        ops::screener_screens_switch(&mut runtime, &name, dry_run, catalog).await
                     }
                 },
                 ScreenerCommand::Filters { command } => match command {

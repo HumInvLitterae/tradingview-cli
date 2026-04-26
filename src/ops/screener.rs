@@ -142,9 +142,41 @@ pub async fn screener_screens_active(
     }))
 }
 
-pub async fn screener_screens_list(runtime: &mut impl RuntimeEvaluator) -> Result<Value, AppError> {
-    let read = read_screener_with_restore(runtime, None).await?;
-    let result = runtime
+pub async fn screener_screens_list(
+    runtime: &mut impl RuntimeEvaluator,
+    catalog: bool,
+) -> Result<Value, AppError> {
+    let mut session = ScreenerMutationSession::open(runtime).await?;
+    let state = read_screener_state(session.runtime, None).await?;
+    ensure_dialog_open(&state)?;
+    if catalog {
+        open_screen_catalog_from_menu(session.runtime).await?;
+        let result = session
+            .runtime
+            .evaluate(
+                &expanded_expression(SCREENER_SCREEN_CATALOG_LIST_EXPRESSION),
+                true,
+            )
+            .await?;
+        ensure_screen_catalog_opened(&result)?;
+        let screens = screen_targets_from_menu(&result);
+        let opened_for_read = session.opened_for_mutation;
+        let restored_open_state = session.restored_open_state;
+        session.restore().await?;
+        return Ok(json!({
+            "source": SCREENER_SOURCE,
+            "scope": "screen_catalog",
+            "open": value_bool(&state, "open"),
+            "opened_for_read": opened_for_read,
+            "restored_open_state": restored_open_state,
+            "screen_title": state.get("screen_title").cloned().unwrap_or(Value::Null),
+            "screen_count": screens.len(),
+            "screens": screen_targets_payload(&screens),
+        }));
+    }
+
+    let result = session
+        .runtime
         .evaluate(
             &expanded_expression(SCREENER_SCREEN_MENU_LIST_EXPRESSION),
             true,
@@ -152,13 +184,16 @@ pub async fn screener_screens_list(runtime: &mut impl RuntimeEvaluator) -> Resul
         .await?;
     ensure_screen_menu_opened(&result)?;
     let screens = screen_targets_from_menu(&result);
+    let opened_for_read = session.opened_for_mutation;
+    let restored_open_state = session.restored_open_state;
+    session.restore().await?;
     Ok(json!({
         "source": SCREENER_SOURCE,
         "scope": "screen_title_menu",
-        "open": value_bool(&read.state, "open"),
-        "opened_for_read": read.opened_for_read,
-        "restored_open_state": read.restored_open_state,
-        "screen_title": read.state.get("screen_title").cloned().unwrap_or(Value::Null),
+        "open": value_bool(&state, "open"),
+        "opened_for_read": opened_for_read,
+        "restored_open_state": restored_open_state,
+        "screen_title": state.get("screen_title").cloned().unwrap_or(Value::Null),
         "catalog_entry_found": value_bool(&result, "catalog_entry_found"),
         "screen_count": screens.len(),
         "screens": screen_targets_payload(&screens),
@@ -169,21 +204,41 @@ pub async fn screener_screens_switch(
     runtime: &mut impl RuntimeEvaluator,
     name: &str,
     dry_run: bool,
+    catalog: bool,
 ) -> Result<Value, AppError> {
     let name = validate_screener_screen_name(name)?;
     let mut session = ScreenerMutationSession::open(runtime).await?;
     let before_state = read_screener_state(session.runtime, None).await?;
     ensure_dialog_open(&before_state)?;
 
-    let menu = session
-        .runtime
-        .evaluate(
-            &expanded_expression(SCREENER_SCREEN_MENU_LIST_EXPRESSION),
-            true,
-        )
-        .await?;
-    ensure_screen_menu_opened(&menu)?;
-    let screens = screen_targets_from_menu(&menu);
+    let scope = if catalog {
+        "screen_catalog"
+    } else {
+        "screen_title_menu"
+    };
+    let screen_list = if catalog {
+        open_screen_catalog_from_menu(session.runtime).await?;
+        let result = session
+            .runtime
+            .evaluate(
+                &expanded_expression(SCREENER_SCREEN_CATALOG_LIST_EXPRESSION),
+                true,
+            )
+            .await?;
+        ensure_screen_catalog_opened(&result)?;
+        result
+    } else {
+        let result = session
+            .runtime
+            .evaluate(
+                &expanded_expression(SCREENER_SCREEN_MENU_LIST_EXPRESSION),
+                true,
+            )
+            .await?;
+        ensure_screen_menu_opened(&result)?;
+        result
+    };
+    let screens = screen_targets_from_menu(&screen_list);
     let target = resolve_screen_target(&screens, &name)?;
     let active_before = before_state
         .get("screen_title")
@@ -198,7 +253,7 @@ pub async fn screener_screens_switch(
         return Ok(json!({
             "source": SCREENER_SOURCE,
             "action": "screen_switch",
-            "scope": "screen_title_menu",
+            "scope": scope,
             "dry_run": true,
             "switched": false,
             "already_active": active_before == name,
@@ -218,7 +273,7 @@ pub async fn screener_screens_switch(
         return Ok(json!({
             "source": SCREENER_SOURCE,
             "action": "screen_switch",
-            "scope": "screen_title_menu",
+            "scope": scope,
             "dry_run": false,
             "switched": false,
             "already_active": true,
@@ -232,7 +287,12 @@ pub async fn screener_screens_switch(
         }));
     }
 
-    if let Err(err) = click_screen_menu_target(session.runtime, &target).await {
+    let click_result = if catalog {
+        click_screen_catalog_target(session.runtime, &target).await
+    } else {
+        click_screen_menu_target(session.runtime, &target).await
+    };
+    if let Err(err) = click_result {
         let _ = session.restore().await;
         return Err(err);
     }
@@ -250,7 +310,7 @@ pub async fn screener_screens_switch(
     Ok(json!({
         "source": SCREENER_SOURCE,
         "action": "screen_switch",
-        "scope": "screen_title_menu",
+        "scope": scope,
         "dry_run": false,
         "switched": true,
         "already_active": false,
@@ -704,6 +764,18 @@ fn ensure_screen_menu_opened(value: &Value) -> Result<(), AppError> {
     }
 }
 
+fn ensure_screen_catalog_opened(value: &Value) -> Result<(), AppError> {
+    if value_bool(value, "catalog_opened") {
+        Ok(())
+    } else {
+        Err(AppError::new(
+            ErrorKind::InternalApiUnavailable,
+            "Stock Screener screen catalog did not open",
+        )
+        .with_details(value.clone()))
+    }
+}
+
 fn screen_targets_from_menu(value: &Value) -> Vec<ScreenerScreenTarget> {
     value
         .get("screens")
@@ -771,6 +843,30 @@ fn screen_targets_payload(screens: &[ScreenerScreenTarget]) -> Vec<Value> {
     screens.iter().map(screen_target_payload).collect()
 }
 
+async fn open_screen_catalog_from_menu(
+    runtime: &mut impl RuntimeEvaluator,
+) -> Result<Value, AppError> {
+    let result = runtime
+        .evaluate(
+            &expanded_expression(SCREENER_SCREEN_CATALOG_OPEN_POINT_EXPRESSION),
+            true,
+        )
+        .await?;
+    if !value_bool(&result, "found") {
+        return Err(AppError::new(
+            ErrorKind::InternalApiUnavailable,
+            "Screener screen catalog open item was not found",
+        )
+        .with_details(result));
+    }
+    if value_bool(&result, "already_open") {
+        return Ok(result);
+    }
+    let point = screen_menu_click_point(&result)?;
+    dispatch_screen_menu_click(runtime, point).await?;
+    Ok(result)
+}
+
 async fn click_screen_menu_target(
     runtime: &mut impl RuntimeEvaluator,
     target: &ScreenerScreenTarget,
@@ -836,6 +932,75 @@ async fn click_screen_menu_target(
         return Err(AppError::new(
             ErrorKind::InternalApiUnavailable,
             "Screener screen menu target was not found",
+        )
+        .with_details(result));
+    }
+    let point = screen_menu_click_point(&result)?;
+    dispatch_screen_menu_click(runtime, point).await?;
+    Ok(())
+}
+
+async fn click_screen_catalog_target(
+    runtime: &mut impl RuntimeEvaluator,
+    target: &ScreenerScreenTarget,
+) -> Result<(), AppError> {
+    open_screen_catalog_from_menu(runtime).await?;
+    let target_name = js_string(&target.name)?;
+    let result = runtime
+        .evaluate(
+            &expanded_expression(&format!(
+                r#"
+                (async function() {{
+                    function sleep(ms) {{
+                        return new Promise(function(resolve) {{ setTimeout(resolve, ms); }});
+                    }}
+                    REPLACE_HELPERS
+                    var catalogState = null;
+                    for (var i = 0; i < 20; i++) {{
+                        var catalog = findScreenerScreenCatalog();
+                        if (catalog) {{
+                            var title = document.querySelector('[data-name="screener-topbar-screen-title"]');
+                            var activeTitle = title && visible(title) ? textOf(title) : null;
+                            catalogState = {{
+                                catalog_opened: true,
+                                screen_title: activeTitle,
+                                screens: collectScreenerCatalogScreenEntries(catalog, activeTitle),
+                                catalog: catalog
+                            }};
+                            break;
+                        }}
+                        await sleep(150);
+                    }}
+                    if (!catalogState || !catalogState.catalog_opened) {{
+                        return {{ catalog_opened: false, found: false, reason: 'catalog_not_found' }};
+                    }}
+                    var targetName = {target_name};
+                    var candidate = findScreenerCatalogScreenItem(catalogState.catalog, targetName);
+                    if (!candidate) {{
+                        closeScreenerScreenCatalog();
+                        delete catalogState.catalog;
+                        return Object.assign({{ found: false, reason: 'target_not_found', target_name: targetName }}, catalogState);
+                    }}
+                    var rect = candidate.getBoundingClientRect();
+                    var x = rect.left + rect.width / 2;
+                    var y = rect.top + rect.height / 2;
+                    delete catalogState.catalog;
+                    return Object.assign({{
+                        found: true,
+                        target_name: targetName,
+                        click_point: {{ x: x, y: y }}
+                    }}, catalogState);
+                }})()
+                "#
+            )),
+            true,
+        )
+        .await?;
+
+    if !value_bool(&result, "found") {
+        return Err(AppError::new(
+            ErrorKind::InternalApiUnavailable,
+            "Screener screen catalog target was not found",
         )
         .with_details(result));
     }
@@ -1114,6 +1279,9 @@ const SCREENER_SCREEN_MENU_LIST_EXPRESSION: &str = r#"
         return new Promise(function(resolve) { setTimeout(resolve, ms); });
     }
     REPLACE_HELPERS
+    if (findScreenerScreenCatalog()) {
+        return { found: true, already_open: true, catalog_opened: true };
+    }
     var title = document.querySelector('[data-name="screener-topbar-screen-title"]');
     if (!title || !visible(title)) {
         return { menu_opened: false, reason: 'title_not_found', screens: [] };
@@ -1136,6 +1304,76 @@ const SCREENER_SCREEN_MENU_LIST_EXPRESSION: &str = r#"
     }
     closeScreenerScreenMenu();
     return { menu_opened: false, reason: 'menu_not_found', screen_title: activeTitle, screens: [] };
+})()
+"#;
+
+const SCREENER_SCREEN_CATALOG_OPEN_POINT_EXPRESSION: &str = r#"
+(async function() {
+    function sleep(ms) {
+        return new Promise(function(resolve) { setTimeout(resolve, ms); });
+    }
+    REPLACE_HELPERS
+    var title = document.querySelector('[data-name="screener-topbar-screen-title"]');
+    if (!title || !visible(title)) {
+        return { found: false, menu_opened: false, reason: 'title_not_found' };
+    }
+    var activeTitle = textOf(title);
+    mouseClick(title);
+    var menu = null;
+    for (var i = 0; i < 10; i++) {
+        menu = findScreenerScreenMenu();
+        if (menu) break;
+        await sleep(150);
+    }
+    if (!menu) {
+        return { found: false, menu_opened: false, reason: 'menu_not_found', screen_title: activeTitle };
+    }
+    var openItem = findScreenerCatalogOpenItem(menu);
+    if (!openItem) {
+        closeScreenerScreenMenu();
+        return {
+            found: false,
+            menu_opened: true,
+            reason: 'catalog_open_item_not_found',
+            screen_title: activeTitle,
+            screens: collectScreenerScreenEntries(menu, activeTitle)
+        };
+    }
+    var rect = openItem.getBoundingClientRect();
+    return {
+        found: true,
+        menu_opened: true,
+        screen_title: activeTitle,
+        click_point: {
+            x: rect.left + rect.width / 2,
+            y: rect.top + rect.height / 2
+        }
+    };
+})()
+"#;
+
+const SCREENER_SCREEN_CATALOG_LIST_EXPRESSION: &str = r#"
+(async function() {
+    function sleep(ms) {
+        return new Promise(function(resolve) { setTimeout(resolve, ms); });
+    }
+    REPLACE_HELPERS
+    for (var i = 0; i < 20; i++) {
+        var catalog = findScreenerScreenCatalog();
+        if (catalog) {
+            var title = document.querySelector('[data-name="screener-topbar-screen-title"]');
+            var activeTitle = title && visible(title) ? textOf(title) : null;
+            var result = {
+                catalog_opened: true,
+                screen_title: activeTitle,
+                screens: collectScreenerCatalogScreenEntries(catalog, activeTitle)
+            };
+            closeScreenerScreenCatalog();
+            return result;
+        }
+        await sleep(150);
+    }
+    return { catalog_opened: false, reason: 'catalog_not_found', screens: [] };
 })()
 "#;
 
@@ -1256,11 +1494,42 @@ function findScreenerScreenMenuItem(menu, targetName) {
 }
 function findScreenerScreenMenu() {
     var menus = visibleElements('.portal-lATuqHRX, [role="menu"], [class*="menu"], [class*="portal"]');
-    return menus.find(function(menu) {
+    var matches = menus.filter(function(menu) {
         var text = textOf(menu);
         return /最近使用した項目|Recent|スクリーンを開く|Open screen|スクリーンを保存|Save screen/i.test(text) &&
             /米国株|screen|Screen|スクリーン|CLI|株/i.test(text);
-    }) || null;
+    });
+    matches.sort(function(a, b) {
+        var ar = a.getBoundingClientRect();
+        var br = b.getBoundingClientRect();
+        return (ar.width * ar.height) - (br.width * br.height);
+    });
+    return matches[0] || null;
+}
+function findScreenerCatalogOpenItem(menu) {
+    var candidates = Array.from(menu.querySelectorAll('button, [role="menuitem"], [role="option"], div, span')).filter(function(el) {
+        return visible(el) && /^(スクリーンを開く|Open screen)/i.test(textOf(el));
+    });
+    candidates = candidates.map(function(el) {
+        var current = el;
+        while (current && current !== menu) {
+            var cls = String(current.className || '');
+            if (/^(スクリーンを開く|Open screen)/i.test(textOf(current)) &&
+                (current.getAttribute('role') === 'menuitem' ||
+                 current.tagName === 'BUTTON' ||
+                 /button|background|item|row/i.test(cls))) {
+                return current;
+            }
+            current = current.parentElement;
+        }
+        return el;
+    });
+    candidates.sort(function(a, b) {
+        var ar = a.getBoundingClientRect();
+        var br = b.getBoundingClientRect();
+        return (br.width * br.height) - (ar.width * ar.height);
+    });
+    return candidates[0] || null;
 }
 function openScreenerScreenMenu() {
     var title = document.querySelector('[data-name="screener-topbar-screen-title"]');
@@ -1286,6 +1555,130 @@ function openScreenerScreenMenu() {
         screens: entries,
         menu: menu
     };
+}
+function findScreenerScreenCatalog() {
+    var containers = visibleElements('[role="dialog"], [class*="dialog"], [class*="Dialog"], [class*="modal"], [class*="Modal"], .portal-lATuqHRX');
+    return containers.find(function(container) {
+        if (container.querySelector && container.querySelector('table')) return false;
+        var text = textOf(container);
+        if (text.length > 3000) return false;
+        return /マイスクリーン|My screens|Screeners|スクリーン/i.test(text) &&
+            !/スクリーンを保存|Save screen/i.test(text);
+    }) || null;
+}
+function closeScreenerScreenCatalog() {
+    var catalog = findScreenerScreenCatalog();
+    if (!catalog) return;
+    var closeButton = Array.from(catalog.querySelectorAll('button, [role="button"], [aria-label], [data-name]')).filter(visible).find(function(el) {
+        var label = [el.getAttribute('aria-label'), el.getAttribute('title'), el.getAttribute('data-name'), textOf(el)].filter(Boolean).join(' ');
+        return /close|dismiss|閉じる|キャンセル|cancel/i.test(label);
+    });
+    if (closeButton) {
+        mouseClick(closeButton);
+        return;
+    }
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', code: 'Escape', keyCode: 27, which: 27, bubbles: true, cancelable: true }));
+    document.dispatchEvent(new KeyboardEvent('keyup', { key: 'Escape', code: 'Escape', keyCode: 27, which: 27, bubbles: true, cancelable: true }));
+}
+function screenerCatalogActionText(text) {
+    return /マイスクリーン|My screens|最近|Recent|スクリーンを開く|Open screen|スクリーンを保存|Save screen|スクリーンを共有|Share screen|コピーを作成|Make a copy|名前を変更|Rename|新規スクリーン|Create new screen|検索|Search|キャンセル|Cancel|閉じる|Close/i.test(text);
+}
+function collectScreenerCatalogScreenEntries(catalog, activeTitle) {
+    var seen = {};
+    var entries = [];
+    var inMyScreens = false;
+    var leftMyScreens = false;
+    var nodes = Array.from(catalog.querySelectorAll('button, [role="option"], [role="menuitem"], [role="row"], [data-name], div, span')).filter(visible);
+    nodes.forEach(function(el) {
+        if (leftMyScreens) return;
+        var name = textOf(el);
+        if (/^(マイスクリーン|My screens)$/i.test(name)) {
+            inMyScreens = true;
+            return;
+        }
+        if (/^(人気のスクリーン|Popular screens)$/i.test(name)) {
+            leftMyScreens = true;
+            return;
+        }
+        if (!inMyScreens) return;
+        if (!name || name.length > 120 || screenerCatalogActionText(name)) return;
+        if (name.indexOf('\n') >= 0) return;
+        if (seen[name]) return;
+        var rect = el.getBoundingClientRect();
+        if (rect.width < 20 || rect.height < 8) return;
+        seen[name] = true;
+        entries.push({
+            index: entries.length,
+            name: name,
+            active: name === activeTitle
+        });
+    });
+    return entries;
+}
+function findScreenerCatalogScreenItem(catalog, targetName) {
+    var candidates = Array.from(catalog.querySelectorAll('button, [role="option"], [role="menuitem"], [role="row"], [data-name], div, span')).filter(function(el) {
+        return visible(el) && textOf(el) === targetName;
+    });
+    candidates = candidates.map(function(el) {
+        var current = el;
+        while (current && current !== catalog) {
+            var cls = String(current.className || '');
+            var role = current.getAttribute('role') || '';
+            if (textOf(current) === targetName &&
+                (role === 'option' || role === 'menuitem' || role === 'row' ||
+                 current.tagName === 'BUTTON' || /button|item|row|list|cell/i.test(cls))) {
+                return current;
+            }
+            current = current.parentElement;
+        }
+        return el;
+    });
+    candidates.sort(function(a, b) {
+        var ar = a.getBoundingClientRect();
+        var br = b.getBoundingClientRect();
+        return (br.width * br.height) - (ar.width * ar.height);
+    });
+    return candidates[0] || null;
+}
+async function openScreenerScreenCatalog() {
+    function sleep(ms) {
+        return new Promise(function(resolve) { setTimeout(resolve, ms); });
+    }
+    var title = document.querySelector('[data-name="screener-topbar-screen-title"]');
+    if (!title || !visible(title)) {
+        return { catalog_opened: false, menu_opened: false, reason: 'title_not_found', screens: [] };
+    }
+    var activeTitle = textOf(title);
+    mouseClick(title);
+    var menu = null;
+    for (var i = 0; i < 10; i++) {
+        menu = findScreenerScreenMenu();
+        if (menu) break;
+        await sleep(150);
+    }
+    if (!menu) {
+        return { catalog_opened: false, menu_opened: false, reason: 'menu_not_found', screen_title: activeTitle, screens: [] };
+    }
+    var openItem = findScreenerCatalogOpenItem(menu);
+    if (!openItem) {
+        closeScreenerScreenMenu();
+        return { catalog_opened: false, menu_opened: true, reason: 'catalog_open_item_not_found', screen_title: activeTitle, screens: collectScreenerScreenEntries(menu, activeTitle) };
+    }
+    mouseClick(openItem);
+    for (var j = 0; j < 4; j++) {
+        var catalog = findScreenerScreenCatalog();
+        if (catalog) {
+            return {
+                catalog_opened: true,
+                menu_opened: true,
+                screen_title: activeTitle,
+                screens: collectScreenerCatalogScreenEntries(catalog, activeTitle),
+                catalog: catalog
+            };
+        }
+        await sleep(100);
+    }
+    return { catalog_opened: false, menu_opened: true, reason: 'catalog_not_found', screen_title: activeTitle, screens: [] };
 }
 function readScreenerState(limit) {
     var button = document.querySelector('[data-name="screener-dialog-button"]');
@@ -1535,7 +1928,7 @@ mod tests {
             }),
         ]);
 
-        let result = screener_screens_list(&mut runtime).await.unwrap();
+        let result = screener_screens_list(&mut runtime, false).await.unwrap();
 
         assert_eq!(result["source"], SCREENER_SOURCE);
         assert_eq!(result["scope"], "screen_title_menu");
@@ -1544,6 +1937,42 @@ mod tests {
         assert_eq!(result["screen_count"], 2);
         assert_eq!(result["screens"][0]["name"], "米国株（テスト用）");
         assert_eq!(result["screens"][0]["active"], true);
+    }
+
+    #[tokio::test]
+    async fn screener_screens_list_catalog_returns_catalog_entries() {
+        let mut runtime = FakeRuntime::new([
+            json!({ "button_found": true, "open": true }),
+            json!({
+                "button_found": true,
+                "open": true,
+                "dialog_title": "Stock Screener",
+                "screen_title": "CLI-Test1"
+            }),
+            json!({
+                "found": true,
+                "menu_opened": true,
+                "screen_title": "CLI-Test1",
+                "click_point": { "x": 100.0, "y": 200.0 }
+            }),
+            json!({
+                "catalog_opened": true,
+                "screen_title": "CLI-Test1",
+                "screens": [
+                    { "index": 0, "name": "CLI-Test1", "active": true },
+                    { "index": 1, "name": "CLI-Test2", "active": false }
+                ]
+            }),
+        ]);
+
+        let result = screener_screens_list(&mut runtime, true).await.unwrap();
+
+        assert_eq!(result["source"], SCREENER_SOURCE);
+        assert_eq!(result["scope"], "screen_catalog");
+        assert_eq!(result["screen_title"], "CLI-Test1");
+        assert_eq!(result["screen_count"], 2);
+        assert_eq!(result["screens"][1]["name"], "CLI-Test2");
+        assert_eq!(result["screens"][1]["active"], false);
     }
 
     #[tokio::test]
@@ -1565,7 +1994,7 @@ mod tests {
             }),
         ]);
 
-        let result = screener_screens_switch(&mut runtime, "米国株", true)
+        let result = screener_screens_switch(&mut runtime, "米国株", true, false)
             .await
             .unwrap();
 
@@ -1576,6 +2005,43 @@ mod tests {
         assert_eq!(result["target_screen"]["name"], "米国株");
         assert_eq!(result["before_screen_title"], "米国株（テスト用）");
         assert_eq!(result["after_screen_title"], "米国株（テスト用）");
+    }
+
+    #[tokio::test]
+    async fn screener_screens_switch_catalog_dry_run_returns_target_without_clicking() {
+        let mut runtime = FakeRuntime::new([
+            json!({ "button_found": true, "open": true }),
+            json!({
+                "button_found": true,
+                "open": true,
+                "screen_title": "CLI-Test1"
+            }),
+            json!({
+                "found": true,
+                "menu_opened": true,
+                "screen_title": "CLI-Test1",
+                "click_point": { "x": 100.0, "y": 200.0 }
+            }),
+            json!({
+                "catalog_opened": true,
+                "screen_title": "CLI-Test1",
+                "screens": [
+                    { "index": 0, "name": "CLI-Test1", "active": true },
+                    { "index": 1, "name": "CLI-Test2", "active": false }
+                ]
+            }),
+        ]);
+
+        let result = screener_screens_switch(&mut runtime, "CLI-Test2", true, true)
+            .await
+            .unwrap();
+
+        assert_eq!(result["action"], "screen_switch");
+        assert_eq!(result["scope"], "screen_catalog");
+        assert_eq!(result["dry_run"], true);
+        assert_eq!(result["switched"], false);
+        assert_eq!(result["target_screen"]["name"], "CLI-Test2");
+        assert_eq!(runtime.mouse_events.len(), 3);
     }
 
     #[tokio::test]
@@ -1609,7 +2075,7 @@ mod tests {
             }),
         ]);
 
-        let result = screener_screens_switch(&mut runtime, "米国株", false)
+        let result = screener_screens_switch(&mut runtime, "米国株", false, false)
             .await
             .unwrap();
 
@@ -1619,6 +2085,61 @@ mod tests {
         assert_eq!(result["before_screen_title"], "米国株（テスト用）");
         assert_eq!(result["after_screen_title"], "米国株");
         assert_eq!(runtime.mouse_events.len(), 3);
+    }
+
+    #[tokio::test]
+    async fn screener_screens_switch_catalog_clicks_target_and_verifies_after_title() {
+        let mut runtime = FakeRuntime::new([
+            json!({ "button_found": true, "open": true }),
+            json!({
+                "button_found": true,
+                "open": true,
+                "screen_title": "CLI-Test1"
+            }),
+            json!({
+                "found": true,
+                "menu_opened": true,
+                "screen_title": "CLI-Test1",
+                "click_point": { "x": 100.0, "y": 200.0 }
+            }),
+            json!({
+                "catalog_opened": true,
+                "screen_title": "CLI-Test1",
+                "screens": [
+                    { "index": 0, "name": "CLI-Test1", "active": true },
+                    { "index": 1, "name": "CLI-Test2", "active": false }
+                ]
+            }),
+            json!({
+                "found": true,
+                "menu_opened": true,
+                "screen_title": "CLI-Test1",
+                "click_point": { "x": 100.0, "y": 200.0 }
+            }),
+            json!({
+                "found": true,
+                "catalog_opened": true,
+                "target_name": "CLI-Test2",
+                "click_point": { "x": 320.0, "y": 420.0 }
+            }),
+            json!({
+                "matched": true,
+                "button_found": true,
+                "open": true,
+                "screen_title": "CLI-Test2"
+            }),
+        ]);
+
+        let result = screener_screens_switch(&mut runtime, "CLI-Test2", false, true)
+            .await
+            .unwrap();
+
+        assert_eq!(result["scope"], "screen_catalog");
+        assert_eq!(result["dry_run"], false);
+        assert_eq!(result["switched"], true);
+        assert_eq!(result["before_screen_title"], "CLI-Test1");
+        assert_eq!(result["after_screen_title"], "CLI-Test2");
+        assert_eq!(runtime.mouse_events.len(), 9);
     }
 
     #[tokio::test]
@@ -1638,7 +2159,7 @@ mod tests {
             }),
         ]);
 
-        let error = screener_screens_switch(&mut runtime, "米国株", true)
+        let error = screener_screens_switch(&mut runtime, "米国株", true, false)
             .await
             .unwrap_err();
 

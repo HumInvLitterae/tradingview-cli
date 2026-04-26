@@ -117,11 +117,16 @@ fn screener_help_lists_read_subcommands() {
         .stdout(predicate::str::contains("active"))
         .stdout(predicate::str::contains("list"))
         .stdout(predicate::str::contains("switch"));
+    tv().args(["screener", "screens", "list", "--help"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("--catalog"));
     tv().args(["screener", "screens", "switch", "--help"])
         .assert()
         .success()
         .stdout(predicate::str::contains("--name"))
-        .stdout(predicate::str::contains("--dry-run"));
+        .stdout(predicate::str::contains("--dry-run"))
+        .stdout(predicate::str::contains("--catalog"));
 
     tv().args(["screener", "filters", "--help"])
         .assert()

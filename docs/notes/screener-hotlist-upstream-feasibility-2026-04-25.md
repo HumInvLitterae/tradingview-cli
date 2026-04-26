@@ -55,9 +55,10 @@ Screener support, start with a small read-oriented dialog slice only:
 `status`, `open`, `get`, and `close`. Keep filter/screen/column mutation out of
 the first implementation.
 
-Later Rust slices added guarded visible-filter cleanup and menu-visible screen
-list/switch after separate live evidence and safety plans. Full saved-screen
-catalog management and column mutation remain deferred.
+Later Rust slices added guarded visible-filter cleanup, menu-visible screen
+list/switch, and catalog-backed screen list/switch after separate live evidence
+and safety plans. Screen save/save-as/delete/rename/create and column mutation
+remain deferred.
 
 ## Upstream PR #89: Hotlist scanner presets
 
@@ -99,7 +100,8 @@ Classify the remaining Screener/Hotlist ideas as follows:
 | UI filter list / column list / active screen read | implemented as `tv screener` metadata reads | Read-only after opening the dialog, implemented as lightweight metadata commands that restore the initial open/closed dialog state. |
 | UI filter remove/clear | implemented as guarded `tv screener filters remove/clear` | Mutates the active Screener screen, so remove supports dry-run target reporting and clear requires explicit confirmation. |
 | UI menu-visible screen list/switch | implemented as guarded `tv screener screens list/switch` | Lists exact visible menu names and supports dry-run target reporting. Non-dry-run switch verifies the active title and fails safely if TradingView does not activate the clicked row. |
-| UI screen save/save-as/delete/rename/create and full catalog list/switch | defer | Cloud-state and modal-flow risk; upstream mostly uses stubs for these. |
+| UI saved-screen catalog list/switch | implemented as guarded `tv screener screens list/switch --catalog` | Uses the saved-screen catalog for exact-name targeting, supports dry-run target reporting, and verifies the active title after mutation. |
+| UI screen save/save-as/delete/rename/create | defer | Cloud-state and modal-flow risk; upstream mostly uses stubs for these. |
 | UI column add/remove/reorder/reset | defer | Catalog and drag/drop UI automation; likely too brittle for core CLI now. |
 | Scanner/product workflow packs | keep downstream | Rules packs and dashboards are workflow products, not core bridge replacement. |
 
@@ -143,10 +145,11 @@ The Rust implementation is separate from Hotlist REST and starts with only:
 - `tv screener close`
 
 `screens list` and `screens switch` are intentionally narrower than upstream PR
-#66's stretch screen-management surface. They only use entries visible in the
-active screen title menu, such as recent screens, and return
-`scope: "screen_title_menu"` to make that boundary explicit. They do not
-implement save-as, delete, rename, create, or column mutation. Live smoke on
+#66's stretch screen-management surface. By default they use entries visible in
+the active screen title menu, such as recent screens, and return
+`scope: "screen_title_menu"` to make that boundary explicit. With `--catalog`,
+they use the saved-screen catalog and return `scope: "screen_catalog"`. They do
+not implement save-as, delete, rename, create, or column mutation. Live smoke on
 2026-04-25 showed that menu-visible entries were readable and dry-run targeting
 worked, but the current TradingView Desktop session did not activate a clicked
 visible screen row; non-dry-run switch therefore failed with
