@@ -314,6 +314,17 @@ pub enum ScreenerFiltersCommand {
 pub enum ScreenerColumnsCommand {
     #[command(about = "List visible Stock Screener columns")]
     List,
+    #[command(about = "List visible Stock Screener column-management actions")]
+    Actions,
+    #[command(about = "Resolve a visible Stock Screener column for removal")]
+    Remove {
+        #[arg(long)]
+        index: Option<usize>,
+        #[arg(long)]
+        name: Option<String>,
+        #[arg(long)]
+        dry_run: bool,
+    },
 }
 
 #[derive(Debug, Subcommand)]

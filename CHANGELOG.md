@@ -29,6 +29,10 @@ package version omits the leading `v`.
   inspection and exact save-action clicking.
 - Added guarded `tv screener filters remove` and `tv screener filters clear`
   commands, including dry-run target reporting and clear-all confirmation.
+- Added `tv screener columns actions` and dry-run target resolution for
+  `tv screener columns remove`; current TradingView Desktop evidence does not
+  expose a safe visible column-remove action, so normal removal remains
+  evidence-gated.
 - Added `tv quote [SYMBOL]` for symbol-targeted quote reads with temporary chart
   switching and verified restoration.
 

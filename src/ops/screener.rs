@@ -19,6 +19,12 @@ pub enum ScreenerFilterSelector {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
+pub enum ScreenerColumnSelector {
+    Index(usize),
+    Name(String),
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
 struct ScreenerFilterTarget {
     index: usize,
     text: String,
@@ -39,6 +45,12 @@ struct ScreenerScreenAction {
     text: String,
     kind: String,
     enabled: bool,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+struct ScreenerColumnTarget {
+    index: usize,
+    name: String,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -73,6 +85,25 @@ pub fn validate_screener_filter_selector(
         (None, None) => Err(AppError::new(
             ErrorKind::Validation,
             "Either --index or --text is required",
+        )),
+    }
+}
+
+pub fn validate_screener_column_selector(
+    index: Option<usize>,
+    name: Option<&str>,
+) -> Result<ScreenerColumnSelector, AppError> {
+    let name = name.map(str::trim).filter(|value| !value.is_empty());
+    match (index, name) {
+        (Some(_), Some(_)) => Err(AppError::new(
+            ErrorKind::Validation,
+            "--index and --name are mutually exclusive",
+        )),
+        (Some(index), None) => Ok(ScreenerColumnSelector::Index(index)),
+        (None, Some(name)) => Ok(ScreenerColumnSelector::Name(name.to_string())),
+        (None, None) => Err(AppError::new(
+            ErrorKind::Validation,
+            "Either --index or --name is required",
         )),
     }
 }
@@ -596,6 +627,87 @@ pub async fn screener_columns_list(runtime: &mut impl RuntimeEvaluator) -> Resul
     }))
 }
 
+pub async fn screener_columns_actions(
+    runtime: &mut impl RuntimeEvaluator,
+) -> Result<Value, AppError> {
+    let mut session = ScreenerMutationSession::open(runtime).await?;
+    let state = read_screener_state(session.runtime, None).await?;
+    ensure_dialog_open(&state)?;
+    let columns = column_targets_from_state(&state);
+    let actions = read_column_actions(session.runtime).await?;
+    let close_result = session.restore().await;
+    close_result?;
+
+    Ok(json!({
+        "source": SCREENER_SOURCE,
+        "action": "columns_actions",
+        "open": value_bool(&state, "open"),
+        "screen_title": state.get("screen_title").cloned().unwrap_or(Value::Null),
+        "column_count": columns.len(),
+        "columns": column_targets_payload(&columns),
+        "opened_for_read": session.opened_for_mutation,
+        "restored_open_state": session.restored_open_state,
+        "settings_button_found": value_bool(&actions, "settings_button_found"),
+        "settings_opened": value_bool(&actions, "settings_opened"),
+        "categories": actions.get("categories").cloned().unwrap_or_else(|| json!([])),
+        "header_menu_actions": actions.get("header_menu_actions").cloned().unwrap_or_else(|| json!([])),
+        "remove_supported": value_bool(&actions, "remove_supported"),
+        "reset_supported": value_bool(&actions, "reset_supported"),
+        "unavailable_reason": actions.get("unavailable_reason").cloned().unwrap_or(Value::Null),
+    }))
+}
+
+pub async fn screener_columns_remove(
+    runtime: &mut impl RuntimeEvaluator,
+    selector: ScreenerColumnSelector,
+    dry_run: bool,
+) -> Result<Value, AppError> {
+    let mut session = ScreenerMutationSession::open(runtime).await?;
+    let before_state = read_screener_state(session.runtime, None).await?;
+    ensure_dialog_open(&before_state)?;
+    let before_columns = column_targets_from_state(&before_state);
+    let target = resolve_column_target(&before_columns, &selector)?;
+    let actions = read_column_actions(session.runtime).await?;
+    let remove_supported = value_bool(&actions, "remove_supported");
+
+    if dry_run {
+        let close_result = session.restore().await;
+        close_result?;
+        return Ok(json!({
+            "source": SCREENER_SOURCE,
+            "action": "columns_remove",
+            "dry_run": true,
+            "removed": false,
+            "remove_supported": remove_supported,
+            "unavailable_reason": actions.get("unavailable_reason").cloned().unwrap_or(Value::Null),
+            "opened_for_mutation": session.opened_for_mutation,
+            "restored_open_state": session.restored_open_state,
+            "before_column_count": before_columns.len(),
+            "after_column_count": before_columns.len(),
+            "target_column": column_target_payload(&target),
+            "columns": column_targets_payload(&before_columns),
+        }));
+    }
+
+    let close_result = session.restore().await;
+    close_result?;
+
+    Err(AppError::new(
+        ErrorKind::InternalApiUnavailable,
+        "Screener column remove action was not found in the visible TradingView UI",
+    )
+    .with_details(json!({
+        "source": SCREENER_SOURCE,
+        "action": "columns_remove",
+        "dry_run": false,
+        "removed": false,
+        "remove_supported": remove_supported,
+        "unavailable_reason": actions.get("unavailable_reason").cloned().unwrap_or(Value::Null),
+        "target_column": column_target_payload(&target),
+        "columns": column_targets_payload(&before_columns),
+    })))
+}
+
 pub async fn screener_close(runtime: &mut impl RuntimeEvaluator) -> Result<Value, AppError> {
     let before = read_screener_state(runtime, None).await?;
     if !value_bool(&before, "open") {
@@ -882,6 +994,82 @@ fn filter_target_payload(filter: &ScreenerFilterTarget) -> Value {
 
 fn filter_targets_payload(filters: &[ScreenerFilterTarget]) -> Vec<Value> {
     filters.iter().map(filter_target_payload).collect()
+}
+
+fn column_targets_from_state(state: &Value) -> Vec<ScreenerColumnTarget> {
+    state
+        .get("columns")
+        .and_then(Value::as_array)
+        .map(|columns| {
+            columns
+                .iter()
+                .enumerate()
+                .filter_map(|(index, column)| {
+                    column.as_str().map(str::trim).and_then(|name| {
+                        if name.is_empty() {
+                            None
+                        } else {
+                            Some(ScreenerColumnTarget {
+                                index,
+                                name: name.to_string(),
+                            })
+                        }
+                    })
+                })
+                .collect()
+        })
+        .unwrap_or_default()
+}
+
+fn resolve_column_target(
+    columns: &[ScreenerColumnTarget],
+    selector: &ScreenerColumnSelector,
+) -> Result<ScreenerColumnTarget, AppError> {
+    match selector {
+        ScreenerColumnSelector::Index(index) => columns
+            .iter()
+            .find(|column| column.index == *index)
+            .cloned()
+            .ok_or_else(|| {
+                AppError::new(
+                    ErrorKind::Validation,
+                    format!("No visible Screener column found at index {index}"),
+                )
+                .with_details(json!({ "columns": column_targets_payload(columns) }))
+            }),
+        ScreenerColumnSelector::Name(name) => {
+            let needle = name.to_lowercase();
+            let matches = columns
+                .iter()
+                .filter(|column| column.name.to_lowercase().contains(&needle))
+                .cloned()
+                .collect::<Vec<_>>();
+            match matches.len() {
+                0 => Err(AppError::new(
+                    ErrorKind::Validation,
+                    format!("No visible Screener column matched name {name:?}"),
+                )
+                .with_details(json!({ "columns": column_targets_payload(columns) }))),
+                1 => Ok(matches[0].clone()),
+                _ => Err(AppError::new(
+                    ErrorKind::Validation,
+                    format!("Screener column name {name:?} matched multiple columns"),
+                )
+                .with_details(json!({ "matches": column_targets_payload(&matches) }))),
+            }
+        }
+    }
+}
+
+fn column_target_payload(column: &ScreenerColumnTarget) -> Value {
+    json!({
+        "index": column.index,
+        "name": column.name,
+    })
+}
+
+fn column_targets_payload(columns: &[ScreenerColumnTarget]) -> Vec<Value> {
+    columns.iter().map(column_target_payload).collect()
 }
 
 fn ensure_screen_menu_opened(value: &Value) -> Result<(), AppError> {
@@ -1361,6 +1549,15 @@ async fn wait_for_screen_save_post_check(
     Ok(result)
 }
 
+async fn read_column_actions(runtime: &mut impl RuntimeEvaluator) -> Result<Value, AppError> {
+    runtime
+        .evaluate(
+            &expanded_expression(SCREENER_COLUMNS_ACTIONS_EXPRESSION),
+            true,
+        )
+        .await
+}
+
 async fn click_filter_remove_button(
     runtime: &mut impl RuntimeEvaluator,
     target: &ScreenerFilterTarget,
@@ -1747,6 +1944,145 @@ const SCREENER_WAIT_CLOSED_EXPRESSION: &str = r#"
         await sleep(150);
     }
     return readScreenerState(0);
+})()
+"#;
+
+const SCREENER_COLUMNS_ACTIONS_EXPRESSION: &str = r#"
+(async function() {
+    function sleep(ms) {
+        return new Promise(function(resolve) { setTimeout(resolve, ms); });
+    }
+    REPLACE_HELPERS
+    function actionText(text) {
+        if (/^昇順で並べ替え$|^Sort ascending$/i.test(text)) return 'sort_ascending';
+        if (/^降順で並べ替え$|^Sort descending$/i.test(text)) return 'sort_descending';
+        if (/^左に移動$|^Move left$/i.test(text)) return 'move_left';
+        if (/^右に移動$|^Move right$/i.test(text)) return 'move_right';
+        if (/^先頭に移動$|^Move to beginning$/i.test(text)) return 'move_first';
+        if (/^末尾に移動$|^Move to end$/i.test(text)) return 'move_last';
+        if (/削除|Remove|非表示|Hide/i.test(text)) return 'remove';
+        if (/リセット|デフォルト|Reset|Default/i.test(text)) return 'reset';
+        return null;
+    }
+    function mouseContextClick(el) {
+        var rect = el.getBoundingClientRect();
+        var x = rect.left + rect.width / 2;
+        var y = rect.top + rect.height / 2;
+        ['mouseover', 'mousedown', 'mouseup', 'contextmenu'].forEach(function(type) {
+            el.dispatchEvent(new MouseEvent(type, {
+                bubbles: true,
+                cancelable: true,
+                clientX: x,
+                clientY: y,
+                button: 2,
+                buttons: type === 'mousedown' ? 2 : 0,
+                view: window
+            }));
+        });
+    }
+    function collectActionTexts(root) {
+        var seen = {};
+        var actions = [];
+        var nodes = Array.from(root.querySelectorAll('button, [role="menuitem"], [role="option"], [role="button"], div, span')).filter(visible);
+        nodes.forEach(function(el) {
+            var text = textOf(el);
+            var kind = actionText(text);
+            if (!kind || seen[kind + ':' + text]) return;
+            seen[kind + ':' + text] = true;
+            actions.push({
+                index: actions.length,
+                text: text,
+                kind: kind,
+                enabled: !(el.disabled || el.getAttribute('aria-disabled') === 'true')
+            });
+        });
+        return actions;
+    }
+    function findColumnSettingsButton() {
+        var table = visibleElements('table').find(function(candidate) {
+            return candidate.querySelector('th');
+        });
+        if (!table) return null;
+        var headers = Array.from(table.querySelectorAll('th')).filter(visible);
+        for (var i = headers.length - 1; i >= 0; i--) {
+            var header = headers[i];
+            var text = textOf(header);
+            var buttons = Array.from(header.querySelectorAll('button, [role="button"], [title], [aria-label]')).filter(visible);
+            var explicit = buttons.find(function(button) {
+                var label = [button.getAttribute('title'), button.getAttribute('aria-label'), textOf(button)].filter(Boolean).join(' ');
+                return /カラムの設定|Column settings/i.test(label);
+            });
+            if (explicit) return explicit;
+            if (!text && buttons.length) return buttons[buttons.length - 1];
+        }
+        return null;
+    }
+    function findColumnSettingsPanel() {
+        var panels = visibleElements('[role="dialog"], [class*="popover"], [class*="portal"], [class*="menu"]');
+        return panels.find(function(panel) {
+            var text = textOf(panel);
+            return /カラム|Column/i.test(text) &&
+                (/銘柄情報|マーケットデータ|テクニカル|Fundamental|Technical|Market/i.test(text) ||
+                 /検索|Search/i.test(text));
+        }) || null;
+    }
+    function collectColumnCategories(panel) {
+        var seen = {};
+        var categories = [];
+        var nodes = Array.from(panel.querySelectorAll('[role="option"], button, [role="button"], div, span')).filter(visible);
+        nodes.forEach(function(el) {
+            var text = textOf(el);
+            if (!text || text.length > 80) return;
+            var match = text.match(/^(銘柄情報|マーケットデータ|テクニカル|ファンダメンタル|評価|成長率|マージン|配当|Symbol info|Market data|Technical|Fundamental|Ratings|Growth|Margins|Dividends)\s*([0-9]+)?$/i);
+            var key = match && match[1] ? match[1].toLowerCase() : text;
+            if (!match || seen[key]) return;
+            seen[key] = true;
+            categories.push({
+                index: categories.length,
+                text: text,
+                count: match[2] ? Number(match[2]) : null
+            });
+        });
+        return categories;
+    }
+    var state = readScreenerState(0);
+    var settingsButton = findColumnSettingsButton();
+    var settingsOpened = false;
+    var categories = [];
+    if (settingsButton) {
+        mouseClick(settingsButton);
+        for (var i = 0; i < 10; i++) {
+            var panel = findColumnSettingsPanel();
+            if (panel) {
+                settingsOpened = true;
+                categories = collectColumnCategories(panel);
+                break;
+            }
+            await sleep(100);
+        }
+    }
+    if (settingsButton && settingsOpened) {
+        mouseClick(settingsButton);
+        await sleep(50);
+    }
+
+    var headerMenuActions = [];
+    var allActions = headerMenuActions;
+    var removeSupported = allActions.some(function(action) { return action.kind === 'remove'; });
+    var resetSupported = allActions.some(function(action) { return action.kind === 'reset'; });
+    return {
+        source: 'ui_screener_dialog',
+        action: 'columns_actions',
+        open: !!state.open,
+        screen_title: state.screen_title || null,
+        settings_button_found: !!settingsButton,
+        settings_opened: settingsOpened,
+        categories: categories,
+        header_menu_actions: headerMenuActions,
+        remove_supported: removeSupported,
+        reset_supported: resetSupported,
+        unavailable_reason: removeSupported ? null : 'visible_column_remove_action_not_found'
+    };
 })()
 "#;
 
@@ -2192,6 +2528,30 @@ mod tests {
         );
         assert_eq!(
             validate_screener_filter_selector(Some(0), Some("PER"))
+                .unwrap_err()
+                .kind,
+            ErrorKind::Validation
+        );
+    }
+
+    #[test]
+    fn validate_screener_column_selector_requires_one_target() {
+        assert_eq!(
+            validate_screener_column_selector(Some(2), None).unwrap(),
+            ScreenerColumnSelector::Index(2)
+        );
+        assert_eq!(
+            validate_screener_column_selector(None, Some(" Price ")).unwrap(),
+            ScreenerColumnSelector::Name("Price".to_string())
+        );
+        assert_eq!(
+            validate_screener_column_selector(None, None)
+                .unwrap_err()
+                .kind,
+            ErrorKind::Validation
+        );
+        assert_eq!(
+            validate_screener_column_selector(Some(0), Some("Price"))
                 .unwrap_err()
                 .kind,
             ErrorKind::Validation
@@ -2939,6 +3299,106 @@ mod tests {
         assert_eq!(result["opened_for_read"], false);
         assert_eq!(result["restored_open_state"], true);
         assert!(runtime.key_events.is_empty());
+    }
+
+    #[tokio::test]
+    async fn screener_columns_actions_reports_detected_actions() {
+        let mut runtime = FakeRuntime::new([
+            json!({ "button_found": true, "open": true }),
+            json!({
+                "button_found": true,
+                "open": true,
+                "screen_title": "米国株（テスト用）",
+                "columns": ["Symbol", "Price", "Change %"],
+                "column_count": 3
+            }),
+            json!({
+                "settings_button_found": true,
+                "settings_opened": true,
+                "categories": [
+                    { "index": 0, "text": "銘柄情報26", "count": 26 },
+                    { "index": 1, "text": "テクニカル39", "count": 39 }
+                ],
+                "header_menu_actions": [
+                    { "index": 0, "text": "左に移動", "kind": "move_left", "enabled": true }
+                ],
+                "remove_supported": false,
+                "reset_supported": false,
+                "unavailable_reason": "visible_column_remove_action_not_found"
+            }),
+        ]);
+
+        let result = screener_columns_actions(&mut runtime).await.unwrap();
+
+        assert_eq!(result["action"], "columns_actions");
+        assert_eq!(result["screen_title"], "米国株（テスト用）");
+        assert_eq!(result["column_count"], 3);
+        assert_eq!(result["settings_opened"], true);
+        assert_eq!(result["categories"].as_array().unwrap().len(), 2);
+        assert_eq!(result["header_menu_actions"][0]["kind"], "move_left");
+        assert_eq!(result["remove_supported"], false);
+    }
+
+    #[tokio::test]
+    async fn screener_columns_remove_dry_run_returns_target_without_mutation() {
+        let mut runtime = FakeRuntime::new([
+            json!({ "button_found": true, "open": true }),
+            json!({
+                "button_found": true,
+                "open": true,
+                "columns": ["Symbol", "Price", "Change %"],
+                "column_count": 3
+            }),
+            json!({
+                "settings_button_found": true,
+                "settings_opened": true,
+                "categories": [],
+                "header_menu_actions": [],
+                "remove_supported": false,
+                "reset_supported": false,
+                "unavailable_reason": "visible_column_remove_action_not_found"
+            }),
+        ]);
+
+        let result = screener_columns_remove(
+            &mut runtime,
+            ScreenerColumnSelector::Name("Change".to_string()),
+            true,
+        )
+        .await
+        .unwrap();
+
+        assert_eq!(result["action"], "columns_remove");
+        assert_eq!(result["dry_run"], true);
+        assert_eq!(result["removed"], false);
+        assert_eq!(result["target_column"]["index"], 2);
+        assert_eq!(result["target_column"]["name"], "Change %");
+        assert_eq!(result["remove_supported"], false);
+        assert_eq!(runtime.mouse_events.len(), 0);
+    }
+
+    #[tokio::test]
+    async fn screener_columns_remove_rejects_ambiguous_name() {
+        let mut runtime = FakeRuntime::new([
+            json!({ "button_found": true, "open": true }),
+            json!({
+                "button_found": true,
+                "open": true,
+                "columns": ["Price", "Price Change", "Change %"],
+                "column_count": 3
+            }),
+        ]);
+
+        let error = screener_columns_remove(
+            &mut runtime,
+            ScreenerColumnSelector::Name("Price".to_string()),
+            true,
+        )
+        .await
+        .unwrap_err();
+
+        assert_eq!(error.kind, ErrorKind::Validation);
+        assert!(error.details.is_some());
     }
 
     #[tokio::test]

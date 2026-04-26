@@ -159,7 +159,7 @@ As of this pass, the upstream repository has 47 open PRs.
    basic generic scanner REST reads are implemented as `tv scanner scan`. UI
    Screener dialog reads now have live evidence in
    `docs/notes/ui-screener-read-evidence-2026-04-26.md` and are implemented as
-   `tv screener status/open/get/screens active/list/switch/filters list/remove/clear/columns list/close`, including `screens list/switch --catalog` for exact saved-screen catalog targeting. Screen save/save-as/delete/rename/create and column mutations plus
+   `tv screener status/open/get/screens active/list/switch/filters list/remove/clear/columns list/actions/remove --dry-run/close`, including `screens list/switch --catalog` for exact saved-screen catalog targeting. Screen save/save-as/delete/rename/create and normal column mutations plus
    workflow scanner packs should still stay outside the core CLI unless
    separate evidence proves they belong here. `#91`
    unsaved-layout dialog auto-dismiss should also remain deferred; Rust should not dismiss

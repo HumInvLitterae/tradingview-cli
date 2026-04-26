@@ -158,7 +158,15 @@ fn screener_help_lists_read_subcommands() {
     tv().args(["screener", "columns", "--help"])
         .assert()
         .success()
-        .stdout(predicate::str::contains("list"));
+        .stdout(predicate::str::contains("list"))
+        .stdout(predicate::str::contains("actions"))
+        .stdout(predicate::str::contains("remove"));
+    tv().args(["screener", "columns", "remove", "--help"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("--index"))
+        .stdout(predicate::str::contains("--name"))
+        .stdout(predicate::str::contains("--dry-run"));
 }
 
 #[test]
@@ -210,6 +218,34 @@ fn screener_filter_mutations_reject_invalid_inputs_before_connecting() {
         .failure()
         .code(1);
     let stderr = String::from_utf8(clear_without_confirmation.get_output().stderr.clone()).unwrap();
+    let value: Value = serde_json::from_str(&stderr).unwrap();
+    assert_eq!(value["command"], "screener");
+    assert_eq!(value["error"]["kind"], "validation");
+}
+
+#[test]
+fn screener_column_remove_rejects_invalid_inputs_before_connecting() {
+    let missing_target = tv()
+        .env("TV_CDP_PORT", "9")
+        .args(["screener", "columns", "remove"])
+        .assert()
+        .failure()
+        .code(1);
+    let stderr = String::from_utf8(missing_target.get_output().stderr.clone()).unwrap();
+    let value: Value = serde_json::from_str(&stderr).unwrap();
+    assert_eq!(value["success"], false);
+    assert_eq!(value["command"], "screener");
+    assert_eq!(value["error"]["kind"], "validation");
+
+    let conflicting_target = tv()
+        .env("TV_CDP_PORT", "9")
+        .args([
+            "screener", "columns", "remove", "--index", "0", "--name", "Price",
+        ])
+        .assert()
+        .failure()
+        .code(1);
+    let stderr = String::from_utf8(conflicting_target.get_output().stderr.clone()).unwrap();
     let value: Value = serde_json::from_str(&stderr).unwrap();
     assert_eq!(value["command"], "screener");
     assert_eq!(value["error"]["kind"], "validation");

@@ -235,6 +235,12 @@ async fn dispatch(command: Command) -> Result<serde_json::Value, AppError> {
                     ScreenerFiltersCommand::List => {}
                 }
             }
+            if let ScreenerCommand::Columns {
+                command: ScreenerColumnsCommand::Remove { index, name, .. },
+            } = &command
+            {
+                ops::validate_screener_column_selector(*index, name.as_deref())?;
+            }
             if let ScreenerCommand::Screens {
                 command: ScreenerScreensCommand::Switch { name, .. },
             } = &command
@@ -286,6 +292,18 @@ async fn dispatch(command: Command) -> Result<serde_json::Value, AppError> {
                 },
                 ScreenerCommand::Columns { command } => match command {
                     ScreenerColumnsCommand::List => ops::screener_columns_list(&mut runtime).await,
+                    ScreenerColumnsCommand::Actions => {
+                        ops::screener_columns_actions(&mut runtime).await
+                    }
+                    ScreenerColumnsCommand::Remove {
+                        index,
+                        name,
+                        dry_run,
+                    } => {
+                        let selector =
+                            ops::validate_screener_column_selector(index, name.as_deref())?;
+                        ops::screener_columns_remove(&mut runtime, selector, dry_run).await
+                    }
                 },
                 ScreenerCommand::Close => ops::screener_close(&mut runtime).await,
             }

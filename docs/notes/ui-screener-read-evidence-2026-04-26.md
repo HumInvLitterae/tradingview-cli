@@ -77,6 +77,8 @@ The implemented surface is:
 - `tv screener filters remove --index <N>|--text <TEXT> [--dry-run]`
 - `tv screener filters clear [--dry-run] --confirm-clear`
 - `tv screener columns list`
+- `tv screener columns actions`
+- `tv screener columns remove --index <N>|--name <TEXT> --dry-run`
 - `tv screener close`
 
 The implementation does not depend only on `[class*="screenerContainer"]`.
@@ -90,6 +92,13 @@ localized display text. The metadata commands should document that they read the
 active screen title, visible filter pills, and visible columns from the same UI
 state. None of these commands should present the result as a stable REST scanner
 schema.
+
+The column-management follow-up can read the visible column settings categories
+and resolve a visible column target in dry-run mode. Live evidence on
+2026-04-26 found the settings categories, search, add-column configuration, and
+header sort/move menus, but did not expose a safe visible per-column remove
+action. Normal column remove, reset, add, and reorder therefore remain
+evidence-gated.
 
 The guarded filter mutation follow-up uses the same visible filter pill surface.
 Live evidence showed that opening a filter pill exposes a popover button whose

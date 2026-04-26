@@ -145,6 +145,8 @@ The Rust implementation is separate from Hotlist REST and currently includes:
 - `tv screener filters remove --index <N>|--text <TEXT> [--dry-run]`
 - `tv screener filters clear [--dry-run] --confirm-clear`
 - `tv screener columns list`
+- `tv screener columns actions`
+- `tv screener columns remove --index <N>|--name <TEXT> --dry-run`
 - `tv screener close`
 
 `screens list` and `screens switch` are intentionally narrower than upstream PR
@@ -154,16 +156,21 @@ the active screen title menu, such as recent screens, and return
 they use the saved-screen catalog and return `scope: "screen_catalog"`.
 `screens actions` reads visible menu actions, and `screens save` clicks only the
 exact visible `Save screen` / `スクリーンを保存` action after optional dry-run
-target reporting. The implementation does not include save-as, delete, rename,
-create, or column mutation. Live smoke on 2026-04-25 showed that menu-visible
+target reporting. `columns actions` reads the visible column settings categories
+and reports whether safe remove/reset actions are visible. `columns remove`
+currently supports dry-run target resolution only; live DOM evidence on
+2026-04-26 showed categories, search, add-column configuration, and header
+move/sort menus, but no safe visible per-column remove action. The
+implementation does not include save-as, delete, rename, create, normal column
+remove, reset, add, or reorder. Live smoke on 2026-04-25 showed that menu-visible
 entries were readable and dry-run targeting worked, but the current TradingView
 Desktop session did not activate a clicked visible screen row; non-dry-run
 switch therefore failed with `internal_api_unavailable` rather than reporting a
 false success.
 
-It depends on TradingView Desktop DOM selectors. It does not change columns in
-this slice. Metadata reads return the active screen title,
-visible filter pills, and visible table column names without reading table rows.
+It depends on TradingView Desktop DOM selectors. Metadata reads return the
+active screen title, visible filter pills, and visible table column names
+without reading table rows.
 Filter remove/clear commands operate on visible UI filter pills, not a stable
 REST schema. `remove` resolves exactly one visible filter before clicking the
 pill's popover remove button. `clear` is intentionally confirmation-gated
