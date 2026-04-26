@@ -30,6 +30,15 @@ pub struct ScreenerFilterModifyRequest {
     preset_label: String,
 }
 
+#[derive(Clone, Debug, PartialEq)]
+pub struct ScreenerFilterAddRequest {
+    pub name: String,
+    pub min: Option<f64>,
+    pub max: Option<f64>,
+    pub dry_run: bool,
+    range_matchers: Vec<String>,
+}
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum ScreenerColumnSelector {
     Index(usize),
@@ -70,6 +79,8 @@ struct ScreenMenuClickPoint {
     x: f64,
     y: f64,
 }
+
+type ScreenerClickPoint = ScreenMenuClickPoint;
 
 pub fn validate_screener_limit(limit: Option<usize>) -> Result<usize, AppError> {
     match limit {
@@ -116,6 +127,29 @@ pub fn validate_screener_filter_modify_request(
         max,
         dry_run,
         preset_label,
+    })
+}
+
+pub fn validate_screener_filter_add_request(
+    name: &str,
+    min: Option<f64>,
+    max: Option<f64>,
+    dry_run: bool,
+) -> Result<ScreenerFilterAddRequest, AppError> {
+    let name = name.trim();
+    if name.is_empty() {
+        return Err(AppError::new(
+            ErrorKind::Validation,
+            "--name must not be empty",
+        ));
+    }
+    let range_matchers = screener_filter_add_range_matchers(min, max)?;
+    Ok(ScreenerFilterAddRequest {
+        name: name.to_string(),
+        min,
+        max,
+        dry_run,
+        range_matchers,
     })
 }
 
@@ -556,6 +590,78 @@ pub async fn screener_filters_actions(
         "candidate_filter": actions.get("candidate_filter").cloned().unwrap_or(Value::Null),
         "range_options": actions.get("range_options").cloned().unwrap_or_else(|| json!([])),
         "unavailable_reason": actions.get("unavailable_reason").cloned().unwrap_or(Value::Null),
+    }))
+}
+
+pub async fn screener_filters_add(
+    runtime: &mut impl RuntimeEvaluator,
+    request: ScreenerFilterAddRequest,
+) -> Result<Value, AppError> {
+    let mut session = ScreenerMutationSession::open(runtime).await?;
+    let before_state = read_screener_state(session.runtime, None).await?;
+    ensure_dialog_open(&before_state)?;
+    let before_filters = filter_targets_from_state(&before_state);
+    let requested_range = filter_add_range_payload(&request);
+
+    let search_result = open_filter_add_search(session.runtime).await?;
+    ensure_filter_add_search_opened(&search_result)?;
+    session.runtime.insert_text(&request.name).await?;
+    let candidate = wait_for_filter_add_candidate(session.runtime, &request.name).await?;
+
+    if request.dry_run {
+        close_screener_transient_popups(session.runtime).await?;
+        let close_result = session.restore().await;
+        close_result?;
+        return Ok(json!({
+            "source": SCREENER_SOURCE,
+            "action": "filter_add",
+            "dry_run": true,
+            "added": false,
+            "open": value_bool(&before_state, "open"),
+            "opened_for_mutation": session.opened_for_mutation,
+            "restored_open_state": session.restored_open_state,
+            "before_filter_count": before_filters.len(),
+            "after_filter_count": before_filters.len(),
+            "target_filter": candidate.get("candidate").cloned().unwrap_or(Value::Null),
+            "requested_range": requested_range,
+        }));
+    }
+
+    let candidate_point = screener_click_point(&candidate, "candidate_click_point")?;
+    dispatch_screen_menu_click(session.runtime, candidate_point).await?;
+    let option = wait_for_filter_add_range_option(session.runtime, &request.range_matchers).await?;
+    let option_point = screener_click_point(&option, "range_click_point")?;
+    dispatch_screen_menu_click(session.runtime, option_point).await?;
+    let after_state = wait_for_filter_added(
+        session.runtime,
+        &before_filters,
+        &request.name,
+        &request.range_matchers,
+    )
+    .await?;
+    let after_filters = filter_targets_from_state(&after_state);
+    let after_filter = added_filter_target(
+        &before_filters,
+        &after_filters,
+        &request.name,
+        &request.range_matchers,
+    );
+    let close_result = session.restore().await;
+    close_result?;
+
+    Ok(json!({
+        "source": SCREENER_SOURCE,
+        "action": "filter_add",
+        "dry_run": false,
+        "added": true,
+        "open": value_bool(&after_state, "open"),
+        "opened_for_mutation": session.opened_for_mutation,
+        "restored_open_state": session.restored_open_state,
+        "before_filter_count": before_filters.len(),
+        "after_filter_count": after_filters.len(),
+        "target_filter": candidate.get("candidate").cloned().unwrap_or(Value::Null),
+        "after_filter": after_filter.as_ref().map(filter_target_payload).unwrap_or(Value::Null),
+        "requested_range": requested_range,
     }))
 }
 
@@ -1139,6 +1245,14 @@ fn filter_modify_range_payload(request: &ScreenerFilterModifyRequest) -> Value {
     })
 }
 
+fn filter_add_range_payload(request: &ScreenerFilterAddRequest) -> Value {
+    json!({
+        "min": request.min,
+        "max": request.max,
+        "matchers": request.range_matchers,
+    })
+}
+
 fn screener_filter_range_preset_label(
     min: Option<f64>,
     max: Option<f64>,
@@ -1193,6 +1307,63 @@ fn screener_filter_range_preset_label(
             ErrorKind::Validation,
             "Screener filter preset ranges do not currently support --max without --min",
         )),
+        (None, None) => unreachable!(),
+    }
+}
+
+fn screener_filter_add_range_matchers(
+    min: Option<f64>,
+    max: Option<f64>,
+) -> Result<Vec<String>, AppError> {
+    if min.is_none() && max.is_none() {
+        return Err(AppError::new(
+            ErrorKind::Validation,
+            "Either --min or --max is required",
+        ));
+    }
+    if let Some(value) = min {
+        require_finite(value, "--min")?;
+    }
+    if let Some(value) = max {
+        require_finite(value, "--max")?;
+    }
+    match (min, max) {
+        (Some(min), Some(max)) => {
+            if max <= min {
+                return Err(AppError::new(
+                    ErrorKind::Validation,
+                    "--max must be greater than --min",
+                ));
+            }
+            let min = format_filter_percent(min);
+            let max = format_filter_percent(max);
+            Ok(vec![
+                format!("{min}% 〜 {max}%"),
+                format!("{min}% to {max}%"),
+                format!("{min} 〜 {max}"),
+                format!("{min} to {max}"),
+            ])
+        }
+        (Some(min), None) => {
+            let min = format_filter_percent(min);
+            Ok(vec![
+                format!("> {min}"),
+                format!(">{min}"),
+                format!("{min}%以上"),
+                format!("{min}以上"),
+            ])
+        }
+        (None, Some(max)) => {
+            let max = format_filter_percent(max);
+            Ok(vec![
+                format!("< {max}"),
+                format!("<{max}"),
+                format!("{max}%以下"),
+                format!("{max}以下"),
+                format!("{max}%未満"),
+                format!("{max}未満"),
+            ])
+        }
         (None, None) => unreachable!(),
     }
 }
@@ -1323,6 +1494,18 @@ fn ensure_screen_catalog_opened(value: &Value) -> Result<(), AppError> {
         Err(AppError::new(
             ErrorKind::InternalApiUnavailable,
             "Stock Screener screen catalog did not open",
+        )
+        .with_details(value.clone()))
+    }
+}
+
+fn ensure_filter_add_search_opened(value: &Value) -> Result<(), AppError> {
+    if value_bool(value, "opened") && value_bool(value, "input_found") {
+        Ok(())
+    } else {
+        Err(AppError::new(
+            ErrorKind::InternalApiUnavailable,
+            "Screener filter add search did not open",
         )
         .with_details(value.clone()))
     }
@@ -1635,24 +1818,28 @@ async fn click_screen_catalog_target(
 }
 
 fn screen_menu_click_point(value: &Value) -> Result<ScreenMenuClickPoint, AppError> {
-    let point = value.get("click_point").ok_or_else(|| {
+    screener_click_point(value, "click_point")
+}
+
+fn screener_click_point(value: &Value, field: &str) -> Result<ScreenerClickPoint, AppError> {
+    let point = value.get(field).ok_or_else(|| {
         AppError::new(
             ErrorKind::InternalApiUnavailable,
-            "Screener screen menu click point missing",
+            "Screener click point missing",
         )
         .with_details(value.clone())
     })?;
     let x = point.get("x").and_then(Value::as_f64).ok_or_else(|| {
         AppError::new(
             ErrorKind::InternalApiUnavailable,
-            "Screener screen menu click x coordinate missing",
+            "Screener click x coordinate missing",
         )
         .with_details(value.clone())
     })?;
     let y = point.get("y").and_then(Value::as_f64).ok_or_else(|| {
         AppError::new(
             ErrorKind::InternalApiUnavailable,
-            "Screener screen menu click y coordinate missing",
+            "Screener click y coordinate missing",
         )
         .with_details(value.clone())
     })?;
@@ -1869,6 +2056,193 @@ async fn read_filter_actions(runtime: &mut impl RuntimeEvaluator) -> Result<Valu
             true,
         )
         .await
+}
+
+async fn open_filter_add_search(runtime: &mut impl RuntimeEvaluator) -> Result<Value, AppError> {
+    runtime
+        .evaluate(
+            &expanded_expression(
+                r#"
+                (async function() {
+                    function sleep(ms) {
+                        return new Promise(function(resolve) { setTimeout(resolve, ms); });
+                    }
+                    REPLACE_HELPERS
+                    closeScreenerTransientPopups();
+                    var addButton = findScreenerAddFilterButton();
+                    if (!addButton) {
+                        return { opened: false, reason: 'add_button_not_found' };
+                    }
+                    mouseClick(addButton);
+                    var input = null;
+                    for (var i = 0; i < 10; i++) {
+                        input = findScreenerAddFilterSearchInput();
+                        if (input) break;
+                        await sleep(150);
+                    }
+                    if (!input) {
+                        return { opened: false, reason: 'search_input_not_found' };
+                    }
+                    input.focus();
+                    return {
+                        opened: true,
+                        input_found: true,
+                        placeholder: input.getAttribute('placeholder') || null,
+                        aria_label: input.getAttribute('aria-label') || null
+                    };
+                })()
+                "#,
+            ),
+            true,
+        )
+        .await
+}
+
+async fn wait_for_filter_add_candidate(
+    runtime: &mut impl RuntimeEvaluator,
+    name: &str,
+) -> Result<Value, AppError> {
+    let name = js_string(name)?;
+    let result = runtime
+        .evaluate(
+            &expanded_expression(&format!(
+                r#"
+                (async function() {{
+                    function sleep(ms) {{
+                        return new Promise(function(resolve) {{ setTimeout(resolve, ms); }});
+                    }}
+                    REPLACE_HELPERS
+                    var name = {name};
+                    var last = {{ found: false, reason: 'candidate_not_found', query: name }};
+                    for (var i = 0; i < 12; i++) {{
+                        var candidate = findScreenerAddFilterCandidate(name);
+                        if (candidate) {{
+                            var rect = candidate.getBoundingClientRect();
+                            return {{
+                                found: true,
+                                candidate: {{
+                                    text: textOf(candidate),
+                                    normalized_text: normalizeScreenerFilterText(textOf(candidate)),
+                                    role: candidate.getAttribute('role') || null
+                                }},
+                                candidate_click_point: {{
+                                    x: rect.left + rect.width / 2,
+                                    y: rect.top + rect.height / 2
+                                }}
+                            }};
+                        }}
+                        var dialog = findScreenerAddFilterDialog();
+                        last = {{
+                            found: false,
+                            reason: 'candidate_not_found',
+                            query: name,
+                            dialog_text: dialog ? textOf(dialog).substring(0, 240) : null
+                        }};
+                        await sleep(150);
+                    }}
+                    return last;
+                }})()
+                "#
+            )),
+            true,
+        )
+        .await?;
+
+    if value_bool(&result, "found") {
+        Ok(result)
+    } else {
+        Err(AppError::new(
+            ErrorKind::InternalApiUnavailable,
+            "Screener filter add candidate was not found",
+        )
+        .with_details(result))
+    }
+}
+
+async fn wait_for_filter_add_range_option(
+    runtime: &mut impl RuntimeEvaluator,
+    matchers: &[String],
+) -> Result<Value, AppError> {
+    let matchers = serde_json::to_string(matchers).map_err(|err| {
+        AppError::new(
+            ErrorKind::InternalApiUnavailable,
+            format!("Could not serialize Screener range matchers: {err}"),
+        )
+    })?;
+    let result = runtime
+        .evaluate(
+            &expanded_expression(&format!(
+                r#"
+                (async function() {{
+                    function sleep(ms) {{
+                        return new Promise(function(resolve) {{ setTimeout(resolve, ms); }});
+                    }}
+                    REPLACE_HELPERS
+                    var matchers = {matchers};
+                    var last = {{ found: false, reason: 'range_option_not_found', matchers: matchers }};
+                    for (var i = 0; i < 16; i++) {{
+                        var option = findScreenerAddFilterRangeOption(matchers);
+                        if (option) {{
+                            var rect = option.getBoundingClientRect();
+                            return {{
+                                found: true,
+                                range_option: {{
+                                    text: textOf(option),
+                                    normalized_text: normalizeScreenerFilterText(textOf(option)),
+                                    role: option.getAttribute('role') || null
+                                }},
+                                range_click_point: {{
+                                    x: rect.left + rect.width / 2,
+                                    y: rect.top + rect.height / 2
+                                }}
+                            }};
+                        }}
+                        var dialog = findScreenerAddFilterDialog();
+                        last = {{
+                            found: false,
+                            reason: 'range_option_not_found',
+                            matchers: matchers,
+                            dialog_text: dialog ? textOf(dialog).substring(0, 300) : null
+                        }};
+                        await sleep(150);
+                    }}
+                    return last;
+                }})()
+                "#
+            )),
+            true,
+        )
+        .await?;
+
+    if value_bool(&result, "found") {
+        Ok(result)
+    } else {
+        Err(AppError::new(
+            ErrorKind::InternalApiUnavailable,
+            "Screener filter add range option was not found",
+        )
+        .with_details(result))
+    }
+}
+
+async fn close_screener_transient_popups(
+    runtime: &mut impl RuntimeEvaluator,
+) -> Result<(), AppError> {
+    runtime
+        .evaluate(
+            &expanded_expression(
+                r#"
+                (function() {
+                    REPLACE_HELPERS
+                    closeScreenerTransientPopups();
+                    return { closed: true };
+                })()
+                "#,
+            ),
+            true,
+        )
+        .await
+        .map(|_| ())
 }
 
 async fn click_filter_remove_button(
@@ -2163,6 +2537,86 @@ async fn wait_for_filter_modified(
         "Screener filter text did not reflect requested range preset",
     )
     .with_details(last_state))
+}
+
+async fn wait_for_filter_added(
+    runtime: &mut impl RuntimeEvaluator,
+    before_filters: &[ScreenerFilterTarget],
+    name: &str,
+    matchers: &[String],
+) -> Result<Value, AppError> {
+    let mut last_state = Value::Null;
+    for _ in 0..12 {
+        let state = read_screener_state(runtime, None).await?;
+        let after_filters = filter_targets_from_state(&state);
+        if added_filter_target(before_filters, &after_filters, name, matchers).is_some() {
+            return Ok(state);
+        }
+        last_state = state;
+        sleep(Duration::from_millis(250)).await;
+    }
+
+    Err(AppError::new(
+        ErrorKind::InternalApiUnavailable,
+        "Screener filter text did not reflect requested added filter",
+    )
+    .with_details(last_state))
+}
+
+fn added_filter_target(
+    before_filters: &[ScreenerFilterTarget],
+    after_filters: &[ScreenerFilterTarget],
+    name: &str,
+    matchers: &[String],
+) -> Option<ScreenerFilterTarget> {
+    let before_names = before_filters
+        .iter()
+        .map(|filter| filter.data_name.as_str())
+        .collect::<std::collections::HashSet<_>>();
+    let name_tokens = screener_filter_name_tokens(name);
+    let numeric_tokens = screener_filter_numeric_tokens(matchers);
+    after_filters
+        .iter()
+        .find(|filter| {
+            if before_names.contains(filter.data_name.as_str()) {
+                return false;
+            }
+            let normalized = normalize_screener_text(&filter.text).to_lowercase();
+            let has_name = name_tokens
+                .iter()
+                .any(|token| normalized.contains(&token.to_lowercase()));
+            let has_number = numeric_tokens
+                .iter()
+                .any(|token| normalized.contains(token));
+            has_name && has_number
+        })
+        .cloned()
+}
+
+fn screener_filter_name_tokens(name: &str) -> Vec<String> {
+    normalize_screener_text(name)
+        .split(|ch: char| {
+            !(ch.is_ascii_alphanumeric()
+                || ('\u{3040}'..='\u{30ff}').contains(&ch)
+                || ('\u{3400}'..='\u{9fff}').contains(&ch))
+        })
+        .map(str::trim)
+        .filter(|token| token.len() >= 2)
+        .map(ToString::to_string)
+        .collect()
+}
+
+fn screener_filter_numeric_tokens(matchers: &[String]) -> Vec<String> {
+    matchers
+        .iter()
+        .flat_map(|matcher| {
+            matcher
+                .split(|ch: char| !(ch.is_ascii_digit() || ch == '.'))
+                .filter(|token| !token.is_empty())
+                .map(ToString::to_string)
+                .collect::<Vec<_>>()
+        })
+        .collect()
 }
 
 fn normalize_screener_text(value: &str) -> String {
@@ -2932,6 +3386,47 @@ function findScreenerAddFilterButton() {
         return /新しいフィルターを追加|フィルターを追加|Add new filter|Add filter/i.test(label);
     }) || null;
 }
+function findScreenerAddFilterDialog() {
+    return visibleElements('[role="dialog"], [class*="popover"], [class*="contentDefaultAppearance"]').find(function(el) {
+        var text = normalizeScreenerFilterText(textOf(el));
+        return /フィルター|Filter/i.test(text) && el.getBoundingClientRect().width >= 180;
+    }) || null;
+}
+function findScreenerAddFilterSearchInput() {
+    var dialog = findScreenerAddFilterDialog();
+    if (!dialog) return null;
+    return scopedVisibleElements(dialog, 'input, textarea').find(function(input) {
+        var label = [input.getAttribute('placeholder'), input.getAttribute('aria-label'), input.getAttribute('role')].filter(Boolean).join(' ');
+        return /検索|Search|combobox/i.test(label);
+    }) || null;
+}
+function findScreenerAddFilterCandidate(name) {
+    var dialog = findScreenerAddFilterDialog();
+    if (!dialog) return null;
+    var normalizedName = normalizeScreenerFilterText(name).toLowerCase();
+    var options = scopedVisibleElements(dialog, '[role="option"], button, [role="button"], [data-name]');
+    var exact = options.find(function(option) {
+        return normalizeScreenerFilterText(textOf(option)).toLowerCase() === normalizedName;
+    });
+    if (exact) return exact;
+    return options.find(function(option) {
+        var text = normalizeScreenerFilterText(textOf(option)).toLowerCase();
+        return text.indexOf(normalizedName) >= 0 || normalizedName.indexOf(text) >= 0;
+    }) || null;
+}
+function findScreenerAddFilterRangeOption(matchers) {
+    var dialog = findScreenerAddFilterDialog();
+    if (!dialog) return null;
+    var normalizedMatchers = matchers.map(function(matcher) {
+        return normalizeScreenerFilterText(matcher).toLowerCase();
+    }).filter(Boolean);
+    return scopedVisibleElements(dialog, '[role="option"], button, [role="button"], [data-name]').find(function(option) {
+        var text = normalizeScreenerFilterText(textOf(option)).toLowerCase();
+        return normalizedMatchers.some(function(matcher) {
+            return text.indexOf(matcher) >= 0;
+        });
+    }) || null;
+}
 function findScreenerNumericFilterPill() {
     var filters = visibleElements('[data-name^="screener-filter-pill-"]');
     return filters.find(function(el) {
@@ -3243,6 +3738,55 @@ mod tests {
         );
         assert_eq!(
             validate_screener_filter_modify_request(Some(0), None, Some(0.0), Some(7.0), true)
+                .unwrap_err()
+                .kind,
+            ErrorKind::Validation
+        );
+    }
+
+    #[test]
+    fn validate_screener_filter_add_accepts_generic_numeric_presets() {
+        let request =
+            validate_screener_filter_add_request(" RSI (相対力指数) ", Some(70.0), None, true)
+                .unwrap();
+
+        assert_eq!(request.name, "RSI (相対力指数)");
+        assert_eq!(
+            request.range_matchers,
+            vec!["> 70", ">70", "70%以上", "70以上"]
+        );
+        assert_eq!(filter_add_range_payload(&request)["min"], 70.0);
+
+        let request = validate_screener_filter_add_request("RSI", None, Some(30.0), false).unwrap();
+        assert!(request.range_matchers.contains(&"< 30".to_string()));
+
+        let request =
+            validate_screener_filter_add_request("Change", Some(0.0), Some(5.0), false).unwrap();
+        assert!(request.range_matchers.contains(&"0% 〜 5%".to_string()));
+    }
+
+    #[test]
+    fn validate_screener_filter_add_rejects_unsafe_inputs() {
+        assert_eq!(
+            validate_screener_filter_add_request("   ", Some(70.0), None, true)
+                .unwrap_err()
+                .kind,
+            ErrorKind::Validation
+        );
+        assert_eq!(
+            validate_screener_filter_add_request("RSI", None, None, true)
+                .unwrap_err()
+                .kind,
+            ErrorKind::Validation
+        );
+        assert_eq!(
+            validate_screener_filter_add_request("RSI", Some(f64::NAN), None, true)
+                .unwrap_err()
+                .kind,
+            ErrorKind::Validation
+        );
+        assert_eq!(
+            validate_screener_filter_add_request("RSI", Some(70.0), Some(60.0), true)
                 .unwrap_err()
                 .kind,
             ErrorKind::Validation
@@ -3919,6 +4463,91 @@ mod tests {
             "screener-filter-pill-ema"
         );
         assert_eq!(result["range_options"].as_array().unwrap().len(), 2);
+    }
+
+    #[tokio::test]
+    async fn screener_filters_add_dry_run_resolves_candidate_without_mutation() {
+        let mut runtime = FakeRuntime::new([
+            json!({ "button_found": true, "open": true }),
+            json!({
+                "button_found": true,
+                "open": true,
+                "screen_title": "米国株（テスト用）",
+                "filters": [
+                    { "index": 0, "text": "EMA (21)未満価格 : 0% 〜 10%", "data_name": "screener-filter-pill-ema", "visible": true }
+                ],
+                "filter_count": 1
+            }),
+            json!({ "opened": true, "input_found": true }),
+            json!({
+                "found": true,
+                "candidate": { "text": "RSI (相対力指数)", "normalized_text": "RSI (相対力指数)", "role": "option" },
+                "candidate_click_point": { "x": 900.0, "y": 450.0 }
+            }),
+            json!({ "closed": true }),
+        ]);
+        let request = validate_screener_filter_add_request("RSI", Some(70.0), None, true).unwrap();
+
+        let result = screener_filters_add(&mut runtime, request).await.unwrap();
+
+        assert_eq!(result["action"], "filter_add");
+        assert_eq!(result["dry_run"], true);
+        assert_eq!(result["added"], false);
+        assert_eq!(result["target_filter"]["text"], "RSI (相対力指数)");
+        assert_eq!(result["requested_range"]["min"], 70.0);
+        assert_eq!(runtime.inserted_text, vec!["RSI"]);
+        assert_eq!(runtime.mouse_events.len(), 0);
+    }
+
+    #[tokio::test]
+    async fn screener_filters_add_clicks_candidate_range_and_post_checks() {
+        let mut runtime = FakeRuntime::new([
+            json!({ "button_found": true, "open": true }),
+            json!({
+                "button_found": true,
+                "open": true,
+                "screen_title": "米国株（テスト用）",
+                "filters": [
+                    { "index": 0, "text": "EMA (21)未満価格 : 0% 〜 10%", "data_name": "screener-filter-pill-ema", "visible": true }
+                ],
+                "filter_count": 1
+            }),
+            json!({ "opened": true, "input_found": true }),
+            json!({
+                "found": true,
+                "candidate": { "text": "RSI (相対力指数)", "normalized_text": "RSI (相対力指数)", "role": "option" },
+                "candidate_click_point": { "x": 900.0, "y": 450.0 }
+            }),
+            json!({
+                "found": true,
+                "range_option": { "text": "> 70 買われすぎ", "normalized_text": "> 70 買われすぎ", "role": "option" },
+                "range_click_point": { "x": 900.0, "y": 540.0 }
+            }),
+            json!({
+                "button_found": true,
+                "open": true,
+                "filters": [
+                    { "index": 0, "text": "EMA (21)未満価格 : 0% 〜 10%", "data_name": "screener-filter-pill-ema", "visible": true },
+                    { "index": 1, "text": "RSI (14)70", "data_name": "screener-filter-pill-rsi", "visible": true }
+                ],
+                "filter_count": 2
+            }),
+        ]);
+        let request = validate_screener_filter_add_request("RSI", Some(70.0), None, false).unwrap();
+
+        let result = screener_filters_add(&mut runtime, request).await.unwrap();
+
+        assert_eq!(result["action"], "filter_add");
+        assert_eq!(result["dry_run"], false);
+        assert_eq!(result["added"], true);
+        assert_eq!(
+            result["after_filter"]["data_name"],
+            "screener-filter-pill-rsi"
+        );
+        assert_eq!(result["before_filter_count"], 1);
+        assert_eq!(result["after_filter_count"], 2);
+        assert_eq!(runtime.inserted_text, vec!["RSI"]);
+        assert_eq!(runtime.mouse_events.len(), 6);
     }
 
     #[tokio::test]

@@ -141,6 +141,7 @@ fn screener_help_lists_read_subcommands() {
         .assert()
         .success()
         .stdout(predicate::str::contains("actions"))
+        .stdout(predicate::str::contains("add"))
         .stdout(predicate::str::contains("list"))
         .stdout(predicate::str::contains("modify"))
         .stdout(predicate::str::contains("remove"))
@@ -153,6 +154,13 @@ fn screener_help_lists_read_subcommands() {
         .success()
         .stdout(predicate::str::contains("--index"))
         .stdout(predicate::str::contains("--text"))
+        .stdout(predicate::str::contains("--min"))
+        .stdout(predicate::str::contains("--max"))
+        .stdout(predicate::str::contains("--dry-run"));
+    tv().args(["screener", "filters", "add", "--help"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("--name"))
         .stdout(predicate::str::contains("--min"))
         .stdout(predicate::str::contains("--max"))
         .stdout(predicate::str::contains("--dry-run"));
@@ -269,6 +277,28 @@ fn screener_filter_mutations_reject_invalid_inputs_before_connecting() {
         .failure()
         .code(1);
     let stderr = String::from_utf8(modify_invalid_range.get_output().stderr.clone()).unwrap();
+    let value: Value = serde_json::from_str(&stderr).unwrap();
+    assert_eq!(value["command"], "screener");
+    assert_eq!(value["error"]["kind"], "validation");
+
+    let add_blank_name = tv()
+        .env("TV_CDP_PORT", "9")
+        .args(["screener", "filters", "add", "--name", " ", "--min", "70"])
+        .assert()
+        .failure()
+        .code(1);
+    let stderr = String::from_utf8(add_blank_name.get_output().stderr.clone()).unwrap();
+    let value: Value = serde_json::from_str(&stderr).unwrap();
+    assert_eq!(value["command"], "screener");
+    assert_eq!(value["error"]["kind"], "validation");
+
+    let add_missing_range = tv()
+        .env("TV_CDP_PORT", "9")
+        .args(["screener", "filters", "add", "--name", "RSI"])
+        .assert()
+        .failure()
+        .code(1);
+    let stderr = String::from_utf8(add_missing_range.get_output().stderr.clone()).unwrap();
     let value: Value = serde_json::from_str(&stderr).unwrap();
     assert_eq!(value["command"], "screener");
     assert_eq!(value["error"]["kind"], "validation");

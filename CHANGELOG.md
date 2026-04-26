@@ -34,6 +34,10 @@ package version omits the leading `v`.
   for visible numeric range filters. Modify supports dry-run target reporting,
   finite input validation before CDP connection, and post-mutation visible-text
   verification.
+- Added guarded `tv screener filters add --name <TEXT> --min <N>|--max <N>
+  [--dry-run]` for visible add-filter catalog numeric presets. The command
+  validates finite input before CDP connection and reports success only after a
+  new visible filter pill appears.
 - Added `tv screener columns actions` and dry-run target resolution for
   `tv screener columns remove`; current TradingView Desktop evidence does not
   expose a safe visible column-remove action, so normal removal remains

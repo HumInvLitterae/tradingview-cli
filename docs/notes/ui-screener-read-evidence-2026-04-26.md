@@ -75,6 +75,7 @@ The implemented surface is:
 - `tv screener screens save [--dry-run]`
 - `tv screener filters list`
 - `tv screener filters actions`
+- `tv screener filters add --name <TEXT> --min <N>|--max <N> [--dry-run]`
 - `tv screener filters modify --index <N>|--text <TEXT> --min <N>|--max <N> [--dry-run]`
 - `tv screener filters remove --index <N>|--text <TEXT> [--dry-run]`
 - `tv screener filters clear [--dry-run] --confirm-clear`
@@ -121,9 +122,14 @@ reliable parts of this surface; normal modify must fail with
 `internal_api_unavailable` rather than claiming success when the visible pill
 does not change.
 
-The same pass confirmed that the add-filter button opens a searchable filter
-catalog. It did not verify a safe end-to-end add, numeric range preset, and
-post-add visible-pill check path, so `filters add` remains deferred.
+The filter add follow-up confirmed that the add-filter button opens a searchable
+catalog whose input responds to real inserted text. Selecting `RSI` opened a
+numeric preset list, selecting `> 70` added a visible `RSI (14)` filter pill,
+and the test filter was removed afterward with `tv screener filters remove`.
+Rust now exposes this as guarded `tv screener filters add --name <TEXT>
+--min <N>|--max <N> [--dry-run]`: dry-run resolves the catalog candidate without
+mutation, normal mode clicks the candidate and range preset through CDP mouse
+events, and success requires a new visible filter pill.
 
 ## Still deferred
 

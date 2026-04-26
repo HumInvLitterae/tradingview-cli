@@ -224,6 +224,14 @@ async fn dispatch(command: Command) -> Result<serde_json::Value, AppError> {
             if let ScreenerCommand::Filters { command } = &command {
                 match command {
                     ScreenerFiltersCommand::Actions => {}
+                    ScreenerFiltersCommand::Add {
+                        name,
+                        min,
+                        max,
+                        dry_run,
+                    } => {
+                        ops::validate_screener_filter_add_request(name, *min, *max, *dry_run)?;
+                    }
                     ScreenerFiltersCommand::Remove { index, text, .. } => {
                         ops::validate_screener_filter_selector(*index, text.as_deref())?;
                     }
@@ -294,6 +302,16 @@ async fn dispatch(command: Command) -> Result<serde_json::Value, AppError> {
                     ScreenerFiltersCommand::List => ops::screener_filters_list(&mut runtime).await,
                     ScreenerFiltersCommand::Actions => {
                         ops::screener_filters_actions(&mut runtime).await
+                    }
+                    ScreenerFiltersCommand::Add {
+                        name,
+                        min,
+                        max,
+                        dry_run,
+                    } => {
+                        let request =
+                            ops::validate_screener_filter_add_request(&name, min, max, dry_run)?;
+                        ops::screener_filters_add(&mut runtime, request).await
                     }
                     ScreenerFiltersCommand::Remove {
                         index,

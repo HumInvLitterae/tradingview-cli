@@ -294,6 +294,17 @@ pub enum ScreenerFiltersCommand {
     List,
     #[command(about = "List visible Stock Screener filter-management actions")]
     Actions,
+    #[command(about = "Add a visible numeric Stock Screener filter preset")]
+    Add {
+        #[arg(long)]
+        name: String,
+        #[arg(long)]
+        min: Option<f64>,
+        #[arg(long)]
+        max: Option<f64>,
+        #[arg(long)]
+        dry_run: bool,
+    },
     #[command(about = "Remove a visible Stock Screener filter")]
     Remove {
         #[arg(long)]
