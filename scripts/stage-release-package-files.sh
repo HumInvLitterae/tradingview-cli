@@ -33,6 +33,7 @@ skills=(
   multi-symbol-scan
   pine-develop
   replay-practice
+  screener-workflow
   strategy-report
 )
 

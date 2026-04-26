@@ -88,7 +88,7 @@ GitHub Releases are the first supported binary distribution path. Pushing a vers
 - `tv-v0.1.1-x86_64-pc-windows-msvc.zip`
 - `SHA256SUMS`
 
-Each archive contains the `tv` or `tv.exe` binary, `README.md`, `CHANGELOG.md`, `LICENSE`, a user-facing `AGENTS.md` and `CLAUDE.md`, and runtime-oriented TradingView CLI skills under `.agents/skills/` and `.claude/skills/`. Verify the downloaded archive against `SHA256SUMS`, unpack it, and place the executable on your `PATH`.
+Each archive contains the `tv` or `tv.exe` binary, `README.md`, `CHANGELOG.md`, `LICENSE`, a user-facing `AGENTS.md` and `CLAUDE.md`, and runtime-oriented TradingView CLI skills under `.agents/skills/` and `.claude/skills/`, including chart analysis, multi-symbol scanning, Pine, replay, Screener, and strategy workflows. Verify the downloaded archive against `SHA256SUMS`, unpack it, and place the executable on your `PATH`.
 
 The repository root `AGENTS.md` and `CLAUDE.md` are contributor-facing development guides. Release archives instead include user-facing agent guides for operating `tv` safely through an AI agent.
 
@@ -229,7 +229,8 @@ baseline remains the commands run by CI.
 - a GitHub Actions release workflow for tag-triggered native binary archives
 - optional Git 2.54 config-based local hooks with `mise` task shortcuts
 - `CHANGELOG.md` release notes for public versions
-- user-facing agent guides and runtime skills in release archives
+- user-facing agent guides and runtime skills in release archives, including a
+  dedicated Stock Screener workflow skill
 - symbol-targeted quote reads through `tv quote [SYMBOL]`
 - read-only TradingView scanner REST reads through `tv scanner hotlist` and `tv scanner scan`
 - TradingView Stock Screener dialog reads, menu-visible and catalog screen switching, exact screen action/save support, guarded test-screen lifecycle commands, storage-backed filter cleanup, filter add, preset-range filter modification, and storage-backed column inspection/add/remove/reorder through `tv screener status/open/get/screens active/actions/list/switch/save/create/rename/save-as/delete/filters list/actions/add/modify/remove/clear/columns list/config/actions/add/remove/reorder/close`
@@ -240,7 +241,8 @@ baseline remains the commands run by CI.
 - a Screener completion and stabilization boundary note at `docs/notes/screener-surface-completion-and-stabilization.md`
 - historical implementation ExecPlans archived under `docs/plans/archives/`
 - a repo-local development guideline for module layout, style, and validation
-- repo-local CLI skills migrated from the original MCP workflow split
+- repo-local CLI skills migrated from the original MCP workflow split, with
+  current scanner, Screener, watchlist, and alert operating boundaries reflected
 
 ## Where to start
 

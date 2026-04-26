@@ -11,19 +11,22 @@ Use this skill to compare several TradingView symbols through the Rust `tv` CLI 
 
 1. Confirm the symbol list, timeframe, and screening criteria from the user request.
 2. Run `tv status`; if needed, run `tv watchlist get` to inspect the current TradingView watchlist.
-3. Keep the first pass small and serial. The Rust CLI does not implement the old MCP `batch_run` helper.
+3. For broad discovery, prefer `tv scanner hotlist` or `tv scanner scan` before mutating the chart across many symbols.
+4. Keep chart-by-chart inspection small and serial. The Rust CLI does not implement the old MCP `batch_run` helper.
 
 ## Scan Workflow
 
-1. Set the timeframe once with `tv timeframe <RESOLUTION>` when the scan uses a shared timeframe.
-2. For each symbol, run `tv symbol <SYMBOL>`, then gather `tv quote` and `tv ohlcv --summary`.
-3. Use `tv values` for visible studies and `tv data lines` / `tv data labels` / `tv data boxes` when existing Pine drawings provide useful scan criteria.
-4. Use `tv stream quote`, `tv stream bars`, or `tv stream all` only for short live-monitoring windows after the serial scan identifies symbols worth watching.
-5. Capture screenshots selectively for finalists or ambiguous cases with `tv screenshot --region chart --output <PATH>`.
-6. Present a ranked shortlist and explain which observations came from CLI data versus visual interpretation.
+1. Use `tv scanner hotlist <SLUG> --limit <N>` or `tv scanner scan ...` for broad read-only discovery when the criteria can be expressed as scanner filters.
+2. For a small finalist set, use `tv quote <SYMBOL>` for quick symbol-targeted quotes, then switch the chart with `tv symbol <SYMBOL>` only when OHLCV, visible studies, drawings, or screenshots are needed.
+3. Set the timeframe once with `tv timeframe <RESOLUTION>` when the scan uses a shared timeframe.
+4. Gather `tv ohlcv --summary`, `tv values`, and drawing-derived reads such as `tv data lines`, `tv data labels`, or `tv data boxes` only for symbols that need chart context.
+5. Use `tv stream quote`, `tv stream bars`, or `tv stream all` only for short live-monitoring windows after the scan identifies symbols worth watching.
+6. After user approval, add selected symbols with `tv watchlist add-bulk <SYMBOL>... --allow-partial`; it inherits the API-backed single-symbol add path and reports duplicates or partial failures.
+7. Capture screenshots selectively for finalists or ambiguous cases with `tv screenshot --region chart --output <PATH>`.
+8. Present a ranked shortlist and explain which observations came from scanner REST data, chart reads, or visual interpretation.
 
 ## Boundaries
 
-The Rust CLI can inspect and mutate the current watchlist, read chart-model data, and stream read-only chart samples as JSONL. It does not compute arbitrary historical indicator series, run strategy batches, or provide a bulk batch-run helper.
+The Rust CLI can inspect and mutate the current watchlist, read scanner REST data, read chart-model data, and stream read-only chart samples as JSONL. Watchlist add/remove prefer API-backed mutation with readback checks, but still require user approval because they change account state. The CLI does not compute arbitrary historical indicator series, run strategy batches, or provide a generic batch-run helper.
 
 Read `references/workflow.md` when the task needs the original MCP scan shape translated into the current CLI surface.

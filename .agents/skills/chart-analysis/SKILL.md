@@ -11,12 +11,15 @@ Use this skill for live TradingView chart review through the Rust `tv` CLI.
 
 1. Run `tv status`.
 2. If there is no connection, run `tv launch` once. If it still cannot connect, explain that the user must launch TradingView with a remote debugging port or provide `tv launch --path <PATH>`.
-3. If the connected chart is unclear, run `tv discover` and `tv ui-state`.
+3. If multiple chart targets are open or the connected chart is unclear, run `tv tab list` and use the desired target's `target_env.TV_CDP_TARGET_ID` for follow-up chart commands.
+4. Run `tv discover` and `tv ui-state` when the chart surface itself is unclear.
 
 ## Core Workflow
 
 1. Set the requested market context with `tv symbol <SYMBOL>`, `tv timeframe <RESOLUTION>`, and `tv type <CHART_TYPE>` when needed.
 2. Read chart context with `tv state`, `tv quote`, and `tv ohlcv --summary`.
+   Use `tv quote <SYMBOL>` for a one-off symbol quote when needed; it may
+   temporarily switch the chart and reports whether restore was verified.
 3. Read visible study values with `tv values` when indicators already exist on the chart.
 4. Read Pine drawing-derived levels or zones with `tv data lines`, `tv data labels`, `tv data tables`, or `tv data boxes` when the chart includes such primitives.
 5. Inspect or adjust the date window with `tv range`, `tv scroll <DATE>`, or `tv range --from <UNIX_SECONDS> --to <UNIX_SECONDS>`.

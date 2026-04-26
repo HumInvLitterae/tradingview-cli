@@ -40,6 +40,8 @@ The release archive includes CLI-oriented skills under `.agents/skills/` and `.c
 - `multi-symbol-scan`: small serial symbol scans and comparisons.
 - `pine-develop`: Pine Script read/edit/check/compile workflows.
 - `replay-practice`: bounded TradingView replay practice.
+- `screener-workflow`: Stock Screener target selection, reads, dry-run-first
+  screen/filter/column operation, and disposable test-screen cleanup.
 - `strategy-report`: strategy metrics, trades, and equity review.
 
 Use those skills when the user's request matches their descriptions.

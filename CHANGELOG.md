@@ -16,6 +16,8 @@ package version omits the leading `v`.
 - Added a cross-command internal API replacement audit that classifies DOM
   dependencies, identifies watchlist and alert-create replacement candidates,
   and records which DOM boundaries should remain intentional.
+- Added a runtime `screener-workflow` skill and refreshed packaged agent
+  guidance for current scanner, Screener, watchlist, and alert operation.
 - Added read-only `tv scanner scan` for basic TradingView scanner REST reads
   with exchange, column, sort, limit, and numeric filter options.
 - Added practical `tv scanner scan` filters for stock type, subtype, sector,
