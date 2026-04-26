@@ -13,6 +13,9 @@ package version omits the leading `v`.
   implemented Screener surface, deferred boundaries, and live-smoke priorities.
 - Added a public-safe internal TradingView API reference and Screener
   storage/API stabilization audit for future reliability work.
+- Added a cross-command internal API replacement audit that classifies DOM
+  dependencies, identifies watchlist and alert-create replacement candidates,
+  and records which DOM boundaries should remain intentional.
 - Added read-only `tv scanner scan` for basic TradingView scanner REST reads
   with exchange, column, sort, limit, and numeric filter options.
 - Added practical `tv scanner scan` filters for stock type, subtype, sector,

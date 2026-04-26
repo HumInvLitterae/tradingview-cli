@@ -90,3 +90,10 @@ After the stabilization pass, review repo-local runtime skills for Screener
 coverage. A dedicated Screener workflow skill may be useful if existing skills
 do not clearly tell users how to pick the full-page target, use dry-run first,
 operate on test screens, and clean up disposable filters or columns.
+
+Before updating skills, read `docs/internal-tradingview-apis.md` and
+`docs/plans/tradingview-cli-internal-api-command-audit.md`. They record which
+Screener and non-Screener DOM paths are API replacement candidates. Skill text
+should describe the stable operating boundary rather than depending on
+implementation details that are likely to change in the next stabilization
+slice.

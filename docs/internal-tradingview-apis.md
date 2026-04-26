@@ -32,6 +32,28 @@ It is not acceptable to document:
 - personal script, screen, alert, watchlist, or layout names
 - instructions that imply access-control bypass
 
+## Replacement feasibility policy
+
+When an existing command uses DOM selectors or visible button clicks, do not
+automatically add retries. First classify whether the operation has a safer
+non-public API, page-session object, or storage payload candidate.
+
+Use these categories:
+
+- `api_backed`: the command already uses a page object, endpoint, CDP target
+  endpoint, or saved storage payload as its primary source.
+- `replace_candidate`: a nearby implemented endpoint or storage shape suggests
+  a better path may exist, but live read-only evidence is still required before
+  changing behavior.
+- `research_only`: a replacement might exist, but current value or safety does
+  not justify implementation without a concrete workflow.
+- `intentional_dom`: the command is supposed to inspect visible UI state,
+  compute visible geometry, or preserve generic UI automation compatibility.
+
+For any replacement, keep the Rust CLI rule: do not report success unless a
+post-check proves the requested after-state. Account-state mutations need
+dry-run where practical and guards against accidental production data changes.
+
 ## Page-session chart API
 
 Category: private page object exposed in the TradingView Desktop page.
@@ -95,6 +117,15 @@ Current command family:
 
 - `alert list/create/delete`
 
+Current implementation split:
+
+- `alert list` and `alert delete` are `api_backed` through alert endpoints.
+- `alert create` is currently a `replace_candidate`: it still uses the visible
+  alert dialog and localized button labels, while the list/delete endpoint
+  family proves nearby API surface exists. Do not replace it without first
+  capturing public-safe live request-shape evidence and preserving the current
+  practical fields.
+
 Safety boundary:
 
 - reads preserve endpoint error details with an empty list when appropriate
@@ -110,6 +141,15 @@ or directly when the operation does not require the editor.
 Current command family:
 
 - `pine list/open/check`
+
+Related DOM-backed Pine commands:
+
+- `pine get/set/new/errors/console` intentionally use the local Monaco editor
+  model and are not endpoint replacement priorities.
+- `pine compile`, `pine raw-compile`, and `pine save` use visible editor
+  actions, keyboard shortcuts, dirty-state checks, and save/compile buttons.
+  Treat endpoint replacement as `research_only` unless a future plan proves a
+  safe compile or save endpoint with the same editor/account semantics.
 
 Safety boundary:
 
@@ -137,6 +177,33 @@ Safety boundary:
 - these commands are read-only
 - supported markets and field names are intentionally explicit
 - unexpected response shapes are rejected rather than normalized by guesswork
+
+## Watchlist DOM surface
+
+Category: visible right-panel watchlist UI controlled through DOM and CDP input
+events.
+
+Current command family:
+
+- `watchlist get/add/add-bulk/remove`
+
+Replacement classification:
+
+- `watchlist get` is visible UI readback and may remain DOM-backed when the
+  user wants the current visible watchlist.
+- `watchlist add`, `watchlist add-bulk`, and `watchlist remove` are
+  `replace_candidate` account mutations. They are among the highest-value
+  candidates for a future page-session storage/API evidence slice because they
+  currently depend on panel visibility, add/remove buttons, CDP text input, and
+  row-level post-checks.
+
+Safety boundary:
+
+- do not infer a watchlist storage endpoint from URL names alone
+- normal add/remove must still verify the symbol's presence or absence after
+  mutation
+- bulk add must preserve per-symbol result reporting and partial-success policy
+- do not write live watchlist ids or list names to tracked docs
 
 ## Screener page-session storage API
 
@@ -213,3 +280,57 @@ Likely DOM-maintained boundaries:
 
 The next Screener stabilization work should prefer storage/API evidence before
 adding more DOM retries.
+
+## App-tab DOM surface
+
+Category: TradingView Desktop app-window tab strip visible in the
+`/app/window/index.html` CDP target.
+
+Current command family:
+
+- `tab list/switch/new/close`
+
+Replacement classification:
+
+- `tab switch` is `api_backed` through the CDP target activation endpoint for
+  chart targets.
+- `tab new` and `tab close` are `research_only` replacement candidates. They
+  currently click the app-window tab strip and verify tab-count changes. A
+  non-DOM application command may exist, but the current code does not expose
+  one.
+
+Safety boundary:
+
+- `tab close` must continue refusing to close the final app tab
+- do not replace app-tab DOM operations without an exact target and post-count
+  verification path
+
+## Intentional DOM boundaries
+
+These command families currently should stay DOM-backed unless new evidence
+changes the boundary:
+
+- `data depth`: reads the visible Depth of Market / DOM panel. No structured
+  source is known.
+- `screenshot --region chart`: uses DOM only to compute the visible chart
+  rectangle before CDP screenshot capture.
+- strategy DOM fallbacks: read currently rendered Strategy Tester rows only
+  when chart-model report data is unavailable.
+- generic `ui` commands: compatibility automation by definition; prefer
+  higher-level commands rather than turning this into a broader API layer.
+- diagnostic UI-state reads: intentionally summarize rendered panels and
+  buttons for troubleshooting.
+
+## Cross-command replacement priorities
+
+Recommended order for future API/storage replacement work:
+
+1. Watchlist add/remove storage or page-session API evidence.
+2. Alert create endpoint evidence.
+3. Screener filters add/modify storage schema evidence.
+4. Screener screen create/rename/save-as/save/switch storage or command
+   evidence.
+5. App-tab new/close non-DOM command evidence.
+
+Do not start with `data depth`, chart screenshots, or generic UI automation;
+their current DOM dependency is part of their observable contract.
