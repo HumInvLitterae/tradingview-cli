@@ -178,7 +178,7 @@ Focus first on migration readiness:
 - use `docs/notes/ui-screener-read-evidence-2026-04-26.md` before planning UI Screener commands
 - use `docs/notes/screener-surface-completion-and-stabilization.md` before adding more Screener surface; the current main Screener implementation is in stabilization
 - use `docs/internal-tradingview-apis.md` before changing code that depends on private TradingView page objects, page-session endpoints, or Screener storage
-- use `docs/plans/tradingview-cli-internal-api-command-audit.md` before adding retries to DOM-backed commands; it classifies which commands are API-backed, replacement candidates, research-only, or intentional DOM boundaries
+- use `docs/plans/archives/tradingview-cli-internal-api-command-audit.md` before adding retries to DOM-backed commands; it classifies which commands are API-backed, replacement candidates, research-only, or intentional DOM boundaries
 - use `docs/plans/tradingview-cli-direct-http-feasibility.md` after the next release if planning direct HTTP reads that do not require TradingView Desktop page-session context
 - record evidence before starting any post-v1 ExecPlan
 

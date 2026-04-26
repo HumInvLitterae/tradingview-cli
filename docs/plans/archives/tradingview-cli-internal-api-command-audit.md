@@ -85,7 +85,7 @@ Search command dependencies:
 
 Create this ExecPlan at:
 
-    docs/plans/tradingview-cli-internal-api-command-audit.md
+    docs/plans/archives/tradingview-cli-internal-api-command-audit.md
 
 Update:
 

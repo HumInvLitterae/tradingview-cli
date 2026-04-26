@@ -106,7 +106,7 @@ All commands below should run from this repository root unless the next contribu
 Start by reading this file and the handoff note:
 
     sed -n '1,240p' README.md
-    sed -n '1,260p' docs/notes/next-agent-handoff-prompt-2026-04-21.md
+    sed -n '1,260p' docs/notes/archives/next-agent-handoff-prompt-2026-04-21.md
 
 Then inspect the current upstream bridge repository and summarize findings directly into this plan before designing any Rust surface. The exact clone location is intentionally not hard-coded here; the contributor should use their local environment and record only the relevant findings, not machine-specific paths.
 

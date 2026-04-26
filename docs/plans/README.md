@@ -1,66 +1,38 @@
 # Plans
 
-This directory contains implementation plans for the Rust-native `tv` CLI.
+This directory contains active or future ExecPlans for the Rust-native `tv`
+CLI. Completed implementation plans are archived so this root stays useful
+for release and next-phase planning.
 
-## Current plan
+## Current and future plans
 
-- `tradingview-cli-release-builds.md`: tag-triggered GitHub Release builds for Linux, macOS, and Windows binaries.
-
-## Completed release-readiness plans
-
-- `tradingview-cli-docs-release-readiness-cleanup.md`: public README, plan archive, and MIT license cleanup.
+- `tradingview-cli-release-builds.md`: tag-triggered GitHub Release builds
+  for Linux, macOS, and Windows binaries.
+- `tradingview-cli-direct-http-feasibility.md`: post-next-release
+  investigation into credential-safe direct HTTP reads that do not require a
+  TradingView Desktop page-session context.
 
 ## Archived plans
 
-Completed historical ExecPlans live under `docs/plans/archives/`. These files explain how the current CLI surface was built and why key contract decisions were made.
+Completed historical ExecPlans live under `docs/plans/archives/`. These files
+explain how the current CLI surface was built, why key contract decisions were
+made, and which evidence bounded deferred behavior.
 
-Older filenames used labels such as `v1` or `v1-33`. Those labels were execution-slice identifiers, not Cargo package versions and not public application versions. Archived filenames now omit those labels to avoid confusion with the package version in `Cargo.toml`.
+Older filenames used labels such as `v1` or `v1-33`. Those labels were
+execution-slice identifiers, not Cargo package versions and not public
+application versions. Archived filenames omit those labels to avoid confusion
+with the package version in `Cargo.toml`.
 
-Important archived plans:
+Important archived plan categories:
 
-- `archives/tradingview-cli-remaining-migration-closure.md`: closes the known old JavaScript CLI migration surface.
-- `archives/tradingview-cli-rust-initial-implementation.md`: first Rust `tv` implementation plan.
-- `archives/tradingview-cli-launch.md`: bounded TradingView Desktop launcher.
-- `archives/tradingview-cli-stream-read.md`: read-only JSONL stream commands.
-- `archives/tradingview-cli-pine-save.md`: explicit Pine save contract.
-- `archives/tradingview-cli-layout-list.md`: saved layout list and switch history.
-- `archives/tradingview-cli-draw-clear.md`: bulk drawing cleanup safeguards.
-- `archives/tradingview-cli-bootstrap-and-bridge-replacement.md`: initial bootstrap and bridge replacement framing.
+- initial Rust CLI bootstrap and old JavaScript CLI migration closure
+- release readiness, public documentation, CI/build guardrails, and runtime
+  skill packaging
+- upstream pull-request follow-up slices for scanner, Screener, watchlist,
+  alert, drawing, Pine, tab, quote, screenshot, launch, and internal API
+  audits
+- Screener storage/API research, mutation implementation, and stabilization
+  boundaries
 
-Archived implementation slices:
-
-- `archives/tradingview-cli-advanced-data-reads.md`
-- `archives/tradingview-cli-alert-create.md`
-- `archives/tradingview-cli-alert-delete.md`
-- `archives/tradingview-cli-alert-list.md`
-- `archives/tradingview-cli-chart-region-screenshot.md`
-- `archives/tradingview-cli-chart-type.md`
-- `archives/tradingview-cli-data-depth.md`
-- `archives/tradingview-cli-data-module-refactor.md`
-- `archives/tradingview-cli-diagnostic-read-commands.md`
-- `archives/tradingview-cli-draw-clear.md`
-- `archives/tradingview-cli-drawing-commands.md`
-- `archives/tradingview-cli-indicator-commands.md`
-- `archives/tradingview-cli-launch.md`
-- `archives/tradingview-cli-layout-list.md`
-- `archives/tradingview-cli-ops-module-refactor.md`
-- `archives/tradingview-cli-pane-mutation.md`
-- `archives/tradingview-cli-pine-analyze-check.md`
-- `archives/tradingview-cli-pine-compile.md`
-- `archives/tradingview-cli-pine-new-open.md`
-- `archives/tradingview-cli-pine-read.md`
-- `archives/tradingview-cli-pine-save.md`
-- `archives/tradingview-cli-pine-set.md`
-- `archives/tradingview-cli-read-provider-migration.md`
-- `archives/tradingview-cli-read-utilities.md`
-- `archives/tradingview-cli-replay-autoplay.md`
-- `archives/tradingview-cli-replay-basic-controls.md`
-- `archives/tradingview-cli-replay-status.md`
-- `archives/tradingview-cli-replay-trade.md`
-- `archives/tradingview-cli-stream-read.md`
-- `archives/tradingview-cli-tab-list-switch.md`
-- `archives/tradingview-cli-tab-new-close.md`
-- `archives/tradingview-cli-watchlist-add.md`
-- `archives/tradingview-cli-watchlist-remove.md`
-
-For command contract details, prefer the notes under `docs/notes/` before reading archived implementation plans.
+For command contract details, prefer the notes under `docs/notes/` before
+reading archived implementation plans.
