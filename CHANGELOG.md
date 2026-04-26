@@ -11,6 +11,8 @@ package version omits the leading `v`.
 
 - Added a durable Screener completion and stabilization note that records the
   implemented Screener surface, deferred boundaries, and live-smoke priorities.
+- Added a public-safe internal TradingView API reference and Screener
+  storage/API stabilization audit for future reliability work.
 - Added read-only `tv scanner scan` for basic TradingView scanner REST reads
   with exchange, column, sort, limit, and numeric filter options.
 - Added practical `tv scanner scan` filters for stock type, subtype, sector,
