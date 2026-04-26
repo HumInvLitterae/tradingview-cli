@@ -94,7 +94,7 @@ As of this pass, the upstream repository has 47 open PRs.
 
 | PR | Category | Rust disposition |
 | --- | --- | --- |
-| [#105](https://github.com/tradesdontlie/tradingview-mcp/pull/105) `Fix ReferenceError in listDrawings/getProperties/removeOne/clearAll` | `bugfix` | JavaScript DI regression in drawing helpers. Rust drawing code is separate and already has automated coverage for list/get/remove/clear. Treat as a live drawing smoke candidate rather than a direct Rust code change unless Rust smoke reveals an equivalent failure. |
+| [#105](https://github.com/tradesdontlie/tradingview-mcp/pull/105) `Fix ReferenceError in listDrawings/getProperties/removeOne/clearAll` | `bugfix` | Live-smoked for Rust in `docs/plans/tradingview-cli-drawing-pr105-smoke.md`. Rust drawing code is separate and did not show an equivalent issue: disposable `draw shape/list/get/remove` and `draw clear --dry-run` plus normal `draw clear` all succeeded. No Rust code change is needed. |
 | [#104](https://github.com/tradesdontlie/tradingview-mcp/pull/104) `fix(quote_get): honor symbol parameter via chart switch + restore` | `bugfix` | Addressed as Rust `tv quote [SYMBOL]`. Rust did not have the old false-label bug because `tv quote` was current-chart only, but it now supports an optional symbol by locking symbol-targeted quote commands, switching the chart temporarily, reading quote data, and verifying restore before success. |
 | [#103](https://github.com/tradesdontlie/tradingview-mcp/pull/103) `fix(launch): detect Windows Store (MSIX) TradingView install on Windows` | `bugfix` | Covered by the existing Rust launch discovery slice alongside `#100` and `#93`. No new action unless Windows smoke proves the current AppX/MSIX path handling is insufficient. |
 | [#102](https://github.com/tradesdontlie/tradingview-mcp/pull/102) `Add CI and agent guardrails` | `maintenance/guardrails` | Addressed with Rust-native CI permission/concurrency hardening, optional Git 2.54 config-based hooks, Windows PowerShell hook scripts, and `mise` task shortcuts. Node CI, npm scripts, and Python `pre-commit` are not imported. |
@@ -167,6 +167,12 @@ As of this pass, the upstream repository has 47 open PRs.
    current screenshot-output follow-up remains from `#43`, and the `tv data
    labels` default/truncation plus Hotlist REST follow-ups from `#89` have been
    addressed.
+
+3. Drawing wrapper regressions are covered unless new live evidence appears.
+   Upstream `#105`, `#62`, and `#49` are JavaScript wrapper regressions around
+   drawing helper references. Rust uses its own drawing implementation, and
+   disposable live smoke in `docs/plans/tradingview-cli-drawing-pr105-smoke.md`
+   confirmed `draw shape/list/get/remove/clear` works on the selected target.
 
 ## Assumptions
 
