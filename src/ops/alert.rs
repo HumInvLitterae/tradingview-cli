@@ -86,6 +86,337 @@ pub fn validate_alert_condition(condition: &str) -> Result<(), AppError> {
     }
 }
 
+pub async fn alert_create_via_api(
+    runtime: &mut impl RuntimeEvaluator,
+    price: f64,
+    condition: &str,
+    message: Option<&str>,
+) -> Result<Value, AppError> {
+    require_finite(price, "price")?;
+    validate_alert_condition(condition)?;
+
+    let condition = normalize_alert_condition(condition)?;
+    let condition_type = alert_condition_type(&condition);
+    let message_text = message
+        .filter(|value| !value.trim().is_empty())
+        .unwrap_or("(none)");
+    let condition_literal = js_string(&condition)?;
+    let condition_type_literal = js_string(condition_type)?;
+    let message_literal = js_string(message_text)?;
+
+    let result = runtime
+        .evaluate(
+            &format!(
+                r#"
+            (async function() {{
+                const requestedPrice = {price};
+                const requestedCondition = {condition_literal};
+                const requestedConditionType = {condition_type_literal};
+                const requestedMessage = {message_literal};
+                const source = 'internal_api';
+
+                function publicAlert(alert) {{
+                    if (!alert) return null;
+                    return {{
+                        alert_id: alert.alert_id || alert.id || null,
+                        symbol: alert.symbol || (alert.condition && alert.condition.symbol) || null,
+                        type: alert.type || null,
+                        message: alert.message || alert.description || '',
+                        active: alert.active !== false,
+                        condition: alert.condition || null,
+                        resolution: alert.resolution || alert.interval || null,
+                        created: alert.created || alert.create_time || null,
+                        expiration: alert.expiration || alert.expire_time || null
+                    }};
+                }}
+
+                function normalizeRows(data) {{
+                    const rows = Array.isArray(data && data.r) ? data.r : [];
+                    return rows.map(publicAlert);
+                }}
+
+                async function listAlerts() {{
+                    let response;
+                    let data;
+                    try {{
+                        response = await fetch('https://pricealerts.tradingview.com/list_alerts', {{
+                            credentials: 'include',
+                            headers: {{ 'accept': 'application/json' }}
+                        }});
+                        data = await response.json();
+                    }} catch (error) {{
+                        return {{
+                            ok: false,
+                            error: error && error.message ? error.message : String(error)
+                        }};
+                    }}
+                    if (!response.ok) {{
+                        return {{
+                            ok: false,
+                            error: 'HTTP ' + response.status + ': ' + response.statusText
+                        }};
+                    }}
+                    if (data && data.err) {{
+                        return {{
+                            ok: false,
+                            error: data.errmsg || (data.err && data.err.code) || 'Alert list failed'
+                        }};
+                    }}
+                    return {{ ok: true, alerts: normalizeRows(data) }};
+                }}
+
+                function readChartMetadata() {{
+                    try {{
+                        const chart = window.TradingViewApi &&
+                            window.TradingViewApi._activeChartWidgetWV &&
+                            window.TradingViewApi._activeChartWidgetWV.value &&
+                            window.TradingViewApi._activeChartWidgetWV.value();
+                        const model = chart && chart._chartWidget && chart._chartWidget.model &&
+                            chart._chartWidget.model();
+                        const mainSeries = model && model.mainSeries && model.mainSeries();
+                        const ext = chart && chart.symbolExt && chart.symbolExt();
+                        const info = mainSeries && mainSeries.symbolInfo && mainSeries.symbolInfo();
+                        const symbol = (mainSeries && mainSeries.symbol && mainSeries.symbol()) ||
+                            (ext && (ext.pro_name || ext.full_name || ext.symbol)) ||
+                            (info && (info.pro_name || info.full_name || info.symbol)) ||
+                            null;
+                        const resolution = String(
+                            (chart && chart.resolution && chart.resolution()) ||
+                            (mainSeries && mainSeries.interval && mainSeries.interval()) ||
+                            '1'
+                        );
+                        const currency = (ext && (ext.currency_id || ext.currency || ext['currency-id'])) ||
+                            (info && (info.currency_id || info.currency_code || info.currency || info['currency-id'])) ||
+                            null;
+                        if (!symbol) {{
+                            return {{ error: 'Active chart symbol unavailable' }};
+                        }}
+                        return {{
+                            symbol,
+                            resolution,
+                            currency: currency || 'USD'
+                        }};
+                    }} catch (error) {{
+                        return {{
+                            error: error && error.message ? error.message : String(error)
+                        }};
+                    }}
+                }}
+
+                function alertIds(alerts) {{
+                    const ids = {{}};
+                    alerts.forEach(function(alert) {{
+                        const id = alert && alert.alert_id;
+                        if (id !== null && id !== undefined) ids[String(id)] = true;
+                    }});
+                    return ids;
+                }}
+
+                function conditionValue(alert) {{
+                    const series = alert && alert.condition && Array.isArray(alert.condition.series)
+                        ? alert.condition.series
+                        : [];
+                    for (let i = 0; i < series.length; i++) {{
+                        if (series[i] && series[i].type === 'value' && typeof series[i].value === 'number') {{
+                            return series[i].value;
+                        }}
+                    }}
+                    return null;
+                }}
+
+                function matchingNewAlert(alerts, beforeIds, symbolMarker) {{
+                    const tolerance = Math.max(0.000001, Math.abs(requestedPrice) * 0.000001);
+                    return alerts.find(function(alert) {{
+                        const id = alert && alert.alert_id;
+                        if (id !== null && id !== undefined && beforeIds[String(id)]) return false;
+                        if (!alert || alert.message !== requestedMessage) return false;
+                        if (alert.symbol !== symbolMarker) return false;
+                        if (!alert.condition || alert.condition.type !== requestedConditionType) return false;
+                        const value = conditionValue(alert);
+                        return typeof value === 'number' && Math.abs(value - requestedPrice) <= tolerance;
+                    }}) || null;
+                }}
+
+                const chartMeta = readChartMetadata();
+                if (chartMeta.error) {{
+                    return {{
+                        error: chartMeta.error,
+                        error_kind: 'internal_api_unavailable',
+                        phase: 'chart_metadata_unavailable',
+                        api_fallback_allowed: true,
+                        price: requestedPrice,
+                        condition: requestedCondition,
+                        message: requestedMessage,
+                        price_set: false,
+                        created: false,
+                        source
+                    }};
+                }}
+
+                const before = await listAlerts();
+                if (!before.ok) {{
+                    return {{
+                        error: before.error,
+                        error_kind: 'internal_api_unavailable',
+                        phase: 'pre_list_unavailable',
+                        api_fallback_allowed: true,
+                        price: requestedPrice,
+                        condition: requestedCondition,
+                        message: requestedMessage,
+                        price_set: false,
+                        created: false,
+                        source
+                    }};
+                }}
+
+                const symbolMarker = '=' + JSON.stringify({{
+                    symbol: chartMeta.symbol,
+                    adjustment: 'splits',
+                    'currency-id': chartMeta.currency
+                }});
+                const expiration = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+                const payload = {{
+                    symbol: symbolMarker,
+                    resolution: chartMeta.resolution,
+                    message: requestedMessage,
+                    sound_file: null,
+                    sound_duration: 0,
+                    popup: true,
+                    expiration,
+                    auto_deactivate: true,
+                    email: false,
+                    sms_over_email: false,
+                    mobile_push: true,
+                    web_hook: null,
+                    name: null,
+                    conditions: [{{
+                        type: requestedConditionType,
+                        frequency: 'on_first_fire',
+                        series: [{{ type: 'barset' }}, {{ type: 'value', value: requestedPrice }}],
+                        resolution: chartMeta.resolution
+                    }}],
+                    active: true,
+                    ignore_warnings: true
+                }};
+
+                let createResponse;
+                let createText;
+                let createData = null;
+                try {{
+                    createResponse = await fetch('https://pricealerts.tradingview.com/create_alert', {{
+                        method: 'POST',
+                        credentials: 'include',
+                        body: JSON.stringify({{ payload }})
+                    }});
+                    createText = await createResponse.text();
+                    try {{
+                        createData = createText ? JSON.parse(createText) : null;
+                    }} catch (_) {{}}
+                }} catch (error) {{
+                    return {{
+                        error: error && error.message ? error.message : String(error),
+                        error_kind: 'internal_api_unavailable',
+                        phase: 'create_request_unavailable',
+                        api_fallback_allowed: true,
+                        price: requestedPrice,
+                        condition: requestedCondition,
+                        message: requestedMessage,
+                        price_set: true,
+                        created: false,
+                        source,
+                        before_count: before.alerts.length
+                    }};
+                }}
+
+                if (!createResponse.ok || (createData && createData.err)) {{
+                    return {{
+                        error: createData && createData.errmsg
+                            ? createData.errmsg
+                            : 'HTTP ' + createResponse.status + ': ' + createResponse.statusText,
+                        error_kind: 'internal_api_unavailable',
+                        phase: 'create_request_failed',
+                        api_fallback_allowed: false,
+                        price: requestedPrice,
+                        condition: requestedCondition,
+                        message: requestedMessage,
+                        price_set: true,
+                        created: false,
+                        source,
+                        before_count: before.alerts.length,
+                        status: createResponse.status,
+                        body_excerpt: String(createText || '').slice(0, 160)
+                    }};
+                }}
+
+                const after = await listAlerts();
+                if (!after.ok) {{
+                    return {{
+                        error: after.error,
+                        error_kind: 'internal_api_unavailable',
+                        phase: 'post_list_unavailable',
+                        api_fallback_allowed: false,
+                        price: requestedPrice,
+                        condition: requestedCondition,
+                        condition_type: requestedConditionType,
+                        message: requestedMessage,
+                        price_set: true,
+                        created: false,
+                        source,
+                        symbol: chartMeta.symbol,
+                        resolution: chartMeta.resolution,
+                        before_count: before.alerts.length
+                    }};
+                }}
+
+                const matched = matchingNewAlert(after.alerts, alertIds(before.alerts), symbolMarker);
+                if (!matched) {{
+                    return {{
+                        error: 'Alert create did not confirm a matching new alert',
+                        error_kind: 'internal_api_unavailable',
+                        phase: 'post_check_failed',
+                        api_fallback_allowed: false,
+                        price: requestedPrice,
+                        condition: requestedCondition,
+                        condition_type: requestedConditionType,
+                        message: requestedMessage,
+                        price_set: true,
+                        created: false,
+                        source,
+                        symbol: chartMeta.symbol,
+                        resolution: chartMeta.resolution,
+                        before_count: before.alerts.length,
+                        after_count: after.alerts.length
+                    }};
+                }}
+
+                return {{
+                    alert_id: matched.alert_id || null,
+                    price: requestedPrice,
+                    condition: requestedCondition,
+                    condition_type: requestedConditionType,
+                    message: requestedMessage,
+                    price_set: true,
+                    message_set: requestedMessage !== '(none)',
+                    created: true,
+                    opened: false,
+                    open_selector: null,
+                    source,
+                    symbol: chartMeta.symbol,
+                    resolution: chartMeta.resolution,
+                    before_count: before.alerts.length,
+                    after_count: after.alerts.length,
+                    matched_alert: matched
+                }};
+            }})()
+            "#
+            ),
+            true,
+        )
+        .await?;
+
+    normalize_alert_create_payload(result)
+}
+
 pub async fn alert_create(
     runtime: &mut impl RuntimeEvaluator,
     price: f64,
@@ -94,6 +425,12 @@ pub async fn alert_create(
 ) -> Result<Value, AppError> {
     require_finite(price, "price")?;
     validate_alert_condition(condition)?;
+
+    match alert_create_via_api(runtime, price, condition, message).await {
+        Ok(data) => return Ok(data),
+        Err(error) if alert_api_error_allows_fallback(&error) => {}
+        Err(error) => return Err(error),
+    }
 
     let condition = normalize_alert_condition(condition)?;
     let price_text = price.to_string();
@@ -372,10 +709,7 @@ pub async fn alert_delete(
                     const alertIdValue = /^\\d+$/.test(String(requestedAlertId))
                         ? Number(requestedAlertId)
                         : requestedAlertId;
-                    const deleteUrl = new URL('https://pricealerts.tradingview.com/delete_alerts', location.origin);
-                    deleteUrl.searchParams.set('build_time', String(window.BUILD_TIME || ''));
-                    deleteUrl.searchParams.set('log_username', String((window.user && window.user.username) || ''));
-                    const deleteResponse = await fetch(deleteUrl.toString(), {{
+                    const deleteResponse = await fetch('https://pricealerts.tradingview.com/delete_alerts', {{
                         method: 'POST',
                         credentials: 'include',
                         headers: {{ 'accept': 'application/json' }},
@@ -559,10 +893,7 @@ pub async fn alert_delete_all(
                         }};
                     }}
 
-                    const deleteUrl = new URL('https://pricealerts.tradingview.com/delete_alerts', location.origin);
-                    deleteUrl.searchParams.set('build_time', String(window.BUILD_TIME || ''));
-                    deleteUrl.searchParams.set('log_username', String((window.user && window.user.username) || ''));
-                    const deleteResponse = await fetch(deleteUrl.toString(), {{
+                    const deleteResponse = await fetch('https://pricealerts.tradingview.com/delete_alerts', {{
                         method: 'POST',
                         credentials: 'include',
                         headers: {{ 'accept': 'application/json' }},
@@ -662,6 +993,14 @@ fn normalize_alert_list_payload(data: Value) -> Value {
 }
 
 fn normalize_alert_create_payload(data: Value) -> Result<Value, AppError> {
+    if let Some(message) = data.get("error").and_then(Value::as_str) {
+        let kind = match data.get("error_kind").and_then(Value::as_str) {
+            Some("validation") => ErrorKind::Validation,
+            _ => ErrorKind::InternalApiUnavailable,
+        };
+        return Err(AppError::new(kind, message.to_string()).with_details(data));
+    }
+
     if !data
         .get("price_set")
         .and_then(Value::as_bool)
@@ -711,7 +1050,23 @@ fn normalize_alert_create_payload(data: Value) -> Result<Value, AppError> {
             .get("message_set")
             .and_then(Value::as_bool)
             .unwrap_or(false),
+        "alert_id": data.get("alert_id").cloned().unwrap_or(Value::Null),
+        "symbol": data.get("symbol").cloned().unwrap_or(Value::Null),
+        "resolution": data.get("resolution").cloned().unwrap_or(Value::Null),
+        "condition_type": data.get("condition_type").cloned().unwrap_or(Value::Null),
+        "before_count": data.get("before_count").cloned().unwrap_or(Value::Null),
+        "after_count": data.get("after_count").cloned().unwrap_or(Value::Null),
+        "matched_alert": data.get("matched_alert").cloned().unwrap_or(Value::Null),
     }))
+}
+
+fn alert_api_error_allows_fallback(error: &AppError) -> bool {
+    error
+        .details
+        .as_ref()
+        .and_then(|details| details.get("api_fallback_allowed"))
+        .and_then(Value::as_bool)
+        .unwrap_or(false)
 }
 
 fn normalize_alert_delete_payload(data: Value) -> Result<Value, AppError> {
@@ -808,6 +1163,14 @@ fn normalize_alert_condition(condition: &str) -> Result<String, AppError> {
     Ok(normalized)
 }
 
+fn alert_condition_type(condition: &str) -> &'static str {
+    match condition {
+        "greater_than" => "cross_up",
+        "less_than" => "cross_down",
+        _ => "cross",
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use std::collections::VecDeque;
@@ -816,6 +1179,21 @@ mod tests {
 
     use super::*;
     use crate::ops::test_support::FakeRuntime;
+
+    fn alert_create_api_fallback() -> Value {
+        json!({
+            "error": "Alert create API unavailable in test",
+            "error_kind": "internal_api_unavailable",
+            "phase": "pre_list_unavailable",
+            "api_fallback_allowed": true,
+            "price": 100.0,
+            "condition": "crossing",
+            "message": "(none)",
+            "price_set": false,
+            "created": false,
+            "source": "internal_api"
+        })
+    }
 
     #[tokio::test]
     async fn alert_list_returns_runtime_payload() {
@@ -881,16 +1259,61 @@ mod tests {
     #[tokio::test]
     async fn alert_create_returns_practical_old_cli_fields() {
         let mut runtime = FakeRuntime::new(VecDeque::from([json!({
-            "opened": true,
-            "open_selector": "[aria-label=\"Create Alert\"]",
+            "alert_id": "4530000001",
+            "opened": false,
+            "open_selector": null,
             "price": 123.45,
             "condition": "crossing",
+            "condition_type": "cross",
             "message": "Breakout",
             "price_set": true,
             "message_set": true,
             "created": true,
-            "source": "dom_fallback"
+            "source": "internal_api",
+            "symbol": "NASDAQ:AAPL",
+            "resolution": "1",
+            "before_count": 2,
+            "after_count": 3,
+            "matched_alert": {"alert_id": "4530000001", "message": "Breakout"}
         })]));
+
+        let data = alert_create(&mut runtime, 123.45, "crossing", Some("Breakout"))
+            .await
+            .unwrap();
+
+        assert_eq!(data["alert_id"], "4530000001");
+        assert_eq!(data["price"], 123.45);
+        assert_eq!(data["condition"], "crossing");
+        assert_eq!(data["condition_type"], "cross");
+        assert_eq!(data["message"], "Breakout");
+        assert_eq!(data["price_set"], true);
+        assert_eq!(data["source"], "internal_api");
+        assert_eq!(data["created"], true);
+        assert_eq!(data["symbol"], "NASDAQ:AAPL");
+        assert_eq!(data["before_count"], 2);
+        assert_eq!(data["after_count"], 3);
+        assert!(runtime.evaluated[0].0.contains("create_alert"));
+        assert!(runtime.evaluated[0].0.contains("list_alerts"));
+        assert!(!runtime.evaluated[0].0.contains("Content-Type"));
+        assert!(runtime.evaluated[0].1);
+    }
+
+    #[tokio::test]
+    async fn alert_create_falls_back_to_dom_when_api_is_unavailable_before_mutation() {
+        let mut runtime = FakeRuntime::new(VecDeque::from([
+            alert_create_api_fallback(),
+            json!({
+                "opened": true,
+                "open_selector": "[aria-label=\"Create Alert\"]",
+                "price": 123.45,
+                "condition": "crossing",
+                "message": "Breakout",
+                "price_set": true,
+                "message_set": true,
+                "created": true,
+                "source": "dom_fallback"
+            }),
+        ]));
 
         let data = alert_create(&mut runtime, 123.45, "crossing", Some("Breakout"))
             .await
@@ -901,21 +1324,23 @@ mod tests {
         assert_eq!(data["message"], "Breakout");
         assert_eq!(data["price_set"], true);
         assert_eq!(data["source"], "dom_fallback");
-        assert!(runtime.evaluated[0].0.contains("Create Alert"));
-        assert!(runtime.evaluated[0].0.contains("set-alert-button"));
-        assert!(runtime.evaluated[0].0.contains("\"Breakout\""));
-        assert!(runtime.evaluated[0].1);
+        assert!(runtime.evaluated[1].0.contains("Create Alert"));
+        assert!(runtime.evaluated[1].0.contains("set-alert-button"));
+        assert!(runtime.evaluated[1].0.contains("\"Breakout\""));
+        assert!(runtime.evaluated[1].1);
     }
 
     #[tokio::test]
     async fn alert_create_defaults_message_to_none() {
         let mut runtime = FakeRuntime::new(VecDeque::from([json!({
+            "alert_id": "4530000002",
             "price": 100.0,
             "condition": "greater_than",
+            "condition_type": "cross_up",
             "message": "(none)",
             "price_set": true,
             "created": true,
-            "source": "dom_fallback"
+            "source": "internal_api"
         })]));
 
         let data = alert_create(&mut runtime, 100.0, "greater-than", None)
@@ -923,6 +1348,7 @@ mod tests {
             .unwrap();
 
         assert_eq!(data["condition"], "greater_than");
+        assert_eq!(data["condition_type"], "cross_up");
         assert_eq!(data["message"], "(none)");
         assert!(!runtime.evaluated[0].0.contains("greater-than"));
     }
@@ -953,14 +1379,17 @@ mod tests {
 
     #[tokio::test]
     async fn alert_create_fails_when_price_was_not_set() {
-        let mut runtime = FakeRuntime::new(VecDeque::from([json!({
-            "price": 100.0,
-            "condition": "crossing",
-            "message": "(none)",
-            "price_set": false,
-            "created": true,
-            "source": "dom_fallback"
-        })]));
+        let mut runtime = FakeRuntime::new(VecDeque::from([
+            alert_create_api_fallback(),
+            json!({
+                "price": 100.0,
+                "condition": "crossing",
+                "message": "(none)",
+                "price_set": false,
+                "created": true,
+                "source": "dom_fallback"
+            }),
+        ]));
 
         let error = alert_create(&mut runtime, 100.0, "crossing", None)
             .await
@@ -972,14 +1401,17 @@ mod tests {
 
     #[tokio::test]
     async fn alert_create_fails_when_create_button_was_not_clicked() {
-        let mut runtime = FakeRuntime::new(VecDeque::from([json!({
-            "price": 100.0,
-            "condition": "crossing",
-            "message": "(none)",
-            "price_set": true,
-            "created": false,
-            "source": "dom_fallback"
-        })]));
+        let mut runtime = FakeRuntime::new(VecDeque::from([
+            alert_create_api_fallback(),
+            json!({
+                "price": 100.0,
+                "condition": "crossing",
+                "message": "(none)",
+                "price_set": true,
+                "created": false,
+                "source": "dom_fallback"
+            }),
+        ]));
 
         let error = alert_create(&mut runtime, 100.0, "crossing", None)
             .await
@@ -987,6 +1419,57 @@ mod tests {
 
         assert_eq!(error.kind, ErrorKind::InternalApiUnavailable);
         assert_eq!(error.message, "Alert create button could not be clicked");
+    }
+
+    #[tokio::test]
+    async fn alert_create_api_post_check_failure_does_not_fallback_to_dom() {
+        let mut runtime = FakeRuntime::new(VecDeque::from([json!({
+            "error": "Alert create did not confirm a matching new alert",
+            "error_kind": "internal_api_unavailable",
+            "phase": "post_check_failed",
+            "api_fallback_allowed": false,
+            "price": 100.0,
+            "condition": "crossing",
+            "message": "(none)",
+            "price_set": true,
+            "created": false,
+            "source": "internal_api"
+        })]));
+
+        let error = alert_create(&mut runtime, 100.0, "crossing", None)
+            .await
+            .unwrap_err();
+
+        assert_eq!(error.kind, ErrorKind::InternalApiUnavailable);
+        assert_eq!(
+            error.message,
+            "Alert create did not confirm a matching new alert"
+        );
+        assert_eq!(runtime.evaluated.len(), 1);
+    }
+
+    #[tokio::test]
+    async fn alert_create_api_request_failure_does_not_fallback_after_post_attempt() {
+        let mut runtime = FakeRuntime::new(VecDeque::from([json!({
+            "error": "HTTP 400: Bad Request",
+            "error_kind": "internal_api_unavailable",
+            "phase": "create_request_failed",
+            "api_fallback_allowed": false,
+            "price": 100.0,
+            "condition": "crossing",
+            "message": "(none)",
+            "price_set": true,
+            "created": false,
+            "source": "internal_api"
+        })]));
+
+        let error = alert_create(&mut runtime, 100.0, "crossing", None)
+            .await
+            .unwrap_err();
+
+        assert_eq!(error.kind, ErrorKind::InternalApiUnavailable);
+        assert_eq!(error.message, "HTTP 400: Bad Request");
+        assert_eq!(runtime.evaluated.len(), 1);
     }
 
     #[tokio::test]
@@ -1016,7 +1499,8 @@ mod tests {
         assert_eq!(data["matched_alert"]["message"], "smoke");
         assert!(runtime.evaluated[0].0.contains("delete_alerts"));
         assert!(runtime.evaluated[0].0.contains("alert_ids"));
-        assert!(runtime.evaluated[0].0.contains("log_username"));
+        assert!(!runtime.evaluated[0].0.contains("log_username"));
+        assert!(!runtime.evaluated[0].0.contains("build_time"));
         assert!(runtime.evaluated[0].0.contains("\"4546454367\""));
         assert!(runtime.evaluated[0].1);
     }
@@ -1138,6 +1622,9 @@ mod tests {
             data["remaining_target_alert_ids"].as_array().unwrap().len(),
             0
         );
+        assert!(runtime.evaluated[0].0.contains("delete_alerts"));
+        assert!(!runtime.evaluated[0].0.contains("log_username"));
+        assert!(!runtime.evaluated[0].0.contains("build_time"));
     }
 
     #[tokio::test]

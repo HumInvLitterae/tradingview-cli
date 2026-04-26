@@ -28,6 +28,9 @@ package version omits the leading `v`.
 - Added API-backed `tv watchlist add` and `tv watchlist remove` mutation paths
   for the active custom watchlist, with readback post-checks and DOM fallback
   when the symbols-list API cannot be used before mutation.
+- Added API-backed `tv alert create` mutation with alert-list readback
+  verification and visible-dialog fallback only before the create request is
+  sent.
 - Added menu-visible `tv screener screens list` and
   `tv screener screens switch --name <NAME> [--dry-run]` commands for prepared
   Screener screen operation.
@@ -74,6 +77,12 @@ package version omits the leading `v`.
   before success.
 - Added `tv quote [SYMBOL]` for symbol-targeted quote reads with temporary chart
   switching and verified restoration.
+
+### Fixed
+
+- Fixed `tv alert delete --id` and `tv alert delete --all` to use the alert
+  delete endpoint shape verified by live cleanup while preserving absence
+  post-checks.
 
 ## v0.1.1 - 2026-04-25
 

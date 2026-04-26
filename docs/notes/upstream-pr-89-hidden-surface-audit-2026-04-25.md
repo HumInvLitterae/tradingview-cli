@@ -89,14 +89,17 @@ Upstream replaces DOM alert creation with a REST call to TradingView's alert
 endpoint and rewrites delete to support individual, bulk-id, and all-alert
 deletion. Rust already implements `alert list`, `alert delete --id`, and
 `alert delete --all` through internal alert endpoints with dry-run and
-post-delete verification for bulk delete. Rust `alert create` still uses DOM
-dialog automation.
+post-delete verification. Rust now also prefers the alert endpoint for
+`alert create`, preserves the existing public CLI surface, and confirms
+creation through alert-list readback before reporting success.
 
-Disposition: possible Rust bugfix research, not immediate implementation in
-this audit. If live smoke shows Rust `alert create` cannot open or submit the
-current dialog reliably, plan a dedicated alert-create REST slice. That slice
-must decide the exact request body, CORS/header behavior, message/price parity,
-and post-create verification before changing account mutation behavior.
+Disposition: addressed for the narrow create/delete stability gap. The
+implementation follows the upstream CORS/header evidence by sending create JSON
+as a plain string body with no custom `Content-Type` header. Live smoke also
+found that Rust's previous delete endpoint shape could return `invalid_request`
+for the disposable alert created during the smoke; delete now uses the bare
+delete endpoint shape and still verifies absence afterward. Broader alert
+edit/pause/resume behavior remains future feature research.
 
 ### Hotlist scanner reads
 

@@ -119,16 +119,25 @@ Current command family:
 
 Current implementation split:
 
-- `alert list` and `alert delete` are `api_backed` through alert endpoints.
-- `alert create` is currently a `replace_candidate`: it still uses the visible
-  alert dialog and localized button labels, while the list/delete endpoint
-  family proves nearby API surface exists. Do not replace it without first
-  capturing public-safe live request-shape evidence and preserving the current
-  practical fields.
+- `alert list`, `alert create`, and `alert delete` are `api_backed` through
+  alert endpoints.
+- `alert create` reads active chart metadata from the page session, submits the
+  create request through the logged-in alert endpoint, and confirms the new
+  alert through a list readback before reporting success.
+- `alert create` sends its JSON as a plain string request body with no custom
+  `Content-Type` header. Adding custom headers can trigger a rejected
+  cross-origin preflight in TradingView's page context.
+- `alert delete` uses the bare delete endpoint shape and verifies absence after
+  mutation.
 
 Safety boundary:
 
 - reads preserve endpoint error details with an empty list when appropriate
+- creates and deletes require post-mutation readback before success
+- create only falls back to visible dialog automation if the API path fails
+  before the create request is sent
+- post-create ambiguity must not trigger DOM fallback, because retries can
+  create duplicate alerts
 - deletes support dry-run where applicable and require post-delete absence
 - bulk account mutation must remain explicit and guarded
 - do not record live alert ids in tracked docs
