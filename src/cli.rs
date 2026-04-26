@@ -286,6 +286,38 @@ pub enum ScreenerScreensCommand {
         #[arg(long)]
         dry_run: bool,
     },
+    #[command(about = "Create a Stock Screener screen from the visible screen menu")]
+    Create {
+        #[arg(long)]
+        name: String,
+        #[arg(long)]
+        dry_run: bool,
+    },
+    #[command(about = "Rename the active Stock Screener screen")]
+    Rename {
+        #[arg(long)]
+        name: String,
+        #[arg(long = "to")]
+        new_name: String,
+        #[arg(long)]
+        dry_run: bool,
+    },
+    #[command(about = "Create a copy of the active Stock Screener screen")]
+    SaveAs {
+        #[arg(long)]
+        name: String,
+        #[arg(long)]
+        dry_run: bool,
+    },
+    #[command(about = "Delete a test Stock Screener screen by exact catalog name")]
+    Delete {
+        #[arg(long)]
+        name: String,
+        #[arg(long)]
+        dry_run: bool,
+        #[arg(long)]
+        confirm_delete: bool,
+    },
 }
 
 #[derive(Debug, Subcommand)]

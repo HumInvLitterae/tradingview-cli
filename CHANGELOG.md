@@ -27,6 +27,11 @@ package version omits the leading `v`.
 - Added `tv screener screens actions` and
   `tv screener screens save [--dry-run]` for guarded active-screen menu
   inspection and exact save-action clicking.
+- Added guarded Stock Screener screen lifecycle commands:
+  `tv screener screens create`, `rename`, `save-as`, and `delete --dry-run`.
+  Normal create, rename, and save-as are limited to test/disposable screen
+  names and require active-title post-checks; normal delete remains disabled
+  until exact-screen delete evidence is verified.
 - Added guarded `tv screener filters remove` and `tv screener filters clear`
   commands, including dry-run target reporting and clear-all confirmation.
 - Added `tv screener filters actions` and preset-backed

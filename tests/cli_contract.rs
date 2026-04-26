@@ -118,7 +118,11 @@ fn screener_help_lists_read_subcommands() {
         .stdout(predicate::str::contains("actions"))
         .stdout(predicate::str::contains("list"))
         .stdout(predicate::str::contains("switch"))
-        .stdout(predicate::str::contains("save"));
+        .stdout(predicate::str::contains("save"))
+        .stdout(predicate::str::contains("create"))
+        .stdout(predicate::str::contains("rename"))
+        .stdout(predicate::str::contains("save-as"))
+        .stdout(predicate::str::contains("delete"));
     tv().args(["screener", "screens", "actions", "--help"])
         .assert()
         .success();
@@ -136,6 +140,28 @@ fn screener_help_lists_read_subcommands() {
         .assert()
         .success()
         .stdout(predicate::str::contains("--dry-run"));
+    tv().args(["screener", "screens", "create", "--help"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("--name"))
+        .stdout(predicate::str::contains("--dry-run"));
+    tv().args(["screener", "screens", "rename", "--help"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("--name"))
+        .stdout(predicate::str::contains("--to"))
+        .stdout(predicate::str::contains("--dry-run"));
+    tv().args(["screener", "screens", "save-as", "--help"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("--name"))
+        .stdout(predicate::str::contains("--dry-run"));
+    tv().args(["screener", "screens", "delete", "--help"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("--name"))
+        .stdout(predicate::str::contains("--dry-run"))
+        .stdout(predicate::str::contains("--confirm-delete"));
 
     tv().args(["screener", "filters", "--help"])
         .assert()
@@ -354,6 +380,90 @@ fn screener_screen_switch_rejects_empty_name_before_connecting() {
     let stderr = String::from_utf8(assert.get_output().stderr.clone()).unwrap();
     let value: Value = serde_json::from_str(&stderr).unwrap();
     assert_eq!(value["success"], false);
+    assert_eq!(value["command"], "screener");
+    assert_eq!(value["error"]["kind"], "validation");
+}
+
+#[test]
+fn screener_screen_lifecycle_rejects_invalid_inputs_before_connecting() {
+    let output = tv()
+        .args(["screener", "screens", "create", "--name", "   "])
+        .assert()
+        .failure()
+        .code(1)
+        .get_output()
+        .stderr
+        .clone();
+    let value: serde_json::Value = serde_json::from_slice(&output).unwrap();
+    assert_eq!(value["command"], "screener");
+    assert_eq!(value["error"]["kind"], "validation");
+
+    let output = tv()
+        .args([
+            "screener",
+            "screens",
+            "create",
+            "--name",
+            "Production Screen",
+        ])
+        .assert()
+        .failure()
+        .code(1)
+        .get_output()
+        .stderr
+        .clone();
+    let value: serde_json::Value = serde_json::from_slice(&output).unwrap();
+    assert_eq!(value["command"], "screener");
+    assert_eq!(value["error"]["kind"], "validation");
+
+    let output = tv()
+        .args([
+            "screener",
+            "screens",
+            "rename",
+            "--name",
+            "CLI-Test1",
+            "--to",
+            "CLI-Test1",
+        ])
+        .assert()
+        .failure()
+        .code(1)
+        .get_output()
+        .stderr
+        .clone();
+    let value: serde_json::Value = serde_json::from_slice(&output).unwrap();
+    assert_eq!(value["command"], "screener");
+    assert_eq!(value["error"]["kind"], "validation");
+
+    let output = tv()
+        .args(["screener", "screens", "delete", "--name", "CLI-Test1"])
+        .assert()
+        .failure()
+        .code(1)
+        .get_output()
+        .stderr
+        .clone();
+    let value: serde_json::Value = serde_json::from_slice(&output).unwrap();
+    assert_eq!(value["command"], "screener");
+    assert_eq!(value["error"]["kind"], "validation");
+
+    let output = tv()
+        .args([
+            "screener",
+            "screens",
+            "delete",
+            "--name",
+            "Production Screen",
+            "--confirm-delete",
+        ])
+        .assert()
+        .failure()
+        .code(1)
+        .get_output()
+        .stderr
+        .clone();
+    let value: serde_json::Value = serde_json::from_slice(&output).unwrap();
     assert_eq!(value["command"], "screener");
     assert_eq!(value["error"]["kind"], "validation");
 }

@@ -73,6 +73,10 @@ The implemented surface is:
 - `tv screener screens active`
 - `tv screener screens actions`
 - `tv screener screens save [--dry-run]`
+- `tv screener screens create --name <NAME> [--dry-run]`
+- `tv screener screens rename --name <CURRENT> --to <NEW> [--dry-run]`
+- `tv screener screens save-as --name <NAME> [--dry-run]`
+- `tv screener screens delete --name <NAME> [--dry-run] --confirm-delete`
 - `tv screener filters list`
 - `tv screener filters actions`
 - `tv screener filters add --name <TEXT> --min <N>|--max <N> [--dry-run]`
@@ -135,11 +139,23 @@ Rust now exposes this as guarded `tv screener filters add --name <TEXT>
 mutation, normal mode clicks the candidate and range preset through CDP mouse
 events, and success requires a new visible filter pill.
 
+The screen lifecycle follow-up found active screen menu actions for save, copy,
+rename, CSV download, create, recent, and open. The current UI exposes name
+dialogs for create, rename, and copy/save-as; Rust now exposes guarded
+`screens create`, `screens rename`, and `screens save-as` commands with dry-run
+dialog reporting, test-name validation for normal mutations, and active-title
+post-checks before success. Delete is intentionally narrower: Rust resolves an
+exact saved-screen catalog target in dry-run mode, but normal delete returns
+`internal_api_unavailable` until a safe exact-screen delete action and
+confirmation path are verified. One disposable live screen named
+`CLI-Test-Codex-426A` was created during smoke and remained visible because
+normal delete was not verified.
+
 ## Still deferred
 
-- screen save-as / rename / create / delete
-- column add / remove / reorder / reset
-- filter add and generic non-numeric filter editing
+- normal screen delete
+- column add / normal remove / reorder / reset
+- generic non-numeric filter editing
 - workflow scanner rules, dashboards, or downstream strategy packs
 
 These surfaces need separate safety policy and workflow evidence before they

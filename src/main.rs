@@ -265,11 +265,42 @@ async fn dispatch(command: Command) -> Result<serde_json::Value, AppError> {
             {
                 ops::validate_screener_column_selector(*index, name.as_deref())?;
             }
-            if let ScreenerCommand::Screens {
-                command: ScreenerScreensCommand::Switch { name, .. },
-            } = &command
-            {
-                ops::validate_screener_screen_name(name)?;
+            if let ScreenerCommand::Screens { command } = &command {
+                match command {
+                    ScreenerScreensCommand::Switch { name, .. } => {
+                        ops::validate_screener_screen_name(name)?;
+                    }
+                    ScreenerScreensCommand::Delete {
+                        name,
+                        dry_run,
+                        confirm_delete,
+                    } => {
+                        ops::validate_screener_screen_delete_request(
+                            name,
+                            *dry_run,
+                            *confirm_delete,
+                        )?;
+                    }
+                    ScreenerScreensCommand::Create { name, dry_run } => {
+                        ops::validate_screener_screen_test_mutation_name(name, *dry_run, "create")?;
+                    }
+                    ScreenerScreensCommand::SaveAs { name, dry_run } => {
+                        ops::validate_screener_screen_test_mutation_name(
+                            name, *dry_run, "save-as",
+                        )?;
+                    }
+                    ScreenerScreensCommand::Rename {
+                        name,
+                        new_name,
+                        dry_run,
+                    } => {
+                        ops::validate_screener_screen_rename_request(name, new_name, *dry_run)?;
+                    }
+                    ScreenerScreensCommand::Active
+                    | ScreenerScreensCommand::Actions
+                    | ScreenerScreensCommand::List { .. }
+                    | ScreenerScreensCommand::Save { .. } => {}
+                }
             }
             let mut runtime = connect_runtime().await?;
             match command {
@@ -296,6 +327,41 @@ async fn dispatch(command: Command) -> Result<serde_json::Value, AppError> {
                     }
                     ScreenerScreensCommand::Save { dry_run } => {
                         ops::screener_screens_save(&mut runtime, dry_run).await
+                    }
+                    ScreenerScreensCommand::Create { name, dry_run } => {
+                        let name = ops::validate_screener_screen_test_mutation_name(
+                            &name, dry_run, "create",
+                        )?;
+                        ops::screener_screens_create(&mut runtime, &name, dry_run).await
+                    }
+                    ScreenerScreensCommand::Rename {
+                        name,
+                        new_name,
+                        dry_run,
+                    } => {
+                        let (name, new_name) = ops::validate_screener_screen_rename_request(
+                            &name, &new_name, dry_run,
+                        )?;
+                        ops::screener_screens_rename(&mut runtime, &name, &new_name, dry_run).await
+                    }
+                    ScreenerScreensCommand::SaveAs { name, dry_run } => {
+                        let name = ops::validate_screener_screen_test_mutation_name(
+                            &name, dry_run, "save-as",
+                        )?;
+                        ops::screener_screens_save_as(&mut runtime, &name, dry_run).await
+                    }
+                    ScreenerScreensCommand::Delete {
+                        name,
+                        dry_run,
+                        confirm_delete,
+                    } => {
+                        let name = ops::validate_screener_screen_delete_request(
+                            &name,
+                            dry_run,
+                            confirm_delete,
+                        )?;
+                        ops::screener_screens_delete(&mut runtime, &name, dry_run, confirm_delete)
+                            .await
                     }
                 },
                 ScreenerCommand::Filters { command } => match command {

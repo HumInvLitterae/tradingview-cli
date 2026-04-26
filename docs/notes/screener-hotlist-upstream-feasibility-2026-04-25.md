@@ -47,8 +47,8 @@ The mutation subset is riskier:
 
 - `filters remove` and `filters clear` mutate the active screen's filters
 - `screens save` can persist screen changes to TradingView cloud state
-- full screen catalog actions, filter add/modify, column add/remove/reorder, and screen save-as/delete
-  are modal/catalog flows and should remain deferred unless separately planned
+- remaining normal screen delete and column add/remove/reorder/reset flows are
+  modal/catalog flows and should remain deferred unless separately planned
 
 Disposition: do not implement PR #66 as a single Rust slice. If Rust adds UI
 Screener support, start with a small read-oriented dialog slice only:
@@ -56,9 +56,10 @@ Screener support, start with a small read-oriented dialog slice only:
 the first implementation.
 
 Later Rust slices added guarded visible-filter cleanup, menu-visible screen
-list/switch, catalog-backed screen list/switch, and exact screen action/save
-support after separate evidence and safety plans. Screen save-as/delete/rename/
-create and column mutation remain deferred.
+list/switch, catalog-backed screen list/switch, exact screen action/save
+support, guarded screen create/rename/save-as, and delete dry-run target
+resolution after separate evidence and safety plans. Normal screen delete and
+column mutation remain deferred.
 
 ## Upstream PR #89: Hotlist scanner presets
 
@@ -103,14 +104,15 @@ Classify the remaining Screener/Hotlist ideas as follows:
 | UI menu-visible screen list/switch | implemented as guarded `tv screener screens list/switch` | Lists exact visible menu names and supports dry-run target reporting. Non-dry-run switch verifies the active title and fails safely if TradingView does not activate the clicked row. |
 | UI saved-screen catalog list/switch | implemented as guarded `tv screener screens list/switch --catalog` | Uses the saved-screen catalog for exact-name targeting, supports dry-run target reporting, and verifies the active title after mutation. |
 | UI screen actions/save | implemented as guarded `tv screener screens actions/save` | Lists visible screen menu actions and clicks only exact `Save screen` / `スクリーンを保存`; dry-run reports the target action before mutation. |
-| UI screen save-as/delete/rename/create | defer | Cloud-state and modal-flow risk; upstream mostly uses stubs for these. |
+| UI screen create/rename/save-as/delete | partially implemented | Create, rename, and save-as are guarded test-screen lifecycle commands with dry-run and active-title post-checks. Delete currently resolves an exact catalog target in dry-run only; normal delete remains deferred until a safe exact-screen delete action is verified. |
 | UI column add/remove/reorder/reset | defer | Catalog and drag/drop UI automation; likely too brittle for core CLI now. |
 | Scanner/product workflow packs | keep downstream | Rules packs and dashboards are workflow products, not core bridge replacement. |
 
 Hotlist REST, generic scanner REST, the read-oriented UI Screener dialog slice,
-guarded filter cleanup, and preset-backed filter modify are now implemented.
-Any next implementation plan should not bundle full Screener screen catalog
-management, column mutation, generic filter add, or downstream scanner workflow
+guarded filter cleanup, preset-backed filter modify, guarded filter add, and
+guarded screen lifecycle dry-run/test-screen commands are now implemented. Any
+next implementation plan should not bundle normal screen delete, column
+mutation, generic non-numeric filter editing, or downstream scanner workflow
 rules.
 
 ## Implemented REST scanner contract
@@ -166,8 +168,9 @@ and reports whether safe remove/reset actions are visible. `columns remove`
 currently supports dry-run target resolution only; live DOM evidence on
 2026-04-26 showed categories, search, add-column configuration, and header
 move/sort menus, but no safe visible per-column remove action. The
-implementation does not include save-as, delete, rename, create, normal column
-remove, reset, add, or reorder. Live smoke on 2026-04-25 showed that menu-visible
+implementation includes guarded screen create/rename/save-as and exact delete
+target resolution in dry-run mode, but does not include normal screen delete or
+normal column remove, reset, add, or reorder. Live smoke on 2026-04-25 showed that menu-visible
 entries were readable and dry-run targeting worked, but the current TradingView
 Desktop session did not activate a clicked visible screen row; non-dry-run
 switch therefore failed with `internal_api_unavailable` rather than reporting a
@@ -185,8 +188,8 @@ for the current test screen, `EMA (21)` exposes `0% 〜 10%`, `10%以上`, and
 `20%以上`, while `0% 〜 5%` belongs to a different `変動` filter. Normal
 `filters modify` remains guarded by visible-text post-check and should be
 treated as evidence-gated in live UI. The add-filter button opens a searchable
-catalog, but `filters add` remains deferred until add plus range selection plus
-post-add verification is proven end to end.
+catalog. `filters add` is now implemented for visible numeric range presets
+with dry-run candidate reporting and visible-pill post-checks.
 
 The 2026-04-26 live evidence pass found that the upstream
 `[class*="screenerContainer"]` selector did not match the current dialog. A Rust
