@@ -140,9 +140,22 @@ fn screener_help_lists_read_subcommands() {
     tv().args(["screener", "filters", "--help"])
         .assert()
         .success()
+        .stdout(predicate::str::contains("actions"))
         .stdout(predicate::str::contains("list"))
+        .stdout(predicate::str::contains("modify"))
         .stdout(predicate::str::contains("remove"))
         .stdout(predicate::str::contains("clear"));
+    tv().args(["screener", "filters", "actions", "--help"])
+        .assert()
+        .success();
+    tv().args(["screener", "filters", "modify", "--help"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("--index"))
+        .stdout(predicate::str::contains("--text"))
+        .stdout(predicate::str::contains("--min"))
+        .stdout(predicate::str::contains("--max"))
+        .stdout(predicate::str::contains("--dry-run"));
     tv().args(["screener", "filters", "remove", "--help"])
         .assert()
         .success()
@@ -207,6 +220,55 @@ fn screener_filter_mutations_reject_invalid_inputs_before_connecting() {
         .failure()
         .code(1);
     let stderr = String::from_utf8(conflicting_target.get_output().stderr.clone()).unwrap();
+    let value: Value = serde_json::from_str(&stderr).unwrap();
+    assert_eq!(value["command"], "screener");
+    assert_eq!(value["error"]["kind"], "validation");
+
+    let modify_missing_target = tv()
+        .env("TV_CDP_PORT", "9")
+        .args(["screener", "filters", "modify", "--min", "0", "--max", "5"])
+        .assert()
+        .failure()
+        .code(1);
+    let stderr = String::from_utf8(modify_missing_target.get_output().stderr.clone()).unwrap();
+    let value: Value = serde_json::from_str(&stderr).unwrap();
+    assert_eq!(value["command"], "screener");
+    assert_eq!(value["error"]["kind"], "validation");
+
+    let modify_conflicting_target = tv()
+        .env("TV_CDP_PORT", "9")
+        .args([
+            "screener", "filters", "modify", "--index", "0", "--text", "EMA", "--min", "0",
+            "--max", "5",
+        ])
+        .assert()
+        .failure()
+        .code(1);
+    let stderr = String::from_utf8(modify_conflicting_target.get_output().stderr.clone()).unwrap();
+    let value: Value = serde_json::from_str(&stderr).unwrap();
+    assert_eq!(value["command"], "screener");
+    assert_eq!(value["error"]["kind"], "validation");
+
+    let modify_missing_range = tv()
+        .env("TV_CDP_PORT", "9")
+        .args(["screener", "filters", "modify", "--text", "EMA"])
+        .assert()
+        .failure()
+        .code(1);
+    let stderr = String::from_utf8(modify_missing_range.get_output().stderr.clone()).unwrap();
+    let value: Value = serde_json::from_str(&stderr).unwrap();
+    assert_eq!(value["command"], "screener");
+    assert_eq!(value["error"]["kind"], "validation");
+
+    let modify_invalid_range = tv()
+        .env("TV_CDP_PORT", "9")
+        .args([
+            "screener", "filters", "modify", "--text", "EMA", "--min", "0", "--max", "7",
+        ])
+        .assert()
+        .failure()
+        .code(1);
+    let stderr = String::from_utf8(modify_invalid_range.get_output().stderr.clone()).unwrap();
     let value: Value = serde_json::from_str(&stderr).unwrap();
     assert_eq!(value["command"], "screener");
     assert_eq!(value["error"]["kind"], "validation");

@@ -6,7 +6,10 @@ use crate::{
     error::{AppError, ErrorKind},
 };
 
-use super::{common::js_string, ui::ui_keyboard};
+use super::{
+    common::{js_string, require_finite},
+    ui::ui_keyboard,
+};
 
 const SCREENER_SOURCE: &str = "ui_screener_dialog";
 const DEFAULT_SCREENER_LIMIT: usize = 20;
@@ -16,6 +19,15 @@ const MAX_SCREENER_LIMIT: usize = 100;
 pub enum ScreenerFilterSelector {
     Index(usize),
     Text(String),
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct ScreenerFilterModifyRequest {
+    pub selector: ScreenerFilterSelector,
+    pub min: Option<f64>,
+    pub max: Option<f64>,
+    pub dry_run: bool,
+    preset_label: String,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -87,6 +99,24 @@ pub fn validate_screener_filter_selector(
             "Either --index or --text is required",
         )),
     }
+}
+
+pub fn validate_screener_filter_modify_request(
+    index: Option<usize>,
+    text: Option<&str>,
+    min: Option<f64>,
+    max: Option<f64>,
+    dry_run: bool,
+) -> Result<ScreenerFilterModifyRequest, AppError> {
+    let selector = validate_screener_filter_selector(index, text)?;
+    let preset_label = screener_filter_range_preset_label(min, max)?;
+    Ok(ScreenerFilterModifyRequest {
+        selector,
+        min,
+        max,
+        dry_run,
+        preset_label,
+    })
 }
 
 pub fn validate_screener_column_selector(
@@ -500,6 +530,35 @@ pub async fn screener_filters_list(runtime: &mut impl RuntimeEvaluator) -> Resul
     }))
 }
 
+pub async fn screener_filters_actions(
+    runtime: &mut impl RuntimeEvaluator,
+) -> Result<Value, AppError> {
+    let mut session = ScreenerMutationSession::open(runtime).await?;
+    let state = read_screener_state(session.runtime, None).await?;
+    ensure_dialog_open(&state)?;
+    let filters = filter_targets_from_state(&state);
+    let actions = read_filter_actions(session.runtime).await?;
+    let close_result = session.restore().await;
+    close_result?;
+
+    Ok(json!({
+        "source": SCREENER_SOURCE,
+        "action": "filters_actions",
+        "open": value_bool(&state, "open"),
+        "screen_title": state.get("screen_title").cloned().unwrap_or(Value::Null),
+        "filter_count": filters.len(),
+        "filters": filter_targets_payload(&filters),
+        "opened_for_read": session.opened_for_mutation,
+        "restored_open_state": session.restored_open_state,
+        "add_button_found": value_bool(&actions, "add_button_found"),
+        "add_supported": value_bool(&actions, "add_supported"),
+        "numeric_modify_supported": value_bool(&actions, "numeric_modify_supported"),
+        "candidate_filter": actions.get("candidate_filter").cloned().unwrap_or(Value::Null),
+        "range_options": actions.get("range_options").cloned().unwrap_or_else(|| json!([])),
+        "unavailable_reason": actions.get("unavailable_reason").cloned().unwrap_or(Value::Null),
+    }))
+}
+
 pub async fn screener_filters_remove(
     runtime: &mut impl RuntimeEvaluator,
     selector: ScreenerFilterSelector,
@@ -546,6 +605,82 @@ pub async fn screener_filters_remove(
         "before_filter_count": before_filters.len(),
         "after_filter_count": after_filters.len(),
         "target_filter": filter_target_payload(&target),
+    }))
+}
+
+pub async fn screener_filters_modify(
+    runtime: &mut impl RuntimeEvaluator,
+    request: ScreenerFilterModifyRequest,
+) -> Result<Value, AppError> {
+    let mut session = ScreenerMutationSession::open(runtime).await?;
+    let before_state = read_screener_state(session.runtime, None).await?;
+    ensure_dialog_open(&before_state)?;
+    let before_filters = filter_targets_from_state(&before_state);
+    let target = resolve_filter_target(&before_filters, &request.selector)?;
+    let requested_range = filter_modify_range_payload(&request);
+
+    if request.dry_run {
+        let close_result = session.restore().await;
+        close_result?;
+        return Ok(json!({
+            "source": SCREENER_SOURCE,
+            "action": "filter_modify",
+            "dry_run": true,
+            "modified": false,
+            "open": value_bool(&before_state, "open"),
+            "opened_for_mutation": session.opened_for_mutation,
+            "restored_open_state": session.restored_open_state,
+            "before_filter_count": before_filters.len(),
+            "after_filter_count": before_filters.len(),
+            "target_filter": filter_target_payload(&target),
+            "requested_range": requested_range,
+        }));
+    }
+
+    if normalize_screener_text(&target.text).contains(&request.preset_label) {
+        let close_result = session.restore().await;
+        close_result?;
+        return Ok(json!({
+            "source": SCREENER_SOURCE,
+            "action": "filter_modify",
+            "dry_run": false,
+            "modified": false,
+            "already_matching": true,
+            "open": value_bool(&before_state, "open"),
+            "opened_for_mutation": session.opened_for_mutation,
+            "restored_open_state": session.restored_open_state,
+            "before_filter_count": before_filters.len(),
+            "after_filter_count": before_filters.len(),
+            "target_filter": filter_target_payload(&target),
+            "after_filter": filter_target_payload(&target),
+            "requested_range": requested_range,
+        }));
+    }
+
+    click_filter_range_preset(session.runtime, &target, &request.preset_label).await?;
+    let after_state =
+        wait_for_filter_modified(session.runtime, &target.data_name, &request.preset_label).await?;
+    let after_filters = filter_targets_from_state(&after_state);
+    let after_target = after_filters
+        .iter()
+        .find(|filter| filter.data_name == target.data_name)
+        .cloned();
+    let close_result = session.restore().await;
+    close_result?;
+
+    Ok(json!({
+        "source": SCREENER_SOURCE,
+        "action": "filter_modify",
+        "dry_run": false,
+        "modified": true,
+        "open": value_bool(&after_state, "open"),
+        "opened_for_mutation": session.opened_for_mutation,
+        "restored_open_state": session.restored_open_state,
+        "before_filter_count": before_filters.len(),
+        "after_filter_count": after_filters.len(),
+        "target_filter": filter_target_payload(&target),
+        "after_filter": after_target.as_ref().map(filter_target_payload).unwrap_or(Value::Null),
+        "requested_range": requested_range,
     }))
 }
 
@@ -994,6 +1129,103 @@ fn filter_target_payload(filter: &ScreenerFilterTarget) -> Value {
 
 fn filter_targets_payload(filters: &[ScreenerFilterTarget]) -> Vec<Value> {
     filters.iter().map(filter_target_payload).collect()
+}
+
+fn filter_modify_range_payload(request: &ScreenerFilterModifyRequest) -> Value {
+    json!({
+        "min": request.min,
+        "max": request.max,
+        "preset_label": request.preset_label,
+    })
+}
+
+fn screener_filter_range_preset_label(
+    min: Option<f64>,
+    max: Option<f64>,
+) -> Result<String, AppError> {
+    if min.is_none() && max.is_none() {
+        return Err(AppError::new(
+            ErrorKind::Validation,
+            "Either --min or --max is required",
+        ));
+    }
+    if let Some(value) = min {
+        require_finite(value, "--min")?;
+        if value < 0.0 {
+            return Err(AppError::new(
+                ErrorKind::Validation,
+                "--min must be greater than or equal to 0",
+            ));
+        }
+    }
+    if let Some(value) = max {
+        require_finite(value, "--max")?;
+        if value <= 0.0 {
+            return Err(AppError::new(
+                ErrorKind::Validation,
+                "--max must be greater than 0",
+            ));
+        }
+    }
+
+    match (min, max) {
+        (Some(min), Some(max)) => {
+            if !approximately(min, 0.0) || max <= min {
+                return Err(AppError::new(
+                    ErrorKind::Validation,
+                    "Screener filter preset ranges currently support --min 0 --max <N>",
+                ));
+            }
+            ensure_supported_filter_preset(max, &[3.0, 5.0, 10.0, 20.0, 30.0], "--max")?;
+            Ok(format!("0% 〜 {}%", format_filter_percent(max)))
+        }
+        (Some(min), None) => {
+            ensure_supported_filter_preset(
+                min,
+                &[
+                    3.0, 5.0, 10.0, 15.0, 20.0, 30.0, 40.0, 50.0, 60.0, 70.0, 80.0, 90.0,
+                ],
+                "--min",
+            )?;
+            Ok(format!("{}%以上", format_filter_percent(min)))
+        }
+        (None, Some(_)) => Err(AppError::new(
+            ErrorKind::Validation,
+            "Screener filter preset ranges do not currently support --max without --min",
+        )),
+        (None, None) => unreachable!(),
+    }
+}
+
+fn ensure_supported_filter_preset(
+    value: f64,
+    supported: &[f64],
+    label: &str,
+) -> Result<(), AppError> {
+    if supported
+        .iter()
+        .any(|supported| approximately(value, *supported))
+    {
+        Ok(())
+    } else {
+        Err(AppError::new(
+            ErrorKind::Validation,
+            format!("{label} does not match a supported visible Screener preset"),
+        )
+        .with_details(json!({ "supported": supported })))
+    }
+}
+
+fn approximately(left: f64, right: f64) -> bool {
+    (left - right).abs() < 0.000_001
+}
+
+fn format_filter_percent(value: f64) -> String {
+    if approximately(value.fract(), 0.0) {
+        format!("{}", value.trunc() as i64)
+    } else {
+        format!("{value}")
+    }
 }
 
 fn column_targets_from_state(state: &Value) -> Vec<ScreenerColumnTarget> {
@@ -1558,6 +1790,81 @@ async fn read_column_actions(runtime: &mut impl RuntimeEvaluator) -> Result<Valu
         .await
 }
 
+async fn read_filter_actions(runtime: &mut impl RuntimeEvaluator) -> Result<Value, AppError> {
+    runtime
+        .evaluate(
+            &expanded_expression(
+                r#"
+                (async function() {
+                    function sleep(ms) {
+                        return new Promise(function(resolve) { setTimeout(resolve, ms); });
+                    }
+                    REPLACE_HELPERS
+                    var state = readScreenerState(0);
+                    var addButton = findScreenerAddFilterButton();
+                    var candidate = findScreenerNumericFilterPill();
+                    var candidatePayload = candidate ? {
+                        text: textOf(candidate),
+                        data_name: candidate.getAttribute('data-name') || null
+                    } : null;
+                    var manualSettingsFound = false;
+                    var rangeOptions = [];
+                    if (candidate) {
+                        mouseClick(candidate);
+                        for (var i = 0; i < 10; i++) {
+                            if (findScreenerManualFilterButton()) {
+                                manualSettingsFound = true;
+                                break;
+                            }
+                            await sleep(100);
+                        }
+                        var manualButton = findScreenerManualFilterButton();
+                        if (manualButton) {
+                            mouseClick(manualButton);
+                            for (var j = 0; j < 10; j++) {
+                                var combo = findScreenerRangeCombobox();
+                                if (combo) {
+                                    mouseClick(combo);
+                                    for (var k = 0; k < 10; k++) {
+                                        rangeOptions = collectScreenerRangeOptions();
+                                        if (rangeOptions.length > 0) break;
+                                        await sleep(100);
+                                    }
+                                    break;
+                                }
+                                await sleep(100);
+                            }
+                        }
+                        closeScreenerTransientPopups();
+                    }
+                    return {
+                        source: 'ui_screener_dialog',
+                        action: 'filters_actions',
+                        open: !!state.open,
+                        screen_title: state.screen_title || null,
+                        add_button_found: !!addButton,
+                        add_supported: false,
+                        add_unavailable_reason: addButton ? 'filter_add_catalog_not_verified' : 'add_button_not_found',
+                        numeric_modify_supported: rangeOptions.length > 0,
+                        candidate_filter: candidatePayload,
+                        manual_settings_found: manualSettingsFound,
+                        range_options: rangeOptions.map(function(option) {
+                            return {
+                                index: option.index,
+                                text: option.text,
+                                normalized_text: option.normalized_text
+                            };
+                        }),
+                        unavailable_reason: rangeOptions.length > 0 ? null : 'numeric_range_filter_preset_options_not_found'
+                    };
+                })()
+                "#,
+            ),
+            true,
+        )
+        .await
+}
+
 async fn click_filter_remove_button(
     runtime: &mut impl RuntimeEvaluator,
     target: &ScreenerFilterTarget,
@@ -1627,6 +1934,136 @@ async fn click_filter_remove_button(
     Ok(())
 }
 
+async fn click_filter_range_preset(
+    runtime: &mut impl RuntimeEvaluator,
+    target: &ScreenerFilterTarget,
+    preset_label: &str,
+) -> Result<(), AppError> {
+    let data_name = js_string(&target.data_name)?;
+    let preset_label = js_string(preset_label)?;
+    let result = runtime
+        .evaluate(
+            &expanded_expression(&format!(
+                r#"
+                (async function() {{
+                    function sleep(ms) {{
+                        return new Promise(function(resolve) {{ setTimeout(resolve, ms); }});
+                    }}
+                    REPLACE_HELPERS
+                    var pill = document.querySelector('[data-name=' + {data_name} + ']');
+                    if (!pill || !visible(pill)) {{
+                        return {{ found: false, data_name: {data_name}, reason: 'filter_pill_not_found' }};
+                    }}
+                    mouseClick(pill);
+                    var manualButton = null;
+                    for (var i = 0; i < 8; i++) {{
+                        manualButton = findScreenerManualFilterButton();
+                        if (manualButton) break;
+                        await sleep(75);
+                    }}
+                    if (!manualButton) {{
+                        closeScreenerTransientPopups();
+                        return {{
+                            found: true,
+                            manual_settings_found: false,
+                            range_combobox_found: false,
+                            range_option_found: false,
+                            requested_range: {preset_label},
+                            data_name: {data_name}
+                        }};
+                    }}
+                    mouseClick(manualButton);
+                    var combo = null;
+                    for (var j = 0; j < 8; j++) {{
+                        combo = findScreenerRangeCombobox();
+                        if (combo) break;
+                        await sleep(75);
+                    }}
+                    if (!combo) {{
+                        closeScreenerTransientPopups();
+                        return {{
+                            found: true,
+                            manual_settings_found: true,
+                            range_combobox_found: false,
+                            range_option_found: false,
+                            requested_range: {preset_label},
+                            data_name: {data_name}
+                        }};
+                    }}
+                    mouseClick(combo);
+                    var option = null;
+                    var options = [];
+                    for (var k = 0; k < 8; k++) {{
+                        options = collectScreenerRangeOptions();
+                        option = options.find(function(candidate) {{
+                            return candidate.normalized_text === {preset_label};
+                        }});
+                        if (option && option.element) break;
+                        await sleep(75);
+                    }}
+                    if (!option || !option.element) {{
+                        closeScreenerTransientPopups();
+                        return {{
+                            found: true,
+                            manual_settings_found: true,
+                            range_combobox_found: true,
+                            range_option_found: false,
+                            requested_range: {preset_label},
+                            available_options: options.map(function(candidate) {{
+                                return candidate.normalized_text;
+                            }}),
+                            data_name: {data_name}
+                        }};
+                    }}
+                    mouseClick(option.element);
+                    return {{
+                        found: true,
+                        manual_settings_found: true,
+                        range_combobox_found: true,
+                        range_option_found: true,
+                        clicked: true,
+                        requested_range: {preset_label},
+                        data_name: {data_name}
+                    }};
+                }})()
+                "#
+            )),
+            true,
+        )
+        .await?;
+
+    if !value_bool(&result, "found") {
+        return Err(AppError::new(
+            ErrorKind::InternalApiUnavailable,
+            "Screener filter pill not found",
+        )
+        .with_details(result));
+    }
+    if !value_bool(&result, "manual_settings_found") {
+        return Err(AppError::new(
+            ErrorKind::InternalApiUnavailable,
+            "Screener filter manual settings button not found",
+        )
+        .with_details(result));
+    }
+    if !value_bool(&result, "range_combobox_found") {
+        return Err(AppError::new(
+            ErrorKind::InternalApiUnavailable,
+            "Screener filter range combobox not found",
+        )
+        .with_details(result));
+    }
+    if !value_bool(&result, "range_option_found") {
+        return Err(AppError::new(
+            ErrorKind::InternalApiUnavailable,
+            "Screener filter range preset option not found",
+        )
+        .with_details(result));
+    }
+    sleep(Duration::from_millis(250)).await;
+    Ok(())
+}
+
 async fn wait_for_filter_removed(
     runtime: &mut impl RuntimeEvaluator,
     data_name: &str,
@@ -1672,6 +2109,42 @@ async fn wait_for_filter_removed(
     }
 
     Ok(result)
+}
+
+async fn wait_for_filter_modified(
+    runtime: &mut impl RuntimeEvaluator,
+    data_name: &str,
+    preset_label: &str,
+) -> Result<Value, AppError> {
+    let raw_data_name = data_name.to_string();
+    let raw_preset_label = preset_label.to_string();
+    let mut last_state = Value::Null;
+    for _ in 0..12 {
+        let state = read_screener_state(runtime, None).await?;
+        let modified = filter_targets_from_state(&state).iter().any(|filter| {
+            filter.data_name == raw_data_name
+                && normalize_screener_text(&filter.text).contains(&raw_preset_label)
+        });
+        if modified {
+            return Ok(state);
+        }
+        last_state = state;
+        sleep(Duration::from_millis(250)).await;
+    }
+
+    Err(AppError::new(
+        ErrorKind::InternalApiUnavailable,
+        "Screener filter text did not reflect requested range preset",
+    )
+    .with_details(last_state))
+}
+
+fn normalize_screener_text(value: &str) -> String {
+    value
+        .replace(['\u{2066}', '\u{2067}', '\u{2068}', '\u{2069}'], "")
+        .split_whitespace()
+        .collect::<Vec<_>>()
+        .join(" ")
 }
 
 fn normalize_columns(columns: Option<&Value>) -> Vec<Value> {
@@ -2423,6 +2896,97 @@ async function openScreenerScreenCatalog() {
     }
     return { catalog_opened: false, menu_opened: true, reason: 'catalog_not_found', screen_title: activeTitle, screens: [] };
 }
+function normalizeScreenerFilterText(value) {
+    return String(value || '').replace(/[\u2066\u2067\u2068\u2069]/g, '').replace(/\s+/g, ' ').trim();
+}
+function findScreenerAddFilterButton() {
+    return visibleElements('button, [role="button"], [title], [aria-label], [data-name]').find(function(el) {
+        var label = [el.getAttribute('title'), el.getAttribute('aria-label'), el.getAttribute('data-name'), textOf(el)].filter(Boolean).join(' ');
+        return /新しいフィルターを追加|フィルターを追加|Add new filter|Add filter/i.test(label);
+    }) || null;
+}
+function findScreenerNumericFilterPill() {
+    var filters = visibleElements('[data-name^="screener-filter-pill-"]');
+    return filters.find(function(el) {
+        var text = normalizeScreenerFilterText(textOf(el));
+        return /:/.test(text) && /〜/.test(text);
+    }) || filters.find(function(el) {
+        var text = normalizeScreenerFilterText(textOf(el));
+        return /EMA|SMA|価格|Price/i.test(text) && /〜/.test(text);
+    }) || filters.find(function(el) {
+        return /〜/.test(normalizeScreenerFilterText(textOf(el)));
+    }) || filters.find(function(el) {
+        return /以上|以下|未満/.test(normalizeScreenerFilterText(textOf(el)));
+    }) || filters.find(function(el) {
+        return /greater|less|between|range/i.test(normalizeScreenerFilterText(textOf(el)));
+    }) || null;
+}
+function findScreenerFallbackNumericFilterPill() {
+    var filters = visibleElements('[data-name^="screener-filter-pill-"]');
+    return filters.find(function(el) {
+        return /%|以上|以下|未満|greater|less|between|range/i.test(normalizeScreenerFilterText(textOf(el)));
+    }) || filters[0] || null;
+}
+function findScreenerManualFilterButton() {
+    return visibleElements('button, [role="button"], [role="menuitem"], div, span').find(function(el) {
+        var text = textOf(el);
+        return /手動で設定|Set manually|Manual/i.test(text) && text.length < 120;
+    }) || null;
+}
+function findScreenerRangeCombobox() {
+    var candidates = visibleElements('button, [role="button"], [role="combobox"], [aria-haspopup], div, span');
+    candidates = candidates.filter(function(el) {
+        var text = normalizeScreenerFilterText(textOf(el));
+        if (!text || text.length > 80) return false;
+        return /%/.test(text) && (/〜|以上|以下|未満|to|or more|less/i.test(text));
+    });
+    candidates.sort(function(a, b) {
+        var ar = a.getBoundingClientRect();
+        var br = b.getBoundingClientRect();
+        return (ar.width * ar.height) - (br.width * br.height);
+    });
+    return candidates[0] || null;
+}
+function collectScreenerRangeOptions() {
+    var seen = {};
+    var options = [];
+    function optionClickTarget(el, label) {
+        var current = el;
+        while (current && current !== document.body) {
+            var role = current.getAttribute && (current.getAttribute('role') || '');
+            var cls = String(current.className || '');
+            if (textOf(current).indexOf(label) >= 0 &&
+                (role === 'option' || role === 'menuitem' || role === 'button' ||
+                 current.tagName === 'BUTTON' || /item|option|row|button/i.test(cls))) {
+                return current;
+            }
+            current = current.parentElement;
+        }
+        return el;
+    }
+    var nodes = visibleElements('[role="option"], [role="menuitem"], button, div, span');
+    nodes.forEach(function(el) {
+        var text = normalizeScreenerFilterText(textOf(el));
+        if (!text || text.length > 80) return;
+        if (!/%/.test(text) || !(/〜|以上|以下|未満|to|or more|less/i.test(text))) return;
+        if (!/^-?\d+(?:\.\d+)?%\s*(?:〜|to)\s*-?\d+(?:\.\d+)?%$|^-?\d+(?:\.\d+)?%\s*(?:以上|以下|未満)$|^-?\d+(?:\.\d+)?%\s*(?:or more|less)$/i.test(text)) return;
+        if (seen[text]) return;
+        seen[text] = true;
+        options.push({
+            index: options.length,
+            text: text,
+            normalized_text: text,
+            element: optionClickTarget(el, text)
+        });
+    });
+    return options;
+}
+function closeScreenerTransientPopups() {
+    for (var i = 0; i < 3; i++) {
+        document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', code: 'Escape', keyCode: 27, which: 27, bubbles: true, cancelable: true }));
+        document.dispatchEvent(new KeyboardEvent('keyup', { key: 'Escape', code: 'Escape', keyCode: 27, which: 27, bubbles: true, cancelable: true }));
+    }
+}
 function readScreenerState(limit) {
     var button = document.querySelector('[data-name="screener-dialog-button"]');
     var screenerDataElements = visibleElements('[data-name*="screener"]');
@@ -2528,6 +3092,76 @@ mod tests {
         );
         assert_eq!(
             validate_screener_filter_selector(Some(0), Some("PER"))
+                .unwrap_err()
+                .kind,
+            ErrorKind::Validation
+        );
+    }
+
+    #[test]
+    fn validate_screener_filter_modify_accepts_visible_presets() {
+        let request =
+            validate_screener_filter_modify_request(None, Some("EMA"), Some(0.0), Some(5.0), true)
+                .unwrap();
+
+        assert_eq!(
+            request.selector,
+            ScreenerFilterSelector::Text("EMA".to_string())
+        );
+        assert_eq!(request.preset_label, "0% 〜 5%");
+        assert_eq!(
+            filter_modify_range_payload(&request)["preset_label"],
+            "0% 〜 5%"
+        );
+
+        let request =
+            validate_screener_filter_modify_request(Some(1), None, Some(15.0), None, false)
+                .unwrap();
+
+        assert_eq!(request.selector, ScreenerFilterSelector::Index(1));
+        assert_eq!(request.preset_label, "15%以上");
+    }
+
+    #[test]
+    fn validate_screener_filter_modify_rejects_unsafe_inputs() {
+        assert_eq!(
+            validate_screener_filter_modify_request(None, None, Some(0.0), Some(5.0), true)
+                .unwrap_err()
+                .kind,
+            ErrorKind::Validation
+        );
+        assert_eq!(
+            validate_screener_filter_modify_request(
+                Some(0),
+                Some("EMA"),
+                Some(0.0),
+                Some(5.0),
+                true
+            )
+            .unwrap_err()
+            .kind,
+            ErrorKind::Validation
+        );
+        assert_eq!(
+            validate_screener_filter_modify_request(Some(0), None, None, None, true)
+                .unwrap_err()
+                .kind,
+            ErrorKind::Validation
+        );
+        assert_eq!(
+            validate_screener_filter_modify_request(Some(0), None, None, Some(5.0), true)
+                .unwrap_err()
+                .kind,
+            ErrorKind::Validation
+        );
+        assert_eq!(
+            validate_screener_filter_modify_request(Some(0), None, Some(f64::NAN), Some(5.0), true)
+                .unwrap_err()
+                .kind,
+            ErrorKind::Validation
+        );
+        assert_eq!(
+            validate_screener_filter_modify_request(Some(0), None, Some(0.0), Some(7.0), true)
                 .unwrap_err()
                 .kind,
             ErrorKind::Validation
@@ -3163,6 +3797,134 @@ mod tests {
         assert_eq!(result["target_filter"]["text"], "PER");
         assert_eq!(result["before_filter_count"], 2);
         assert_eq!(result["after_filter_count"], 2);
+    }
+
+    #[tokio::test]
+    async fn screener_filters_actions_reports_detected_capabilities() {
+        let mut runtime = FakeRuntime::new([
+            json!({ "button_found": true, "open": true }),
+            json!({
+                "button_found": true,
+                "open": true,
+                "screen_title": "米国株（テスト用）",
+                "filters": [
+                    { "index": 0, "text": "EMA (21)未満価格 : 0% 〜 10%", "data_name": "screener-filter-pill-ema", "visible": true }
+                ],
+                "filter_count": 1
+            }),
+            json!({
+                "add_button_found": true,
+                "add_supported": false,
+                "numeric_modify_supported": true,
+                "candidate_filter": { "text": "EMA (21)未満価格 : 0% 〜 10%", "data_name": "screener-filter-pill-ema" },
+                "range_options": [
+                    { "index": 0, "text": "0% 〜 5%", "normalized_text": "0% 〜 5%" },
+                    { "index": 1, "text": "10%以上", "normalized_text": "10%以上" }
+                ],
+                "unavailable_reason": null
+            }),
+        ]);
+
+        let result = screener_filters_actions(&mut runtime).await.unwrap();
+
+        assert_eq!(result["action"], "filters_actions");
+        assert_eq!(result["screen_title"], "米国株（テスト用）");
+        assert_eq!(result["filter_count"], 1);
+        assert_eq!(result["add_button_found"], true);
+        assert_eq!(result["add_supported"], false);
+        assert_eq!(result["numeric_modify_supported"], true);
+        assert_eq!(
+            result["candidate_filter"]["data_name"],
+            "screener-filter-pill-ema"
+        );
+        assert_eq!(result["range_options"].as_array().unwrap().len(), 2);
+    }
+
+    #[tokio::test]
+    async fn screener_filters_modify_dry_run_returns_target_without_mutation() {
+        let mut runtime = FakeRuntime::new([
+            json!({ "button_found": true, "open": true }),
+            json!({
+                "button_found": true,
+                "open": true,
+                "filters": [
+                    { "index": 0, "text": "EMA (21)未満価格 : 0% 〜 10%", "data_name": "screener-filter-pill-ema", "visible": true },
+                    { "index": 1, "text": "PER", "data_name": "screener-filter-pill-pe", "visible": true }
+                ],
+                "filter_count": 2
+            }),
+        ]);
+        let request =
+            validate_screener_filter_modify_request(None, Some("EMA"), Some(0.0), Some(5.0), true)
+                .unwrap();
+
+        let result = screener_filters_modify(&mut runtime, request)
+            .await
+            .unwrap();
+
+        assert_eq!(result["action"], "filter_modify");
+        assert_eq!(result["dry_run"], true);
+        assert_eq!(result["modified"], false);
+        assert_eq!(
+            result["target_filter"]["data_name"],
+            "screener-filter-pill-ema"
+        );
+        assert_eq!(result["requested_range"]["preset_label"], "0% 〜 5%");
+        assert_eq!(result["before_filter_count"], 2);
+        assert_eq!(result["after_filter_count"], 2);
+    }
+
+    #[tokio::test]
+    async fn screener_filters_modify_clicks_preset_and_verifies_text() {
+        let mut runtime = FakeRuntime::new([
+            json!({ "button_found": true, "open": true }),
+            json!({
+                "button_found": true,
+                "open": true,
+                "filters": [
+                    { "index": 0, "text": "EMA (21)未満価格 : 0% 〜 10%", "data_name": "screener-filter-pill-ema", "visible": true }
+                ],
+                "filter_count": 1
+            }),
+            json!({
+                "found": true,
+                "manual_settings_found": true,
+                "range_combobox_found": true,
+                "range_option_found": true,
+                "clicked": true,
+                "requested_range": "0% 〜 5%"
+            }),
+            json!({
+                "button_found": true,
+                "open": true,
+                "filters": [
+                    { "index": 0, "text": "EMA (21)未満価格 : 0% 〜 5%", "data_name": "screener-filter-pill-ema", "visible": true }
+                ],
+                "filter_count": 1
+            }),
+        ]);
+        let request =
+            validate_screener_filter_modify_request(Some(0), None, Some(0.0), Some(5.0), false)
+                .unwrap();
+
+        let result = screener_filters_modify(&mut runtime, request)
+            .await
+            .unwrap();
+
+        assert_eq!(result["action"], "filter_modify");
+        assert_eq!(result["dry_run"], false);
+        assert_eq!(result["modified"], true);
+        assert_eq!(
+            result["target_filter"]["data_name"],
+            "screener-filter-pill-ema"
+        );
+        assert_eq!(
+            result["after_filter"]["text"],
+            "EMA (21)未満価格 : 0% 〜 5%"
+        );
+        assert_eq!(result["before_filter_count"], 1);
+        assert_eq!(result["after_filter_count"], 1);
+        assert_eq!(runtime.mouse_events.len(), 0);
     }
 
     #[tokio::test]

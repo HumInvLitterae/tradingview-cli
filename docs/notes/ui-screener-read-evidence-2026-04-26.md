@@ -74,6 +74,8 @@ The implemented surface is:
 - `tv screener screens actions`
 - `tv screener screens save [--dry-run]`
 - `tv screener filters list`
+- `tv screener filters actions`
+- `tv screener filters modify --index <N>|--text <TEXT> --min <N>|--max <N> [--dry-run]`
 - `tv screener filters remove --index <N>|--text <TEXT> [--dry-run]`
 - `tv screener filters clear [--dry-run] --confirm-clear`
 - `tv screener columns list`
@@ -105,10 +107,24 @@ Live evidence showed that opening a filter pill exposes a popover button whose
 class includes `removeButton`; the Rust command clicks that button and then
 verifies the target filter disappeared.
 
+The filter modify follow-up found the active test screen with 17 visible
+filters. `tv screener filters actions` found the add-filter button and a
+numeric range filter candidate for `EMA (21)`, and exposed a visible range
+preset such as `0% 〜 5%`. `tv screener filters modify --text "EMA (21)" --min
+0 --max 5 --dry-run` resolved the target filter without mutation. Normal modify
+is implemented defensively with preset validation and a visible-text post-check;
+the live EMA mutation attempt did not change the current TradingView UI and
+failed with `internal_api_unavailable` rather than claiming success. A separate
+smoke also revealed that probing a simpler `変動` filter can cause TradingView
+to normalize its visible pill from `5%` to `0% 〜 5%`, so action discovery now
+prefers explicit range filters such as `EMA (21)` and generic filter add/edit
+remains deferred.
+
 ## Still deferred
 
-- screen save / switch / save-as / rename / create / delete
+- screen save-as / rename / create / delete
 - column add / remove / reorder / reset
+- filter add and generic non-numeric filter editing
 - workflow scanner rules, dashboards, or downstream strategy packs
 
 These surfaces need separate safety policy and workflow evidence before they

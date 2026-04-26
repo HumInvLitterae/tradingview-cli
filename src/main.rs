@@ -223,6 +223,7 @@ async fn dispatch(command: Command) -> Result<serde_json::Value, AppError> {
             }
             if let ScreenerCommand::Filters { command } = &command {
                 match command {
+                    ScreenerFiltersCommand::Actions => {}
                     ScreenerFiltersCommand::Remove { index, text, .. } => {
                         ops::validate_screener_filter_selector(*index, text.as_deref())?;
                     }
@@ -231,6 +232,21 @@ async fn dispatch(command: Command) -> Result<serde_json::Value, AppError> {
                         confirm_clear,
                     } => {
                         ops::validate_screener_filter_clear(*dry_run, *confirm_clear)?;
+                    }
+                    ScreenerFiltersCommand::Modify {
+                        index,
+                        text,
+                        min,
+                        max,
+                        dry_run,
+                    } => {
+                        ops::validate_screener_filter_modify_request(
+                            *index,
+                            text.as_deref(),
+                            *min,
+                            *max,
+                            *dry_run,
+                        )?;
                     }
                     ScreenerFiltersCommand::List => {}
                 }
@@ -276,6 +292,9 @@ async fn dispatch(command: Command) -> Result<serde_json::Value, AppError> {
                 },
                 ScreenerCommand::Filters { command } => match command {
                     ScreenerFiltersCommand::List => ops::screener_filters_list(&mut runtime).await,
+                    ScreenerFiltersCommand::Actions => {
+                        ops::screener_filters_actions(&mut runtime).await
+                    }
                     ScreenerFiltersCommand::Remove {
                         index,
                         text,
@@ -289,6 +308,22 @@ async fn dispatch(command: Command) -> Result<serde_json::Value, AppError> {
                         dry_run,
                         confirm_clear,
                     } => ops::screener_filters_clear(&mut runtime, dry_run, confirm_clear).await,
+                    ScreenerFiltersCommand::Modify {
+                        index,
+                        text,
+                        min,
+                        max,
+                        dry_run,
+                    } => {
+                        let request = ops::validate_screener_filter_modify_request(
+                            index,
+                            text.as_deref(),
+                            min,
+                            max,
+                            dry_run,
+                        )?;
+                        ops::screener_filters_modify(&mut runtime, request).await
+                    }
                 },
                 ScreenerCommand::Columns { command } => match command {
                     ScreenerColumnsCommand::List => ops::screener_columns_list(&mut runtime).await,

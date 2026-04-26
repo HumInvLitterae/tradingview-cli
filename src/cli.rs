@@ -292,6 +292,8 @@ pub enum ScreenerScreensCommand {
 pub enum ScreenerFiltersCommand {
     #[command(about = "List visible Stock Screener filters")]
     List,
+    #[command(about = "List visible Stock Screener filter-management actions")]
+    Actions,
     #[command(about = "Remove a visible Stock Screener filter")]
     Remove {
         #[arg(long)]
@@ -307,6 +309,19 @@ pub enum ScreenerFiltersCommand {
         dry_run: bool,
         #[arg(long)]
         confirm_clear: bool,
+    },
+    #[command(about = "Modify a visible numeric Stock Screener filter preset")]
+    Modify {
+        #[arg(long)]
+        index: Option<usize>,
+        #[arg(long)]
+        text: Option<String>,
+        #[arg(long)]
+        min: Option<f64>,
+        #[arg(long)]
+        max: Option<f64>,
+        #[arg(long)]
+        dry_run: bool,
     },
 }
 

@@ -29,6 +29,11 @@ package version omits the leading `v`.
   inspection and exact save-action clicking.
 - Added guarded `tv screener filters remove` and `tv screener filters clear`
   commands, including dry-run target reporting and clear-all confirmation.
+- Added `tv screener filters actions` and preset-backed
+  `tv screener filters modify --index <N>|--text <TEXT> --min <N>|--max <N>`
+  for visible numeric range filters. Modify supports dry-run target reporting,
+  finite input validation before CDP connection, and post-mutation visible-text
+  verification.
 - Added `tv screener columns actions` and dry-run target resolution for
   `tv screener columns remove`; current TradingView Desktop evidence does not
   expose a safe visible column-remove action, so normal removal remains

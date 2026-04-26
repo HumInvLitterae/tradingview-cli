@@ -99,6 +99,7 @@ Classify the remaining Screener/Hotlist ideas as follows:
 | UI Screener status/get/open/close | implemented as `tv screener` | Useful but DOM-fragile and changes visible UI state. Implemented as a narrow read-only UI dialog slice after live evidence in `docs/notes/ui-screener-read-evidence-2026-04-26.md`. |
 | UI filter list / column list / active screen read | implemented as `tv screener` metadata reads | Read-only after opening the dialog, implemented as lightweight metadata commands that restore the initial open/closed dialog state. |
 | UI filter remove/clear | implemented as guarded `tv screener filters remove/clear` | Mutates the active Screener screen, so remove supports dry-run target reporting and clear requires explicit confirmation. |
+| UI filter actions/modify | implemented as guarded `tv screener filters actions/modify` | `actions` reports visible add/edit capability and numeric preset options. `modify` is limited to existing visible numeric range presets, supports dry-run target reporting, validates finite values before CDP, treats already-matching presets as no-op, and verifies visible filter text after mutation. Generic add and non-numeric filter editing remain deferred. |
 | UI menu-visible screen list/switch | implemented as guarded `tv screener screens list/switch` | Lists exact visible menu names and supports dry-run target reporting. Non-dry-run switch verifies the active title and fails safely if TradingView does not activate the clicked row. |
 | UI saved-screen catalog list/switch | implemented as guarded `tv screener screens list/switch --catalog` | Uses the saved-screen catalog for exact-name targeting, supports dry-run target reporting, and verifies the active title after mutation. |
 | UI screen actions/save | implemented as guarded `tv screener screens actions/save` | Lists visible screen menu actions and clicks only exact `Save screen` / `スクリーンを保存`; dry-run reports the target action before mutation. |
@@ -107,9 +108,10 @@ Classify the remaining Screener/Hotlist ideas as follows:
 | Scanner/product workflow packs | keep downstream | Rules packs and dashboards are workflow products, not core bridge replacement. |
 
 Hotlist REST, generic scanner REST, the read-oriented UI Screener dialog slice,
-and guarded filter cleanup are now implemented. Any next implementation plan
-should not bundle full Screener screen catalog management, column mutation, or
-downstream scanner workflow rules.
+guarded filter cleanup, and preset-backed filter modify are now implemented.
+Any next implementation plan should not bundle full Screener screen catalog
+management, column mutation, generic filter add, or downstream scanner workflow
+rules.
 
 ## Implemented REST scanner contract
 
@@ -142,6 +144,8 @@ The Rust implementation is separate from Hotlist REST and currently includes:
 - `tv screener screens switch --name <NAME> [--dry-run]`
 - `tv screener screens save [--dry-run]`
 - `tv screener filters list`
+- `tv screener filters actions`
+- `tv screener filters modify --index <N>|--text <TEXT> --min <N>|--max <N> [--dry-run]`
 - `tv screener filters remove --index <N>|--text <TEXT> [--dry-run]`
 - `tv screener filters clear [--dry-run] --confirm-clear`
 - `tv screener columns list`
