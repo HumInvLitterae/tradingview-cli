@@ -179,6 +179,13 @@ Filter remove/clear commands operate on visible UI filter pills, not a stable
 REST schema. `remove` resolves exactly one visible filter before clicking the
 pill's popover remove button. `clear` is intentionally confirmation-gated
 because it can remove every visible filter from the active screen.
+`filters actions` now scopes numeric range options to the target filter popover;
+for the current test screen, `EMA (21)` exposes `0% 〜 10%`, `10%以上`, and
+`20%以上`, while `0% 〜 5%` belongs to a different `変動` filter. Normal
+`filters modify` remains guarded by visible-text post-check and should be
+treated as evidence-gated in live UI. The add-filter button opens a searchable
+catalog, but `filters add` remains deferred until add plus range selection plus
+post-add verification is proven end to end.
 
 The 2026-04-26 live evidence pass found that the upstream
 `[class*="screenerContainer"]` selector did not match the current dialog. A Rust

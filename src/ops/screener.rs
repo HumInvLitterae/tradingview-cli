@@ -1811,26 +1811,32 @@ async fn read_filter_actions(runtime: &mut impl RuntimeEvaluator) -> Result<Valu
                     var rangeOptions = [];
                     if (candidate) {
                         mouseClick(candidate);
+                        var editScope = null;
                         for (var i = 0; i < 10; i++) {
-                            if (findScreenerManualFilterButton()) {
+                            editScope = findScreenerFilterEditPopoverForPill(candidate);
+                            if (findScreenerManualFilterButton(editScope)) {
                                 manualSettingsFound = true;
                                 break;
                             }
                             await sleep(100);
                         }
-                        var manualButton = findScreenerManualFilterButton();
+                        var manualButton = findScreenerManualFilterButton(editScope);
                         if (manualButton) {
                             mouseClick(manualButton);
                             for (var j = 0; j < 10; j++) {
-                                var combo = findScreenerRangeCombobox();
+                                rangeOptions = collectScreenerRangeOptions(editScope);
+                                if (rangeOptions.length > 0) break;
+                                await sleep(100);
+                            }
+                            if (rangeOptions.length === 0) {
+                                var combo = findScreenerRangeCombobox(editScope);
                                 if (combo) {
                                     mouseClick(combo);
                                     for (var k = 0; k < 10; k++) {
-                                        rangeOptions = collectScreenerRangeOptions();
+                                        rangeOptions = collectScreenerRangeOptions(editScope);
                                         if (rangeOptions.length > 0) break;
                                         await sleep(100);
                                     }
-                                    break;
                                 }
                                 await sleep(100);
                             }
@@ -1956,8 +1962,10 @@ async fn click_filter_range_preset(
                     }}
                     mouseClick(pill);
                     var manualButton = null;
+                    var editScope = null;
                     for (var i = 0; i < 8; i++) {{
-                        manualButton = findScreenerManualFilterButton();
+                        editScope = findScreenerFilterEditPopoverForPill(pill);
+                        manualButton = findScreenerManualFilterButton(editScope);
                         if (manualButton) break;
                         await sleep(75);
                     }}
@@ -1973,13 +1981,28 @@ async fn click_filter_range_preset(
                         }};
                     }}
                     mouseClick(manualButton);
+                    var option = null;
+                    var options = [];
+                    var rangeOptionsOpenedDirectly = false;
+                    for (var j = 0; j < 8; j++) {{
+                        options = collectScreenerRangeOptions(editScope);
+                        option = options.find(function(candidate) {{
+                            return candidate.normalized_text === {preset_label};
+                        }});
+                        if (option && option.element) {{
+                            rangeOptionsOpenedDirectly = true;
+                            break;
+                        }}
+                        await sleep(75);
+                    }}
                     var combo = null;
                     for (var j = 0; j < 8; j++) {{
-                        combo = findScreenerRangeCombobox();
+                        if (option && option.element) break;
+                        combo = findScreenerRangeCombobox(editScope);
                         if (combo) break;
                         await sleep(75);
                     }}
-                    if (!combo) {{
+                    if (!combo && !rangeOptionsOpenedDirectly) {{
                         closeScreenerTransientPopups();
                         return {{
                             found: true,
@@ -1990,23 +2013,23 @@ async fn click_filter_range_preset(
                             data_name: {data_name}
                         }};
                     }}
-                    mouseClick(combo);
-                    var option = null;
-                    var options = [];
-                    for (var k = 0; k < 8; k++) {{
-                        options = collectScreenerRangeOptions();
-                        option = options.find(function(candidate) {{
-                            return candidate.normalized_text === {preset_label};
-                        }});
-                        if (option && option.element) break;
-                        await sleep(75);
+                    if (!option || !option.element) {{
+                        mouseClick(combo);
+                        for (var k = 0; k < 8; k++) {{
+                            options = collectScreenerRangeOptions(editScope);
+                            option = options.find(function(candidate) {{
+                                return candidate.normalized_text === {preset_label};
+                            }});
+                            if (option && option.element) break;
+                            await sleep(75);
+                        }}
                     }}
                     if (!option || !option.element) {{
                         closeScreenerTransientPopups();
                         return {{
                             found: true,
                             manual_settings_found: true,
-                            range_combobox_found: true,
+                            range_combobox_found: !!combo || rangeOptionsOpenedDirectly,
                             range_option_found: false,
                             requested_range: {preset_label},
                             available_options: options.map(function(candidate) {{
@@ -2015,13 +2038,16 @@ async fn click_filter_range_preset(
                             data_name: {data_name}
                         }};
                     }}
-                    mouseClick(option.element);
+                    setTimeout(function() {{
+                        mouseClick(option.element);
+                    }}, 0);
                     return {{
                         found: true,
                         manual_settings_found: true,
-                        range_combobox_found: true,
+                        range_combobox_found: !!combo || rangeOptionsOpenedDirectly,
                         range_option_found: true,
-                        clicked: true,
+                        click_scheduled: true,
+                        range_options_opened_directly: rangeOptionsOpenedDirectly,
                         requested_range: {preset_label},
                         data_name: {data_name}
                     }};
@@ -2575,8 +2601,9 @@ function mouseClick(el) {
     var rect = el.getBoundingClientRect();
     var x = rect.left + rect.width / 2;
     var y = rect.top + rect.height / 2;
+    var target = document.elementFromPoint(x, y) || el;
     ['mouseover', 'mousedown', 'mouseup', 'click'].forEach(function(type) {
-        el.dispatchEvent(new MouseEvent(type, {
+        target.dispatchEvent(new MouseEvent(type, {
             bubbles: true,
             cancelable: true,
             clientX: x,
@@ -2927,17 +2954,54 @@ function findScreenerFallbackNumericFilterPill() {
         return /%|以上|以下|未満|greater|less|between|range/i.test(normalizeScreenerFilterText(textOf(el)));
     }) || filters[0] || null;
 }
-function findScreenerManualFilterButton() {
-    return visibleElements('button, [role="button"], [role="menuitem"], div, span').find(function(el) {
+function scopedVisibleElements(scope, selector) {
+    return Array.from((scope || document).querySelectorAll(selector)).filter(visible);
+}
+function screenerFilterPopoverTokens(text) {
+    return normalizeScreenerFilterText(text)
+        .replace(/-?\d+(?:\.\d+)?%\s*(?:〜|to)\s*-?\d+(?:\.\d+)?%/ig, ' ')
+        .replace(/-?\d+(?:\.\d+)?%\s*(?:以上|以下|未満|or more|less)/ig, ' ')
+        .split(/[^A-Za-z\u3040-\u30ff\u3400-\u9fff]+/)
+        .filter(function(token) {
+            return token.length >= 2 && !/^(未満|以上|以下|価格|Price)$/.test(token);
+        });
+}
+function findScreenerFilterEditPopoverForPill(pill) {
+    if (!pill) return null;
+    var tokens = screenerFilterPopoverTokens(textOf(pill));
+    var popovers = visibleElements('[role="dialog"], [class*="popover"], [class*="contentDefaultAppearance"]').filter(function(el) {
+        var rect = el.getBoundingClientRect();
+        return rect.width >= 160 && rect.height >= 80;
+    });
+    var scored = popovers.map(function(popover) {
+        var text = normalizeScreenerFilterText(textOf(popover)).toLowerCase();
+        var score = tokens.reduce(function(total, token) {
+            return total + (text.indexOf(token.toLowerCase()) >= 0 ? 1 : 0);
+        }, 0);
+        return { popover: popover, score: score };
+    }).filter(function(candidate) {
+        return candidate.score > 0;
+    });
+    scored.sort(function(a, b) {
+        if (b.score !== a.score) return b.score - a.score;
+        var ar = a.popover.getBoundingClientRect();
+        var br = b.popover.getBoundingClientRect();
+        return ar.top - br.top;
+    });
+    return scored.length > 0 ? scored[0].popover : null;
+}
+function findScreenerManualFilterButton(scope) {
+    return scopedVisibleElements(scope, 'button, [role="button"], [role="menuitem"], div, span').find(function(el) {
         var text = textOf(el);
         return /手動で設定|Set manually|Manual/i.test(text) && text.length < 120;
     }) || null;
 }
-function findScreenerRangeCombobox() {
-    var candidates = visibleElements('button, [role="button"], [role="combobox"], [aria-haspopup], div, span');
+function findScreenerRangeCombobox(scope) {
+    var candidates = scopedVisibleElements(scope, 'button, [role="button"], [role="combobox"], [aria-haspopup], div, span');
     candidates = candidates.filter(function(el) {
         var text = normalizeScreenerFilterText(textOf(el));
         if (!text || text.length > 80) return false;
+        if (el.closest && el.closest('[data-name^="screener-filter-pill-"]')) return false;
         return /%/.test(text) && (/〜|以上|以下|未満|to|or more|less/i.test(text));
     });
     candidates.sort(function(a, b) {
@@ -2947,9 +3011,16 @@ function findScreenerRangeCombobox() {
     });
     return candidates[0] || null;
 }
-function collectScreenerRangeOptions() {
+function collectScreenerRangeOptions(scope) {
     var seen = {};
     var options = [];
+    function rangeLabel(text) {
+        var normalized = normalizeScreenerFilterText(text);
+        var match = normalized.match(/-?\d+(?:\.\d+)?%\s*(?:〜|to)\s*-?\d+(?:\.\d+)?%/i) ||
+            normalized.match(/-?\d+(?:\.\d+)?%\s*(?:以上|以下|未満)/) ||
+            normalized.match(/-?\d+(?:\.\d+)?%\s*(?:or more|less)/i);
+        return match ? match[0] : null;
+    }
     function optionClickTarget(el, label) {
         var current = el;
         while (current && current !== document.body) {
@@ -2964,19 +3035,29 @@ function collectScreenerRangeOptions() {
         }
         return el;
     }
-    var nodes = visibleElements('[role="option"], [role="menuitem"], button, div, span');
+    var scopes = scopedVisibleElements(scope, '[role="listbox"], [role="dialog"], [class*="popover"], [class*="menu"], [class*="contentDefaultAppearance"]').filter(function(candidateScope) {
+        var rect = candidateScope.getBoundingClientRect();
+        var text = normalizeScreenerFilterText(textOf(candidateScope));
+        return rect.width >= 100 && rect.height >= 80 && /%/.test(text) && (/〜|以上|以下|未満|to|or more|less/i.test(text));
+    });
+    var nodes = [];
+    if (scopes.length > 0) {
+        scopes.forEach(function(scope) {
+            nodes = nodes.concat(Array.from(scope.querySelectorAll('[role="option"], [role="menuitem"], button, div, span')).filter(visible));
+        });
+    } else {
+        nodes = visibleElements('[role="option"], [role="menuitem"], button, div, span');
+    }
     nodes.forEach(function(el) {
-        var text = normalizeScreenerFilterText(textOf(el));
-        if (!text || text.length > 80) return;
-        if (!/%/.test(text) || !(/〜|以上|以下|未満|to|or more|less/i.test(text))) return;
-        if (!/^-?\d+(?:\.\d+)?%\s*(?:〜|to)\s*-?\d+(?:\.\d+)?%$|^-?\d+(?:\.\d+)?%\s*(?:以上|以下|未満)$|^-?\d+(?:\.\d+)?%\s*(?:or more|less)$/i.test(text)) return;
-        if (seen[text]) return;
-        seen[text] = true;
+        var label = rangeLabel(textOf(el));
+        if (!label) return;
+        if (seen[label]) return;
+        seen[label] = true;
         options.push({
             index: options.length,
-            text: text,
-            normalized_text: text,
-            element: optionClickTarget(el, text)
+            text: label,
+            normalized_text: label,
+            element: optionClickTarget(el, label)
         });
     });
     return options;
@@ -3891,7 +3972,7 @@ mod tests {
                 "manual_settings_found": true,
                 "range_combobox_found": true,
                 "range_option_found": true,
-                "clicked": true,
+                "click_scheduled": true,
                 "requested_range": "0% 〜 5%"
             }),
             json!({

@@ -108,17 +108,22 @@ class includes `removeButton`; the Rust command clicks that button and then
 verifies the target filter disappeared.
 
 The filter modify follow-up found the active test screen with 17 visible
-filters. `tv screener filters actions` found the add-filter button and a
-numeric range filter candidate for `EMA (21)`, and exposed a visible range
-preset such as `0% 〜 5%`. `tv screener filters modify --text "EMA (21)" --min
-0 --max 5 --dry-run` resolved the target filter without mutation. Normal modify
-is implemented defensively with preset validation and a visible-text post-check;
-the live EMA mutation attempt did not change the current TradingView UI and
-failed with `internal_api_unavailable` rather than claiming success. A separate
-smoke also revealed that probing a simpler `変動` filter can cause TradingView
-to normalize its visible pill from `5%` to `0% 〜 5%`, so action discovery now
-prefers explicit range filters such as `EMA (21)` and generic filter add/edit
-remains deferred.
+filters. A reliability pass found that early action discovery could accidentally
+read the `変動` filter's `0% 〜 5%` option while targeting `EMA (21)`. The
+implementation now scopes range-option discovery to the target filter popover.
+For the current test screen, `EMA (21)` exposes `0% 〜 10%`, `10%以上`, and
+`20%以上`; `0% 〜 5%` is not an `EMA (21)` option. `tv screener filters modify`
+is still implemented defensively with preset validation and a visible-text
+post-check. One live manual mutation from `0% 〜 10%` to `10%以上` succeeded and
+the filter was restored to `0% 〜 10%`, but repeated CLI normal mutation was not
+reliable enough to treat as fully stable. Dry-run and `filters actions` are the
+reliable parts of this surface; normal modify must fail with
+`internal_api_unavailable` rather than claiming success when the visible pill
+does not change.
+
+The same pass confirmed that the add-filter button opens a searchable filter
+catalog. It did not verify a safe end-to-end add, numeric range preset, and
+post-add visible-pill check path, so `filters add` remains deferred.
 
 ## Still deferred
 
