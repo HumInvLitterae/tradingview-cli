@@ -28,9 +28,16 @@ This project uses Rust 2024.
 - Do not introduce `mod.rs`.
 - Prefer facade files with same-named submodule directories for large
   capabilities.
-- Keep `src/main.rs` focused on dispatch, envelopes, and exit behavior.
+- Keep top-level module declarations in `src/lib.rs`.
+- Keep `src/main.rs` focused on binary startup, dispatch, envelopes, and exit
+  behavior.
 - Keep `src/cli.rs` focused on command and argument shape.
 - Keep operation implementations under `src/ops/` by capability.
+- Put reusable command logic, transport helpers, output envelopes, and typed
+  errors in library modules rather than adding binary-only code to
+  `src/main.rs`.
+- Treat the library crate as internal and unstable until a future plan
+  explicitly defines a stable Rust API.
 - Keep helpers as private as possible; use `pub(super)` for sibling operation
   modules when needed.
 - Avoid unrelated cleanup while migrating commands or fixing behavior.

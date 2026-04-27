@@ -475,10 +475,10 @@ Remaining replacement work is evidence-gated rather than urgent:
    evidence.
 3. App-tab new/close non-DOM command evidence.
 
-`docs/plans/tradingview-cli-direct-http-feasibility.md` tracks the first direct
-HTTP feasibility pass. That work prefers credential-safe read-only endpoints and
-does not move account mutations away from the user's logged-in page session
-without a separate safety plan.
+`docs/plans/archives/tradingview-cli-direct-http-feasibility.md` records the
+first direct HTTP feasibility pass. That work prefers credential-safe read-only
+endpoints and does not move account mutations away from the user's logged-in
+page session without a separate safety plan.
 
 Do not start with `data depth`, chart screenshots, or generic UI automation;
 their current DOM dependency is part of their observable contract.

@@ -8,15 +8,8 @@ for release and next-phase planning.
 
 - `tradingview-cli-release-builds.md`: tag-triggered GitHub Release builds
   for Linux, macOS, and Windows binaries.
-- `tradingview-cli-direct-http-feasibility.md`: post-next-release
-  investigation into credential-safe direct HTTP reads that do not require a
-  TradingView Desktop page-session context.
-- `tradingview-cli-indicator-alertcondition-mutation.md`: guarded normal
-  mutation for Pine `alertcondition()` alert creation.
-- `tradingview-cli-chart-data-readiness.md`: `ohlcv` failure diagnostics and
-  agent recovery guidance for chart target readiness.
-- `tradingview-cli-symbol-http-reads.md`: Desktop-free single-symbol metadata
-  and quote resolution hardening.
+- `tradingview-cli-library-crate-split.md`: first behavior-preserving
+  binary/library crate boundary for `v0.3.0` maintainability work.
 
 ## Archived plans
 
@@ -41,6 +34,8 @@ Important archived plan categories:
   guarded alert creation
 - Screener storage/API research, mutation implementation, and stabilization
   boundaries
+- Direct HTTP feasibility, Desktop-free symbol reads, and chart data readiness
+  diagnostics
 
 For command contract details, prefer the notes under `docs/notes/` before
 reading archived implementation plans.

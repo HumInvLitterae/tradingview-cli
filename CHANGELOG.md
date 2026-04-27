@@ -44,6 +44,8 @@ package version omits the leading `v`.
   TradingView symbol search and tightened `tv quote <SYMBOL>` so symbol
   resolution failures return candidates instead of falling back to chart target
   selection.
+- Added the first internal library crate boundary so the `tv` binary can share
+  modules through `src/lib.rs` without changing the CLI contract.
 
 ## v0.2.0 - 2026-04-27
 

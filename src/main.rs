@@ -1,28 +1,22 @@
-mod cdp;
-mod cli;
-mod error;
-mod ops;
-mod output;
-mod transport;
-
 use std::{
     io::{self, IsTerminal, Read},
     process::ExitCode,
     time::Duration,
 };
 
-use cdp::CdpClient;
 use clap::{Parser, error::ErrorKind as ClapErrorKind};
-use cli::{
+use serde_json::json;
+use tradingview_cli::cdp::CdpClient;
+use tradingview_cli::cli::{
     AlertCommand, Cli, Command, DataCommand, DrawingCommand, IndicatorCommand, LayoutCommand,
     PaneCommand, PineCommand, ReplayCommand, ScannerCommand, ScreenerColumnsCommand,
     ScreenerCommand, ScreenerFiltersCommand, ScreenerScreensCommand, StreamCommand, TabCommand,
     UiCommand, WatchlistCommand,
 };
-use error::{AppError, ErrorKind};
-use output::{ErrorBody, ErrorEnvelope, SuccessEnvelope};
-use serde_json::json;
-use transport::TransportConfig;
+use tradingview_cli::error::{AppError, ErrorKind};
+use tradingview_cli::ops;
+use tradingview_cli::output::{ErrorBody, ErrorEnvelope, SuccessEnvelope};
+use tradingview_cli::transport::{self, TransportConfig};
 
 const UNSAFE_UI_EVAL_ENV: &str = "TV_ALLOW_UNSAFE_UI_EVAL";
 #[cfg(windows)]

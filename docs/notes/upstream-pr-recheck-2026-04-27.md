@@ -83,4 +83,5 @@ upstream report.
 
 The next `v0.3.0` work item is not another broad upstream sweep. Move to
 credential-safe direct HTTP feasibility for read-only surfaces, using
-`docs/plans/tradingview-cli-direct-http-feasibility.md` as the research plan.
+`docs/plans/archives/tradingview-cli-direct-http-feasibility.md` as the
+completed research plan.

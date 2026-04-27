@@ -36,12 +36,28 @@ Before adding more DOM retries, check whether a page-session API, storage
 payload, or endpoint can replace the visible UI path. The public-safe reference
 for these dependencies is `docs/internal-tradingview-apis.md`.
 
+## Crate boundary
+
+The package has two Rust crate roots:
+
+- `src/lib.rs` is the library crate root. It exposes the current internal
+  modules so the binary can share a single module tree and future refactors can
+  extract reusable pieces incrementally.
+- `src/main.rs` is the `tv` binary entrypoint. It owns process startup,
+  tracing setup, command dispatch, success/error envelope printing, and exit
+  codes.
+
+The library crate is not yet a stable public Rust API. Treat its modules as an
+internal boundary for maintainability until a future ExecPlan explicitly marks
+types or functions as stable for downstream Rust callers.
+
 ## Rust module responsibilities
 
 Keep responsibilities separated:
 
+- `src/lib.rs` owns top-level module declarations.
 - `src/main.rs` owns startup, CLI dispatch, runtime connection setup,
-  success/error envelope printing, and exit codes.
+  success/error envelope printing, and exit codes for the `tv` binary.
 - `src/cli.rs` owns the `clap` command surface, argument definitions, and
   command names.
 - `src/ops.rs` is a thin facade that declares operation modules and re-exports
@@ -150,4 +166,4 @@ Keep these boundaries unless a future ExecPlan records new evidence:
   preferred
 - direct HTTP operation without TradingView Desktop page-session context is
   still future research for account/session-bound commands, documented in
-  `docs/plans/tradingview-cli-direct-http-feasibility.md`
+  `docs/plans/archives/tradingview-cli-direct-http-feasibility.md`
