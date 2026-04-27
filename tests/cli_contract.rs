@@ -763,7 +763,31 @@ fn ohlcv_accepts_count_argument() {
     tv().args(["ohlcv", "--help"])
         .assert()
         .success()
-        .stdout(predicate::str::contains("--count"));
+        .stdout(predicate::str::contains("--count"))
+        .stdout(predicate::str::contains("selected chart target"))
+        .stdout(predicate::str::contains("--target-id"))
+        .stdout(predicate::str::contains("tv tab list"));
+}
+
+#[test]
+fn info_help_explains_current_chart_only() {
+    tv().args(["info", "--help"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("current chart symbol metadata"))
+        .stdout(predicate::str::contains(
+            "does not accept a SYMBOL argument",
+        ))
+        .stdout(predicate::str::contains("tv quote <SYMBOL>"));
+}
+
+#[test]
+fn timeframe_help_explains_interval_is_not_command() {
+    tv().args(["timeframe", "--help"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("tv timeframe D"))
+        .stdout(predicate::str::contains("`interval` is not a `tv` command"));
 }
 
 #[test]

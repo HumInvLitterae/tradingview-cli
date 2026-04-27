@@ -11,7 +11,7 @@ Use this skill for live TradingView chart review through the Rust `tv` CLI.
 
 1. Run `tv status`.
 2. If there is no connection, run `tv launch` once. If it still cannot connect, explain that the user must launch TradingView with a remote debugging port or provide `tv launch --path <PATH>`.
-3. If multiple chart targets are open or the connected chart is unclear, run `tv tab list` and use the desired target's `target_cli_args`, for example `tv --target-id <ID> quote`, for follow-up chart commands.
+3. If multiple chart targets are open or the connected chart is unclear, run `tv tab list` and use the desired target's `target_cli_args`, for example `tv --target-id <ID> quote`, for follow-up chart commands. Do not use `TV_CDP_TARGET_ID`.
 4. Run `tv discover` and `tv ui-state` when the chart surface itself is unclear.
 
 ## Core Workflow
@@ -29,6 +29,20 @@ Use this skill for live TradingView chart review through the Rust `tv` CLI.
 6. Inspect or adjust the date window with `tv range`, `tv scroll <DATE>`, or `tv range --from <UNIX_SECONDS> --to <UNIX_SECONDS>`.
 7. Use `tv stream quote` or `tv stream bars` only when the task needs short-lived live monitoring; ordinary chart reads should use `tv quote` and `tv ohlcv --summary`.
 8. Capture visual evidence only when useful: `tv screenshot --region chart --output <PATH>`.
+
+## OHLCV Recovery
+
+If `tv ohlcv` fails but `tv quote` or `tv symbol` works, keep the full JSON
+error envelope and inspect `error.kind` and `error.details` instead of piping
+through `head` or `tail`. Then rerun `tv tab list`, choose the active chart
+target's `target_cli_args`, run `tv --target-id <ID> state`, and retry
+`tv --target-id <ID> ohlcv --count 1`. Ask the user to foreground or click the
+chart only after target reselection and `state` inspection do not explain the
+failure.
+
+Use `tv timeframe <RESOLUTION>` for timeframe changes. `tv interval` is not a
+command. `tv info` reads the current chart symbol metadata and does not accept a
+symbol argument; for a one-off symbol read, use `tv quote <SYMBOL>`.
 
 ## Reporting
 

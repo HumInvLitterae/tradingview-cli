@@ -24,10 +24,13 @@ When reporting commands to the user, write them as `tv ...` unless the local exe
 3. On Windows, prefer the standalone TradingView Desktop install. Microsoft Store/MSIX launch compatibility is unverified until Windows live smoke confirms CDP starts correctly.
 4. If `tv launch` cannot find TradingView Desktop, ask the user for the executable path and use `tv launch --path <PATH>`.
 5. If more than one chart target is open, run `tv tab list`, ask the user which target to use, and reuse that target's `target_cli_args`, for example `tv --target-id <ID> quote`, for chart-specific commands.
+6. Do not use `TV_CDP_TARGET_ID`; explicit target handoff is `--target-id`.
 
 ## Safety Rules
 
 - Prefer read-only commands first: `status`, `state`, `quote`, `ohlcv`, `values`, `watchlist get`, `pane list`, `layout list`, `alert list`, `pine get`, and `screenshot`.
+- If `ohlcv` fails while `quote` or `symbol` works, keep the full JSON error envelope, inspect `error.details`, rerun `tv tab list`, choose the active target's `target_cli_args`, run `tv --target-id <ID> state`, and retry `tv --target-id <ID> ohlcv --count 1`.
+- Use `tv timeframe <RESOLUTION>` for timeframe changes. `tv interval` is not a command. `tv info` reads the current chart only; use `tv quote <SYMBOL>` for one-off symbol quotes.
 - Before mutating chart, account, Pine, replay, layout, tab, drawing, alert, or watchlist state, explain the expected effect and get explicit user approval.
 - Use dry-run modes when available, especially for broad actions such as `alert delete --all --dry-run`, `draw clear --dry-run`, and `layout switch --dry-run`.
 - Do not record real account-local identifiers in shared notes unless the user explicitly asks. Scrub saved-script ids, saved-script names, alert ids, layout ids, chart target ids, usernames, emails, account names, and machine-local paths.

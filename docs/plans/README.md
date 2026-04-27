@@ -13,6 +13,8 @@ for release and next-phase planning.
   TradingView Desktop page-session context.
 - `tradingview-cli-indicator-alertcondition-mutation.md`: guarded normal
   mutation for Pine `alertcondition()` alert creation.
+- `tradingview-cli-chart-data-readiness.md`: `ohlcv` failure diagnostics and
+  agent recovery guidance for chart target readiness.
 
 ## Archived plans
 

@@ -81,6 +81,10 @@ Safety boundary:
 - `quote <SYMBOL>` should prefer a non-mutating read when available; chart
   switching is fallback behavior and must fail if the observed quote symbol does
   not match the requested symbol
+- `ohlcv` depends on the selected chart target's main-series bars collection.
+  When the chart API or bars collection is unavailable, it should fail with
+  structured readiness details and a target-selection recovery hint rather than
+  reporting stale or empty chart data as success.
 - missing objects or changed method names should become
   `internal_api_unavailable`
 

@@ -33,7 +33,10 @@ pub enum Command {
     },
     #[command(about = "Get current chart state")]
     State,
-    #[command(about = "Get detailed symbol metadata")]
+    #[command(
+        about = "Get current chart symbol metadata",
+        long_about = "Get current chart symbol metadata.\n\nThis command reads metadata for the symbol already loaded in the selected chart target. It does not accept a SYMBOL argument; use `tv quote <SYMBOL>` for a one-off symbol quote, or run `tv symbol <SYMBOL>` followed by `tv info` when you intentionally want to change the chart first. If more than one TradingView target is open, run `tv tab list` and pass `tv --target-id <ID> info`."
+    )]
     Info,
     #[command(about = "Search TradingView symbols")]
     Search { query: Vec<String> },
@@ -58,7 +61,10 @@ pub enum Command {
     Discover,
     #[command(name = "ui-state", about = "Get current TradingView UI state")]
     UiState,
-    #[command(about = "Get OHLCV summary data")]
+    #[command(
+        about = "Get OHLCV summary data",
+        long_about = "Get OHLCV chart bar data from the selected chart target.\n\nBy default this returns recent bars from the current chart. Use `--count <N>` for raw bars and `--summary` for an aggregate summary. If more than one TradingView target is open, run `tv tab list` and pass `tv --target-id <ID> ohlcv ...`. If bars are unavailable, inspect the structured error details, then rerun `tv tab list`, `tv --target-id <ID> state`, and `tv --target-id <ID> ohlcv --count 1` against the active chart target."
+    )]
     Ohlcv {
         #[arg(long, short)]
         summary: bool,
@@ -70,7 +76,10 @@ pub enum Command {
         long_about = "Get or set the chart symbol.\n\nRun without SYMBOL to read the current chart symbol. Pass SYMBOL as a positional argument to set it, for example `tv symbol NASDAQ:MU`. There is no --set flag. If more than one TradingView target is open, run `tv tab list` and pass `tv --target-id <ID> symbol ...`."
     )]
     Symbol { symbol: Option<String> },
-    #[command(about = "Get or set the chart timeframe")]
+    #[command(
+        about = "Get or set the chart timeframe",
+        long_about = "Get or set the chart timeframe.\n\nRun without RESOLUTION to read the current chart timeframe. Pass RESOLUTION as a positional argument to set it, for example `tv timeframe D`. The command name is `timeframe`; `interval` is not a `tv` command. If more than one TradingView target is open, run `tv tab list` and pass `tv --target-id <ID> timeframe ...`."
+    )]
     Timeframe { timeframe: Option<String> },
     #[command(about = "Get or set the chart type")]
     Type { chart_type: Option<String> },

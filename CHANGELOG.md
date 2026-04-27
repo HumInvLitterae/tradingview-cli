@@ -37,6 +37,9 @@ package version omits the leading `v`.
 - Fixed alert delete cleanup for numeric alert ids and sanitized returned alert
   condition details so Pine/account metadata is not exposed in alert list,
   create, or delete payloads.
+- Improved `tv ohlcv` failures with structured chart-bars readiness details and
+  refreshed agent guidance for `--target-id`, valid chart commands, and OHLCV
+  recovery.
 
 ## v0.2.0 - 2026-04-27
 

@@ -11,7 +11,7 @@ Use this skill to compare several TradingView symbols through the Rust `tv` CLI 
 
 1. Confirm the symbol list, timeframe, and screening criteria from the user request.
 2. Run `tv status`; if needed, run `tv watchlist get` to inspect the current TradingView watchlist.
-3. If more than one chart target is open, run `tv tab list` and use `target_cli_args`, for example `tv --target-id <ID> ...`, for any chart-specific follow-up.
+3. If more than one chart target is open, run `tv tab list` and use `target_cli_args`, for example `tv --target-id <ID> ...`, for any chart-specific follow-up. Do not use `TV_CDP_TARGET_ID`.
 4. For broad discovery, prefer `tv scanner hotlist` or `tv scanner scan` before mutating the chart across many symbols.
 5. Keep chart-by-chart inspection small and serial. The Rust CLI does not implement the old MCP `batch_run` helper.
 
@@ -26,6 +26,18 @@ Use this skill to compare several TradingView symbols through the Rust `tv` CLI 
 7. After user approval, add selected symbols with `tv watchlist add-bulk <SYMBOL>... --allow-partial`; it inherits the API-backed single-symbol add path and reports duplicates or partial failures.
 8. Capture screenshots selectively for finalists or ambiguous cases with `tv screenshot --region chart --output <PATH>`.
 9. Present a ranked shortlist and explain which observations came from scanner REST data, chart reads, or visual interpretation.
+
+## OHLCV Recovery
+
+If a finalist chart read returns an `ohlcv` failure while symbol or quote reads
+still work, do not keep retrying the same target. Preserve the full JSON error
+envelope, inspect `error.details`, rerun `tv tab list`, choose the active chart
+target's `target_cli_args`, run `tv --target-id <ID> state`, and retry
+`tv --target-id <ID> ohlcv --count 1`.
+
+Use `tv timeframe <RESOLUTION>` for shared timeframe setup. `tv interval` is
+not a command. `tv info` reads only the current chart symbol metadata; use
+`tv quote <SYMBOL>` for symbol-targeted one-off quote reads.
 
 ## Boundaries
 

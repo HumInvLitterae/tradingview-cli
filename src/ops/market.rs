@@ -563,25 +563,79 @@ pub async fn ohlcv_bars(
     count: Option<usize>,
 ) -> Result<Value, AppError> {
     let limit = normalized_count(count);
-    runtime
+    let data = runtime
         .evaluate(
             &format!(
                 r#"
                 (function() {{
-                    var chart = {CHART_API};
-                    var bars = {BARS_PATH};
-                    if (!bars || typeof bars.lastIndex !== 'function') {{
-                        throw new Error('Could not extract OHLCV data. The chart may still be loading.');
+                    function safeCall(fn) {{
+                        try {{ return fn(); }} catch (e) {{ return null; }}
+                    }}
+                    function readinessFailure(reason, chart, bars, extra) {{
+                        var firstIndex = null;
+                        var lastIndex = null;
+                        var size = null;
+                        var hasFirstIndex = !!(bars && typeof bars.firstIndex === 'function');
+                        var hasLastIndex = !!(bars && typeof bars.lastIndex === 'function');
+                        if (hasFirstIndex) firstIndex = safeCall(function() {{ return bars.firstIndex(); }});
+                        if (hasLastIndex) lastIndex = safeCall(function() {{ return bars.lastIndex(); }});
+                        if (bars && typeof bars.size === 'function') size = safeCall(function() {{ return bars.size(); }});
+                        return Object.assign({{
+                            _tv_ohlcv_error: true,
+                            phase: "ohlcv_bars_read",
+                            reason: reason,
+                            chart_api_available: !!chart,
+                            bars_available: !!bars,
+                            chart_symbol: chart ? safeCall(function() {{ return chart.symbol(); }}) : null,
+                            resolution: chart ? safeCall(function() {{ return chart.resolution(); }}) : null,
+                            bar_index_state: {{
+                                has_first_index: hasFirstIndex,
+                                has_last_index: hasLastIndex,
+                                first_index: firstIndex,
+                                last_index: lastIndex,
+                                size: size,
+                                result_count: 0
+                            }}
+                        }}, extra || {{}});
+                    }}
+
+                    var chart = null;
+                    var bars = null;
+                    try {{ chart = {CHART_API}; }} catch (e) {{
+                        return readinessFailure("chart_api_unavailable", null, null, {{
+                            chart_api_error: String(e && e.message ? e.message : e)
+                        }});
+                    }}
+                    try {{ bars = {BARS_PATH}; }} catch (e) {{
+                        return readinessFailure("bars_path_unavailable", chart, null, {{
+                            bars_error: String(e && e.message ? e.message : e)
+                        }});
+                    }}
+                    if (!bars || typeof bars.lastIndex !== 'function' || typeof bars.firstIndex !== 'function') {{
+                        return readinessFailure("bars_index_api_unavailable", chart, bars, null);
                     }}
                     var result = [];
-                    var end = bars.lastIndex();
-                    var start = Math.max(bars.firstIndex(), end - {limit} + 1);
+                    var first = safeCall(function() {{ return bars.firstIndex(); }});
+                    var end = safeCall(function() {{ return bars.lastIndex(); }});
+                    if (first === null || end === null || !isFinite(first) || !isFinite(end)) {{
+                        return readinessFailure("bars_index_unreadable", chart, bars, null);
+                    }}
+                    var start = Math.max(first, end - {limit} + 1);
                     for (var i = start; i <= end; i++) {{
                         var v = bars.valueAt(i);
                         if (v) result.push({{time: v[0], open: v[1], high: v[2], low: v[3], close: v[4], volume: v[5] || 0}});
                     }}
                     if (result.length === 0) {{
-                        throw new Error('Could not extract OHLCV data. The chart may still be loading.');
+                        return readinessFailure("bars_empty", chart, bars, {{
+                            bar_index_state: {{
+                                has_first_index: true,
+                                has_last_index: true,
+                                first_index: start,
+                                last_index: end,
+                                size: (typeof bars.size === 'function') ? safeCall(function() {{ return bars.size(); }}) : null,
+                                result_count: 0
+                            }}
+                        }});
                     }}
                     return {{
                         symbol: chart.symbol(),
@@ -597,7 +651,32 @@ pub async fn ohlcv_bars(
             ),
             false,
         )
-        .await
+        .await?;
+    if data
+        .get("_tv_ohlcv_error")
+        .and_then(Value::as_bool)
+        .unwrap_or(false)
+    {
+        return Err(ohlcv_readiness_error(data));
+    }
+    Ok(data)
+}
+
+fn ohlcv_readiness_error(mut details: Value) -> AppError {
+    if let Some(object) = details.as_object_mut() {
+        object.remove("_tv_ohlcv_error");
+        object.insert(
+            "next_action_hint".to_string(),
+            json!(
+                "Run `tv tab list`, choose the active chart target's target_cli_args, then run `tv --target-id <ID> state` and `tv --target-id <ID> ohlcv --count 1`. Do not use TV_CDP_TARGET_ID."
+            ),
+        );
+    }
+    AppError::new(
+        ErrorKind::InternalApiUnavailable,
+        "Could not extract OHLCV data because chart bars are not available",
+    )
+    .with_details(details)
 }
 
 pub async fn ohlcv_summary(
@@ -782,6 +861,117 @@ mod tests {
         let _ = ohlcv_bars(&mut runtime, Some(900)).await;
 
         assert!(runtime.evaluated[0].0.contains("end - 500 + 1"));
+    }
+
+    #[tokio::test]
+    async fn ohlcv_missing_bars_returns_readiness_details() {
+        let mut runtime = FakeRuntime::new([json!({
+            "_tv_ohlcv_error": true,
+            "phase": "ohlcv_bars_read",
+            "reason": "bars_index_api_unavailable",
+            "chart_api_available": true,
+            "bars_available": false,
+            "chart_symbol": "NASDAQ:IONQ",
+            "resolution": "D",
+            "bar_index_state": {
+                "has_first_index": false,
+                "has_last_index": false,
+                "first_index": null,
+                "last_index": null,
+                "size": null,
+                "result_count": 0
+            }
+        })]);
+
+        let error = ohlcv_bars(&mut runtime, Some(5)).await.unwrap_err();
+
+        assert_eq!(error.kind, ErrorKind::InternalApiUnavailable);
+        assert_eq!(
+            error.message,
+            "Could not extract OHLCV data because chart bars are not available"
+        );
+        let details = error.details.as_ref().unwrap();
+        assert_eq!(details["phase"], "ohlcv_bars_read");
+        assert_eq!(details["reason"], "bars_index_api_unavailable");
+        assert_eq!(details["chart_api_available"], true);
+        assert_eq!(details["bars_available"], false);
+        assert_eq!(details["chart_symbol"], "NASDAQ:IONQ");
+        assert_eq!(details["resolution"], "D");
+        assert_eq!(details["bar_index_state"]["result_count"], 0);
+        assert_eq!(details["_tv_ohlcv_error"], Value::Null);
+        assert!(
+            details["next_action_hint"]
+                .as_str()
+                .unwrap()
+                .contains("--target-id")
+        );
+    }
+
+    #[tokio::test]
+    async fn ohlcv_empty_bars_returns_readiness_details() {
+        let mut runtime = FakeRuntime::new([json!({
+            "_tv_ohlcv_error": true,
+            "phase": "ohlcv_bars_read",
+            "reason": "bars_empty",
+            "chart_api_available": true,
+            "bars_available": true,
+            "chart_symbol": "NASDAQ:IONQ",
+            "resolution": "D",
+            "bar_index_state": {
+                "has_first_index": true,
+                "has_last_index": true,
+                "first_index": 10,
+                "last_index": 12,
+                "size": 3,
+                "result_count": 0
+            }
+        })]);
+
+        let error = ohlcv_bars(&mut runtime, Some(5)).await.unwrap_err();
+
+        assert_eq!(error.kind, ErrorKind::InternalApiUnavailable);
+        let details = error.details.as_ref().unwrap();
+        assert_eq!(details["reason"], "bars_empty");
+        assert_eq!(details["bars_available"], true);
+        assert_eq!(details["bar_index_state"]["first_index"], 10);
+        assert_eq!(details["bar_index_state"]["last_index"], 12);
+        assert_eq!(details["bar_index_state"]["size"], 3);
+        assert!(
+            details["next_action_hint"]
+                .as_str()
+                .unwrap()
+                .contains("TV_CDP_TARGET_ID")
+        );
+    }
+
+    #[tokio::test]
+    async fn ohlcv_success_preserves_practical_fields() {
+        let mut runtime = FakeRuntime::new([json!({
+            "symbol": "NASDAQ:IONQ",
+            "resolution": "D",
+            "timeframe": "D",
+            "bar_count": 1,
+            "total_available": 42,
+            "source": "direct_bars",
+            "bars": [{
+                "time": 1,
+                "open": 1.0,
+                "high": 2.0,
+                "low": 0.5,
+                "close": 1.5,
+                "volume": 1000.0
+            }]
+        })]);
+
+        let result = ohlcv_bars(&mut runtime, Some(1)).await.unwrap();
+
+        assert_eq!(result["symbol"], "NASDAQ:IONQ");
+        assert_eq!(result["resolution"], "D");
+        assert_eq!(result["timeframe"], "D");
+        assert_eq!(result["bar_count"], 1);
+        assert_eq!(result["total_available"], 42);
+        assert_eq!(result["source"], "direct_bars");
+        assert_eq!(result["bars"].as_array().unwrap().len(), 1);
     }
 
     #[tokio::test]

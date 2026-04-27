@@ -211,6 +211,14 @@ tv --target-id <CDP_TARGET_ID> symbol NASDAQ:MU
 
 When a Stock Screener is open as its own TradingView Desktop tab, `tv tab list` also returns `screener_targets`; use their `target_cli_args` value for `tv screener ...` commands against the full-page Screener target.
 
+If `tv ohlcv` fails while `tv quote` or `tv symbol` still works, do not keep
+retrying the same command blindly. Preserve the full JSON error envelope, check
+`error.details`, rerun `tv tab list`, choose the active chart target's
+`target_cli_args`, then run `tv --target-id <ID> state` and
+`tv --target-id <ID> ohlcv --count 1`. `tv info` reads the current chart and
+does not take a symbol argument; use `tv quote <SYMBOL>` for one-off quote reads.
+The chart timeframe command is `tv timeframe <RESOLUTION>`, not `interval`.
+
 Commands print structured JSON. Most successful commands print one `success: true` envelope to stdout. `tv stream ...` commands are intentionally long-running and print newline-delimited JSON envelopes, one line per changed sample. Failed commands print a `success: false` envelope to stderr.
 
 Exit codes are:
