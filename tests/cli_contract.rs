@@ -1183,6 +1183,22 @@ fn pine_analyze_requires_source_before_connecting() {
 }
 
 #[test]
+fn pine_alertconditions_requires_source_before_connecting() {
+    let assert = tv()
+        .env("TV_CDP_PORT", "9")
+        .args(["pine", "alertconditions"])
+        .write_stdin("")
+        .assert()
+        .failure()
+        .code(1);
+    let stderr = String::from_utf8(assert.get_output().stderr.clone()).unwrap();
+    let value: Value = serde_json::from_str(&stderr).unwrap();
+    assert_eq!(value["success"], false);
+    assert_eq!(value["command"], "pine");
+    assert_eq!(value["error"]["kind"], "validation");
+}
+
+#[test]
 fn pine_check_requires_source_before_connecting() {
     let assert = tv()
         .env("TV_CDP_PORT", "9")
@@ -1272,6 +1288,40 @@ fn pine_analyze_runs_without_cdp_connection() {
     assert_eq!(value["command"], "pine");
     assert_eq!(value["data"]["input_source"], "stdin");
     assert_eq!(value["data"]["issue_count"], 1);
+}
+
+#[test]
+fn pine_alertconditions_runs_without_cdp_connection() {
+    let assert = tv()
+        .env("TV_CDP_PORT", "9")
+        .args(["pine", "alertconditions"])
+        .write_stdin(
+            r#"//@version=6
+indicator("Signals")
+plot(close)
+alertcondition(close > open, "Long", "Long message")"#,
+        )
+        .assert()
+        .success();
+    let stdout = String::from_utf8(assert.get_output().stdout.clone()).unwrap();
+    let value: Value = serde_json::from_str(&stdout).unwrap();
+    assert_eq!(value["success"], true);
+    assert_eq!(value["command"], "pine");
+    assert_eq!(value["data"]["input_source"], "stdin");
+    assert_eq!(value["data"]["candidate_count"], 1);
+    assert_eq!(value["data"]["candidates"][0]["alert_cond_id"], "plot_1");
+    assert_eq!(value["data"]["candidates"][0]["title"], "Long");
+}
+
+#[test]
+fn pine_alertconditions_help_is_available() {
+    let assert = tv()
+        .args(["pine", "alertconditions", "--help"])
+        .assert()
+        .success();
+    let stdout = String::from_utf8(assert.get_output().stdout.clone()).unwrap();
+    assert!(stdout.contains("Discover Pine alertcondition() candidates"));
+    assert!(stdout.contains("--file"));
 }
 
 #[test]

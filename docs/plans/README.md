@@ -14,6 +14,9 @@ for release and next-phase planning.
 - `tradingview-cli-indicator-alertcondition-feasibility.md`: feasibility
   investigation for Pine `alertcondition()` alert creation before any
   account-mutating command is added.
+- `tradingview-cli-pine-alertcondition-discovery.md`: safe local static
+  discovery of Pine `alertcondition()` candidates before any indicator-alert
+  dry-run or mutation command is added.
 
 ## Archived plans
 

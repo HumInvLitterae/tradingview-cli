@@ -25,6 +25,9 @@ package version omits the leading `v`.
 - Recorded Pine `alertcondition()` alert creation feasibility and kept raw
   indicator-alert mutation deferred until discovery/dry-run behavior is
   designed.
+- Added `tv pine alertconditions [--file <PATH>]` for local static discovery of
+  Pine `alertcondition()` candidates without connecting to TradingView or
+  creating account alerts.
 
 ## v0.2.0 - 2026-04-27
 

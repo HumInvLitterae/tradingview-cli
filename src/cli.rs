@@ -548,6 +548,11 @@ pub enum PineCommand {
         #[arg(long, short)]
         file: Option<PathBuf>,
     },
+    #[command(about = "Discover Pine alertcondition() candidates from source")]
+    Alertconditions {
+        #[arg(long, short)]
+        file: Option<PathBuf>,
+    },
     #[command(about = "Run TradingView server-side Pine Script compile check")]
     Check {
         #[arg(long, short)]

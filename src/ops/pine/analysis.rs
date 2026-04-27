@@ -15,6 +15,26 @@ struct PineDiagnostic {
     severity: &'static str,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+struct AlertconditionCandidate {
+    line: usize,
+    column: usize,
+    title: Option<String>,
+    message: Option<String>,
+    alert_cond_id: String,
+    plot_index: usize,
+    preceding_output_count: usize,
+    confidence: &'static str,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct PineCall {
+    name: String,
+    start: usize,
+    open: usize,
+    close: usize,
+}
+
 pub fn pine_analyze(source: &str, input_source: &str) -> Value {
     let diagnostics = analyze_source(source);
 
@@ -27,6 +47,39 @@ pub fn pine_analyze(source: &str, input_source: &str) -> Value {
         } else {
             Value::Null
         },
+    })
+}
+
+pub fn pine_alertconditions(source: &str, input_source: &str) -> Value {
+    let calls = collect_pine_calls(source);
+    let mut counted_output_count = 0usize;
+    let mut candidates = Vec::new();
+
+    for call in calls {
+        if call.name == "alertcondition" {
+            let (title, message) = alertcondition_literal_fields(source, &call);
+            let (line, column) = line_column(source, call.start);
+            candidates.push(AlertconditionCandidate {
+                line,
+                column,
+                title,
+                message,
+                alert_cond_id: format!("plot_{counted_output_count}"),
+                plot_index: counted_output_count,
+                preceding_output_count: counted_output_count,
+                confidence: "best_effort",
+            });
+        }
+
+        counted_output_count += 1;
+    }
+
+    json!({
+        "input_source": input_source,
+        "candidate_count": candidates.len(),
+        "counted_output_count": counted_output_count,
+        "candidates": candidates,
+        "note": "Static Pine alertcondition discovery only. Compile the script in TradingView before relying on plot indexes for alert creation.",
     })
 }
 
@@ -270,6 +323,301 @@ fn is_identifier_char(ch: char) -> bool {
     ch == '_' || ch.is_ascii_alphanumeric()
 }
 
+fn collect_pine_calls(source: &str) -> Vec<PineCall> {
+    let sanitized = sanitize_for_call_scan(source);
+    let bytes = sanitized.as_bytes();
+    let mut calls = Vec::new();
+    let mut index = 0usize;
+
+    while index < bytes.len() {
+        let ch = bytes[index] as char;
+        if ch == '_' || ch.is_ascii_alphabetic() {
+            let start = index;
+            index += 1;
+            while index < bytes.len() {
+                let next = bytes[index] as char;
+                if is_identifier_char(next) {
+                    index += 1;
+                } else {
+                    break;
+                }
+            }
+
+            let name = &sanitized[start..index];
+            let mut open = index;
+            while open < bytes.len() && bytes[open].is_ascii_whitespace() {
+                open += 1;
+            }
+
+            let mut matched_call = false;
+            if open < bytes.len()
+                && bytes[open] == b'('
+                && is_counted_pine_call(name)
+                && !is_member_call(&sanitized, start)
+                && let Some(close) = find_matching_paren(&sanitized, open)
+            {
+                calls.push(PineCall {
+                    name: name.to_string(),
+                    start,
+                    open,
+                    close,
+                });
+                index = close + 1;
+                matched_call = true;
+            }
+
+            if !matched_call {
+                index = index.max(start + 1);
+            }
+        } else {
+            index += 1;
+        }
+    }
+
+    calls
+}
+
+fn is_counted_pine_call(name: &str) -> bool {
+    matches!(
+        name,
+        "alertcondition" | "bgcolor" | "plot" | "plotbar" | "plotcandle" | "plotchar" | "plotshape"
+    )
+}
+
+fn is_member_call(source: &str, start: usize) -> bool {
+    source[..start].chars().rev().find(|ch| !ch.is_whitespace()) == Some('.')
+}
+
+fn find_matching_paren(source: &str, open: usize) -> Option<usize> {
+    let mut depth = 0usize;
+    for (index, ch) in source[open..].char_indices() {
+        let absolute = open + index;
+        match ch {
+            '(' => depth += 1,
+            ')' => {
+                depth = depth.checked_sub(1)?;
+                if depth == 0 {
+                    return Some(absolute);
+                }
+            }
+            _ => {}
+        }
+    }
+    None
+}
+
+fn alertcondition_literal_fields(
+    source: &str,
+    call: &PineCall,
+) -> (Option<String>, Option<String>) {
+    let args = &source[call.open + 1..call.close];
+    let args = split_top_level_args(args);
+    let title = named_string_arg(&args, "title")
+        .or_else(|| args.get(1).and_then(|arg| string_literal_value(arg)));
+    let message = named_string_arg(&args, "message")
+        .or_else(|| args.get(2).and_then(|arg| string_literal_value(arg)));
+    (title, message)
+}
+
+fn named_string_arg(args: &[String], name: &str) -> Option<String> {
+    args.iter().find_map(|arg| {
+        let (candidate, value) = arg.split_once('=')?;
+        if candidate.trim() == name {
+            string_literal_value(value)
+        } else {
+            None
+        }
+    })
+}
+
+fn split_top_level_args(args: &str) -> Vec<String> {
+    let mut result = Vec::new();
+    let mut current = String::new();
+    let mut depth = 0usize;
+    let mut quote: Option<char> = None;
+    let mut escaped = false;
+
+    for ch in args.chars() {
+        if let Some(quote_char) = quote {
+            current.push(ch);
+            if escaped {
+                escaped = false;
+            } else if ch == '\\' {
+                escaped = true;
+            } else if ch == quote_char {
+                quote = None;
+            }
+            continue;
+        }
+
+        match ch {
+            '"' | '\'' => {
+                quote = Some(ch);
+                current.push(ch);
+            }
+            '(' | '[' | '{' => {
+                depth += 1;
+                current.push(ch);
+            }
+            ')' | ']' | '}' => {
+                depth = depth.saturating_sub(1);
+                current.push(ch);
+            }
+            ',' if depth == 0 => {
+                result.push(current.trim().to_string());
+                current.clear();
+            }
+            _ => current.push(ch),
+        }
+    }
+
+    if !current.trim().is_empty() || args.ends_with(',') {
+        result.push(current.trim().to_string());
+    }
+
+    result
+}
+
+fn string_literal_value(value: &str) -> Option<String> {
+    let trimmed = value.trim();
+    let mut chars = trimmed.chars();
+    let quote = chars.next()?;
+    if quote != '"' && quote != '\'' {
+        return None;
+    }
+
+    let mut result = String::new();
+    let mut escaped = false;
+    for ch in chars {
+        if escaped {
+            result.push(match ch {
+                'n' => '\n',
+                'r' => '\r',
+                't' => '\t',
+                other => other,
+            });
+            escaped = false;
+        } else if ch == '\\' {
+            escaped = true;
+        } else if ch == quote {
+            return Some(result);
+        } else {
+            result.push(ch);
+        }
+    }
+    None
+}
+
+fn line_column(source: &str, byte_index: usize) -> (usize, usize) {
+    let mut line = 1usize;
+    let mut line_start = 0usize;
+    for (index, ch) in source.char_indices() {
+        if index >= byte_index {
+            break;
+        }
+        if ch == '\n' {
+            line += 1;
+            line_start = index + ch.len_utf8();
+        }
+    }
+    (line, byte_index - line_start + 1)
+}
+
+fn sanitize_for_call_scan(source: &str) -> String {
+    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+    enum State {
+        Normal,
+        LineComment,
+        BlockComment,
+        String(char),
+    }
+
+    let mut output = String::with_capacity(source.len());
+    let mut chars = source.char_indices().peekable();
+    let mut state = State::Normal;
+    let mut escaped = false;
+
+    while let Some((_, ch)) = chars.next() {
+        match state {
+            State::Normal => {
+                if ch == '/'
+                    && let Some((_, next)) = chars.peek().copied()
+                {
+                    if next == '/' {
+                        push_spaces_like(&mut output, ch);
+                        chars.next();
+                        push_spaces_like(&mut output, next);
+                        state = State::LineComment;
+                        continue;
+                    }
+                    if next == '*' {
+                        push_spaces_like(&mut output, ch);
+                        chars.next();
+                        push_spaces_like(&mut output, next);
+                        state = State::BlockComment;
+                        continue;
+                    }
+                }
+
+                if ch == '"' || ch == '\'' {
+                    push_spaces_like(&mut output, ch);
+                    state = State::String(ch);
+                    escaped = false;
+                } else {
+                    output.push(ch);
+                }
+            }
+            State::LineComment => {
+                if ch == '\n' {
+                    output.push('\n');
+                    state = State::Normal;
+                } else {
+                    push_spaces_like(&mut output, ch);
+                }
+            }
+            State::BlockComment => {
+                if ch == '*'
+                    && let Some((_, next)) = chars.peek().copied()
+                    && next == '/'
+                {
+                    push_spaces_like(&mut output, ch);
+                    chars.next();
+                    push_spaces_like(&mut output, next);
+                    state = State::Normal;
+                } else if ch == '\n' {
+                    output.push('\n');
+                } else {
+                    push_spaces_like(&mut output, ch);
+                }
+            }
+            State::String(quote) => {
+                if ch == '\n' {
+                    output.push('\n');
+                    escaped = false;
+                } else {
+                    push_spaces_like(&mut output, ch);
+                }
+
+                if escaped {
+                    escaped = false;
+                } else if ch == '\\' {
+                    escaped = true;
+                } else if ch == quote {
+                    state = State::Normal;
+                }
+            }
+        }
+    }
+
+    output
+}
+
+fn push_spaces_like(output: &mut String, ch: char) {
+    for _ in 0..ch.len_utf8() {
+        output.push(' ');
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -472,5 +820,76 @@ strategy.entry("Long", strategy.long)"#,
         assert_eq!(result["issue_count"], 0);
         assert!(result["diagnostics"].as_array().unwrap().is_empty());
         assert!(result["note"].as_str().unwrap().contains("No static"));
+    }
+
+    #[test]
+    fn pine_alertconditions_reports_best_effort_plot_ids() {
+        let result = pine_alertconditions(
+            r#"//@version=6
+indicator("Signals")
+plot(close)
+bgcolor(close > open ? color.green : na)
+plotshape(close > open, title="Shape")
+alertcondition(close > open, "Long", "Long message")
+alertcondition(close < open, title="Short", message="Short message")"#,
+            "stdin",
+        );
+
+        assert_eq!(result["input_source"], "stdin");
+        assert_eq!(result["candidate_count"], 2);
+        assert_eq!(result["counted_output_count"], 5);
+        assert_eq!(result["candidates"][0]["alert_cond_id"], "plot_3");
+        assert_eq!(result["candidates"][0]["plot_index"], 3);
+        assert_eq!(result["candidates"][0]["title"], "Long");
+        assert_eq!(result["candidates"][0]["message"], "Long message");
+        assert_eq!(result["candidates"][1]["alert_cond_id"], "plot_4");
+        assert_eq!(result["candidates"][1]["title"], "Short");
+        assert_eq!(result["candidates"][1]["message"], "Short message");
+        assert_eq!(result["candidates"][1]["confidence"], "best_effort");
+    }
+
+    #[test]
+    fn pine_alertconditions_ignores_comments_and_strings() {
+        let result = pine_alertconditions(
+            r#"//@version=6
+indicator("alertcondition(false, \"No\")")
+// alertcondition(close > open, "Commented")
+/*
+plot(close)
+alertcondition(close > open, "Blocked")
+*/
+plot(close)
+label = "plotshape(close > open)"
+alertcondition(close > open, "Real")"#,
+            "stdin",
+        );
+
+        assert_eq!(result["candidate_count"], 1);
+        assert_eq!(result["counted_output_count"], 2);
+        assert_eq!(result["candidates"][0]["alert_cond_id"], "plot_1");
+        assert_eq!(result["candidates"][0]["title"], "Real");
+    }
+
+    #[test]
+    fn pine_alertconditions_handles_multiline_calls() {
+        let result = pine_alertconditions(
+            r#"//@version=6
+indicator("Signals")
+plot(
+    close
+)
+alertcondition(
+    close > open,
+    title="Long",
+    message="Multi line"
+)"#,
+            "file",
+        );
+
+        assert_eq!(result["input_source"], "file");
+        assert_eq!(result["candidate_count"], 1);
+        assert_eq!(result["candidates"][0]["alert_cond_id"], "plot_1");
+        assert_eq!(result["candidates"][0]["title"], "Long");
+        assert_eq!(result["candidates"][0]["message"], "Multi line");
     }
 }

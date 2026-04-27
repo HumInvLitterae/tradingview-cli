@@ -909,6 +909,10 @@ async fn dispatch(
                 let (source, input_source) = read_pine_source(file.as_deref())?;
                 Ok(ops::pine_analyze(&source, input_source))
             }
+            PineCommand::Alertconditions { file } => {
+                let (source, input_source) = read_pine_source(file.as_deref())?;
+                Ok(ops::pine_alertconditions(&source, input_source))
+            }
             PineCommand::Check { file } => {
                 let (source, input_source) = read_pine_source(file.as_deref())?;
                 ops::pine_check(&source, input_source).await

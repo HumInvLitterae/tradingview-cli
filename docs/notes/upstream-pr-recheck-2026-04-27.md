@@ -29,7 +29,7 @@ of this starter pass.
 | --- | --- | --- |
 | [#114](https://github.com/tradesdontlie/tradingview-mcp/pull/114) `Document Microsoft Store TradingView Desktop incompatibility` | `docs/compatibility` | Windows live-verification backlog. It says Microsoft Store/MSIX TradingView Desktop may not expose the requested remote debugging port because of packaged-app sandboxing. Rust now records the boundary in `docs/notes/windows-store-msix-launch-boundary.md`: standalone Desktop is the recommended launch path until Store/MSIX CDP startup is proven on Windows. |
 | [#113](https://github.com/tradesdontlie/tradingview-mcp/pull/113) `Add advanced trading bot that reads live TradingView chart` | `workflow/helper` | Keep outside core CLI. It may inspire downstream examples or skills, but a trading bot, confluence engine, paper-position manager, and drawing workflow should not be imported into the Rust binary by default. |
-| [#112](https://github.com/tradesdontlie/tradingview-mcp/pull/112) `feat(alerts): add alert_create_indicator for Pine alertcondition signals` | `feature` | Feasibility recorded in `docs/plans/tradingview-cli-indicator-alertcondition-feasibility.md`. Rust has the alert endpoint and Pine list building blocks, but should not expose the raw PR primitive directly because it depends on account-linked script metadata, exact alert-condition ids, Pine input payloads, and webhook/message mutation fields. Future work should start with discovery/dry-run before normal mutation. |
+| [#112](https://github.com/tradesdontlie/tradingview-mcp/pull/112) `feat(alerts): add alert_create_indicator for Pine alertcondition signals` | `feature` | Feasibility recorded in `docs/plans/tradingview-cli-indicator-alertcondition-feasibility.md`. Rust has the alert endpoint and Pine list building blocks, but should not expose the raw PR primitive directly because it depends on account-linked script metadata, exact alert-condition ids, Pine input payloads, and webhook/message mutation fields. The first safe discovery step is `tv pine alertconditions [--file <PATH>]`, which scans local Pine source without account mutation. Future work should continue with an account-safe dry-run before normal mutation. |
 | [#110](https://github.com/tradesdontlie/tradingview-mcp/pull/110) `Support MSIX/Microsoft Store TradingView installs on Windows` | `bugfix/compatibility` | Windows live-verification backlog. The PR points at AUMID-style activation and IPv4 loopback behavior. Rust already addressed the IPv4 default in the CDP compatibility slice; AUMID / shortcut activation remains unimplemented until a Windows environment can prove it opens CDP reliably. |
 | [#109](https://github.com/tradesdontlie/tradingview-mcp/pull/109) `Add .claude/ to .gitignore and sync package-lock.json bin entry` | `maintenance/node-only` | No Rust action. This is original-project packaging hygiene. |
 | [#108](https://github.com/tradesdontlie/tradingview-mcp/pull/108) `fix: TradingView Electron 38 CDP compatibility` | `bugfix/compatibility` | Addressed for Rust in the CDP transport compatibility slice: the default host is `127.0.0.1`, `CdpClient::connect` no longer sends initial `Runtime.enable`, `Page.enable`, or `DOM.enable` calls, and `tv tab list` exposes app-window targets for diagnostics while chart command auto-selection still avoids file URL app-window targets. |
@@ -47,10 +47,11 @@ of this starter pass.
    the standalone Desktop installer and leave AUMID / shortcut activation for a
    separate Windows-specific ExecPlan.
 
-3. Treat `#112` as a viable but deferred feature candidate.
-   Indicator/Pine alert-condition alerts may belong in the CLI, but the first
-   safe Rust step should be metadata discovery and dry-run preview rather than a
-   raw mutation primitive.
+3. Treat `#112` as a viable but still guarded feature candidate.
+   Indicator/Pine alert-condition alerts may belong in the CLI. Rust now has a
+   local static discovery command, `tv pine alertconditions [--file <PATH>]`;
+   the next step should be account-safe dry-run preview rather than a raw
+   mutation primitive.
 
 4. Keep `#113` outside the Rust core CLI.
    Workflow packs and trading bots are downstream material unless a later plan

@@ -168,12 +168,17 @@ Indicator alertcondition alerts:
 - Upstream PR #112 shows that Pine `alertcondition()` alerts can likely be
   created through the same alert endpoint family by referencing saved Pine
   script metadata and a plot-like alert condition id.
-- This is a feature candidate, not an implemented Rust surface. A raw command
-  that asks users for saved script ids, exact condition ids, input payloads, and
-  webhook fields is too easy to misuse.
-- The next safe Rust step should be discovery and dry-run first: identify
-  candidate scripts and alertcondition entries, preview the intended alert, and
-  only add normal mutation after readback and cleanup behavior are specified.
+- Rust now has the first safe discovery building block:
+  `tv pine alertconditions [--file <PATH>]` scans local Pine source and reports
+  best-effort `alertcondition()` candidates such as `plot_1`. It does not use
+  TradingView account metadata, does not connect to CDP, and does not create
+  alerts.
+- Raw indicator-alert creation remains deferred. A command that asks users for
+  saved script ids, exact condition ids, input payloads, and webhook fields is
+  too easy to misuse.
+- The next safe Rust step, if this feature proceeds, should be an account-safe
+  dry-run preview that combines static candidates with explicit user-selected
+  saved script metadata without recording account-linked identifiers in docs.
 - Do not document raw request bodies, saved script ids, webhook URLs, or copied
   alert payloads for this surface.
 
