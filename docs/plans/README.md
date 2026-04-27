@@ -11,12 +11,6 @@ for release and next-phase planning.
 - `tradingview-cli-direct-http-feasibility.md`: post-next-release
   investigation into credential-safe direct HTTP reads that do not require a
   TradingView Desktop page-session context.
-- `tradingview-cli-indicator-alertcondition-feasibility.md`: feasibility
-  investigation for Pine `alertcondition()` alert creation before any
-  account-mutating command is added.
-- `tradingview-cli-pine-alertcondition-discovery.md`: safe local static
-  discovery of Pine `alertcondition()` candidates before any indicator-alert
-  dry-run or mutation command is added.
 
 ## Archived plans
 
@@ -37,6 +31,8 @@ Important archived plan categories:
 - upstream pull-request follow-up slices for scanner, Screener, watchlist,
   alert, drawing, Pine, tab, quote, screenshot, launch, and internal API
   audits
+- Pine `alertcondition()` alert feasibility, static discovery, and dry-run-only
+  preview
 - Screener storage/API research, mutation implementation, and stabilization
   boundaries
 

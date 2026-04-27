@@ -121,7 +121,7 @@ All changes are additive and safe to rerun. The local smoke uses files under `ta
 Important evidence from the initial read:
 
     src/main.rs dispatch for `PineCommand::Analyze` reads source before invoking `ops::pine_analyze`.
-    docs/plans/tradingview-cli-indicator-alertcondition-feasibility.md records that raw PR #112 mutation remains deferred until discovery/dry-run.
+    docs/plans/archives/tradingview-cli-indicator-alertcondition-feasibility.md records that raw PR #112 mutation remains deferred until discovery/dry-run.
 
 ## Interfaces and Dependencies
 

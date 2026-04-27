@@ -24,7 +24,8 @@ mod ui;
 mod test_support;
 
 pub use alert::{
-    alert_create, alert_delete, alert_delete_all, alert_list, validate_alert_condition,
+    IndicatorAlertDryRunRequest, alert_create, alert_create_indicator_dry_run, alert_delete,
+    alert_delete_all, alert_list, validate_alert_condition,
 };
 pub use chart::{
     current_chart_type, current_symbol, current_timeframe, scroll_to_date, set_chart_type,

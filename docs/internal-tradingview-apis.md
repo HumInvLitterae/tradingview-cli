@@ -173,12 +173,18 @@ Indicator alertcondition alerts:
   best-effort `alertcondition()` candidates such as `plot_1`. It does not use
   TradingView account metadata, does not connect to CDP, and does not create
   alerts.
-- Raw indicator-alert creation remains deferred. A command that asks users for
-  saved script ids, exact condition ids, input payloads, and webhook fields is
-  too easy to misuse.
-- The next safe Rust step, if this feature proceeds, should be an account-safe
-  dry-run preview that combines static candidates with explicit user-selected
-  saved script metadata without recording account-linked identifiers in docs.
+- Rust also has a dry-run-only preview command:
+  `tv alert create-indicator --script <NAME> --file <PATH>
+  --condition-title <TITLE>|--alert-cond-id <ID> --dry-run`. It combines a
+  local static candidate with an exact saved-script display-name match from the
+  logged-in Pine facade list. Its success payload reports whether a script id
+  is available internally, but does not print the id.
+- Raw indicator-alert creation remains deferred. A normal mutation command that
+  asks users for saved script ids, exact condition ids, input payloads, and
+  webhook fields is too easy to misuse.
+- The next safe Rust step, if this feature proceeds, should specify exact
+  endpoint payload construction, post-create readback matching, and cleanup
+  smoke before enabling normal mutation.
 - Do not document raw request bodies, saved script ids, webhook URLs, or copied
   alert payloads for this surface.
 

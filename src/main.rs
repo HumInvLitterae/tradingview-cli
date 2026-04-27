@@ -665,6 +665,48 @@ async fn dispatch(
                 let mut runtime = connect_runtime(config).await?;
                 ops::alert_create(&mut runtime, price, &condition, message.as_deref()).await
             }
+            AlertCommand::CreateIndicator {
+                script,
+                file,
+                condition_title,
+                alert_cond_id,
+                symbol,
+                resolution,
+                message,
+                dry_run,
+            } => {
+                if !dry_run {
+                    return Err(AppError::new(
+                        ErrorKind::Validation,
+                        "alert create-indicator currently supports --dry-run only",
+                    ));
+                }
+                if script.trim().is_empty() {
+                    return Err(AppError::new(
+                        ErrorKind::Validation,
+                        "script must not be empty",
+                    ));
+                }
+                if condition_title.is_some() == alert_cond_id.is_some() {
+                    return Err(AppError::new(
+                        ErrorKind::Validation,
+                        "Use exactly one of --condition-title <TEXT> or --alert-cond-id <ID>",
+                    ));
+                }
+                let (source, input_source) = read_pine_source(file.as_deref())?;
+                let request = ops::IndicatorAlertDryRunRequest {
+                    script: &script,
+                    source: &source,
+                    input_source,
+                    condition_title: condition_title.as_deref(),
+                    alert_cond_id: alert_cond_id.as_deref(),
+                    symbol: symbol.as_deref(),
+                    resolution: resolution.as_deref(),
+                    message: message.as_deref(),
+                };
+                let mut runtime = connect_runtime(config).await?;
+                ops::alert_create_indicator_dry_run(&mut runtime, request).await
+            }
             AlertCommand::Delete { id, all, dry_run } => {
                 if id.is_some() == all {
                     return Err(AppError::new(

@@ -435,6 +435,25 @@ pub enum AlertCommand {
         #[arg(long, short)]
         message: Option<String>,
     },
+    #[command(about = "Preview Pine alertcondition() alert creation")]
+    CreateIndicator {
+        #[arg(long)]
+        script: String,
+        #[arg(long, short)]
+        file: Option<PathBuf>,
+        #[arg(long)]
+        condition_title: Option<String>,
+        #[arg(long)]
+        alert_cond_id: Option<String>,
+        #[arg(long)]
+        symbol: Option<String>,
+        #[arg(long)]
+        resolution: Option<String>,
+        #[arg(long, short)]
+        message: Option<String>,
+        #[arg(long)]
+        dry_run: bool,
+    },
     #[command(about = "Delete TradingView alerts")]
     Delete {
         #[arg(long)]

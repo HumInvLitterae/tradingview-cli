@@ -5,9 +5,33 @@ use crate::{
     error::{AppError, ErrorKind},
 };
 
-use super::common::{js_string, require_finite};
+use super::{
+    common::{js_string, require_finite},
+    pine::{PineAlertconditionCandidate, pine_alertcondition_candidates},
+};
 
 const ALERT_CONDITIONS: [&str; 3] = ["crossing", "greater_than", "less_than"];
+
+#[derive(Debug, Clone)]
+pub struct IndicatorAlertDryRunRequest<'a> {
+    pub script: &'a str,
+    pub source: &'a str,
+    pub input_source: &'static str,
+    pub condition_title: Option<&'a str>,
+    pub alert_cond_id: Option<&'a str>,
+    pub symbol: Option<&'a str>,
+    pub resolution: Option<&'a str>,
+    pub message: Option<&'a str>,
+}
+
+#[derive(Debug, Clone)]
+struct SavedPineScriptPreview {
+    name: String,
+    title: Option<String>,
+    version: Option<Value>,
+    modified: Option<Value>,
+    script_id_available: bool,
+}
 
 pub async fn alert_list(runtime: &mut impl RuntimeEvaluator) -> Result<Value, AppError> {
     runtime
@@ -69,6 +93,53 @@ pub async fn alert_list(runtime: &mut impl RuntimeEvaluator) -> Result<Value, Ap
         .map(normalize_alert_list_payload)
 }
 
+pub async fn alert_create_indicator_dry_run(
+    runtime: &mut impl RuntimeEvaluator,
+    request: IndicatorAlertDryRunRequest<'_>,
+) -> Result<Value, AppError> {
+    let script = require_non_empty(request.script, "script")?;
+    let candidate = select_alertcondition_candidate(
+        request.source,
+        request.condition_title,
+        request.alert_cond_id,
+    )?;
+    let saved_script = resolve_saved_pine_script(runtime, script).await?;
+
+    Ok(json!({
+        "action": "dry_run",
+        "dry_run": true,
+        "would_create": true,
+        "mutation_supported": false,
+        "source": "indicator_alert_dry_run",
+        "input_source": request.input_source,
+        "script": {
+            "requested": script,
+            "name": saved_script.name,
+            "title": saved_script.title,
+            "version": saved_script.version,
+            "modified": saved_script.modified,
+            "script_id_available": saved_script.script_id_available,
+        },
+        "condition": {
+            "selector": if request.alert_cond_id.is_some() { "alert_cond_id" } else { "condition_title" },
+            "alert_cond_id": candidate.alert_cond_id,
+            "plot_index": candidate.plot_index,
+            "preceding_output_count": candidate.preceding_output_count,
+            "title": candidate.title,
+            "message": candidate.message,
+            "line": candidate.line,
+            "column": candidate.column,
+            "confidence": candidate.confidence,
+        },
+        "request": {
+            "symbol": request.symbol.map(str::trim).filter(|value| !value.is_empty()),
+            "resolution": request.resolution.map(str::trim).filter(|value| !value.is_empty()),
+            "message": request.message.map(str::trim).filter(|value| !value.is_empty()),
+        },
+        "note": "Dry run only. No TradingView alert was created; normal indicator alert mutation remains deferred.",
+    }))
+}
+
 pub fn validate_alert_condition(condition: &str) -> Result<(), AppError> {
     let normalized = normalize_alert_condition(condition)?;
     if ALERT_CONDITIONS.contains(&normalized.as_str()) {
@@ -84,6 +155,230 @@ pub fn validate_alert_condition(condition: &str) -> Result<(), AppError> {
             "supported": ALERT_CONDITIONS,
         })))
     }
+}
+
+fn require_non_empty<'a>(value: &'a str, label: &str) -> Result<&'a str, AppError> {
+    let trimmed = value.trim();
+    if trimmed.is_empty() {
+        Err(AppError::new(
+            ErrorKind::Validation,
+            format!("{label} must not be empty"),
+        ))
+    } else {
+        Ok(trimmed)
+    }
+}
+
+fn select_alertcondition_candidate(
+    source: &str,
+    condition_title: Option<&str>,
+    alert_cond_id: Option<&str>,
+) -> Result<PineAlertconditionCandidate, AppError> {
+    if condition_title.is_some() == alert_cond_id.is_some() {
+        return Err(AppError::new(
+            ErrorKind::Validation,
+            "Use exactly one of --condition-title <TEXT> or --alert-cond-id <ID>",
+        ));
+    }
+
+    let candidates = pine_alertcondition_candidates(source);
+    if candidates.is_empty() {
+        return Err(AppError::new(
+            ErrorKind::Validation,
+            "No alertcondition() candidates found in Pine source",
+        ));
+    }
+
+    let matches = if let Some(id) = alert_cond_id {
+        let id = require_non_empty(id, "alert_cond_id")?;
+        validate_alert_cond_id(id)?;
+        candidates
+            .into_iter()
+            .filter(|candidate| candidate.alert_cond_id == id)
+            .collect::<Vec<_>>()
+    } else {
+        let title = require_non_empty(condition_title.unwrap_or_default(), "condition_title")?;
+        candidates
+            .into_iter()
+            .filter(|candidate| {
+                candidate
+                    .title
+                    .as_deref()
+                    .is_some_and(|candidate_title| candidate_title == title)
+            })
+            .collect::<Vec<_>>()
+    };
+
+    match matches.as_slice() {
+        [candidate] => Ok(candidate.clone()),
+        [] => Err(AppError::new(
+            ErrorKind::Validation,
+            "No matching alertcondition() candidate found",
+        )
+        .with_details(json!({
+            "available_candidates": pine_alertcondition_candidates(source)
+                .into_iter()
+                .map(public_alertcondition_candidate)
+                .collect::<Vec<_>>(),
+        }))),
+        _ => Err(AppError::new(
+            ErrorKind::Validation,
+            "Multiple alertcondition() candidates match the selector",
+        )
+        .with_details(json!({
+            "matching_candidates": matches
+                .into_iter()
+                .map(public_alertcondition_candidate)
+                .collect::<Vec<_>>(),
+        }))),
+    }
+}
+
+fn validate_alert_cond_id(value: &str) -> Result<(), AppError> {
+    let Some(index) = value.strip_prefix("plot_") else {
+        return Err(AppError::new(
+            ErrorKind::Validation,
+            "alert_cond_id must use the plot_<N> format",
+        ));
+    };
+    if index.is_empty() || index.parse::<usize>().is_err() {
+        return Err(AppError::new(
+            ErrorKind::Validation,
+            "alert_cond_id must use the plot_<N> format",
+        ));
+    }
+    Ok(())
+}
+
+fn public_alertcondition_candidate(candidate: PineAlertconditionCandidate) -> Value {
+    json!({
+        "alert_cond_id": candidate.alert_cond_id,
+        "plot_index": candidate.plot_index,
+        "title": candidate.title,
+        "message": candidate.message,
+        "line": candidate.line,
+        "column": candidate.column,
+        "confidence": candidate.confidence,
+    })
+}
+
+async fn resolve_saved_pine_script(
+    runtime: &mut impl RuntimeEvaluator,
+    script: &str,
+) -> Result<SavedPineScriptPreview, AppError> {
+    let script_literal = js_string(script)?;
+    let result = runtime
+        .evaluate(
+            &format!(
+                r#"
+            fetch('https://pine-facade.tradingview.com/pine-facade/list/?filter=saved', {{ credentials: 'include' }})
+                .then(function(response) {{
+                    return response.json().then(function(data) {{
+                        return {{ ok: response.ok, status: response.status, statusText: response.statusText, data: data }};
+                    }});
+                }})
+                .then(function(result) {{
+                    const requested = {script_literal};
+                    if (!result.ok) {{
+                        return {{ error: 'HTTP ' + result.status + ': ' + result.statusText, kind: 'internal_api_unavailable' }};
+                    }}
+                    if (!Array.isArray(result.data)) {{
+                        return {{ error: 'Unexpected response from pine-facade', kind: 'internal_api_unavailable' }};
+                    }}
+                    const scripts = result.data.map(function(s) {{
+                        return {{
+                            name: s.scriptName || s.scriptTitle || 'Untitled',
+                            title: s.scriptTitle || null,
+                            version: s.version || null,
+                            modified: s.modified || null,
+                            script_id_available: !!s.scriptIdPart
+                        }};
+                    }});
+                    const matches = scripts.filter(function(script) {{
+                        return script.name === requested || script.title === requested;
+                    }});
+                    return {{
+                        requested: requested,
+                        match_count: matches.length,
+                        match: matches.length === 1 ? matches[0] : null,
+                        candidates: matches.length === 1 ? [] : scripts.slice(0, 20)
+                    }};
+                }})
+                .catch(function(error) {{
+                    return {{ error: error && error.message ? error.message : String(error), kind: 'internal_api_unavailable' }};
+                }})
+            "#
+            ),
+            true,
+        )
+        .await?;
+
+    normalize_saved_pine_script_match(result)
+}
+
+fn normalize_saved_pine_script_match(data: Value) -> Result<SavedPineScriptPreview, AppError> {
+    if let Some(error) = data.get("error").and_then(Value::as_str) {
+        return Err(
+            AppError::new(ErrorKind::InternalApiUnavailable, error.to_string()).with_details(data),
+        );
+    }
+
+    let match_count = data.get("match_count").and_then(Value::as_u64).unwrap_or(0);
+    if match_count != 1 {
+        let message = if match_count == 0 {
+            "No saved Pine script matches --script"
+        } else {
+            "Multiple saved Pine scripts match --script"
+        };
+        return Err(
+            AppError::new(ErrorKind::Validation, message).with_details(json!({
+                "requested": data.get("requested").cloned().unwrap_or(Value::Null),
+                "match_count": match_count,
+                "candidates": data.get("candidates").cloned().unwrap_or_else(|| json!([])),
+            })),
+        );
+    }
+
+    let matched = data
+        .get("match")
+        .and_then(Value::as_object)
+        .ok_or_else(|| {
+            AppError::new(
+                ErrorKind::InternalApiUnavailable,
+                "Pine script match payload was malformed",
+            )
+            .with_details(data.clone())
+        })?;
+
+    let name = matched
+        .get("name")
+        .and_then(Value::as_str)
+        .unwrap_or("Untitled")
+        .to_string();
+    let title = matched
+        .get("title")
+        .and_then(Value::as_str)
+        .map(str::to_string);
+    let version = matched
+        .get("version")
+        .cloned()
+        .filter(|value| !value.is_null());
+    let modified = matched
+        .get("modified")
+        .cloned()
+        .filter(|value| !value.is_null());
+    let script_id_available = matched
+        .get("script_id_available")
+        .and_then(Value::as_bool)
+        .unwrap_or(false);
+
+    Ok(SavedPineScriptPreview {
+        name,
+        title,
+        version,
+        modified,
+        script_id_available,
+    })
 }
 
 pub async fn alert_create_via_api(
@@ -1470,6 +1765,113 @@ mod tests {
         assert_eq!(error.kind, ErrorKind::InternalApiUnavailable);
         assert_eq!(error.message, "HTTP 400: Bad Request");
         assert_eq!(runtime.evaluated.len(), 1);
+    }
+
+    #[tokio::test]
+    async fn alert_indicator_dry_run_returns_sanitized_preview() {
+        let source = r#"//@version=6
+indicator("Signals")
+plot(close)
+alertcondition(close > open, "Long", "Long message")"#;
+        let mut runtime = FakeRuntime::new(VecDeque::from([json!({
+            "requested": "Signals",
+            "match_count": 1,
+            "match": {
+                "name": "Signals",
+                "title": "Signals",
+                "version": 4,
+                "modified": 123,
+                "script_id_available": true
+            },
+            "candidates": []
+        })]));
+
+        let data = alert_create_indicator_dry_run(
+            &mut runtime,
+            IndicatorAlertDryRunRequest {
+                script: "Signals",
+                source,
+                input_source: "stdin",
+                condition_title: Some("Long"),
+                alert_cond_id: None,
+                symbol: Some("NASDAQ:AAPL"),
+                resolution: Some("1D"),
+                message: Some("Test alert"),
+            },
+        )
+        .await
+        .unwrap();
+
+        assert_eq!(data["action"], "dry_run");
+        assert_eq!(data["dry_run"], true);
+        assert_eq!(data["would_create"], true);
+        assert_eq!(data["mutation_supported"], false);
+        assert_eq!(data["script"]["requested"], "Signals");
+        assert_eq!(data["script"]["name"], "Signals");
+        assert_eq!(data["script"]["script_id_available"], true);
+        assert!(data["script"].get("id").is_none());
+        assert_eq!(data["condition"]["alert_cond_id"], "plot_1");
+        assert_eq!(data["condition"]["title"], "Long");
+        assert_eq!(data["request"]["symbol"], "NASDAQ:AAPL");
+        assert!(runtime.evaluated[0].0.contains("pine-facade/list"));
+        assert!(!runtime.evaluated[0].0.contains("script_id:"));
+    }
+
+    #[tokio::test]
+    async fn alert_indicator_dry_run_rejects_ambiguous_condition_selector() {
+        let mut runtime = FakeRuntime::new(VecDeque::new());
+
+        let error = alert_create_indicator_dry_run(
+            &mut runtime,
+            IndicatorAlertDryRunRequest {
+                script: "Signals",
+                source: "alertcondition(close > open, \"Long\")",
+                input_source: "stdin",
+                condition_title: Some("Long"),
+                alert_cond_id: Some("plot_0"),
+                symbol: None,
+                resolution: None,
+                message: None,
+            },
+        )
+        .await
+        .unwrap_err();
+
+        assert_eq!(error.kind, ErrorKind::Validation);
+        assert!(runtime.evaluated.is_empty());
+    }
+
+    #[tokio::test]
+    async fn alert_indicator_dry_run_rejects_missing_saved_script_match() {
+        let source = "alertcondition(close > open, \"Long\")";
+        let mut runtime = FakeRuntime::new(VecDeque::from([json!({
+            "requested": "Signals",
+            "match_count": 0,
+            "match": null,
+            "candidates": [
+                { "name": "Other", "title": "Other", "version": 1, "modified": null, "script_id_available": true }
+            ]
+        })]));
+
+        let error = alert_create_indicator_dry_run(
+            &mut runtime,
+            IndicatorAlertDryRunRequest {
+                script: "Signals",
+                source,
+                input_source: "stdin",
+                condition_title: Some("Long"),
+                alert_cond_id: None,
+                symbol: None,
+                resolution: None,
+                message: None,
+            },
+        )
+        .await
+        .unwrap_err();
+
+        assert_eq!(error.kind, ErrorKind::Validation);
+        assert_eq!(error.message, "No saved Pine script matches --script");
+        assert_eq!(error.details.unwrap()["match_count"], 0);
     }
 
     #[tokio::test]

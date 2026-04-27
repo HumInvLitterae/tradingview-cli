@@ -16,15 +16,15 @@ struct PineDiagnostic {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
-struct AlertconditionCandidate {
-    line: usize,
-    column: usize,
-    title: Option<String>,
-    message: Option<String>,
-    alert_cond_id: String,
-    plot_index: usize,
-    preceding_output_count: usize,
-    confidence: &'static str,
+pub struct PineAlertconditionCandidate {
+    pub line: usize,
+    pub column: usize,
+    pub title: Option<String>,
+    pub message: Option<String>,
+    pub alert_cond_id: String,
+    pub plot_index: usize,
+    pub preceding_output_count: usize,
+    pub confidence: &'static str,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -51,15 +51,27 @@ pub fn pine_analyze(source: &str, input_source: &str) -> Value {
 }
 
 pub fn pine_alertconditions(source: &str, input_source: &str) -> Value {
+    let candidates = pine_alertcondition_candidates(source);
+    let counted_output_count = collect_pine_calls(source).len();
+
+    json!({
+        "input_source": input_source,
+        "candidate_count": candidates.len(),
+        "counted_output_count": counted_output_count,
+        "candidates": candidates,
+        "note": "Static Pine alertcondition discovery only. Compile the script in TradingView before relying on plot indexes for alert creation.",
+    })
+}
+
+pub fn pine_alertcondition_candidates(source: &str) -> Vec<PineAlertconditionCandidate> {
     let calls = collect_pine_calls(source);
-    let mut counted_output_count = 0usize;
     let mut candidates = Vec::new();
 
-    for call in calls {
+    for (counted_output_count, call) in calls.into_iter().enumerate() {
         if call.name == "alertcondition" {
             let (title, message) = alertcondition_literal_fields(source, &call);
             let (line, column) = line_column(source, call.start);
-            candidates.push(AlertconditionCandidate {
+            candidates.push(PineAlertconditionCandidate {
                 line,
                 column,
                 title,
@@ -70,17 +82,9 @@ pub fn pine_alertconditions(source: &str, input_source: &str) -> Value {
                 confidence: "best_effort",
             });
         }
-
-        counted_output_count += 1;
     }
 
-    json!({
-        "input_source": input_source,
-        "candidate_count": candidates.len(),
-        "counted_output_count": counted_output_count,
-        "candidates": candidates,
-        "note": "Static Pine alertcondition discovery only. Compile the script in TradingView before relying on plot indexes for alert creation.",
-    })
+    candidates
 }
 
 fn analyze_source(source: &str) -> Vec<PineDiagnostic> {

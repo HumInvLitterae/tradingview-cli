@@ -28,6 +28,12 @@ package version omits the leading `v`.
 - Added `tv pine alertconditions [--file <PATH>]` for local static discovery of
   Pine `alertcondition()` candidates without connecting to TradingView or
   creating account alerts.
+- Added dry-run-only
+  `tv alert create-indicator --script <NAME> --file <PATH>
+  --condition-title <TITLE>|--alert-cond-id <ID> --dry-run` preview for Pine
+  `alertcondition()` alert creation. It verifies a local source candidate and a
+  unique saved-script display-name match without creating alerts or printing
+  saved-script identifiers.
 
 ## v0.2.0 - 2026-04-27
 
