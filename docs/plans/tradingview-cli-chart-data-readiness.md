@@ -40,7 +40,7 @@ Agents and users rely on `tv ohlcv` to confirm that the visible TradingView char
 
 ## Outcomes & Retrospective
 
-Implemented. `tv ohlcv` now reports structured chart-bars readiness details for missing, unreadable, or empty bars instead of collapsing those states into a generic loading message. CLI help, README, runtime skills, and the packaged agent guide now direct agents toward full JSON error inspection, `tv tab list`, `target_cli_args` / `--target-id`, `state`, and `ohlcv --count 1`, and away from the obsolete `TV_CDP_TARGET_ID`, `tv interval`, and `tv info <SYMBOL>` patterns.
+Implemented. `tv ohlcv` now reports structured chart-bars readiness details for missing, unreadable, or empty bars instead of collapsing those states into a generic loading message. CLI help, README, runtime skills, and the packaged agent guide now direct agents toward full JSON error inspection, `tv tab list`, `target_cli_args` / `--target-id`, `state`, and `ohlcv --count 1`, and away from the obsolete `TV_CDP_TARGET_ID` and invalid `tv interval` patterns. A later slice added `tv info <SYMBOL>` as a Desktop-free symbol metadata read, while `tv info` without a symbol remains the current-chart metadata read.
 
 Automated validation passed: `cargo test market -- --nocapture`, `cargo test transport -- --nocapture`, `cargo test tab -- --nocapture`, the targeted `cli_contract` filters for `ohlcv`, `info`, `symbol`, and `timeframe`, `cargo fmt --check`, `cargo clippy --all-targets --all-features -- -D warnings`, `cargo test`, `git diff --check`, and the tracked-doc hygiene grep. Skill validation passed for `chart-analysis` and `multi-symbol-scan`; `bash -n scripts/stage-release-package-files.sh` passed. Live read-only smoke showed a remaining chart-bars readiness gap on the current active chart target, but the new diagnostic correctly exposed it as `bars_index_unreadable` while `status`, `state`, and `quote` succeeded.
 
@@ -60,7 +60,7 @@ First, update `src/ops/market.rs` so `ohlcv_bars` returns a structured object fr
 
 Second, add or update tests around the operation behavior. The new tests should verify missing bars and empty bars become structured failures, and that successful OHLCV output retains the existing practical fields.
 
-Third, improve CLI help in `src/cli.rs`. `ohlcv --help` should state that it reads the current chart target's bars, that multiple chart targets require `--target-id`, and that failures should be debugged with `tab list` and `state`. `info --help` should say it reads current-chart symbol metadata and does not take a symbol argument. `timeframe --help` should make clear that the command name is `timeframe`, not `interval`.
+Third, improve CLI help in `src/cli.rs`. `ohlcv --help` should state that it reads the current chart target's bars, that multiple chart targets require `--target-id`, and that failures should be debugged with `tab list` and `state`. At the time of this slice, `info --help` clarified current-chart symbol metadata; a later Desktop-free symbol-read slice extends it to `info [SYMBOL]`. `timeframe --help` should make clear that the command name is `timeframe`, not `interval`.
 
 Fourth, update operator documentation. README should gain a short recovery flow near the Multiple Chart Targets section. The `chart-analysis` and `multi-symbol-scan` skills should tell agents not to use `TV_CDP_TARGET_ID`, not to truncate JSON failures when debugging, and to re-run `tab list` rather than retrying the same target endlessly when `ohlcv` fails while `quote` or `symbol` succeeds. `packaging/agent/AGENTS.md` should carry the same guidance in a shorter release-archive form.
 
@@ -112,7 +112,7 @@ Work from the repository root.
 
 ## Validation and Acceptance
 
-The change is accepted when a missing or unreadable chart bars collection returns a structured failure with actionable details rather than a generic loading message, and when successful `ohlcv` reads keep the same practical payload fields as before. The help text and bundled skills must lead agents toward `tv tab list`, `target_cli_args`, `--target-id`, `state`, and `ohlcv --count 1`, and away from `TV_CDP_TARGET_ID`, `tv interval`, and symbol arguments to `tv info`.
+The change is accepted when a missing or unreadable chart bars collection returns a structured failure with actionable details rather than a generic loading message, and when successful `ohlcv` reads keep the same practical payload fields as before. The help text and bundled skills must lead agents toward `tv tab list`, `target_cli_args`, `--target-id`, `state`, and `ohlcv --count 1`, and away from `TV_CDP_TARGET_ID` and `tv interval`. Symbol arguments to `tv info` were introduced later for Desktop-free symbol metadata and are no longer invalid.
 
 Automated acceptance is the targeted test list plus the full Rust baseline passing. Documentation acceptance is `git diff --check`, the tracked-doc hygiene grep, and skill validation for each changed runtime skill. Live smoke is read-only and optional if TradingView Desktop is not reachable.
 

@@ -15,6 +15,8 @@ for release and next-phase planning.
   mutation for Pine `alertcondition()` alert creation.
 - `tradingview-cli-chart-data-readiness.md`: `ohlcv` failure diagnostics and
   agent recovery guidance for chart target readiness.
+- `tradingview-cli-symbol-http-reads.md`: Desktop-free single-symbol metadata
+  and quote resolution hardening.
 
 ## Archived plans
 

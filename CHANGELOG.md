@@ -40,6 +40,10 @@ package version omits the leading `v`.
 - Improved `tv ohlcv` failures with structured chart-bars readiness details and
   refreshed agent guidance for `--target-id`, valid chart commands, and OHLCV
   recovery.
+- Added Desktop-free `tv info <SYMBOL>` symbol metadata reads through
+  TradingView symbol search and tightened `tv quote <SYMBOL>` so symbol
+  resolution failures return candidates instead of falling back to chart target
+  selection.
 
 ## v0.2.0 - 2026-04-27
 

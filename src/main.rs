@@ -146,10 +146,17 @@ async fn dispatch(
             let mut runtime = connect_runtime(config).await?;
             ops::state(&mut runtime).await
         }
-        Command::Info => {
-            let mut runtime = connect_runtime(config).await?;
-            ops::symbol_info(&mut runtime).await
-        }
+        Command::Info { symbol } => match symbol.as_deref() {
+            Some(symbol) if symbol.trim().is_empty() => Err(AppError::new(
+                ErrorKind::Validation,
+                "info symbol must not be empty",
+            )),
+            Some(symbol) => ops::symbol_info_direct(symbol).await,
+            None => {
+                let mut runtime = connect_runtime(config).await?;
+                ops::symbol_info(&mut runtime).await
+            }
+        },
         Command::Search { query } => {
             let query = query.join(" ");
             if query.trim().is_empty() {

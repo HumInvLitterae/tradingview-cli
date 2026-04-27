@@ -770,13 +770,15 @@ fn ohlcv_accepts_count_argument() {
 }
 
 #[test]
-fn info_help_explains_current_chart_only() {
+fn info_help_explains_current_chart_and_symbol_modes() {
     tv().args(["info", "--help"])
         .assert()
         .success()
-        .stdout(predicate::str::contains("current chart symbol metadata"))
+        .stdout(predicate::str::contains("[SYMBOL]"))
+        .stdout(predicate::str::contains("Without SYMBOL"))
+        .stdout(predicate::str::contains("With SYMBOL"))
         .stdout(predicate::str::contains(
-            "does not accept a SYMBOL argument",
+            "without connecting to TradingView Desktop",
         ))
         .stdout(predicate::str::contains("tv quote <SYMBOL>"));
 }

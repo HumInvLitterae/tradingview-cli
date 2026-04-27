@@ -103,8 +103,33 @@ Safety boundary:
   high, low, volume, change, exchange, type, and subtype
 - if the scanner read is unavailable before chart mutation, the CLI may fall
   back to the chart API path
-- if scanner or chart fallback returns a symbol that does not match the
-  requested symbol, the command must fail instead of reporting stale data
+- if the scanner response has no rows, ambiguous rows, or a returned symbol
+  that does not match the requested symbol, the CLI treats it as symbol
+  resolution failure and returns candidates from symbol search instead of
+  falling back to chart target selection
+- if chart fallback is used after a technical scanner failure, the fallback
+  must still fail when the observed symbol does not match the requested symbol
+
+## Symbol search REST read
+
+Category: unauthenticated TradingView symbol search REST read.
+
+Current command families:
+
+- `search <QUERY>`
+- `info <SYMBOL>` for Desktop-free symbol metadata reads
+
+Safety boundary:
+
+- this path is read-only and does not require a TradingView Desktop target
+- `info <SYMBOL>` resolves exchange-qualified input strictly; bare input uses
+  TradingView's search ordering and returns the first exact symbol match
+- the command returns practical metadata such as symbol, full name, exchange,
+  description, and type
+- missing or exchange-mismatched inputs are validation errors and should include
+  candidate symbols when available
+- `info` without a symbol is still the current-chart metadata command and uses
+  the page-session chart API
 
 ## Replay page API
 
@@ -235,6 +260,7 @@ Current command families:
 - `search`
 - `scanner hotlist`
 - `scanner scan`
+- `info <SYMBOL>`
 - `quote <SYMBOL>` before chart fallback
 
 Safety boundary:
@@ -245,8 +271,9 @@ Safety boundary:
 
 Direct HTTP feasibility status:
 
-- `search`, `scanner hotlist`, `scanner scan`, symbol-targeted `quote`, and
-  `pine check` are the current credential-safe direct HTTP reads.
+- `search`, `scanner hotlist`, `scanner scan`, symbol-targeted `info`,
+  symbol-targeted `quote`, and `pine check` are the current credential-safe
+  direct HTTP reads.
 - No additional direct HTTP command candidate is selected from the first
   `v0.3.0` feasibility pass.
 - Future candidates need a concrete read-only operator need, endpoint evidence,

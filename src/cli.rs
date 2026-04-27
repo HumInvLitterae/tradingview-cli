@@ -35,9 +35,9 @@ pub enum Command {
     State,
     #[command(
         about = "Get current chart symbol metadata",
-        long_about = "Get current chart symbol metadata.\n\nThis command reads metadata for the symbol already loaded in the selected chart target. It does not accept a SYMBOL argument; use `tv quote <SYMBOL>` for a one-off symbol quote, or run `tv symbol <SYMBOL>` followed by `tv info` when you intentionally want to change the chart first. If more than one TradingView target is open, run `tv tab list` and pass `tv --target-id <ID> info`."
+        long_about = "Get symbol metadata.\n\nWithout SYMBOL, reads metadata for the symbol already loaded in the selected chart target. With SYMBOL, reads symbol metadata through TradingView's symbol-search HTTP endpoint without connecting to TradingView Desktop. Use `tv quote <SYMBOL>` for a one-off symbol quote, or run `tv symbol <SYMBOL>` followed by `tv info` when you intentionally want current-chart metadata. If more than one TradingView target is open for current-chart reads, run `tv tab list` and pass `tv --target-id <ID> info`."
     )]
-    Info,
+    Info { symbol: Option<String> },
     #[command(about = "Search TradingView symbols")]
     Search { query: Vec<String> },
     #[command(about = "Read TradingView scanner preset data")]
@@ -822,7 +822,7 @@ impl Command {
             Self::Status => "status",
             Self::Launch { .. } => "launch",
             Self::State => "state",
-            Self::Info => "info",
+            Self::Info { .. } => "info",
             Self::Search { .. } => "search",
             Self::Scanner { .. } => "scanner",
             Self::Screener { .. } => "screener",

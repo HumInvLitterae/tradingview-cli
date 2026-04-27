@@ -18,7 +18,7 @@ Use this skill to compare several TradingView symbols through the Rust `tv` CLI 
 ## Scan Workflow
 
 1. Use `tv scanner hotlist <SLUG> --limit <N>` or `tv scanner scan ...` for broad read-only discovery when the criteria can be expressed as scanner filters.
-2. For a small finalist set, use `tv quote <SYMBOL>` for quick symbol-targeted quotes; it first tries a non-mutating scanner read and only falls back to temporary chart switching when needed.
+2. For a small finalist set, use `tv quote <SYMBOL>` for quick symbol-targeted quotes and `tv info <SYMBOL>` for symbol metadata. Both are Desktop-free in the normal path.
 3. Set the timeframe once with `tv timeframe <RESOLUTION>` when the scan uses a shared timeframe.
 4. Switch the chart with `tv symbol <SYMBOL>` only when OHLCV, visible studies, drawings, or screenshots are needed. After switching, confirm fresh chart data with `tv ohlcv --count 1` or `tv ohlcv --summary`.
 5. Gather `tv ohlcv --summary`, `tv values`, and drawing-derived reads such as `tv data lines`, `tv data labels`, or `tv data boxes` only for symbols that need chart context.
@@ -36,8 +36,8 @@ target's `target_cli_args`, run `tv --target-id <ID> state`, and retry
 `tv --target-id <ID> ohlcv --count 1`.
 
 Use `tv timeframe <RESOLUTION>` for shared timeframe setup. `tv interval` is
-not a command. `tv info` reads only the current chart symbol metadata; use
-`tv quote <SYMBOL>` for symbol-targeted one-off quote reads.
+not a command. Use `tv info <SYMBOL>` for Desktop-free symbol metadata, and use
+`tv info` without a symbol only for current-chart metadata.
 
 ## Boundaries
 
