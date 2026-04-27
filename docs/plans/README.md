@@ -11,8 +11,9 @@ for release and next-phase planning.
 - `tradingview-cli-direct-http-feasibility.md`: post-next-release
   investigation into credential-safe direct HTTP reads that do not require a
   TradingView Desktop page-session context.
-- `tradingview-cli-cdp-transport-compatibility.md`: active compatibility slice
-  for TradingView Desktop / Electron CDP behavior.
+- `tradingview-cli-indicator-alertcondition-feasibility.md`: feasibility
+  investigation for Pine `alertcondition()` alert creation before any
+  account-mutating command is added.
 
 ## Archived plans
 

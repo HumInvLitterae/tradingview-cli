@@ -22,6 +22,9 @@ package version omits the leading `v`.
 - Improved TradingView Desktop CDP compatibility by defaulting to
   `127.0.0.1`, skipping initial CDP domain-enable calls, and exposing
   app-window targets in `tv tab list` for diagnostics.
+- Recorded Pine `alertcondition()` alert creation feasibility and kept raw
+  indicator-alert mutation deferred until discovery/dry-run behavior is
+  designed.
 
 ## v0.2.0 - 2026-04-27
 

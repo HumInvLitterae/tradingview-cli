@@ -163,6 +163,20 @@ Safety boundary:
 - bulk account mutation must remain explicit and guarded
 - do not record live alert ids in tracked docs
 
+Indicator alertcondition alerts:
+
+- Upstream PR #112 shows that Pine `alertcondition()` alerts can likely be
+  created through the same alert endpoint family by referencing saved Pine
+  script metadata and a plot-like alert condition id.
+- This is a feature candidate, not an implemented Rust surface. A raw command
+  that asks users for saved script ids, exact condition ids, input payloads, and
+  webhook fields is too easy to misuse.
+- The next safe Rust step should be discovery and dry-run first: identify
+  candidate scripts and alertcondition entries, preview the intended alert, and
+  only add normal mutation after readback and cleanup behavior are specified.
+- Do not document raw request bodies, saved script ids, webhook URLs, or copied
+  alert payloads for this surface.
+
 ## Pine facade endpoints
 
 Category: TradingView Pine service endpoints called either from the page session
