@@ -435,7 +435,7 @@ pub enum AlertCommand {
         #[arg(long, short)]
         message: Option<String>,
     },
-    #[command(about = "Preview Pine alertcondition() alert creation")]
+    #[command(about = "Create or preview a Pine alertcondition() alert")]
     CreateIndicator {
         #[arg(long)]
         script: String,

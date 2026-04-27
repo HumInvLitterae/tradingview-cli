@@ -148,8 +148,8 @@ Current implementation split:
 - `alert create` sends its JSON as a plain string request body with no custom
   `Content-Type` header. Adding custom headers can trigger a rejected
   cross-origin preflight in TradingView's page context.
-- `alert delete` uses the bare delete endpoint shape and verifies absence after
-  mutation.
+- `alert delete` uses the bare delete endpoint shape, sends numeric alert ids
+  as numbers, and verifies absence after mutation.
 
 Safety boundary:
 
@@ -160,6 +160,9 @@ Safety boundary:
 - post-create ambiguity must not trigger DOM fallback, because retries can
   create duplicate alerts
 - deletes support dry-run where applicable and require post-delete absence
+- alert list/create/delete payloads sanitize condition details and must not
+  expose raw Pine series, saved-script identifiers, input maps, or endpoint
+  payloads
 - bulk account mutation must remain explicit and guarded
 - do not record live alert ids in tracked docs
 
@@ -173,18 +176,20 @@ Indicator alertcondition alerts:
   best-effort `alertcondition()` candidates such as `plot_1`. It does not use
   TradingView account metadata, does not connect to CDP, and does not create
   alerts.
-- Rust also has a dry-run-only preview command:
+- Rust also has a guarded create/preview command:
   `tv alert create-indicator --script <NAME> --file <PATH>
-  --condition-title <TITLE>|--alert-cond-id <ID> --dry-run`. It combines a
+  --condition-title <TITLE>|--alert-cond-id <ID> [--dry-run]`. It combines a
   local static candidate with an exact saved-script display-name match from the
-  logged-in Pine facade list. Its success payload reports whether a script id
-  is available internally, but does not print the id.
-- Raw indicator-alert creation remains deferred. A normal mutation command that
-  asks users for saved script ids, exact condition ids, input payloads, and
-  webhook fields is too easy to misuse.
-- The next safe Rust step, if this feature proceeds, should specify exact
-  endpoint payload construction, post-create readback matching, and cleanup
-  smoke before enabling normal mutation.
+  logged-in Pine facade list. Dry-run returns a sanitized preview. Normal mode
+  creates through the alert endpoint only when required saved-script and input
+  metadata can be resolved safely, then verifies the new alert through a list
+  readback before reporting success.
+- Raw indicator-alert endpoint primitives remain intentionally unexposed. The
+  CLI does not ask users for saved script ids, raw Pine input payloads, raw plot
+  offsets, or webhook fields in this initial surface.
+- If Pine `input.*` declarations are present and a matching active chart study
+  does not expose input values, normal creation must fail before the create
+  request is sent.
 - Do not document raw request bodies, saved script ids, webhook URLs, or copied
   alert payloads for this surface.
 

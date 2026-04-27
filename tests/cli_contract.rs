@@ -1895,7 +1895,7 @@ fn alert_create_requires_price() {
 }
 
 #[test]
-fn alert_create_indicator_requires_dry_run_before_connecting() {
+fn alert_create_indicator_normal_mode_attempts_connection_after_source_validation() {
     let assert = tv()
         .env("TV_CDP_PORT", "9")
         .args([
@@ -1909,12 +1909,12 @@ fn alert_create_indicator_requires_dry_run_before_connecting() {
         .write_stdin("alertcondition(close > open, \"Long\")")
         .assert()
         .failure()
-        .code(1);
+        .code(2);
     let stderr = String::from_utf8(assert.get_output().stderr.clone()).unwrap();
     let value: Value = serde_json::from_str(&stderr).unwrap();
     assert_eq!(value["success"], false);
     assert_eq!(value["command"], "alert");
-    assert_eq!(value["error"]["kind"], "validation");
+    assert_eq!(value["error"]["kind"], "connection");
 }
 
 #[test]
@@ -1974,7 +1974,7 @@ fn alert_create_indicator_help_is_available() {
         .assert()
         .success();
     let stdout = String::from_utf8(assert.get_output().stdout.clone()).unwrap();
-    assert!(stdout.contains("Preview Pine alertcondition() alert creation"));
+    assert!(stdout.contains("Create or preview a Pine alertcondition() alert"));
     assert!(stdout.contains("--condition-title"));
     assert!(stdout.contains("--alert-cond-id"));
     assert!(stdout.contains("--dry-run"));

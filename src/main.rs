@@ -675,12 +675,6 @@ async fn dispatch(
                 message,
                 dry_run,
             } => {
-                if !dry_run {
-                    return Err(AppError::new(
-                        ErrorKind::Validation,
-                        "alert create-indicator currently supports --dry-run only",
-                    ));
-                }
                 if script.trim().is_empty() {
                     return Err(AppError::new(
                         ErrorKind::Validation,
@@ -694,7 +688,7 @@ async fn dispatch(
                     ));
                 }
                 let (source, input_source) = read_pine_source(file.as_deref())?;
-                let request = ops::IndicatorAlertDryRunRequest {
+                let request = ops::IndicatorAlertRequest {
                     script: &script,
                     source: &source,
                     input_source,
@@ -703,9 +697,10 @@ async fn dispatch(
                     symbol: symbol.as_deref(),
                     resolution: resolution.as_deref(),
                     message: message.as_deref(),
+                    dry_run,
                 };
                 let mut runtime = connect_runtime(config).await?;
-                ops::alert_create_indicator_dry_run(&mut runtime, request).await
+                ops::alert_create_indicator(&mut runtime, request).await
             }
             AlertCommand::Delete { id, all, dry_run } => {
                 if id.is_some() == all {

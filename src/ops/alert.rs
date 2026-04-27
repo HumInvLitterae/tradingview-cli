@@ -13,7 +13,7 @@ use super::{
 const ALERT_CONDITIONS: [&str; 3] = ["crossing", "greater_than", "less_than"];
 
 #[derive(Debug, Clone)]
-pub struct IndicatorAlertDryRunRequest<'a> {
+pub struct IndicatorAlertRequest<'a> {
     pub script: &'a str,
     pub source: &'a str,
     pub input_source: &'static str,
@@ -22,10 +22,12 @@ pub struct IndicatorAlertDryRunRequest<'a> {
     pub symbol: Option<&'a str>,
     pub resolution: Option<&'a str>,
     pub message: Option<&'a str>,
+    pub dry_run: bool,
 }
 
 #[derive(Debug, Clone)]
-struct SavedPineScriptPreview {
+struct SavedPineScriptMatch {
+    id: Option<String>,
     name: String,
     title: Option<String>,
     version: Option<Value>,
@@ -93,9 +95,9 @@ pub async fn alert_list(runtime: &mut impl RuntimeEvaluator) -> Result<Value, Ap
         .map(normalize_alert_list_payload)
 }
 
-pub async fn alert_create_indicator_dry_run(
+pub async fn alert_create_indicator(
     runtime: &mut impl RuntimeEvaluator,
-    request: IndicatorAlertDryRunRequest<'_>,
+    request: IndicatorAlertRequest<'_>,
 ) -> Result<Value, AppError> {
     let script = require_non_empty(request.script, "script")?;
     let candidate = select_alertcondition_candidate(
@@ -105,11 +107,12 @@ pub async fn alert_create_indicator_dry_run(
     )?;
     let saved_script = resolve_saved_pine_script(runtime, script).await?;
 
-    Ok(json!({
+    if request.dry_run {
+        return Ok(json!({
         "action": "dry_run",
         "dry_run": true,
         "would_create": true,
-        "mutation_supported": false,
+        "mutation_supported": true,
         "source": "indicator_alert_dry_run",
         "input_source": request.input_source,
         "script": {
@@ -136,8 +139,11 @@ pub async fn alert_create_indicator_dry_run(
             "resolution": request.resolution.map(str::trim).filter(|value| !value.is_empty()),
             "message": request.message.map(str::trim).filter(|value| !value.is_empty()),
         },
-        "note": "Dry run only. No TradingView alert was created; normal indicator alert mutation remains deferred.",
-    }))
+        "note": "Dry run only. No TradingView alert was created. Normal create still requires saved script metadata and post-create readback.",
+        }));
+    }
+
+    alert_create_indicator_via_api(runtime, script, &candidate, &saved_script, &request).await
 }
 
 pub fn validate_alert_condition(condition: &str) -> Result<(), AppError> {
@@ -265,7 +271,7 @@ fn public_alertcondition_candidate(candidate: PineAlertconditionCandidate) -> Va
 async fn resolve_saved_pine_script(
     runtime: &mut impl RuntimeEvaluator,
     script: &str,
-) -> Result<SavedPineScriptPreview, AppError> {
+) -> Result<SavedPineScriptMatch, AppError> {
     let script_literal = js_string(script)?;
     let result = runtime
         .evaluate(
@@ -291,9 +297,19 @@ async fn resolve_saved_pine_script(
                             title: s.scriptTitle || null,
                             version: s.version || null,
                             modified: s.modified || null,
+                            script_id: s.scriptIdPart || null,
                             script_id_available: !!s.scriptIdPart
                         }};
                     }});
+                    function publicScript(script) {{
+                        return {{
+                            name: script.name,
+                            title: script.title,
+                            version: script.version,
+                            modified: script.modified,
+                            script_id_available: script.script_id_available
+                        }};
+                    }}
                     const matches = scripts.filter(function(script) {{
                         return script.name === requested || script.title === requested;
                     }});
@@ -301,7 +317,7 @@ async fn resolve_saved_pine_script(
                         requested: requested,
                         match_count: matches.length,
                         match: matches.length === 1 ? matches[0] : null,
-                        candidates: matches.length === 1 ? [] : scripts.slice(0, 20)
+                        candidates: matches.length === 1 ? [] : scripts.slice(0, 20).map(publicScript)
                     }};
                 }})
                 .catch(function(error) {{
@@ -316,7 +332,7 @@ async fn resolve_saved_pine_script(
     normalize_saved_pine_script_match(result)
 }
 
-fn normalize_saved_pine_script_match(data: Value) -> Result<SavedPineScriptPreview, AppError> {
+fn normalize_saved_pine_script_match(data: Value) -> Result<SavedPineScriptMatch, AppError> {
     if let Some(error) = data.get("error").and_then(Value::as_str) {
         return Err(
             AppError::new(ErrorKind::InternalApiUnavailable, error.to_string()).with_details(data),
@@ -355,6 +371,11 @@ fn normalize_saved_pine_script_match(data: Value) -> Result<SavedPineScriptPrevi
         .and_then(Value::as_str)
         .unwrap_or("Untitled")
         .to_string();
+    let id = matched
+        .get("script_id")
+        .and_then(Value::as_str)
+        .filter(|value| !value.trim().is_empty())
+        .map(str::to_string);
     let title = matched
         .get("title")
         .and_then(Value::as_str)
@@ -372,13 +393,590 @@ fn normalize_saved_pine_script_match(data: Value) -> Result<SavedPineScriptPrevi
         .and_then(Value::as_bool)
         .unwrap_or(false);
 
-    Ok(SavedPineScriptPreview {
+    Ok(SavedPineScriptMatch {
+        id,
         name,
         title,
         version,
         modified,
         script_id_available,
     })
+}
+
+async fn alert_create_indicator_via_api(
+    runtime: &mut impl RuntimeEvaluator,
+    script: &str,
+    candidate: &PineAlertconditionCandidate,
+    saved_script: &SavedPineScriptMatch,
+    request: &IndicatorAlertRequest<'_>,
+) -> Result<Value, AppError> {
+    let script_id = saved_script.id.as_deref().ok_or_else(|| {
+        AppError::new(
+            ErrorKind::InternalApiUnavailable,
+            "Saved Pine script id was unavailable for indicator alert creation",
+        )
+        .with_details(json!({
+            "script": {
+                "requested": script,
+                "name": saved_script.name,
+                "title": saved_script.title,
+                "script_id_available": saved_script.script_id_available,
+            },
+            "phase": "saved_script_metadata_unavailable",
+        }))
+    })?;
+
+    let script_literal = js_string(script)?;
+    let script_name_literal = js_string(&saved_script.name)?;
+    let script_title_literal = saved_script
+        .title
+        .as_deref()
+        .map(js_string)
+        .transpose()?
+        .unwrap_or_else(|| "null".to_string());
+    let script_id_literal = js_string(script_id)?;
+    let pine_version = saved_script
+        .version
+        .as_ref()
+        .and_then(|value| value.as_str().map(str::to_string))
+        .or_else(|| saved_script.version.as_ref().map(Value::to_string))
+        .unwrap_or_else(|| "1.0".to_string());
+    let pine_version_literal = js_string(&pine_version)?;
+    let alert_cond_id_literal = js_string(&candidate.alert_cond_id)?;
+    let condition_title_literal = candidate
+        .title
+        .as_deref()
+        .map(js_string)
+        .transpose()?
+        .unwrap_or_else(|| "null".to_string());
+    let condition_message_literal = candidate
+        .message
+        .as_deref()
+        .map(js_string)
+        .transpose()?
+        .unwrap_or_else(|| "null".to_string());
+    let requested_message = request
+        .message
+        .and_then(|value| {
+            let trimmed = value.trim();
+            (!trimmed.is_empty()).then_some(trimmed)
+        })
+        .or(candidate.message.as_deref())
+        .unwrap_or("(none)");
+    let message_literal = js_string(requested_message)?;
+    let symbol_literal = request
+        .symbol
+        .and_then(|value| {
+            let trimmed = value.trim();
+            (!trimmed.is_empty()).then_some(trimmed)
+        })
+        .map(js_string)
+        .transpose()?
+        .unwrap_or_else(|| "null".to_string());
+    let resolution_literal = request
+        .resolution
+        .and_then(|value| {
+            let trimmed = value.trim();
+            (!trimmed.is_empty()).then_some(trimmed)
+        })
+        .map(js_string)
+        .transpose()?
+        .unwrap_or_else(|| "null".to_string());
+    let offsets_by_plot = offsets_by_plot(candidate.plot_index);
+    let offsets_json = serde_json::to_string(&offsets_by_plot).map_err(|err| {
+        AppError::new(
+            ErrorKind::InternalApiUnavailable,
+            format!("Could not serialize plot offsets: {err}"),
+        )
+    })?;
+    let pine_features = pine_features(request.source);
+    let pine_features_json = serde_json::to_string(&pine_features).map_err(|err| {
+        AppError::new(
+            ErrorKind::InternalApiUnavailable,
+            format!("Could not serialize Pine feature metadata: {err}"),
+        )
+    })?;
+    let source_has_inputs = source_has_pine_inputs(request.source);
+
+    let result = runtime
+        .evaluate(
+            &format!(
+                r#"
+            (async function() {{
+                const source = 'indicator_alert_api';
+                const requestedScript = {script_literal};
+                const savedScriptName = {script_name_literal};
+                const savedScriptTitle = {script_title_literal};
+                const pineId = {script_id_literal};
+                const pineVersion = {pine_version_literal};
+                const requestedAlertCondId = {alert_cond_id_literal};
+                const requestedConditionTitle = {condition_title_literal};
+                const conditionSourceMessage = {condition_message_literal};
+                const requestedMessage = {message_literal};
+                const requestedSymbol = {symbol_literal};
+                const requestedResolution = {resolution_literal};
+                const offsetsByPlot = {offsets_json};
+                const pineFeatures = {pine_features_json};
+                const sourceHasInputs = {source_has_inputs};
+
+                function publicAlert(alert) {{
+                    if (!alert) return null;
+                    const condition = alertCondition(alert);
+                    return {{
+                        alert_id: alert.alert_id || alert.id || null,
+                        symbol: alert.symbol || (alert.condition && alert.condition.symbol) || null,
+                        type: alert.type || null,
+                        message: alert.message || alert.description || '',
+                        active: alert.active !== false,
+                        resolution: alert.resolution || alert.interval || (condition && condition.resolution) || null,
+                        created: alert.created || alert.create_time || null,
+                        expiration: alert.expiration || alert.expire_time || null,
+                        condition: condition ? {{
+                            type: condition.type || null,
+                            alert_cond_id: condition.alert_cond_id || null,
+                            frequency: condition.frequency || null,
+                            resolution: condition.resolution || null,
+                            has_study_series: hasStudySeries(condition)
+                        }} : null
+                    }};
+                }}
+
+                function normalizeRows(data) {{
+                    return Array.isArray(data && data.r) ? data.r : [];
+                }}
+
+                async function listAlerts() {{
+                    let response;
+                    let data;
+                    try {{
+                        response = await fetch('https://pricealerts.tradingview.com/list_alerts', {{
+                            credentials: 'include',
+                            headers: {{ 'accept': 'application/json' }}
+                        }});
+                        data = await response.json();
+                    }} catch (error) {{
+                        return {{
+                            ok: false,
+                            error: error && error.message ? error.message : String(error)
+                        }};
+                    }}
+                    if (!response.ok) {{
+                        return {{
+                            ok: false,
+                            error: 'HTTP ' + response.status + ': ' + response.statusText
+                        }};
+                    }}
+                    if (data && data.err) {{
+                        return {{
+                            ok: false,
+                            error: data.errmsg || (data.err && data.err.code) || 'Alert list failed'
+                        }};
+                    }}
+                    const rows = normalizeRows(data);
+                    return {{ ok: true, rows, alerts: rows.map(publicAlert) }};
+                }}
+
+                function readChartMetadata() {{
+                    try {{
+                        const chart = window.TradingViewApi &&
+                            window.TradingViewApi._activeChartWidgetWV &&
+                            window.TradingViewApi._activeChartWidgetWV.value &&
+                            window.TradingViewApi._activeChartWidgetWV.value();
+                        const model = chart && chart._chartWidget && chart._chartWidget.model &&
+                            chart._chartWidget.model();
+                        const mainSeries = model && model.mainSeries && model.mainSeries();
+                        const ext = chart && chart.symbolExt && chart.symbolExt();
+                        const info = mainSeries && mainSeries.symbolInfo && mainSeries.symbolInfo();
+                        const symbol = requestedSymbol ||
+                            (mainSeries && mainSeries.symbol && mainSeries.symbol()) ||
+                            (ext && (ext.pro_name || ext.full_name || ext.symbol)) ||
+                            (info && (info.pro_name || info.full_name || info.symbol)) ||
+                            null;
+                        const resolution = String(
+                            requestedResolution ||
+                            (chart && chart.resolution && chart.resolution()) ||
+                            (mainSeries && mainSeries.interval && mainSeries.interval()) ||
+                            '1'
+                        );
+                        const currency = (ext && (ext.currency_id || ext.currency || ext['currency-id'])) ||
+                            (info && (info.currency_id || info.currency_code || info.currency || info['currency-id'])) ||
+                            'USD';
+                        if (!symbol) {{
+                            return {{ error: 'Active chart symbol unavailable and --symbol was not provided' }};
+                        }}
+                        return {{ chart, symbol, resolution, currency }};
+                    }} catch (error) {{
+                        return {{
+                            error: error && error.message ? error.message : String(error)
+                        }};
+                    }}
+                }}
+
+                function labelOf(value) {{
+                    if (!value) return null;
+                    if (typeof value === 'string') return value;
+                    if (typeof value.name === 'function') {{
+                        try {{ return value.name(); }} catch (_) {{}}
+                    }}
+                    if (typeof value.title === 'function') {{
+                        try {{ return value.title(); }} catch (_) {{}}
+                    }}
+                    return value.name || value.title || value.description || value.shortDescription || null;
+                }}
+
+                function sameScriptLabel(label) {{
+                    if (!label) return false;
+                    return label === savedScriptName || label === savedScriptTitle || label === requestedScript;
+                }}
+
+                function readStudyInputs(chart) {{
+                    const base = {{
+                        pineFeatures: JSON.stringify(pineFeatures),
+                        __fast_calc: false,
+                        __profile: false
+                    }};
+                    if (!chart || typeof chart.getAllStudies !== 'function') {{
+                        if (sourceHasInputs) {{
+                            return {{
+                                ok: false,
+                                error: 'Active chart study list is unavailable for Pine input metadata'
+                            }};
+                        }}
+                        return {{ ok: true, inputs: base, input_count: 0, input_source: 'default_no_inputs', study_matched: false }};
+                    }}
+
+                    const studies = chart.getAllStudies() || [];
+                    for (let i = 0; i < studies.length; i++) {{
+                        const info = studies[i] || {{}};
+                        let study = null;
+                        try {{
+                            study = info.id && chart.getStudyById ? chart.getStudyById(info.id) : null;
+                        }} catch (_) {{}}
+                        const labels = [
+                            labelOf(info),
+                            labelOf(study),
+                            labelOf(study && study._study),
+                            info.name,
+                            info.title
+                        ].filter(Boolean);
+                        if (!labels.some(sameScriptLabel)) continue;
+                        let values = [];
+                        try {{
+                            if (study && typeof study.getInputValues === 'function') {{
+                                values = study.getInputValues() || [];
+                            }}
+                        }} catch (error) {{
+                            return {{
+                                ok: false,
+                                error: 'Could not read active study input values: ' + (error && error.message ? error.message : String(error))
+                            }};
+                        }}
+                        const inputs = Object.assign({{}}, base);
+                        for (let j = 0; j < values.length; j++) {{
+                            const input = values[j] || {{}};
+                            let value = input.value;
+                            if (value === undefined && input.val !== undefined) value = input.val;
+                            if (value === undefined && input.defval !== undefined) value = input.defval;
+                            inputs['in_' + j] = value;
+                        }}
+                        return {{
+                            ok: true,
+                            inputs,
+                            input_count: values.length,
+                            input_source: 'active_chart_study',
+                            study_matched: true
+                        }};
+                    }}
+
+                    if (sourceHasInputs) {{
+                        return {{
+                            ok: false,
+                            error: 'Pine source declares input.* calls, but no matching active chart study exposed input values'
+                        }};
+                    }}
+                    return {{ ok: true, inputs: base, input_count: 0, input_source: 'default_no_inputs', study_matched: false }};
+                }}
+
+                function alertIds(rows) {{
+                    const ids = {{}};
+                    rows.forEach(function(alert) {{
+                        const id = alert && (alert.alert_id || alert.id);
+                        if (id !== null && id !== undefined) ids[String(id)] = true;
+                    }});
+                    return ids;
+                }}
+
+                function alertCondition(alert) {{
+                    if (!alert) return null;
+                    if (alert.condition && typeof alert.condition === 'object') return alert.condition;
+                    if (Array.isArray(alert.conditions) && alert.conditions.length > 0) return alert.conditions[0];
+                    return null;
+                }}
+
+                function hasStudySeries(condition) {{
+                    return !!(condition && Array.isArray(condition.series) && condition.series.some(function(series) {{
+                        return series && series.type === 'study';
+                    }}));
+                }}
+
+                function conditionAlertCondId(condition) {{
+                    if (!condition) return null;
+                    if (condition.alert_cond_id) return condition.alert_cond_id;
+                    if (condition.alertCondId) return condition.alertCondId;
+                    if (Array.isArray(condition.series)) {{
+                        for (let i = 0; i < condition.series.length; i++) {{
+                            const series = condition.series[i] || {{}};
+                            if (series.alert_cond_id) return series.alert_cond_id;
+                            if (series.alertCondId) return series.alertCondId;
+                        }}
+                    }}
+                    return null;
+                }}
+
+                function matchingNewAlert(rows, beforeIds, symbolMarker) {{
+                    for (let i = 0; i < rows.length; i++) {{
+                        const alert = rows[i] || {{}};
+                        const id = alert.alert_id || alert.id;
+                        if (id !== null && id !== undefined && beforeIds[String(id)]) continue;
+                        const condition = alertCondition(alert);
+                        if (!condition || condition.type !== 'alert_cond') continue;
+                        if (conditionAlertCondId(condition) !== requestedAlertCondId) continue;
+                        const message = alert.message || alert.description || '';
+                        if (message !== requestedMessage) continue;
+                        const symbol = alert.symbol || (alert.condition && alert.condition.symbol) || null;
+                        if (symbol && symbol !== symbolMarker) continue;
+                        return alert;
+                    }}
+                    return null;
+                }}
+
+                const chartMeta = readChartMetadata();
+                if (chartMeta.error) {{
+                    return {{
+                        error: chartMeta.error,
+                        error_kind: 'internal_api_unavailable',
+                        phase: 'chart_metadata_unavailable',
+                        created: false,
+                        source
+                    }};
+                }}
+
+                const studyInputs = readStudyInputs(chartMeta.chart);
+                if (!studyInputs.ok) {{
+                    return {{
+                        error: studyInputs.error,
+                        error_kind: 'internal_api_unavailable',
+                        phase: 'study_input_metadata_unavailable',
+                        created: false,
+                        source,
+                        input_metadata_required: sourceHasInputs
+                    }};
+                }}
+
+                const before = await listAlerts();
+                if (!before.ok) {{
+                    return {{
+                        error: before.error,
+                        error_kind: 'internal_api_unavailable',
+                        phase: 'pre_list_unavailable',
+                        created: false,
+                        source
+                    }};
+                }}
+
+                const symbolMarker = '=' + JSON.stringify({{
+                    symbol: chartMeta.symbol,
+                    adjustment: 'dividends',
+                    'currency-id': chartMeta.currency
+                }});
+                const expiration = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+                const payload = {{
+                    symbol: symbolMarker,
+                    resolution: String(chartMeta.resolution),
+                    message: requestedMessage,
+                    sound_file: null,
+                    sound_duration: 0,
+                    popup: false,
+                    expiration,
+                    auto_deactivate: false,
+                    email: false,
+                    sms_over_email: false,
+                    mobile_push: false,
+                    web_hook: null,
+                    name: null,
+                    conditions: [{{
+                        type: 'alert_cond',
+                        frequency: 'on_bar_close',
+                        alert_cond_id: requestedAlertCondId,
+                        series: [{{
+                            type: 'study',
+                            study: 'Script@tv-scripting-101',
+                            offsets_by_plot: offsetsByPlot,
+                            inputs: studyInputs.inputs,
+                            pine_id: pineId,
+                            pine_version: pineVersion
+                        }}],
+                        resolution: String(chartMeta.resolution)
+                    }}],
+                    active: true,
+                    ignore_warnings: true
+                }};
+
+                let createResponse;
+                let createText;
+                let createData = null;
+                try {{
+                    createResponse = await fetch('https://pricealerts.tradingview.com/create_alert', {{
+                        method: 'POST',
+                        credentials: 'include',
+                        body: JSON.stringify({{ payload }})
+                    }});
+                    createText = await createResponse.text();
+                    try {{
+                        createData = createText ? JSON.parse(createText) : null;
+                    }} catch (_) {{}}
+                }} catch (error) {{
+                    return {{
+                        error: error && error.message ? error.message : String(error),
+                        error_kind: 'internal_api_unavailable',
+                        phase: 'create_request_unavailable',
+                        created: false,
+                        source,
+                        before_count: before.rows.length
+                    }};
+                }}
+
+                if (!createResponse.ok || (createData && createData.err) || (createData && createData.s && createData.s !== 'ok')) {{
+                    return {{
+                        error: createData && createData.errmsg
+                            ? createData.errmsg
+                            : createData && createData.err && createData.err.code
+                                ? createData.err.code
+                                : 'HTTP ' + createResponse.status + ': ' + createResponse.statusText,
+                        error_kind: 'internal_api_unavailable',
+                        phase: 'create_request_failed',
+                        created: false,
+                        source,
+                        before_count: before.rows.length,
+                        status: createResponse.status,
+                        body_excerpt: String(createText || '').slice(0, 160)
+                    }};
+                }}
+
+                const after = await listAlerts();
+                if (!after.ok) {{
+                    return {{
+                        error: after.error,
+                        error_kind: 'internal_api_unavailable',
+                        phase: 'post_list_unavailable',
+                        created: false,
+                        source,
+                        symbol: chartMeta.symbol,
+                        resolution: chartMeta.resolution,
+                        before_count: before.rows.length
+                    }};
+                }}
+
+                const matched = matchingNewAlert(after.rows, alertIds(before.rows), symbolMarker);
+                if (!matched) {{
+                    return {{
+                        error: 'Indicator alert create did not confirm a matching new alert',
+                        error_kind: 'internal_api_unavailable',
+                        phase: 'post_check_failed',
+                        created: false,
+                        source,
+                        symbol: chartMeta.symbol,
+                        resolution: chartMeta.resolution,
+                        alert_cond_id: requestedAlertCondId,
+                        before_count: before.rows.length,
+                        after_count: after.rows.length
+                    }};
+                }}
+
+                const publicMatched = publicAlert(matched);
+                return {{
+                    action: 'create_indicator',
+                    dry_run: false,
+                    alert_id: publicMatched && publicMatched.alert_id || null,
+                    created: true,
+                    source,
+                    symbol: chartMeta.symbol,
+                    resolution: String(chartMeta.resolution),
+                    message: requestedMessage,
+                    before_count: before.rows.length,
+                    after_count: after.rows.length,
+                    script: {{
+                        requested: requestedScript,
+                        name: savedScriptName,
+                        title: savedScriptTitle,
+                        version: pineVersion,
+                        script_id_available: true
+                    }},
+                    condition: {{
+                        alert_cond_id: requestedAlertCondId,
+                        title: requestedConditionTitle,
+                        message: conditionSourceMessage,
+                        plot_index: {plot_index},
+                        confidence: {confidence}
+                    }},
+                    input_metadata: {{
+                        source: studyInputs.input_source,
+                        input_count: studyInputs.input_count,
+                        study_matched: studyInputs.study_matched,
+                        source_has_inputs: sourceHasInputs
+                    }},
+                    matched_alert: publicMatched
+                }};
+            }})()
+            "#,
+                plot_index = candidate.plot_index,
+                confidence = js_string(candidate.confidence)?
+            ),
+            true,
+        )
+        .await?;
+
+    normalize_indicator_alert_create_payload(result)
+}
+
+fn offsets_by_plot(plot_index: usize) -> Value {
+    let mut map = serde_json::Map::new();
+    for index in 0..plot_index {
+        map.insert(format!("plot_{index}"), json!(0));
+    }
+    Value::Object(map)
+}
+
+fn source_has_pine_inputs(source: &str) -> bool {
+    source.contains("input.") || source.contains("input(")
+}
+
+fn pine_features(source: &str) -> Value {
+    let mut features = serde_json::Map::new();
+    for (needle, key) in [
+        ("indicator(", "indicator"),
+        ("strategy(", "strategy"),
+        ("plot(", "plot"),
+        ("plotshape(", "plotshape"),
+        ("plotchar(", "plotchar"),
+        ("bgcolor(", "bgcolor"),
+        ("alertcondition(", "alertcondition"),
+        ("request.security", "request.security"),
+        ("ta.", "ta"),
+        ("math.", "math"),
+        ("array.", "array"),
+        ("line.", "line"),
+        ("label.", "label"),
+        ("box.", "box"),
+        ("table.", "table"),
+        ("input.", "input"),
+        ("input(", "input"),
+    ] {
+        if source.contains(needle) {
+            features.insert(key.to_string(), json!(1));
+        }
+    }
+    Value::Object(features)
 }
 
 pub async fn alert_create_via_api(
@@ -1001,29 +1599,53 @@ pub async fn alert_delete(
                         }};
                     }}
 
-                    const alertIdValue = /^\\d+$/.test(String(requestedAlertId))
-                        ? Number(requestedAlertId)
-                        : requestedAlertId;
-                    const deleteResponse = await fetch('https://pricealerts.tradingview.com/delete_alerts', {{
-                        method: 'POST',
-                        credentials: 'include',
-                        headers: {{ 'accept': 'application/json' }},
-                        body: JSON.stringify({{ payload: {{ alert_ids: [alertIdValue] }} }})
-                    }});
-                    if (!deleteResponse.ok) {{
+                    function wireAlertId(id) {{
+                        return /^\d+$/.test(String(id)) ? Number(id) : id;
+                    }}
+
+                    async function deleteAlerts(ids) {{
+                        const response = await fetch('https://pricealerts.tradingview.com/delete_alerts', {{
+                            method: 'POST',
+                            credentials: 'include',
+                            body: JSON.stringify({{ payload: {{ alert_ids: ids }} }})
+                        }});
+                        if (!response.ok) {{
+                            return {{
+                                ok: false,
+                                http_error: 'HTTP ' + response.status + ': ' + response.statusText,
+                                data: null
+                            }};
+                        }}
+                        const data = await response.json();
+                        return {{ ok: !data.err, http_error: null, data }};
+                    }}
+
+                    const deleteAttempts = [];
+                    const firstAlertIdValue = wireAlertId(requestedAlertId);
+                    deleteAttempts.push(typeof firstAlertIdValue);
+                    let deleteResult = await deleteAlerts([firstAlertIdValue]);
+                    if (!deleteResult.ok && deleteResult.data && deleteResult.data.err && deleteResult.data.err.code === 'invalid_request' && typeof firstAlertIdValue !== 'string') {{
+                        deleteAttempts.push('string');
+                        deleteResult = await deleteAlerts([String(requestedAlertId)]);
+                    }}
+
+                    if (deleteResult.http_error) {{
+                        const deleteData = deleteResult.data;
                         return {{
-                            error: 'HTTP ' + deleteResponse.status + ': ' + deleteResponse.statusText,
+                            error: deleteResult.http_error,
                             error_kind: 'internal_api_unavailable',
                             alert_id: requestedAlertId,
                             source: 'internal_api',
                             before_count: before.alerts.length,
                             matched_before: true,
-                            matched_alert: matched
+                            matched_alert: matched,
+                            delete_attempts: deleteAttempts,
+                            delete_response: deleteData
                         }};
                     }}
 
-                    const deleteData = await deleteResponse.json();
-                    if (deleteData.err) {{
+                    const deleteData = deleteResult.data;
+                    if (!deleteResult.ok) {{
                         return {{
                             error: deleteData.errmsg || (deleteData.err && deleteData.err.code) || 'Alert delete failed',
                             error_kind: 'internal_api_unavailable',
@@ -1032,6 +1654,7 @@ pub async fn alert_delete(
                             before_count: before.alerts.length,
                             matched_before: true,
                             matched_alert: matched,
+                            delete_attempts: deleteAttempts,
                             delete_response: deleteData
                         }};
                     }}
@@ -1046,6 +1669,7 @@ pub async fn alert_delete(
                             before_count: before.alerts.length,
                             matched_before: true,
                             matched_alert: matched,
+                            delete_attempts: deleteAttempts,
                             delete_response: deleteData
                         }};
                     }}
@@ -1060,6 +1684,7 @@ pub async fn alert_delete(
                         matched_before: true,
                         matched_after: !!matchedAfter,
                         matched_alert: matched,
+                        delete_attempts: deleteAttempts,
                         delete_response: deleteData
                     }};
                 }} catch (error) {{
@@ -1137,7 +1762,7 @@ pub async fn alert_delete_all(
                 }}
 
                 function wireAlertId(id) {{
-                    return /^\\d+$/.test(String(id)) ? Number(id) : id;
+                        return /^\d+$/.test(String(id)) ? Number(id) : id;
                 }}
 
                 try {{
@@ -1191,7 +1816,6 @@ pub async fn alert_delete_all(
                     const deleteResponse = await fetch('https://pricealerts.tradingview.com/delete_alerts', {{
                         method: 'POST',
                         credentials: 'include',
-                        headers: {{ 'accept': 'application/json' }},
                         body: JSON.stringify({{ payload: {{ alert_ids: targetIds.map(wireAlertId) }} }})
                     }});
                     if (!deleteResponse.ok) {{
@@ -1262,7 +1886,109 @@ pub async fn alert_delete_all(
     normalize_alert_delete_all_payload(result)
 }
 
+fn sanitize_alert_condition_value(condition: &Value) -> Value {
+    let Some(object) = condition.as_object() else {
+        return condition.clone();
+    };
+
+    let mut sanitized = serde_json::Map::new();
+    for key in ["type", "alert_cond_id", "frequency", "resolution", "symbol"] {
+        if let Some(value) = object.get(key).cloned() {
+            sanitized.insert(key.to_string(), value);
+        }
+    }
+    if let Some(value) = object.get("alertCondId").cloned() {
+        sanitized
+            .entry("alert_cond_id".to_string())
+            .or_insert(value);
+    }
+    if let Some(value) = object.get("operator").cloned() {
+        sanitized.insert("operator".to_string(), value);
+    }
+    if let Some(value) = object.get("value").cloned() {
+        sanitized.insert("value".to_string(), value);
+    }
+
+    if let Some(series) = object.get("series").and_then(Value::as_array) {
+        let has_study_series = series
+            .iter()
+            .any(|item| item.get("type").and_then(Value::as_str) == Some("study"));
+        sanitized.insert("series_count".to_string(), json!(series.len()));
+        sanitized.insert("has_study_series".to_string(), json!(has_study_series));
+    }
+
+    Value::Object(sanitized)
+}
+
+fn sanitize_public_alert_value(alert: &Value) -> Value {
+    let Some(object) = alert.as_object() else {
+        return Value::Null;
+    };
+
+    let condition = object
+        .get("condition")
+        .map(sanitize_alert_condition_value)
+        .unwrap_or(Value::Null);
+    let message = object
+        .get("message")
+        .or_else(|| object.get("description"))
+        .cloned()
+        .unwrap_or_else(|| json!(""));
+
+    json!({
+        "alert_id": object.get("alert_id").or_else(|| object.get("id")).cloned().unwrap_or(Value::Null),
+        "symbol": object.get("symbol").cloned().unwrap_or(Value::Null),
+        "type": object.get("type").cloned().unwrap_or(Value::Null),
+        "message": message,
+        "active": object.get("active").cloned().unwrap_or(Value::Bool(true)),
+        "condition": condition,
+        "resolution": object.get("resolution").or_else(|| object.get("interval")).cloned().unwrap_or(Value::Null),
+        "created": object.get("created").or_else(|| object.get("create_time")).cloned().unwrap_or(Value::Null),
+        "last_fired": object.get("last_fired").or_else(|| object.get("last_fire_time")).cloned().unwrap_or(Value::Null),
+        "expiration": object.get("expiration").or_else(|| object.get("expire_time")).cloned().unwrap_or(Value::Null),
+    })
+}
+
+fn sanitize_public_alert_array(value: Option<&Value>) -> Value {
+    value
+        .and_then(Value::as_array)
+        .map(|alerts| {
+            Value::Array(
+                alerts
+                    .iter()
+                    .map(sanitize_public_alert_value)
+                    .collect::<Vec<_>>(),
+            )
+        })
+        .unwrap_or_else(|| json!([]))
+}
+
+fn sanitize_alert_payload(mut data: Value) -> Value {
+    if let Some(object) = data.as_object_mut() {
+        if object.contains_key("alerts") {
+            object.insert(
+                "alerts".to_string(),
+                sanitize_public_alert_array(object.get("alerts")),
+            );
+        }
+        if object.contains_key("target_alerts") {
+            object.insert(
+                "target_alerts".to_string(),
+                sanitize_public_alert_array(object.get("target_alerts")),
+            );
+        }
+        if let Some(matched_alert) = object.get("matched_alert").cloned() {
+            object.insert(
+                "matched_alert".to_string(),
+                sanitize_public_alert_value(&matched_alert),
+            );
+        }
+    }
+    data
+}
+
 fn normalize_alert_list_payload(data: Value) -> Value {
+    let data = sanitize_alert_payload(data);
     let alerts = data
         .get("alerts")
         .and_then(Value::as_array)
@@ -1288,6 +2014,7 @@ fn normalize_alert_list_payload(data: Value) -> Value {
 }
 
 fn normalize_alert_create_payload(data: Value) -> Result<Value, AppError> {
+    let data = sanitize_alert_payload(data);
     if let Some(message) = data.get("error").and_then(Value::as_str) {
         let kind = match data.get("error_kind").and_then(Value::as_str) {
             Some("validation") => ErrorKind::Validation,
@@ -1355,6 +2082,52 @@ fn normalize_alert_create_payload(data: Value) -> Result<Value, AppError> {
     }))
 }
 
+fn normalize_indicator_alert_create_payload(data: Value) -> Result<Value, AppError> {
+    let data = sanitize_alert_payload(data);
+    if let Some(message) = data.get("error").and_then(Value::as_str) {
+        let kind = match data.get("error_kind").and_then(Value::as_str) {
+            Some("validation") => ErrorKind::Validation,
+            _ => ErrorKind::InternalApiUnavailable,
+        };
+        return Err(AppError::new(kind, message.to_string()).with_details(data));
+    }
+
+    if !data
+        .get("created")
+        .and_then(Value::as_bool)
+        .unwrap_or(false)
+    {
+        return Err(AppError::new(
+            ErrorKind::InternalApiUnavailable,
+            "Indicator alert create did not confirm a created alert",
+        )
+        .with_details(data));
+    }
+
+    Ok(json!({
+        "action": data
+            .get("action")
+            .and_then(Value::as_str)
+            .unwrap_or("create_indicator"),
+        "dry_run": false,
+        "created": true,
+        "source": data
+            .get("source")
+            .and_then(Value::as_str)
+            .unwrap_or("indicator_alert_api"),
+        "alert_id": data.get("alert_id").cloned().unwrap_or(Value::Null),
+        "symbol": data.get("symbol").cloned().unwrap_or(Value::Null),
+        "resolution": data.get("resolution").cloned().unwrap_or(Value::Null),
+        "message": data.get("message").cloned().unwrap_or(Value::Null),
+        "before_count": data.get("before_count").cloned().unwrap_or(Value::Null),
+        "after_count": data.get("after_count").cloned().unwrap_or(Value::Null),
+        "script": data.get("script").cloned().unwrap_or(Value::Null),
+        "condition": data.get("condition").cloned().unwrap_or(Value::Null),
+        "input_metadata": data.get("input_metadata").cloned().unwrap_or(Value::Null),
+        "matched_alert": data.get("matched_alert").cloned().unwrap_or(Value::Null),
+    }))
+}
+
 fn alert_api_error_allows_fallback(error: &AppError) -> bool {
     error
         .details
@@ -1365,6 +2138,7 @@ fn alert_api_error_allows_fallback(error: &AppError) -> bool {
 }
 
 fn normalize_alert_delete_payload(data: Value) -> Result<Value, AppError> {
+    let data = sanitize_alert_payload(data);
     if let Some(message) = data.get("error").and_then(Value::as_str) {
         let kind = match data.get("error_kind").and_then(Value::as_str) {
             Some("validation") => ErrorKind::Validation,
@@ -1407,6 +2181,7 @@ fn normalize_alert_delete_payload(data: Value) -> Result<Value, AppError> {
 }
 
 fn normalize_alert_delete_all_payload(data: Value) -> Result<Value, AppError> {
+    let data = sanitize_alert_payload(data);
     if let Some(message) = data.get("error").and_then(Value::as_str) {
         let kind = match data.get("error_kind").and_then(Value::as_str) {
             Some("validation") => ErrorKind::Validation,
@@ -1786,9 +2561,9 @@ alertcondition(close > open, "Long", "Long message")"#;
             "candidates": []
         })]));
 
-        let data = alert_create_indicator_dry_run(
+        let data = alert_create_indicator(
             &mut runtime,
-            IndicatorAlertDryRunRequest {
+            IndicatorAlertRequest {
                 script: "Signals",
                 source,
                 input_source: "stdin",
@@ -1797,6 +2572,7 @@ alertcondition(close > open, "Long", "Long message")"#;
                 symbol: Some("NASDAQ:AAPL"),
                 resolution: Some("1D"),
                 message: Some("Test alert"),
+                dry_run: true,
             },
         )
         .await
@@ -1805,7 +2581,7 @@ alertcondition(close > open, "Long", "Long message")"#;
         assert_eq!(data["action"], "dry_run");
         assert_eq!(data["dry_run"], true);
         assert_eq!(data["would_create"], true);
-        assert_eq!(data["mutation_supported"], false);
+        assert_eq!(data["mutation_supported"], true);
         assert_eq!(data["script"]["requested"], "Signals");
         assert_eq!(data["script"]["name"], "Signals");
         assert_eq!(data["script"]["script_id_available"], true);
@@ -1814,16 +2590,16 @@ alertcondition(close > open, "Long", "Long message")"#;
         assert_eq!(data["condition"]["title"], "Long");
         assert_eq!(data["request"]["symbol"], "NASDAQ:AAPL");
         assert!(runtime.evaluated[0].0.contains("pine-facade/list"));
-        assert!(!runtime.evaluated[0].0.contains("script_id:"));
+        assert!(data["script"].get("script_id").is_none());
     }
 
     #[tokio::test]
     async fn alert_indicator_dry_run_rejects_ambiguous_condition_selector() {
         let mut runtime = FakeRuntime::new(VecDeque::new());
 
-        let error = alert_create_indicator_dry_run(
+        let error = alert_create_indicator(
             &mut runtime,
-            IndicatorAlertDryRunRequest {
+            IndicatorAlertRequest {
                 script: "Signals",
                 source: "alertcondition(close > open, \"Long\")",
                 input_source: "stdin",
@@ -1832,6 +2608,7 @@ alertcondition(close > open, "Long", "Long message")"#;
                 symbol: None,
                 resolution: None,
                 message: None,
+                dry_run: true,
             },
         )
         .await
@@ -1853,9 +2630,9 @@ alertcondition(close > open, "Long", "Long message")"#;
             ]
         })]));
 
-        let error = alert_create_indicator_dry_run(
+        let error = alert_create_indicator(
             &mut runtime,
-            IndicatorAlertDryRunRequest {
+            IndicatorAlertRequest {
                 script: "Signals",
                 source,
                 input_source: "stdin",
@@ -1864,6 +2641,7 @@ alertcondition(close > open, "Long", "Long message")"#;
                 symbol: None,
                 resolution: None,
                 message: None,
+                dry_run: true,
             },
         )
         .await
@@ -1872,6 +2650,193 @@ alertcondition(close > open, "Long", "Long message")"#;
         assert_eq!(error.kind, ErrorKind::Validation);
         assert_eq!(error.message, "No saved Pine script matches --script");
         assert_eq!(error.details.unwrap()["match_count"], 0);
+    }
+
+    #[tokio::test]
+    async fn alert_indicator_create_returns_sanitized_success() {
+        let source = r#"//@version=6
+indicator("Signals")
+plot(close)
+alertcondition(close > open, "Long", "Long message")"#;
+        let mut runtime = FakeRuntime::new(VecDeque::from([
+            json!({
+                "requested": "Signals",
+                "match_count": 1,
+                "match": {
+                    "name": "Signals",
+                    "title": "Signals",
+                    "version": 4,
+                    "modified": 123,
+                    "script_id": "SAVED_SCRIPT_ID_REDACTED",
+                    "script_id_available": true
+                },
+                "candidates": []
+            }),
+            json!({
+                "action": "create_indicator",
+                "dry_run": false,
+                "alert_id": "4550000001",
+                "created": true,
+                "source": "indicator_alert_api",
+                "symbol": "NASDAQ:AAPL",
+                "resolution": "1D",
+                "message": "Long message",
+                "before_count": 1,
+                "after_count": 2,
+                "script": {
+                    "requested": "Signals",
+                    "name": "Signals",
+                    "title": "Signals",
+                    "version": "4",
+                    "script_id_available": true
+                },
+                "condition": {
+                    "alert_cond_id": "plot_1",
+                    "title": "Long",
+                    "message": "Long message",
+                    "plot_index": 1,
+                    "confidence": "best_effort"
+                },
+                "input_metadata": {
+                    "source": "default_no_inputs",
+                    "input_count": 0,
+                    "study_matched": false,
+                    "source_has_inputs": false
+                },
+                "matched_alert": {
+                    "alert_id": "4550000001",
+                    "message": "Long message",
+                    "condition": {
+                        "type": "alert_cond",
+                        "alert_cond_id": "plot_1",
+                        "has_study_series": true
+                    }
+                }
+            }),
+        ]));
+
+        let data = alert_create_indicator(
+            &mut runtime,
+            IndicatorAlertRequest {
+                script: "Signals",
+                source,
+                input_source: "stdin",
+                condition_title: Some("Long"),
+                alert_cond_id: None,
+                symbol: Some("NASDAQ:AAPL"),
+                resolution: Some("1D"),
+                message: None,
+                dry_run: false,
+            },
+        )
+        .await
+        .unwrap();
+
+        assert_eq!(data["action"], "create_indicator");
+        assert_eq!(data["dry_run"], false);
+        assert_eq!(data["created"], true);
+        assert_eq!(data["source"], "indicator_alert_api");
+        assert_eq!(data["alert_id"], "4550000001");
+        assert_eq!(data["condition"]["alert_cond_id"], "plot_1");
+        assert!(data["script"].get("id").is_none());
+        assert!(data["matched_alert"]["condition"].get("pine_id").is_none());
+        assert_eq!(runtime.evaluated.len(), 2);
+        assert!(runtime.evaluated[1].0.contains("create_alert"));
+        assert!(runtime.evaluated[1].0.contains("list_alerts"));
+        assert!(!runtime.evaluated[1].0.contains("Content-Type"));
+    }
+
+    #[tokio::test]
+    async fn alert_indicator_create_rejects_missing_script_id_before_create_request() {
+        let source = "alertcondition(close > open, \"Long\")";
+        let mut runtime = FakeRuntime::new(VecDeque::from([json!({
+            "requested": "Signals",
+            "match_count": 1,
+            "match": {
+                "name": "Signals",
+                "title": "Signals",
+                "version": 1,
+                "modified": null,
+                "script_id": null,
+                "script_id_available": false
+            },
+            "candidates": []
+        })]));
+
+        let error = alert_create_indicator(
+            &mut runtime,
+            IndicatorAlertRequest {
+                script: "Signals",
+                source,
+                input_source: "stdin",
+                condition_title: Some("Long"),
+                alert_cond_id: None,
+                symbol: None,
+                resolution: None,
+                message: None,
+                dry_run: false,
+            },
+        )
+        .await
+        .unwrap_err();
+
+        assert_eq!(error.kind, ErrorKind::InternalApiUnavailable);
+        assert_eq!(
+            error.message,
+            "Saved Pine script id was unavailable for indicator alert creation"
+        );
+        assert_eq!(runtime.evaluated.len(), 1);
+    }
+
+    #[tokio::test]
+    async fn alert_indicator_create_post_check_failure_does_not_fallback() {
+        let source = "alertcondition(close > open, \"Long\")";
+        let mut runtime = FakeRuntime::new(VecDeque::from([
+            json!({
+                "requested": "Signals",
+                "match_count": 1,
+                "match": {
+                    "name": "Signals",
+                    "title": "Signals",
+                    "version": 1,
+                    "modified": null,
+                    "script_id": "SAVED_SCRIPT_ID_REDACTED",
+                    "script_id_available": true
+                },
+                "candidates": []
+            }),
+            json!({
+                "error": "Indicator alert create did not confirm a matching new alert",
+                "error_kind": "internal_api_unavailable",
+                "phase": "post_check_failed",
+                "created": false,
+                "source": "indicator_alert_api"
+            }),
+        ]));
+
+        let error = alert_create_indicator(
+            &mut runtime,
+            IndicatorAlertRequest {
+                script: "Signals",
+                source,
+                input_source: "stdin",
+                condition_title: Some("Long"),
+                alert_cond_id: None,
+                symbol: None,
+                resolution: None,
+                message: None,
+                dry_run: false,
+            },
+        )
+        .await
+        .unwrap_err();
+
+        assert_eq!(error.kind, ErrorKind::InternalApiUnavailable);
+        assert_eq!(
+            error.message,
+            "Indicator alert create did not confirm a matching new alert"
+        );
+        assert_eq!(runtime.evaluated.len(), 2);
     }
 
     #[tokio::test]
@@ -1886,7 +2851,19 @@ alertcondition(close > open, "Long", "Long message")"#;
             "matched_after": false,
             "matched_alert": {
                 "alert_id": "4546454367",
-                "message": "smoke"
+                "message": "smoke",
+                "condition": {
+                    "type": "alert_cond",
+                    "series": [
+                        {
+                            "type": "study",
+                            "pine_id": "USER;redacted;script"
+                        }
+                    ],
+                    "inputs": {
+                        "length": 21
+                    }
+                }
             },
             "delete_response": { "s": "ok" }
         })]));
@@ -1899,8 +2876,14 @@ alertcondition(close > open, "Long", "Long message")"#;
         assert_eq!(data["before_count"], 1);
         assert_eq!(data["after_count"], 0);
         assert_eq!(data["matched_alert"]["message"], "smoke");
+        assert_eq!(data["matched_alert"]["condition"]["type"], "alert_cond");
+        assert_eq!(data["matched_alert"]["condition"]["has_study_series"], true);
+        assert!(data["matched_alert"]["condition"].get("series").is_none());
+        assert!(data["matched_alert"]["condition"].get("pine_id").is_none());
+        assert!(data["matched_alert"]["condition"].get("inputs").is_none());
         assert!(runtime.evaluated[0].0.contains("delete_alerts"));
         assert!(runtime.evaluated[0].0.contains("alert_ids"));
+        assert!(runtime.evaluated[0].0.contains("deleteAttempts"));
         assert!(!runtime.evaluated[0].0.contains("log_username"));
         assert!(!runtime.evaluated[0].0.contains("build_time"));
         assert!(runtime.evaluated[0].0.contains("\"4546454367\""));
@@ -1940,12 +2923,43 @@ alertcondition(close > open, "Long", "Long message")"#;
             "error": "Alert delete failed",
             "error_kind": "internal_api_unavailable",
             "alert_id": "4546454367",
-            "source": "internal_api"
+            "source": "internal_api",
+            "matched_alert": {
+                "alert_id": "4546454367",
+                "condition": {
+                    "type": "alert_cond",
+                    "series": [
+                        {
+                            "type": "study",
+                            "pine_id": "USER;redacted;script"
+                        }
+                    ],
+                    "inputs": {
+                        "length": 21
+                    }
+                }
+            }
         })]));
 
         let error = alert_delete(&mut runtime, "4546454367").await.unwrap_err();
 
         assert_eq!(error.kind, ErrorKind::InternalApiUnavailable);
+        let details = error.details.unwrap();
+        assert!(
+            details["matched_alert"]["condition"]
+                .get("series")
+                .is_none()
+        );
+        assert!(
+            details["matched_alert"]["condition"]
+                .get("inputs")
+                .is_none()
+        );
+        assert!(
+            details["matched_alert"]["condition"]
+                .get("pine_id")
+                .is_none()
+        );
     }
 
     #[tokio::test]

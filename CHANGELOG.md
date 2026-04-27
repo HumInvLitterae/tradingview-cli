@@ -23,17 +23,20 @@ package version omits the leading `v`.
   `127.0.0.1`, skipping initial CDP domain-enable calls, and exposing
   app-window targets in `tv tab list` for diagnostics.
 - Recorded Pine `alertcondition()` alert creation feasibility and kept raw
-  indicator-alert mutation deferred until discovery/dry-run behavior is
-  designed.
+  indicator-alert endpoint primitives out of the public CLI.
 - Added `tv pine alertconditions [--file <PATH>]` for local static discovery of
   Pine `alertcondition()` candidates without connecting to TradingView or
   creating account alerts.
-- Added dry-run-only
+- Added
   `tv alert create-indicator --script <NAME> --file <PATH>
-  --condition-title <TITLE>|--alert-cond-id <ID> --dry-run` preview for Pine
-  `alertcondition()` alert creation. It verifies a local source candidate and a
-  unique saved-script display-name match without creating alerts or printing
-  saved-script identifiers.
+  --condition-title <TITLE>|--alert-cond-id <ID> [--dry-run]` for guarded Pine
+  `alertcondition()` alert creation. Dry-run verifies a local source candidate
+  and a unique saved-script display-name match without creating alerts. Normal
+  mode creates through the logged-in alert endpoint only when required metadata
+  is available and verifies the new alert by readback before reporting success.
+- Fixed alert delete cleanup for numeric alert ids and sanitized returned alert
+  condition details so Pine/account metadata is not exposed in alert list,
+  create, or delete payloads.
 
 ## v0.2.0 - 2026-04-27
 
