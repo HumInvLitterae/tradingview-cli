@@ -7,7 +7,13 @@ package version omits the leading `v`.
 
 ## Unreleased
 
-No unreleased changes.
+### Added
+
+- Added a `v0.3.0` roadmap that prioritizes upstream PR re-checks,
+  non-public API stabilization, direct HTTP feasibility, and a later
+  binary/library crate split.
+- Started a refreshed upstream pull-request re-check note after the `v0.2.0`
+  release.
 
 ## v0.2.0 - 2026-04-27
 

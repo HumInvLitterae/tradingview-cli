@@ -16,20 +16,22 @@ Read these in order before making major decisions:
 
 1. `CONTINUITY.md`
 2. `README.md`
-3. `docs/architecture.md`
-4. `docs/development.md`
-5. `docs/release-packaging.md`
-6. `docs/breaking-changes-from-js-cli.md`
-7. `docs/internal-tradingview-apis.md`
-8. `docs/notes/next-agent-handoff-prompt-2026-04-24.md`
-9. `docs/notes/rust-cli-contract-migration-2026-04-24.md`
-10. `docs/notes/legacy-cli-command-migration-inventory-2026-04-24.md`
-11. `docs/notes/remaining-deferred-surface-audit-2026-04-25.md`
-12. `docs/notes/upstream-pr-triage-2026-04-25.md`
-13. `docs/plans/README.md`
-14. `docs/notes/tradingview-mcp-investigation-2026-04-24.md`
-15. `.agents/PLANS.md`
-16. `.agents/skills/continuity/SKILL.md` when the continuity skill is active
+3. `docs/v0.3-roadmap.md`
+4. `docs/architecture.md`
+5. `docs/development.md`
+6. `docs/release-packaging.md`
+7. `docs/breaking-changes-from-js-cli.md`
+8. `docs/internal-tradingview-apis.md`
+9. `docs/notes/next-agent-handoff-prompt-2026-04-24.md`
+10. `docs/notes/rust-cli-contract-migration-2026-04-24.md`
+11. `docs/notes/legacy-cli-command-migration-inventory-2026-04-24.md`
+12. `docs/notes/remaining-deferred-surface-audit-2026-04-25.md`
+13. `docs/notes/upstream-pr-triage-2026-04-25.md`
+14. `docs/notes/upstream-pr-recheck-2026-04-27.md`
+15. `docs/plans/README.md`
+16. `docs/notes/tradingview-mcp-investigation-2026-04-24.md`
+17. `.agents/PLANS.md`
+18. `.agents/skills/continuity/SKILL.md` when the continuity skill is active
 
 Historical ExecPlans live under `docs/plans/archives/`. Read them only when you need slice-level implementation history or rationale that is not already summarized in the current notes.
 
@@ -132,11 +134,13 @@ If the answer still depends on unresolved bridge facts, investigate first and wr
 - `README.md`: project overview and current status
 - `CONTINUITY.md`: compaction-safe continuity ledger for current durable state
 - `docs/architecture.md`: stable CLI architecture, module boundaries, JSON contract, and mutation safety model
+- `docs/v0.3-roadmap.md`: post-`v0.2.0` roadmap for upstream PR re-check, API-backed stabilization, direct HTTP feasibility, and library crate split planning
 - `docs/development.md`: coding style, test style, validation, and commit guide
 - `docs/release-packaging.md`: GitHub Release archive contents, runtime skill packaging, and release validation guide
 - `docs/breaking-changes-from-js-cli.md`: short downstream migration guide for intentional old CLI differences
 - `docs/internal-tradingview-apis.md`: public-safe reference for non-public TradingView dependencies
 - `docs/notes/upstream-pr-triage-2026-04-25.md`: original upstream PR classification and Rust follow-up priorities
+- `docs/notes/upstream-pr-recheck-2026-04-27.md`: refreshed post-`v0.2.0` upstream PR delta and first compatibility candidates
 - `src/ops.rs`: thin operation facade that re-exports feature modules
 - `src/ops/`: operation implementations grouped by capability
 - `src/ops/indicator.rs`: indicator add/remove/toggle/set operation implementation
