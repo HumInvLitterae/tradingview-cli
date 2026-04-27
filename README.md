@@ -108,7 +108,7 @@ Launch TradingView Desktop with Chrome DevTools Protocol enabled. The bounded la
 tv launch
 ```
 
-On Windows, `tv launch` also checks for Microsoft Store/MSIX-style TradingView installs with PowerShell. On macOS, it first tries a direct app spawn and then falls back to `open -a TradingView --args ...` if CDP does not become ready. The launcher does not close an existing TradingView session unless `--kill-existing` is explicit:
+On Windows, the standalone Desktop build is the recommended install for `tv launch`. Microsoft Store/MSIX launch compatibility is still unverified because detecting an install and starting it with `--remote-debugging-port` are separate problems. On macOS, the launcher first tries a direct app spawn and then falls back to `open -a TradingView --args ...` if CDP does not become ready. The launcher does not close an existing TradingView session unless `--kill-existing` is explicit:
 
 ```bash
 tv launch --kill-existing
@@ -123,7 +123,7 @@ tv launch --path "/Applications/TradingView.app/Contents/MacOS/TradingView"
 Common TradingView Desktop executable paths include:
 
 - macOS: `/Applications/TradingView.app/Contents/MacOS/TradingView`
-- Windows: `%ProgramFiles%\TradingView\TradingView.exe`, or a Microsoft Store/MSIX install detected through PowerShell
+- Windows: `%ProgramFiles%\TradingView\TradingView.exe`, preferably from the standalone Desktop installer. Store/MSIX launch behavior is a Windows verification backlog item.
 - Linux: `/opt/TradingView/tradingview`, `/opt/TradingView/TradingView`, or `/snap/tradingview/current/tradingview`
 
 Then run commands against the active TradingView Desktop session:
