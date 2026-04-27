@@ -10,7 +10,7 @@ This tool requires the user's own valid TradingView Desktop installation, logged
 
 This repository now contains the first Rust-native `tv` CLI implementation.
 
-The first implementation focuses on a narrow CLI surface for connecting to an already-running TradingView Desktop instance through Chrome DevTools Protocol on `localhost:9222`.
+The first implementation focuses on a narrow CLI surface for connecting to an already-running TradingView Desktop instance through Chrome DevTools Protocol on `127.0.0.1:9222`.
 
 The old TradingView MCP Bridge CLI command migration is now closed for the known JavaScript CLI surface. If new evidence shows a missed old CLI command, treat it as migration backlog unless a repository decision explicitly marks it out of scope. The MCP server is different: implementing an MCP server is not planned for this project.
 
@@ -102,7 +102,7 @@ Install `tv` from a GitHub Release archive for your OS, or build it from the rep
 cargo install --path .
 ```
 
-Launch TradingView Desktop with Chrome DevTools Protocol enabled. The bounded launcher searches common install locations and defaults to `localhost:9222`:
+Launch TradingView Desktop with Chrome DevTools Protocol enabled. The bounded launcher searches common install locations and defaults to `127.0.0.1:9222`:
 
 ```bash
 tv launch
@@ -179,7 +179,7 @@ Most commands operate on the current chart target. Mutation commands such as `sy
 
 Screenshots require an explicit `--output <PATH>` file path. Parent directories are created automatically, so agent or Claude Desktop workflows should choose a readable output path directly instead of relying on a default screenshots directory.
 
-The default CDP endpoint is `localhost:9222`. Override it with `TV_CDP_HOST` and `TV_CDP_PORT` when needed.
+The default CDP endpoint is `127.0.0.1:9222`. Override it with `TV_CDP_HOST` and `TV_CDP_PORT` when needed, for example if a local setup still requires `localhost`.
 
 ### Multiple Chart Targets
 

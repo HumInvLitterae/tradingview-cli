@@ -32,16 +32,14 @@ of this starter pass.
 | [#112](https://github.com/tradesdontlie/tradingview-mcp/pull/112) `feat(alerts): add alert_create_indicator for Pine alertcondition signals` | `feature` | Feature candidate, not an immediate patch. Rust has API-backed price alert creation, but not indicator/Pine `alertcondition()` alert creation. This needs a separate feasibility plan because it depends on script metadata and alert-condition identifiers. Do not copy account-linked examples from the PR body into tracked docs. |
 | [#110](https://github.com/tradesdontlie/tradingview-mcp/pull/110) `Support MSIX/Microsoft Store TradingView installs on Windows` | `bugfix/compatibility` | Investigate together with `#114` and `#108`. The PR points at AUMID-style activation and IPv4 loopback behavior. Rust currently records AppX/MSIX discovery in `tv launch`, but the effective launch path may still need Windows-specific smoke before claiming release-user support. |
 | [#109](https://github.com/tradesdontlie/tradingview-mcp/pull/109) `Add .claude/ to .gitignore and sync package-lock.json bin entry` | `maintenance/node-only` | No Rust action. This is original-project packaging hygiene. |
-| [#108](https://github.com/tradesdontlie/tradingview-mcp/pull/108) `fix: TradingView Electron 38 CDP compatibility` | `bugfix/compatibility` | High-priority Rust compatibility candidate. The PR reports that `localhost` may fail where `127.0.0.1` works, that newer Electron builds can hang on `Runtime.enable`, `Page.enable`, or `DOM.enable`, and that file-based TradingView Desktop targets may need broader target matching. Rust currently defaults to `localhost`, enables those CDP domains during connection, and prioritizes target URLs containing `tradingview.com/chart`; this deserves a focused compatibility plan. |
+| [#108](https://github.com/tradesdontlie/tradingview-mcp/pull/108) `fix: TradingView Electron 38 CDP compatibility` | `bugfix/compatibility` | Addressed for Rust in the CDP transport compatibility slice: the default host is `127.0.0.1`, `CdpClient::connect` no longer sends initial `Runtime.enable`, `Page.enable`, or `DOM.enable` calls, and `tv tab list` exposes app-window targets for diagnostics while chart command auto-selection still avoids file URL app-window targets. |
 | [#107](https://github.com/tradesdontlie/tradingview-mcp/pull/107) `Integration: 16 fixes (alerts REST, DI restore, TV 3.1.0 compat, i18n, draw_shape hardening)` | `mixed` | Do not cherry-pick. Treat as a bundle to audit after the focused `#108`, `#110`/`#114`, and `#112` passes. Some areas are likely already addressed in Rust, such as API-backed watchlist and alert creation, while the TV Desktop 3.1.0 compatibility evidence may still be valuable. |
 
 ## Initial recommendations
 
-1. Open a focused ExecPlan for CDP transport compatibility based on `#108` and
-   the relevant parts of `#107`.
-   Check `localhost` versus `127.0.0.1`, target URL selection for desktop file
-   targets, and whether CDP domain-enable calls should be lazy, optional, or
-   timeout-bounded.
+1. The focused CDP transport compatibility pass for `#108` is addressed in
+   Rust. Future work should monitor live TradingView Desktop regressions rather
+   than re-opening domain-enable bootstrap by default.
 
 2. Open a Windows launch policy and compatibility pass based on `#114` and
    `#110`.

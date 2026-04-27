@@ -11,9 +11,8 @@ for release and next-phase planning.
 - `tradingview-cli-direct-http-feasibility.md`: post-next-release
   investigation into credential-safe direct HTTP reads that do not require a
   TradingView Desktop page-session context.
-- `tradingview-cli-target-env-removal.md`: active contract cleanup to remove
-  `TV_CDP_TARGET_ID` / `target_env` and keep `--target-id` as the only
-  explicit target handoff.
+- `tradingview-cli-cdp-transport-compatibility.md`: active compatibility slice
+  for TradingView Desktop / Electron CDP behavior.
 
 ## Archived plans
 

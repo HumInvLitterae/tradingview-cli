@@ -325,6 +325,27 @@ Likely DOM-maintained boundaries:
 The next Screener stabilization work should prefer storage/API evidence before
 adding more DOM retries.
 
+## CDP transport boundary
+
+Category: local Chrome DevTools Protocol endpoint exposed by TradingView
+Desktop.
+
+Current command family:
+
+- chart, tab, screenshot, Pine, drawing, replay, data, and UI commands that
+  need the running desktop session
+
+Compatibility notes:
+
+- The default endpoint host is `127.0.0.1`; `TV_CDP_HOST` and `TV_CDP_PORT`
+  remain available for explicit local overrides.
+- CDP methods are called directly when needed. The client does not send
+  initial `Runtime.enable`, `Page.enable`, or `DOM.enable` during connection
+  because recent TradingView Desktop / Electron builds can hang on those
+  bootstrap calls while still accepting the direct methods used by this CLI.
+- TradingView Desktop app-window targets are useful for app-tab operations and
+  diagnostics, but they are not treated as automatic chart API targets.
+
 ## App-tab DOM surface
 
 Category: TradingView Desktop app-window tab strip visible in the

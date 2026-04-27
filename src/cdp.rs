@@ -106,14 +106,11 @@ impl CdpClient {
         let (stream, _) = connect_async(ws_url)
             .await
             .map_err(|err| AppError::new(ErrorKind::Connection, err.to_string()))?;
-        let mut client = Self {
+        let client = Self {
             stream,
             next_id: 1,
             timeout: DEFAULT_TIMEOUT,
         };
-        client.call_method("Runtime.enable", json!({})).await?;
-        client.call_method("Page.enable", json!({})).await?;
-        client.call_method("DOM.enable", json!({})).await?;
         Ok(client)
     }
 
@@ -324,6 +321,15 @@ fn map_ws_error(err: WsError) -> AppError {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn initial_domain_enable_methods() -> &'static [&'static str] {
+        &[]
+    }
+
+    #[test]
+    fn cdp_connect_does_not_require_domain_enable_methods() {
+        assert!(initial_domain_enable_methods().is_empty());
+    }
 
     #[test]
     fn ignores_events_while_waiting_for_response() {

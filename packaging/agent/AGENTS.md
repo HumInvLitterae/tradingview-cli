@@ -4,7 +4,7 @@ This file is for users who unpack a `tv` release archive and want an AI agent to
 
 ## Purpose
 
-Use the bundled `tv` binary as the only interface for TradingView automation. The tool connects to the user's own running TradingView Desktop session through Chrome DevTools Protocol on `localhost:9222`.
+Use the bundled `tv` binary as the only interface for TradingView automation. The tool connects to the user's own running TradingView Desktop session through Chrome DevTools Protocol on `127.0.0.1:9222`.
 
 This project is not affiliated with TradingView Inc. It does not bypass TradingView access controls, subscriptions, paywalls, exchange data agreements, or script ownership rules. Market data, Pine scripts, alerts, layouts, and account state remain subject to TradingView and data-provider terms.
 

@@ -19,6 +19,9 @@ package version omits the leading `v`.
   chart-switch freshness checks.
 - Removed the old `TV_CDP_TARGET_ID` explicit target-selection fallback from
   the public contract; use `target_cli_args` / `--target-id` instead.
+- Improved TradingView Desktop CDP compatibility by defaulting to
+  `127.0.0.1`, skipping initial CDP domain-enable calls, and exposing
+  app-window targets in `tv tab list` for diagnostics.
 
 ## v0.2.0 - 2026-04-27
 

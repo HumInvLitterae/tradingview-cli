@@ -134,7 +134,7 @@ The implemented commands are:
 - `tv screenshot --region full --output <PATH>`
 - `tv screenshot --region chart --output <PATH>`
 
-The default CDP endpoint is `localhost:9222`. `TV_CDP_HOST` and `TV_CDP_PORT` can override it.
+The default CDP endpoint is `127.0.0.1:9222`. `TV_CDP_HOST` and `TV_CDP_PORT` can override it.
 
 Commands use structured JSON envelopes. Most successful commands print one `success: true` envelope to stdout. Stream commands print newline-delimited `success: true` envelopes, one line per changed sample. Failed commands print `success: false` to stderr.
 

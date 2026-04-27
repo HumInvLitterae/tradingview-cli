@@ -16,7 +16,7 @@ known commands, but the Rust CLI is not a JSON wire-format clone.
 ## Runtime model
 
 Most chart and UI commands connect to TradingView Desktop through Chrome
-DevTools Protocol on `localhost:9222`.
+DevTools Protocol on `127.0.0.1:9222`.
 
 The CLI uses three kinds of TradingView surface:
 
@@ -25,6 +25,12 @@ The CLI uses three kinds of TradingView surface:
   watchlist, and Screener saved-screen operations
 - visible DOM or page object interaction when the command is intentionally
   about visible UI state or when no safer API/storage path is known
+
+CDP method calls are issued directly when needed. The client does not send
+initial `Runtime.enable`, `Page.enable`, or `DOM.enable` calls during
+connection because recent TradingView Desktop / Electron builds can hang on
+those enable calls while still accepting `Runtime.evaluate`,
+`Page.captureScreenshot`, and `Input.*` methods.
 
 Before adding more DOM retries, check whether a page-session API, storage
 payload, or endpoint can replace the visible UI path. The public-safe reference

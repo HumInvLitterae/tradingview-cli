@@ -33,7 +33,7 @@ pub struct TransportConfig {
 impl Default for TransportConfig {
     fn default() -> Self {
         Self {
-            host: "localhost".to_string(),
+            host: "127.0.0.1".to_string(),
             port: 9222,
             target_id: None,
         }
@@ -47,7 +47,7 @@ impl TransportConfig {
     }
 
     pub fn from_env_with_target_id(target_id: Option<&str>) -> Result<Self, AppError> {
-        let host = std::env::var("TV_CDP_HOST").unwrap_or_else(|_| "localhost".to_string());
+        let host = std::env::var("TV_CDP_HOST").unwrap_or_else(|_| "127.0.0.1".to_string());
         let port = match std::env::var("TV_CDP_PORT") {
             Ok(value) => value.parse::<u16>().map_err(|err| {
                 AppError::new(
@@ -113,7 +113,7 @@ pub fn select_target(targets: &[Target]) -> TargetSelection {
     }
 
     let tradingview_targets = page_targets_matching(targets, |target| {
-        target.url.to_lowercase().contains("tradingview")
+        target.url.to_lowercase().contains("tradingview") && !is_app_window_target(target)
     });
     match tradingview_targets.as_slice() {
         [target] => TargetSelection::Selected((*target).clone()),
@@ -149,7 +149,11 @@ pub async fn discover_target(config: &TransportConfig) -> Result<Target, AppErro
             ErrorKind::Connection,
             "No TradingView chart target found",
         )
-        .with_details(json!({ "targets": targets_with_handoff(&targets) }))),
+        .with_details(json!({
+            "next_action_hint": "Run `tv tab list` to inspect available CDP targets, then retry with `tv --target-id <ID> <command>` when a chart target is available.",
+            "targets": targets_with_handoff(&targets),
+            "app_window_targets": targets_with_handoff(&app_window_targets(&targets)),
+        }))),
         TargetSelection::Ambiguous(targets) => Err(AppError::new(
             ErrorKind::TargetAmbiguous,
             "Multiple TradingView chart targets found",
@@ -169,6 +173,18 @@ fn page_targets_matching(targets: &[Target], predicate: impl Fn(&Target) -> bool
         .collect()
 }
 
+pub fn is_app_window_target(target: &Target) -> bool {
+    target.kind == "page" && target.url.contains("/app/window/index.html")
+}
+
+fn app_window_targets(targets: &[Target]) -> Vec<Target> {
+    targets
+        .iter()
+        .filter(|target| is_app_window_target(target))
+        .cloned()
+        .collect()
+}
+
 pub fn target_cli_args(target_id: &str) -> [&str; 2] {
     ["--target-id", target_id]
 }
@@ -176,12 +192,28 @@ pub fn target_cli_args(target_id: &str) -> [&str; 2] {
 fn target_with_handoff(target: &Target) -> serde_json::Value {
     json!({
         "id": target.id,
-        "title": target.title,
+        "title": target_title_for_handoff(target),
         "type": target.kind,
-        "url": target.url,
+        "url": target_url_for_handoff(target),
         "webSocketDebuggerUrl": target.web_socket_debugger_url,
         "target_cli_args": target_cli_args(&target.id),
     })
+}
+
+pub fn target_title_for_handoff(target: &Target) -> String {
+    if is_app_window_target(target) {
+        "TradingView app window".to_string()
+    } else {
+        target.title.clone()
+    }
+}
+
+pub fn target_url_for_handoff(target: &Target) -> String {
+    if is_app_window_target(target) {
+        "file://<tradingview-app-window>".to_string()
+    } else {
+        target.url.clone()
+    }
 }
 
 fn targets_with_handoff(targets: &[Target]) -> Vec<serde_json::Value> {
@@ -191,6 +223,12 @@ fn targets_with_handoff(targets: &[Target]) -> Vec<serde_json::Value> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::sync::{Mutex, OnceLock};
+
+    fn env_lock() -> std::sync::MutexGuard<'static, ()> {
+        static LOCK: OnceLock<Mutex<()>> = OnceLock::new();
+        LOCK.get_or_init(|| Mutex::new(())).lock().unwrap()
+    }
 
     fn target(id: &str, url: &str) -> Target {
         Target {
@@ -226,6 +264,28 @@ mod tests {
     }
 
     #[test]
+    fn does_not_select_app_window_as_chart_target() {
+        let targets = vec![target(
+            "window",
+            "file:///TradingView.app/Contents/Resources/app.asar/app/window/index.html",
+        )];
+
+        assert_eq!(select_target(&targets), TargetSelection::None);
+        assert!(is_app_window_target(&targets[0]));
+    }
+
+    #[test]
+    fn target_handoff_sanitizes_app_window_file_url() {
+        let value = target_with_handoff(&target(
+            "window",
+            "file:///Users/example/TradingView.app/Contents/Resources/app.asar/app/window/index.html",
+        ));
+
+        assert_eq!(value["title"], "TradingView app window");
+        assert_eq!(value["url"], "file://<tradingview-app-window>");
+    }
+
+    #[test]
     fn reports_ambiguous_chart_targets() {
         let targets = vec![
             target("a", "https://www.tradingview.com/chart/a"),
@@ -242,6 +302,34 @@ mod tests {
     fn config_reads_optional_target_id_from_cli_option() {
         let config = TransportConfig::from_env_with_target_id(Some("cli-target")).unwrap();
         assert_eq!(config.target_id.as_deref(), Some("cli-target"));
+    }
+
+    #[test]
+    fn default_host_uses_ipv4_loopback() {
+        let config = TransportConfig::default();
+
+        assert_eq!(config.host, "127.0.0.1");
+        assert_eq!(config.list_url(), "http://127.0.0.1:9222/json/list");
+    }
+
+    #[test]
+    fn env_host_and_port_override_default_endpoint() {
+        let _guard = env_lock();
+        unsafe {
+            std::env::set_var("TV_CDP_HOST", "localhost");
+            std::env::set_var("TV_CDP_PORT", "9333");
+        }
+
+        let config = TransportConfig::from_env().unwrap();
+
+        assert_eq!(config.host, "localhost");
+        assert_eq!(config.port, 9333);
+        assert_eq!(config.list_url(), "http://localhost:9333/json/list");
+
+        unsafe {
+            std::env::remove_var("TV_CDP_HOST");
+            std::env::remove_var("TV_CDP_PORT");
+        }
     }
 
     #[test]

@@ -579,7 +579,7 @@ mod tests {
     #[test]
     fn launch_request_uses_env_port_unless_overridden() {
         let config = TransportConfig {
-            host: "localhost".to_string(),
+            host: "127.0.0.1".to_string(),
             port: 9333,
             target_id: None,
         };

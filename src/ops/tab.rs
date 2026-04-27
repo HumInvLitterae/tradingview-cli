@@ -39,10 +39,19 @@ struct ScreenerTarget {
     target_cli_args: Vec<String>,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+struct AppWindowTarget {
+    id: String,
+    title: String,
+    url: String,
+    target_cli_args: Vec<String>,
+}
+
 pub async fn tab_list(config: &TransportConfig) -> Result<Value, AppError> {
     let targets = transport::fetch_targets(config).await?;
     let tabs = chart_tabs_from_targets(&targets);
     let screener_targets = screener_targets_from_targets(&targets);
+    let app_window_targets = app_window_targets_from_targets(&targets);
     let app_tabs = app_tabs_from_targets(&targets).await;
 
     Ok(json!({
@@ -50,6 +59,8 @@ pub async fn tab_list(config: &TransportConfig) -> Result<Value, AppError> {
         "tabs": tabs,
         "screener_target_count": screener_targets.len(),
         "screener_targets": screener_targets,
+        "app_window_target_count": app_window_targets.len(),
+        "app_window_targets": app_window_targets,
         "app_tab_count": app_tabs.len(),
         "app_tabs": app_tabs,
         "cdp_host": config.host,
@@ -226,6 +237,19 @@ fn is_screener_url(url: &str) -> bool {
     url.to_lowercase().contains("tradingview.com/screener")
 }
 
+fn app_window_targets_from_targets(targets: &[Target]) -> Vec<AppWindowTarget> {
+    targets
+        .iter()
+        .filter(|target| transport::is_app_window_target(target))
+        .map(|target| AppWindowTarget {
+            id: target.id.clone(),
+            title: transport::target_title_for_handoff(target),
+            url: transport::target_url_for_handoff(target),
+            target_cli_args: target_cli_args(&target.id),
+        })
+        .collect()
+}
+
 async fn activate_tab(config: &TransportConfig, tab: &ChartTab) -> Result<(), AppError> {
     let response = reqwest::get(config.activate_url(&tab.id))
         .await
@@ -246,7 +270,7 @@ async fn activate_tab(config: &TransportConfig, tab: &ChartTab) -> Result<(), Ap
 fn app_window_target(targets: &[Target]) -> Result<&Target, AppError> {
     targets
         .iter()
-        .find(|target| target.kind == "page" && target.url.contains("/app/window/index.html"))
+        .find(|target| transport::is_app_window_target(target))
         .ok_or_else(|| {
             AppError::new(
                 ErrorKind::InternalApiUnavailable,
@@ -258,7 +282,7 @@ fn app_window_target(targets: &[Target]) -> Result<&Target, AppError> {
 async fn app_tabs_from_targets(targets: &[Target]) -> Vec<AppTab> {
     let Some(target) = targets
         .iter()
-        .find(|target| target.kind == "page" && target.url.contains("/app/window/index.html"))
+        .find(|target| transport::is_app_window_target(target))
     else {
         return Vec::new();
     };
@@ -598,6 +622,35 @@ mod tests {
         assert_eq!(
             screener_targets[0].target_cli_args,
             target_cli_args("screener")
+        );
+    }
+
+    #[test]
+    fn app_window_targets_include_explicit_handoff() {
+        let targets = vec![
+            target(
+                "window",
+                "page",
+                "file:///TradingView.app/Contents/Resources/app.asar/app/window/index.html",
+                "index.html",
+            ),
+            target(
+                "chart",
+                "page",
+                "https://www.tradingview.com/chart/abcd1234/",
+                "Live stock charts on AAPL",
+            ),
+        ];
+
+        let app_window_targets = app_window_targets_from_targets(&targets);
+
+        assert_eq!(app_window_targets.len(), 1);
+        assert_eq!(app_window_targets[0].id, "window");
+        assert_eq!(app_window_targets[0].title, "TradingView app window");
+        assert_eq!(app_window_targets[0].url, "file://<tradingview-app-window>");
+        assert_eq!(
+            app_window_targets[0].target_cli_args,
+            target_cli_args("window")
         );
     }
 
