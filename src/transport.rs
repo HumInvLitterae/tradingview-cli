@@ -28,22 +28,6 @@ pub struct TransportConfig {
     pub host: String,
     pub port: u16,
     pub target_id: Option<String>,
-    pub target_id_source: Option<TargetIdSource>,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum TargetIdSource {
-    CliOption,
-    Env,
-}
-
-impl TargetIdSource {
-    pub fn as_str(self) -> &'static str {
-        match self {
-            Self::CliOption => "cli_option",
-            Self::Env => "env",
-        }
-    }
 }
 
 impl Default for TransportConfig {
@@ -52,7 +36,6 @@ impl Default for TransportConfig {
             host: "localhost".to_string(),
             port: 9222,
             target_id: None,
-            target_id_source: None,
         }
     }
 }
@@ -78,22 +61,10 @@ impl TransportConfig {
             .map(str::trim)
             .filter(|value| !value.is_empty())
             .map(str::to_string);
-        let env_target_id = std::env::var("TV_CDP_TARGET_ID")
-            .ok()
-            .map(|value| value.trim().to_string())
-            .filter(|value| !value.is_empty());
-        let (target_id, target_id_source) = if let Some(target_id) = cli_target_id {
-            (Some(target_id), Some(TargetIdSource::CliOption))
-        } else if let Some(target_id) = env_target_id {
-            (Some(target_id), Some(TargetIdSource::Env))
-        } else {
-            (None, None)
-        };
         Ok(Self {
             host,
             port,
-            target_id,
-            target_id_source,
+            target_id: cli_target_id,
         })
     }
 
@@ -167,7 +138,7 @@ pub async fn discover_target(config: &TransportConfig) -> Result<Target, AppErro
                 )
                 .with_details(json!({
                     "target_id": target_id,
-                    "target_selected_by": config.target_id_source.map(TargetIdSource::as_str),
+                    "target_selected_by": "cli_option",
                     "targets": targets_with_handoff(&targets),
                 }))
             });
@@ -210,9 +181,6 @@ fn target_with_handoff(target: &Target) -> serde_json::Value {
         "url": target.url,
         "webSocketDebuggerUrl": target.web_socket_debugger_url,
         "target_cli_args": target_cli_args(&target.id),
-        "target_env": {
-            "TV_CDP_TARGET_ID": target.id,
-        },
     })
 }
 
@@ -223,12 +191,6 @@ fn targets_with_handoff(targets: &[Target]) -> Vec<serde_json::Value> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::sync::{Mutex, OnceLock};
-
-    fn env_lock() -> std::sync::MutexGuard<'static, ()> {
-        static LOCK: OnceLock<Mutex<()>> = OnceLock::new();
-        LOCK.get_or_init(|| Mutex::new(())).lock().unwrap()
-    }
 
     fn target(id: &str, url: &str) -> Target {
         Target {
@@ -277,39 +239,17 @@ mod tests {
     }
 
     #[test]
-    fn config_reads_optional_target_id_from_env() {
-        let _guard = env_lock();
-        unsafe {
-            std::env::set_var("TV_CDP_TARGET_ID", "target-1");
-        }
-        let config = TransportConfig::from_env().unwrap();
-        assert_eq!(config.target_id.as_deref(), Some("target-1"));
-        assert_eq!(config.target_id_source, Some(TargetIdSource::Env));
-        unsafe {
-            std::env::remove_var("TV_CDP_TARGET_ID");
-        }
-    }
-
-    #[test]
-    fn cli_target_id_overrides_env_target_id() {
-        let _guard = env_lock();
-        unsafe {
-            std::env::set_var("TV_CDP_TARGET_ID", "env-target");
-        }
+    fn config_reads_optional_target_id_from_cli_option() {
         let config = TransportConfig::from_env_with_target_id(Some("cli-target")).unwrap();
         assert_eq!(config.target_id.as_deref(), Some("cli-target"));
-        assert_eq!(config.target_id_source, Some(TargetIdSource::CliOption));
-        unsafe {
-            std::env::remove_var("TV_CDP_TARGET_ID");
-        }
     }
 
     #[test]
-    fn target_handoff_prefers_cli_args_but_keeps_env() {
+    fn target_handoff_uses_cli_args() {
         let value = target_with_handoff(&target("target-1", "https://www.tradingview.com/chart/a"));
 
         assert_eq!(value["target_cli_args"], json!(["--target-id", "target-1"]));
-        assert_eq!(value["target_env"]["TV_CDP_TARGET_ID"], "target-1");
+        assert!(value.get("target_env").is_none());
     }
 
     #[test]

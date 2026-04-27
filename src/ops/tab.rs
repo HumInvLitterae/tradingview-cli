@@ -20,7 +20,6 @@ struct ChartTab {
     url: String,
     chart_id: Option<String>,
     target_cli_args: Vec<String>,
-    target_env: TargetEnv,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
@@ -32,19 +31,12 @@ struct AppTab {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
-struct TargetEnv {
-    #[serde(rename = "TV_CDP_TARGET_ID")]
-    tv_cdp_target_id: String,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 struct ScreenerTarget {
     index: usize,
     id: String,
     title: String,
     url: String,
     target_cli_args: Vec<String>,
-    target_env: TargetEnv,
 }
 
 pub async fn tab_list(config: &TransportConfig) -> Result<Value, AppError> {
@@ -103,9 +95,6 @@ fn tab_switch_payload(tab: &ChartTab) -> Value {
         "tab_id": tab.id,
         "target_id": tab.id,
         "target_cli_args": target_cli_args(&tab.id),
-        "target_env": {
-            "TV_CDP_TARGET_ID": tab.id,
-        },
         "next_command_hint": format!("tv --target-id {} <command>", tab.id),
         "chart_id": tab.chart_id,
         "title": tab.title,
@@ -213,9 +202,6 @@ fn chart_tabs_from_targets(targets: &[Target]) -> Vec<ChartTab> {
             url: target.url.clone(),
             chart_id: chart_id_from_url(&target.url),
             target_cli_args: target_cli_args(&target.id),
-            target_env: TargetEnv {
-                tv_cdp_target_id: target.id.clone(),
-            },
         })
         .collect()
 }
@@ -232,9 +218,6 @@ fn screener_targets_from_targets(targets: &[Target]) -> Vec<ScreenerTarget> {
             title: clean_title(&target.title),
             url: target.url.clone(),
             target_cli_args: target_cli_args(&target.id),
-            target_env: TargetEnv {
-                tv_cdp_target_id: target.id.clone(),
-            },
         })
         .collect()
 }
@@ -540,9 +523,6 @@ mod tests {
             url: format!("https://www.tradingview.com/chart/{id}"),
             chart_id: Some(id.to_string()),
             target_cli_args: target_cli_args(id),
-            target_env: TargetEnv {
-                tv_cdp_target_id: id.to_string(),
-            },
         }
     }
 
@@ -578,7 +558,6 @@ mod tests {
         assert_eq!(tabs[0].title, "AAPL");
         assert_eq!(tabs[0].chart_id.as_deref(), Some("abcd1234"));
         assert_eq!(tabs[0].target_cli_args, target_cli_args("a"));
-        assert_eq!(tabs[0].target_env.tv_cdp_target_id, "a");
         assert_eq!(tabs[1].index, 1);
         assert_eq!(tabs[1].chart_id.as_deref(), Some("efgh5678"));
     }
@@ -620,7 +599,6 @@ mod tests {
             screener_targets[0].target_cli_args,
             target_cli_args("screener")
         );
-        assert_eq!(screener_targets[0].target_env.tv_cdp_target_id, "screener");
     }
 
     #[test]
@@ -674,7 +652,7 @@ mod tests {
             payload["target_cli_args"],
             json!(["--target-id", "target-2"])
         );
-        assert_eq!(payload["target_env"]["TV_CDP_TARGET_ID"], "target-2");
+        assert!(payload.get("target_env").is_none());
         assert_eq!(
             payload["next_command_hint"],
             "tv --target-id target-2 <command>"

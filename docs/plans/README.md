@@ -11,9 +11,9 @@ for release and next-phase planning.
 - `tradingview-cli-direct-http-feasibility.md`: post-next-release
   investigation into credential-safe direct HTTP reads that do not require a
   TradingView Desktop page-session context.
-- `tradingview-cli-target-selection-and-quote-freshness.md`: active v0.3.0
-  operability slice for `--target-id`, target ambiguity hints, and
-  symbol-targeted quote freshness.
+- `tradingview-cli-target-env-removal.md`: active contract cleanup to remove
+  `TV_CDP_TARGET_ID` / `target_env` and keep `--target-id` as the only
+  explicit target handoff.
 
 ## Archived plans
 

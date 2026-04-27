@@ -191,7 +191,7 @@ tv --target-id <CDP_TARGET_ID> ohlcv --summary
 tv --target-id <CDP_TARGET_ID> symbol NASDAQ:MU
 ```
 
-`tv tab list` and `tv tab switch <INDEX>` return `target_cli_args`, which can be reused directly for the next command. They also still return `target_env.TV_CDP_TARGET_ID` for v0.2.x automation fallback, but new docs and agent workflows should prefer `--target-id`. The `TV_CDP_TARGET_ID` environment variable may be removed or hidden before `v0.3.0`.
+`tv tab list` and `tv tab switch <INDEX>` return `target_cli_args`, which can be reused directly for the next command. `--target-id` is the only explicit target handoff; `TV_CDP_TARGET_ID` is no longer part of the public contract.
 
 When a Stock Screener is open as its own TradingView Desktop tab, `tv tab list` also returns `screener_targets`; use their `target_cli_args` value for `tv screener ...` commands against the full-page Screener target.
 

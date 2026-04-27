@@ -83,8 +83,8 @@ tv tab list
 tv --target-id <TARGET_ID> status
 ```
 
-`TV_CDP_TARGET_ID=<TARGET_ID>` remains a v0.2.x fallback, but new automation
-should prefer `--target-id`.
+`--target-id` is the explicit target selection contract. Older
+`TV_CDP_TARGET_ID=<TARGET_ID>` handoff is no longer supported.
 
 ## Exit codes
 

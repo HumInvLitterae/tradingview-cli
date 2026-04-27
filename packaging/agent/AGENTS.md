@@ -22,7 +22,7 @@ When reporting commands to the user, write them as `tv ...` unless the local exe
 1. Run `tv status`.
 2. If TradingView is not connected, run `tv launch` once.
 3. If `tv launch` cannot find TradingView Desktop, ask the user for the executable path and use `tv launch --path <PATH>`.
-4. If more than one chart target is open, run `tv tab list` and ask the user which target to use, then set `TV_CDP_TARGET_ID` for chart-specific commands.
+4. If more than one chart target is open, run `tv tab list`, ask the user which target to use, and reuse that target's `target_cli_args`, for example `tv --target-id <ID> quote`, for chart-specific commands.
 
 ## Safety Rules
 

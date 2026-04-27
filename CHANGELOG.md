@@ -17,6 +17,8 @@ package version omits the leading `v`.
 - Added global `tv --target-id <CDP_TARGET_ID>` target selection, structured
   target handoff hints, and non-mutating scanner-backed symbol quote reads with
   chart-switch freshness checks.
+- Removed the old `TV_CDP_TARGET_ID` explicit target-selection fallback from
+  the public contract; use `target_cli_args` / `--target-id` instead.
 
 ## v0.2.0 - 2026-04-27
 

@@ -11,7 +11,7 @@ Use this skill to compare several TradingView symbols through the Rust `tv` CLI 
 
 1. Confirm the symbol list, timeframe, and screening criteria from the user request.
 2. Run `tv status`; if needed, run `tv watchlist get` to inspect the current TradingView watchlist.
-3. If more than one chart target is open, run `tv tab list` and use `target_cli_args`, for example `tv --target-id <ID> ...`, for any chart-specific follow-up. `target_env.TV_CDP_TARGET_ID` is a v0.2.x fallback only.
+3. If more than one chart target is open, run `tv tab list` and use `target_cli_args`, for example `tv --target-id <ID> ...`, for any chart-specific follow-up.
 4. For broad discovery, prefer `tv scanner hotlist` or `tv scanner scan` before mutating the chart across many symbols.
 5. Keep chart-by-chart inspection small and serial. The Rust CLI does not implement the old MCP `batch_run` helper.
 
