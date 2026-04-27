@@ -18,6 +18,21 @@ use super::common::{
     merge_object, round2,
 };
 
+const QUOTE_SCAN_URL: &str = "https://scanner.tradingview.com/america/scan";
+const QUOTE_SCAN_COLUMNS: &[&str] = &[
+    "name",
+    "description",
+    "close",
+    "open",
+    "high",
+    "low",
+    "volume",
+    "change",
+    "exchange",
+    "type",
+    "subtype",
+];
+
 pub async fn symbol_search(query: &str) -> Result<Value, AppError> {
     let url = reqwest::Url::parse_with_params(
         SYMBOL_SEARCH_URL,
@@ -52,6 +67,18 @@ pub async fn symbol_search(query: &str) -> Result<Value, AppError> {
         .await
         .map_err(|err| AppError::new(ErrorKind::InternalApiUnavailable, err.to_string()))?;
     Ok(normalize_symbol_search_response(query, &value))
+}
+
+pub async fn quote_symbol(symbol: &str) -> Result<Value, AppError> {
+    let requested_symbol = symbol.trim();
+    if requested_symbol.is_empty() {
+        return Err(AppError::new(
+            ErrorKind::Validation,
+            "quote symbol must not be empty",
+        ));
+    }
+    let value = quote_symbol_via_scanner(requested_symbol).await?;
+    normalize_scanner_quote_response(requested_symbol, &value)
 }
 
 pub async fn quote(
@@ -119,6 +146,12 @@ pub async fn quote(
         .get("symbol")
         .and_then(Value::as_str)
         .map(str::to_string);
+    ensure_quote_matches_request(
+        &requested_symbol,
+        observed_symbol.as_deref(),
+        switch_performed,
+        restored,
+    )?;
     add_quote_metadata(
         &mut quote,
         Some(requested_symbol),
@@ -128,6 +161,152 @@ pub async fn quote(
         restored,
     );
     Ok(quote)
+}
+
+async fn quote_symbol_via_scanner(symbol: &str) -> Result<Value, AppError> {
+    let (exchange, name) = split_exchange_symbol(symbol);
+    let mut filters = vec![json!({
+        "left": "name",
+        "operation": "equal",
+        "right": name,
+    })];
+    if let Some(exchange) = exchange {
+        filters.push(json!({
+            "left": "exchange",
+            "operation": "in_range",
+            "right": [exchange],
+        }));
+    }
+    let body = json!({
+        "columns": QUOTE_SCAN_COLUMNS,
+        "filter": filters,
+        "range": [0, 2],
+    });
+    let response = reqwest::Client::new()
+        .post(QUOTE_SCAN_URL)
+        .json(&body)
+        .send()
+        .await
+        .map_err(|err| AppError::new(ErrorKind::Connection, err.to_string()))?;
+
+    let status = response.status();
+    if !status.is_success() {
+        return Err(AppError::new(
+            ErrorKind::InternalApiUnavailable,
+            format!("TradingView scanner quote API returned {status}"),
+        ));
+    }
+
+    response
+        .json::<Value>()
+        .await
+        .map_err(|err| AppError::new(ErrorKind::InternalApiUnavailable, err.to_string()))
+}
+
+fn normalize_scanner_quote_response(
+    requested_symbol: &str,
+    value: &Value,
+) -> Result<Value, AppError> {
+    let rows = value.get("data").and_then(Value::as_array).ok_or_else(|| {
+        AppError::new(
+            ErrorKind::InternalApiUnavailable,
+            "TradingView scanner quote payload did not include data rows",
+        )
+    })?;
+    if rows.is_empty() {
+        return Err(AppError::new(
+            ErrorKind::InternalApiUnavailable,
+            "TradingView scanner quote did not return the requested symbol",
+        )
+        .with_details(json!({
+            "requested_symbol": requested_symbol,
+            "source": "scanner_scan_rest",
+        })));
+    }
+    if rows.len() > 1 {
+        return Err(AppError::new(
+            ErrorKind::Validation,
+            "Quote symbol is ambiguous; use EXCHANGE:SYMBOL",
+        )
+        .with_details(json!({
+            "requested_symbol": requested_symbol,
+            "candidate_count": rows.len(),
+        })));
+    }
+
+    let row = &rows[0];
+    let full_symbol = row
+        .get("s")
+        .and_then(Value::as_str)
+        .filter(|symbol| !symbol.trim().is_empty())
+        .ok_or_else(|| {
+            AppError::new(
+                ErrorKind::InternalApiUnavailable,
+                "TradingView scanner quote row did not include a symbol",
+            )
+            .with_details(row.clone())
+        })?;
+    if bare_symbol(full_symbol) != bare_symbol(requested_symbol) {
+        return Err(AppError::new(
+            ErrorKind::InternalApiUnavailable,
+            "Scanner quote freshness check failed because the returned symbol did not match the requested symbol",
+        )
+        .with_details(json!({
+            "requested_symbol": requested_symbol,
+            "observed_symbol": full_symbol,
+            "freshness_check": {
+                "kind": "requested_symbol_matches_observed_symbol",
+                "passed": false,
+            },
+        })));
+    }
+
+    let values = row.get("d").and_then(Value::as_array).ok_or_else(|| {
+        AppError::new(
+            ErrorKind::InternalApiUnavailable,
+            "TradingView scanner quote row did not include quote values",
+        )
+        .with_details(row.clone())
+    })?;
+    let field = |index: usize| values.get(index).cloned().unwrap_or(Value::Null);
+    let close = field(2);
+    Ok(json!({
+        "symbol": full_symbol,
+        "time": Value::Null,
+        "last": close,
+        "close": field(2),
+        "open": field(3),
+        "high": field(4),
+        "low": field(5),
+        "volume": field(6),
+        "change": field(7),
+        "description": field(1),
+        "exchange": field(8),
+        "type": field(9),
+        "subtype": field(10),
+        "source": "scanner_scan_rest",
+        "non_mutating": true,
+        "requested_symbol": requested_symbol,
+        "original_symbol": Value::Null,
+        "observed_symbol": full_symbol,
+        "switch_performed": false,
+        "restored": true,
+        "freshness_check": {
+            "kind": "requested_symbol_matches_observed_symbol",
+            "passed": true,
+        },
+    }))
+}
+
+fn split_exchange_symbol(symbol: &str) -> (Option<String>, String) {
+    let symbol = symbol.trim();
+    match symbol.split_once(':') {
+        Some((exchange, name)) if !exchange.trim().is_empty() && !name.trim().is_empty() => (
+            Some(exchange.trim().to_ascii_uppercase()),
+            name.trim().to_ascii_uppercase(),
+        ),
+        _ => (None, symbol.to_ascii_uppercase()),
+    }
 }
 
 struct QuoteSymbolLock {
@@ -333,6 +512,7 @@ fn add_quote_metadata(
     merge_object(
         quote,
         json!({
+            "source": "chart_api",
             "requested_symbol": requested_symbol,
             "original_symbol": original_symbol,
             "observed_symbol": observed_symbol,
@@ -340,6 +520,33 @@ fn add_quote_metadata(
             "restored": restored,
         }),
     );
+}
+
+fn ensure_quote_matches_request(
+    requested_symbol: &str,
+    observed_symbol: Option<&str>,
+    switch_performed: bool,
+    restored: bool,
+) -> Result<(), AppError> {
+    let observed_symbol = observed_symbol.unwrap_or_default();
+    if bare_symbol(observed_symbol) == bare_symbol(requested_symbol) {
+        return Ok(());
+    }
+
+    Err(AppError::new(
+        ErrorKind::InternalApiUnavailable,
+        "Quote freshness check failed because the observed quote symbol did not match the requested symbol",
+    )
+    .with_details(json!({
+        "requested_symbol": requested_symbol,
+        "observed_symbol": observed_symbol,
+        "switch_performed": switch_performed,
+        "restored": restored,
+        "freshness_check": {
+            "kind": "requested_symbol_matches_observed_symbol",
+            "passed": false,
+        },
+    })))
 }
 
 fn bare_symbol(symbol: &str) -> String {
@@ -594,6 +801,7 @@ mod tests {
         assert_eq!(result["observed_symbol"], "NASDAQ:AAPL");
         assert_eq!(result["switch_performed"], false);
         assert_eq!(result["restored"], true);
+        assert_eq!(result["source"], "chart_api");
     }
 
     #[tokio::test]
@@ -621,6 +829,7 @@ mod tests {
         assert_eq!(result["observed_symbol"], "NASDAQ:AAPL");
         assert_eq!(result["switch_performed"], false);
         assert_eq!(result["restored"], true);
+        assert_eq!(result["source"], "chart_api");
     }
 
     #[tokio::test]
@@ -649,6 +858,35 @@ mod tests {
         assert_eq!(result["observed_symbol"], "NASDAQ:MSFT");
         assert_eq!(result["switch_performed"], true);
         assert_eq!(result["restored"], true);
+        assert_eq!(result["source"], "chart_api");
+    }
+
+    #[tokio::test]
+    async fn quote_requested_symbol_fails_when_observed_quote_is_stale() {
+        let mut runtime = FakeRuntime::new([
+            json!("NASDAQ:AAPL"),
+            json!({"observed_symbol": "NASDAQ:MSFT"}),
+            json!({
+                "symbol": "NASDAQ:AAOI",
+                "last": 145.82,
+                "close": 145.82
+            }),
+            json!({"observed_symbol": "NASDAQ:AAPL"}),
+        ]);
+
+        let error = quote(&mut runtime, Some("MSFT")).await.unwrap_err();
+
+        assert_eq!(error.kind, ErrorKind::InternalApiUnavailable);
+        let details = error.details.as_ref().unwrap();
+        assert_eq!(details["requested_symbol"], "MSFT");
+        assert_eq!(details["observed_symbol"], "NASDAQ:AAOI");
+        assert_eq!(details["switch_performed"], true);
+        assert_eq!(details["restored"], true);
+        assert_eq!(
+            details["freshness_check"]["kind"],
+            "requested_symbol_matches_observed_symbol"
+        );
+        assert_eq!(details["freshness_check"]["passed"], false);
     }
 
     #[tokio::test]
@@ -682,6 +920,65 @@ mod tests {
     fn bare_symbol_compares_exchange_prefixed_inputs() {
         assert_eq!(bare_symbol("NASDAQ:AAPL"), bare_symbol("AAPL"));
         assert_eq!(bare_symbol("nyse:brk.b"), "BRK.B");
+    }
+
+    #[test]
+    fn split_exchange_symbol_normalizes_optional_exchange() {
+        assert_eq!(
+            split_exchange_symbol(" nasdaq:aapl "),
+            (Some("NASDAQ".to_string()), "AAPL".to_string())
+        );
+        assert_eq!(split_exchange_symbol("AAPL"), (None, "AAPL".to_string()));
+    }
+
+    #[test]
+    fn normalize_scanner_quote_response_returns_non_mutating_quote_payload() {
+        let payload = json!({
+            "totalCount": 1,
+            "data": [{
+                "s": "NASDAQ:AAPL",
+                "d": [
+                    "AAPL",
+                    "Apple Inc.",
+                    266.39,
+                    266.09,
+                    268.36,
+                    265.07,
+                    16427115,
+                    -1.72,
+                    "NASDAQ",
+                    "stock",
+                    "common"
+                ]
+            }]
+        });
+
+        let result = normalize_scanner_quote_response("AAPL", &payload).unwrap();
+
+        assert_eq!(result["symbol"], "NASDAQ:AAPL");
+        assert_eq!(result["last"], 266.39);
+        assert_eq!(result["close"], 266.39);
+        assert_eq!(result["description"], "Apple Inc.");
+        assert_eq!(result["source"], "scanner_scan_rest");
+        assert_eq!(result["non_mutating"], true);
+        assert_eq!(result["switch_performed"], false);
+        assert_eq!(result["restored"], true);
+        assert_eq!(result["freshness_check"]["passed"], true);
+    }
+
+    #[test]
+    fn normalize_scanner_quote_response_rejects_ambiguous_symbol() {
+        let payload = json!({
+            "data": [
+                {"s": "NASDAQ:ABC", "d": []},
+                {"s": "NYSE:ABC", "d": []}
+            ]
+        });
+
+        let error = normalize_scanner_quote_response("ABC", &payload).unwrap_err();
+
+        assert_eq!(error.kind, ErrorKind::Validation);
+        assert!(error.message.contains("ambiguous"));
     }
 
     #[tokio::test]

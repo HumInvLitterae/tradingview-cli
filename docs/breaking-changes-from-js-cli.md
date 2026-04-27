@@ -80,8 +80,11 @@ Use:
 
 ```bash
 tv tab list
-TV_CDP_TARGET_ID=<TARGET_ID> tv status
+tv --target-id <TARGET_ID> status
 ```
+
+`TV_CDP_TARGET_ID=<TARGET_ID>` remains a v0.2.x fallback, but new automation
+should prefer `--target-id`.
 
 ## Exit codes
 

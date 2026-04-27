@@ -6,6 +6,13 @@ use clap::{Parser, Subcommand};
 #[command(name = "tv")]
 #[command(about = "Rust-native TradingView Desktop CLI via Chrome DevTools Protocol")]
 pub struct Cli {
+    #[arg(
+        long,
+        global = true,
+        value_name = "CDP_TARGET_ID",
+        help = "Select a specific TradingView CDP target id"
+    )]
+    pub target_id: Option<String>,
     #[command(subcommand)]
     pub command: Command,
 }
@@ -40,7 +47,10 @@ pub enum Command {
         #[command(subcommand)]
         command: ScreenerCommand,
     },
-    #[command(about = "Get real-time price quote")]
+    #[command(
+        about = "Get real-time price quote",
+        long_about = "Get a real-time price quote.\n\nWithout SYMBOL, reads the current chart target. With SYMBOL, reads a symbol-targeted quote; this may temporarily switch the chart unless a non-mutating quote path is available. If more than one TradingView target is open, run `tv tab list` and pass `tv --target-id <ID> quote ...`."
+    )]
     Quote { symbol: Option<String> },
     #[command(about = "Get current indicator values")]
     Values,
@@ -55,7 +65,10 @@ pub enum Command {
         #[arg(long, short)]
         count: Option<usize>,
     },
-    #[command(about = "Get or set the chart symbol")]
+    #[command(
+        about = "Get or set the chart symbol",
+        long_about = "Get or set the chart symbol.\n\nRun without SYMBOL to read the current chart symbol. Pass SYMBOL as a positional argument to set it, for example `tv symbol NASDAQ:MU`. There is no --set flag. If more than one TradingView target is open, run `tv tab list` and pass `tv --target-id <ID> symbol ...`."
+    )]
     Symbol { symbol: Option<String> },
     #[command(about = "Get or set the chart timeframe")]
     Timeframe { timeframe: Option<String> },

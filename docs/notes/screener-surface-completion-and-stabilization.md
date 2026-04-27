@@ -65,7 +65,8 @@ Stabilization should focus on the implemented surface, not on adding the
 deferred commands above. The highest-value checks are:
 
 - Prefer a full-page Screener target discovered through `tv tab list` and
-  `screener_targets[].target_env.TV_CDP_TARGET_ID` for live smoke.
+  `screener_targets[].target_cli_args` for live smoke. The older
+  `target_env.TV_CDP_TARGET_ID` handoff remains a v0.2.x fallback only.
 - Run read-only and `--dry-run` commands before normal mutations.
 - Keep normal screen lifecycle, storage-backed filter remove/clear, and column
   storage mutations limited to prepared test or disposable screens whose names

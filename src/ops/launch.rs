@@ -115,6 +115,7 @@ impl LaunchRequest {
             host: self.host.clone(),
             port: self.port,
             target_id: None,
+            target_id_source: None,
         }
     }
 }
@@ -582,6 +583,7 @@ mod tests {
             host: "localhost".to_string(),
             port: 9333,
             target_id: None,
+            target_id_source: None,
         };
 
         let request = LaunchRequest::new(&config, None, None, false).unwrap();

@@ -34,6 +34,10 @@ Desktop page session.
 
 - Scanner reads: use as the reference model for direct HTTP, because these are
   already direct read commands.
+- Symbol-targeted quote reads: `tv quote <SYMBOL>` now uses the scanner REST
+  API as a non-mutating read before any chart-switch fallback. Future direct
+  HTTP work should treat this as an implemented reference path, not an open
+  candidate.
 - Additional market-discovery reads: consider only if they are unauthenticated
   or work without copying browser session credentials.
 - Read-only metadata endpoints: consider only if they do not expose

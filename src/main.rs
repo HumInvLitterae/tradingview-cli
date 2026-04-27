@@ -82,8 +82,18 @@ async fn async_main() -> ExitCode {
         }
     };
 
+    let config = match TransportConfig::from_env_with_target_id(cli.target_id.as_deref()) {
+        Ok(config) => config,
+        Err(err) => {
+            let code = err.exit_code();
+            let envelope = ErrorEnvelope::new("tv", ErrorBody::from(err));
+            print_json_stderr(&envelope);
+            return ExitCode::from(code);
+        }
+    };
+
     if let Command::Stream { command } = cli.command {
-        return match run_stream_command(command).await {
+        return match run_stream_command(command, &config).await {
             Ok(()) => ExitCode::SUCCESS,
             Err(err) => {
                 let code = err.exit_code();
@@ -96,7 +106,7 @@ async fn async_main() -> ExitCode {
 
     let command_name = cli.command.name();
 
-    match dispatch(cli.command).await {
+    match dispatch(cli.command, &config).await {
         Ok(data) => {
             let envelope = SuccessEnvelope::new(command_name, data);
             print_json_stdout(&envelope);
@@ -118,24 +128,26 @@ fn startup_error(message: impl Into<String>) -> ExitCode {
     ExitCode::from(1)
 }
 
-async fn dispatch(command: Command) -> Result<serde_json::Value, AppError> {
-    let config = TransportConfig::from_env()?;
+async fn dispatch(
+    command: Command,
+    config: &TransportConfig,
+) -> Result<serde_json::Value, AppError> {
     match command {
-        Command::Status => ops::status(&config).await,
+        Command::Status => ops::status(config).await,
         Command::Launch {
             port,
             path,
             kill_existing,
         } => {
-            let request = ops::LaunchRequest::new(&config, port, path, kill_existing)?;
+            let request = ops::LaunchRequest::new(config, port, path, kill_existing)?;
             ops::launch(request).await
         }
         Command::State => {
-            let mut runtime = connect_runtime().await?;
+            let mut runtime = connect_runtime(config).await?;
             ops::state(&mut runtime).await
         }
         Command::Info => {
-            let mut runtime = connect_runtime().await?;
+            let mut runtime = connect_runtime(config).await?;
             ops::symbol_info(&mut runtime).await
         }
         Command::Search { query } => {
@@ -332,7 +344,7 @@ async fn dispatch(command: Command) -> Result<serde_json::Value, AppError> {
                     | ScreenerScreensCommand::Save { .. } => {}
                 }
             }
-            let mut runtime = connect_runtime().await?;
+            let mut runtime = connect_runtime(config).await?;
             match command {
                 ScreenerCommand::Status => ops::screener_status(&mut runtime).await,
                 ScreenerCommand::Open => ops::screener_open(&mut runtime).await,
@@ -497,23 +509,30 @@ async fn dispatch(command: Command) -> Result<serde_json::Value, AppError> {
                 Some(symbol) => Some(symbol),
                 None => None,
             };
-            let mut runtime = connect_runtime().await?;
+            if let Some(symbol) = symbol {
+                match ops::quote_symbol(symbol).await {
+                    Ok(data) => return Ok(data),
+                    Err(err) if err.kind == ErrorKind::Validation => return Err(err),
+                    Err(_) => {}
+                }
+            }
+            let mut runtime = connect_runtime(config).await?;
             ops::quote(&mut runtime, symbol).await
         }
         Command::Values => {
-            let mut runtime = connect_runtime().await?;
+            let mut runtime = connect_runtime(config).await?;
             ops::study_values(&mut runtime).await
         }
         Command::Discover => {
-            let mut runtime = connect_runtime().await?;
+            let mut runtime = connect_runtime(config).await?;
             ops::discover(&mut runtime).await
         }
         Command::UiState => {
-            let mut runtime = connect_runtime().await?;
+            let mut runtime = connect_runtime(config).await?;
             ops::ui_state(&mut runtime).await
         }
         Command::Ohlcv { summary, count } => {
-            let mut runtime = connect_runtime().await?;
+            let mut runtime = connect_runtime(config).await?;
             if summary {
                 ops::ohlcv_summary(&mut runtime, count).await
             } else {
@@ -521,7 +540,7 @@ async fn dispatch(command: Command) -> Result<serde_json::Value, AppError> {
             }
         }
         Command::Symbol { symbol } => {
-            let mut runtime = connect_runtime().await?;
+            let mut runtime = connect_runtime(config).await?;
             match symbol {
                 Some(symbol) => {
                     if symbol.trim().is_empty() {
@@ -536,7 +555,7 @@ async fn dispatch(command: Command) -> Result<serde_json::Value, AppError> {
             }
         }
         Command::Timeframe { timeframe } => {
-            let mut runtime = connect_runtime().await?;
+            let mut runtime = connect_runtime(config).await?;
             match timeframe {
                 Some(timeframe) => {
                     if timeframe.trim().is_empty() {
@@ -559,21 +578,21 @@ async fn dispatch(command: Command) -> Result<serde_json::Value, AppError> {
                     ));
                 }
                 ops::validate_chart_type(&chart_type)?;
-                let mut runtime = connect_runtime().await?;
+                let mut runtime = connect_runtime(config).await?;
                 ops::set_chart_type(&mut runtime, &chart_type).await
             }
             None => {
-                let mut runtime = connect_runtime().await?;
+                let mut runtime = connect_runtime(config).await?;
                 ops::current_chart_type(&mut runtime).await
             }
         },
         Command::Range { from, to } => match (from, to) {
             (Some(from), Some(to)) => {
-                let mut runtime = connect_runtime().await?;
+                let mut runtime = connect_runtime(config).await?;
                 ops::set_visible_range(&mut runtime, from, to).await
             }
             (None, None) => {
-                let mut runtime = connect_runtime().await?;
+                let mut runtime = connect_runtime(config).await?;
                 ops::visible_range(&mut runtime).await
             }
             _ => Err(AppError::new(
@@ -588,12 +607,12 @@ async fn dispatch(command: Command) -> Result<serde_json::Value, AppError> {
                     "Date must not be empty",
                 ));
             }
-            let mut runtime = connect_runtime().await?;
+            let mut runtime = connect_runtime(config).await?;
             ops::scroll_to_date(&mut runtime, &date).await
         }
         Command::Watchlist { command } => match command {
             WatchlistCommand::Get => {
-                let mut runtime = connect_runtime().await?;
+                let mut runtime = connect_runtime(config).await?;
                 ops::watchlist_get(&mut runtime).await
             }
             WatchlistCommand::Add { symbol } => {
@@ -603,7 +622,7 @@ async fn dispatch(command: Command) -> Result<serde_json::Value, AppError> {
                         "Symbol must not be empty",
                     ));
                 }
-                let mut runtime = connect_runtime().await?;
+                let mut runtime = connect_runtime(config).await?;
                 ops::watchlist_add(&mut runtime, &symbol).await
             }
             WatchlistCommand::AddBulk {
@@ -612,7 +631,7 @@ async fn dispatch(command: Command) -> Result<serde_json::Value, AppError> {
                 allow_partial,
             } => {
                 ops::validate_watchlist_add_bulk_request(&symbols, delay_ms)?;
-                let mut runtime = connect_runtime().await?;
+                let mut runtime = connect_runtime(config).await?;
                 ops::watchlist_add_bulk(&mut runtime, &symbols, delay_ms, allow_partial).await
             }
             WatchlistCommand::Remove { symbol } => {
@@ -622,13 +641,13 @@ async fn dispatch(command: Command) -> Result<serde_json::Value, AppError> {
                         "Symbol must not be empty",
                     ));
                 }
-                let mut runtime = connect_runtime().await?;
+                let mut runtime = connect_runtime(config).await?;
                 ops::watchlist_remove(&mut runtime, &symbol).await
             }
         },
         Command::Alert { command } => match command {
             AlertCommand::List => {
-                let mut runtime = connect_runtime().await?;
+                let mut runtime = connect_runtime(config).await?;
                 ops::alert_list(&mut runtime).await
             }
             AlertCommand::Create {
@@ -643,7 +662,7 @@ async fn dispatch(command: Command) -> Result<serde_json::Value, AppError> {
                     ));
                 }
                 ops::validate_alert_condition(&condition)?;
-                let mut runtime = connect_runtime().await?;
+                let mut runtime = connect_runtime(config).await?;
                 ops::alert_create(&mut runtime, price, &condition, message.as_deref()).await
             }
             AlertCommand::Delete { id, all, dry_run } => {
@@ -654,7 +673,7 @@ async fn dispatch(command: Command) -> Result<serde_json::Value, AppError> {
                     ));
                 }
                 if all {
-                    let mut runtime = connect_runtime().await?;
+                    let mut runtime = connect_runtime(config).await?;
                     ops::alert_delete_all(&mut runtime, dry_run).await
                 } else {
                     let id = id.unwrap_or_default();
@@ -670,7 +689,7 @@ async fn dispatch(command: Command) -> Result<serde_json::Value, AppError> {
                             "--dry-run is only supported with --all",
                         ));
                     }
-                    let mut runtime = connect_runtime().await?;
+                    let mut runtime = connect_runtime(config).await?;
                     ops::alert_delete(&mut runtime, &id).await
                 }
             }
@@ -688,7 +707,7 @@ async fn dispatch(command: Command) -> Result<serde_json::Value, AppError> {
                     .as_deref()
                     .map(ops::parse_indicator_inputs)
                     .transpose()?;
-                let mut runtime = connect_runtime().await?;
+                let mut runtime = connect_runtime(config).await?;
                 ops::indicator_add(&mut runtime, &indicator, inputs.as_ref()).await
             }
             IndicatorCommand::Remove { entity_id } => {
@@ -698,7 +717,7 @@ async fn dispatch(command: Command) -> Result<serde_json::Value, AppError> {
                         "Entity ID must not be empty",
                     ));
                 }
-                let mut runtime = connect_runtime().await?;
+                let mut runtime = connect_runtime(config).await?;
                 ops::indicator_remove(&mut runtime, &entity_id).await
             }
             IndicatorCommand::Toggle {
@@ -719,7 +738,7 @@ async fn dispatch(command: Command) -> Result<serde_json::Value, AppError> {
                     ));
                 }
                 let target_visible = !hidden;
-                let mut runtime = connect_runtime().await?;
+                let mut runtime = connect_runtime(config).await?;
                 ops::indicator_toggle(&mut runtime, &entity_id, target_visible).await
             }
             IndicatorCommand::Set { entity_id, inputs } => {
@@ -730,7 +749,7 @@ async fn dispatch(command: Command) -> Result<serde_json::Value, AppError> {
                     ));
                 }
                 let inputs = ops::parse_indicator_inputs(&inputs)?;
-                let mut runtime = connect_runtime().await?;
+                let mut runtime = connect_runtime(config).await?;
                 ops::indicator_set(&mut runtime, &entity_id, &inputs).await
             }
             IndicatorCommand::Get { entity_id } => {
@@ -740,7 +759,7 @@ async fn dispatch(command: Command) -> Result<serde_json::Value, AppError> {
                         "Entity ID must not be empty",
                     ));
                 }
-                let mut runtime = connect_runtime().await?;
+                let mut runtime = connect_runtime(config).await?;
                 ops::data_indicator(&mut runtime, &entity_id).await
             }
         },
@@ -790,7 +809,7 @@ async fn dispatch(command: Command) -> Result<serde_json::Value, AppError> {
                     text,
                     overrides,
                 };
-                let mut runtime = connect_runtime().await?;
+                let mut runtime = connect_runtime(config).await?;
                 ops::drawing_shape(&mut runtime, request).await
             }
             DrawingCommand::Position {
@@ -815,11 +834,11 @@ async fn dispatch(command: Command) -> Result<serde_json::Value, AppError> {
                     lot_size,
                 };
                 ops::validate_position_request(&request)?;
-                let mut runtime = connect_runtime().await?;
+                let mut runtime = connect_runtime(config).await?;
                 ops::drawing_position(&mut runtime, request).await
             }
             DrawingCommand::List => {
-                let mut runtime = connect_runtime().await?;
+                let mut runtime = connect_runtime(config).await?;
                 ops::drawing_list(&mut runtime).await
             }
             DrawingCommand::Get { entity_id } => {
@@ -829,7 +848,7 @@ async fn dispatch(command: Command) -> Result<serde_json::Value, AppError> {
                         "Entity ID must not be empty",
                     ));
                 }
-                let mut runtime = connect_runtime().await?;
+                let mut runtime = connect_runtime(config).await?;
                 ops::drawing_get(&mut runtime, &entity_id).await
             }
             DrawingCommand::Remove { entity_id } => {
@@ -839,40 +858,40 @@ async fn dispatch(command: Command) -> Result<serde_json::Value, AppError> {
                         "Entity ID must not be empty",
                     ));
                 }
-                let mut runtime = connect_runtime().await?;
+                let mut runtime = connect_runtime(config).await?;
                 ops::drawing_remove(&mut runtime, &entity_id).await
             }
             DrawingCommand::Clear { dry_run } => {
-                let mut runtime = connect_runtime().await?;
+                let mut runtime = connect_runtime(config).await?;
                 ops::drawing_clear(&mut runtime, dry_run).await
             }
         },
         Command::Pine { command } => match command {
             PineCommand::Get => {
-                let mut runtime = connect_runtime().await?;
+                let mut runtime = connect_runtime(config).await?;
                 ops::pine_get(&mut runtime).await
             }
             PineCommand::Set { file } => {
                 let (source, input_source) = read_pine_source(file.as_deref())?;
-                let mut runtime = connect_runtime().await?;
+                let mut runtime = connect_runtime(config).await?;
                 ops::pine_set(&mut runtime, &source, input_source).await
             }
             PineCommand::Compile => {
-                let mut runtime = connect_runtime().await?;
+                let mut runtime = connect_runtime(config).await?;
                 ops::pine_compile(&mut runtime).await
             }
             PineCommand::RawCompile => {
-                let mut runtime = connect_runtime().await?;
+                let mut runtime = connect_runtime(config).await?;
                 ops::pine_raw_compile(&mut runtime).await
             }
             PineCommand::Save => {
-                let mut runtime = connect_runtime().await?;
+                let mut runtime = connect_runtime(config).await?;
                 ops::pine_save(&mut runtime).await
             }
             PineCommand::New { script_type } => {
                 let script_type =
                     ops::validate_pine_script_type(script_type.as_deref().unwrap_or("indicator"))?;
-                let mut runtime = connect_runtime().await?;
+                let mut runtime = connect_runtime(config).await?;
                 ops::pine_new(&mut runtime, script_type).await
             }
             PineCommand::Open { name } => {
@@ -883,7 +902,7 @@ async fn dispatch(command: Command) -> Result<serde_json::Value, AppError> {
                         "Script name required. Usage: tv pine open \"My Script\"",
                     ));
                 }
-                let mut runtime = connect_runtime().await?;
+                let mut runtime = connect_runtime(config).await?;
                 ops::pine_open(&mut runtime, &name).await
             }
             PineCommand::Analyze { file } => {
@@ -895,15 +914,15 @@ async fn dispatch(command: Command) -> Result<serde_json::Value, AppError> {
                 ops::pine_check(&source, input_source).await
             }
             PineCommand::Errors => {
-                let mut runtime = connect_runtime().await?;
+                let mut runtime = connect_runtime(config).await?;
                 ops::pine_errors(&mut runtime).await
             }
             PineCommand::Console => {
-                let mut runtime = connect_runtime().await?;
+                let mut runtime = connect_runtime(config).await?;
                 ops::pine_console(&mut runtime).await
             }
             PineCommand::List => {
-                let mut runtime = connect_runtime().await?;
+                let mut runtime = connect_runtime(config).await?;
                 ops::pine_list(&mut runtime).await
             }
         },
@@ -915,27 +934,27 @@ async fn dispatch(command: Command) -> Result<serde_json::Value, AppError> {
                         "Entity ID must not be empty",
                     ));
                 }
-                let mut runtime = connect_runtime().await?;
+                let mut runtime = connect_runtime(config).await?;
                 ops::data_indicator(&mut runtime, &entity_id).await
             }
             DataCommand::Depth => {
-                let mut runtime = connect_runtime().await?;
+                let mut runtime = connect_runtime(config).await?;
                 ops::data_depth(&mut runtime).await
             }
             DataCommand::Strategy => {
-                let mut runtime = connect_runtime().await?;
+                let mut runtime = connect_runtime(config).await?;
                 ops::data_strategy(&mut runtime).await
             }
             DataCommand::Trades { max } => {
-                let mut runtime = connect_runtime().await?;
+                let mut runtime = connect_runtime(config).await?;
                 ops::data_trades(&mut runtime, max).await
             }
             DataCommand::Equity => {
-                let mut runtime = connect_runtime().await?;
+                let mut runtime = connect_runtime(config).await?;
                 ops::data_equity(&mut runtime).await
             }
             DataCommand::Lines { filter, verbose } => {
-                let mut runtime = connect_runtime().await?;
+                let mut runtime = connect_runtime(config).await?;
                 ops::data_lines(&mut runtime, filter.as_deref(), verbose).await
             }
             DataCommand::Labels {
@@ -943,15 +962,15 @@ async fn dispatch(command: Command) -> Result<serde_json::Value, AppError> {
                 max,
                 verbose,
             } => {
-                let mut runtime = connect_runtime().await?;
+                let mut runtime = connect_runtime(config).await?;
                 ops::data_labels(&mut runtime, filter.as_deref(), max, verbose).await
             }
             DataCommand::Tables { filter } => {
-                let mut runtime = connect_runtime().await?;
+                let mut runtime = connect_runtime(config).await?;
                 ops::data_tables(&mut runtime, filter.as_deref()).await
             }
             DataCommand::Boxes { filter, verbose } => {
-                let mut runtime = connect_runtime().await?;
+                let mut runtime = connect_runtime(config).await?;
                 ops::data_boxes(&mut runtime, filter.as_deref(), verbose).await
             }
             DataCommand::Shapes {
@@ -965,22 +984,22 @@ async fn dispatch(command: Command) -> Result<serde_json::Value, AppError> {
                         "--count must be greater than 0",
                     ));
                 }
-                let mut runtime = connect_runtime().await?;
+                let mut runtime = connect_runtime(config).await?;
                 ops::data_shapes(&mut runtime, filter.as_deref(), count, verbose).await
             }
         },
         Command::Pane { command } => match command {
             PaneCommand::List => {
-                let mut runtime = connect_runtime().await?;
+                let mut runtime = connect_runtime(config).await?;
                 ops::pane_list(&mut runtime).await
             }
             PaneCommand::Layout { layout } => {
                 ops::validate_pane_layout(&layout)?;
-                let mut runtime = connect_runtime().await?;
+                let mut runtime = connect_runtime(config).await?;
                 ops::pane_layout(&mut runtime, &layout).await
             }
             PaneCommand::Focus { index } => {
-                let mut runtime = connect_runtime().await?;
+                let mut runtime = connect_runtime(config).await?;
                 ops::pane_focus(&mut runtime, index).await
             }
             PaneCommand::Symbol { index, symbol } => {
@@ -990,13 +1009,13 @@ async fn dispatch(command: Command) -> Result<serde_json::Value, AppError> {
                         "Symbol must not be empty",
                     ));
                 }
-                let mut runtime = connect_runtime().await?;
+                let mut runtime = connect_runtime(config).await?;
                 ops::pane_symbol(&mut runtime, index, &symbol).await
             }
         },
         Command::Layout { command } => match command {
             LayoutCommand::List => {
-                let mut runtime = connect_runtime().await?;
+                let mut runtime = connect_runtime(config).await?;
                 ops::saved_layout_list(&mut runtime).await
             }
             LayoutCommand::Switch { target, dry_run } => {
@@ -1007,46 +1026,46 @@ async fn dispatch(command: Command) -> Result<serde_json::Value, AppError> {
                         "Layout target required. Usage: tv layout switch \"My Layout\"",
                     ));
                 }
-                let mut runtime = connect_runtime().await?;
+                let mut runtime = connect_runtime(config).await?;
                 ops::saved_layout_switch(&mut runtime, &target, dry_run).await
             }
         },
         Command::Tab { command } => match command {
-            TabCommand::List => ops::tab_list(&config).await,
-            TabCommand::Switch { index } => ops::tab_switch(&config, index).await,
-            TabCommand::New { from } => ops::tab_new(&config, from).await,
-            TabCommand::Close { index } => ops::tab_close(&config, index).await,
+            TabCommand::List => ops::tab_list(config).await,
+            TabCommand::Switch { index } => ops::tab_switch(config, index).await,
+            TabCommand::New { from } => ops::tab_new(config, from).await,
+            TabCommand::Close { index } => ops::tab_close(config, index).await,
         },
         Command::Replay { command } => match command {
             ReplayCommand::Start { date } => {
                 if let Some(date) = date.as_deref() {
                     ops::validate_replay_date(date)?;
                 }
-                let mut runtime = connect_runtime().await?;
+                let mut runtime = connect_runtime(config).await?;
                 ops::replay_start(&mut runtime, date.as_deref()).await
             }
             ReplayCommand::Step => {
-                let mut runtime = connect_runtime().await?;
+                let mut runtime = connect_runtime(config).await?;
                 ops::replay_step(&mut runtime).await
             }
             ReplayCommand::Stop => {
-                let mut runtime = connect_runtime().await?;
+                let mut runtime = connect_runtime(config).await?;
                 ops::replay_stop(&mut runtime).await
             }
             ReplayCommand::Status => {
-                let mut runtime = connect_runtime().await?;
+                let mut runtime = connect_runtime(config).await?;
                 ops::replay_status(&mut runtime).await
             }
             ReplayCommand::Autoplay { speed } => {
                 if let Some(speed) = speed {
                     ops::validate_replay_autoplay_speed(speed)?;
                 }
-                let mut runtime = connect_runtime().await?;
+                let mut runtime = connect_runtime(config).await?;
                 ops::replay_autoplay(&mut runtime, speed).await
             }
             ReplayCommand::Trade { action } => {
                 ops::validate_replay_trade_action(&action)?;
-                let mut runtime = connect_runtime().await?;
+                let mut runtime = connect_runtime(config).await?;
                 ops::replay_trade(&mut runtime, &action).await
             }
         },
@@ -1062,11 +1081,11 @@ async fn dispatch(command: Command) -> Result<serde_json::Value, AppError> {
                 ));
             }
             require_unsafe_ui_eval_enabled()?;
-            let mut runtime = connect_runtime().await?;
+            let mut runtime = connect_runtime(config).await?;
             ops::ui_eval(&mut runtime, &expression).await
         }
         Command::Ui { command } => {
-            let mut runtime = connect_runtime().await?;
+            let mut runtime = connect_runtime(config).await?;
             match command {
                 UiCommand::Eval { .. } => unreachable!("ui eval is handled before CDP connection"),
                 UiCommand::Click { by, value } => ops::ui_click(&mut runtime, &by, &value).await,
@@ -1135,7 +1154,7 @@ async fn dispatch(command: Command) -> Result<serde_json::Value, AppError> {
                     "Output path must not be empty",
                 ));
             }
-            let mut runtime = connect_runtime().await?;
+            let mut runtime = connect_runtime(config).await?;
             match region.as_str() {
                 "full" => ops::screenshot_full(&mut runtime, &output).await,
                 "chart" => ops::screenshot_chart(&mut runtime, &output).await,
@@ -1145,9 +1164,12 @@ async fn dispatch(command: Command) -> Result<serde_json::Value, AppError> {
     }
 }
 
-async fn run_stream_command(command: StreamCommand) -> Result<(), AppError> {
+async fn run_stream_command(
+    command: StreamCommand,
+    config: &TransportConfig,
+) -> Result<(), AppError> {
     let request = stream_request_from_command(command)?;
-    let mut runtime = connect_runtime().await?;
+    let mut runtime = connect_runtime(config).await?;
     let mut dedupe = ops::StreamDedupe::default();
     let interval = Duration::from_millis(request.interval_ms);
 
@@ -1216,8 +1238,8 @@ fn unsafe_ui_eval_disabled_error() -> AppError {
     )
 }
 
-async fn connect_runtime() -> Result<CdpClient, AppError> {
-    let target = transport::discover_target(&TransportConfig::from_env()?).await?;
+async fn connect_runtime(config: &TransportConfig) -> Result<CdpClient, AppError> {
+    let target = transport::discover_target(config).await?;
     CdpClient::connect(&target).await
 }
 

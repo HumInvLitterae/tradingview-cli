@@ -46,7 +46,9 @@ Keep responsibilities separated:
 - `src/cdp.rs` owns Chrome DevTools Protocol evaluation and screenshot
   primitives.
 - `src/transport.rs` owns TradingView CDP target discovery and connection
-  setup.
+  setup. `tv --target-id <CDP_TARGET_ID>` is the primary explicit target
+  selection path; `TV_CDP_TARGET_ID` remains a v0.2.x fallback pending the
+  `v0.3.0` cleanup decision.
 - `src/output.rs` owns JSON success and error envelopes.
 - `src/error.rs` owns typed application errors and exit-code mapping.
 
@@ -142,5 +144,5 @@ Keep these boundaries unless a future ExecPlan records new evidence:
 - generic `ui` commands exist for compatibility, but higher-level commands are
   preferred
 - direct HTTP operation without TradingView Desktop page-session context is
-  future research, documented in
+  still future research for account/session-bound commands, documented in
   `docs/plans/tradingview-cli-direct-http-feasibility.md`

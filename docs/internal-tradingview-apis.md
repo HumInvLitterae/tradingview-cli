@@ -78,8 +78,29 @@ Safety boundary:
 - user input must be serialized into JavaScript, not hand-escaped
 - mutation commands must verify the observable after-state before returning
   success
+- `quote <SYMBOL>` should prefer a non-mutating read when available; chart
+  switching is fallback behavior and must fail if the observed quote symbol does
+  not match the requested symbol
 - missing objects or changed method names should become
   `internal_api_unavailable`
+
+## Scanner REST quote read
+
+Category: unauthenticated TradingView scanner REST read.
+
+Current command family:
+
+- `quote <SYMBOL>` for symbol-targeted reads before any chart mutation
+
+Safety boundary:
+
+- this path is read-only and does not require a TradingView Desktop target
+- it returns scanner quote fields such as symbol, description, close, open,
+  high, low, volume, change, exchange, type, and subtype
+- if the scanner read is unavailable before chart mutation, the CLI may fall
+  back to the chart API path
+- if scanner or chart fallback returns a symbol that does not match the
+  requested symbol, the command must fail instead of reporting stale data
 
 ## Replay page API
 

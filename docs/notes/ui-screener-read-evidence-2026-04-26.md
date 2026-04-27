@@ -29,8 +29,9 @@ filters, save cloud-backed screen state, or depend on modal/catalog UI flows.
 ## Live evidence
 
 The smoke target initially had multiple TradingView CDP pages, so the active
-target was selected with `TV_CDP_TARGET_ID` after `tv tab list`. The visible
-Screener dialog was initially closed.
+target was selected explicitly after `tv tab list`. Modern commands should use
+`tv --target-id <ID> ...`; older `TV_CDP_TARGET_ID` usage remains historical
+evidence for this note. The visible Screener dialog was initially closed.
 
 Observed read-only selectors and structure:
 

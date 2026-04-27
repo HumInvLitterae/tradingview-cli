@@ -3,7 +3,7 @@ use serde_json::{Value, json};
 use crate::{
     cdp::{CdpClient, RuntimeEvaluator},
     error::AppError,
-    transport::{self, TargetSelection, TransportConfig},
+    transport::{self, TargetIdSource, TargetSelection, TransportConfig},
 };
 
 use super::common::{CHART_API, merge_object};
@@ -18,7 +18,7 @@ pub async fn status(config: &TransportConfig) -> Result<Value, AppError> {
             "target_id": target.id,
             "target_url": target.url,
             "target_title": target.title,
-            "target_selected_by": "TV_CDP_TARGET_ID",
+            "target_selected_by": config.target_id_source.map(TargetIdSource::as_str).unwrap_or("target_id"),
             "cdp_host": config.host,
             "cdp_port": config.port,
             "chart_symbol": "unknown",

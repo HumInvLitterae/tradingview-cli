@@ -12,8 +12,9 @@ Use this skill for TradingView Stock Screener work through the Rust `tv` CLI.
 1. Run `tv status`.
 2. Run `tv tab list` and prefer a full-page Screener target from
    `screener_targets`.
-3. Use the returned `target_env.TV_CDP_TARGET_ID` for follow-up
-   `tv screener ...` commands.
+3. Use the returned `target_cli_args`, for example
+   `tv --target-id <ID> screener ...`, for follow-up commands.
+   `target_env.TV_CDP_TARGET_ID` is a v0.2.x fallback only.
 4. If no full-page Screener target is available, use `tv screener open` on the
    chosen chart target, but expect more UI fragility than the full-page target.
 

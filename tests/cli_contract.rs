@@ -35,15 +35,29 @@ fn help_lists_v1_commands() {
         .stdout(predicate::str::contains("range"))
         .stdout(predicate::str::contains("type"))
         .stdout(predicate::str::contains("scroll"))
-        .stdout(predicate::str::contains("screenshot"));
+        .stdout(predicate::str::contains("screenshot"))
+        .stdout(predicate::str::contains("--target-id"));
 }
 
 #[test]
-fn quote_help_lists_optional_symbol() {
+fn quote_help_explains_symbol_and_target_selection() {
     tv().args(["quote", "--help"])
         .assert()
         .success()
-        .stdout(predicate::str::contains("[SYMBOL]"));
+        .stdout(predicate::str::contains("[SYMBOL]"))
+        .stdout(predicate::str::contains("current chart target"))
+        .stdout(predicate::str::contains("--target-id"));
+}
+
+#[test]
+fn symbol_help_explains_read_set_and_set_flag_absence() {
+    tv().args(["symbol", "--help"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("[SYMBOL]"))
+        .stdout(predicate::str::contains("Run without SYMBOL"))
+        .stdout(predicate::str::contains("There is no --set flag"))
+        .stdout(predicate::str::contains("--target-id"));
 }
 
 #[test]
@@ -1324,21 +1338,6 @@ fn quote_rejects_empty_symbol_before_connecting() {
     assert_eq!(value["success"], false);
     assert_eq!(value["command"], "quote");
     assert_eq!(value["error"]["kind"], "validation");
-}
-
-#[test]
-fn quote_with_symbol_attempts_connection_when_cdp_is_unavailable() {
-    let assert = tv()
-        .env("TV_CDP_PORT", "9")
-        .args(["quote", "NASDAQ:AAPL"])
-        .assert()
-        .failure()
-        .code(2);
-    let stderr = String::from_utf8(assert.get_output().stderr.clone()).unwrap();
-    let value: Value = serde_json::from_str(&stderr).unwrap();
-    assert_eq!(value["success"], false);
-    assert_eq!(value["command"], "quote");
-    assert_eq!(value["error"]["kind"], "connection");
 }
 
 #[test]

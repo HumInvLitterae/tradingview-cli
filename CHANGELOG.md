@@ -14,6 +14,9 @@ package version omits the leading `v`.
   binary/library crate split.
 - Started a refreshed upstream pull-request re-check note after the `v0.2.0`
   release.
+- Added global `tv --target-id <CDP_TARGET_ID>` target selection, structured
+  target handoff hints, and non-mutating scanner-backed symbol quote reads with
+  chart-switch freshness checks.
 
 ## v0.2.0 - 2026-04-27
 
