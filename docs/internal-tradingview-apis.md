@@ -231,12 +231,23 @@ Current command families:
 - `search`
 - `scanner hotlist`
 - `scanner scan`
+- `quote <SYMBOL>` before chart fallback
 
 Safety boundary:
 
 - these commands are read-only
 - supported markets and field names are intentionally explicit
 - unexpected response shapes are rejected rather than normalized by guesswork
+
+Direct HTTP feasibility status:
+
+- `search`, `scanner hotlist`, `scanner scan`, symbol-targeted `quote`, and
+  `pine check` are the current credential-safe direct HTTP reads.
+- No additional direct HTTP command candidate is selected from the first
+  `v0.3.0` feasibility pass.
+- Future candidates need a concrete read-only operator need, endpoint evidence,
+  and no requirement to copy browser credentials, session state, or
+  account-linked identifiers.
 
 ## Watchlist page-session API and DOM surface
 
@@ -433,11 +444,10 @@ Remaining replacement work is evidence-gated rather than urgent:
    evidence.
 3. App-tab new/close non-DOM command evidence.
 
-After the next release, `docs/plans/tradingview-cli-direct-http-feasibility.md`
-tracks a separate investigation into direct HTTP reads. That future work should
-prefer credential-safe read-only endpoints and should not move account
-mutations away from the user's logged-in page session without a separate safety
-plan.
+`docs/plans/tradingview-cli-direct-http-feasibility.md` tracks the first direct
+HTTP feasibility pass. That work prefers credential-safe read-only endpoints and
+does not move account mutations away from the user's logged-in page session
+without a separate safety plan.
 
 Do not start with `data depth`, chart screenshots, or generic UI automation;
 their current DOM dependency is part of their observable contract.

@@ -23,6 +23,11 @@ As of this pass, the upstream repository reports 54 open PRs. The previous
 durable triage note recorded 47 open PRs, so the newest delta is the main focus
 of this starter pass.
 
+Refresh on 2026-04-28 still reports 54 open PRs. No new open PR appeared after
+the previous delta pass. The most recently updated item is now `#90`, which is
+already classified in `docs/notes/upstream-pr-triage-2026-04-25.md` as addressed
+by Rust strategy-data compatibility work.
+
 ## New PR delta
 
 | PR | Category | Rust disposition |
@@ -57,9 +62,25 @@ of this starter pass.
    Workflow packs and trading bots are downstream material unless a later plan
    extracts a narrow command that clearly belongs here.
 
-## Next re-check work
+## Current closure boundary
 
-This starter pass only covers the newest delta since the previous triage note.
-The next pass should work downward through the still-open list and update the
-older dispositions where upstream PRs have been superseded, closed, or made more
-specific by newer compatibility reports.
+Treat the upstream PR follow-up as complete enough for the current `v0.3.0`
+planning phase. The remaining open upstream PRs are not ignored, but their Rust
+dispositions are now one of:
+
+- addressed by existing Rust implementation or docs;
+- Windows live-verification backlog;
+- intentionally outside the core CLI as workflow/helper material;
+- evidence-gated deferred work such as layout-dialog policy or broader
+  Screener editing;
+- original-project Node/MCP maintenance with no Rust action.
+
+Future upstream work should be periodic monitoring, or a focused re-check only
+when a new upstream PR appears or a live Rust regression points back to an
+upstream report.
+
+## Next work
+
+The next `v0.3.0` work item is not another broad upstream sweep. Move to
+credential-safe direct HTTP feasibility for read-only surfaces, using
+`docs/plans/tradingview-cli-direct-http-feasibility.md` as the research plan.
