@@ -4,7 +4,6 @@ mod indicator;
 mod list;
 mod payload;
 
-pub use crate::domain::alert::validate_alert_condition;
 pub use create::alert_create;
 #[allow(unused_imports)]
 pub use create::alert_create_via_api;

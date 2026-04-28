@@ -98,6 +98,9 @@ package version omits the leading `v`.
 - Added a larger in-package `domain::screener` boundary for Screener
   validation, target resolution, and storage payload shaping while preserving
   command behavior.
+- Clarified application/domain/operation-adapter dependencies so dispatch
+  calls pure domain helpers directly while `ops` stays focused on executable
+  TradingView operations.
 - Added `--direction <long|short>` as an alias for the positional `DIRECTION`
   argument on `tv draw position`.
 

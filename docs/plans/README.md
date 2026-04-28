@@ -8,9 +8,9 @@ for release and next-phase planning.
 
 - `tradingview-cli-release-builds.md`: tag-triggered GitHub Release builds
   for Linux, macOS, and Windows binaries.
-- `tradingview-cli-screener-domain-boundary.md`: introduce the larger
-  in-package Screener domain/service boundary by moving validation, target
-  resolution, and storage payload shaping out of the operation adapter.
+- `tradingview-cli-domain-boundary-review.md`: clarify how application
+  dispatch, in-package domain helpers, and executable operation adapters depend
+  on each other.
 
 ## Archived plans
 
@@ -64,6 +64,9 @@ Important archived plan categories:
 - third in-package domain/service boundary for Replay validation, timestamp
   conversion, and payload normalization
 - fourth in-package domain/service boundary for Drawing request validation
+- larger in-package Screener domain/service boundary for validation, target
+  resolution, and storage payload shaping
+- application/domain/operation-adapter dependency boundary review
 
 For command contract details, prefer the notes under `docs/notes/` before
 reading archived implementation plans.

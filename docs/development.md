@@ -45,6 +45,11 @@ This project uses Rust 2024.
   storage payload shaping. Operation adapters keep TradingView execution, DOM
   fallback, chart API JavaScript, page-session API calls, runtime access, and
   post-check behavior.
+- Let `crates/cli/src/app/dispatch.rs` call `domain::*` directly for pure
+  validation, request interpretation, target resolution, and payload shaping.
+  Use `ops::*` from dispatch only for executable TradingView operations or
+  adapter-specific request types. Do not re-export domain helpers through
+  `ops.rs` solely for dispatch convenience.
 - When an operation adapter grows too large, split it behind a facade file and
   a same-named directory before creating a new workspace crate. `screener` is
   the current model: stable public adapter exports at the facade, sub-surface

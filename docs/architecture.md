@@ -113,6 +113,12 @@ Keep responsibilities separated:
   payload shaping. Operation adapters still perform TradingView calls, DOM
   fallback, chart API execution, page-session storage fetch/save, and
   post-checks.
+- `crates/cli/src/app/dispatch.rs` may call `domain::*` directly when it is
+  converting CLI command variants into validated primitive values or domain
+  request types. It should call `ops::*` for executable TradingView
+  operations. This keeps the dependency direction explicit: application
+  dispatch interprets command input, domain validates and shapes pure command
+  data, and ops executes live TradingView work.
 - `crates/cli/src/ops/` contains operation adapter implementations grouped by
   capability. These modules still own command-facing TradingView operations;
   do not treat them as a pure domain crate boundary yet.

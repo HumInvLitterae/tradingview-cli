@@ -11,6 +11,25 @@ use crate::{
         ScreenerCommand, ScreenerFiltersCommand, ScreenerScreensCommand, TabCommand, UiCommand,
         WatchlistCommand,
     },
+    domain::{
+        alert::validate_alert_condition,
+        drawing::{
+            DrawingPoint, DrawingPositionRequest, DrawingShapeRequest, PositionDirection,
+            parse_drawing_overrides, validate_position_request,
+        },
+        replay::{
+            validate_replay_autoplay_speed, validate_replay_date, validate_replay_trade_action,
+        },
+        screener::validation::{
+            validate_screener_column_add_request, validate_screener_column_reorder_request,
+            validate_screener_column_selector, validate_screener_filter_add_request,
+            validate_screener_filter_clear, validate_screener_filter_modify_request,
+            validate_screener_filter_selector, validate_screener_limit,
+            validate_screener_screen_delete_request, validate_screener_screen_name,
+            validate_screener_screen_rename_request, validate_screener_screen_test_mutation_name,
+        },
+        watchlist::validate_watchlist_add_bulk_request,
+    },
     ops,
 };
 use tradingview_cdp::TransportConfig;
@@ -125,7 +144,7 @@ pub async fn dispatch(
         },
         Command::Screener { command } => {
             if let ScreenerCommand::Get { limit } = &command {
-                ops::validate_screener_limit(*limit)?;
+                validate_screener_limit(*limit)?;
             }
             if let ScreenerCommand::Filters { command } = &command {
                 match command {
@@ -136,16 +155,16 @@ pub async fn dispatch(
                         max,
                         dry_run,
                     } => {
-                        ops::validate_screener_filter_add_request(name, *min, *max, *dry_run)?;
+                        validate_screener_filter_add_request(name, *min, *max, *dry_run)?;
                     }
                     ScreenerFiltersCommand::Remove { index, text, .. } => {
-                        ops::validate_screener_filter_selector(*index, text.as_deref())?;
+                        validate_screener_filter_selector(*index, text.as_deref())?;
                     }
                     ScreenerFiltersCommand::Clear {
                         dry_run,
                         confirm_clear,
                     } => {
-                        ops::validate_screener_filter_clear(*dry_run, *confirm_clear)?;
+                        validate_screener_filter_clear(*dry_run, *confirm_clear)?;
                     }
                     ScreenerFiltersCommand::Modify {
                         index,
@@ -155,7 +174,7 @@ pub async fn dispatch(
                         option,
                         dry_run,
                     } => {
-                        ops::validate_screener_filter_modify_request(
+                        validate_screener_filter_modify_request(
                             *index,
                             text.as_deref(),
                             *min,
@@ -171,7 +190,7 @@ pub async fn dispatch(
                 command: ScreenerColumnsCommand::Remove { index, name, .. },
             } = &command
             {
-                ops::validate_screener_column_selector(*index, name.as_deref())?;
+                validate_screener_column_selector(*index, name.as_deref())?;
             }
             if let ScreenerCommand::Columns {
                 command:
@@ -183,7 +202,7 @@ pub async fn dispatch(
                     },
             } = &command
             {
-                ops::validate_screener_column_add_request(
+                validate_screener_column_add_request(
                     id,
                     params_json.as_deref(),
                     *after_index,
@@ -199,38 +218,32 @@ pub async fn dispatch(
                     },
             } = &command
             {
-                ops::validate_screener_column_reorder_request(*from_index, *to_index)?;
+                validate_screener_column_reorder_request(*from_index, *to_index)?;
             }
             if let ScreenerCommand::Screens { command } = &command {
                 match command {
                     ScreenerScreensCommand::Switch { name, .. } => {
-                        ops::validate_screener_screen_name(name)?;
+                        validate_screener_screen_name(name)?;
                     }
                     ScreenerScreensCommand::Delete {
                         name,
                         dry_run,
                         confirm_delete,
                     } => {
-                        ops::validate_screener_screen_delete_request(
-                            name,
-                            *dry_run,
-                            *confirm_delete,
-                        )?;
+                        validate_screener_screen_delete_request(name, *dry_run, *confirm_delete)?;
                     }
                     ScreenerScreensCommand::Create { name, dry_run } => {
-                        ops::validate_screener_screen_test_mutation_name(name, *dry_run, "create")?;
+                        validate_screener_screen_test_mutation_name(name, *dry_run, "create")?;
                     }
                     ScreenerScreensCommand::SaveAs { name, dry_run } => {
-                        ops::validate_screener_screen_test_mutation_name(
-                            name, *dry_run, "save-as",
-                        )?;
+                        validate_screener_screen_test_mutation_name(name, *dry_run, "save-as")?;
                     }
                     ScreenerScreensCommand::Rename {
                         name,
                         new_name,
                         dry_run,
                     } => {
-                        ops::validate_screener_screen_rename_request(name, new_name, *dry_run)?;
+                        validate_screener_screen_rename_request(name, new_name, *dry_run)?;
                     }
                     ScreenerScreensCommand::Active
                     | ScreenerScreensCommand::Actions
@@ -258,16 +271,15 @@ pub async fn dispatch(
                         dry_run,
                         catalog,
                     } => {
-                        let name = ops::validate_screener_screen_name(&name)?;
+                        let name = validate_screener_screen_name(&name)?;
                         ops::screener_screens_switch(&mut runtime, &name, dry_run, catalog).await
                     }
                     ScreenerScreensCommand::Save { dry_run } => {
                         ops::screener_screens_save(&mut runtime, dry_run).await
                     }
                     ScreenerScreensCommand::Create { name, dry_run } => {
-                        let name = ops::validate_screener_screen_test_mutation_name(
-                            &name, dry_run, "create",
-                        )?;
+                        let name =
+                            validate_screener_screen_test_mutation_name(&name, dry_run, "create")?;
                         ops::screener_screens_create(&mut runtime, &name, dry_run).await
                     }
                     ScreenerScreensCommand::Rename {
@@ -275,15 +287,13 @@ pub async fn dispatch(
                         new_name,
                         dry_run,
                     } => {
-                        let (name, new_name) = ops::validate_screener_screen_rename_request(
-                            &name, &new_name, dry_run,
-                        )?;
+                        let (name, new_name) =
+                            validate_screener_screen_rename_request(&name, &new_name, dry_run)?;
                         ops::screener_screens_rename(&mut runtime, &name, &new_name, dry_run).await
                     }
                     ScreenerScreensCommand::SaveAs { name, dry_run } => {
-                        let name = ops::validate_screener_screen_test_mutation_name(
-                            &name, dry_run, "save-as",
-                        )?;
+                        let name =
+                            validate_screener_screen_test_mutation_name(&name, dry_run, "save-as")?;
                         ops::screener_screens_save_as(&mut runtime, &name, dry_run).await
                     }
                     ScreenerScreensCommand::Delete {
@@ -291,7 +301,7 @@ pub async fn dispatch(
                         dry_run,
                         confirm_delete,
                     } => {
-                        let name = ops::validate_screener_screen_delete_request(
+                        let name = validate_screener_screen_delete_request(
                             &name,
                             dry_run,
                             confirm_delete,
@@ -312,7 +322,7 @@ pub async fn dispatch(
                         dry_run,
                     } => {
                         let request =
-                            ops::validate_screener_filter_add_request(&name, min, max, dry_run)?;
+                            validate_screener_filter_add_request(&name, min, max, dry_run)?;
                         ops::screener_filters_add(&mut runtime, request).await
                     }
                     ScreenerFiltersCommand::Remove {
@@ -320,8 +330,7 @@ pub async fn dispatch(
                         text,
                         dry_run,
                     } => {
-                        let selector =
-                            ops::validate_screener_filter_selector(index, text.as_deref())?;
+                        let selector = validate_screener_filter_selector(index, text.as_deref())?;
                         ops::screener_filters_remove(&mut runtime, selector, dry_run).await
                     }
                     ScreenerFiltersCommand::Clear {
@@ -336,7 +345,7 @@ pub async fn dispatch(
                         option,
                         dry_run,
                     } => {
-                        let request = ops::validate_screener_filter_modify_request(
+                        let request = validate_screener_filter_modify_request(
                             index,
                             text.as_deref(),
                             min,
@@ -360,8 +369,7 @@ pub async fn dispatch(
                         name,
                         dry_run,
                     } => {
-                        let selector =
-                            ops::validate_screener_column_selector(index, name.as_deref())?;
+                        let selector = validate_screener_column_selector(index, name.as_deref())?;
                         ops::screener_columns_remove(&mut runtime, selector, dry_run).await
                     }
                     ScreenerColumnsCommand::Add {
@@ -370,7 +378,7 @@ pub async fn dispatch(
                         after_index,
                         dry_run,
                     } => {
-                        let request = ops::validate_screener_column_add_request(
+                        let request = validate_screener_column_add_request(
                             &id,
                             params_json.as_deref(),
                             after_index,
@@ -384,7 +392,7 @@ pub async fn dispatch(
                         dry_run,
                     } => {
                         let (from_index, to_index) =
-                            ops::validate_screener_column_reorder_request(from_index, to_index)?;
+                            validate_screener_column_reorder_request(from_index, to_index)?;
                         ops::screener_columns_reorder(&mut runtime, from_index, to_index, dry_run)
                             .await
                     }
@@ -524,7 +532,7 @@ pub async fn dispatch(
                 delay_ms,
                 allow_partial,
             } => {
-                ops::validate_watchlist_add_bulk_request(&symbols, delay_ms)?;
+                validate_watchlist_add_bulk_request(&symbols, delay_ms)?;
                 let mut runtime = connect_runtime(config).await?;
                 ops::watchlist_add_bulk(&mut runtime, &symbols, delay_ms, allow_partial).await
             }
@@ -555,7 +563,7 @@ pub async fn dispatch(
                         "price must be a finite number",
                     ));
                 }
-                ops::validate_alert_condition(&condition)?;
+                validate_alert_condition(&condition)?;
                 let mut runtime = connect_runtime(config).await?;
                 ops::alert_create(&mut runtime, price, &condition, message.as_deref()).await
             }
@@ -716,7 +724,7 @@ pub async fn dispatch(
                     (Some(price2), Some(time2)) => {
                         validate_finite(price2, "price2")?;
                         validate_finite(time2, "time2")?;
-                        Some(ops::DrawingPoint {
+                        Some(DrawingPoint {
                             time: time2,
                             price: price2,
                         })
@@ -731,11 +739,11 @@ pub async fn dispatch(
                 };
                 let overrides = overrides
                     .as_deref()
-                    .map(ops::parse_drawing_overrides)
+                    .map(parse_drawing_overrides)
                     .transpose()?;
-                let request = ops::DrawingShapeRequest {
+                let request = DrawingShapeRequest {
                     shape_type: shape_type.trim().to_string(),
-                    point: ops::DrawingPoint { time, price },
+                    point: DrawingPoint { time, price },
                     point2,
                     text,
                     overrides,
@@ -755,7 +763,7 @@ pub async fn dispatch(
                 lot_size,
             } => {
                 let direction = resolve_drawing_position_direction(direction, direction_flag)?;
-                let request = ops::DrawingPositionRequest {
+                let request = DrawingPositionRequest {
                     direction,
                     entry_price,
                     stop_loss,
@@ -765,7 +773,7 @@ pub async fn dispatch(
                     risk,
                     lot_size,
                 };
-                ops::validate_position_request(&request)?;
+                validate_position_request(&request)?;
                 let mut runtime = connect_runtime(config).await?;
                 ops::drawing_position(&mut runtime, request).await
             }
@@ -975,7 +983,7 @@ pub async fn dispatch(
         Command::Replay { command } => match command {
             ReplayCommand::Start { date } => {
                 if let Some(date) = date.as_deref() {
-                    ops::validate_replay_date(date)?;
+                    validate_replay_date(date)?;
                 }
                 let mut runtime = connect_runtime(config).await?;
                 ops::replay_start(&mut runtime, date.as_deref()).await
@@ -994,13 +1002,13 @@ pub async fn dispatch(
             }
             ReplayCommand::Autoplay { speed } => {
                 if let Some(speed) = speed {
-                    ops::validate_replay_autoplay_speed(speed)?;
+                    validate_replay_autoplay_speed(speed)?;
                 }
                 let mut runtime = connect_runtime(config).await?;
                 ops::replay_autoplay(&mut runtime, speed).await
             }
             ReplayCommand::Trade { action } => {
-                ops::validate_replay_trade_action(&action)?;
+                validate_replay_trade_action(&action)?;
                 let mut runtime = connect_runtime(config).await?;
                 ops::replay_trade(&mut runtime, &action).await
             }
@@ -1114,15 +1122,13 @@ fn validate_finite(value: f64, label: &str) -> Result<(), AppError> {
 fn resolve_drawing_position_direction(
     direction: Option<String>,
     direction_flag: Option<String>,
-) -> Result<ops::PositionDirection, AppError> {
+) -> Result<PositionDirection, AppError> {
     match (direction, direction_flag) {
         (Some(_), Some(_)) => Err(AppError::new(
             ErrorKind::Validation,
             "pass direction either as DIRECTION or --direction, not both",
         )),
-        (Some(direction), None) | (None, Some(direction)) => {
-            ops::PositionDirection::parse(&direction)
-        }
+        (Some(direction), None) | (None, Some(direction)) => PositionDirection::parse(&direction),
         (None, None) => Err(AppError::new(
             ErrorKind::Validation,
             "direction required. Use `tv draw position long ...` or `tv draw position --direction long ...`.",
