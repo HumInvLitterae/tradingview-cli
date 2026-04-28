@@ -92,6 +92,9 @@ package version omits the leading `v`.
 - Added a third in-package `domain::replay` boundary for Replay validation,
   timestamp conversion, and action/status payload normalization while
   preserving command behavior.
+- Added a fourth in-package `domain::drawing` boundary for Drawing request
+  types, direction parsing, override parsing, and position validation while
+  preserving command behavior.
 - Added `--direction <long|short>` as an alias for the positional `DIRECTION`
   argument on `tv draw position`.
 

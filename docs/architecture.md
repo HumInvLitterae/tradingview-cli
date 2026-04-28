@@ -107,8 +107,10 @@ Keep responsibilities separated:
   `domain::alert` owns alert condition validation, public-safe alert payload
   normalization, sanitization, and API fallback policy. `domain::replay` owns
   replay date/speed/action validation, replay timestamp conversion, and replay
-  action/status payload normalization. Operation adapters still perform
-  TradingView calls, DOM fallback, and post-checks.
+  action/status payload normalization. `domain::drawing` owns drawing request
+  structs, direction parsing, override parsing, and position price validation.
+  Operation adapters still perform TradingView calls, DOM fallback, chart API
+  execution, and post-checks.
 - `crates/cli/src/ops/` contains operation adapter implementations grouped by
   capability. These modules still own command-facing TradingView operations;
   do not treat them as a pure domain crate boundary yet.
@@ -147,13 +149,11 @@ Keep responsibilities separated:
   `compile` modules so Monaco/CDP helpers, source editing, saved-script
   operations, and compile/report reads stay separated.
 - `crates/cli/src/ops/drawing.rs` is the Drawing operation adapter facade. It
-  groups validation, drawing creation, drawing reads, and drawing lifecycle
-  cleanup under `crates/cli/src/ops/drawing/` while preserving the public
-  `draw` command surface.
-- `crates/cli/src/ops/replay.rs` is the Replay operation adapter facade. It
-  groups validation, start/step/stop control, autoplay, trade actions, status
-  reads, and replay payload normalization under
-  `crates/cli/src/ops/replay/`.
+  groups drawing creation, drawing reads, and drawing lifecycle cleanup under
+  `crates/cli/src/ops/drawing/` while preserving the public `draw` command
+  surface. Drawing request types, direction parsing, override parsing, and
+  position validation live in `domain::drawing`; the adapter owns chart API
+  JavaScript, entity post-checks, and live chart reads.
 - `crates/cli/src/ops/market.rs` is the chart-dependent Market operation
   adapter facade. Its `direct` module delegates Desktop-free symbol search,
   symbol info, and symbol quote reads to `tradingview_market`; its `quote` and

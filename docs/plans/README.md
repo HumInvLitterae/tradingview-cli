@@ -8,9 +8,10 @@ for release and next-phase planning.
 
 - `tradingview-cli-release-builds.md`: tag-triggered GitHub Release builds
   for Linux, macOS, and Windows binaries.
-- `tradingview-cli-replay-domain-boundary.md`: introduce the third in-package
-  domain/service boundary by moving reusable Replay validation and payload
-  normalization out of the operation adapter.
+- `tradingview-cli-drawing-domain-boundary.md`: introduce the fourth
+  in-package domain/service boundary by moving reusable Drawing request and
+  validation logic out of the operation adapter, then record the current
+  domain-layer design boundary.
 
 ## Archived plans
 
@@ -61,6 +62,8 @@ Important archived plan categories:
   aggregation, and payload normalization
 - second in-package domain/service boundary for Alert validation,
   sanitization, fallback policy, and payload normalization
+- third in-package domain/service boundary for Replay validation, timestamp
+  conversion, and payload normalization
 
 For command contract details, prefer the notes under `docs/notes/` before
 reading archived implementation plans.

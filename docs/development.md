@@ -39,8 +39,10 @@ This project uses Rust 2024.
   `domain::alert`, which owns alert condition validation, public-safe payload
   normalization, sanitization, and API fallback policy, and `domain::replay`,
   which owns replay date/speed/action validation plus replay action/status
-  payload normalization. Operation adapters keep TradingView execution, DOM
-  fallback, runtime access, and post-check behavior.
+  payload normalization, and `domain::drawing`, which owns drawing request
+  structs, direction parsing, override parsing, and position validation.
+  Operation adapters keep TradingView execution, DOM fallback, chart API
+  JavaScript, runtime access, and post-check behavior.
 - When an operation adapter grows too large, split it behind a facade file and
   a same-named directory before creating a new workspace crate. `screener` is
   the current model: stable public adapter exports at the facade, sub-surface
@@ -73,6 +75,11 @@ This project uses Rust 2024.
   Market now use same-named implementation directories under
   `crates/cli/src/ops/`. Do not gather new Drawing/Replay/Market operation
   bodies back into the facade files.
+- Once an adapter split exposes CDP-free request interpretation or validation,
+  move that logic into `crates/cli/src/domain/` if it is reusable and not tied
+  to clap or live page state. Drawing is the request-boundary example:
+  `domain::drawing` owns the request structs and position validation, while
+  `ops/drawing` owns shape creation, entity post-checks, reads, and cleanup.
 - Keep generic UI automation safety-aware. `crates/cli/src/ops/ui.rs` is a
   facade over `dom`, `input`, `selectors`, and `eval`; do not move the
   `TV_ALLOW_UNSAFE_UI_EVAL` gate out of the application safety/dispatch layer
