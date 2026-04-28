@@ -51,6 +51,9 @@ package version omits the leading `v`.
 - Extracted Desktop-free symbol search, symbol info, and symbol quote reads
   into the internal workspace crate `tradingview-market` under
   `crates/market/`.
+- Split `tradingview-market` into focused modules and extracted Desktop-free
+  scanner reads and Pine static/check helpers into internal workspace crates
+  `tradingview-scanner` and `tradingview-pine`.
 
 ## v0.2.0 - 2026-04-27
 

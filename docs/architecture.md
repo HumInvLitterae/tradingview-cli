@@ -49,6 +49,12 @@ contains internal support crates under `crates/`.
 - `crates/market/src/lib.rs` owns Desktop-free market reads for symbol search,
   symbol metadata, and symbol quote lookup. It uses credential-free TradingView
   HTTP endpoints and does not depend on CDP, chart state, or UI automation.
+- `crates/scanner/src/lib.rs` owns Desktop-free scanner reads for hotlists and
+  basic scanner scans. It uses credential-free scanner HTTP endpoints and does
+  not depend on CDP, chart state, or UI automation.
+- `crates/pine/src/lib.rs` owns Desktop-free Pine helpers for local static
+  analysis, `alertcondition()` discovery, and Pine facade checks. Pine Editor
+  operations remain in the root CLI crate because they depend on CDP.
 - `src/lib.rs` is the root package's library crate root. It exposes the
   current internal modules so the binary can share a single module tree and
   future refactors can extract reusable pieces incrementally.
@@ -56,7 +62,7 @@ contains internal support crates under `crates/`.
   tracing setup, command dispatch, success/error envelope printing, and exit
   codes.
 
-Both library crates are internal and unstable for now. Treat them as
+These library crates are internal and unstable for now. Treat them as
 maintainability boundaries until a future ExecPlan explicitly marks types or
 functions as stable for downstream Rust callers.
 
@@ -73,16 +79,23 @@ Keep responsibilities separated:
   envelopes, and error exit-code mapping.
 - `crates/market/src/lib.rs` owns direct HTTP implementations behind
   `tv search <QUERY>`, `tv info <SYMBOL>`, and `tv quote <SYMBOL>`.
+- `crates/scanner/src/lib.rs` owns direct HTTP implementations behind
+  `tv scanner hotlist` and `tv scanner scan`.
+- `crates/pine/src/lib.rs` owns Desktop-free Pine static analysis,
+  `alertcondition()` discovery, and `tv pine check` support.
 - `src/ops.rs` is a thin facade that declares operation modules and re-exports
   operation functions used by `src/main.rs`.
 - `src/ops/` contains operation implementations grouped by capability.
-- `src/ops/data.rs` and `src/ops/pine.rs` are thin facades for larger
-  sub-surfaces under same-named directories.
+- `src/ops/data.rs` is a thin facade for larger sub-surfaces under a
+  same-named directory. `src/ops/pine.rs` is a facade that combines
+  Desktop-free helpers from `tradingview_pine` with CDP-dependent Pine Editor
+  operations under `src/ops/pine/`.
 - `src/cdp.rs` owns Chrome DevTools Protocol evaluation and screenshot
   primitives.
 - `src/ops/market.rs` owns chart-dependent market reads, including current
   chart quote fallback and OHLCV. Its Desktop-free functions delegate to
   `tradingview_market`.
+- `src/ops/scanner.rs` delegates scanner reads to `tradingview_scanner`.
 - `src/transport.rs` owns TradingView CDP target discovery and connection
   setup. `tv --target-id <CDP_TARGET_ID>` is the primary explicit target
   selection path.
@@ -99,7 +112,6 @@ Prefer a facade file plus a same-named directory for submodules, as with:
 
 - `src/ops.rs` plus `src/ops/`
 - `src/ops/data.rs` plus `src/ops/data/`
-- `src/ops/scanner.rs` plus `src/ops/scanner/`
 - `src/ops/pine.rs` plus `src/ops/pine/`
 
 Add new operations to the capability module that matches the user-visible

@@ -1,6 +1,1 @@
-mod common;
-mod hotlist;
-mod scan;
-
-pub use hotlist::scanner_hotlist;
-pub use scan::{ScannerScanRequest, scanner_scan};
+pub use tradingview_scanner::{ScannerScanRequest, scanner_hotlist, scanner_scan};
