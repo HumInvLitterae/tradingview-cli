@@ -72,6 +72,8 @@ package version omits the leading `v`.
 - Moved the remaining Screener state, screen, and filter operation bodies into
   their sub-surface modules, leaving `engine` as the shared runtime/helper
   layer.
+- Split the large Alert operation adapter into facade plus list, create,
+  indicator, delete, and payload modules while preserving command behavior.
 
 ## v0.2.0 - 2026-04-27
 

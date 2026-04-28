@@ -46,6 +46,11 @@ This project uses Rust 2024.
   `crates/cli/src/ops/screener/columns.rs`; Screener filters and screens now
   also own their operation bodies while shared open-state, storage fetch, click
   dispatch, and JavaScript helper expansion remain in `engine.rs`.
+- Keep mixed page-session adapters split by user-visible sub-surface before
+  extracting crates. Alert is the current model: list, normal create,
+  indicator-alert create, delete, and public-safe payload normalization live
+  under `crates/cli/src/ops/alert/`, while `alert.rs` preserves the adapter
+  exports used by dispatch.
 - Keep `crates/cli/src/main.rs` as a thin process entrypoint. Put CLI parsing,
   command dispatch, JSON envelope output, stream loops, input conversion, and
   target connection orchestration under `crates/cli/src/app/`.
