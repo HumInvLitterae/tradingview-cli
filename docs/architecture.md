@@ -40,13 +40,15 @@ for these dependencies is `docs/internal-tradingview-apis.md`.
 
 The repository is now a Cargo workspace. The root package remains
 `tradingview-cli`, and the installed binary remains `tv`. The workspace also
-contains `crates/core/`, whose package name is `tradingview-core` and whose
-Rust crate name is `tradingview_core`.
+contains internal support crates under `crates/`.
 
 - `crates/core/src/lib.rs` owns the shared contract types: `AppError`,
   `ErrorKind`, `SuccessEnvelope`, `ErrorEnvelope`, and `ErrorBody`. These are
   intentionally small and dependency-light so future internal crates can share
   JSON envelope and exit-code semantics without depending on the full CLI.
+- `crates/market/src/lib.rs` owns Desktop-free market reads for symbol search,
+  symbol metadata, and symbol quote lookup. It uses credential-free TradingView
+  HTTP endpoints and does not depend on CDP, chart state, or UI automation.
 - `src/lib.rs` is the root package's library crate root. It exposes the
   current internal modules so the binary can share a single module tree and
   future refactors can extract reusable pieces incrementally.
@@ -69,6 +71,8 @@ Keep responsibilities separated:
   command names.
 - `crates/core/src/lib.rs` owns shared typed errors, JSON success/error
   envelopes, and error exit-code mapping.
+- `crates/market/src/lib.rs` owns direct HTTP implementations behind
+  `tv search <QUERY>`, `tv info <SYMBOL>`, and `tv quote <SYMBOL>`.
 - `src/ops.rs` is a thin facade that declares operation modules and re-exports
   operation functions used by `src/main.rs`.
 - `src/ops/` contains operation implementations grouped by capability.
@@ -76,6 +80,9 @@ Keep responsibilities separated:
   sub-surfaces under same-named directories.
 - `src/cdp.rs` owns Chrome DevTools Protocol evaluation and screenshot
   primitives.
+- `src/ops/market.rs` owns chart-dependent market reads, including current
+  chart quote fallback and OHLCV. Its Desktop-free functions delegate to
+  `tradingview_market`.
 - `src/transport.rs` owns TradingView CDP target discovery and connection
   setup. `tv --target-id <CDP_TARGET_ID>` is the primary explicit target
   selection path.

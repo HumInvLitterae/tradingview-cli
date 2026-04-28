@@ -6,8 +6,6 @@ pub(super) const CHART_API: &str = "window.TradingViewApi._activeChartWidgetWV.v
 pub(super) const CHART_WIDGET_COLLECTION: &str = "window.TradingViewApi._chartWidgetCollection";
 pub(super) const BARS_PATH: &str =
     "window.TradingViewApi._activeChartWidgetWV.value()._chartWidget.model().mainSeries().bars()";
-pub(super) const SYMBOL_SEARCH_URL: &str =
-    "https://symbol-search.tradingview.com/symbol_search/v3/";
 pub(super) const DEFAULT_OHLCV_COUNT: usize = 100;
 pub(super) const MAX_OHLCV_COUNT: usize = 500;
 pub(super) const MAX_TRADES_COUNT: usize = 20;

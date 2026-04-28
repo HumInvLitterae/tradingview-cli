@@ -8,8 +8,8 @@ for release and next-phase planning.
 
 - `tradingview-cli-release-builds.md`: tag-triggered GitHub Release builds
   for Linux, macOS, and Windows binaries.
-- `tradingview-cli-core-crate-extraction.md`: workspace conversion and
-  extraction of the shared error/envelope contract into `tradingview-core`.
+- `tradingview-cli-market-crate-extraction.md`: extraction of Desktop-free
+  symbol search, symbol info, and quote reads into `tradingview-market`.
 
 ## Archived plans
 
@@ -37,6 +37,7 @@ Important archived plan categories:
 - Direct HTTP feasibility, Desktop-free symbol reads, and chart data readiness
   diagnostics
 - first behavior-preserving binary/library crate boundary
+- core contract crate extraction
 
 For command contract details, prefer the notes under `docs/notes/` before
 reading archived implementation plans.

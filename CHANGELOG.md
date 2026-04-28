@@ -48,6 +48,9 @@ package version omits the leading `v`.
   modules through `src/lib.rs` without changing the CLI contract.
 - Extracted shared typed errors, exit-code mapping, and JSON envelope types
   into the internal workspace crate `tradingview-core` under `crates/core/`.
+- Extracted Desktop-free symbol search, symbol info, and symbol quote reads
+  into the internal workspace crate `tradingview-market` under
+  `crates/market/`.
 
 ## v0.2.0 - 2026-04-27
 

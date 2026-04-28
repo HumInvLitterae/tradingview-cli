@@ -1874,6 +1874,7 @@ dependencies = [
  "tracing",
  "tracing-subscriber",
  "tradingview-core",
+ "tradingview-market",
 ]
 
 [[package]]
@@ -1883,6 +1884,15 @@ dependencies = [
  "serde",
  "serde_json",
  "thiserror 2.0.18",
+]
+
+[[package]]
+name = "tradingview-market"
+version = "0.2.0"
+dependencies = [
+ "reqwest",
+ "serde_json",
+ "tradingview-core",
 ]
 
 [[package]]

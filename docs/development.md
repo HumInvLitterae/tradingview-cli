@@ -38,10 +38,12 @@ This project uses Rust 2024.
 - Put cross-crate contract types in `crates/core/` only when they are small,
   low-dependency, and broadly shared. Current examples are typed errors, JSON
   envelopes, and exit-code mapping.
-- Do not move operation logic, CDP clients, market reads, scanner code, or
-  Screener code into another workspace crate merely because they are reusable
-  in theory. Extract them only when a concrete follow-up plan proves the
-  boundary and dependency set are useful.
+- Put credential-free, Desktop-free market reads in `crates/market/` when they
+  do not depend on CDP, chart state, or UI automation.
+- Do not move operation logic, CDP clients, chart-dependent market reads,
+  scanner code, or Screener code into another workspace crate merely because
+  they are reusable in theory. Extract them only when a concrete follow-up plan
+  proves the boundary and dependency set are useful.
 - Treat the workspace library crates as internal and unstable until a future
   plan explicitly defines a stable Rust API.
 - Keep helpers as private as possible; use `pub(super)` for sibling operation
