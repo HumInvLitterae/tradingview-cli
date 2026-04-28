@@ -745,6 +745,7 @@ pub async fn dispatch(
             }
             DrawingCommand::Position {
                 direction,
+                direction_flag,
                 entry_price,
                 stop_loss,
                 take_profit,
@@ -753,7 +754,7 @@ pub async fn dispatch(
                 risk,
                 lot_size,
             } => {
-                let direction = ops::PositionDirection::parse(&direction)?;
+                let direction = resolve_drawing_position_direction(direction, direction_flag)?;
                 let request = ops::DrawingPositionRequest {
                     direction,
                     entry_price,
@@ -1107,5 +1108,24 @@ fn validate_finite(value: f64, label: &str) -> Result<(), AppError> {
             ErrorKind::Validation,
             format!("{label} must be a finite number"),
         ))
+    }
+}
+
+fn resolve_drawing_position_direction(
+    direction: Option<String>,
+    direction_flag: Option<String>,
+) -> Result<ops::PositionDirection, AppError> {
+    match (direction, direction_flag) {
+        (Some(_), Some(_)) => Err(AppError::new(
+            ErrorKind::Validation,
+            "pass direction either as DIRECTION or --direction, not both",
+        )),
+        (Some(direction), None) | (None, Some(direction)) => {
+            ops::PositionDirection::parse(&direction)
+        }
+        (None, None) => Err(AppError::new(
+            ErrorKind::Validation,
+            "direction required. Use `tv draw position long ...` or `tv draw position --direction long ...`.",
+        )),
     }
 }

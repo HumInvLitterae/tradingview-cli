@@ -80,6 +80,8 @@ package version omits the leading `v`.
   scripts, and compile modules while preserving command behavior.
 - Split the Drawing, Replay, and chart-dependent Market operation adapters
   into facade plus focused submodules while preserving command behavior.
+- Added `--direction <long|short>` as an alias for the positional `DIRECTION`
+  argument on `tv draw position`.
 
 ## v0.2.0 - 2026-04-27
 

@@ -521,9 +521,19 @@ pub enum DrawingCommand {
         #[arg(long)]
         overrides: Option<String>,
     },
-    #[command(about = "Draw a native long/short position on the chart")]
+    #[command(
+        about = "Draw a native long/short position on the chart",
+        long_about = "Draw a native long/short position on the chart.\n\nPass the direction as either the positional DIRECTION argument, for example `tv draw position long ...`, or the equivalent `--direction <long|short>` option. Do not pass both."
+    )]
     Position {
-        direction: String,
+        #[arg(value_name = "DIRECTION", help = "Position direction: long or short")]
+        direction: Option<String>,
+        #[arg(
+            long = "direction",
+            value_name = "DIRECTION",
+            help = "Position direction alias: long or short"
+        )]
+        direction_flag: Option<String>,
         #[arg(long)]
         entry_price: f64,
         #[arg(long)]

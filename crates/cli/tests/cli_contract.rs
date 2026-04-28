@@ -909,6 +909,8 @@ fn draw_help_lists_lifecycle_subcommands() {
     tv().args(["draw", "position", "--help"])
         .assert()
         .success()
+        .stdout(predicate::str::contains("DIRECTION"))
+        .stdout(predicate::str::contains("--direction"))
         .stdout(predicate::str::contains("--entry-price"))
         .stdout(predicate::str::contains("--stop-loss"))
         .stdout(predicate::str::contains("--take-profit"))
@@ -1777,6 +1779,41 @@ fn draw_position_rejects_invalid_inputs_before_connecting() {
             "110",
             "--take-profit",
             "100",
+        ],
+        vec![
+            "draw",
+            "position",
+            "--direction",
+            "long",
+            "--entry-price",
+            "NaN",
+            "--stop-loss",
+            "90",
+            "--take-profit",
+            "120",
+        ],
+        vec![
+            "draw",
+            "position",
+            "long",
+            "--direction",
+            "long",
+            "--entry-price",
+            "100",
+            "--stop-loss",
+            "90",
+            "--take-profit",
+            "120",
+        ],
+        vec![
+            "draw",
+            "position",
+            "--entry-price",
+            "100",
+            "--stop-loss",
+            "90",
+            "--take-profit",
+            "120",
         ],
         vec![
             "draw",
