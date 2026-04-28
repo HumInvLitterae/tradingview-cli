@@ -37,8 +37,10 @@ This project uses Rust 2024.
   CDP runtime objects. Accepted examples are `domain::watchlist`, which owns
   symbol normalization, bulk aggregation, and payload normalization, and
   `domain::alert`, which owns alert condition validation, public-safe payload
-  normalization, sanitization, and API fallback policy. Operation adapters keep
-  TradingView execution, DOM fallback, runtime access, and post-check behavior.
+  normalization, sanitization, and API fallback policy, and `domain::replay`,
+  which owns replay date/speed/action validation plus replay action/status
+  payload normalization. Operation adapters keep TradingView execution, DOM
+  fallback, runtime access, and post-check behavior.
 - When an operation adapter grows too large, split it behind a facade file and
   a same-named directory before creating a new workspace crate. `screener` is
   the current model: stable public adapter exports at the facade, sub-surface
