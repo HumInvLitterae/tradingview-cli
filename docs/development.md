@@ -41,6 +41,11 @@ This project uses Rust 2024.
   example, Screener validation lives in
   `crates/cli/src/ops/screener/validation.rs` before columns or saved-screen
   storage logic are split out of the implementation engine.
+- Storage-backed sub-surfaces are the next-best split candidates once
+  validation is isolated. Screener columns live in
+  `crates/cli/src/ops/screener/columns.rs` while shared open-state and
+  saved-screen fetch helpers remain in the engine until a later common module
+  is justified.
 - Keep `crates/cli/src/main.rs` as a thin process entrypoint. Put CLI parsing,
   command dispatch, JSON envelope output, stream loops, input conversion, and
   target connection orchestration under `crates/cli/src/app/`.

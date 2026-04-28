@@ -108,9 +108,11 @@ Keep responsibilities separated:
   `filters`, `columns`, and `validation` submodules under
   `crates/cli/src/ops/screener/`. Validation is now implemented in
   `crates/cli/src/ops/screener/validation.rs` as the pure input-boundary layer
-  for Screener requests. Runtime, storage, UI, JavaScript, and post-check logic
-  still live in the implementation engine until deeper behavior-preserving
-  splits move bodies one sub-surface at a time.
+  for Screener requests. Column operations are implemented in
+  `crates/cli/src/ops/screener/columns.rs` as the first storage-backed
+  sub-surface split. The remaining runtime, screen, filter, UI, JavaScript, and
+  post-check logic still live in the implementation engine until deeper
+  behavior-preserving splits move bodies one sub-surface at a time.
 - `crates/cli/src/ops/data.rs` is a thin facade for larger sub-surfaces under
   a same-named directory. `crates/cli/src/ops/pine.rs` is a facade that
   combines Desktop-free helpers from `tradingview_pine` with CDP-dependent Pine

@@ -67,6 +67,8 @@ package version omits the leading `v`.
   modules while preserving the CLI surface and behavior.
 - Moved Screener validation request types, helpers, and tests into the
   Screener validation module while preserving command behavior.
+- Moved Screener column operations, storage-column helpers, and column tests
+  into the Screener columns module while preserving command behavior.
 
 ## v0.2.0 - 2026-04-27
 
