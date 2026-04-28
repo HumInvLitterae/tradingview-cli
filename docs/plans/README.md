@@ -8,9 +8,9 @@ for release and next-phase planning.
 
 - `tradingview-cli-release-builds.md`: tag-triggered GitHub Release builds
   for Linux, macOS, and Windows binaries.
-- `tradingview-cli-medium-adapter-split.md`: split the Drawing, Replay, and
-  chart-dependent Market operation adapters into facade plus focused
-  submodules.
+- `tradingview-cli-ui-adapter-split.md`: split the generic UI automation
+  adapter into facade plus DOM, input, selector, and eval modules while keeping
+  the unsafe eval gate in the application layer.
 
 ## Archived plans
 
@@ -54,6 +54,7 @@ Important archived plan categories:
 - Layout operation adapter split into watchlist and pane modules
 - Pine Editor operation adapter split into runtime, source, scripts, and
   compile modules
+- Drawing, Replay, and chart-dependent Market medium adapter split
 
 For command contract details, prefer the notes under `docs/notes/` before
 reading archived implementation plans.

@@ -64,6 +64,10 @@ This project uses Rust 2024.
   Market now use same-named implementation directories under
   `crates/cli/src/ops/`. Do not gather new Drawing/Replay/Market operation
   bodies back into the facade files.
+- Keep generic UI automation safety-aware. `crates/cli/src/ops/ui.rs` is a
+  facade over `dom`, `input`, `selectors`, and `eval`; do not move the
+  `TV_ALLOW_UNSAFE_UI_EVAL` gate out of the application safety/dispatch layer
+  or hide new unsafe behavior inside the adapter.
 - Keep `crates/cli/src/main.rs` as a thin process entrypoint. Put CLI parsing,
   command dispatch, JSON envelope output, stream loops, input conversion, and
   target connection orchestration under `crates/cli/src/app/`.

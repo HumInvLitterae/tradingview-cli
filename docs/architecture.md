@@ -142,6 +142,11 @@ Keep responsibilities separated:
   symbol info, and symbol quote reads to `tradingview_market`; its `quote` and
   `ohlcv` modules keep current-chart quote fallback, quote freshness checks,
   and chart-bars reads in the CLI package.
+- `crates/cli/src/ops/ui.rs` is the generic UI automation compatibility
+  adapter facade. It groups DOM actions, input events, selector lookup, and
+  eval execution under `crates/cli/src/ops/ui/`. The unsafe `ui eval` gate
+  stays in the application safety/dispatch layer; the eval adapter only
+  receives already-authorized expressions.
 - `crates/cli/src/ops/scanner.rs` delegates scanner reads to
   `tradingview_scanner`.
 

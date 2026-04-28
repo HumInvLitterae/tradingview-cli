@@ -80,6 +80,9 @@ package version omits the leading `v`.
   scripts, and compile modules while preserving command behavior.
 - Split the Drawing, Replay, and chart-dependent Market operation adapters
   into facade plus focused submodules while preserving command behavior.
+- Split the generic UI automation adapter into facade plus DOM, input,
+  selector, and eval modules while preserving command behavior and the
+  application-layer unsafe eval gate.
 - Added `--direction <long|short>` as an alias for the positional `DIRECTION`
   argument on `tv draw position`.
 
