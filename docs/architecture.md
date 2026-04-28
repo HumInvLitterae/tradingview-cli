@@ -58,9 +58,12 @@ contains internal support crates under `crates/`.
 - `src/lib.rs` is the root package's library crate root. It exposes the
   current internal modules so the binary can share a single module tree and
   future refactors can extract reusable pieces incrementally.
-- `src/main.rs` is the `tv` binary entrypoint. It owns process startup,
-  tracing setup, command dispatch, success/error envelope printing, and exit
-  codes.
+- `src/main.rs` is the `tv` binary entrypoint. It owns only process startup
+  and the Windows larger-stack wrapper before calling the library-owned
+  application runner.
+- `src/app.rs` is the root package's application-layer facade. It owns CLI
+  parsing, command dispatch, runtime connection orchestration, stdin/file input
+  conversion, stream looping, safety gates, and success/error envelope output.
 
 These library crates are internal and unstable for now. Treat them as
 maintainability boundaries until a future ExecPlan explicitly marks types or
@@ -71,8 +74,10 @@ functions as stable for downstream Rust callers.
 Keep responsibilities separated:
 
 - `src/lib.rs` owns top-level module declarations.
-- `src/main.rs` owns startup, CLI dispatch, runtime connection setup,
-  success/error envelope printing, and exit codes for the `tv` binary.
+- `src/main.rs` owns startup for the `tv` binary and delegates application
+  behavior to `tradingview_cli::app`.
+- `src/app.rs` and `src/app/` own application orchestration between the CLI
+  surface and domain operation modules.
 - `src/cli.rs` owns the `clap` command surface, argument definitions, and
   command names.
 - `crates/core/src/lib.rs` owns shared typed errors, JSON success/error

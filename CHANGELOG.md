@@ -54,6 +54,9 @@ package version omits the leading `v`.
 - Split `tradingview-market` into focused modules and extracted Desktop-free
   scanner reads and Pine static/check helpers into internal workspace crates
   `tradingview-scanner` and `tradingview-pine`.
+- Split the `tv` binary entrypoint from the library-owned application runner,
+  command dispatch, stream loop, input handling, output envelopes, and safety
+  gates.
 
 ## v0.2.0 - 2026-04-27
 

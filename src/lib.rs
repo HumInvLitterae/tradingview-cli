@@ -1,3 +1,4 @@
+pub mod app;
 pub mod cdp;
 pub mod cli;
 pub mod ops;

@@ -8,9 +8,8 @@ for release and next-phase planning.
 
 - `tradingview-cli-release-builds.md`: tag-triggered GitHub Release builds
   for Linux, macOS, and Windows binaries.
-- `tradingview-cli-workspace-crate-split-phase-3.md`: extraction of
-  Desktop-free scanner and Pine support crates, plus market crate module
-  cleanup.
+- `tradingview-cli-application-layer-split.md`: split the thin `tv` binary
+  entrypoint from the library-owned application runner and command dispatch.
 
 ## Archived plans
 
@@ -40,6 +39,7 @@ Important archived plan categories:
 - first behavior-preserving binary/library crate boundary
 - core contract crate extraction
 - Desktop-free market crate extraction
+- Desktop-free scanner and Pine support crate extraction
 
 For command contract details, prefer the notes under `docs/notes/` before
 reading archived implementation plans.

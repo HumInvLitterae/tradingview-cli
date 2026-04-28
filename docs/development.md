@@ -29,10 +29,11 @@ This project uses Rust 2024.
 - Prefer facade files with same-named submodule directories for large
   capabilities.
 - Keep top-level module declarations in `src/lib.rs`.
-- Keep `src/main.rs` focused on binary startup, dispatch, envelopes, and exit
-  behavior.
 - Keep `src/cli.rs` focused on command and argument shape.
 - Keep operation implementations under `src/ops/` by capability.
+- Keep `src/main.rs` as a thin process entrypoint. Put CLI parsing, command
+  dispatch, JSON envelope output, stream loops, input conversion, and target
+  connection orchestration under `src/app/`.
 - Put reusable command logic and transport helpers in root library modules
   rather than adding binary-only code to `src/main.rs`.
 - Put cross-crate contract types in `crates/core/` only when they are small,
