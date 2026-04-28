@@ -95,6 +95,9 @@ package version omits the leading `v`.
 - Added a fourth in-package `domain::drawing` boundary for Drawing request
   types, direction parsing, override parsing, and position validation while
   preserving command behavior.
+- Added a larger in-package `domain::screener` boundary for Screener
+  validation, target resolution, and storage payload shaping while preserving
+  command behavior.
 - Added `--direction <long|short>` as an alias for the positional `DIRECTION`
   argument on `tv draw position`.
 

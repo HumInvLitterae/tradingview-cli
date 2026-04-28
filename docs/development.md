@@ -40,18 +40,20 @@ This project uses Rust 2024.
   normalization, sanitization, and API fallback policy, and `domain::replay`,
   which owns replay date/speed/action validation plus replay action/status
   payload normalization, and `domain::drawing`, which owns drawing request
-  structs, direction parsing, override parsing, and position validation.
-  Operation adapters keep TradingView execution, DOM fallback, chart API
-  JavaScript, runtime access, and post-check behavior.
+  structs, direction parsing, override parsing, and position validation, and
+  `domain::screener`, which owns Screener validation, target resolution, and
+  storage payload shaping. Operation adapters keep TradingView execution, DOM
+  fallback, chart API JavaScript, page-session API calls, runtime access, and
+  post-check behavior.
 - When an operation adapter grows too large, split it behind a facade file and
   a same-named directory before creating a new workspace crate. `screener` is
   the current model: stable public adapter exports at the facade, sub-surface
   implementation modules underneath, and shared runtime/page-session helpers in
   a narrow common module.
-- Prefer moving CDP-free input boundaries before runtime/storage/UI code. For
-  example, Screener validation lives in
-  `crates/cli/src/ops/screener/validation.rs` before columns or saved-screen
-  storage logic are split out of the implementation engine.
+- Prefer moving CDP-free input boundaries before runtime/storage/UI code.
+  Screener is the larger example: validation, target resolution, and storage
+  payload shaping live in `domain::screener`, while page-session storage
+  fetch/save and UI operations remain in `ops/screener`.
 - Storage-backed sub-surfaces are the next-best split candidates once
   validation is isolated. Screener columns live in
   `crates/cli/src/ops/screener/columns.rs`; Screener filters and screens now

@@ -109,19 +109,22 @@ Keep responsibilities separated:
   replay date/speed/action validation, replay timestamp conversion, and replay
   action/status payload normalization. `domain::drawing` owns drawing request
   structs, direction parsing, override parsing, and position price validation.
-  Operation adapters still perform TradingView calls, DOM fallback, chart API
-  execution, and post-checks.
+  `domain::screener` owns Screener validation, target resolution, and storage
+  payload shaping. Operation adapters still perform TradingView calls, DOM
+  fallback, chart API execution, page-session storage fetch/save, and
+  post-checks.
 - `crates/cli/src/ops/` contains operation adapter implementations grouped by
   capability. These modules still own command-facing TradingView operations;
   do not treat them as a pure domain crate boundary yet.
 - `crates/cli/src/ops/screener.rs` is the Screener operation adapter facade.
   It groups the public Screener adapter surface through `state`, `screens`,
   `filters`, `columns`, and `validation` submodules under
-  `crates/cli/src/ops/screener/`. Validation owns the pure input-boundary
-  layer. `state`, `screens`, `filters`, and `columns` own their respective
-  operation bodies and focused tests. The remaining `engine` module is the
-  shared Screener runtime/helper layer for open/restore sessions, state reads,
-  active storage fetches, common click dispatch, and shared JavaScript helpers.
+  `crates/cli/src/ops/screener/`. CDP-free validation, target resolution, and
+  storage payload helpers live in `domain::screener`; `state`, `screens`,
+  `filters`, and `columns` own their respective runtime operation bodies and
+  focused tests. The remaining `engine` module is the shared Screener
+  runtime/helper layer for open/restore sessions, state reads, active storage
+  fetches, common click dispatch, and shared JavaScript helpers.
 - `crates/cli/src/ops/alert.rs` is the Alert operation adapter facade. It
   groups alert list, normal alert create, Pine `alertcondition()` alert create,
   alert delete, and an adapter-facing payload re-export under
