@@ -45,13 +45,16 @@ This project uses Rust 2024.
   they can be exercised without TradingView Desktop.
 - Put Desktop-free Pine helpers in `crates/pine/` when they are local source
   analysis or Pine facade checks. Keep Pine Editor operations in the root crate.
+- Put shared TradingView Desktop CDP connection code in `crates/cdp/`. Do not
+  duplicate target discovery, `RuntimeEvaluator`, screenshot/input event
+  primitives, or target handoff helpers inside operation modules.
 - Keep each library crate's `lib.rs` as a facade. When implementation grows,
   split into same-directory modules rather than gathering everything in
   `lib.rs`.
-- Do not move CDP clients, chart-dependent market reads, Screener code,
-  account mutation, or UI automation into another workspace crate merely
-  because they are reusable in theory. Extract them only when a concrete
-  follow-up plan proves the boundary and dependency set are useful.
+- Do not move chart-dependent market reads, Screener code, account mutation,
+  or UI automation into another workspace crate merely because they are
+  reusable in theory. Extract them only when a concrete follow-up plan proves
+  the boundary and dependency set are useful.
 - Treat the workspace library crates as internal and unstable until a future
   plan explicitly defines a stable Rust API.
 - Keep helpers as private as possible; use `pub(super)` for sibling operation

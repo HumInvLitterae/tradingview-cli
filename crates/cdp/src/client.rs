@@ -10,8 +10,9 @@ use tokio_tungstenite::{
     tungstenite::{Error as WsError, Message},
 };
 
-use crate::transport::Target;
 use tradingview_core::{AppError, ErrorKind};
+
+use crate::Target;
 
 const DEFAULT_TIMEOUT: Duration = Duration::from_secs(10);
 

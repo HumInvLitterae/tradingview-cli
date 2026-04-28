@@ -8,7 +8,7 @@ use std::{
 use serde_json::{Value, json};
 use tokio::time::sleep;
 
-use crate::cdp::RuntimeEvaluator;
+use tradingview_cdp::RuntimeEvaluator;
 use tradingview_core::{AppError, ErrorKind};
 
 use super::common::{

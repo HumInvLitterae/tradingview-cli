@@ -1,6 +1,6 @@
 use serde_json::{Value, json};
 
-use crate::cdp::RuntimeEvaluator;
+use tradingview_cdp::RuntimeEvaluator;
 use tradingview_core::{AppError, ErrorKind};
 
 const VALID_AUTOPLAY_DELAYS: [u64; 9] = [100, 143, 200, 300, 1000, 2000, 3000, 5000, 10000];

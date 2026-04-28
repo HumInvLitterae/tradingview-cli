@@ -2,7 +2,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 use serde_json::{Value, json};
 
-use crate::cdp::RuntimeEvaluator;
+use tradingview_cdp::RuntimeEvaluator;
 use tradingview_core::{AppError, ErrorKind};
 
 use super::common::{CHART_API, CHART_WIDGET_COLLECTION, js_string};

@@ -2,7 +2,7 @@ use std::{collections::HashSet, time::Duration};
 
 use serde_json::{Value, json};
 
-use crate::cdp::{KeyEvent, KeyEventType, RuntimeEvaluator};
+use tradingview_cdp::{KeyEvent, KeyEventType, RuntimeEvaluator};
 use tradingview_core::{AppError, ErrorKind};
 
 use super::common::{CHART_API, CHART_WIDGET_COLLECTION, js_string};
@@ -1550,8 +1550,8 @@ pub async fn pane_symbol(
 
 #[cfg(test)]
 mod tests {
-    use crate::cdp::KeyEventType;
     use serde_json::json;
+    use tradingview_cdp::KeyEventType;
 
     use super::super::test_support::FakeRuntime;
     use super::*;

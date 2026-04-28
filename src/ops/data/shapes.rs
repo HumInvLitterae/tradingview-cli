@@ -1,6 +1,6 @@
 use serde_json::{Value, json};
 
-use crate::cdp::RuntimeEvaluator;
+use tradingview_cdp::RuntimeEvaluator;
 use tradingview_core::AppError;
 
 use super::super::common::{CHART_API, DEFAULT_OHLCV_COUNT, MAX_OHLCV_COUNT, js_string, round2};

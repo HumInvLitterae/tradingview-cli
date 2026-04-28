@@ -7,7 +7,7 @@ use std::{
 
 use serde_json::{Value, json};
 
-use crate::transport::TransportConfig;
+use tradingview_cdp::TransportConfig;
 use tradingview_core::{AppError, ErrorKind};
 
 const LAUNCH_READY_ATTEMPTS: usize = 15;

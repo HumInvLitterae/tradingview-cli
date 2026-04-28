@@ -57,6 +57,8 @@ package version omits the leading `v`.
 - Split the `tv` binary entrypoint from the library-owned application runner,
   command dispatch, stream loop, input handling, output envelopes, and safety
   gates.
+- Extracted CDP target discovery, runtime evaluation, screenshot capture, and
+  input event primitives into the internal workspace crate `tradingview-cdp`.
 
 ## v0.2.0 - 2026-04-27
 

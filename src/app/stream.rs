@@ -9,8 +9,8 @@ use crate::{
     },
     cli::StreamCommand,
     ops,
-    transport::TransportConfig,
 };
+use tradingview_cdp::TransportConfig;
 
 pub async fn run_stream_command(
     command: StreamCommand,

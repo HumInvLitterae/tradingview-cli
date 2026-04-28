@@ -1,8 +1,7 @@
 use serde_json::{Value, json};
 
-use crate::{
-    cdp::{CdpClient, RuntimeEvaluator},
-    transport::{self, TargetSelection, TransportConfig},
+use tradingview_cdp::{
+    self as transport, CdpClient, RuntimeEvaluator, TargetSelection, TransportConfig,
 };
 use tradingview_core::AppError;
 

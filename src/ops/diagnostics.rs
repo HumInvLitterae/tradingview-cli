@@ -1,6 +1,6 @@
 use serde_json::{Value, json};
 
-use crate::cdp::RuntimeEvaluator;
+use tradingview_cdp::RuntimeEvaluator;
 use tradingview_core::{AppError, ErrorKind};
 
 pub async fn discover(runtime: &mut impl RuntimeEvaluator) -> Result<Value, AppError> {

@@ -12,8 +12,8 @@ use crate::{
         WatchlistCommand,
     },
     ops,
-    transport::TransportConfig,
 };
+use tradingview_cdp::TransportConfig;
 
 pub async fn dispatch(
     command: Command,

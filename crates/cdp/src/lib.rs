@@ -1,0 +1,10 @@
+mod client;
+mod transport;
+
+pub use client::{
+    CdpClient, KeyEvent, KeyEventType, MouseEvent, MouseEventType, RuntimeEvaluator, ScreenshotClip,
+};
+pub use transport::{
+    Target, TargetSelection, TransportConfig, discover_target, fetch_targets, is_app_window_target,
+    select_target, target_cli_args, target_title_for_handoff, target_url_for_handoff,
+};

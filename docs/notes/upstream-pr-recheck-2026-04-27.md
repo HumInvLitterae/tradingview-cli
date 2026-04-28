@@ -16,8 +16,8 @@ Rust.
   `gh pr view` on the newest PRs that were not covered by the previous
   `docs/notes/upstream-pr-triage-2026-04-25.md` pass.
 - Rust comparison points:
-  `src/cdp.rs`, `src/transport.rs`, `src/ops/launch.rs`, and
-  `src/ops/alert.rs`.
+  `crates/cdp/src/client.rs`, `crates/cdp/src/transport.rs`,
+  `src/ops/launch.rs`, and `src/ops/alert.rs`.
 
 As of this pass, the upstream repository reports 54 open PRs. The previous
 durable triage note recorded 47 open PRs, so the newest delta is the main focus

@@ -1,7 +1,7 @@
 use serde_json::{Map, Value, json};
 use tokio::time::{Duration, sleep};
 
-use crate::cdp::{MouseEvent, MouseEventType, RuntimeEvaluator};
+use tradingview_cdp::{MouseEvent, MouseEventType, RuntimeEvaluator};
 use tradingview_core::{AppError, ErrorKind};
 
 use super::{

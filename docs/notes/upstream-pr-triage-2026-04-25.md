@@ -14,7 +14,8 @@ the Rust CLI backlog.
 - Command: `gh pr list -R tradesdontlie/tradingview-mcp --state open --limit 100`
 - Follow-up: `gh pr view` for the open PRs listed below
 - Rust comparison points: current `src/ops/launch.rs`, `src/ops/data/strategy.rs`,
-  `src/ops/pine/editor.rs`, `src/ops/ui.rs`, `src/transport.rs`
+  `src/ops/pine/editor.rs`, `src/ops/ui.rs`, and
+  `crates/cdp/src/transport.rs`
 - Refresh check after the `tv data labels` hardening slice:
   `gh pr list -R tradesdontlie/tradingview-mcp --state open --limit 20 --json number,title,updatedAt,url`
   still showed `#100` as the newest open PR.

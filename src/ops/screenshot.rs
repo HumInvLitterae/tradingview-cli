@@ -3,7 +3,7 @@ use std::{fs, io::Cursor, path::Path};
 use image::ImageFormat;
 use serde_json::{Value, json};
 
-use crate::cdp::{RuntimeEvaluator, ScreenshotClip};
+use tradingview_cdp::{RuntimeEvaluator, ScreenshotClip};
 use tradingview_core::{AppError, ErrorKind};
 
 pub async fn screenshot_full(

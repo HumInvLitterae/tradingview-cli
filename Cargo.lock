@@ -1856,13 +1856,25 @@ dependencies = [
 ]
 
 [[package]]
+name = "tradingview-cdp"
+version = "0.2.0"
+dependencies = [
+ "base64",
+ "futures-util",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "tokio",
+ "tokio-tungstenite",
+ "tradingview-core",
+]
+
+[[package]]
 name = "tradingview-cli"
 version = "0.2.0"
 dependencies = [
  "assert_cmd",
- "base64",
  "clap",
- "futures-util",
  "image",
  "predicates",
  "reqwest",
@@ -1870,9 +1882,9 @@ dependencies = [
  "serde_json",
  "tempfile",
  "tokio",
- "tokio-tungstenite",
  "tracing",
  "tracing-subscriber",
+ "tradingview-cdp",
  "tradingview-core",
  "tradingview-market",
  "tradingview-pine",

@@ -10,8 +10,8 @@ use crate::{
         stream::run_stream_command,
     },
     cli::{Cli, Command},
-    transport::TransportConfig,
 };
+use tradingview_cdp::TransportConfig;
 
 pub fn run_cli() -> ExitCode {
     let runtime = match tokio::runtime::Builder::new_current_thread()

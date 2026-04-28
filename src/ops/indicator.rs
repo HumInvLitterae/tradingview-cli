@@ -1,6 +1,6 @@
 use serde_json::{Map, Value};
 
-use crate::cdp::RuntimeEvaluator;
+use tradingview_cdp::RuntimeEvaluator;
 use tradingview_core::{AppError, ErrorKind};
 
 use super::common::{CHART_API, js_string};

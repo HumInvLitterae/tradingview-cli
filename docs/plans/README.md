@@ -8,8 +8,8 @@ for release and next-phase planning.
 
 - `tradingview-cli-release-builds.md`: tag-triggered GitHub Release builds
   for Linux, macOS, and Windows binaries.
-- `tradingview-cli-application-layer-split.md`: split the thin `tv` binary
-  entrypoint from the library-owned application runner and command dispatch.
+- `tradingview-cli-cdp-crate-extraction.md`: extract the reusable CDP client
+  and target-discovery layer into an internal workspace crate.
 
 ## Archived plans
 
@@ -40,6 +40,7 @@ Important archived plan categories:
 - core contract crate extraction
 - Desktop-free market crate extraction
 - Desktop-free scanner and Pine support crate extraction
+- application-layer split for the thin `tv` binary and library-owned runner
 
 For command contract details, prefer the notes under `docs/notes/` before
 reading archived implementation plans.

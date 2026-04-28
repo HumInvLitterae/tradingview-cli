@@ -3,7 +3,7 @@ use std::{collections::VecDeque, io::Cursor};
 use image::{ImageBuffer, ImageFormat, Rgba};
 use serde_json::Value;
 
-use crate::cdp::{KeyEvent, MouseEvent, RuntimeEvaluator, ScreenshotClip};
+use tradingview_cdp::{KeyEvent, MouseEvent, RuntimeEvaluator, ScreenshotClip};
 use tradingview_core::{AppError, ErrorKind};
 
 pub(super) struct FakeRuntime {

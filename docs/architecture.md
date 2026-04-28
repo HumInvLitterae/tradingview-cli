@@ -55,6 +55,9 @@ contains internal support crates under `crates/`.
 - `crates/pine/src/lib.rs` owns Desktop-free Pine helpers for local static
   analysis, `alertcondition()` discovery, and Pine facade checks. Pine Editor
   operations remain in the root CLI crate because they depend on CDP.
+- `crates/cdp/src/lib.rs` owns the TradingView Desktop connection substrate:
+  CDP target discovery, explicit target selection, WebSocket method calls,
+  runtime evaluation, screenshot capture, and input events.
 - `src/lib.rs` is the root package's library crate root. It exposes the
   current internal modules so the binary can share a single module tree and
   future refactors can extract reusable pieces incrementally.
@@ -88,22 +91,20 @@ Keep responsibilities separated:
   `tv scanner hotlist` and `tv scanner scan`.
 - `crates/pine/src/lib.rs` owns Desktop-free Pine static analysis,
   `alertcondition()` discovery, and `tv pine check` support.
+- `crates/cdp/src/lib.rs` owns Chrome DevTools Protocol evaluation,
+  screenshot/input primitives, and TradingView CDP target discovery. `tv
+  --target-id <CDP_TARGET_ID>` is the primary explicit target selection path.
 - `src/ops.rs` is a thin facade that declares operation modules and re-exports
-  operation functions used by `src/main.rs`.
+  operation functions used by the application dispatch layer.
 - `src/ops/` contains operation implementations grouped by capability.
 - `src/ops/data.rs` is a thin facade for larger sub-surfaces under a
   same-named directory. `src/ops/pine.rs` is a facade that combines
   Desktop-free helpers from `tradingview_pine` with CDP-dependent Pine Editor
   operations under `src/ops/pine/`.
-- `src/cdp.rs` owns Chrome DevTools Protocol evaluation and screenshot
-  primitives.
 - `src/ops/market.rs` owns chart-dependent market reads, including current
   chart quote fallback and OHLCV. Its Desktop-free functions delegate to
   `tradingview_market`.
 - `src/ops/scanner.rs` delegates scanner reads to `tradingview_scanner`.
-- `src/transport.rs` owns TradingView CDP target discovery and connection
-  setup. `tv --target-id <CDP_TARGET_ID>` is the primary explicit target
-  selection path.
 
 Do not grow command implementation logic in `src/main.rs` or `src/cli.rs`.
 If a capability module becomes difficult to scan, split it before adding more

@@ -3,10 +3,7 @@ use std::collections::HashSet;
 use serde::Serialize;
 use serde_json::{Value, json};
 
-use crate::{
-    cdp::{CdpClient, RuntimeEvaluator},
-    transport::{self, Target, TransportConfig},
-};
+use tradingview_cdp::{self as transport, CdpClient, RuntimeEvaluator, Target, TransportConfig};
 use tradingview_core::{AppError, ErrorKind};
 
 const TAB_NEW_WAIT_MS: u64 = 2_000;
