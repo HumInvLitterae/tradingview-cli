@@ -1,6 +1,6 @@
 use serde_json::{Value, json};
 
-use crate::error::{AppError, ErrorKind};
+use tradingview_core::{AppError, ErrorKind};
 
 pub(super) const CHART_API: &str = "window.TradingViewApi._activeChartWidgetWV.value()";
 pub(super) const CHART_WIDGET_COLLECTION: &str = "window.TradingViewApi._chartWidgetCollection";

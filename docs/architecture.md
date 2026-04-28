@@ -38,18 +38,25 @@ for these dependencies is `docs/internal-tradingview-apis.md`.
 
 ## Crate boundary
 
-The package has two Rust crate roots:
+The repository is now a Cargo workspace. The root package remains
+`tradingview-cli`, and the installed binary remains `tv`. The workspace also
+contains `crates/core/`, whose package name is `tradingview-core` and whose
+Rust crate name is `tradingview_core`.
 
-- `src/lib.rs` is the library crate root. It exposes the current internal
-  modules so the binary can share a single module tree and future refactors can
-  extract reusable pieces incrementally.
+- `crates/core/src/lib.rs` owns the shared contract types: `AppError`,
+  `ErrorKind`, `SuccessEnvelope`, `ErrorEnvelope`, and `ErrorBody`. These are
+  intentionally small and dependency-light so future internal crates can share
+  JSON envelope and exit-code semantics without depending on the full CLI.
+- `src/lib.rs` is the root package's library crate root. It exposes the
+  current internal modules so the binary can share a single module tree and
+  future refactors can extract reusable pieces incrementally.
 - `src/main.rs` is the `tv` binary entrypoint. It owns process startup,
   tracing setup, command dispatch, success/error envelope printing, and exit
   codes.
 
-The library crate is not yet a stable public Rust API. Treat its modules as an
-internal boundary for maintainability until a future ExecPlan explicitly marks
-types or functions as stable for downstream Rust callers.
+Both library crates are internal and unstable for now. Treat them as
+maintainability boundaries until a future ExecPlan explicitly marks types or
+functions as stable for downstream Rust callers.
 
 ## Rust module responsibilities
 
@@ -60,6 +67,8 @@ Keep responsibilities separated:
   success/error envelope printing, and exit codes for the `tv` binary.
 - `src/cli.rs` owns the `clap` command surface, argument definitions, and
   command names.
+- `crates/core/src/lib.rs` owns shared typed errors, JSON success/error
+  envelopes, and error exit-code mapping.
 - `src/ops.rs` is a thin facade that declares operation modules and re-exports
   operation functions used by `src/main.rs`.
 - `src/ops/` contains operation implementations grouped by capability.
@@ -70,8 +79,6 @@ Keep responsibilities separated:
 - `src/transport.rs` owns TradingView CDP target discovery and connection
   setup. `tv --target-id <CDP_TARGET_ID>` is the primary explicit target
   selection path.
-- `src/output.rs` owns JSON success and error envelopes.
-- `src/error.rs` owns typed application errors and exit-code mapping.
 
 Do not grow command implementation logic in `src/main.rs` or `src/cli.rs`.
 If a capability module becomes difficult to scan, split it before adding more

@@ -1,9 +1,7 @@
 use serde_json::{Value, json};
 
-use crate::{
-    cdp::{KeyEvent, KeyEventType, MouseEvent, MouseEventType, RuntimeEvaluator},
-    error::{AppError, ErrorKind},
-};
+use crate::cdp::{KeyEvent, KeyEventType, MouseEvent, MouseEventType, RuntimeEvaluator};
+use tradingview_core::{AppError, ErrorKind};
 
 use super::common::{js_string, require_finite};
 

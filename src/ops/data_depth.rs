@@ -1,9 +1,7 @@
 use serde_json::{Value, json};
 
-use crate::{
-    cdp::RuntimeEvaluator,
-    error::{AppError, ErrorKind},
-};
+use crate::cdp::RuntimeEvaluator;
+use tradingview_core::{AppError, ErrorKind};
 
 pub async fn data_depth(runtime: &mut impl RuntimeEvaluator) -> Result<Value, AppError> {
     let data = runtime

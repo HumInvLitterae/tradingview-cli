@@ -7,10 +7,8 @@ use std::{
 
 use serde_json::{Value, json};
 
-use crate::{
-    error::{AppError, ErrorKind},
-    transport::TransportConfig,
-};
+use crate::transport::TransportConfig;
+use tradingview_core::{AppError, ErrorKind};
 
 const LAUNCH_READY_ATTEMPTS: usize = 15;
 const LAUNCH_READY_DELAY: Duration = Duration::from_secs(1);

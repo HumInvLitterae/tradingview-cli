@@ -46,6 +46,8 @@ package version omits the leading `v`.
   selection.
 - Added the first internal library crate boundary so the `tv` binary can share
   modules through `src/lib.rs` without changing the CLI contract.
+- Extracted shared typed errors, exit-code mapping, and JSON envelope types
+  into the internal workspace crate `tradingview-core` under `crates/core/`.
 
 ## v0.2.0 - 2026-04-27
 

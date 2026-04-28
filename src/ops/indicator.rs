@@ -1,9 +1,7 @@
 use serde_json::{Map, Value};
 
-use crate::{
-    cdp::RuntimeEvaluator,
-    error::{AppError, ErrorKind},
-};
+use crate::cdp::RuntimeEvaluator;
+use tradingview_core::{AppError, ErrorKind};
 
 use super::common::{CHART_API, js_string};
 
@@ -303,7 +301,7 @@ mod tests {
 
     use super::super::test_support::FakeRuntime;
     use super::*;
-    use crate::error::ErrorKind;
+    use tradingview_core::ErrorKind;
 
     #[test]
     fn parse_indicator_inputs_requires_non_empty_object() {

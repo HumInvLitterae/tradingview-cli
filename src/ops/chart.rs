@@ -1,6 +1,7 @@
 use serde_json::Value;
 
-use crate::{cdp::RuntimeEvaluator, error::AppError};
+use crate::cdp::RuntimeEvaluator;
+use tradingview_core::AppError;
 
 use super::common::{CHART_API, CHART_TYPES, js_string, parse_chart_type, require_finite};
 
@@ -351,8 +352,8 @@ pub async fn scroll_to_date(
 
 #[cfg(test)]
 mod tests {
-    use crate::error::ErrorKind;
     use serde_json::json;
+    use tradingview_core::ErrorKind;
 
     use super::super::test_support::FakeRuntime;
     use super::*;

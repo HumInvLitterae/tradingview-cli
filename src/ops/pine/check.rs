@@ -1,6 +1,6 @@
 use serde_json::{Value, json};
 
-use crate::error::{AppError, ErrorKind};
+use tradingview_core::{AppError, ErrorKind};
 
 const PINE_CHECK_URL: &str = "https://pine-facade.tradingview.com/pine-facade/translate_light?user_name=Guest&pine_id=00000000-0000-0000-0000-000000000000";
 

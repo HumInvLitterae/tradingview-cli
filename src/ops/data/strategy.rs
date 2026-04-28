@@ -1,6 +1,7 @@
 use serde_json::Value;
 
-use crate::{cdp::RuntimeEvaluator, error::AppError};
+use crate::cdp::RuntimeEvaluator;
+use tradingview_core::AppError;
 
 use super::super::common::{CHART_API, MAX_TRADES_COUNT};
 

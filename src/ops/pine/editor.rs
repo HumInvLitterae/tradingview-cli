@@ -1,10 +1,8 @@
 use serde_json::{Value, json};
 use std::time::Duration;
 
-use crate::{
-    cdp::{KeyEvent, KeyEventType, RuntimeEvaluator},
-    error::{AppError, ErrorKind},
-};
+use crate::cdp::{KeyEvent, KeyEventType, RuntimeEvaluator};
+use tradingview_core::{AppError, ErrorKind};
 
 const FIND_MONACO: &str = r#"
 (function findMonacoEditor() {

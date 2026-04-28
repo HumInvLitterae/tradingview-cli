@@ -13,10 +13,10 @@ use tradingview_cli::cli::{
     ScreenerCommand, ScreenerFiltersCommand, ScreenerScreensCommand, StreamCommand, TabCommand,
     UiCommand, WatchlistCommand,
 };
-use tradingview_cli::error::{AppError, ErrorKind};
 use tradingview_cli::ops;
-use tradingview_cli::output::{ErrorBody, ErrorEnvelope, SuccessEnvelope};
 use tradingview_cli::transport::{self, TransportConfig};
+use tradingview_core::{AppError, ErrorKind};
+use tradingview_core::{ErrorBody, ErrorEnvelope, SuccessEnvelope};
 
 const UNSAFE_UI_EVAL_ENV: &str = "TV_ALLOW_UNSAFE_UI_EVAL";
 #[cfg(windows)]

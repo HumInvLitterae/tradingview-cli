@@ -2,10 +2,8 @@ use std::{collections::HashSet, time::Duration};
 
 use serde_json::{Value, json};
 
-use crate::{
-    cdp::{KeyEvent, KeyEventType, RuntimeEvaluator},
-    error::{AppError, ErrorKind},
-};
+use crate::cdp::{KeyEvent, KeyEventType, RuntimeEvaluator};
+use tradingview_core::{AppError, ErrorKind};
 
 use super::common::{CHART_API, CHART_WIDGET_COLLECTION, js_string};
 

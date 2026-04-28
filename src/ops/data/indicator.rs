@@ -1,9 +1,7 @@
 use serde_json::Value;
 
-use crate::{
-    cdp::RuntimeEvaluator,
-    error::{AppError, ErrorKind},
-};
+use crate::cdp::RuntimeEvaluator;
+use tradingview_core::{AppError, ErrorKind};
 
 use super::super::common::{CHART_API, js_string};
 
@@ -97,7 +95,7 @@ mod tests {
 
     use super::super::super::test_support::FakeRuntime;
     use super::*;
-    use crate::error::ErrorKind;
+    use tradingview_core::ErrorKind;
 
     #[tokio::test]
     async fn study_values_returns_runtime_payload() {

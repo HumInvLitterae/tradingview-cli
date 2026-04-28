@@ -1,6 +1,6 @@
 use serde_json::{Value, json};
 
-use crate::error::{AppError, ErrorKind};
+use tradingview_core::{AppError, ErrorKind};
 
 use super::common::field_values_object;
 

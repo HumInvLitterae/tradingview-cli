@@ -8,10 +8,8 @@ use std::{
 use serde_json::{Value, json};
 use tokio::time::sleep;
 
-use crate::{
-    cdp::RuntimeEvaluator,
-    error::{AppError, ErrorKind},
-};
+use crate::cdp::RuntimeEvaluator;
+use tradingview_core::{AppError, ErrorKind};
 
 use super::common::{
     BARS_PATH, CHART_API, DEFAULT_OHLCV_COUNT, MAX_OHLCV_COUNT, SYMBOL_SEARCH_URL, js_string,

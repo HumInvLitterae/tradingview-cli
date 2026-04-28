@@ -8,8 +8,8 @@ for release and next-phase planning.
 
 - `tradingview-cli-release-builds.md`: tag-triggered GitHub Release builds
   for Linux, macOS, and Windows binaries.
-- `tradingview-cli-library-crate-split.md`: first behavior-preserving
-  binary/library crate boundary for `v0.3.0` maintainability work.
+- `tradingview-cli-core-crate-extraction.md`: workspace conversion and
+  extraction of the shared error/envelope contract into `tradingview-core`.
 
 ## Archived plans
 
@@ -36,6 +36,7 @@ Important archived plan categories:
   boundaries
 - Direct HTTP feasibility, Desktop-free symbol reads, and chart data readiness
   diagnostics
+- first behavior-preserving binary/library crate boundary
 
 For command contract details, prefer the notes under `docs/notes/` before
 reading archived implementation plans.

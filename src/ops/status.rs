@@ -2,9 +2,9 @@ use serde_json::{Value, json};
 
 use crate::{
     cdp::{CdpClient, RuntimeEvaluator},
-    error::AppError,
     transport::{self, TargetSelection, TransportConfig},
 };
+use tradingview_core::AppError;
 
 use super::common::{CHART_API, merge_object};
 

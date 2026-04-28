@@ -5,9 +5,9 @@ use serde_json::{Value, json};
 
 use crate::{
     cdp::{CdpClient, RuntimeEvaluator},
-    error::{AppError, ErrorKind},
     transport::{self, Target, TransportConfig},
 };
+use tradingview_core::{AppError, ErrorKind};
 
 const TAB_NEW_WAIT_MS: u64 = 2_000;
 const TAB_CLOSE_WAIT_MS: u64 = 1_000;

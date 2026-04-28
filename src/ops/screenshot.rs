@@ -3,10 +3,8 @@ use std::{fs, io::Cursor, path::Path};
 use image::ImageFormat;
 use serde_json::{Value, json};
 
-use crate::{
-    cdp::{RuntimeEvaluator, ScreenshotClip},
-    error::{AppError, ErrorKind},
-};
+use crate::cdp::{RuntimeEvaluator, ScreenshotClip};
+use tradingview_core::{AppError, ErrorKind};
 
 pub async fn screenshot_full(
     runtime: &mut impl RuntimeEvaluator,
@@ -217,9 +215,9 @@ fn scaled_ceil(value: f64, scale: f64, max: u32, min: u32) -> u32 {
 mod tests {
     use std::fs;
 
-    use crate::error::ErrorKind;
     use serde_json::json;
     use tempfile::tempdir;
+    use tradingview_core::ErrorKind;
 
     use super::super::test_support::{FakeRuntime, png_fixture};
     use super::*;
