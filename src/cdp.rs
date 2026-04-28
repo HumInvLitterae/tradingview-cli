@@ -1,3 +1,4 @@
+use std::future::Future;
 use std::time::Duration;
 
 use base64::{Engine, engine::general_purpose::STANDARD};
@@ -17,12 +18,25 @@ use crate::{
 const DEFAULT_TIMEOUT: Duration = Duration::from_secs(10);
 
 pub trait RuntimeEvaluator {
-    async fn evaluate(&mut self, expression: &str, await_promise: bool) -> Result<Value, AppError>;
-    async fn capture_screenshot(&mut self) -> Result<Vec<u8>, AppError>;
-    async fn capture_screenshot_clip(&mut self, clip: ScreenshotClip) -> Result<Vec<u8>, AppError>;
-    async fn insert_text(&mut self, text: &str) -> Result<(), AppError>;
-    async fn dispatch_key_event(&mut self, event: KeyEvent) -> Result<(), AppError>;
-    async fn dispatch_mouse_event(&mut self, event: MouseEvent) -> Result<(), AppError>;
+    fn evaluate(
+        &mut self,
+        expression: &str,
+        await_promise: bool,
+    ) -> impl Future<Output = Result<Value, AppError>> + Send;
+    fn capture_screenshot(&mut self) -> impl Future<Output = Result<Vec<u8>, AppError>> + Send;
+    fn capture_screenshot_clip(
+        &mut self,
+        clip: ScreenshotClip,
+    ) -> impl Future<Output = Result<Vec<u8>, AppError>> + Send;
+    fn insert_text(&mut self, text: &str) -> impl Future<Output = Result<(), AppError>> + Send;
+    fn dispatch_key_event(
+        &mut self,
+        event: KeyEvent,
+    ) -> impl Future<Output = Result<(), AppError>> + Send;
+    fn dispatch_mouse_event(
+        &mut self,
+        event: MouseEvent,
+    ) -> impl Future<Output = Result<(), AppError>> + Send;
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, serde::Serialize)]
