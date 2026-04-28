@@ -106,13 +106,11 @@ Keep responsibilities separated:
 - `crates/cli/src/ops/screener.rs` is the Screener operation adapter facade.
   It groups the public Screener adapter surface through `state`, `screens`,
   `filters`, `columns`, and `validation` submodules under
-  `crates/cli/src/ops/screener/`. Validation is now implemented in
-  `crates/cli/src/ops/screener/validation.rs` as the pure input-boundary layer
-  for Screener requests. Column operations are implemented in
-  `crates/cli/src/ops/screener/columns.rs` as the first storage-backed
-  sub-surface split. The remaining runtime, screen, filter, UI, JavaScript, and
-  post-check logic still live in the implementation engine until deeper
-  behavior-preserving splits move bodies one sub-surface at a time.
+  `crates/cli/src/ops/screener/`. Validation owns the pure input-boundary
+  layer. `state`, `screens`, `filters`, and `columns` own their respective
+  operation bodies and focused tests. The remaining `engine` module is the
+  shared Screener runtime/helper layer for open/restore sessions, state reads,
+  active storage fetches, common click dispatch, and shared JavaScript helpers.
 - `crates/cli/src/ops/data.rs` is a thin facade for larger sub-surfaces under
   a same-named directory. `crates/cli/src/ops/pine.rs` is a facade that
   combines Desktop-free helpers from `tradingview_pine` with CDP-dependent Pine

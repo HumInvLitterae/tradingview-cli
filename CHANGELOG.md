@@ -69,6 +69,9 @@ package version omits the leading `v`.
   Screener validation module while preserving command behavior.
 - Moved Screener column operations, storage-column helpers, and column tests
   into the Screener columns module while preserving command behavior.
+- Moved the remaining Screener state, screen, and filter operation bodies into
+  their sub-surface modules, leaving `engine` as the shared runtime/helper
+  layer.
 
 ## v0.2.0 - 2026-04-27
 

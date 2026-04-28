@@ -8,8 +8,8 @@ for release and next-phase planning.
 
 - `tradingview-cli-release-builds.md`: tag-triggered GitHub Release builds
   for Linux, macOS, and Windows binaries.
-- `tradingview-cli-screener-columns-split.md`: move Screener column operation
-  implementation from the remaining engine into the columns module.
+- `tradingview-cli-screener-engine-split.md`: move the remaining Screener
+  state, screen, and filter operation bodies out of the shared engine.
 
 ## Archived plans
 
@@ -45,6 +45,7 @@ Important archived plan categories:
 - CLI package relocation under `crates/cli/`
 - Screener operation adapter facade split
 - Screener validation implementation split
+- Screener columns implementation split
 
 For command contract details, prefer the notes under `docs/notes/` before
 reading archived implementation plans.

@@ -34,18 +34,18 @@ This project uses Rust 2024.
   capability.
 - When an operation adapter grows too large, split it behind a facade file and
   a same-named directory before creating a new workspace crate. `screener` is
-  the current model for this first step: stable public adapter exports at the
-  facade, sub-surface modules underneath, and deeper implementation movement in
-  later behavior-preserving slices.
+  the current model: stable public adapter exports at the facade, sub-surface
+  implementation modules underneath, and shared runtime/page-session helpers in
+  a narrow common module.
 - Prefer moving CDP-free input boundaries before runtime/storage/UI code. For
   example, Screener validation lives in
   `crates/cli/src/ops/screener/validation.rs` before columns or saved-screen
   storage logic are split out of the implementation engine.
 - Storage-backed sub-surfaces are the next-best split candidates once
   validation is isolated. Screener columns live in
-  `crates/cli/src/ops/screener/columns.rs` while shared open-state and
-  saved-screen fetch helpers remain in the engine until a later common module
-  is justified.
+  `crates/cli/src/ops/screener/columns.rs`; Screener filters and screens now
+  also own their operation bodies while shared open-state, storage fetch, click
+  dispatch, and JavaScript helper expansion remain in `engine.rs`.
 - Keep `crates/cli/src/main.rs` as a thin process entrypoint. Put CLI parsing,
   command dispatch, JSON envelope output, stream loops, input conversion, and
   target connection orchestration under `crates/cli/src/app/`.
