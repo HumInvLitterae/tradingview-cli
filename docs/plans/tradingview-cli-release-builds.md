@@ -51,7 +51,7 @@ The first release workflow deliberately stays modest. It gives users downloadabl
 
 ## Context and Orientation
 
-This repository builds a Rust command-line application named `tv`. The package metadata lives in `Cargo.toml`; the binary target is declared as `[[bin]] name = "tv" path = "src/main.rs"`. The existing `.github/workflows/ci.yml` workflow runs the normal Rust baseline on pushes and pull requests, but it does not create release binaries or upload artifacts.
+This repository builds a Rust command-line application named `tv`. The root `Cargo.toml` is a virtual workspace manifest, and the CLI package metadata lives in `crates/cli/Cargo.toml`; the binary target is declared there as `[[bin]] name = "tv" path = "src/main.rs"`. The existing `.github/workflows/ci.yml` workflow runs the normal Rust baseline on pushes and pull requests, but it does not create release binaries or upload artifacts.
 
 GitHub Actions workflows live under `.github/workflows/`. A workflow is a YAML file that GitHub runs when configured events happen. This plan adds `.github/workflows/release.yml`. A tag-triggered workflow means GitHub runs the workflow when a tag like `v0.1.0` is pushed.
 
@@ -96,8 +96,8 @@ Run validation from the repository root:
     scripts/stage-release-package-files.sh target/release-package-smoke target/release/tv
     find target/release-package-smoke -maxdepth 4 -print | sort
     cargo fmt --check
-    cargo clippy --all-targets --all-features -- -D warnings
-    cargo test
+    cargo clippy --workspace --all-targets --all-features -- -D warnings
+    cargo test --workspace
     cargo build --release --locked
     git diff --check
     git grep -nE '(/[U]sers/|[C]:\\)' -- README.md AGENTS.md docs .agents/skills || true

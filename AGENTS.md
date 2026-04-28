@@ -74,8 +74,9 @@ What is true right now:
 - the bounded launch command slice is complete with no-kill default behavior
 - the remaining old CLI migration closure slice is complete; `layout switch`, `alert delete --all`, `pine raw-compile`, and generic `ui` commands are implemented
 - upstream PR follow-up has addressed the first narrow Rust fixes, read-only additions, and guardrails, including `tv data shapes`, `tv data labels` truncation metadata, `tv scanner hotlist`, and optional Git 2.54 config-based hooks
-- the operation layer has been split from one oversized `src/ops.rs` into a thin facade plus feature modules under `src/ops/`
-- the data operation layer has been split from one large `src/ops/data.rs` into a thin facade plus capability modules under `src/ops/data/`
+- the `tradingview-cli` package now lives under `crates/cli/`; the repository root is a virtual Cargo workspace
+- the operation layer has been split from one oversized `crates/cli/src/ops.rs` into a thin facade plus feature modules under `crates/cli/src/ops/`
+- the data operation layer has been split from one large `crates/cli/src/ops/data.rs` into a thin facade plus capability modules under `crates/cli/src/ops/data/`
 - repo-local development guidelines now record module layout, style, contract, and validation rules for future work
 - the original MCP workflow skills have been migrated into repo-local CLI skills with current capability gaps marked
 - this repository should stay narrower than a full reimplementation of the old bridge
@@ -141,21 +142,22 @@ If the answer still depends on unresolved bridge facts, investigate first and wr
 - `docs/internal-tradingview-apis.md`: public-safe reference for non-public TradingView dependencies
 - `docs/notes/upstream-pr-triage-2026-04-25.md`: original upstream PR classification and Rust follow-up priorities
 - `docs/notes/upstream-pr-recheck-2026-04-27.md`: refreshed post-`v0.2.0` upstream PR delta and first compatibility candidates
-- `src/ops.rs`: thin operation facade that re-exports feature modules
-- `src/ops/`: operation implementations grouped by capability
-- `src/ops/indicator.rs`: indicator add/remove/toggle/set operation implementation
-- `src/ops/drawing.rs`: drawing shape/list/get/remove/clear operation implementation
-- `src/ops/pine.rs`: thin Pine operation facade
-- `src/ops/pine/`: Pine Editor source/template/open, static analysis, and server-side check implementations
-- `src/ops/tab.rs`: tab list/switch/new/close operation implementation
-- `src/ops/replay.rs`: replay start/step/stop/status/autoplay/trade operation implementation
-- `src/ops/stream.rs`: read-only JSONL stream operation implementation
-- `src/ops/launch.rs`: bounded TradingView Desktop launch operation implementation
-- `src/ops/scanner.rs`: read-only TradingView scanner Hotlist REST operation implementation
-- `src/ops/saved_layout.rs`: saved chart layout list operation implementation
-- `src/ops/ui.rs`: generic UI automation compatibility command implementation
-- `src/ops/data.rs`: thin data operation facade
-- `src/ops/data/`: data operation implementations grouped by indicator, strategy, and drawing-derived reads
+- `crates/cli/src/`: `tradingview-cli` package source, including the `tv` binary, application layer, CLI surface, and operation adapters
+- `crates/cli/src/ops.rs`: thin operation facade that re-exports feature modules
+- `crates/cli/src/ops/`: operation implementations grouped by capability
+- `crates/cli/src/ops/indicator.rs`: indicator add/remove/toggle/set operation implementation
+- `crates/cli/src/ops/drawing.rs`: drawing shape/list/get/remove/clear operation implementation
+- `crates/cli/src/ops/pine.rs`: thin Pine operation facade
+- `crates/cli/src/ops/pine/`: Pine Editor source/template/open, static analysis, and server-side check implementations
+- `crates/cli/src/ops/tab.rs`: tab list/switch/new/close operation implementation
+- `crates/cli/src/ops/replay.rs`: replay start/step/stop/status/autoplay/trade operation implementation
+- `crates/cli/src/ops/stream.rs`: read-only JSONL stream operation implementation
+- `crates/cli/src/ops/launch.rs`: bounded TradingView Desktop launch operation implementation
+- `crates/cli/src/ops/scanner.rs`: read-only TradingView scanner Hotlist REST operation implementation
+- `crates/cli/src/ops/saved_layout.rs`: saved chart layout list operation implementation
+- `crates/cli/src/ops/ui.rs`: generic UI automation compatibility command implementation
+- `crates/cli/src/ops/data.rs`: thin data operation facade
+- `crates/cli/src/ops/data/`: data operation implementations grouped by indicator, strategy, and drawing-derived reads
 - `scripts/git-hooks/`: optional local Git 2.54 config-based hook scripts
 - `docs/plans/`: active plan index and current ExecPlans
 - `docs/plans/archives/`: completed historical ExecPlans

@@ -45,7 +45,8 @@ package version omits the leading `v`.
   resolution failures return candidates instead of falling back to chart target
   selection.
 - Added the first internal library crate boundary so the `tv` binary can share
-  modules through `src/lib.rs` without changing the CLI contract.
+  modules through the CLI package library root without changing the CLI
+  contract.
 - Extracted shared typed errors, exit-code mapping, and JSON envelope types
   into the internal workspace crate `tradingview-core` under `crates/core/`.
 - Extracted Desktop-free symbol search, symbol info, and symbol quote reads
@@ -59,6 +60,9 @@ package version omits the leading `v`.
   gates.
 - Extracted CDP target discovery, runtime evaluation, screenshot capture, and
   input event primitives into the internal workspace crate `tradingview-cdp`.
+- Moved the `tradingview-cli` package into `crates/cli/`, leaving the
+  repository root as a virtual Cargo workspace while preserving the `tv`
+  binary and CLI behavior.
 
 ## v0.2.0 - 2026-04-27
 

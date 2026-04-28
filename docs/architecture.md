@@ -38,10 +38,21 @@ for these dependencies is `docs/internal-tradingview-apis.md`.
 
 ## Crate boundary
 
-The repository is now a Cargo workspace. The root package remains
-`tradingview-cli`, and the installed binary remains `tv`. The workspace also
-contains internal support crates under `crates/`.
+The repository is now a Cargo workspace. The root `Cargo.toml` is a virtual
+workspace manifest, meaning it has no package of its own. The CLI package lives
+under `crates/cli/`, its package name remains `tradingview-cli`, and the
+installed binary remains `tv`.
 
+- `crates/cli/src/lib.rs` is the `tradingview-cli` package's library crate
+  root. It exposes current internal modules so the binary can share a single
+  module tree and future refactors can extract reusable pieces incrementally.
+- `crates/cli/src/main.rs` is the `tv` binary entrypoint. It owns only process
+  startup and the Windows larger-stack wrapper before calling the library-owned
+  application runner.
+- `crates/cli/src/app.rs` is the CLI package's application-layer facade. It
+  owns CLI parsing, command dispatch, runtime connection orchestration,
+  stdin/file input conversion, stream looping, safety gates, and success/error
+  envelope output.
 - `crates/core/src/lib.rs` owns the shared contract types: `AppError`,
   `ErrorKind`, `SuccessEnvelope`, `ErrorEnvelope`, and `ErrorBody`. These are
   intentionally small and dependency-light so future internal crates can share
@@ -58,15 +69,6 @@ contains internal support crates under `crates/`.
 - `crates/cdp/src/lib.rs` owns the TradingView Desktop connection substrate:
   CDP target discovery, explicit target selection, WebSocket method calls,
   runtime evaluation, screenshot capture, and input events.
-- `src/lib.rs` is the root package's library crate root. It exposes the
-  current internal modules so the binary can share a single module tree and
-  future refactors can extract reusable pieces incrementally.
-- `src/main.rs` is the `tv` binary entrypoint. It owns only process startup
-  and the Windows larger-stack wrapper before calling the library-owned
-  application runner.
-- `src/app.rs` is the root package's application-layer facade. It owns CLI
-  parsing, command dispatch, runtime connection orchestration, stdin/file input
-  conversion, stream looping, safety gates, and success/error envelope output.
 
 These library crates are internal and unstable for now. Treat them as
 maintainability boundaries until a future ExecPlan explicitly marks types or
@@ -76,13 +78,14 @@ functions as stable for downstream Rust callers.
 
 Keep responsibilities separated:
 
-- `src/lib.rs` owns top-level module declarations.
-- `src/main.rs` owns startup for the `tv` binary and delegates application
-  behavior to `tradingview_cli::app`.
-- `src/app.rs` and `src/app/` own application orchestration between the CLI
-  surface and domain operation modules.
-- `src/cli.rs` owns the `clap` command surface, argument definitions, and
-  command names.
+- `crates/cli/src/lib.rs` owns top-level module declarations for the CLI
+  package.
+- `crates/cli/src/main.rs` owns startup for the `tv` binary and delegates
+  application behavior to `tradingview_cli::app`.
+- `crates/cli/src/app.rs` and `crates/cli/src/app/` own application
+  orchestration between the CLI surface and operation adapter modules.
+- `crates/cli/src/cli.rs` owns the `clap` command surface, argument
+  definitions, and command names.
 - `crates/core/src/lib.rs` owns shared typed errors, JSON success/error
   envelopes, and error exit-code mapping.
 - `crates/market/src/lib.rs` owns direct HTTP implementations behind
@@ -94,21 +97,25 @@ Keep responsibilities separated:
 - `crates/cdp/src/lib.rs` owns Chrome DevTools Protocol evaluation,
   screenshot/input primitives, and TradingView CDP target discovery. `tv
   --target-id <CDP_TARGET_ID>` is the primary explicit target selection path.
-- `src/ops.rs` is a thin facade that declares operation modules and re-exports
-  operation functions used by the application dispatch layer.
-- `src/ops/` contains operation implementations grouped by capability.
-- `src/ops/data.rs` is a thin facade for larger sub-surfaces under a
-  same-named directory. `src/ops/pine.rs` is a facade that combines
-  Desktop-free helpers from `tradingview_pine` with CDP-dependent Pine Editor
-  operations under `src/ops/pine/`.
-- `src/ops/market.rs` owns chart-dependent market reads, including current
-  chart quote fallback and OHLCV. Its Desktop-free functions delegate to
-  `tradingview_market`.
-- `src/ops/scanner.rs` delegates scanner reads to `tradingview_scanner`.
+- `crates/cli/src/ops.rs` is a thin facade that declares operation adapter
+  modules and re-exports operation functions used by the application dispatch
+  layer.
+- `crates/cli/src/ops/` contains operation adapter implementations grouped by
+  capability. These modules still own command-facing TradingView operations;
+  do not treat them as a pure domain crate boundary yet.
+- `crates/cli/src/ops/data.rs` is a thin facade for larger sub-surfaces under
+  a same-named directory. `crates/cli/src/ops/pine.rs` is a facade that
+  combines Desktop-free helpers from `tradingview_pine` with CDP-dependent Pine
+  Editor operations under `crates/cli/src/ops/pine/`.
+- `crates/cli/src/ops/market.rs` owns chart-dependent market reads, including
+  current chart quote fallback and OHLCV. Its Desktop-free functions delegate
+  to `tradingview_market`.
+- `crates/cli/src/ops/scanner.rs` delegates scanner reads to
+  `tradingview_scanner`.
 
-Do not grow command implementation logic in `src/main.rs` or `src/cli.rs`.
-If a capability module becomes difficult to scan, split it before adding more
-surface area.
+Do not grow command implementation logic in `crates/cli/src/main.rs` or
+`crates/cli/src/cli.rs`. If a capability module becomes difficult to scan,
+split it before adding more surface area.
 
 ## Module layout
 
@@ -116,9 +123,9 @@ This project uses Rust 2024. Do not introduce `mod.rs`.
 
 Prefer a facade file plus a same-named directory for submodules, as with:
 
-- `src/ops.rs` plus `src/ops/`
-- `src/ops/data.rs` plus `src/ops/data/`
-- `src/ops/pine.rs` plus `src/ops/pine/`
+- `crates/cli/src/ops.rs` plus `crates/cli/src/ops/`
+- `crates/cli/src/ops/data.rs` plus `crates/cli/src/ops/data/`
+- `crates/cli/src/ops/pine.rs` plus `crates/cli/src/ops/pine/`
 
 Add new operations to the capability module that matches the user-visible
 surface, not to a generic catch-all. Keep shared helpers private or

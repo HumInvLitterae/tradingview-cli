@@ -28,14 +28,15 @@ This project uses Rust 2024.
 - Do not introduce `mod.rs`.
 - Prefer facade files with same-named submodule directories for large
   capabilities.
-- Keep top-level module declarations in `src/lib.rs`.
-- Keep `src/cli.rs` focused on command and argument shape.
-- Keep operation implementations under `src/ops/` by capability.
-- Keep `src/main.rs` as a thin process entrypoint. Put CLI parsing, command
-  dispatch, JSON envelope output, stream loops, input conversion, and target
-  connection orchestration under `src/app/`.
+- Keep top-level CLI package module declarations in `crates/cli/src/lib.rs`.
+- Keep `crates/cli/src/cli.rs` focused on command and argument shape.
+- Keep operation adapter implementations under `crates/cli/src/ops/` by
+  capability.
+- Keep `crates/cli/src/main.rs` as a thin process entrypoint. Put CLI parsing,
+  command dispatch, JSON envelope output, stream loops, input conversion, and
+  target connection orchestration under `crates/cli/src/app/`.
 - Put reusable command logic and transport helpers in root library modules
-  rather than adding binary-only code to `src/main.rs`.
+  rather than adding binary-only code to `crates/cli/src/main.rs`.
 - Put cross-crate contract types in `crates/core/` only when they are small,
   low-dependency, and broadly shared. Current examples are typed errors, JSON
   envelopes, and exit-code mapping.
@@ -55,6 +56,10 @@ This project uses Rust 2024.
   or UI automation into another workspace crate merely because they are
   reusable in theory. Extract them only when a concrete follow-up plan proves
   the boundary and dependency set are useful.
+- Do not create a generic `ops` crate just to move files. Current `ops` modules
+  are operation adapters inside the CLI package. Split large modules internally
+  first, then extract domain-specific crates only when their dependency
+  boundary is clear.
 - Treat the workspace library crates as internal and unstable until a future
   plan explicitly defines a stable Rust API.
 - Keep helpers as private as possible; use `pub(super)` for sibling operation
@@ -86,9 +91,9 @@ Operation unit tests should live next to the module they verify under
 `#[cfg(test)]`. They must use fake runtime evaluators and must not require a
 running TradingView Desktop.
 
-CLI contract tests belong under `tests/cli_contract.rs`. They should cover
-argument parsing, structured connection errors, validation errors, and public
-command shape.
+CLI contract tests belong under `crates/cli/tests/cli_contract.rs`. They should
+cover argument parsing, structured connection errors, validation errors, and
+public command shape.
 
 Live CDP smoke checks are useful but environment-dependent. Keep them separate
 from automated tests and record meaningful results in the relevant ExecPlan or
@@ -100,8 +105,8 @@ For code changes, run:
 
 ```bash
 cargo fmt --check
-cargo clippy --all-targets --all-features -- -D warnings
-cargo test
+cargo clippy --workspace --all-targets --all-features -- -D warnings
+cargo test --workspace
 git diff --check
 ```
 
@@ -110,7 +115,7 @@ example:
 
 ```bash
 cargo test screener -- --nocapture
-cargo test --test cli_contract screener -- --nocapture
+cargo test -p tradingview-cli --test cli_contract screener -- --nocapture
 ```
 
 For docs-only changes, at minimum run:

@@ -18,8 +18,9 @@ Keep the Rust-native `tv` CLI reliable and useful as a replacement path for prac
 - missing old CLI commands are migration backlog unless explicitly excluded
 - chart-region screenshots have a first Rust implementation, but remain DOM-selector dependent
 - the high-priority planned read-only migration backlog is complete
-- the operation layer is split into a thin `src/ops.rs` facade plus feature modules under `src/ops/`; do not reintroduce a monolithic ops file or `mod.rs`
-- the data operation layer is split into a thin `src/ops/data.rs` facade plus `indicator`, `strategy`, and `drawings` modules under `src/ops/data/`
+- the `tradingview-cli` package now lives under `crates/cli/`; the repository root is a virtual Cargo workspace
+- the operation layer is split into a thin `crates/cli/src/ops.rs` facade plus feature modules under `crates/cli/src/ops/`; do not reintroduce a monolithic ops file or `mod.rs`
+- the data operation layer is split into a thin `crates/cli/src/ops/data.rs` facade plus `indicator`, `strategy`, and `drawings` modules under `crates/cli/src/ops/data/`
 - stable architecture, development, and release packaging guidance is now summarized under `docs/architecture.md`, `docs/development.md`, and `docs/release-packaging.md`
 - development guidelines are recorded in `docs/development.md`
 - `data depth` is implemented as a read-only DOM-dependent slice and may require a visible DOM or Depth of Market panel
@@ -174,7 +175,7 @@ Focus first on migration readiness:
 - smoke-test the CLI against real TradingView Desktop sessions when available
 - keep GitHub Actions CI aligned with the local baseline
 - exercise the CLI from downstream workflows before deciding the next command slice
-- keep new operation code in the relevant `src/ops/` feature module
+- keep new operation code in the relevant `crates/cli/src/ops/` feature module
 - treat old CLI command coverage as closed unless new evidence shows a missed command; preserve information compatibility for any future compatibility work
 - use `docs/notes/command-lifecycle-balance-audit-2026-04-24.md` when evaluating mutation surfaces and cleanup gaps
 - use `docs/plans/archives/tradingview-cli-remaining-migration-closure.md` and `docs/notes/remaining-deferred-surface-audit-2026-04-25.md` when checking old CLI migration closure
@@ -195,8 +196,8 @@ The Rust v1 implementation is checked locally and in GitHub Actions with:
 
 ```bash
 cargo fmt --check
-cargo clippy --all-targets --all-features -- -D warnings
-cargo test
+cargo clippy --workspace --all-targets --all-features -- -D warnings
+cargo test --workspace
 git diff --check
 ```
 

@@ -17,7 +17,7 @@ Rust.
   `docs/notes/upstream-pr-triage-2026-04-25.md` pass.
 - Rust comparison points:
   `crates/cdp/src/client.rs`, `crates/cdp/src/transport.rs`,
-  `src/ops/launch.rs`, and `src/ops/alert.rs`.
+  `crates/cli/src/ops/launch.rs`, and `crates/cli/src/ops/alert.rs`.
 
 As of this pass, the upstream repository reports 54 open PRs. The previous
 durable triage note recorded 47 open PRs, so the newest delta is the main focus

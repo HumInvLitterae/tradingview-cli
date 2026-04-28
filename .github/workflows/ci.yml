@@ -71,7 +71,7 @@ jobs:
         with:
           components: clippy
       - name: Run clippy
-        run: cargo clippy --all-targets --all-features -- -D warnings
+        run: cargo clippy --workspace --all-targets --all-features -- -D warnings
 
   test:
     name: Test (${{ matrix.os }})
@@ -89,4 +89,4 @@ jobs:
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
       - name: Run tests
-        run: cargo test
+        run: cargo test --workspace

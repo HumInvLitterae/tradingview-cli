@@ -14,9 +14,10 @@ copying a large mixed JavaScript patch into the Rust CLI.
 
 - `gh pr view 89 -R tradesdontlie/tradingview-mcp --json number,title,body,files,updatedAt,url`
 - `gh pr diff 89 -R tradesdontlie/tradingview-mcp`
-- Rust comparison points: `src/ops/alert.rs`, `src/ops/layout.rs`,
-  `src/ops/data/drawings.rs`, `src/ops/drawing.rs`,
-  `src/ops/saved_layout.rs`, and current CLI contract tests.
+- Rust comparison points: `crates/cli/src/ops/alert.rs`,
+  `crates/cli/src/ops/layout.rs`, `crates/cli/src/ops/data/drawings.rs`,
+  `crates/cli/src/ops/drawing.rs`, `crates/cli/src/ops/saved_layout.rs`,
+  and current CLI contract tests.
 
 ## Summary classification
 

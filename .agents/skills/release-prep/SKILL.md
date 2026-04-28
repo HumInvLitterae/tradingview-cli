@@ -35,8 +35,8 @@ Release archives must include only runtime-oriented skills. Before changing pack
 4. **Validate before commit.**
    - Run the normal baseline when code or workflow behavior changes:
      - `cargo fmt --check`
-     - `cargo clippy --all-targets --all-features -- -D warnings`
-     - `cargo test`
+     - `cargo clippy --workspace --all-targets --all-features -- -D warnings`
+     - `cargo test --workspace`
      - `git diff --check`
    - For docs-only release note changes, `git diff --check` plus tracked-doc hygiene scans may be enough.
    - Always scan tracked docs and skills for machine-local paths and account-local metadata before public release.
