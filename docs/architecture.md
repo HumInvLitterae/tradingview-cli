@@ -102,9 +102,11 @@ Keep responsibilities separated:
   layer.
 - `crates/cli/src/domain.rs` is the in-package domain/service facade. Domain
   modules hold reusable command logic that does not depend on clap command
-  enums or CDP runtime objects. The first pilot is `domain::watchlist`, which
-  owns watchlist symbol normalization, bulk-add aggregation, and public payload
-  normalization while the operation adapter still performs TradingView calls.
+  enums or CDP runtime objects. `domain::watchlist` owns watchlist symbol
+  normalization, bulk-add aggregation, and public payload normalization.
+  `domain::alert` owns alert condition validation, public-safe alert payload
+  normalization, sanitization, and API fallback policy. Operation adapters
+  still perform TradingView calls, DOM fallback, and post-checks.
 - `crates/cli/src/ops/` contains operation adapter implementations grouped by
   capability. These modules still own command-facing TradingView operations;
   do not treat them as a pure domain crate boundary yet.
@@ -118,10 +120,11 @@ Keep responsibilities separated:
   active storage fetches, common click dispatch, and shared JavaScript helpers.
 - `crates/cli/src/ops/alert.rs` is the Alert operation adapter facade. It
   groups alert list, normal alert create, Pine `alertcondition()` alert create,
-  alert delete, and public-safe payload normalization under
+  alert delete, and an adapter-facing payload re-export under
   `crates/cli/src/ops/alert/`. Alert remains a CLI-package adapter because it
   still combines page-session APIs, active chart metadata, Pine helper
-  integration, and command-facing fallback policy.
+  integration, DOM fallback, and post-check execution. CDP-free validation and
+  public payload normalization live in `domain::alert`.
 - `crates/cli/src/ops/layout.rs` is the historical Layout operation adapter
   facade. It groups the public watchlist and pane adapter surface through
   `watchlist` and `pane` submodules under `crates/cli/src/ops/layout/`.

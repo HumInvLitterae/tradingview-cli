@@ -1,31 +1,15 @@
-use serde_json::{Value, json};
+use serde_json::Value;
 
 use tradingview_cdp::RuntimeEvaluator;
-use tradingview_core::{AppError, ErrorKind};
+use tradingview_core::AppError;
 
 use super::{
     super::common::{js_string, require_finite},
     payload::{alert_api_error_allows_fallback, normalize_alert_create_payload},
 };
-
-const ALERT_CONDITIONS: [&str; 3] = ["crossing", "greater_than", "less_than"];
-
-pub fn validate_alert_condition(condition: &str) -> Result<(), AppError> {
-    let normalized = normalize_alert_condition(condition)?;
-    if ALERT_CONDITIONS.contains(&normalized.as_str()) {
-        Ok(())
-    } else {
-        Err(AppError::new(
-            ErrorKind::Validation,
-            format!(
-                "Unknown alert condition: {condition}. Use crossing, greater_than, or less_than."
-            ),
-        )
-        .with_details(json!({
-            "supported": ALERT_CONDITIONS,
-        })))
-    }
-}
+use crate::domain::alert::{
+    alert_condition_type, normalize_alert_condition, validate_alert_condition,
+};
 
 pub async fn alert_create_via_api(
     runtime: &mut impl RuntimeEvaluator,
@@ -559,30 +543,12 @@ pub async fn alert_create(
     normalize_alert_create_payload(result)
 }
 
-fn normalize_alert_condition(condition: &str) -> Result<String, AppError> {
-    let normalized = condition.trim().to_ascii_lowercase().replace('-', "_");
-    if normalized.is_empty() {
-        return Err(AppError::new(
-            ErrorKind::Validation,
-            "Alert condition must not be empty",
-        ));
-    }
-    Ok(normalized)
-}
-
-fn alert_condition_type(condition: &str) -> &'static str {
-    match condition {
-        "greater_than" => "cross_up",
-        "less_than" => "cross_down",
-        _ => "cross",
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use std::collections::VecDeque;
 
     use serde_json::{Value, json};
+    use tradingview_core::ErrorKind;
 
     use super::super::super::test_support::FakeRuntime;
     use super::*;

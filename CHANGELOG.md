@@ -86,6 +86,9 @@ package version omits the leading `v`.
 - Introduced an in-package `domain` layer with a first `watchlist` service
   boundary for symbol normalization, bulk aggregation, and payload
   normalization while preserving command behavior.
+- Added a second in-package `domain::alert` boundary for alert condition
+  validation, public-safe alert payload normalization, sanitization, and API
+  fallback policy while preserving command behavior.
 - Added `--direction <long|short>` as an alias for the positional `DIRECTION`
   argument on `tv draw position`.
 
