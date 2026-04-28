@@ -8,9 +8,8 @@ for release and next-phase planning.
 
 - `tradingview-cli-release-builds.md`: tag-triggered GitHub Release builds
   for Linux, macOS, and Windows binaries.
-- `tradingview-cli-alert-adapter-split.md`: split the large Alert operation
-  adapter into facade plus list, create, indicator, delete, and payload
-  modules.
+- `tradingview-cli-layout-adapter-split.md`: split the historical Layout
+  operation adapter into facade plus watchlist and pane modules.
 
 ## Archived plans
 
@@ -49,6 +48,8 @@ Important archived plan categories:
 - Screener columns implementation split
 - Screener remaining engine split into state, screens, filters, and shared
   helper modules
+- Alert operation adapter split into list, create, indicator, delete, and
+  payload modules
 
 For command contract details, prefer the notes under `docs/notes/` before
 reading archived implementation plans.

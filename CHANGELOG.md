@@ -74,6 +74,8 @@ package version omits the leading `v`.
   layer.
 - Split the large Alert operation adapter into facade plus list, create,
   indicator, delete, and payload modules while preserving command behavior.
+- Split the historical Layout operation adapter into facade plus watchlist and
+  pane modules while preserving command behavior.
 
 ## v0.2.0 - 2026-04-27
 

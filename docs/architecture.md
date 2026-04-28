@@ -117,6 +117,11 @@ Keep responsibilities separated:
   `crates/cli/src/ops/alert/`. Alert remains a CLI-package adapter because it
   still combines page-session APIs, active chart metadata, Pine helper
   integration, and command-facing fallback policy.
+- `crates/cli/src/ops/layout.rs` is the historical Layout operation adapter
+  facade. It groups the public watchlist and pane adapter surface through
+  `watchlist` and `pane` submodules under `crates/cli/src/ops/layout/`.
+  Watchlist owns API-backed list mutation plus visible-panel fallback. Pane
+  owns chart pane list, layout, focus, and symbol operations.
 - `crates/cli/src/ops/data.rs` is a thin facade for larger sub-surfaces under
   a same-named directory. `crates/cli/src/ops/pine.rs` is a facade that
   combines Desktop-free helpers from `tradingview_pine` with CDP-dependent Pine
@@ -140,6 +145,7 @@ Prefer a facade file plus a same-named directory for submodules, as with:
 - `crates/cli/src/ops.rs` plus `crates/cli/src/ops/`
 - `crates/cli/src/ops/screener.rs` plus `crates/cli/src/ops/screener/`
 - `crates/cli/src/ops/alert.rs` plus `crates/cli/src/ops/alert/`
+- `crates/cli/src/ops/layout.rs` plus `crates/cli/src/ops/layout/`
 - `crates/cli/src/ops/data.rs` plus `crates/cli/src/ops/data/`
 - `crates/cli/src/ops/pine.rs` plus `crates/cli/src/ops/pine/`
 

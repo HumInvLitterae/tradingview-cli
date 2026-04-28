@@ -51,6 +51,10 @@ This project uses Rust 2024.
   indicator-alert create, delete, and public-safe payload normalization live
   under `crates/cli/src/ops/alert/`, while `alert.rs` preserves the adapter
   exports used by dispatch.
+- Keep historical adapter names as facades when that avoids churn. Layout is
+  now a facade over `crates/cli/src/ops/layout/watchlist.rs` and
+  `crates/cli/src/ops/layout/pane.rs`; do not mix new watchlist and pane
+  implementation bodies back into the facade file.
 - Keep `crates/cli/src/main.rs` as a thin process entrypoint. Put CLI parsing,
   command dispatch, JSON envelope output, stream loops, input conversion, and
   target connection orchestration under `crates/cli/src/app/`.
