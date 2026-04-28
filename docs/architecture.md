@@ -103,6 +103,12 @@ Keep responsibilities separated:
 - `crates/cli/src/ops/` contains operation adapter implementations grouped by
   capability. These modules still own command-facing TradingView operations;
   do not treat them as a pure domain crate boundary yet.
+- `crates/cli/src/ops/screener.rs` is the Screener operation adapter facade.
+  It groups the public Screener adapter surface through `state`, `screens`,
+  `filters`, `columns`, and `validation` submodules under
+  `crates/cli/src/ops/screener/`. The current implementation engine remains
+  inside that directory until deeper behavior-preserving splits move bodies one
+  sub-surface at a time.
 - `crates/cli/src/ops/data.rs` is a thin facade for larger sub-surfaces under
   a same-named directory. `crates/cli/src/ops/pine.rs` is a facade that
   combines Desktop-free helpers from `tradingview_pine` with CDP-dependent Pine
@@ -124,6 +130,7 @@ This project uses Rust 2024. Do not introduce `mod.rs`.
 Prefer a facade file plus a same-named directory for submodules, as with:
 
 - `crates/cli/src/ops.rs` plus `crates/cli/src/ops/`
+- `crates/cli/src/ops/screener.rs` plus `crates/cli/src/ops/screener/`
 - `crates/cli/src/ops/data.rs` plus `crates/cli/src/ops/data/`
 - `crates/cli/src/ops/pine.rs` plus `crates/cli/src/ops/pine/`
 

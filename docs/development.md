@@ -32,6 +32,11 @@ This project uses Rust 2024.
 - Keep `crates/cli/src/cli.rs` focused on command and argument shape.
 - Keep operation adapter implementations under `crates/cli/src/ops/` by
   capability.
+- When an operation adapter grows too large, split it behind a facade file and
+  a same-named directory before creating a new workspace crate. `screener` is
+  the current model for this first step: stable public adapter exports at the
+  facade, sub-surface modules underneath, and deeper implementation movement in
+  later behavior-preserving slices.
 - Keep `crates/cli/src/main.rs` as a thin process entrypoint. Put CLI parsing,
   command dispatch, JSON envelope output, stream loops, input conversion, and
   target connection orchestration under `crates/cli/src/app/`.

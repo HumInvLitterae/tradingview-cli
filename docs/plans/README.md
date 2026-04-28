@@ -8,8 +8,8 @@ for release and next-phase planning.
 
 - `tradingview-cli-release-builds.md`: tag-triggered GitHub Release builds
   for Linux, macOS, and Windows binaries.
-- `tradingview-cli-cli-package-relocation.md`: move the CLI package under
-  `crates/cli/` and keep the root as a virtual workspace.
+- `tradingview-cli-screener-adapter-split.md`: split the large Screener
+  operation adapter behind a facade and sub-surface modules.
 
 ## Archived plans
 
@@ -42,6 +42,7 @@ Important archived plan categories:
 - Desktop-free scanner and Pine support crate extraction
 - application-layer split for the thin `tv` binary and library-owned runner
 - CDP client and target-discovery crate extraction
+- CLI package relocation under `crates/cli/`
 
 For command contract details, prefer the notes under `docs/notes/` before
 reading archived implementation plans.

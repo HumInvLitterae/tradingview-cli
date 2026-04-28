@@ -63,6 +63,8 @@ package version omits the leading `v`.
 - Moved the `tradingview-cli` package into `crates/cli/`, leaving the
   repository root as a virtual Cargo workspace while preserving the `tv`
   binary and CLI behavior.
+- Split the large Screener operation adapter behind a facade and sub-surface
+  modules while preserving the CLI surface and behavior.
 
 ## v0.2.0 - 2026-04-27
 
