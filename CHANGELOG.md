@@ -83,6 +83,9 @@ package version omits the leading `v`.
 - Split the generic UI automation adapter into facade plus DOM, input,
   selector, and eval modules while preserving command behavior and the
   application-layer unsafe eval gate.
+- Introduced an in-package `domain` layer with a first `watchlist` service
+  boundary for symbol normalization, bulk aggregation, and payload
+  normalization while preserving command behavior.
 - Added `--direction <long|short>` as an alias for the positional `DIRECTION`
   argument on `tv draw position`.
 

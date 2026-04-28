@@ -1,14 +1,17 @@
-use std::{collections::HashSet, time::Duration};
+use std::time::Duration;
 
 use serde_json::{Value, json};
 
 use tradingview_cdp::{KeyEvent, KeyEventType, RuntimeEvaluator};
 use tradingview_core::{AppError, ErrorKind};
 
-use super::super::common::js_string;
+pub use crate::domain::watchlist::validate_watchlist_add_bulk_request;
+use crate::domain::watchlist::{
+    WatchlistBulkAccumulator, normalize_watchlist_api_payload, normalize_watchlist_remove_payload,
+    normalize_watchlist_symbol, unique_watchlist_symbol_count, watchlist_api_error_allows_fallback,
+};
 
-const MAX_WATCHLIST_BULK_SYMBOLS: usize = 50;
-const MAX_WATCHLIST_BULK_DELAY_MS: u64 = 10_000;
+use super::super::common::js_string;
 
 pub async fn watchlist_get(runtime: &mut impl RuntimeEvaluator) -> Result<Value, AppError> {
     runtime
@@ -319,38 +322,6 @@ pub async fn watchlist_add(
     }))
 }
 
-pub fn validate_watchlist_add_bulk_request(
-    symbols: &[String],
-    delay_ms: u64,
-) -> Result<(), AppError> {
-    if symbols.is_empty() {
-        return Err(AppError::new(
-            ErrorKind::Validation,
-            "At least one symbol is required",
-        ));
-    }
-    if delay_ms > MAX_WATCHLIST_BULK_DELAY_MS {
-        return Err(AppError::new(
-            ErrorKind::Validation,
-            format!("--delay-ms must be at most {MAX_WATCHLIST_BULK_DELAY_MS}"),
-        ));
-    }
-
-    let mut unique = HashSet::new();
-    for symbol in symbols {
-        let normalized = normalize_watchlist_symbol(symbol)?;
-        unique.insert(normalized);
-    }
-    if unique.len() > MAX_WATCHLIST_BULK_SYMBOLS {
-        return Err(AppError::new(
-            ErrorKind::Validation,
-            format!("At most {MAX_WATCHLIST_BULK_SYMBOLS} unique symbols can be added at once"),
-        ));
-    }
-
-    Ok(())
-}
-
 pub async fn watchlist_add_bulk(
     runtime: &mut impl RuntimeEvaluator,
     symbols: &[String],
@@ -359,85 +330,27 @@ pub async fn watchlist_add_bulk(
 ) -> Result<Value, AppError> {
     validate_watchlist_add_bulk_request(symbols, delay_ms)?;
 
-    let unique_total = symbols
-        .iter()
-        .map(|symbol| normalize_watchlist_symbol(symbol))
-        .collect::<Result<HashSet<_>, _>>()?
-        .len();
-    let mut seen = HashSet::new();
-    let mut results = Vec::new();
-    let mut processed_count = 0usize;
-    let mut added_count = 0usize;
-    let mut already_present_count = 0usize;
-    let mut failed_count = 0usize;
-    let mut skipped_duplicate_count = 0usize;
+    let unique_total = unique_watchlist_symbol_count(symbols)?;
+    let mut accumulator = WatchlistBulkAccumulator::new(symbols.len(), delay_ms, allow_partial);
 
     for (input_index, symbol) in symbols.iter().enumerate() {
         let normalized = normalize_watchlist_symbol(symbol)?;
-        if !seen.insert(normalized.clone()) {
-            skipped_duplicate_count += 1;
-            results.push(json!({
-                "input_index": input_index,
-                "symbol": normalized,
-                "status": "skipped_duplicate",
-            }));
+        if !accumulator.mark_seen_or_duplicate(input_index, &normalized) {
             continue;
         }
 
-        processed_count += 1;
         match watchlist_add(runtime, &normalized).await {
-            Ok(data) => {
-                let action = data
-                    .get("action")
-                    .and_then(Value::as_str)
-                    .unwrap_or("added");
-                let status = if action == "already_present" {
-                    already_present_count += 1;
-                    "already_present"
-                } else {
-                    added_count += 1;
-                    "added"
-                };
-                results.push(json!({
-                    "input_index": input_index,
-                    "symbol": normalized,
-                    "status": status,
-                    "data": data,
-                }));
-            }
-            Err(error) => {
-                failed_count += 1;
-                results.push(json!({
-                    "input_index": input_index,
-                    "symbol": normalized,
-                    "status": "failed",
-                    "error": {
-                        "kind": error.kind,
-                        "message": error.message,
-                        "details": error.details,
-                    },
-                }));
-            }
+            Ok(data) => accumulator.record_success(input_index, &normalized, data),
+            Err(error) => accumulator.record_failure(input_index, &normalized, error),
         }
 
-        if delay_ms > 0 && processed_count < unique_total {
+        if delay_ms > 0 && accumulator.processed_count() < unique_total {
             tokio::time::sleep(Duration::from_millis(delay_ms)).await;
         }
     }
 
-    let payload = json!({
-        "action": "bulk_add",
-        "requested_count": symbols.len(),
-        "processed_count": processed_count,
-        "added_count": added_count,
-        "already_present_count": already_present_count,
-        "failed_count": failed_count,
-        "skipped_duplicate_count": skipped_duplicate_count,
-        "delay_ms": delay_ms,
-        "allow_partial": allow_partial,
-        "results": results,
-    });
-
+    let failed_count = accumulator.failed_count();
+    let payload = accumulator.payload();
     if failed_count > 0 && !allow_partial {
         return Err(AppError::new(
             ErrorKind::InternalApiUnavailable,
@@ -447,17 +360,6 @@ pub async fn watchlist_add_bulk(
     }
 
     Ok(payload)
-}
-
-fn normalize_watchlist_symbol(symbol: &str) -> Result<String, AppError> {
-    let symbol = symbol.trim();
-    if symbol.is_empty() {
-        return Err(AppError::new(
-            ErrorKind::Validation,
-            "Symbol must not be empty",
-        ));
-    }
-    Ok(symbol.to_string())
 }
 
 pub async fn watchlist_add_via_api(
@@ -756,39 +658,6 @@ async fn watchlist_mutate_via_api(
     normalize_watchlist_api_payload(result)
 }
 
-fn normalize_watchlist_api_payload(data: Value) -> Result<Value, AppError> {
-    if let Some(message) = data.get("error").and_then(Value::as_str) {
-        let kind = match data.get("error_kind").and_then(Value::as_str) {
-            Some("validation") => ErrorKind::Validation,
-            _ => ErrorKind::InternalApiUnavailable,
-        };
-        return Err(AppError::new(kind, message.to_string()).with_details(data));
-    }
-
-    if data.get("source").and_then(Value::as_str) != Some("watchlist_api") {
-        return Err(AppError::new(
-            ErrorKind::InternalApiUnavailable,
-            "Watchlist API response shape was not recognized",
-        )
-        .with_details(json!({
-            "phase": "unrecognized_response",
-            "api_fallback_allowed": true,
-            "source": data.get("source").cloned().unwrap_or(Value::Null),
-        })));
-    }
-
-    Ok(data)
-}
-
-fn watchlist_api_error_allows_fallback(error: &AppError) -> bool {
-    error
-        .details
-        .as_ref()
-        .and_then(|details| details.get("api_fallback_allowed"))
-        .and_then(Value::as_bool)
-        .unwrap_or(false)
-}
-
 pub async fn watchlist_remove(
     runtime: &mut impl RuntimeEvaluator,
     symbol: &str,
@@ -988,55 +857,6 @@ pub async fn watchlist_remove(
 
     let result = runtime.evaluate(&expression, true).await?;
     normalize_watchlist_remove_payload(result)
-}
-
-fn normalize_watchlist_remove_payload(data: Value) -> Result<Value, AppError> {
-    if let Some(message) = data.get("error").and_then(Value::as_str) {
-        let kind = match data.get("error_kind").and_then(Value::as_str) {
-            Some("validation") => ErrorKind::Validation,
-            _ => ErrorKind::InternalApiUnavailable,
-        };
-        return Err(AppError::new(kind, message.to_string()).with_details(data));
-    }
-
-    if !data
-        .get("removed")
-        .and_then(Value::as_bool)
-        .unwrap_or(false)
-    {
-        return Err(AppError::new(
-            ErrorKind::InternalApiUnavailable,
-            "Watchlist remove did not remove the requested symbol",
-        )
-        .with_details(data));
-    }
-
-    Ok(json!({
-        "symbol": data.get("symbol").cloned().unwrap_or(Value::Null),
-        "requested_symbol": data.get("requested_symbol").cloned().unwrap_or(Value::Null),
-        "action": data.get("action").cloned().unwrap_or_else(|| json!("removed")),
-        "removed": true,
-        "source": data
-            .get("source")
-            .and_then(Value::as_str)
-            .unwrap_or("dom_row"),
-        "before_count": data.get("before_count").cloned().unwrap_or(Value::Null),
-        "after_count": data.get("after_count").cloned().unwrap_or(Value::Null),
-        "matched_before": data
-            .get("matched_before")
-            .and_then(Value::as_bool)
-            .unwrap_or(true),
-        "matched_after": data
-            .get("matched_after")
-            .and_then(Value::as_bool)
-            .unwrap_or(false),
-        "remove_method": data.get("remove_method").cloned().unwrap_or(Value::Null),
-        "click_method": data.get("click_method").cloned().unwrap_or(Value::Null),
-        "confirmation_clicked": data
-            .get("confirmation_clicked")
-            .and_then(Value::as_bool)
-            .unwrap_or(false),
-    }))
 }
 
 async fn ensure_watchlist_panel_open(
@@ -1472,40 +1292,6 @@ mod tests {
         let details = err.details.unwrap();
         assert_eq!(details["failed_count"], 1);
         assert_eq!(details["results"][0]["status"], "failed");
-    }
-
-    #[test]
-    fn watchlist_add_bulk_validates_inputs_before_connecting() {
-        assert_eq!(
-            validate_watchlist_add_bulk_request(&[], 0)
-                .unwrap_err()
-                .kind,
-            ErrorKind::Validation
-        );
-        assert_eq!(
-            validate_watchlist_add_bulk_request(&[" ".to_string()], 0)
-                .unwrap_err()
-                .kind,
-            ErrorKind::Validation
-        );
-        assert_eq!(
-            validate_watchlist_add_bulk_request(
-                &["NASDAQ:AAPL".to_string()],
-                MAX_WATCHLIST_BULK_DELAY_MS + 1,
-            )
-            .unwrap_err()
-            .kind,
-            ErrorKind::Validation
-        );
-        let too_many = (0..=MAX_WATCHLIST_BULK_SYMBOLS)
-            .map(|index| format!("NASDAQ:TEST{index}"))
-            .collect::<Vec<_>>();
-        assert_eq!(
-            validate_watchlist_add_bulk_request(&too_many, 0)
-                .unwrap_err()
-                .kind,
-            ErrorKind::Validation
-        );
     }
 
     #[tokio::test]

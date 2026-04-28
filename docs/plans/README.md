@@ -8,9 +8,9 @@ for release and next-phase planning.
 
 - `tradingview-cli-release-builds.md`: tag-triggered GitHub Release builds
   for Linux, macOS, and Windows binaries.
-- `tradingview-cli-ui-adapter-split.md`: split the generic UI automation
-  adapter into facade plus DOM, input, selector, and eval modules while keeping
-  the unsafe eval gate in the application layer.
+- `tradingview-cli-operation-domain-boundary.md`: introduce the first
+  in-package domain/service boundary by moving reusable watchlist validation,
+  aggregation, and payload normalization out of the operation adapter.
 
 ## Archived plans
 
@@ -55,6 +55,8 @@ Important archived plan categories:
 - Pine Editor operation adapter split into runtime, source, scripts, and
   compile modules
 - Drawing, Replay, and chart-dependent Market medium adapter split
+- Generic UI automation adapter split into DOM, input, selector, and eval
+  modules
 
 For command contract details, prefer the notes under `docs/notes/` before
 reading archived implementation plans.

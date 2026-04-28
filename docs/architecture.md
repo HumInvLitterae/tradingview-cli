@@ -100,6 +100,11 @@ Keep responsibilities separated:
 - `crates/cli/src/ops.rs` is a thin facade that declares operation adapter
   modules and re-exports operation functions used by the application dispatch
   layer.
+- `crates/cli/src/domain.rs` is the in-package domain/service facade. Domain
+  modules hold reusable command logic that does not depend on clap command
+  enums or CDP runtime objects. The first pilot is `domain::watchlist`, which
+  owns watchlist symbol normalization, bulk-add aggregation, and public payload
+  normalization while the operation adapter still performs TradingView calls.
 - `crates/cli/src/ops/` contains operation adapter implementations grouped by
   capability. These modules still own command-facing TradingView operations;
   do not treat them as a pure domain crate boundary yet.
@@ -120,8 +125,10 @@ Keep responsibilities separated:
 - `crates/cli/src/ops/layout.rs` is the historical Layout operation adapter
   facade. It groups the public watchlist and pane adapter surface through
   `watchlist` and `pane` submodules under `crates/cli/src/ops/layout/`.
-  Watchlist owns API-backed list mutation plus visible-panel fallback. Pane
-  owns chart pane list, layout, focus, and symbol operations.
+  Watchlist uses `domain::watchlist` for CDP-free normalization and bulk
+  aggregation, while the adapter owns API-backed mutation execution,
+  visible-panel fallback, and post-checks. Pane owns chart pane list, layout,
+  focus, and symbol operations.
 - `crates/cli/src/ops/data.rs` is a thin facade for larger sub-surfaces under
   a same-named directory. `crates/cli/src/ops/pine.rs` is a facade that
   combines Desktop-free helpers from `tradingview_pine` with CDP-dependent Pine

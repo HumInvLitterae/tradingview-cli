@@ -32,6 +32,11 @@ This project uses Rust 2024.
 - Keep `crates/cli/src/cli.rs` focused on command and argument shape.
 - Keep operation adapter implementations under `crates/cli/src/ops/` by
   capability.
+- Move reusable command logic into `crates/cli/src/domain/` before extracting a
+  new workspace crate. Domain modules must not depend on clap command enums or
+  CDP runtime objects. The first accepted example is `domain::watchlist`, which
+  owns symbol normalization, bulk aggregation, and payload normalization while
+  `ops/layout/watchlist.rs` keeps TradingView execution and fallback behavior.
 - When an operation adapter grows too large, split it behind a facade file and
   a same-named directory before creating a new workspace crate. `screener` is
   the current model: stable public adapter exports at the facade, sub-surface
