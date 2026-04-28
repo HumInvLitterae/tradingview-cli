@@ -125,7 +125,10 @@ Keep responsibilities separated:
 - `crates/cli/src/ops/data.rs` is a thin facade for larger sub-surfaces under
   a same-named directory. `crates/cli/src/ops/pine.rs` is a facade that
   combines Desktop-free helpers from `tradingview_pine` with CDP-dependent Pine
-  Editor operations under `crates/cli/src/ops/pine/`.
+  Editor operations under `crates/cli/src/ops/pine/`. The Pine Editor adapter
+  keeps `editor.rs` as a facade over `runtime`, `source`, `scripts`, and
+  `compile` modules so Monaco/CDP helpers, source editing, saved-script
+  operations, and compile/report reads stay separated.
 - `crates/cli/src/ops/market.rs` owns chart-dependent market reads, including
   current chart quote fallback and OHLCV. Its Desktop-free functions delegate
   to `tradingview_market`.

@@ -55,6 +55,10 @@ This project uses Rust 2024.
   now a facade over `crates/cli/src/ops/layout/watchlist.rs` and
   `crates/cli/src/ops/layout/pane.rs`; do not mix new watchlist and pane
   implementation bodies back into the facade file.
+- Keep CDP-dependent Pine Editor operations in the CLI package, but split them
+  by Editor sub-surface. `crates/cli/src/ops/pine/editor.rs` is now a facade
+  over `runtime`, `source`, `scripts`, and `compile` modules. Desktop-free
+  Pine static analysis and facade checks still belong in `crates/pine/`.
 - Keep `crates/cli/src/main.rs` as a thin process entrypoint. Put CLI parsing,
   command dispatch, JSON envelope output, stream loops, input conversion, and
   target connection orchestration under `crates/cli/src/app/`.
@@ -68,7 +72,8 @@ This project uses Rust 2024.
 - Put credential-free, Desktop-free scanner reads in `crates/scanner/` when
   they can be exercised without TradingView Desktop.
 - Put Desktop-free Pine helpers in `crates/pine/` when they are local source
-  analysis or Pine facade checks. Keep Pine Editor operations in the root crate.
+  analysis or Pine facade checks. Keep Pine Editor operations in the CLI
+  package because they depend on CDP, Monaco, and visible TradingView UI state.
 - Put shared TradingView Desktop CDP connection code in `crates/cdp/`. Do not
   duplicate target discovery, `RuntimeEvaluator`, screenshot/input event
   primitives, or target handoff helpers inside operation modules.

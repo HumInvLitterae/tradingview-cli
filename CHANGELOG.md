@@ -76,6 +76,8 @@ package version omits the leading `v`.
   indicator, delete, and payload modules while preserving command behavior.
 - Split the historical Layout operation adapter into facade plus watchlist and
   pane modules while preserving command behavior.
+- Split the CDP-dependent Pine Editor adapter into facade plus runtime, source,
+  scripts, and compile modules while preserving command behavior.
 
 ## v0.2.0 - 2026-04-27
 
