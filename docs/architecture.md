@@ -129,9 +129,19 @@ Keep responsibilities separated:
   keeps `editor.rs` as a facade over `runtime`, `source`, `scripts`, and
   `compile` modules so Monaco/CDP helpers, source editing, saved-script
   operations, and compile/report reads stay separated.
-- `crates/cli/src/ops/market.rs` owns chart-dependent market reads, including
-  current chart quote fallback and OHLCV. Its Desktop-free functions delegate
-  to `tradingview_market`.
+- `crates/cli/src/ops/drawing.rs` is the Drawing operation adapter facade. It
+  groups validation, drawing creation, drawing reads, and drawing lifecycle
+  cleanup under `crates/cli/src/ops/drawing/` while preserving the public
+  `draw` command surface.
+- `crates/cli/src/ops/replay.rs` is the Replay operation adapter facade. It
+  groups validation, start/step/stop control, autoplay, trade actions, status
+  reads, and replay payload normalization under
+  `crates/cli/src/ops/replay/`.
+- `crates/cli/src/ops/market.rs` is the chart-dependent Market operation
+  adapter facade. Its `direct` module delegates Desktop-free symbol search,
+  symbol info, and symbol quote reads to `tradingview_market`; its `quote` and
+  `ohlcv` modules keep current-chart quote fallback, quote freshness checks,
+  and chart-bars reads in the CLI package.
 - `crates/cli/src/ops/scanner.rs` delegates scanner reads to
   `tradingview_scanner`.
 

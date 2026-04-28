@@ -59,6 +59,11 @@ This project uses Rust 2024.
   by Editor sub-surface. `crates/cli/src/ops/pine/editor.rs` is now a facade
   over `runtime`, `source`, `scripts`, and `compile` modules. Desktop-free
   Pine static analysis and facade checks still belong in `crates/pine/`.
+- Keep medium adapters behind the same facade pattern once they mix validation,
+  reads, mutation, and payload shaping. Drawing, Replay, and chart-dependent
+  Market now use same-named implementation directories under
+  `crates/cli/src/ops/`. Do not gather new Drawing/Replay/Market operation
+  bodies back into the facade files.
 - Keep `crates/cli/src/main.rs` as a thin process entrypoint. Put CLI parsing,
   command dispatch, JSON envelope output, stream loops, input conversion, and
   target connection orchestration under `crates/cli/src/app/`.

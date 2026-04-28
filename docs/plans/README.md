@@ -8,9 +8,9 @@ for release and next-phase planning.
 
 - `tradingview-cli-release-builds.md`: tag-triggered GitHub Release builds
   for Linux, macOS, and Windows binaries.
-- `tradingview-cli-pine-editor-adapter-split.md`: split the CDP-dependent Pine
-  Editor operation adapter into facade plus runtime, source, scripts, and
-  compile modules.
+- `tradingview-cli-medium-adapter-split.md`: split the Drawing, Replay, and
+  chart-dependent Market operation adapters into facade plus focused
+  submodules.
 
 ## Archived plans
 
@@ -52,6 +52,8 @@ Important archived plan categories:
 - Alert operation adapter split into list, create, indicator, delete, and
   payload modules
 - Layout operation adapter split into watchlist and pane modules
+- Pine Editor operation adapter split into runtime, source, scripts, and
+  compile modules
 
 For command contract details, prefer the notes under `docs/notes/` before
 reading archived implementation plans.
