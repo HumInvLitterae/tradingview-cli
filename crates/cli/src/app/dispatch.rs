@@ -11,28 +11,26 @@ use crate::{
         ScreenerCommand, ScreenerFiltersCommand, ScreenerScreensCommand, TabCommand, UiCommand,
         WatchlistCommand,
     },
-    domain::{
-        alert::validate_alert_condition,
-        drawing::{
-            DrawingPoint, DrawingPositionRequest, DrawingShapeRequest, PositionDirection,
-            parse_drawing_overrides, validate_position_request,
-        },
-        replay::{
-            validate_replay_autoplay_speed, validate_replay_date, validate_replay_trade_action,
-        },
-        screener::validation::{
-            validate_screener_column_add_request, validate_screener_column_reorder_request,
-            validate_screener_column_selector, validate_screener_filter_add_request,
-            validate_screener_filter_clear, validate_screener_filter_modify_request,
-            validate_screener_filter_selector, validate_screener_limit,
-            validate_screener_screen_delete_request, validate_screener_screen_name,
-            validate_screener_screen_rename_request, validate_screener_screen_test_mutation_name,
-        },
-        watchlist::validate_watchlist_add_bulk_request,
-    },
     ops,
 };
 use tradingview_cdp::TransportConfig;
+use tradingview_model::{
+    alert::validate_alert_condition,
+    drawing::{
+        DrawingPoint, DrawingPositionRequest, DrawingShapeRequest, PositionDirection,
+        parse_drawing_overrides, validate_position_request,
+    },
+    replay::{validate_replay_autoplay_speed, validate_replay_date, validate_replay_trade_action},
+    screener::validation::{
+        validate_screener_column_add_request, validate_screener_column_reorder_request,
+        validate_screener_column_selector, validate_screener_filter_add_request,
+        validate_screener_filter_clear, validate_screener_filter_modify_request,
+        validate_screener_filter_selector, validate_screener_limit,
+        validate_screener_screen_delete_request, validate_screener_screen_name,
+        validate_screener_screen_rename_request, validate_screener_screen_test_mutation_name,
+    },
+    watchlist::validate_watchlist_add_bulk_request,
+};
 
 pub async fn dispatch(
     command: Command,

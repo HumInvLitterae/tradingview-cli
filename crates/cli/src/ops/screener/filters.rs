@@ -18,7 +18,7 @@ use super::{
         filter_modify_range_payload, validate_screener_filter_clear,
     },
 };
-use crate::domain::screener::filters::{
+use tradingview_model::screener::filters::{
     ScreenerFilterTarget, ScreenerStorageFilterTarget, added_filter_target,
     ensure_storage_filter_alignment, ensure_storage_filter_index,
     ensure_test_screener_screen_for_filter_mutation, filter_target_payload,

@@ -7,7 +7,7 @@ use super::{
     super::common::{js_string, require_finite},
     payload::{alert_api_error_allows_fallback, normalize_alert_create_payload},
 };
-use crate::domain::alert::{
+use tradingview_model::alert::{
     alert_condition_type, normalize_alert_condition, validate_alert_condition,
 };
 

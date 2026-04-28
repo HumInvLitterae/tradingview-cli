@@ -20,6 +20,7 @@ tokio = { version = "1.52.1", features = ["macros", "rt-multi-thread", "time", "
 tradingview-cdp = { path = "../cdp" }
 tradingview-core = { path = "../core" }
 tradingview-market = { path = "../market" }
+tradingview-model = { path = "../model" }
 tradingview-pine = { path = "../pine" }
 tradingview-scanner = { path = "../scanner" }
 tracing = "0.1.44"

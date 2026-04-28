@@ -5,8 +5,8 @@ use serde_json::{Value, json};
 use tradingview_cdp::{KeyEvent, KeyEventType, RuntimeEvaluator};
 use tradingview_core::{AppError, ErrorKind};
 
-pub use crate::domain::watchlist::validate_watchlist_add_bulk_request;
-use crate::domain::watchlist::{
+pub use tradingview_model::watchlist::validate_watchlist_add_bulk_request;
+use tradingview_model::watchlist::{
     WatchlistBulkAccumulator, normalize_watchlist_api_payload, normalize_watchlist_remove_payload,
     normalize_watchlist_symbol, unique_watchlist_symbol_count, watchlist_api_error_allows_fallback,
 };

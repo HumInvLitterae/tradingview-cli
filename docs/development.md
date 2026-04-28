@@ -32,23 +32,17 @@ This project uses Rust 2024.
 - Keep `crates/cli/src/cli.rs` focused on command and argument shape.
 - Keep operation adapter implementations under `crates/cli/src/ops/` by
   capability.
-- Move reusable command logic into `crates/cli/src/domain/` before extracting a
-  new workspace crate. Domain modules must not depend on clap command enums or
-  CDP runtime objects. Accepted examples are `domain::watchlist`, which owns
-  symbol normalization, bulk aggregation, and payload normalization, and
-  `domain::alert`, which owns alert condition validation, public-safe payload
-  normalization, sanitization, and API fallback policy, and `domain::replay`,
-  which owns replay date/speed/action validation plus replay action/status
-  payload normalization, and `domain::drawing`, which owns drawing request
-  structs, direction parsing, override parsing, and position validation, and
-  `domain::screener`, which owns Screener validation, target resolution, and
-  storage payload shaping. Operation adapters keep TradingView execution, DOM
-  fallback, chart API JavaScript, page-session API calls, runtime access, and
-  post-check behavior.
-- Let `crates/cli/src/app/dispatch.rs` call `domain::*` directly for pure
+- Put shared I/O-free command model logic in `crates/model/`. The
+  `tradingview-model` crate owns validation, request interpretation, selector
+  and target resolution, payload normalization/shaping, and fallback policy
+  decisions. It must not depend on clap command enums, CDP runtime objects,
+  HTTP clients, page-session execution, or UI automation. Accepted examples are
+  `tradingview_model::watchlist`, `alert`, `replay`, `drawing`, and
+  `screener`.
+- Let `crates/cli/src/app/dispatch.rs` call `tradingview_model::*` directly for pure
   validation, request interpretation, target resolution, and payload shaping.
   Use `ops::*` from dispatch only for executable TradingView operations or
-  adapter-specific request types. Do not re-export domain helpers through
+  adapter-specific request types. Do not re-export model helpers through
   `ops.rs` solely for dispatch convenience.
 - When an operation adapter grows too large, split it behind a facade file and
   a same-named directory before creating a new workspace crate. `screener` is
@@ -57,7 +51,7 @@ This project uses Rust 2024.
   a narrow common module.
 - Prefer moving CDP-free input boundaries before runtime/storage/UI code.
   Screener is the larger example: validation, target resolution, and storage
-  payload shaping live in `domain::screener`, while page-session storage
+  payload shaping live in `tradingview_model::screener`, while page-session storage
   fetch/save and UI operations remain in `ops/screener`.
 - Storage-backed sub-surfaces are the next-best split candidates once
   validation is isolated. Screener columns live in
@@ -83,9 +77,9 @@ This project uses Rust 2024.
   `crates/cli/src/ops/`. Do not gather new Drawing/Replay/Market operation
   bodies back into the facade files.
 - Once an adapter split exposes CDP-free request interpretation or validation,
-  move that logic into `crates/cli/src/domain/` if it is reusable and not tied
+  move that logic into `crates/model/` if it is reusable and not tied
   to clap or live page state. Drawing is the request-boundary example:
-  `domain::drawing` owns the request structs and position validation, while
+  `tradingview_model::drawing` owns the request structs and position validation, while
   `ops/drawing` owns shape creation, entity post-checks, reads, and cleanup.
 - Keep generic UI automation safety-aware. `crates/cli/src/ops/ui.rs` is a
   facade over `dom`, `input`, `selectors`, and `eval`; do not move the
@@ -99,6 +93,10 @@ This project uses Rust 2024.
 - Put cross-crate contract types in `crates/core/` only when they are small,
   low-dependency, and broadly shared. Current examples are typed errors, JSON
   envelopes, and exit-code mapping.
+- Put shared I/O-free request models, validation, normalization, target
+  resolution, and public-safe payload shaping in `crates/model/`. The model
+  crate may use `tradingview-core` and `serde_json`, but it must stay free of
+  network, CDP, clap, and UI dependencies.
 - Put credential-free, Desktop-free market reads in `crates/market/` when they
   do not depend on CDP, chart state, or UI automation.
 - Put credential-free, Desktop-free scanner reads in `crates/scanner/` when

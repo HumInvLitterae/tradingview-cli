@@ -1887,6 +1887,7 @@ dependencies = [
  "tradingview-cdp",
  "tradingview-core",
  "tradingview-market",
+ "tradingview-model",
  "tradingview-pine",
  "tradingview-scanner",
 ]
@@ -1905,6 +1906,14 @@ name = "tradingview-market"
 version = "0.2.0"
 dependencies = [
  "reqwest",
+ "serde_json",
+ "tradingview-core",
+]
+
+[[package]]
+name = "tradingview-model"
+version = "0.2.0"
+dependencies = [
  "serde_json",
  "tradingview-core",
 ]

@@ -101,6 +101,10 @@ package version omits the leading `v`.
 - Clarified application/domain/operation-adapter dependencies so dispatch
   calls pure domain helpers directly while `ops` stays focused on executable
   TradingView operations.
+- Extracted the proven I/O-free domain/model layer into the internal workspace
+  crate `tradingview-model` under `crates/model/`, preserving CLI behavior
+  while making validation, request models, target resolution, and payload
+  shaping reusable across CLI adapters and future crates.
 - Added `--direction <long|short>` as an alias for the positional `DIRECTION`
   argument on `tv draw position`.
 

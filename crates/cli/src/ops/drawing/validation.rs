@@ -1,6 +1,6 @@
-pub use crate::domain::drawing::{
+pub use tradingview_model::drawing::{
     DrawingPositionRequest, DrawingShapeRequest, validate_position_request,
 };
 
 #[cfg(test)]
-pub use crate::domain::drawing::{DrawingPoint, PositionDirection};
+pub use tradingview_model::drawing::{DrawingPoint, PositionDirection};

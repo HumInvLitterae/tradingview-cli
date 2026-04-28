@@ -13,7 +13,7 @@ use super::{
         ScreenerColumnAddRequest, ScreenerColumnSelector, validate_screener_column_reorder_request,
     },
 };
-use crate::domain::screener::columns::{
+use tradingview_model::screener::columns::{
     ScreenerStorageColumnTarget, add_storage_column, column_targets_from_state,
     column_targets_payload, ensure_storage_column_index,
     ensure_test_screener_screen_for_column_mutation, remove_storage_column,

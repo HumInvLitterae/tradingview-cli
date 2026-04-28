@@ -2,6 +2,7 @@
 members = [
     "crates/cli",
     "crates/core",
+    "crates/model",
     "crates/market",
     "crates/scanner",
     "crates/pine",

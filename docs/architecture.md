@@ -57,6 +57,11 @@ installed binary remains `tv`.
   `ErrorKind`, `SuccessEnvelope`, `ErrorEnvelope`, and `ErrorBody`. These are
   intentionally small and dependency-light so future internal crates can share
   JSON envelope and exit-code semantics without depending on the full CLI.
+- `crates/model/src/lib.rs` owns the shared I/O-free model and policy layer:
+  request interpretation, validation, selector and target resolution,
+  normalization, public-safe payload shaping, and fallback policy decisions. It
+  depends on `tradingview-core` but does not depend on clap, CDP, HTTP clients,
+  page-session execution, or UI automation.
 - `crates/market/src/lib.rs` owns Desktop-free market reads for symbol search,
   symbol metadata, and symbol quote lookup. It uses credential-free TradingView
   HTTP endpoints and does not depend on CDP, chart state, or UI automation.
@@ -88,6 +93,16 @@ Keep responsibilities separated:
   definitions, and command names.
 - `crates/core/src/lib.rs` owns shared typed errors, JSON success/error
   envelopes, and error exit-code mapping.
+- `crates/model/src/lib.rs` owns the shared model modules previously kept under
+  the CLI package's in-package `domain` layer. `tradingview_model::watchlist`
+  owns watchlist symbol normalization, bulk-add aggregation, and public payload
+  normalization. `tradingview_model::alert` owns alert condition validation,
+  public-safe alert payload normalization, sanitization, and API fallback
+  policy. `tradingview_model::replay` owns replay date/speed/action validation,
+  replay timestamp conversion, and replay action/status payload normalization.
+  `tradingview_model::drawing` owns drawing request structs, direction parsing,
+  override parsing, and position price validation. `tradingview_model::screener`
+  owns Screener validation, target resolution, and storage payload shaping.
 - `crates/market/src/lib.rs` owns direct HTTP implementations behind
   `tv search <QUERY>`, `tv info <SYMBOL>`, and `tv quote <SYMBOL>`.
 - `crates/scanner/src/lib.rs` owns direct HTTP implementations behind
@@ -100,24 +115,11 @@ Keep responsibilities separated:
 - `crates/cli/src/ops.rs` is a thin facade that declares operation adapter
   modules and re-exports operation functions used by the application dispatch
   layer.
-- `crates/cli/src/domain.rs` is the in-package domain/service facade. Domain
-  modules hold reusable command logic that does not depend on clap command
-  enums or CDP runtime objects. `domain::watchlist` owns watchlist symbol
-  normalization, bulk-add aggregation, and public payload normalization.
-  `domain::alert` owns alert condition validation, public-safe alert payload
-  normalization, sanitization, and API fallback policy. `domain::replay` owns
-  replay date/speed/action validation, replay timestamp conversion, and replay
-  action/status payload normalization. `domain::drawing` owns drawing request
-  structs, direction parsing, override parsing, and position price validation.
-  `domain::screener` owns Screener validation, target resolution, and storage
-  payload shaping. Operation adapters still perform TradingView calls, DOM
-  fallback, chart API execution, page-session storage fetch/save, and
-  post-checks.
-- `crates/cli/src/app/dispatch.rs` may call `domain::*` directly when it is
+- `crates/cli/src/app/dispatch.rs` may call `tradingview_model::*` directly when it is
   converting CLI command variants into validated primitive values or domain
   request types. It should call `ops::*` for executable TradingView
   operations. This keeps the dependency direction explicit: application
-  dispatch interprets command input, domain validates and shapes pure command
+  dispatch interprets command input, the model crate validates and shapes pure command
   data, and ops executes live TradingView work.
 - `crates/cli/src/ops/` contains operation adapter implementations grouped by
   capability. These modules still own command-facing TradingView operations;
@@ -126,7 +128,7 @@ Keep responsibilities separated:
   It groups the public Screener adapter surface through `state`, `screens`,
   `filters`, `columns`, and `validation` submodules under
   `crates/cli/src/ops/screener/`. CDP-free validation, target resolution, and
-  storage payload helpers live in `domain::screener`; `state`, `screens`,
+  storage payload helpers live in `tradingview_model::screener`; `state`, `screens`,
   `filters`, and `columns` own their respective runtime operation bodies and
   focused tests. The remaining `engine` module is the shared Screener
   runtime/helper layer for open/restore sessions, state reads, active storage
@@ -137,18 +139,18 @@ Keep responsibilities separated:
   `crates/cli/src/ops/alert/`. Alert remains a CLI-package adapter because it
   still combines page-session APIs, active chart metadata, Pine helper
   integration, DOM fallback, and post-check execution. CDP-free validation and
-  public payload normalization live in `domain::alert`.
+  public payload normalization live in `tradingview_model::alert`.
 - `crates/cli/src/ops/layout.rs` is the historical Layout operation adapter
   facade. It groups the public watchlist and pane adapter surface through
   `watchlist` and `pane` submodules under `crates/cli/src/ops/layout/`.
-  Watchlist uses `domain::watchlist` for CDP-free normalization and bulk
+  Watchlist uses `tradingview_model::watchlist` for CDP-free normalization and bulk
   aggregation, while the adapter owns API-backed mutation execution,
   visible-panel fallback, and post-checks. Pane owns chart pane list, layout,
   focus, and symbol operations.
 - `crates/cli/src/ops/replay.rs` is the Replay operation adapter facade. It
   groups replay start, step, stop, status, autoplay, and trade operations under
   `crates/cli/src/ops/replay/`. Replay validation and payload normalization
-  live in `domain::replay`; the adapter owns Replay API method calls, runtime
+  live in `tradingview_model::replay`; the adapter owns Replay API method calls, runtime
   evaluation, availability checks, and post-check behavior.
 - `crates/cli/src/ops/data.rs` is a thin facade for larger sub-surfaces under
   a same-named directory. `crates/cli/src/ops/pine.rs` is a facade that
@@ -161,7 +163,7 @@ Keep responsibilities separated:
   groups drawing creation, drawing reads, and drawing lifecycle cleanup under
   `crates/cli/src/ops/drawing/` while preserving the public `draw` command
   surface. Drawing request types, direction parsing, override parsing, and
-  position validation live in `domain::drawing`; the adapter owns chart API
+  position validation live in `tradingview_model::drawing`; the adapter owns chart API
   JavaScript, entity post-checks, and live chart reads.
 - `crates/cli/src/ops/market.rs` is the chart-dependent Market operation
   adapter facade. Its `direct` module delegates Desktop-free symbol search,

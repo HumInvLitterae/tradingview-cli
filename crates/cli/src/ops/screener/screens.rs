@@ -13,7 +13,7 @@ use super::{
     },
     validation::validate_screener_screen_name,
 };
-use crate::domain::screener::screens::{
+use tradingview_model::screener::screens::{
     ScreenerScreenTarget, resolve_save_screen_action, resolve_screen_action, resolve_screen_target,
     screen_action_payload, screen_actions_from_menu, screen_actions_payload,
     screen_name_dialog_payload, screen_target_payload, screen_targets_from_menu,
