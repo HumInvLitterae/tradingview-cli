@@ -65,6 +65,8 @@ package version omits the leading `v`.
   binary and CLI behavior.
 - Split the large Screener operation adapter behind a facade and sub-surface
   modules while preserving the CLI surface and behavior.
+- Moved Screener validation request types, helpers, and tests into the
+  Screener validation module while preserving command behavior.
 
 ## v0.2.0 - 2026-04-27
 

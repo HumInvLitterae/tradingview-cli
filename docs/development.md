@@ -37,6 +37,10 @@ This project uses Rust 2024.
   the current model for this first step: stable public adapter exports at the
   facade, sub-surface modules underneath, and deeper implementation movement in
   later behavior-preserving slices.
+- Prefer moving CDP-free input boundaries before runtime/storage/UI code. For
+  example, Screener validation lives in
+  `crates/cli/src/ops/screener/validation.rs` before columns or saved-screen
+  storage logic are split out of the implementation engine.
 - Keep `crates/cli/src/main.rs` as a thin process entrypoint. Put CLI parsing,
   command dispatch, JSON envelope output, stream loops, input conversion, and
   target connection orchestration under `crates/cli/src/app/`.
