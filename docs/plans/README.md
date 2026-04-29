@@ -8,15 +8,10 @@ for release and next-phase planning.
 
 - `tradingview-cli-release-builds.md`: tag-triggered GitHub Release builds
   for Linux, macOS, and Windows binaries.
-- `tradingview-cli-v0.3.0-release-readiness.md`: prepare version metadata,
-  release notes, package guidance, and validation evidence for `v0.3.0`.
-- `tradingview-cli-extended-hours-quote.md`: add premarket and postmarket
-  fields to Desktop-free `tv quote <SYMBOL>` scanner reads.
-- `tradingview-cli-scanner-extended-hours-columns.md`: allow confirmed
-  premarket and postmarket scanner columns in `tv scanner scan --columns`.
-- `tradingview-cli-v0.4-market-data-lane-review.md`: clarify the completed,
-  deferred, and next-candidate boundaries for the `v0.4.0` market data read
-  lane.
+
+No `v0.4.0` implementation plan is currently active. The next expected plan is
+release readiness for `v0.4.0`, unless a specific post-release feature slice is
+chosen first.
 
 ## Archived plans
 
@@ -43,6 +38,10 @@ Important archived plan categories:
   boundaries
 - Direct HTTP feasibility, Desktop-free symbol reads, and chart data readiness
   diagnostics
+- Desktop-free market data read polish, including extended-hours quotes,
+  scanner extended-hours columns, scanner metainfo, ordered batch quotes,
+  explicit quote source selection, typed market/scanner Rust APIs, and the
+  v0.4 market data lane review
 - first behavior-preserving binary/library crate boundary
 - core contract crate extraction
 - Desktop-free market crate extraction
@@ -78,12 +77,7 @@ Important archived plan categories:
 - operation adapter boundary audit after model extraction
 - bounded Screener filter storage mutation audit and storage-backed numeric
   range filter modification
-- scanner metainfo field metadata discovery through Desktop-free REST
-- ordered Desktop-free batch quote reads through `tv quotes <SYMBOL>...`
 - Desktop-free historical bars feasibility and WebSocket lab boundary research
-- explicit quote source selection and scanner quote timestamp/feed metadata
-- typed read API boundary for `tradingview-market` and `tradingview-scanner`
-- rustdoc and stable docs for the typed market/scanner Rust API boundary
 - full-page Screener target opening through existing-target reuse, CDP target
   creation attempt, and bounded Desktop new-tab tile fallback
 - shared TradingView Desktop app-window/new-tab helper extraction before
