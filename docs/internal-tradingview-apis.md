@@ -95,6 +95,8 @@ Category: unauthenticated TradingView scanner REST read.
 Current command family:
 
 - `quote <SYMBOL>` for symbol-targeted reads before any chart mutation
+- `scanner scan --columns ...` for broader scanner-table reads with explicit
+  fields
 
 Safety boundary:
 
@@ -110,14 +112,18 @@ Safety boundary:
 - extended-hours values are returned as a nested `extended_hours` object.
   Missing or inactive-session values remain `null`; the top-level `last` and
   `close` fields are not replaced by premarket or postmarket values
-- if the scanner read is unavailable before chart mutation, the CLI may fall
-  back to the chart API path
-- if the scanner response has no rows, ambiguous rows, or a returned symbol
-  that does not match the requested symbol, the CLI treats it as symbol
-  resolution failure and returns candidates from symbol search instead of
-  falling back to chart target selection
-- if chart fallback is used after a technical scanner failure, the fallback
-  must still fail when the observed symbol does not match the requested symbol
+- when the same extended-hours columns are requested through `scanner scan`,
+  they remain table fields under each symbol row's `field_values` object rather
+  than being reshaped into a nested object
+- for `quote <SYMBOL>`, if the scanner read is unavailable before chart
+  mutation, the CLI may fall back to the chart API path
+- for `quote <SYMBOL>`, if the scanner response has no rows, ambiguous rows,
+  or a returned symbol that does not match the requested symbol, the CLI treats
+  it as symbol resolution failure and returns candidates from symbol search
+  instead of falling back to chart target selection
+- if quote chart fallback is used after a technical scanner failure, the
+  fallback must still fail when the observed symbol does not match the
+  requested symbol
 
 ## Symbol search REST read
 

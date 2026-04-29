@@ -12,6 +12,8 @@ for release and next-phase planning.
   release notes, package guidance, and validation evidence for `v0.3.0`.
 - `tradingview-cli-extended-hours-quote.md`: add premarket and postmarket
   fields to Desktop-free `tv quote <SYMBOL>` scanner reads.
+- `tradingview-cli-scanner-extended-hours-columns.md`: allow confirmed
+  premarket and postmarket scanner columns in `tv scanner scan --columns`.
 
 ## Archived plans
 

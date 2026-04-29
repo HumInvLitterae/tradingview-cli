@@ -11,6 +11,8 @@ package version omits the leading `v`.
 
 - Added `extended_hours` premarket and postmarket fields to Desktop-free
   `tv quote <SYMBOL>` scanner reads.
+- Added confirmed premarket and postmarket scanner REST columns to
+  `tv scanner scan --columns ...` for Desktop-free extended-hours scans.
 
 ## v0.3.0 - 2026-04-29
 

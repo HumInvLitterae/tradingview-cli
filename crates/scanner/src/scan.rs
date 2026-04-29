@@ -42,6 +42,21 @@ const SUPPORTED_SCAN_COLUMNS: &[&str] = &[
     "Perf.3M",
     "RSI",
     "Recommend.All",
+    "premarket_open",
+    "premarket_high",
+    "premarket_low",
+    "premarket_close",
+    "premarket_change",
+    "premarket_change_abs",
+    "premarket_gap",
+    "premarket_volume",
+    "postmarket_open",
+    "postmarket_high",
+    "postmarket_low",
+    "postmarket_close",
+    "postmarket_change",
+    "postmarket_change_abs",
+    "postmarket_volume",
 ];
 
 #[derive(Debug)]
@@ -886,6 +901,106 @@ mod tests {
                 "right": 0.1
             })
         );
+    }
+
+    #[test]
+    fn normalize_scan_request_accepts_extended_hours_columns_without_changing_defaults() {
+        let request = ScannerScanRequest {
+            market: "america".to_string(),
+            exchanges: Vec::new(),
+            columns: Some(
+                "name,close,premarket_close,premarket_volume,postmarket_close,postmarket_volume"
+                    .to_string(),
+            ),
+            sort: Some("premarket_volume".to_string()),
+            asc: false,
+            desc: true,
+            limit: Some(5),
+            min_price: None,
+            max_price: None,
+            min_volume: None,
+            min_market_cap: None,
+            sectors: Vec::new(),
+            industries: Vec::new(),
+            symbol_types: Vec::new(),
+            subtypes: Vec::new(),
+            min_change: None,
+            max_change: None,
+            min_relative_volume: None,
+            max_pe: None,
+            min_average_volume: None,
+            min_performance_week: None,
+            max_performance_week: None,
+            min_performance_month: None,
+            max_performance_month: None,
+            min_performance_quarter: None,
+            max_performance_quarter: None,
+            min_rsi: None,
+            max_rsi: None,
+            min_recommendation: None,
+            max_recommendation: None,
+        };
+
+        let normalized = normalize_scan_request(request).unwrap();
+
+        assert_eq!(
+            normalized.columns,
+            [
+                "name",
+                "close",
+                "premarket_close",
+                "premarket_volume",
+                "postmarket_close",
+                "postmarket_volume"
+            ]
+        );
+        assert_eq!(normalized.sort_field, "premarket_volume");
+        assert_eq!(
+            normalized.body["columns"],
+            json!([
+                "name",
+                "close",
+                "premarket_close",
+                "premarket_volume",
+                "postmarket_close",
+                "postmarket_volume"
+            ])
+        );
+
+        let defaults = normalize_scan_request(ScannerScanRequest {
+            market: "america".to_string(),
+            exchanges: Vec::new(),
+            columns: None,
+            sort: None,
+            asc: false,
+            desc: false,
+            limit: None,
+            min_price: None,
+            max_price: None,
+            min_volume: None,
+            min_market_cap: None,
+            sectors: Vec::new(),
+            industries: Vec::new(),
+            symbol_types: Vec::new(),
+            subtypes: Vec::new(),
+            min_change: None,
+            max_change: None,
+            min_relative_volume: None,
+            max_pe: None,
+            min_average_volume: None,
+            min_performance_week: None,
+            max_performance_week: None,
+            min_performance_month: None,
+            max_performance_month: None,
+            min_performance_quarter: None,
+            max_performance_quarter: None,
+            min_rsi: None,
+            max_rsi: None,
+            min_recommendation: None,
+            max_recommendation: None,
+        })
+        .unwrap();
+        assert_eq!(defaults.columns, DEFAULT_SCAN_COLUMNS);
     }
 
     #[test]

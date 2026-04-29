@@ -137,6 +137,7 @@ tv scanner scan --exchange NASDAQ --exchange NYSE --sort market_cap_basic --desc
 tv scanner scan --type stock --sector "Technology Services" --min-relative-volume 1.5 --sort relative_volume_10d_calc --desc --limit 10
 tv scanner scan --type stock --min-average-volume 1000000 --min-performance-week 5 --max-rsi 70 --sort Perf.W --desc --limit 10
 tv scanner scan --type stock --max-change -5 --sort change --asc --columns name,change,volume --limit 10
+tv scanner scan --type stock --columns name,close,premarket_close,premarket_volume,postmarket_close,postmarket_volume --limit 10
 tv screener get --limit 10
 tv screener screens actions
 tv screener screens list
