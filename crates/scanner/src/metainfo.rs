@@ -9,6 +9,7 @@ const METAINFO_SOURCE: &str = "scanner_metainfo_rest";
 const SUPPORTED_METAINFO_MARKETS: &[&str] = &["america"];
 
 #[derive(Debug)]
+/// Request for Desktop-free scanner field metadata.
 pub struct ScannerMetainfoRequest {
     pub market: String,
     pub fields: Vec<String>,
@@ -25,6 +26,10 @@ pub async fn scanner_metainfo(request: ScannerMetainfoRequest) -> Result<Value, 
         .map_err(|err| AppError::new(ErrorKind::Internal, err.to_string()))
 }
 
+/// Reads scanner field metadata without connecting to TradingView Desktop.
+///
+/// This is the typed Rust API. Use [`scanner_metainfo`] only when preserving
+/// the CLI-compatible JSON payload shape is required.
 pub async fn scanner_metainfo_typed(
     request: ScannerMetainfoRequest,
 ) -> Result<ScannerMetainfoResult, AppError> {

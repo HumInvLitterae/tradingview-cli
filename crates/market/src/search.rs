@@ -13,6 +13,10 @@ pub async fn symbol_search(query: &str) -> Result<Value, AppError> {
         .map_err(|err| AppError::new(ErrorKind::Internal, err.to_string()))
 }
 
+/// Searches TradingView symbols without connecting to TradingView Desktop.
+///
+/// This is the typed Rust API. Use [`symbol_search`] only when preserving the
+/// CLI-compatible JSON payload shape is required.
 pub async fn search_symbols_typed(query: &str) -> Result<SymbolSearchResponse, AppError> {
     let url = reqwest::Url::parse_with_params(
         SYMBOL_SEARCH_URL,

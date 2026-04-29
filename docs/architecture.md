@@ -39,6 +39,8 @@ for these dependencies is `docs/internal-tradingview-apis.md`.
 families intentionally stay in `ops`, which are API/storage replacement
 candidates, and which kinds of logic belong in `tradingview-model` or the
 Desktop-free service crates.
+`docs/rust-api.md` records the current reusable Rust API boundary for internal
+workspace crates.
 
 ## Crate boundary
 
@@ -85,7 +87,8 @@ installed binary remains `tv`.
 
 These library crates are internal and unstable for now. Treat them as
 maintainability boundaries until a future ExecPlan explicitly marks types or
-functions as stable for downstream Rust callers.
+functions as stable for downstream Rust callers. For the currently documented
+reuse surface, see `docs/rust-api.md`.
 
 ## Rust module responsibilities
 

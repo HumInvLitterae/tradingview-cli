@@ -12,6 +12,10 @@ pub async fn symbol_info(symbol: &str) -> Result<Value, AppError> {
         .map_err(|err| AppError::new(ErrorKind::Internal, err.to_string()))
 }
 
+/// Resolves Desktop-free symbol metadata through TradingView symbol search.
+///
+/// This is the typed Rust API. Use [`symbol_info`] only when preserving the
+/// CLI-compatible JSON payload shape is required.
 pub async fn symbol_info_typed(symbol: &str) -> Result<SymbolInfo, AppError> {
     let requested_symbol = symbol.trim();
     if requested_symbol.is_empty() {

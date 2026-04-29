@@ -27,6 +27,10 @@ pub async fn scanner_hotlist(slug: &str, limit: Option<usize>) -> Result<Value, 
         .map_err(|err| AppError::new(ErrorKind::Internal, err.to_string()))
 }
 
+/// Reads a TradingView scanner preset hotlist without TradingView Desktop.
+///
+/// This is the typed Rust API. Use [`scanner_hotlist`] only when preserving the
+/// CLI-compatible JSON payload shape is required.
 pub async fn scanner_hotlist_typed(
     slug: &str,
     limit: Option<usize>,

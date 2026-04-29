@@ -61,6 +61,7 @@ const SUPPORTED_SCAN_COLUMNS: &[&str] = &[
 ];
 
 #[derive(Debug)]
+/// Request for a Desktop-free scanner table read.
 pub struct ScannerScanRequest {
     pub market: String,
     pub exchanges: Vec<String>,
@@ -99,6 +100,10 @@ pub async fn scanner_scan(request: ScannerScanRequest) -> Result<Value, AppError
         .map_err(|err| AppError::new(ErrorKind::Internal, err.to_string()))
 }
 
+/// Reads a scanner table without connecting to TradingView Desktop.
+///
+/// This is the typed Rust API. Use [`scanner_scan`] only when preserving the
+/// CLI-compatible JSON payload shape is required.
 pub async fn scanner_scan_typed(
     request: ScannerScanRequest,
 ) -> Result<ScannerScanResult, AppError> {

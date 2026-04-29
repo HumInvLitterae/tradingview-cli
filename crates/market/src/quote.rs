@@ -48,6 +48,10 @@ pub async fn quote_symbol(symbol: &str) -> Result<Value, AppError> {
         .map_err(|err| AppError::new(ErrorKind::Internal, err.to_string()))
 }
 
+/// Reads one scanner-backed quote without connecting to TradingView Desktop.
+///
+/// This is the typed Rust API. Use [`quote_symbol`] only when preserving the
+/// CLI-compatible JSON payload shape is required.
 pub async fn quote_symbol_typed(symbol: &str) -> Result<Quote, AppError> {
     let requested_symbol = symbol.trim();
     if requested_symbol.is_empty() {
@@ -74,6 +78,11 @@ pub async fn quote_symbols(symbols: Vec<String>) -> Result<Value, AppError> {
     }
 }
 
+/// Reads multiple scanner-backed quotes in input order.
+///
+/// Each item contains either a typed [`Quote`] or a public-safe item error.
+/// This is the typed Rust API. Use [`quote_symbols`] only when preserving the
+/// CLI-compatible JSON payload shape is required.
 pub async fn quote_symbols_typed(symbols: Vec<String>) -> Result<BatchQuotes, AppError> {
     let requested_symbols = normalize_quote_symbols(symbols)?;
     let requested_count = requested_symbols.len();

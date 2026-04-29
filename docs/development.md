@@ -106,11 +106,13 @@ This project uses Rust 2024.
 - Put credential-free, Desktop-free market reads in `crates/market/` when they
   do not depend on CDP, chart state, or UI automation. Prefer typed result
   structs for reusable Rust APIs; keep JSON wrappers only for CLI payload
-  compatibility.
+  compatibility. Document reusable typed APIs in rustdoc and
+  `docs/rust-api.md`.
 - Put credential-free, Desktop-free scanner reads in `crates/scanner/` when
   they can be exercised without TradingView Desktop. Prefer typed result
   structs for reusable Rust APIs; keep JSON wrappers only for CLI payload
-  compatibility.
+  compatibility. Document reusable typed APIs in rustdoc and
+  `docs/rust-api.md`.
 - Put Desktop-free Pine helpers in `crates/pine/` when they are local source
   analysis or Pine facade checks. Keep Pine Editor operations in the CLI
   package because they depend on CDP, Monaco, and visible TradingView UI state.

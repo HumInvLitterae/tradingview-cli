@@ -290,6 +290,7 @@ baseline remains the commands run by CI.
 - old JavaScript CLI command migration coverage for the known CLI surface
 - stable architecture, development, packaging, migration, and internal API
   references under `docs/`
+- a Rust API reuse guide at `docs/rust-api.md`
 - a `v0.3.0` roadmap and release-readiness record at `docs/v0.3-roadmap.md`,
   plus a `v0.4.0` roadmap draft at `docs/v0.4-roadmap.md`
 - historical command contract, lifecycle, and deferred-surface notes under
@@ -310,16 +311,17 @@ Read these in order:
 3. `docs/v0.3-roadmap.md`
 4. `docs/architecture.md`
 5. `docs/development.md`
-6. `docs/release-packaging.md`
-7. `docs/breaking-changes-from-js-cli.md`
-8. `docs/internal-tradingview-apis.md`
-9. `docs/notes/rust-cli-contract-migration-2026-04-24.md`
-10. `docs/notes/legacy-cli-command-migration-inventory-2026-04-24.md`
-11. `docs/notes/remaining-deferred-surface-audit-2026-04-25.md`
-12. `docs/notes/upstream-pr-triage-2026-04-25.md`
-13. `docs/notes/upstream-pr-recheck-2026-04-27.md`
-14. `docs/plans/README.md`
-15. `docs/notes/tradingview-mcp-investigation-2026-04-24.md`
+6. `docs/rust-api.md`
+7. `docs/release-packaging.md`
+8. `docs/breaking-changes-from-js-cli.md`
+9. `docs/internal-tradingview-apis.md`
+10. `docs/notes/rust-cli-contract-migration-2026-04-24.md`
+11. `docs/notes/legacy-cli-command-migration-inventory-2026-04-24.md`
+12. `docs/notes/remaining-deferred-surface-audit-2026-04-25.md`
+13. `docs/notes/upstream-pr-triage-2026-04-25.md`
+14. `docs/notes/upstream-pr-recheck-2026-04-27.md`
+15. `docs/plans/README.md`
+16. `docs/notes/tradingview-mcp-investigation-2026-04-24.md`
 
 The first capability and boundary research milestone, the Rust v1 implementation milestone, the read/provider migration slices, chart/pane/watchlist/alert/layout/indicator/drawing/Pine/tab/replay/stream/launch slices, command lifecycle balance audit, remaining deferred surface audit, operation-layer and data-operation module refactors, development guideline pass, remaining old CLI migration closure slice, and first release readiness pass are complete. Upstream pull request follow-up has addressed the initial narrow Rust fixes and additions, including `tv data shapes`, `tv data labels` truncation metadata, `tv scanner hotlist`, `tv scanner scan`, read-oriented `tv screener` dialog and metadata commands, menu-visible and catalog Screener screen switching, Screener screen action/save support, guarded Screener screen lifecycle, storage-backed Screener filter remove/clear, guarded Screener filter add/modify, storage-backed Screener column config/add/remove/reorder, API-backed `tv watchlist add/remove` mutation with DOM fallback, API-backed `tv alert create` mutation with readback verification, Desktop-free `tv info <SYMBOL>` and `tv quote [SYMBOL]` reads, static Pine `alertcondition()` discovery, and guarded API-backed indicator alertcondition alert creation. The main planned Screener surface is now in stabilization; `columns reset` and broader multi-option/free-text filter editing remain evidence-gated. Future stabilization should check storage/API options before adding more DOM retries.
 

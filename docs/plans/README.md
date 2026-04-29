@@ -14,9 +14,9 @@ for release and next-phase planning.
   fields to Desktop-free `tv quote <SYMBOL>` scanner reads.
 - `tradingview-cli-scanner-extended-hours-columns.md`: allow confirmed
   premarket and postmarket scanner columns in `tv scanner scan --columns`.
-- `tradingview-cli-market-scanner-api-boundary.md`: add typed reusable read
-  APIs to `tradingview-market` and `tradingview-scanner` while preserving CLI
-  JSON wrappers.
+- `tradingview-cli-market-scanner-typed-api-docs.md`: document the typed
+  `tradingview-market` and `tradingview-scanner` Rust APIs with rustdoc and a
+  stable `docs/rust-api.md` guide.
 
 ## Archived plans
 
@@ -83,6 +83,7 @@ Important archived plan categories:
 - Desktop-free historical bars feasibility and WebSocket lab boundary research
 - explicit quote source selection and scanner quote timestamp/feed metadata
 - typed read API boundary for `tradingview-market` and `tradingview-scanner`
+- rustdoc and stable docs for the typed market/scanner Rust API boundary
 - full-page Screener target opening through existing-target reuse, CDP target
   creation attempt, and bounded Desktop new-tab tile fallback
 - shared TradingView Desktop app-window/new-tab helper extraction before

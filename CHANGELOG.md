@@ -20,6 +20,8 @@ package version omits the leading `v`.
   scanner quote `time` / `update_mode` / `delay_seconds` metadata.
 - Added typed reusable read APIs to the internal `tradingview-market` and
   `tradingview-scanner` crates while preserving CLI JSON payloads.
+- Documented the typed market/scanner Rust API boundary with crate-level
+  rustdoc and `docs/rust-api.md`.
 
 ## v0.3.0 - 2026-04-29
 
