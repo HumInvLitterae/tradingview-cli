@@ -14,8 +14,8 @@ Use this skill for TradingView Stock Screener work through the Rust `tv` CLI.
    `screener_targets`.
 3. Use the returned `target_cli_args`, for example
    `tv --target-id <ID> screener ...`, for follow-up commands.
-4. If no full-page Screener target is available, use `tv screener open` on the
-   chosen chart target, but expect more UI fragility than the full-page target.
+4. If no full-page Screener target is available, run
+   `tv screener open --full-page` and then use the returned `target_cli_args`.
 
 ## Read First
 
