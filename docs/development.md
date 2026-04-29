@@ -26,6 +26,12 @@ excludes them.
 This project uses Rust 2024.
 
 - Do not introduce `mod.rs`.
+- Keep shared package metadata such as version, edition, license, and publish
+  policy in the workspace root `[workspace.package]` table.
+- Keep dependency versions and internal crate paths in the workspace root
+  `[workspace.dependencies]` table. Member crates should normally use
+  `workspace = true` in their own `[dependencies]` or `[dev-dependencies]`
+  entries and add only crate-specific feature selections there.
 - Prefer facade files with same-named submodule directories for large
   capabilities.
 - Keep top-level CLI package module declarations in `crates/cli/src/lib.rs`.

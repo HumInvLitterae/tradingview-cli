@@ -1,32 +1,32 @@
 [package]
 name = "tradingview-cli"
-authors = ["HumInvLitterae"]
-version = "0.2.0"
-edition = "2024"
-license = "MIT"
-publish = false
+authors.workspace = true
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
 
 [[bin]]
 name = "tv"
 path = "src/main.rs"
 
 [dependencies]
-clap = { version = "4.6.1", features = ["derive"] }
-image = { version = "0.25.10", default-features = false, features = ["png"] }
-reqwest = { version = "0.13.3", features = ["json"] }
-serde = { version = "1.0.228", features = ["derive"] }
-serde_json = "1.0.149"
-tokio = { version = "1.52.1", features = ["macros", "rt-multi-thread", "time", "net"] }
-tradingview-cdp = { path = "../cdp" }
-tradingview-core = { path = "../core" }
-tradingview-market = { path = "../market" }
-tradingview-model = { path = "../model" }
-tradingview-pine = { path = "../pine" }
-tradingview-scanner = { path = "../scanner" }
-tracing = "0.1.44"
-tracing-subscriber = { version = "0.3.23", features = ["env-filter"] }
+clap = { workspace = true, features = ["derive"] }
+image = { workspace = true, features = ["png"] }
+reqwest = { workspace = true, features = ["json"] }
+serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
+tokio = { workspace = true, features = ["macros", "rt-multi-thread", "time", "net"] }
+tradingview-cdp = { workspace = true }
+tradingview-core = { workspace = true }
+tradingview-market = { workspace = true }
+tradingview-model = { workspace = true }
+tradingview-pine = { workspace = true }
+tradingview-scanner = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true, features = ["env-filter"] }
 
 [dev-dependencies]
-assert_cmd = "2.2.1"
-predicates = "3.1.4"
-tempfile = "3.27.0"
+assert_cmd = { workspace = true }
+predicates = { workspace = true }
+tempfile = { workspace = true }

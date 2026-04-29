@@ -11,6 +11,9 @@ for release and next-phase planning.
 - `tradingview-cli-desktop-app-window-helper-split.md`: share TradingView
   Desktop app-window/new-tab helper code between `tab` operations and
   `screener open --full-page` before release readiness.
+- `tradingview-cli-workspace-dependency-centralization.md`: centralize
+  dependency versions and internal crate paths in root
+  `[workspace.dependencies]`.
 
 ## Archived plans
 
