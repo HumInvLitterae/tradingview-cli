@@ -7,7 +7,10 @@ package version omits the leading `v`.
 
 ## Unreleased
 
-Nothing yet.
+### Added
+
+- Added `extended_hours` premarket and postmarket fields to Desktop-free
+  `tv quote <SYMBOL>` scanner reads.
 
 ## v0.3.0 - 2026-04-29
 

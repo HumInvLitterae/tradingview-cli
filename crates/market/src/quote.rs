@@ -20,6 +20,21 @@ const QUOTE_SCAN_COLUMNS: &[&str] = &[
     "exchange",
     "type",
     "subtype",
+    "premarket_open",
+    "premarket_high",
+    "premarket_low",
+    "premarket_close",
+    "premarket_change",
+    "premarket_change_abs",
+    "premarket_gap",
+    "premarket_volume",
+    "postmarket_open",
+    "postmarket_high",
+    "postmarket_low",
+    "postmarket_close",
+    "postmarket_change",
+    "postmarket_change_abs",
+    "postmarket_volume",
 ];
 
 pub async fn quote_symbol(symbol: &str) -> Result<Value, AppError> {
@@ -165,6 +180,29 @@ fn normalize_scanner_quote_response(
         "exchange": field(8),
         "type": field(9),
         "subtype": field(10),
+        "extended_hours": {
+            "premarket": {
+                "open": field(11),
+                "high": field(12),
+                "low": field(13),
+                "last": field(14),
+                "close": field(14),
+                "change_percent": field(15),
+                "change_abs": field(16),
+                "gap_percent": field(17),
+                "volume": field(18),
+            },
+            "postmarket": {
+                "open": field(19),
+                "high": field(20),
+                "low": field(21),
+                "last": field(22),
+                "close": field(22),
+                "change_percent": field(23),
+                "change_abs": field(24),
+                "volume": field(25),
+            },
+        },
         "source": "scanner_scan_rest",
         "non_mutating": true,
         "requested_symbol": requested_symbol,
@@ -232,7 +270,22 @@ mod tests {
                     -1.72,
                     "NASDAQ",
                     "stock",
-                    "common"
+                    "common",
+                    269.81,
+                    269.98,
+                    267.85,
+                    268.2,
+                    -0.9271914594953977,
+                    -2.509999999999991,
+                    -0.3324590890620876,
+                    174665,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null
                 ]
             }]
         });
@@ -248,6 +301,64 @@ mod tests {
         assert_eq!(result["switch_performed"], false);
         assert_eq!(result["restored"], true);
         assert_eq!(result["freshness_check"]["passed"], true);
+        assert_eq!(result["extended_hours"]["premarket"]["open"], 269.81);
+        assert_eq!(result["extended_hours"]["premarket"]["last"], 268.2);
+        assert_eq!(result["extended_hours"]["premarket"]["close"], 268.2);
+        assert_eq!(
+            result["extended_hours"]["premarket"]["change_percent"],
+            -0.9271914594953977
+        );
+        assert_eq!(
+            result["extended_hours"]["premarket"]["change_abs"],
+            -2.509999999999991
+        );
+        assert_eq!(
+            result["extended_hours"]["premarket"]["gap_percent"],
+            -0.3324590890620876
+        );
+        assert_eq!(result["extended_hours"]["premarket"]["volume"], 174665);
+        assert_eq!(result["extended_hours"]["postmarket"]["last"], Value::Null);
+        assert_eq!(
+            result["extended_hours"]["postmarket"]["change_percent"],
+            Value::Null
+        );
+    }
+
+    #[test]
+    fn normalize_scanner_quote_response_defaults_missing_extended_hours_to_null() {
+        let payload = json!({
+            "totalCount": 1,
+            "data": [{
+                "s": "NYSE:IONQ",
+                "d": [
+                    "IONQ",
+                    "IonQ, Inc.",
+                    43.1,
+                    43.84,
+                    44.26,
+                    42.89,
+                    12000000,
+                    -1.68,
+                    "NYSE",
+                    "stock",
+                    "common"
+                ]
+            }]
+        });
+
+        let result = normalize_scanner_quote_response("NYSE:IONQ", &payload).unwrap();
+
+        assert_eq!(result["symbol"], "NYSE:IONQ");
+        assert_eq!(result["last"], 43.1);
+        assert_eq!(result["extended_hours"]["premarket"]["last"], Value::Null);
+        assert_eq!(
+            result["extended_hours"]["premarket"]["gap_percent"],
+            Value::Null
+        );
+        assert_eq!(
+            result["extended_hours"]["postmarket"]["volume"],
+            Value::Null
+        );
     }
 
     #[test]

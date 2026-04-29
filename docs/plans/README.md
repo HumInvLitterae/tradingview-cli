@@ -10,6 +10,8 @@ for release and next-phase planning.
   for Linux, macOS, and Windows binaries.
 - `tradingview-cli-v0.3.0-release-readiness.md`: prepare version metadata,
   release notes, package guidance, and validation evidence for `v0.3.0`.
+- `tradingview-cli-extended-hours-quote.md`: add premarket and postmarket
+  fields to Desktop-free `tv quote <SYMBOL>` scanner reads.
 
 ## Archived plans
 

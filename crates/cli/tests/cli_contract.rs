@@ -46,6 +46,7 @@ fn quote_help_explains_symbol_and_target_selection() {
         .success()
         .stdout(predicate::str::contains("[SYMBOL]"))
         .stdout(predicate::str::contains("current chart target"))
+        .stdout(predicate::str::contains("extended_hours"))
         .stdout(predicate::str::contains("--target-id"));
 }
 

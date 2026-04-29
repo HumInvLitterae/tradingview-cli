@@ -52,7 +52,7 @@ pub enum Command {
     },
     #[command(
         about = "Get real-time price quote",
-        long_about = "Get a real-time price quote.\n\nWithout SYMBOL, reads the current chart target. With SYMBOL, reads a symbol-targeted quote; this may temporarily switch the chart unless a non-mutating quote path is available. If more than one TradingView target is open, run `tv tab list` and pass `tv --target-id <ID> quote ...`."
+        long_about = "Get a real-time price quote.\n\nWithout SYMBOL, reads the current chart target. With SYMBOL, reads a symbol-targeted quote; this may temporarily switch the chart unless a non-mutating quote path is available. Scanner-backed symbol quotes include an additive `extended_hours` object for premarket and postmarket values when TradingView returns them. If more than one TradingView target is open, run `tv tab list` and pass `tv --target-id <ID> quote ...`."
     )]
     Quote { symbol: Option<String> },
     #[command(about = "Get current indicator values")]

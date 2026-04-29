@@ -101,6 +101,15 @@ Safety boundary:
 - this path is read-only and does not require a TradingView Desktop target
 - it returns scanner quote fields such as symbol, description, close, open,
   high, low, volume, change, exchange, type, and subtype
+- it also requests TradingView scanner extended-hours columns when available:
+  `premarket_open`, `premarket_high`, `premarket_low`, `premarket_close`,
+  `premarket_change`, `premarket_change_abs`, `premarket_gap`,
+  `premarket_volume`, `postmarket_open`, `postmarket_high`,
+  `postmarket_low`, `postmarket_close`, `postmarket_change`,
+  `postmarket_change_abs`, and `postmarket_volume`
+- extended-hours values are returned as a nested `extended_hours` object.
+  Missing or inactive-session values remain `null`; the top-level `last` and
+  `close` fields are not replaced by premarket or postmarket values
 - if the scanner read is unavailable before chart mutation, the CLI may fall
   back to the chart API path
 - if the scanner response has no rows, ambiguous rows, or a returned symbol
