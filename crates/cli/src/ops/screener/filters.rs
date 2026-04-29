@@ -8,9 +8,10 @@ use super::{
     super::common::js_string,
     engine::{
         SCREENER_SOURCE, ScreenerMutationSession, dispatch_screen_menu_click, ensure_dialog_open,
-        expanded_expression, fetch_active_screener_storage_config, read_screener_state,
-        read_screener_with_restore, require_active_screen_title, screener_click_point,
-        screener_click_point_from_value, value_bool,
+        expanded_expression, fetch_active_screener_storage_config,
+        fetch_current_screener_storage_config, read_screener_state, read_screener_with_restore,
+        require_active_screen_title, screener_click_point, screener_click_point_from_value,
+        value_bool,
     },
     validation::{
         ScreenerFilterAddRequest, ScreenerFilterModifyMode, ScreenerFilterModifyRequest,
@@ -23,9 +24,10 @@ use tradingview_model::screener::filters::{
     ensure_storage_filter_alignment, ensure_storage_filter_index,
     ensure_test_screener_screen_for_filter_mutation, filter_target_payload,
     filter_targets_from_state, filter_targets_payload, normalize_filters, normalize_screener_text,
-    remove_storage_filter, resolve_filter_target, screener_filter_text_matches_option,
-    storage_filter_order_matches, storage_filter_target_payload, storage_filter_targets_payload,
-    storage_filter_update_payload, storage_filters_from_config,
+    remove_storage_filter, replace_storage_filter_range, resolve_filter_target,
+    screener_filter_text_matches_option, storage_filter_order_matches,
+    storage_filter_target_payload, storage_filter_targets_payload, storage_filter_update_payload,
+    storage_filters_from_config,
 };
 
 pub async fn screener_filters_list(runtime: &mut impl RuntimeEvaluator) -> Result<Value, AppError> {
@@ -233,8 +235,35 @@ pub async fn screener_filters_modify(
     runtime: &mut impl RuntimeEvaluator,
     request: ScreenerFilterModifyRequest,
 ) -> Result<Value, AppError> {
-    let mut session = ScreenerMutationSession::open(runtime).await?;
-    let before_state = read_screener_state(session.runtime, None).await?;
+    let initial_state = read_screener_state(runtime, None).await?;
+    if matches!(request.mode, ScreenerFilterModifyMode::Range { .. })
+        && !value_bool(&initial_state, "button_found")
+        && !value_bool(&initial_state, "open")
+        && let Some(result) = try_screener_filters_modify_range_storage(runtime, &request).await?
+    {
+        return Ok(result);
+    }
+
+    let restored_open_state = value_bool(&initial_state, "open");
+    let mut opened_for_mutation = false;
+    let initial_has_filters = initial_state
+        .get("filters")
+        .and_then(Value::as_array)
+        .is_some_and(|filters| !filters.is_empty());
+    let before_state = if restored_open_state && initial_has_filters {
+        initial_state
+    } else {
+        if !restored_open_state {
+            super::state::screener_open(runtime).await?;
+            opened_for_mutation = true;
+        }
+        read_screener_state(runtime, None).await?
+    };
+    let mut session = ScreenerMutationSession {
+        runtime,
+        opened_for_mutation,
+        restored_open_state,
+    };
     ensure_dialog_open(&before_state)?;
     let before_filters = filter_targets_from_state(&before_state);
     let target = resolve_filter_target(&before_filters, &request.selector)?;
@@ -383,6 +412,96 @@ pub async fn screener_filters_modify(
             }))
         }
     }
+}
+
+async fn try_screener_filters_modify_range_storage(
+    runtime: &mut impl RuntimeEvaluator,
+    request: &ScreenerFilterModifyRequest,
+) -> Result<Option<Value>, AppError> {
+    let (min, max) = match &request.mode {
+        ScreenerFilterModifyMode::Range { min, max, .. } => (*min, *max),
+        ScreenerFilterModifyMode::Option { .. } => return Ok(None),
+    };
+    let index = match &request.selector {
+        ScreenerFilterSelector::Index(index) => *index,
+        ScreenerFilterSelector::Text(_) => return Ok(None),
+    };
+    let requested_range = filter_modify_range_payload(request);
+    let before_config = match fetch_current_screener_storage_config(runtime).await {
+        Ok(config) => config,
+        Err(error) if error.kind == ErrorKind::InternalApiUnavailable => return Ok(None),
+        Err(error) => return Err(error),
+    };
+    let screen_title = before_config
+        .get("screen_title")
+        .and_then(Value::as_str)
+        .unwrap_or("")
+        .to_string();
+    let before_storage_filters = storage_filters_from_config(&before_config, &[]);
+    let Some(storage_target) = before_storage_filters.get(index).cloned() else {
+        return Ok(None);
+    };
+    let expected_after_filters =
+        match replace_storage_filter_range(&before_storage_filters, index, min, max) {
+            Ok(filters) => filters,
+            Err(error) if error.kind == ErrorKind::InternalApiUnavailable => return Ok(None),
+            Err(error) => return Err(error),
+        };
+
+    if request.dry_run {
+        return Ok(Some(json!({
+            "source": SCREENER_SOURCE,
+            "action": "filter_modify",
+            "scope": "screen_storage_api",
+            "dry_run": true,
+            "modified": false,
+            "before_filter_count": before_storage_filters.len(),
+            "after_filter_count": expected_after_filters.len(),
+            "storage_target_filter": storage_filter_target_payload(&storage_target),
+            "requested_range": requested_range,
+            "filters": storage_filter_targets_payload(&expected_after_filters),
+        })));
+    }
+
+    ensure_test_screener_screen_for_filter_mutation(&screen_title, "modify")?;
+    let save_result =
+        save_screener_storage_filters(runtime, &before_config, &expected_after_filters).await?;
+    let after_config = fetch_current_screener_storage_config(runtime).await?;
+    let after_storage_filters = storage_filters_from_config(&after_config, &[]);
+    if !storage_filter_order_matches(&after_storage_filters, &expected_after_filters) {
+        return Err(AppError::new(
+            ErrorKind::InternalApiUnavailable,
+            "Screener storage filters did not match after modify",
+        )
+        .with_details(json!({
+            "source": SCREENER_SOURCE,
+            "action": "filter_modify",
+            "scope": "screen_storage_api",
+            "target_filter": storage_filter_target_payload(&storage_target),
+            "expected_filters": storage_filter_targets_payload(&expected_after_filters),
+            "after_filters": storage_filter_targets_payload(&after_storage_filters),
+            "save_result": save_result,
+        })));
+    }
+    let visible_refresh =
+        request_full_page_screener_reload_after_storage_filter_save(runtime).await?;
+
+    Ok(Some(json!({
+        "source": SCREENER_SOURCE,
+        "action": "filter_modify",
+        "scope": "screen_storage_api",
+        "dry_run": false,
+        "modified": true,
+        "screen_title": screen_title,
+        "screen_id": before_config.get("screen_id").cloned().unwrap_or(Value::Null),
+        "before_filter_count": before_storage_filters.len(),
+        "after_filter_count": after_storage_filters.len(),
+        "storage_target_filter": storage_filter_target_payload(&storage_target),
+        "requested_range": requested_range,
+        "filters": storage_filter_targets_payload(&expected_after_filters),
+        "save_result": save_result,
+        "visible_refresh": visible_refresh,
+    })))
 }
 
 pub async fn screener_filters_clear(
@@ -641,6 +760,36 @@ async fn refresh_full_page_screener_after_storage_filter_save(
         "expected_filter_count": expected_filter_count,
         "last_filter_count": last_state.get("filter_count").cloned().unwrap_or(Value::Null),
     }))
+}
+
+async fn request_full_page_screener_reload_after_storage_filter_save(
+    runtime: &mut impl RuntimeEvaluator,
+) -> Result<Value, AppError> {
+    runtime
+        .evaluate(
+            &expanded_expression(
+                r#"
+                (function() {
+                    REPLACE_HELPERS
+                    if (!window.location || !window.location.reload) {
+                        return {
+                            requested: false,
+                            confirmed: false,
+                            reason: 'location_reload_unavailable'
+                        };
+                    }
+                    window.location.reload();
+                    return {
+                        requested: true,
+                        confirmed: false,
+                        reason: 'reload_requested_after_storage_post_check'
+                    };
+                })()
+                "#,
+            ),
+            true,
+        )
+        .await
 }
 
 async fn read_filter_actions(runtime: &mut impl RuntimeEvaluator) -> Result<Value, AppError> {
@@ -1365,6 +1514,26 @@ mod tests {
         json!({ "type": filter_type })
     }
 
+    fn condition_filter_above(column: &str, value: f64) -> Value {
+        json!({
+            "type": "Condition",
+            "left": { "column": { "id": column, "params": {} } },
+            "operation": { "type": "above" },
+            "right": { "value": value },
+            "target": column
+        })
+    }
+
+    fn condition_filter_between(column: &str, left: f64, right: f64) -> Value {
+        json!({
+            "type": "Condition",
+            "left": { "column": { "id": column, "params": {} } },
+            "operation": { "type": "between" },
+            "right": { "left": left, "right": right },
+            "target": column
+        })
+    }
+
     #[tokio::test]
     async fn screener_filters_list_indexes_filters_and_restores_closed_state() {
         let mut runtime = FakeRuntime::new([
@@ -1652,6 +1821,126 @@ mod tests {
         assert_eq!(result["before_filter_count"], 1);
         assert_eq!(result["after_filter_count"], 1);
         assert_eq!(runtime.mouse_events.len(), 0);
+    }
+
+    #[tokio::test]
+    async fn screener_filters_modify_range_storage_dry_run_returns_expected_payload() {
+        let mut runtime = FakeRuntime::new([
+            json!({ "button_found": false, "open": false }),
+            storage_config_with_filters(
+                "米国株（テスト用）",
+                vec![],
+                vec![condition_filter_above("change", 10.0)],
+            ),
+        ]);
+        let request = validate_screener_filter_modify_request(
+            Some(0),
+            None,
+            Some(0.0),
+            Some(5.0),
+            None,
+            true,
+        )
+        .unwrap();
+
+        let result = screener_filters_modify(&mut runtime, request)
+            .await
+            .unwrap();
+
+        assert_eq!(result["scope"], "screen_storage_api");
+        assert_eq!(result["action"], "filter_modify");
+        assert_eq!(result["dry_run"], true);
+        assert_eq!(result["modified"], false);
+        assert_eq!(result["before_filter_count"], 1);
+        assert_eq!(result["after_filter_count"], 1);
+        assert_eq!(result["storage_target_filter"]["type"], "Condition");
+        assert_eq!(result["storage_target_filter"]["operation"], "above");
+        assert_eq!(result["filters"][0]["operation"], "between");
+        assert_eq!(runtime.mouse_events.len(), 0);
+        assert_eq!(runtime.inserted_text.len(), 0);
+    }
+
+    #[tokio::test]
+    async fn screener_filters_modify_range_storage_saves_and_post_checks() {
+        let mut runtime = FakeRuntime::new([
+            json!({ "button_found": false, "open": false }),
+            storage_config_with_filters(
+                "米国株（テスト用）",
+                vec![],
+                vec![condition_filter_above("change", 10.0)],
+            ),
+            json!({ "saved": true, "screen_id": "screen-test", "filter_count": 1 }),
+            storage_config_with_filters(
+                "米国株（テスト用）",
+                vec![],
+                vec![condition_filter_between("change", 0.0, 5.0)],
+            ),
+            json!({
+                "requested": true,
+                "confirmed": false,
+                "reason": "reload_requested_after_storage_post_check"
+            }),
+        ]);
+        let request = validate_screener_filter_modify_request(
+            Some(0),
+            None,
+            Some(0.0),
+            Some(5.0),
+            None,
+            false,
+        )
+        .unwrap();
+
+        let result = screener_filters_modify(&mut runtime, request)
+            .await
+            .unwrap();
+
+        assert_eq!(result["scope"], "screen_storage_api");
+        assert_eq!(result["dry_run"], false);
+        assert_eq!(result["modified"], true);
+        assert_eq!(result["storage_target_filter"]["operation"], "above");
+        assert_eq!(result["filters"][0]["operation"], "between");
+        assert_eq!(result["visible_refresh"]["requested"], true);
+        assert_eq!(runtime.mouse_events.len(), 0);
+        assert!(runtime.evaluated.iter().any(|(expression, _)| {
+            expression.contains("\"operation\":{\"type\":\"between\"}")
+                && expression.contains("\"right\":{\"left\":0.0,\"right\":5.0}")
+        }));
+    }
+
+    #[tokio::test]
+    async fn screener_filters_modify_range_storage_post_check_failure_does_not_fallback() {
+        let mut runtime = FakeRuntime::new([
+            json!({ "button_found": false, "open": false }),
+            storage_config_with_filters(
+                "米国株（テスト用）",
+                vec![],
+                vec![condition_filter_above("change", 10.0)],
+            ),
+            json!({ "saved": true, "screen_id": "screen-test", "filter_count": 1 }),
+            storage_config_with_filters(
+                "米国株（テスト用）",
+                vec![],
+                vec![condition_filter_above("change", 10.0)],
+            ),
+        ]);
+        let request = validate_screener_filter_modify_request(
+            Some(0),
+            None,
+            Some(0.0),
+            Some(5.0),
+            None,
+            false,
+        )
+        .unwrap();
+
+        let error = screener_filters_modify(&mut runtime, request)
+            .await
+            .unwrap_err();
+
+        assert_eq!(error.kind, ErrorKind::InternalApiUnavailable);
+        assert!(runtime.mouse_events.is_empty());
+        assert!(runtime.inserted_text.is_empty());
     }
 
     #[tokio::test]

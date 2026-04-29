@@ -171,7 +171,11 @@ pub fn storage_filters_from_config(
                         .map(str::to_string),
                     operation: filter
                         .get("operation")
-                        .and_then(Value::as_str)
+                        .and_then(|operation| {
+                            operation
+                                .as_str()
+                                .or_else(|| operation.get("type").and_then(Value::as_str))
+                        })
                         .map(str::to_string),
                     raw: filter.clone(),
                 })
@@ -197,6 +201,77 @@ pub fn storage_filter_targets_payload(filters: &[ScreenerStorageFilterTarget]) -
 
 pub fn storage_filter_update_payload(filters: &[ScreenerStorageFilterTarget]) -> Vec<Value> {
     filters.iter().map(|filter| filter.raw.clone()).collect()
+}
+
+pub fn replace_storage_filter_range(
+    filters: &[ScreenerStorageFilterTarget],
+    index: usize,
+    min: Option<f64>,
+    max: Option<f64>,
+) -> Result<Vec<ScreenerStorageFilterTarget>, AppError> {
+    ensure_storage_filter_index(filters, index)?;
+    let mut updated = filters.to_vec();
+    let mut filter = updated[index].clone();
+    let target_payload = storage_filter_target_payload(&filter);
+    let raw = filter.raw.as_object_mut().ok_or_else(|| {
+        AppError::new(
+            ErrorKind::InternalApiUnavailable,
+            "Screener storage filter payload was not an object",
+        )
+        .with_details(target_payload.clone())
+    })?;
+    let filter_type = raw.get("type").and_then(Value::as_str);
+    if filter_type != Some("Condition") {
+        return Err(AppError::new(
+            ErrorKind::InternalApiUnavailable,
+            "Screener storage filter range update only supports Condition filters",
+        )
+        .with_details(target_payload.clone()));
+    }
+    let operation_type = raw
+        .get("operation")
+        .and_then(|operation| operation.get("type"))
+        .and_then(Value::as_str);
+    if !matches!(operation_type, Some("above" | "between")) {
+        return Err(AppError::new(
+            ErrorKind::InternalApiUnavailable,
+            "Screener storage filter range update only supports simple above/between operations",
+        )
+        .with_details(target_payload.clone()));
+    }
+
+    match (min, max) {
+        (Some(min), Some(max)) => {
+            if min != 0.0 || max <= min {
+                return Err(AppError::new(
+                    ErrorKind::Validation,
+                    "Screener storage range update supports only --min 0 --max <N>",
+                ));
+            }
+            raw.insert("operation".to_string(), json!({ "type": "between" }));
+            raw.insert("right".to_string(), json!({ "left": min, "right": max }));
+            filter.operation = Some("between".to_string());
+        }
+        (Some(min), None) => {
+            raw.insert("operation".to_string(), json!({ "type": "above" }));
+            raw.insert("right".to_string(), json!({ "value": min }));
+            filter.operation = Some("above".to_string());
+        }
+        (None, Some(_)) => {
+            return Err(AppError::new(
+                ErrorKind::Validation,
+                "Screener storage range update does not support --max without --min",
+            ));
+        }
+        (None, None) => {
+            return Err(AppError::new(
+                ErrorKind::Validation,
+                "Either --min or --max is required",
+            ));
+        }
+    }
+    updated[index] = filter;
+    Ok(updated)
 }
 
 pub fn ensure_storage_filter_alignment(
@@ -262,7 +337,34 @@ pub fn storage_filter_order_matches(
         && actual
             .iter()
             .zip(expected)
-            .all(|(actual, expected)| actual.raw == expected.raw)
+            .all(|(actual, expected)| json_values_equivalent(&actual.raw, &expected.raw))
+}
+
+fn json_values_equivalent(actual: &Value, expected: &Value) -> bool {
+    match (actual, expected) {
+        (Value::Number(actual), Value::Number(expected)) => {
+            match (actual.as_f64(), expected.as_f64()) {
+                (Some(actual), Some(expected)) => (actual - expected).abs() < f64::EPSILON,
+                _ => actual == expected,
+            }
+        }
+        (Value::Array(actual), Value::Array(expected)) => {
+            actual.len() == expected.len()
+                && actual
+                    .iter()
+                    .zip(expected)
+                    .all(|(actual, expected)| json_values_equivalent(actual, expected))
+        }
+        (Value::Object(actual), Value::Object(expected)) => {
+            actual.len() == expected.len()
+                && actual.iter().all(|(key, actual)| {
+                    expected
+                        .get(key)
+                        .is_some_and(|expected| json_values_equivalent(actual, expected))
+                })
+        }
+        _ => actual == expected,
+    }
 }
 
 pub fn added_filter_target(
@@ -345,4 +447,83 @@ pub fn screener_filter_text_matches_option(filter_text: &str, option: &str) -> b
         return false;
     }
     text.ends_with(&option)
+}
+
+#[cfg(test)]
+mod tests {
+    use serde_json::json;
+
+    use super::*;
+
+    fn storage_target(raw: Value) -> ScreenerStorageFilterTarget {
+        ScreenerStorageFilterTarget {
+            index: 0,
+            text: None,
+            filter_type: raw.get("type").and_then(Value::as_str).map(str::to_string),
+            subtype: raw
+                .get("subtype")
+                .and_then(Value::as_str)
+                .map(str::to_string),
+            operation: raw
+                .get("operation")
+                .and_then(|operation| operation.get("type"))
+                .and_then(Value::as_str)
+                .map(str::to_string),
+            raw,
+        }
+    }
+
+    #[test]
+    fn replace_storage_filter_range_sets_between_payload() {
+        let filters = vec![storage_target(json!({
+            "type": "Condition",
+            "left": { "column": { "id": "change", "params": {} } },
+            "operation": { "type": "above" },
+            "right": { "value": 10 },
+            "target": "change"
+        }))];
+
+        let updated = replace_storage_filter_range(&filters, 0, Some(0.0), Some(5.0)).unwrap();
+
+        assert_eq!(updated[0].operation.as_deref(), Some("between"));
+        assert_eq!(updated[0].raw["operation"]["type"], "between");
+        assert_eq!(
+            updated[0].raw["right"],
+            json!({ "left": 0.0, "right": 5.0 })
+        );
+    }
+
+    #[test]
+    fn replace_storage_filter_range_rejects_complex_operation() {
+        let filters = vec![storage_target(json!({
+            "type": "Condition",
+            "left": { "column": { "id": "close", "params": {} } },
+            "operation": {
+                "type": "belowPercent",
+                "params": { "offsetRangeId": "offset_range_0_10" }
+            },
+            "right": { "column": { "id": "ema", "params": { "length": 21 } } },
+            "target": "close"
+        }))];
+
+        let error = replace_storage_filter_range(&filters, 0, Some(0.0), Some(5.0)).unwrap_err();
+
+        assert_eq!(error.kind, ErrorKind::InternalApiUnavailable);
+    }
+
+    #[test]
+    fn storage_filter_order_matches_treats_integer_and_float_numbers_as_equivalent() {
+        let actual = vec![storage_target(json!({
+            "type": "Condition",
+            "operation": { "type": "between" },
+            "right": { "left": 0, "right": 5 }
+        }))];
+        let expected = vec![storage_target(json!({
+            "type": "Condition",
+            "operation": { "type": "between" },
+            "right": { "left": 0.0, "right": 5.0 }
+        }))];
+
+        assert!(storage_filter_order_matches(&actual, &expected));
+    }
 }

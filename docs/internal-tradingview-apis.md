@@ -378,6 +378,8 @@ Storage/API-backed today:
 
 - `screener screens delete`
 - `screener columns config/add/remove/reorder`
+- `screener filters modify --min/--max` for simple saved-storage `Condition`
+  filters selected by index
 - `screener filters remove/clear`
 
 High-value storage/API audit candidates:
@@ -397,15 +399,16 @@ Likely DOM-maintained boundaries:
 The next Screener stabilization work should prefer storage/API evidence before
 adding more DOM retries.
 
-2026-04-29 bounded audit result: filter add/modify storage replacement remains
-`research_only`. In the available live environment, `tv tab list` did not expose
-a full-page Screener target. The chart-side Screener drawer exposed visible
-filters for the test screen, but `window.initData.screen_data` did not expose an
-active saved-screen `filters` payload suitable for deriving add/modify schema.
-Existing `filters remove/clear` stay storage-backed because they remove existing
-raw filter entries and verify by re-fetch. `filters add` and `filters modify`
-continue to use the existing UI-backed path until a future full-page Screener
-target or another safe read source proves the raw add/modify payload shape.
+2026-04-29 bounded audit result: a full-page Screener target exposes enough
+saved-screen filter schema to storage-back `filters modify --min/--max` for
+simple `Condition` filters selected by index. The implementation rewrites only
+the saved filter's `operation` and `right` range fields, saves the active screen,
+and succeeds only after a storage re-fetch matches the expected payload.
+Unsupported filter schemas, text selectors, missing storage init data, and
+pre-save storage unavailability fall back to the existing UI-backed path.
+Post-save post-check failures do not fall back to UI. `filters add` and
+`filters modify --option` remain UI-backed because no safe catalog or option
+value source has been proven for constructing those raw storage payloads.
 
 ## CDP transport boundary
 

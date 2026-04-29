@@ -210,6 +210,89 @@ pub(super) async fn fetch_active_screener_storage_config(
     Ok(result)
 }
 
+pub(super) async fn fetch_current_screener_storage_config(
+    runtime: &mut impl RuntimeEvaluator,
+) -> Result<Value, AppError> {
+    let result = runtime
+        .evaluate(
+            &expanded_expression(
+                r#"
+                (async function() {
+                    REPLACE_HELPERS
+                    var initData = window.initData || {};
+                    var active = initData.screen_data || {};
+                    var storageUrl = initData.SCREENER_STORAGE_URL;
+                    var version = initData.screener_storage_release_version;
+                    var screenId = String(active.id || '');
+                    var screenerKey = initData.standalone_type ||
+                        active.screener_key ||
+                        'stock';
+                    if (!storageUrl || !version || !screenId || !screenerKey) {
+                        return {
+                            storage_available: false,
+                            reason: 'missing_screener_storage_init_data',
+                            columns: []
+                        };
+                    }
+                    var base = String(storageUrl).replace(/\/$/, '') + '/api/v2/screens/';
+                    var url = base + encodeURIComponent(screenId) + '/?screener_key=' +
+                        encodeURIComponent(screenerKey) + '&version=' + encodeURIComponent(version);
+                    var response = await fetch(url, { credentials: 'include' });
+                    var body = await response.json().catch(function() { return null; });
+                    if (!response.ok || !body) {
+                        return {
+                            storage_available: true,
+                            fetch_ok: response.ok,
+                            status: response.status,
+                            status_text: response.statusText,
+                            reason: 'screen_fetch_failed',
+                            columns: []
+                        };
+                    }
+                    var title = String(body.title || active.title || '');
+                    var columns = Array.isArray(body.default_custom_column_set)
+                        ? body.default_custom_column_set
+                        : (Array.isArray(active.default_custom_column_set)
+                            ? active.default_custom_column_set
+                            : []);
+                    return {
+                        storage_available: true,
+                        fetch_ok: true,
+                        status: response.status,
+                        screener_key: screenerKey,
+                        version: body.version || active.version || version,
+                        screen_id: String(body.id || screenId),
+                        screen_title: title,
+                        expected_title: title,
+                        title_matches: true,
+                        active_column_set: body.active_column_set || active.active_column_set || null,
+                        storage_screen: body,
+                        column_count: columns.length,
+                        columns: columns.map(function(column, index) {
+                            return {
+                                index: index,
+                                id: String(column && column.id || ''),
+                                params: column && column.params ? column.params : {}
+                            };
+                        }).filter(function(column) { return column.id; })
+                    };
+                })()
+                "#,
+            ),
+            true,
+        )
+        .await?;
+
+    if !(value_bool(&result, "storage_available") && value_bool(&result, "fetch_ok")) {
+        return Err(AppError::new(
+            ErrorKind::InternalApiUnavailable,
+            "Screener active screen storage API was not available",
+        )
+        .with_details(result));
+    }
+    Ok(result)
+}
+
 pub(super) fn screen_menu_click_point(value: &Value) -> Result<ScreenMenuClickPoint, AppError> {
     screener_click_point(value, "click_point")
 }
