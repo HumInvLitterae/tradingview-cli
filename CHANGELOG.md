@@ -113,8 +113,8 @@ package version omits the leading `v`.
   re-fetch post-checks and UI fallback only before any storage save attempt.
 - Added `tv screener open --full-page` to reuse existing full-page Stock
   Screener targets and return `target_cli_args`; when automatic CDP target
-  creation is unavailable, the command now fails with a manual-open hint instead
-  of silently falling back to fragile UI automation.
+  creation is unavailable, the command uses the bounded TradingView Desktop
+  new-tab Screener tile fallback and reports `creation_method`.
 - Added `--direction <long|short>` as an alias for the positional `DIRECTION`
   argument on `tv draw position`.
 

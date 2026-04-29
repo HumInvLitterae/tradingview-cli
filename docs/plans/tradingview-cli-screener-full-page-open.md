@@ -16,8 +16,9 @@ The existing `tv screener open` behavior must remain unchanged unless `--full-pa
 - [x] (2026-04-29) Added local CDP target creation helpers and shared full-page Screener target recognition.
 - [x] (2026-04-29) Added `tv screener open --full-page` with existing-target reuse and CDP target creation attempt.
 - [x] (2026-04-29) Live-probed CDP target creation and confirmed TradingView Desktop returns `Could not create new page`.
+- [x] (2026-04-29) Added bounded TradingView Desktop new-tab Screener tile fallback after standard CDP target creation failure.
 - [x] (2026-04-29) Updated README, internal API reference, roadmap, changelog, plans index, and local continuity ledger.
-- [x] (2026-04-29) Ran focused tests, full workspace validation, hygiene grep, and bounded live smoke.
+- [x] (2026-04-29) Re-ran full validation after new-tab fallback implementation.
 - [ ] Commit the implementation and docs update.
 
 ## Surprises & Discoveries
@@ -34,6 +35,12 @@ The existing `tv screener open` behavior must remain unchanged unless `--full-pa
 - Observation: The app-tab UI can create a blank TradingView Desktop app tab, but that blank tab did not expose a new chart or Screener CDP page target.
   Evidence: `tv tab new --from 0` increased `app_tabs` but `tab list` still showed no `screener_targets`.
 
+- Observation: The raw CDP target list exposes a separate TradingView Desktop `new-tab` page target that is intentionally not shown as a chart tab by `tv tab list`.
+  Evidence: the raw target URL contains `/app/new-tab/index.html`; its DOM contains a Stock Screener product tile with selector `li.product-customizable.screener-stocks`.
+
+- Observation: Clicking the Stock Screener tile from the `new-tab` page target opens a full-page Screener target.
+  Evidence: bounded live smoke closed the Screener app tab, ran `tv screener open --full-page`, and received `created: true`, `creation_method: "new_tab_tile"`, and reusable `target_cli_args`; the returned target passed `screener status`.
+
 ## Decision Log
 
 - Decision: Add `--full-page` to the existing `open` command instead of adding a new subcommand.
@@ -48,11 +55,15 @@ The existing `tv screener open` behavior must remain unchanged unless `--full-pa
   Rationale: Live evidence showed that app-tab UI creation produces a blank Desktop tab without a Screener CDP target, and app-window menu exploration did not reveal a stable Screener command. The command should reuse existing full-page targets and fail clearly when automatic creation is unavailable rather than pretending to open one.
   Date/Author: 2026-04-29 / Codex.
 
+- Decision: Add a bounded Desktop new-tab tile fallback, but keep it narrow.
+  Rationale: Follow-up live evidence found a concrete `new-tab` page target and a stable Stock Screener tile selector. This is not generic UI automation; it is a targeted Desktop new-tab product-launch path with a post-check that a full-page Screener target appeared.
+  Date/Author: 2026-04-29 / Codex.
+
 ## Outcomes & Retrospective
 
-Partial implementation completed. The command now supports `tv screener open --full-page` and reuses an existing full-page Screener target when one is already open. It also attempts CDP target creation and returns a structured error with a manual-open hint when TradingView Desktop rejects the standard new-target endpoint. Automatic full-page creation remains unavailable in the current Desktop evidence.
+Implementation completed. The command now supports `tv screener open --full-page`, reuses an existing full-page Screener target when one is already open, and attempts local CDP target creation when one is not open. Current TradingView Desktop evidence rejects the standard `/json/new` path, so the command falls back to the bounded Desktop new-tab Screener tile path. Success is reported only after a full-page Screener target appears.
 
-The durable value of this slice is still useful for operator workflow: once a full-page Screener tab is open, the CLI can rediscover it, activate it, and return `target_cli_args` for subsequent `tv --target-id <ID> screener ...` commands. The command no longer leaves this handoff entirely manual. The non-goal is also clearer: without a stable Desktop app-window route, the CLI should not add fragile generic UI fallback just to create the tab.
+The durable value of this slice is that storage-backed Screener workflows no longer need manual full-page preparation in the common Desktop new-tab case. The command creates or reuses a full-page target, activates it, and returns `target_cli_args` for subsequent `tv --target-id <ID> screener ...` commands.
 
 ## Context and Orientation
 
@@ -68,7 +79,7 @@ Second, move full-page Screener URL recognition into `tradingview-cdp` as `is_sc
 
 Third, change `ScreenerCommand::Open` in `crates/cli/src/cli.rs` from a unit variant to `Open { full_page: bool }`. In `app/dispatch`, route `Open { full_page: false }` through the existing runtime-backed drawer open path and route `Open { full_page: true }` to a new config-backed operation, `ops::screener_open_full_page(config)`.
 
-Fourth, implement `screener_open_full_page` in `crates/cli/src/ops/screener/state.rs`. It should fetch targets, reuse and activate the first existing full-page Screener target if present, or call `new_target_url` with `https://www.tradingview.com/screener/` and then poll `fetch_targets` briefly until a full-page Screener target appears. The success payload must include `source`, `action: "open_full_page"`, `full_page: true`, `created`, `reused`, `target_id`, `target_cli_args`, `url`, and `title`. If target creation fails before a full-page target exists, return a structured error that includes a manual-open hint. Do not add UI fallback without a stable app-window command path.
+Fourth, implement `screener_open_full_page` in `crates/cli/src/ops/screener/state.rs`. It should fetch targets, reuse and activate the first existing full-page Screener target if present, or call `new_target_url` with `https://www.tradingview.com/screener/` and then poll `fetch_targets` briefly until a full-page Screener target appears. If the standard CDP new-target path fails before mutation, fall back to the TradingView Desktop `new-tab` page target: create or reuse the app new tab, click only the Stock Screener product tile, and post-check that a full-page Screener target appeared. The success payload must include `source`, `action: "open_full_page"`, `full_page: true`, `created`, `reused`, `creation_method`, `target_id`, `target_cli_args`, `url`, and `title`. If both paths fail, return a structured error that includes a manual-open hint.
 
 Fifth, update README, `docs/internal-tradingview-apis.md`, `docs/v0.3-roadmap.md`, `CHANGELOG.md`, and `docs/plans/README.md`. Update `CONTINUITY.md` as a local ledger but do not stage it.
 
@@ -97,11 +108,11 @@ Do not write the live target id into tracked docs.
 
 ## Validation and Acceptance
 
-This slice is accepted when `tv screener open` still opens the chart drawer with its existing payload shape, while `tv screener open --full-page` returns a full-page Screener target handoff when such a target already exists. If no full-page target exists and the CDP new-target endpoint succeeds, the command must report `created: true`. If CDP target creation fails or a new target cannot be found after creation, the command must fail with a structured error and must not report success.
+This slice is accepted when `tv screener open` still opens the chart drawer with its existing payload shape, while `tv screener open --full-page` returns a full-page Screener target handoff when such a target already exists. If no full-page target exists and the CDP new-target endpoint succeeds, the command must report `created: true`. If CDP target creation fails but the Desktop new-tab fallback opens a Screener target, the command must report `created: true` and `creation_method: "new_tab_tile"`. If no full-page target appears after all attempted paths, the command must fail with a structured error and must not report success.
 
 Tests must cover help visibility, existing-target reuse, new-target success payload, and failure when no Screener target appears after creation.
 
-Validation run on 2026-04-29:
+Validation run on 2026-04-29 after the new-tab fallback update:
 
     cargo test -p tradingview-cdp transport -- --nocapture
     cargo test -p tradingview-cli screener::state -- --nocapture
@@ -132,13 +143,15 @@ The end state should include:
     }
 
     pub async fn new_target_url(config: &TransportConfig, url: &str) -> Result<Target, AppError>;
+    pub fn is_new_tab_target(target: &Target) -> bool;
     pub fn is_screener_target(target: &Target) -> bool;
 
     pub async fn screener_open_full_page(config: &TransportConfig) -> Result<Value, AppError>;
 
-`screener_open_full_page` should use only `tradingview-cdp` target management helpers and should not use generic UI automation.
+`screener_open_full_page` should use `tradingview-cdp` target management helpers and only the narrow TradingView Desktop new-tab product tile fallback. It should not use generic arbitrary UI automation.
 
 ## Open Questions
 
 - Confirmed current local evidence: TradingView Desktop returned HTTP 500 for `PUT /json/new` full-page Screener creation.
-- UNCONFIRMED: Whether another stable app-window command or future Desktop build can open a full-page Screener target without manual setup.
+- Confirmed current local evidence: TradingView Desktop's `new-tab` page target can open Stock Screener through the Stock Screener product tile.
+- UNCONFIRMED: Whether a future Desktop build will support standard CDP `/json/new` page creation.

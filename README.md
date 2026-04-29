@@ -212,9 +212,11 @@ tv --target-id <CDP_TARGET_ID> symbol NASDAQ:MU
 
 Use `tv screener open --full-page` to reuse a Stock Screener page tab and get
 its `target_cli_args`. The command also attempts the local CDP new-target path,
-but current TradingView Desktop builds may reject automatic creation; in that
-case, open the Screener page tab manually and rerun the command. `tv tab list`
-also returns `screener_targets` when a Stock Screener page tab is already open.
+but current TradingView Desktop builds may reject that endpoint. When that
+happens, the command falls back to TradingView Desktop's new-tab Screener tile
+and reports `creation_method: "new_tab_tile"` if a full-page target appears.
+`tv tab list` also returns `screener_targets` when a Stock Screener page tab is
+already open.
 
 If `tv ohlcv` fails while `tv quote` or `tv symbol` still works, do not keep
 retrying the same command blindly. Preserve the full JSON error envelope, check

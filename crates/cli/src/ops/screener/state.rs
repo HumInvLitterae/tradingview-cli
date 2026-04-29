@@ -1,7 +1,7 @@
 use serde_json::{Map, Value, json};
 use tokio::time::{Duration, sleep};
 
-use tradingview_cdp::{RuntimeEvaluator, Target, TransportConfig};
+use tradingview_cdp::{CdpClient, RuntimeEvaluator, Target, TransportConfig};
 use tradingview_core::{AppError, ErrorKind};
 
 use super::{
@@ -16,6 +16,8 @@ use super::{
 const FULL_PAGE_SCREENER_URL: &str = "https://www.tradingview.com/screener/";
 const FULL_PAGE_TARGET_WAIT_ATTEMPTS: usize = 10;
 const FULL_PAGE_TARGET_WAIT_MS: u64 = 250;
+const NEW_TAB_TARGET_WAIT_ATTEMPTS: usize = 10;
+const NEW_TAB_TARGET_WAIT_MS: u64 = 250;
 
 pub async fn screener_status(runtime: &mut impl RuntimeEvaluator) -> Result<Value, AppError> {
     let state = read_screener_state(runtime, None).await?;
@@ -35,30 +37,47 @@ pub async fn screener_open_full_page(config: &TransportConfig) -> Result<Value, 
     let targets = tradingview_cdp::fetch_targets(config).await?;
     if let Some(target) = first_screener_target(&targets) {
         activate_screener_target(config, target).await?;
-        return Ok(full_page_open_payload(target, false, true));
+        return Ok(full_page_open_payload(
+            target,
+            false,
+            true,
+            "existing_target",
+        ));
     }
 
-    let created_target =
-        tradingview_cdp::new_target_url(config, FULL_PAGE_SCREENER_URL)
-            .await
-            .map_err(|error| {
-                AppError::new(
-                    error.kind,
-                    "Full-page Stock Screener target could not be created through local CDP",
-                )
-                .with_details(json!({
-                    "source": SCREENER_SOURCE,
-                    "action": "open_full_page",
-                    "full_page": true,
-                    "target_url": FULL_PAGE_SCREENER_URL,
-                    "creation_error": error.to_string(),
-                    "creation_error_details": error.details,
-                    "next_action_hint": "Open the Stock Screener as a TradingView Desktop tab manually, then rerun `tv screener open --full-page` to reuse it and get target_cli_args.",
-                }))
-            })?;
-    let target = wait_for_screener_target(config, &created_target.id).await?;
+    let created_target = match tradingview_cdp::new_target_url(config, FULL_PAGE_SCREENER_URL).await
+    {
+        Ok(target) => target,
+        Err(creation_error) => {
+            return match open_screener_from_new_tab(config).await {
+                Ok(target) => {
+                    activate_screener_target(config, &target).await?;
+                    Ok(full_page_open_payload(&target, true, false, "new_tab_tile"))
+                }
+                Err(fallback_error) => {
+                    if let Ok(target) =
+                        wait_for_screener_target(config, None, "new_tab_tile_postcheck").await
+                    {
+                        activate_screener_target(config, &target).await?;
+                        return Ok(full_page_open_payload(&target, true, false, "new_tab_tile"));
+                    }
+                    Err(full_page_creation_error(
+                        creation_error,
+                        Some(fallback_error),
+                    ))
+                }
+            };
+        }
+    };
+    let target =
+        wait_for_screener_target(config, Some(&created_target.id), "cdp_new_target").await?;
     activate_screener_target(config, &target).await?;
-    Ok(full_page_open_payload(&target, true, false))
+    Ok(full_page_open_payload(
+        &target,
+        true,
+        false,
+        "cdp_new_target",
+    ))
 }
 
 pub async fn screener_get(
@@ -137,16 +156,18 @@ fn first_screener_target(targets: &[Target]) -> Option<&Target> {
 
 async fn wait_for_screener_target(
     config: &TransportConfig,
-    preferred_target_id: &str,
+    preferred_target_id: Option<&str>,
+    creation_method: &str,
 ) -> Result<Target, AppError> {
     for _ in 0..FULL_PAGE_TARGET_WAIT_ATTEMPTS {
         let targets = tradingview_cdp::fetch_targets(config).await?;
-        if let Some(target) = targets
-            .iter()
-            .find(|target| {
-                target.id == preferred_target_id && tradingview_cdp::is_screener_target(target)
-            })
-            .cloned()
+        if let Some(target_id) = preferred_target_id
+            && let Some(target) = targets
+                .iter()
+                .find(|target| {
+                    target.id == target_id && tradingview_cdp::is_screener_target(target)
+                })
+                .cloned()
         {
             return Ok(target);
         }
@@ -165,9 +186,165 @@ async fn wait_for_screener_target(
         "action": "open_full_page",
         "full_page": true,
         "created_target_id": preferred_target_id,
+        "creation_method": creation_method,
         "target_url": FULL_PAGE_SCREENER_URL,
         "wait_attempts": FULL_PAGE_TARGET_WAIT_ATTEMPTS,
     })))
+}
+
+async fn open_screener_from_new_tab(config: &TransportConfig) -> Result<Target, AppError> {
+    if current_new_tab_target(config).await?.is_none() {
+        click_create_new_app_tab(config).await?;
+        wait_for_new_tab_target(config).await?;
+    }
+
+    let mut last_result = Value::Null;
+    for _ in 0..NEW_TAB_TARGET_WAIT_ATTEMPTS {
+        if let Some(target) =
+            first_screener_target(&tradingview_cdp::fetch_targets(config).await?).cloned()
+        {
+            return Ok(target);
+        }
+
+        let Some(new_tab) = current_new_tab_target(config).await? else {
+            sleep(Duration::from_millis(NEW_TAB_TARGET_WAIT_MS)).await;
+            continue;
+        };
+        let mut runtime = match CdpClient::connect(&new_tab).await {
+            Ok(runtime) => runtime,
+            Err(error) => {
+                last_result = json!({
+                    "clicked": false,
+                    "reason": "new_tab_connect_failed",
+                    "error": error.to_string(),
+                    "details": error.details,
+                });
+                sleep(Duration::from_millis(NEW_TAB_TARGET_WAIT_MS)).await;
+                continue;
+            }
+        };
+
+        match runtime
+            .evaluate(CLICK_NEW_TAB_SCREENER_TILE_EXPRESSION, false)
+            .await
+        {
+            Ok(result) if value_bool(&result, "clicked") => {
+                return wait_for_screener_target(config, None, "new_tab_tile").await;
+            }
+            Ok(result) => {
+                last_result = result;
+            }
+            Err(error) => {
+                if let Ok(target) =
+                    wait_for_screener_target(config, None, "new_tab_tile_postcheck").await
+                {
+                    return Ok(target);
+                }
+                last_result = json!({
+                    "clicked": false,
+                    "reason": "new_tab_click_error",
+                    "error": error.to_string(),
+                    "details": error.details,
+                });
+            }
+        }
+        sleep(Duration::from_millis(NEW_TAB_TARGET_WAIT_MS)).await;
+    }
+
+    if !value_bool(&last_result, "clicked") {
+        return Err(AppError::new(
+            ErrorKind::InternalApiUnavailable,
+            "TradingView new-tab Screener tile was not found",
+        )
+        .with_details(last_result));
+    }
+    wait_for_screener_target(config, None, "new_tab_tile").await
+}
+
+async fn current_new_tab_target(config: &TransportConfig) -> Result<Option<Target>, AppError> {
+    let targets = tradingview_cdp::fetch_targets(config).await?;
+    Ok(first_new_tab_target(&targets).cloned())
+}
+
+fn first_new_tab_target(targets: &[Target]) -> Option<&Target> {
+    targets
+        .iter()
+        .find(|target| tradingview_cdp::is_new_tab_target(target))
+}
+
+async fn wait_for_new_tab_target(config: &TransportConfig) -> Result<Target, AppError> {
+    for _ in 0..NEW_TAB_TARGET_WAIT_ATTEMPTS {
+        if let Some(target) = current_new_tab_target(config).await? {
+            return Ok(target);
+        }
+        sleep(Duration::from_millis(NEW_TAB_TARGET_WAIT_MS)).await;
+    }
+
+    Err(AppError::new(
+        ErrorKind::InternalApiUnavailable,
+        "TradingView new app tab target did not appear",
+    )
+    .with_details(json!({
+        "source": SCREENER_SOURCE,
+        "action": "open_full_page",
+        "full_page": true,
+        "creation_method": "new_tab_tile",
+        "wait_attempts": NEW_TAB_TARGET_WAIT_ATTEMPTS,
+    })))
+}
+
+async fn click_create_new_app_tab(config: &TransportConfig) -> Result<(), AppError> {
+    let targets = tradingview_cdp::fetch_targets(config).await?;
+    let app_target = targets
+        .iter()
+        .find(|target| tradingview_cdp::is_app_window_target(target))
+        .ok_or_else(|| {
+            AppError::new(
+                ErrorKind::InternalApiUnavailable,
+                "TradingView app window target was not found",
+            )
+        })?;
+    let mut runtime = CdpClient::connect(app_target).await?;
+    let result = runtime
+        .evaluate(CLICK_CREATE_NEW_APP_TAB_EXPRESSION, false)
+        .await?;
+    if value_bool(&result, "clicked") {
+        Ok(())
+    } else {
+        Err(AppError::new(
+            ErrorKind::InternalApiUnavailable,
+            "TradingView create-new-tab button was not found",
+        )
+        .with_details(result))
+    }
+}
+
+fn full_page_creation_error(
+    creation_error: AppError,
+    fallback_error: Option<AppError>,
+) -> AppError {
+    let fallback_details = fallback_error.as_ref().map(|error| {
+        json!({
+            "error": error.to_string(),
+            "kind": format!("{:?}", error.kind),
+            "details": error.details,
+        })
+    });
+    AppError::new(
+        creation_error.kind,
+        "Full-page Stock Screener target could not be created through local CDP or TradingView new-tab fallback",
+    )
+    .with_details(json!({
+        "source": SCREENER_SOURCE,
+        "action": "open_full_page",
+        "full_page": true,
+        "target_url": FULL_PAGE_SCREENER_URL,
+        "creation_error": creation_error.to_string(),
+        "creation_error_details": creation_error.details,
+        "fallback_method": "new_tab_tile",
+        "fallback_error": fallback_details,
+        "next_action_hint": "Open the Stock Screener as a TradingView Desktop tab manually, then rerun `tv screener open --full-page` to reuse it and get target_cli_args.",
+    }))
 }
 
 async fn activate_screener_target(
@@ -190,19 +367,75 @@ async fn activate_screener_target(
     Ok(())
 }
 
-fn full_page_open_payload(target: &Target, created: bool, reused: bool) -> Value {
+fn full_page_open_payload(
+    target: &Target,
+    created: bool,
+    reused: bool,
+    creation_method: &str,
+) -> Value {
     json!({
         "source": SCREENER_SOURCE,
         "action": "open_full_page",
         "full_page": true,
         "created": created,
         "reused": reused,
+        "creation_method": creation_method,
         "target_id": target.id,
         "target_cli_args": tradingview_cdp::target_cli_args(&target.id),
         "title": tradingview_cdp::target_title_for_handoff(target),
         "url": tradingview_cdp::target_url_for_handoff(target),
     })
 }
+
+const CLICK_CREATE_NEW_APP_TAB_EXPRESSION: &str = r#"
+(function() {
+    var button = document.querySelector("button.create-new-tab-button");
+    if (!button) return { clicked: false, reason: "missing_create_new_tab_button" };
+    button.click();
+    return { clicked: true };
+})()
+"#;
+
+const CLICK_NEW_TAB_SCREENER_TILE_EXPRESSION: &str = r#"
+(function() {
+    function findScreenerTile() {
+        var tile = document.querySelector("li.product-customizable.screener-stocks");
+        if (tile) return tile;
+        var nodes = Array.from(document.querySelectorAll("li, button, a, [role='button']"));
+        return nodes.find(function(node) {
+            var text = (node.innerText || node.textContent || "").trim();
+            return text.indexOf("スクリーナー") >= 0 || /\\bscreener\\b/i.test(text);
+        }) || null;
+    }
+    var tile = findScreenerTile();
+    if (!tile) {
+        return {
+            clicked: false,
+            reason: "missing_screener_tile",
+            title: document.title,
+            body_text_sample: (document.body && document.body.innerText || "").slice(0, 500)
+        };
+    }
+    var rect = tile.getBoundingClientRect();
+    var x = rect.left + rect.width / 2;
+    var y = rect.top + rect.height / 2;
+    ["mouseover", "mousedown", "mouseup", "click"].forEach(function(type) {
+        tile.dispatchEvent(new MouseEvent(type, {
+            bubbles: true,
+            cancelable: true,
+            view: window,
+            clientX: x,
+            clientY: y
+        }));
+    });
+    if (typeof tile.click === "function") tile.click();
+    return {
+        clicked: true,
+        title: document.title,
+        text: (tile.innerText || tile.textContent || "").trim().slice(0, 120)
+    };
+})()
+"#;
 
 fn ensure_button_available(value: &Value) -> Result<(), AppError> {
     if value_bool(value, "button_found") {
@@ -427,13 +660,14 @@ mod tests {
             "https://www.tradingview.com/screener/",
         );
 
-        let payload = full_page_open_payload(&target, true, false);
+        let payload = full_page_open_payload(&target, true, false, "cdp_new_target");
 
         assert_eq!(payload["source"], SCREENER_SOURCE);
         assert_eq!(payload["action"], "open_full_page");
         assert_eq!(payload["full_page"], true);
         assert_eq!(payload["created"], true);
         assert_eq!(payload["reused"], false);
+        assert_eq!(payload["creation_method"], "cdp_new_target");
         assert_eq!(payload["target_id"], "target-1");
         assert_eq!(
             payload["target_cli_args"],

@@ -230,6 +230,13 @@ pub fn is_app_window_target(target: &Target) -> bool {
     target.kind == "page" && target.url.contains("/app/window/index.html")
 }
 
+pub fn is_new_tab_target(target: &Target) -> bool {
+    target.kind == "page"
+        && (target.url.contains("/app/new-tab/index.html")
+            || target.title.eq_ignore_ascii_case("new tab")
+            || target.title == "新規タブ")
+}
+
 pub fn is_screener_target(target: &Target) -> bool {
     target.kind == "page"
         && target
@@ -427,6 +434,22 @@ mod tests {
         assert!(!is_screener_target(&target(
             "chart",
             "https://www.tradingview.com/chart/abc"
+        )));
+    }
+
+    #[test]
+    fn recognizes_tradingview_desktop_new_tab_targets() {
+        assert!(is_new_tab_target(&Target {
+            id: "new-tab".to_string(),
+            title: "新規タブ".to_string(),
+            kind: "page".to_string(),
+            url: "file:///TradingView.app/Contents/Resources/app.asar/app/new-tab/index.html"
+                .to_string(),
+            web_socket_debugger_url: None,
+        }));
+        assert!(!is_new_tab_target(&target(
+            "window",
+            "file:///TradingView.app/Contents/Resources/app.asar/app/window/index.html"
         )));
     }
 }
