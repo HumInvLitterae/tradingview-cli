@@ -429,6 +429,7 @@ pub async fn dispatch(
             let mut runtime = connect_runtime(config).await?;
             ops::quote(&mut runtime, symbol).await
         }
+        Command::Quotes { symbols } => ops::quote_symbols(symbols).await,
         Command::Values => {
             let mut runtime = connect_runtime(config).await?;
             ops::study_values(&mut runtime).await

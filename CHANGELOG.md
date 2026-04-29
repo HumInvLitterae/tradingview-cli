@@ -15,6 +15,7 @@ package version omits the leading `v`.
   `tv scanner scan --columns ...` for Desktop-free extended-hours scans.
 - Added Desktop-free `tv scanner metainfo` for scanner field metadata
   discovery.
+- Added Desktop-free `tv quotes <SYMBOL>...` for ordered batch quote reads.
 
 ## v0.3.0 - 2026-04-29
 

@@ -55,6 +55,105 @@ pub async fn quote_symbol(symbol: &str) -> Result<Value, AppError> {
     }
 }
 
+pub async fn quote_symbols(symbols: Vec<String>) -> Result<Value, AppError> {
+    let requested_symbols = normalize_quote_symbols(symbols)?;
+    let requested_count = requested_symbols.len();
+    let mut items = Vec::with_capacity(requested_count);
+    let mut resolved_count = 0usize;
+    let mut first_error: Option<AppError> = None;
+
+    for requested_symbol in requested_symbols {
+        match quote_symbol(&requested_symbol).await {
+            Ok(quote) => {
+                resolved_count += 1;
+                items.push(json!({
+                    "requested_symbol": requested_symbol,
+                    "ok": true,
+                    "quote": quote,
+                }));
+            }
+            Err(error) => {
+                if first_error.is_none() {
+                    first_error = Some(AppError {
+                        kind: error.kind,
+                        message: error.message.clone(),
+                        details: error.details.clone(),
+                    });
+                }
+                items.push(json!({
+                    "requested_symbol": requested_symbol,
+                    "ok": false,
+                    "error": error_payload(error),
+                }));
+            }
+        }
+    }
+
+    finalize_quote_items(requested_count, resolved_count, items, first_error)
+}
+
+fn finalize_quote_items(
+    requested_count: usize,
+    resolved_count: usize,
+    items: Vec<Value>,
+    first_error: Option<AppError>,
+) -> Result<Value, AppError> {
+    let error_count = requested_count.saturating_sub(resolved_count);
+    let payload = json!({
+        "source": "scanner_scan_rest",
+        "requested_count": requested_count,
+        "resolved_count": resolved_count,
+        "error_count": error_count,
+        "items": items,
+    });
+
+    if resolved_count > 0 {
+        Ok(payload)
+    } else {
+        let first_error = first_error.unwrap_or_else(|| {
+            AppError::new(
+                ErrorKind::Validation,
+                "No quote symbols were resolved by TradingView scanner REST",
+            )
+        });
+        Err(AppError::new(
+            first_error.kind,
+            "TradingView scanner quote did not resolve any requested symbols",
+        )
+        .with_details(payload))
+    }
+}
+
+fn normalize_quote_symbols(symbols: Vec<String>) -> Result<Vec<String>, AppError> {
+    if symbols.is_empty() {
+        return Err(AppError::new(
+            ErrorKind::Validation,
+            "quotes requires at least one symbol",
+        ));
+    }
+
+    let mut normalized = Vec::with_capacity(symbols.len());
+    for symbol in symbols {
+        let symbol = symbol.trim();
+        if symbol.is_empty() {
+            return Err(AppError::new(
+                ErrorKind::Validation,
+                "quote symbol must not be empty",
+            ));
+        }
+        normalized.push(symbol.to_string());
+    }
+    Ok(normalized)
+}
+
+fn error_payload(error: AppError) -> Value {
+    json!({
+        "kind": error.kind,
+        "message": error.message,
+        "details": error.details,
+    })
+}
+
 async fn quote_symbol_via_scanner(symbol: &str) -> Result<Value, AppError> {
     let (exchange, name) = split_exchange_symbol(symbol);
     let mut filters = vec![json!({
@@ -396,6 +495,84 @@ mod tests {
         assert_eq!(
             error.details.as_ref().unwrap()["resolution_error"],
             "not_found"
+        );
+    }
+
+    #[test]
+    fn normalize_quote_symbols_rejects_empty_inputs_before_network() {
+        assert_eq!(
+            normalize_quote_symbols(Vec::new()).unwrap_err().kind,
+            ErrorKind::Validation
+        );
+        assert_eq!(
+            normalize_quote_symbols(vec![" ".to_string()])
+                .unwrap_err()
+                .kind,
+            ErrorKind::Validation
+        );
+        assert_eq!(
+            normalize_quote_symbols(vec![" AAPL ".to_string(), "NYSE:IONQ".to_string()]).unwrap(),
+            vec!["AAPL".to_string(), "NYSE:IONQ".to_string()]
+        );
+    }
+
+    #[test]
+    fn finalize_quote_items_preserves_order_and_counts_for_mixed_results() {
+        let items = vec![
+            json!({
+                "requested_symbol": "AAPL",
+                "ok": true,
+                "quote": {
+                    "symbol": "NASDAQ:AAPL",
+                    "requested_symbol": "AAPL",
+                    "source": "scanner_scan_rest"
+                }
+            }),
+            json!({
+                "requested_symbol": "BANANA",
+                "ok": false,
+                "error": {
+                    "kind": "validation",
+                    "message": "missing",
+                    "details": { "resolution_error": "not_found" }
+                }
+            }),
+        ];
+
+        let payload = finalize_quote_items(2, 1, items, None).unwrap();
+
+        assert_eq!(payload["source"], "scanner_scan_rest");
+        assert_eq!(payload["requested_count"], 2);
+        assert_eq!(payload["resolved_count"], 1);
+        assert_eq!(payload["error_count"], 1);
+        assert_eq!(payload["items"][0]["requested_symbol"], "AAPL");
+        assert_eq!(payload["items"][0]["quote"]["source"], "scanner_scan_rest");
+        assert_eq!(payload["items"][1]["requested_symbol"], "BANANA");
+        assert_eq!(payload["items"][1]["error"]["kind"], "validation");
+    }
+
+    #[test]
+    fn finalize_quote_items_returns_error_with_ordered_details_when_all_fail() {
+        let items = vec![json!({
+            "requested_symbol": "BANANA",
+            "ok": false,
+            "error": {
+                "kind": "validation",
+                "message": "missing",
+                "details": { "resolution_error": "not_found" }
+            }
+        })];
+        let first_error = AppError::new(ErrorKind::Validation, "missing");
+
+        let error = finalize_quote_items(1, 0, items, Some(first_error)).unwrap_err();
+
+        assert_eq!(error.kind, ErrorKind::Validation);
+        assert_eq!(error.details.as_ref().unwrap()["requested_count"], 1);
+        assert_eq!(error.details.as_ref().unwrap()["resolved_count"], 0);
+        assert_eq!(error.details.as_ref().unwrap()["error_count"], 1);
+        assert_eq!(
+            error.details.as_ref().unwrap()["items"][0]["requested_symbol"],
+            "BANANA"
         );
     }
 }

@@ -95,6 +95,7 @@ Category: unauthenticated TradingView scanner REST read.
 Current command family:
 
 - `quote <SYMBOL>` for symbol-targeted reads before any chart mutation
+- `quotes <SYMBOL>...` for ordered Desktop-free batch quote reads
 - `scanner scan --columns ...` for broader scanner-table reads with explicit
   fields
 
@@ -115,6 +116,9 @@ Safety boundary:
 - extended-hours values are returned as a nested `extended_hours` object.
   Missing or inactive-session values remain `null`; the top-level `last` and
   `close` fields are not replaced by premarket or postmarket values
+- `quotes <SYMBOL>...` returns ordered `items[]`; each successful item embeds
+  the same quote shape as `quote <SYMBOL>`, and each failed item embeds a
+  public-safe structured error for the requested symbol
 - when the same extended-hours columns are requested through `scanner scan`,
   they remain table fields under each symbol row's `field_values` object rather
   than being reshaped into a nested object
@@ -301,6 +305,7 @@ Current command families:
 - `scanner scan`
 - `info <SYMBOL>`
 - `quote <SYMBOL>` before chart fallback
+- `quotes <SYMBOL>...`
 
 Safety boundary:
 

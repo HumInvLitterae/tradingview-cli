@@ -55,6 +55,11 @@ pub enum Command {
         long_about = "Get a real-time price quote.\n\nWithout SYMBOL, reads the current chart target. With SYMBOL, reads a symbol-targeted quote; this may temporarily switch the chart unless a non-mutating quote path is available. Scanner-backed symbol quotes include an additive `extended_hours` object for premarket and postmarket values when TradingView returns them. If more than one TradingView target is open, run `tv tab list` and pass `tv --target-id <ID> quote ...`."
     )]
     Quote { symbol: Option<String> },
+    #[command(
+        about = "Get Desktop-free quotes for multiple symbols",
+        long_about = "Get Desktop-free scanner-backed quotes for multiple symbols.\n\nThe command preserves input order in data.items. Each successful item contains the same quote payload shape as `tv quote <SYMBOL>` when its Desktop-free scanner path succeeds. Failed items contain structured errors and do not fall back to chart target selection."
+    )]
+    Quotes { symbols: Vec<String> },
     #[command(about = "Get current indicator values")]
     Values,
     #[command(about = "Report available TradingView internal API paths")]
@@ -847,6 +852,7 @@ impl Command {
             Self::Scanner { .. } => "scanner",
             Self::Screener { .. } => "screener",
             Self::Quote { .. } => "quote",
+            Self::Quotes { .. } => "quotes",
             Self::Values => "values",
             Self::Discover => "discover",
             Self::UiState => "ui-state",

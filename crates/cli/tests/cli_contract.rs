@@ -19,6 +19,7 @@ fn help_lists_v1_commands() {
         .stdout(predicate::str::contains("scanner"))
         .stdout(predicate::str::contains("values"))
         .stdout(predicate::str::contains("discover"))
+        .stdout(predicate::str::contains("quotes"))
         .stdout(predicate::str::contains("ui-state"))
         .stdout(predicate::str::contains("watchlist"))
         .stdout(predicate::str::contains("alert"))
@@ -48,6 +49,43 @@ fn quote_help_explains_symbol_and_target_selection() {
         .stdout(predicate::str::contains("current chart target"))
         .stdout(predicate::str::contains("extended_hours"))
         .stdout(predicate::str::contains("--target-id"));
+}
+
+#[test]
+fn quotes_help_explains_batch_symbol_reads() {
+    tv().args(["quotes", "--help"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("[SYMBOLS]"))
+        .stdout(predicate::str::contains("Desktop-free"))
+        .stdout(predicate::str::contains("data.items"));
+}
+
+#[test]
+fn quotes_rejects_invalid_inputs_before_connecting() {
+    let no_symbols = tv()
+        .env("TV_CDP_PORT", "9")
+        .arg("quotes")
+        .assert()
+        .failure()
+        .code(1);
+    let stderr = String::from_utf8(no_symbols.get_output().stderr.clone()).unwrap();
+    let value: Value = serde_json::from_str(&stderr).unwrap();
+    assert_eq!(value["success"], false);
+    assert_eq!(value["command"], "quotes");
+    assert_eq!(value["error"]["kind"], "validation");
+
+    let blank_symbol = tv()
+        .env("TV_CDP_PORT", "9")
+        .args(["quotes", " "])
+        .assert()
+        .failure()
+        .code(1);
+    let stderr = String::from_utf8(blank_symbol.get_output().stderr.clone()).unwrap();
+    let value: Value = serde_json::from_str(&stderr).unwrap();
+    assert_eq!(value["success"], false);
+    assert_eq!(value["command"], "quotes");
+    assert_eq!(value["error"]["kind"], "validation");
 }
 
 #[test]
