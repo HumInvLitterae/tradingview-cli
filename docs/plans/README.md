@@ -8,8 +8,9 @@ for release and next-phase planning.
 
 - `tradingview-cli-release-builds.md`: tag-triggered GitHub Release builds
   for Linux, macOS, and Windows binaries.
-- `tradingview-cli-model-crate-extraction.md`: extract the proven I/O-free
-  domain/model logic into the internal `tradingview-model` workspace crate.
+- `tradingview-cli-operation-adapter-boundary-audit.md`: record which remaining
+  `ops` surfaces are executable adapters, API/storage replacement candidates,
+  or intentional UI/DOM boundaries.
 
 ## Archived plans
 
@@ -68,6 +69,7 @@ Important archived plan categories:
 - application/domain/operation-adapter dependency boundary review
 - TradingView model crate extraction for I/O-free validation, request models,
   target resolution, and payload shaping
+- operation adapter boundary audit after model extraction
 
 For command contract details, prefer the notes under `docs/notes/` before
 reading archived implementation plans.

@@ -114,6 +114,10 @@ This project uses Rust 2024.
   or UI automation into another workspace crate merely because they are
   reusable in theory. Extract them only when a concrete follow-up plan proves
   the boundary and dependency set are useful.
+- Before extracting more `ops` code, consult
+  `docs/operation-adapter-boundaries.md`. Keep executable TradingView work in
+  `ops` when it needs CDP/runtime access, page-session APIs, storage fetch/save,
+  DOM/UI fallback, live chart state, or post-checks.
 - Do not create a generic `ops` crate just to move files. Current `ops` modules
   are operation adapters inside the CLI package. Split large modules internally
   first, then extract domain-specific crates only when their dependency

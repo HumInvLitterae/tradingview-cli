@@ -35,6 +35,10 @@ those enable calls while still accepting `Runtime.evaluate`,
 Before adding more DOM retries, check whether a page-session API, storage
 payload, or endpoint can replace the visible UI path. The public-safe reference
 for these dependencies is `docs/internal-tradingview-apis.md`.
+`docs/operation-adapter-boundaries.md` records which remaining operation
+families intentionally stay in `ops`, which are API/storage replacement
+candidates, and which kinds of logic belong in `tradingview-model` or the
+Desktop-free service crates.
 
 ## Crate boundary
 
@@ -123,7 +127,9 @@ Keep responsibilities separated:
   data, and ops executes live TradingView work.
 - `crates/cli/src/ops/` contains operation adapter implementations grouped by
   capability. These modules still own command-facing TradingView operations;
-  do not treat them as a pure domain crate boundary yet.
+  do not treat them as a pure domain crate boundary. Use
+  `docs/operation-adapter-boundaries.md` before moving operation code into a
+  crate.
 - `crates/cli/src/ops/screener.rs` is the Screener operation adapter facade.
   It groups the public Screener adapter surface through `state`, `screens`,
   `filters`, `columns`, and `validation` submodules under
