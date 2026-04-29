@@ -28,9 +28,20 @@ When reporting commands to the user, write them as `tv ...` unless the local exe
 
 ## Safety Rules
 
-- Prefer read-only commands first: `status`, `state`, `info`, `quote`, `ohlcv`, `values`, `watchlist get`, `pane list`, `layout list`, `alert list`, `pine get`, and `screenshot`.
+- Prefer read-only commands first: `status`, `state`, `info`, `quote`,
+  `quotes`, `ohlcv`, `values`, `scanner scan`, `scanner metainfo`,
+  `watchlist get`, `pane list`, `layout list`, `alert list`, `pine get`, and
+  `screenshot`.
 - If `ohlcv` fails while `quote` or `symbol` works, keep the full JSON error envelope, inspect `error.details`, rerun `tv tab list`, choose the active target's `target_cli_args`, run `tv --target-id <ID> state`, and retry `tv --target-id <ID> ohlcv --count 1`.
-- Use `tv timeframe <RESOLUTION>` for timeframe changes. `tv interval` is not a command. Use `tv info <SYMBOL>` and `tv quote <SYMBOL>` for one-off symbol metadata and quote reads; use `tv info` without a symbol only for current-chart metadata.
+- Use `tv timeframe <RESOLUTION>` for timeframe changes. `tv interval` is not
+  a command. Use `tv info <SYMBOL>`, `tv quote <SYMBOL>`, and
+  `tv quotes <SYMBOL>...` for Desktop-free symbol metadata and quote reads; use
+  `tv info` or `tv quote` without a symbol only for current-chart metadata or
+  quote data. Scanner-backed quote reads expose `time`, `update_mode`,
+  `delay_seconds`, and extended-hours fields when TradingView returns them, but
+  they are screening reads rather than realtime entitlement guarantees. Use
+  `tv quote <SYMBOL> --source chart` only when the selected TradingView Desktop
+  chart feed matters.
 - Before mutating chart, account, Pine, replay, layout, tab, drawing, alert, or watchlist state, explain the expected effect and get explicit user approval.
 - Use dry-run modes when available, especially for broad actions such as `alert delete --all --dry-run`, `draw clear --dry-run`, and `layout switch --dry-run`.
 - Do not record real account-local identifiers in shared notes unless the user explicitly asks. Scrub saved-script ids, saved-script names, alert ids, layout ids, chart target ids, usernames, emails, account names, and machine-local paths.

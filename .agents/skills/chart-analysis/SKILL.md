@@ -18,6 +18,9 @@ Use this skill for live TradingView chart review through the Rust `tv` CLI.
 
 1. For a one-off symbol quote or metadata check, prefer Desktop-free
    `tv quote <SYMBOL>` and `tv info <SYMBOL>` before mutating the chart.
+   Scanner-backed quotes expose `time`, `update_mode`, `delay_seconds`, and
+   extended-hours fields when TradingView returns them, but they are not a
+   realtime entitlement guarantee.
 2. Set the requested chart context with `tv symbol <SYMBOL>`,
    `tv timeframe <RESOLUTION>`, and `tv type <CHART_TYPE>` only when OHLCV,
    visible studies, drawings, screenshots, or current-chart metadata are
@@ -26,13 +29,23 @@ Use this skill for live TradingView chart review through the Rust `tv` CLI.
    `tv ohlcv --count 1` or `tv ohlcv --summary` before relying on
    current-chart reads.
 4. Read chart context with `tv state`, `tv info`, `tv quote`, and
-   `tv ohlcv --summary`. `tv info` without a symbol reads the current chart;
-   `tv info <SYMBOL>` reads symbol-search metadata without Desktop/CDP.
-5. Read visible study values with `tv values` when indicators already exist on the chart.
-6. Read Pine drawing-derived levels or zones with `tv data lines`, `tv data labels`, `tv data tables`, or `tv data boxes` when the chart includes such primitives.
-7. Inspect or adjust the date window with `tv range`, `tv scroll <DATE>`, or `tv range --from <UNIX_SECONDS> --to <UNIX_SECONDS>`.
-8. Use `tv stream quote` or `tv stream bars` only when the task needs short-lived live monitoring; ordinary chart reads should use `tv quote` and `tv ohlcv --summary`.
-9. Capture visual evidence only when useful: `tv screenshot --region chart --output <PATH>`.
+   `tv ohlcv --summary`. `tv info` without a symbol and `tv quote` without a
+   symbol read the current chart; `tv info <SYMBOL>` and
+   `tv quote <SYMBOL>` use Desktop-free reads by default.
+5. Use `tv quote <SYMBOL> --source chart` when the selected Desktop chart feed
+   matters, and `tv quote <SYMBOL> --source auto` when chart-first behavior
+   with scanner fallback is acceptable.
+6. Read visible study values with `tv values` when indicators already exist on
+   the chart.
+7. Read Pine drawing-derived levels or zones with `tv data lines`,
+   `tv data labels`, `tv data tables`, or `tv data boxes` when the chart
+   includes such primitives.
+8. Inspect or adjust the date window with `tv range`, `tv scroll <DATE>`, or
+   `tv range --from <UNIX_SECONDS> --to <UNIX_SECONDS>`.
+9. Use `tv stream quote` or `tv stream bars` only when the task needs
+   short-lived live monitoring; ordinary chart reads should use `tv quote` and
+   `tv ohlcv --summary`.
+10. Capture visual evidence only when useful: `tv screenshot --region chart --output <PATH>`.
 
 ## OHLCV Recovery
 
