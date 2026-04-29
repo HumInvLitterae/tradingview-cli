@@ -249,10 +249,17 @@ pub async fn dispatch(
                     | ScreenerScreensCommand::Save { .. } => {}
                 }
             }
+            if matches!(&command, ScreenerCommand::Open { full_page: true }) {
+                return ops::screener_open_full_page(config).await;
+            }
+
             let mut runtime = connect_runtime(config).await?;
             match command {
                 ScreenerCommand::Status => ops::screener_status(&mut runtime).await,
-                ScreenerCommand::Open => ops::screener_open(&mut runtime).await,
+                ScreenerCommand::Open { full_page: false } => {
+                    ops::screener_open(&mut runtime).await
+                }
+                ScreenerCommand::Open { full_page: true } => unreachable!(),
                 ScreenerCommand::Get { limit } => ops::screener_get(&mut runtime, limit).await,
                 ScreenerCommand::Screens { command } => match command {
                     ScreenerScreensCommand::Active => {

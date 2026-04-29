@@ -376,6 +376,11 @@ Safety boundary:
 
 Storage/API-backed today:
 
+- `screener open --full-page` reuses an existing full-page Screener tab and
+  returns `target_cli_args`. It also attempts the local CDP target creation
+  endpoint, but current live evidence shows TradingView Desktop may reject that
+  path with `Could not create new page`. This is not a TradingView account API;
+  it only manages local Desktop page targets.
 - `screener screens delete`
 - `screener columns config/add/remove/reorder`
 - `screener filters modify --min/--max` for simple saved-storage `Condition`
@@ -385,7 +390,6 @@ Storage/API-backed today:
 High-value storage/API audit candidates:
 
 - `screener filters add`
-- `screener filters modify --min/--max`
 - `screener filters modify --option`
 - `screener screens create/rename/save-as/save/switch`
 - `screener columns reset`

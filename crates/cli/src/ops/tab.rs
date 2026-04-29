@@ -217,8 +217,7 @@ fn chart_tabs_from_targets(targets: &[Target]) -> Vec<ChartTab> {
 fn screener_targets_from_targets(targets: &[Target]) -> Vec<ScreenerTarget> {
     targets
         .iter()
-        .filter(|target| target.kind == "page")
-        .filter(|target| is_screener_url(&target.url))
+        .filter(|target| transport::is_screener_target(target))
         .enumerate()
         .map(|(index, target)| ScreenerTarget {
             index,
@@ -228,10 +227,6 @@ fn screener_targets_from_targets(targets: &[Target]) -> Vec<ScreenerTarget> {
             target_cli_args: target_cli_args(&target.id),
         })
         .collect()
-}
-
-fn is_screener_url(url: &str) -> bool {
-    url.to_lowercase().contains("tradingview.com/screener")
 }
 
 fn app_window_targets_from_targets(targets: &[Target]) -> Vec<AppWindowTarget> {

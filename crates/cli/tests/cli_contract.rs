@@ -124,6 +124,10 @@ fn screener_help_lists_read_subcommands() {
         .assert()
         .success()
         .stdout(predicate::str::contains("--limit"));
+    tv().args(["screener", "open", "--help"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("--full-page"));
 
     tv().args(["screener", "screens", "--help"])
         .assert()

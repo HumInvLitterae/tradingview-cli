@@ -18,4 +18,6 @@ pub use screens::{
     screener_screens_delete, screener_screens_list, screener_screens_rename, screener_screens_save,
     screener_screens_save_as, screener_screens_switch,
 };
-pub use state::{screener_close, screener_get, screener_open, screener_status};
+pub use state::{
+    screener_close, screener_get, screener_open, screener_open_full_page, screener_status,
+};

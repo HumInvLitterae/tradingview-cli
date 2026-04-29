@@ -1,3 +1,4 @@
+use reqwest::Url;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 
@@ -78,6 +79,13 @@ impl TransportConfig {
             self.host, self.port, target_id
         )
     }
+
+    pub fn new_target_url(&self, url: &str) -> String {
+        let mut endpoint = Url::parse(&format!("http://{}:{}/json/new", self.host, self.port))
+            .expect("local CDP new target URL should be valid");
+        endpoint.set_query(Some(url));
+        endpoint.to_string()
+    }
 }
 
 pub async fn fetch_targets(config: &TransportConfig) -> Result<Vec<Target>, AppError> {
@@ -96,6 +104,51 @@ pub async fn fetch_targets(config: &TransportConfig) -> Result<Vec<Target>, AppE
         .json::<Vec<Target>>()
         .await
         .map_err(|err| AppError::new(ErrorKind::Connection, err.to_string()))
+}
+
+pub async fn new_target_url(config: &TransportConfig, url: &str) -> Result<Target, AppError> {
+    if url.trim().is_empty() {
+        return Err(AppError::new(
+            ErrorKind::Validation,
+            "CDP target URL must not be empty",
+        ));
+    }
+
+    let response = reqwest::Client::new()
+        .put(config.new_target_url(url))
+        .send()
+        .await
+        .map_err(|err| AppError::new(ErrorKind::Connection, err.to_string()))?;
+
+    let status = response.status();
+    if !status.is_success() {
+        let text = response.text().await.unwrap_or_default();
+        return Err(AppError::new(
+            ErrorKind::Connection,
+            format!("CDP target creation returned HTTP {status}"),
+        )
+        .with_details(json!({
+            "url": url,
+            "status": status.as_u16(),
+            "body": text,
+        })));
+    }
+
+    let target = response
+        .json::<Target>()
+        .await
+        .map_err(|err| AppError::new(ErrorKind::Connection, err.to_string()))?;
+    if target.id.trim().is_empty() || target.kind != "page" {
+        return Err(AppError::new(
+            ErrorKind::InternalApiUnavailable,
+            "CDP target creation returned an unusable target",
+        )
+        .with_details(json!({
+            "url": url,
+            "target": target,
+        })));
+    }
+    Ok(target)
 }
 
 pub fn select_target(targets: &[Target]) -> TargetSelection {
@@ -175,6 +228,14 @@ fn page_targets_matching(targets: &[Target], predicate: impl Fn(&Target) -> bool
 
 pub fn is_app_window_target(target: &Target) -> bool {
     target.kind == "page" && target.url.contains("/app/window/index.html")
+}
+
+pub fn is_screener_target(target: &Target) -> bool {
+    target.kind == "page"
+        && target
+            .url
+            .to_lowercase()
+            .contains("tradingview.com/screener")
 }
 
 fn app_window_targets(targets: &[Target]) -> Vec<Target> {
@@ -310,6 +371,10 @@ mod tests {
 
         assert_eq!(config.host, "127.0.0.1");
         assert_eq!(config.list_url(), "http://127.0.0.1:9222/json/list");
+        assert_eq!(
+            config.new_target_url("https://www.tradingview.com/screener/"),
+            "http://127.0.0.1:9222/json/new?https://www.tradingview.com/screener/"
+        );
     }
 
     #[test]
@@ -351,5 +416,17 @@ mod tests {
         }];
 
         assert_eq!(select_target(&targets), TargetSelection::None);
+    }
+
+    #[test]
+    fn recognizes_full_page_screener_targets() {
+        assert!(is_screener_target(&target(
+            "screener",
+            "https://www.tradingview.com/screener/"
+        )));
+        assert!(!is_screener_target(&target(
+            "chart",
+            "https://www.tradingview.com/chart/abc"
+        )));
     }
 }

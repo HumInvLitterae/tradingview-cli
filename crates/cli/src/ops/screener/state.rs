@@ -1,6 +1,7 @@
 use serde_json::{Map, Value, json};
+use tokio::time::{Duration, sleep};
 
-use tradingview_cdp::RuntimeEvaluator;
+use tradingview_cdp::{RuntimeEvaluator, Target, TransportConfig};
 use tradingview_core::{AppError, ErrorKind};
 
 use super::{
@@ -11,6 +12,10 @@ use super::{
     },
     validation::validate_screener_limit,
 };
+
+const FULL_PAGE_SCREENER_URL: &str = "https://www.tradingview.com/screener/";
+const FULL_PAGE_TARGET_WAIT_ATTEMPTS: usize = 10;
+const FULL_PAGE_TARGET_WAIT_MS: u64 = 250;
 
 pub async fn screener_status(runtime: &mut impl RuntimeEvaluator) -> Result<Value, AppError> {
     let state = read_screener_state(runtime, None).await?;
@@ -24,6 +29,36 @@ pub async fn screener_open(runtime: &mut impl RuntimeEvaluator) -> Result<Value,
     ensure_button_available(&result)?;
     ensure_dialog_open(&result)?;
     Ok(with_action(result, "open"))
+}
+
+pub async fn screener_open_full_page(config: &TransportConfig) -> Result<Value, AppError> {
+    let targets = tradingview_cdp::fetch_targets(config).await?;
+    if let Some(target) = first_screener_target(&targets) {
+        activate_screener_target(config, target).await?;
+        return Ok(full_page_open_payload(target, false, true));
+    }
+
+    let created_target =
+        tradingview_cdp::new_target_url(config, FULL_PAGE_SCREENER_URL)
+            .await
+            .map_err(|error| {
+                AppError::new(
+                    error.kind,
+                    "Full-page Stock Screener target could not be created through local CDP",
+                )
+                .with_details(json!({
+                    "source": SCREENER_SOURCE,
+                    "action": "open_full_page",
+                    "full_page": true,
+                    "target_url": FULL_PAGE_SCREENER_URL,
+                    "creation_error": error.to_string(),
+                    "creation_error_details": error.details,
+                    "next_action_hint": "Open the Stock Screener as a TradingView Desktop tab manually, then rerun `tv screener open --full-page` to reuse it and get target_cli_args.",
+                }))
+            })?;
+    let target = wait_for_screener_target(config, &created_target.id).await?;
+    activate_screener_target(config, &target).await?;
+    Ok(full_page_open_payload(&target, true, false))
 }
 
 pub async fn screener_get(
@@ -91,6 +126,81 @@ fn status_payload(state: &Value) -> Value {
         "column_count": state.get("column_count").cloned().unwrap_or(Value::from(0)),
         "filter_count": state.get("filter_count").cloned().unwrap_or(Value::from(0)),
         "visible_row_count": state.get("visible_row_count").cloned().unwrap_or(Value::from(0)),
+    })
+}
+
+fn first_screener_target(targets: &[Target]) -> Option<&Target> {
+    targets
+        .iter()
+        .find(|target| tradingview_cdp::is_screener_target(target))
+}
+
+async fn wait_for_screener_target(
+    config: &TransportConfig,
+    preferred_target_id: &str,
+) -> Result<Target, AppError> {
+    for _ in 0..FULL_PAGE_TARGET_WAIT_ATTEMPTS {
+        let targets = tradingview_cdp::fetch_targets(config).await?;
+        if let Some(target) = targets
+            .iter()
+            .find(|target| {
+                target.id == preferred_target_id && tradingview_cdp::is_screener_target(target)
+            })
+            .cloned()
+        {
+            return Ok(target);
+        }
+        if let Some(target) = first_screener_target(&targets).cloned() {
+            return Ok(target);
+        }
+        sleep(Duration::from_millis(FULL_PAGE_TARGET_WAIT_MS)).await;
+    }
+
+    Err(AppError::new(
+        ErrorKind::InternalApiUnavailable,
+        "Full-page Stock Screener target did not appear after opening",
+    )
+    .with_details(json!({
+        "source": SCREENER_SOURCE,
+        "action": "open_full_page",
+        "full_page": true,
+        "created_target_id": preferred_target_id,
+        "target_url": FULL_PAGE_SCREENER_URL,
+        "wait_attempts": FULL_PAGE_TARGET_WAIT_ATTEMPTS,
+    })))
+}
+
+async fn activate_screener_target(
+    config: &TransportConfig,
+    target: &Target,
+) -> Result<(), AppError> {
+    let response = reqwest::get(config.activate_url(&target.id))
+        .await
+        .map_err(|err| AppError::new(ErrorKind::Connection, err.to_string()))?;
+    if !response.status().is_success() {
+        return Err(AppError::new(
+            ErrorKind::Connection,
+            format!("CDP target activation returned HTTP {}", response.status()),
+        )
+        .with_details(json!({
+            "target_id": target.id,
+            "url": target.url,
+        })));
+    }
+    Ok(())
+}
+
+fn full_page_open_payload(target: &Target, created: bool, reused: bool) -> Value {
+    json!({
+        "source": SCREENER_SOURCE,
+        "action": "open_full_page",
+        "full_page": true,
+        "created": created,
+        "reused": reused,
+        "target_id": target.id,
+        "target_cli_args": tradingview_cdp::target_cli_args(&target.id),
+        "title": tradingview_cdp::target_title_for_handoff(target),
+        "url": tradingview_cdp::target_url_for_handoff(target),
     })
 }
 
@@ -175,6 +285,16 @@ mod tests {
     use super::super::super::test_support::FakeRuntime;
     use super::*;
     use tradingview_core::ErrorKind;
+
+    fn target(id: &str, title: &str, url: &str) -> Target {
+        Target {
+            id: id.to_string(),
+            title: title.to_string(),
+            kind: "page".to_string(),
+            url: url.to_string(),
+            web_socket_debugger_url: Some(format!("ws://127.0.0.1/devtools/page/{id}")),
+        }
+    }
 
     #[tokio::test]
     async fn screener_status_maps_closed_state() {
@@ -281,5 +401,43 @@ mod tests {
 
         assert_eq!(error.kind, ErrorKind::InternalApiUnavailable);
         assert!(error.details.is_some());
+    }
+
+    #[test]
+    fn first_screener_target_ignores_chart_targets() {
+        let targets = vec![
+            target("chart", "Chart", "https://www.tradingview.com/chart/abc"),
+            target(
+                "screener",
+                "Screener",
+                "https://www.tradingview.com/screener/",
+            ),
+        ];
+
+        let selected = first_screener_target(&targets).unwrap();
+
+        assert_eq!(selected.id, "screener");
+    }
+
+    #[test]
+    fn full_page_open_payload_contains_target_handoff() {
+        let target = target(
+            "target-1",
+            "Stock Screener",
+            "https://www.tradingview.com/screener/",
+        );
+
+        let payload = full_page_open_payload(&target, true, false);
+
+        assert_eq!(payload["source"], SCREENER_SOURCE);
+        assert_eq!(payload["action"], "open_full_page");
+        assert_eq!(payload["full_page"], true);
+        assert_eq!(payload["created"], true);
+        assert_eq!(payload["reused"], false);
+        assert_eq!(payload["target_id"], "target-1");
+        assert_eq!(
+            payload["target_cli_args"],
+            json!(["--target-id", "target-1"])
+        );
     }
 }

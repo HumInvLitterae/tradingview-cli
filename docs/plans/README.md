@@ -8,9 +8,9 @@ for release and next-phase planning.
 
 - `tradingview-cli-release-builds.md`: tag-triggered GitHub Release builds
   for Linux, macOS, and Windows binaries.
-- `tradingview-cli-screener-filter-storage-mutation-audit.md`: bounded
-  feasibility check for replacing Screener filter add/modify UI operations with
-  saved-screen storage mutations.
+- `tradingview-cli-screener-full-page-open.md`: add `tv screener open
+  --full-page` so storage-backed Screener workflows can prepare a full-page
+  Screener target without manual setup.
 
 ## Archived plans
 
@@ -70,6 +70,8 @@ Important archived plan categories:
 - TradingView model crate extraction for I/O-free validation, request models,
   target resolution, and payload shaping
 - operation adapter boundary audit after model extraction
+- bounded Screener filter storage mutation audit and storage-backed numeric
+  range filter modification
 
 For command contract details, prefer the notes under `docs/notes/` before
 reading archived implementation plans.

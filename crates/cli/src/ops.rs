@@ -67,9 +67,10 @@ pub use screener::{
     screener_columns_list, screener_columns_remove, screener_columns_reorder,
     screener_filters_actions, screener_filters_add, screener_filters_clear, screener_filters_list,
     screener_filters_modify, screener_filters_remove, screener_get, screener_open,
-    screener_screens_actions, screener_screens_active, screener_screens_create,
-    screener_screens_delete, screener_screens_list, screener_screens_rename, screener_screens_save,
-    screener_screens_save_as, screener_screens_switch, screener_status,
+    screener_open_full_page, screener_screens_actions, screener_screens_active,
+    screener_screens_create, screener_screens_delete, screener_screens_list,
+    screener_screens_rename, screener_screens_save, screener_screens_save_as,
+    screener_screens_switch, screener_status,
 };
 pub use screenshot::{screenshot_chart, screenshot_full};
 pub use status::status;

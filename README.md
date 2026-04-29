@@ -210,7 +210,11 @@ tv --target-id <CDP_TARGET_ID> symbol NASDAQ:MU
 
 `tv tab list` and `tv tab switch <INDEX>` return `target_cli_args`, which can be reused directly for the next command. `--target-id` is the only explicit target handoff; `TV_CDP_TARGET_ID` is no longer part of the public contract.
 
-When a Stock Screener is open as its own TradingView Desktop tab, `tv tab list` also returns `screener_targets`; use their `target_cli_args` value for `tv screener ...` commands against the full-page Screener target.
+Use `tv screener open --full-page` to reuse a Stock Screener page tab and get
+its `target_cli_args`. The command also attempts the local CDP new-target path,
+but current TradingView Desktop builds may reject automatic creation; in that
+case, open the Screener page tab manually and rerun the command. `tv tab list`
+also returns `screener_targets` when a Stock Screener page tab is already open.
 
 If `tv ohlcv` fails while `tv quote` or `tv symbol` still works, do not keep
 retrying the same command blindly. Preserve the full JSON error envelope, check
@@ -276,7 +280,7 @@ baseline remains the commands run by CI.
 - Desktop-free symbol metadata and quote reads through `tv info <SYMBOL>` and
   `tv quote [SYMBOL]`
 - read-only TradingView scanner REST reads through `tv scanner hotlist` and `tv scanner scan`
-- TradingView Stock Screener dialog reads, menu-visible and catalog screen switching, exact screen action/save support, guarded test-screen lifecycle commands, storage-backed filter cleanup, filter add, preset-range filter modification, and storage-backed column inspection/add/remove/reorder through `tv screener status/open/get/screens active/actions/list/switch/save/create/rename/save-as/delete/filters list/actions/add/modify/remove/clear/columns list/config/actions/add/remove/reorder/close`
+- TradingView Stock Screener dialog and full-page target handoff, menu-visible and catalog screen switching, exact screen action/save support, guarded test-screen lifecycle commands, storage-backed filter cleanup and range edits, filter add, preset-range filter modification, and storage-backed column inspection/add/remove/reorder through `tv screener status/open/get/screens active/actions/list/switch/save/create/rename/save-as/delete/filters list/actions/add/modify/remove/clear/columns list/config/actions/add/remove/reorder/close`
 - old JavaScript CLI command migration coverage for the known CLI surface
 - stable architecture, development, packaging, migration, and internal API
   references under `docs/`

@@ -257,8 +257,11 @@ pub enum ScannerCommand {
 pub enum ScreenerCommand {
     #[command(about = "Get current Stock Screener dialog state")]
     Status,
-    #[command(about = "Open the Stock Screener dialog")]
-    Open,
+    #[command(about = "Open the Stock Screener dialog or full-page Screener target")]
+    Open {
+        #[arg(long)]
+        full_page: bool,
+    },
     #[command(about = "Get visible Stock Screener rows")]
     Get {
         #[arg(long, short = 'n')]
