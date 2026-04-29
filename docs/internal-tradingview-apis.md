@@ -152,6 +152,40 @@ Safety boundary:
 - malformed or unexpectedly shaped responses should become
   `internal_api_unavailable`
 
+## TradingView WebSocket bars research
+
+Category: undocumented TradingView browserless WebSocket protocol.
+
+Current command family:
+
+- none. Rust does not currently expose Desktop-free historical bars or
+  browserless streaming commands.
+
+Comparable evidence:
+
+- fiale-plus PR #47 implements experimental historical bars and bounded quote
+  or bar streaming through TradingView's WebSocket data protocol.
+- The relevant design opens a WebSocket, sends an auth-token message, creates a
+  chart session, resolves a symbol, creates a series, parses bar updates, and
+  waits for completion or a bounded timeout.
+- That design is explicitly lab-gated and treats the protocol as experimental.
+  It has an anonymous-token path, but also optional session-cookie-related
+  configuration. Rust should therefore not treat it as equivalent to the
+  credential-free scanner REST reads.
+
+Safety boundary:
+
+- classify Desktop-free historical bars as `research_candidate`, not
+  `api_backed`
+- do not add cookie/session import, login automation, or authenticated direct
+  HTTP/WebSocket setup without a separate safety plan
+- do not replace `tv ohlcv`; it reads current chart bars through the selected
+  Desktop target
+- if this becomes a Rust feature, prefer a separate lab-gated symbol-targeted
+  command and keep requests bounded by count or duration
+- failures, malformed protocol frames, missing series completion, and symbol
+  errors must become structured failures rather than empty successful bar lists
+
 ## Symbol search REST read
 
 Category: unauthenticated TradingView symbol search REST read.

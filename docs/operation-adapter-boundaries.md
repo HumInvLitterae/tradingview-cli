@@ -63,7 +63,10 @@ now:
   live chart page objects and chart readiness.
 - OHLCV reads: `ohlcv` reads the active chart's main-series bars. Symbol-level
   quote and info reads are Desktop-free, but historical bars remain
-  chart-dependent until a credential-safe endpoint is proven.
+  chart-dependent until a credential-safe endpoint is proven. The first
+  Desktop-free bars feasibility pass found only an undocumented WebSocket
+  research candidate, so a future browserless bars command should be separate
+  from `ohlcv` unless a later plan proves equivalence.
 - Drawing and indicator chart operations: these execute chart APIs and verify
   newly created, updated, hidden, or removed entities.
 - Replay operations: these use Replay page APIs and chart-local Replay state.
@@ -103,6 +106,10 @@ retries. The current high-value candidates are:
   command evidence may reduce catalog/menu/dialog dependency.
 - Pine compile/save replacement: keep as `research_only` unless a safe endpoint
   preserves the same editor/account semantics without raw account metadata.
+- Browserless historical bars: comparable-project evidence exists through an
+  experimental TradingView WebSocket chart-session protocol, but it remains
+  `research_only` until bounded live smoke and freshness/entitlement boundaries
+  are documented.
 
 These are not current crate-extraction tasks. Each needs its own evidence-gated
 ExecPlan before behavior changes.

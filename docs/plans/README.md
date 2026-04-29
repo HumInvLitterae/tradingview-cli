@@ -14,8 +14,9 @@ for release and next-phase planning.
   fields to Desktop-free `tv quote <SYMBOL>` scanner reads.
 - `tradingview-cli-scanner-extended-hours-columns.md`: allow confirmed
   premarket and postmarket scanner columns in `tv scanner scan --columns`.
-- `tradingview-cli-batch-quotes.md`: add Desktop-free ordered batch quote
-  reads through `tv quotes <SYMBOL>...`.
+- `tradingview-cli-desktop-free-bars-feasibility.md`: research whether
+  Desktop-free historical bars / OHLCV are safe enough for a future bounded
+  command.
 
 ## Archived plans
 
@@ -78,6 +79,8 @@ Important archived plan categories:
 - bounded Screener filter storage mutation audit and storage-backed numeric
   range filter modification
 - scanner metainfo field metadata discovery through Desktop-free REST
+- ordered Desktop-free batch quote reads through `tv quotes <SYMBOL>...`
+- Desktop-free historical bars feasibility and WebSocket lab boundary research
 - full-page Screener target opening through existing-target reuse, CDP target
   creation attempt, and bounded Desktop new-tab tile fallback
 - shared TradingView Desktop app-window/new-tab helper extraction before
