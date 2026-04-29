@@ -108,6 +108,9 @@ package version omits the leading `v`.
 - Added an operation-adapter boundary reference that classifies remaining
   `ops` surfaces as executable adapters, API/storage replacement candidates, or
   intentional UI/DOM boundaries.
+- Recorded a bounded Screener filter storage mutation audit. `filters
+  add/modify` remain UI-backed because the available live evidence did not
+  expose enough saved-screen filter schema for safe storage-backed writes.
 - Added `--direction <long|short>` as an alias for the positional `DIRECTION`
   argument on `tv draw position`.
 

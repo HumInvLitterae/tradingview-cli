@@ -8,9 +8,9 @@ for release and next-phase planning.
 
 - `tradingview-cli-release-builds.md`: tag-triggered GitHub Release builds
   for Linux, macOS, and Windows binaries.
-- `tradingview-cli-operation-adapter-boundary-audit.md`: record which remaining
-  `ops` surfaces are executable adapters, API/storage replacement candidates,
-  or intentional UI/DOM boundaries.
+- `tradingview-cli-screener-filter-storage-mutation-audit.md`: bounded
+  feasibility check for replacing Screener filter add/modify UI operations with
+  saved-screen storage mutations.
 
 ## Archived plans
 

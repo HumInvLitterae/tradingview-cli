@@ -96,7 +96,9 @@ Future stabilization should prefer API or storage evidence before adding DOM
 retries. The current high-value candidates are:
 
 - Screener filters add and modify: storage schema evidence may remove remaining
-  popover clicks for numeric and option edits.
+  popover clicks for numeric and option edits. The 2026-04-29 bounded audit did
+  not find enough storage schema evidence in the available chart-side Screener
+  target, so this remains `research_only` and is not a `v0.3.0` release blocker.
 - Screener screens create, rename, save-as, save, and switch: storage or
   command evidence may reduce catalog/menu/dialog dependency.
 - App-tab new and close: a non-DOM application command may exist, but exact

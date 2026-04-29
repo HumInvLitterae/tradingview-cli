@@ -397,6 +397,16 @@ Likely DOM-maintained boundaries:
 The next Screener stabilization work should prefer storage/API evidence before
 adding more DOM retries.
 
+2026-04-29 bounded audit result: filter add/modify storage replacement remains
+`research_only`. In the available live environment, `tv tab list` did not expose
+a full-page Screener target. The chart-side Screener drawer exposed visible
+filters for the test screen, but `window.initData.screen_data` did not expose an
+active saved-screen `filters` payload suitable for deriving add/modify schema.
+Existing `filters remove/clear` stay storage-backed because they remove existing
+raw filter entries and verify by re-fetch. `filters add` and `filters modify`
+continue to use the existing UI-backed path until a future full-page Screener
+target or another safe read source proves the raw add/modify payload shape.
+
 ## CDP transport boundary
 
 Category: local Chrome DevTools Protocol endpoint exposed by TradingView
