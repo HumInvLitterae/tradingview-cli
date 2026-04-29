@@ -6,12 +6,13 @@ for release and next-phase planning.
 
 ## Current and future plans
 
+- `tradingview-cli-v0.4.0-release-readiness.md`: version, changelog, release
+  notes, release archive staging, and final validation before tagging `v0.4.0`.
 - `tradingview-cli-release-builds.md`: tag-triggered GitHub Release builds
   for Linux, macOS, and Windows binaries.
 
-No `v0.4.0` implementation plan is currently active. The next expected plan is
-release readiness for `v0.4.0`, unless a specific post-release feature slice is
-chosen first.
+No new `v0.4.0` feature implementation plan is currently active. Feature work
+is paused while release readiness is completed.
 
 ## Archived plans
 
@@ -42,6 +43,8 @@ Important archived plan categories:
   scanner extended-hours columns, scanner metainfo, ordered batch quotes,
   explicit quote source selection, typed market/scanner Rust APIs, and the
   v0.4 market data lane review
+- runtime market-data interpretation and scanner/Screener result-analysis
+  skills
 - first behavior-preserving binary/library crate boundary
 - core contract crate extraction
 - Desktop-free market crate extraction

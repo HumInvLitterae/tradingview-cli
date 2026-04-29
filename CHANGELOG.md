@@ -7,6 +7,8 @@ package version omits the leading `v`.
 
 ## Unreleased
 
+## v0.4.0 - 2026-04-30
+
 ### Added
 
 - Added `extended_hours` premarket and postmarket fields to Desktop-free
