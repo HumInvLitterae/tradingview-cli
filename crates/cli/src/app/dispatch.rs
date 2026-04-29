@@ -7,9 +7,9 @@ use crate::{
     },
     cli::{
         AlertCommand, Command, DataCommand, DrawingCommand, IndicatorCommand, LayoutCommand,
-        PaneCommand, PineCommand, ReplayCommand, ScannerCommand, ScreenerColumnsCommand,
-        ScreenerCommand, ScreenerFiltersCommand, ScreenerScreensCommand, TabCommand, UiCommand,
-        WatchlistCommand,
+        PaneCommand, PineCommand, QuoteSource, ReplayCommand, ScannerCommand,
+        ScreenerColumnsCommand, ScreenerCommand, ScreenerFiltersCommand, ScreenerScreensCommand,
+        TabCommand, UiCommand, WatchlistCommand,
     },
     ops,
 };
@@ -408,7 +408,7 @@ pub async fn dispatch(
                 ScreenerCommand::Close => ops::screener_close(&mut runtime).await,
             }
         }
-        Command::Quote { symbol } => {
+        Command::Quote { symbol, source } => {
             let symbol = match symbol.as_deref() {
                 Some(symbol) if symbol.trim().is_empty() => {
                     return Err(AppError::new(
@@ -419,15 +419,7 @@ pub async fn dispatch(
                 Some(symbol) => Some(symbol),
                 None => None,
             };
-            if let Some(symbol) = symbol {
-                match ops::quote_symbol(symbol).await {
-                    Ok(data) => return Ok(data),
-                    Err(err) if err.kind == ErrorKind::Validation => return Err(err),
-                    Err(_) => {}
-                }
-            }
-            let mut runtime = connect_runtime(config).await?;
-            ops::quote(&mut runtime, symbol).await
+            dispatch_quote(symbol, source, config).await
         }
         Command::Quotes { symbols } => ops::quote_symbols(symbols).await,
         Command::Values => {
@@ -1114,6 +1106,32 @@ pub async fn dispatch(
                 _ => unreachable!("screenshot region should be validated"),
             }
         }
+    }
+}
+
+async fn dispatch_quote(
+    symbol: Option<&str>,
+    source: Option<QuoteSource>,
+    config: &TransportConfig,
+) -> Result<serde_json::Value, AppError> {
+    match (symbol, source) {
+        (None, Some(QuoteSource::Scanner)) => Err(AppError::new(
+            ErrorKind::Validation,
+            "`tv quote --source scanner` requires SYMBOL",
+        )),
+        (None, _) => {
+            let mut runtime = connect_runtime(config).await?;
+            ops::quote(&mut runtime, None).await
+        }
+        (Some(symbol), None | Some(QuoteSource::Scanner)) => ops::quote_symbol(symbol).await,
+        (Some(symbol), Some(QuoteSource::Chart)) => {
+            let mut runtime = connect_runtime(config).await?;
+            ops::quote(&mut runtime, Some(symbol)).await
+        }
+        (Some(symbol), Some(QuoteSource::Auto)) => match connect_runtime(config).await {
+            Ok(mut runtime) => ops::quote(&mut runtime, Some(symbol)).await,
+            Err(_) => ops::quote_symbol(symbol).await,
+        },
     }
 }
 

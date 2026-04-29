@@ -47,6 +47,10 @@ fn quote_help_explains_symbol_and_target_selection() {
         .success()
         .stdout(predicate::str::contains("[SYMBOL]"))
         .stdout(predicate::str::contains("current chart target"))
+        .stdout(predicate::str::contains("--source"))
+        .stdout(predicate::str::contains("scanner"))
+        .stdout(predicate::str::contains("chart"))
+        .stdout(predicate::str::contains("auto"))
         .stdout(predicate::str::contains("extended_hours"))
         .stdout(predicate::str::contains("--target-id"));
 }
@@ -1466,6 +1470,36 @@ fn quote_rejects_empty_symbol_before_connecting() {
     assert_eq!(value["success"], false);
     assert_eq!(value["command"], "quote");
     assert_eq!(value["error"]["kind"], "validation");
+}
+
+#[test]
+fn quote_scanner_source_requires_symbol_before_connecting() {
+    let assert = tv()
+        .env("TV_CDP_PORT", "9")
+        .args(["quote", "--source", "scanner"])
+        .assert()
+        .failure()
+        .code(1);
+    let stderr = String::from_utf8(assert.get_output().stderr.clone()).unwrap();
+    let value: Value = serde_json::from_str(&stderr).unwrap();
+    assert_eq!(value["success"], false);
+    assert_eq!(value["command"], "quote");
+    assert_eq!(value["error"]["kind"], "validation");
+}
+
+#[test]
+fn quote_chart_source_attempts_connection_when_cdp_is_unavailable() {
+    let assert = tv()
+        .env("TV_CDP_PORT", "9")
+        .args(["quote", "AAPL", "--source", "chart"])
+        .assert()
+        .failure()
+        .code(2);
+    let stderr = String::from_utf8(assert.get_output().stderr.clone()).unwrap();
+    let value: Value = serde_json::from_str(&stderr).unwrap();
+    assert_eq!(value["success"], false);
+    assert_eq!(value["command"], "quote");
+    assert_eq!(value["error"]["kind"], "connection");
 }
 
 #[test]

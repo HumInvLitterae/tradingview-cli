@@ -35,6 +35,8 @@ const QUOTE_SCAN_COLUMNS: &[&str] = &[
     "postmarket_change",
     "postmarket_change_abs",
     "postmarket_volume",
+    "time",
+    "update_mode",
 ];
 
 pub async fn quote_symbol(symbol: &str) -> Result<Value, AppError> {
@@ -265,9 +267,10 @@ fn normalize_scanner_quote_response(
     })?;
     let field = |index: usize| values.get(index).cloned().unwrap_or(Value::Null);
     let close = field(2);
+    let update_mode = field(27);
     Ok(json!({
         "symbol": full_symbol,
-        "time": Value::Null,
+        "time": field(26),
         "last": close,
         "close": field(2),
         "open": field(3),
@@ -302,6 +305,8 @@ fn normalize_scanner_quote_response(
                 "volume": field(25),
             },
         },
+        "update_mode": update_mode,
+        "delay_seconds": parse_update_delay_seconds(&field(27)),
         "source": "scanner_scan_rest",
         "non_mutating": true,
         "requested_symbol": requested_symbol,
@@ -314,6 +319,19 @@ fn normalize_scanner_quote_response(
             "passed": true,
         },
     }))
+}
+
+fn parse_update_delay_seconds(update_mode: &Value) -> Value {
+    let Some(update_mode) = update_mode.as_str() else {
+        return Value::Null;
+    };
+    let Some(seconds) = update_mode.strip_prefix("delayed_streaming_") else {
+        return Value::Null;
+    };
+    seconds
+        .parse::<u64>()
+        .map(|seconds| json!(seconds))
+        .unwrap_or(Value::Null)
 }
 
 async fn add_symbol_search_candidates(mut error: AppError, requested_symbol: &str) -> AppError {
@@ -384,7 +402,9 @@ mod tests {
                     null,
                     null,
                     null,
-                    null
+                    null,
+                    1777469400,
+                    "delayed_streaming_900"
                 ]
             }]
         });
@@ -396,6 +416,9 @@ mod tests {
         assert_eq!(result["close"], 266.39);
         assert_eq!(result["description"], "Apple Inc.");
         assert_eq!(result["source"], "scanner_scan_rest");
+        assert_eq!(result["time"], 1777469400);
+        assert_eq!(result["update_mode"], "delayed_streaming_900");
+        assert_eq!(result["delay_seconds"], 900);
         assert_eq!(result["non_mutating"], true);
         assert_eq!(result["switch_performed"], false);
         assert_eq!(result["restored"], true);
@@ -449,6 +472,9 @@ mod tests {
 
         assert_eq!(result["symbol"], "NYSE:IONQ");
         assert_eq!(result["last"], 43.1);
+        assert_eq!(result["time"], Value::Null);
+        assert_eq!(result["update_mode"], Value::Null);
+        assert_eq!(result["delay_seconds"], Value::Null);
         assert_eq!(result["extended_hours"]["premarket"]["last"], Value::Null);
         assert_eq!(
             result["extended_hours"]["premarket"]["gap_percent"],
@@ -458,6 +484,20 @@ mod tests {
             result["extended_hours"]["postmarket"]["volume"],
             Value::Null
         );
+    }
+
+    #[test]
+    fn parse_update_delay_seconds_handles_known_delayed_mode_only() {
+        assert_eq!(
+            parse_update_delay_seconds(&json!("delayed_streaming_900")),
+            json!(900)
+        );
+        assert_eq!(parse_update_delay_seconds(&json!("streaming")), Value::Null);
+        assert_eq!(
+            parse_update_delay_seconds(&json!("delayed_streaming_unknown")),
+            Value::Null
+        );
+        assert_eq!(parse_update_delay_seconds(&Value::Null), Value::Null);
     }
 
     #[test]

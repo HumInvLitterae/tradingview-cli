@@ -78,9 +78,11 @@ Safety boundary:
 - user input must be serialized into JavaScript, not hand-escaped
 - mutation commands must verify the observable after-state before returning
   success
-- `quote <SYMBOL>` should prefer a non-mutating read when available; chart
-  switching is fallback behavior and must fail if the observed quote symbol does
-  not match the requested symbol
+- `quote <SYMBOL>` defaults to non-mutating scanner REST. `--source chart`
+  explicitly chooses the selected TradingView Desktop chart feed, and
+  `--source auto` is chart-first with scanner fallback only if chart access
+  fails before any chart mutation. Chart switching must fail if the observed
+  quote symbol does not match the requested symbol.
 - `ohlcv` depends on the selected chart target's main-series bars collection.
   When the chart API or bars collection is unavailable, it should fail with
   structured readiness details and a target-selection recovery hint rather than
@@ -94,7 +96,10 @@ Category: unauthenticated TradingView scanner REST read.
 
 Current command family:
 
-- `quote <SYMBOL>` for symbol-targeted reads before any chart mutation
+- `quote <SYMBOL>` and `quote <SYMBOL> --source scanner` for symbol-targeted
+  scanner reads without CDP
+- `quote <SYMBOL> --source auto` as chart-first compatibility mode with scanner
+  fallback only for pre-mutation chart unavailability
 - `quotes <SYMBOL>...` for ordered Desktop-free batch quote reads
 - `scanner scan --columns ...` for broader scanner-table reads with explicit
   fields
@@ -107,6 +112,10 @@ Safety boundary:
   market-data subscription state
 - it returns scanner quote fields such as symbol, description, close, open,
   high, low, volume, change, exchange, type, and subtype
+- scanner quote payloads also include `time`, `update_mode`, and
+  `delay_seconds`. `time` is TradingView's returned quote timestamp when
+  present. `delay_seconds` is parsed only from clearly shaped modes such as
+  `delayed_streaming_900`; unknown or missing modes remain `null`.
 - it also requests TradingView scanner extended-hours columns when available:
   `premarket_open`, `premarket_high`, `premarket_low`, `premarket_close`,
   `premarket_change`, `premarket_change_abs`, `premarket_gap`,
@@ -122,15 +131,11 @@ Safety boundary:
 - when the same extended-hours columns are requested through `scanner scan`,
   they remain table fields under each symbol row's `field_values` object rather
   than being reshaped into a nested object
-- for `quote <SYMBOL>`, if the scanner read is unavailable before chart
-  mutation, the CLI may fall back to the chart API path
-- for `quote <SYMBOL>`, if the scanner response has no rows, ambiguous rows,
-  or a returned symbol that does not match the requested symbol, the CLI treats
-  it as symbol resolution failure and returns candidates from symbol search
-  instead of falling back to chart target selection
-- if quote chart fallback is used after a technical scanner failure, the
-  fallback must still fail when the observed symbol does not match the
-  requested symbol
+- scanner validation failures, missing rows, ambiguous rows, and returned
+  symbol mismatches are symbol-resolution failures. They do not trigger chart
+  fallback, including in `--source auto`.
+- `--source chart` and the chart side of `--source auto` must still fail when
+  the observed symbol does not match the requested symbol.
 
 ## Scanner metainfo REST read
 

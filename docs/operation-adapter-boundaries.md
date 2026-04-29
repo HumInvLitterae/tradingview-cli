@@ -59,8 +59,11 @@ The following command families should stay in `ops` as executable adapters for
 now:
 
 - Chart state commands: `state`, current-chart `info`, `symbol`, `timeframe`,
-  `type`, `range`, `scroll`, and current-chart quote fallback. These depend on
-  live chart page objects and chart readiness.
+  `type`, `range`, `scroll`, and chart-sourced quote reads. These depend on
+  live chart page objects and chart readiness. `tv quote <SYMBOL>` defaults to
+  scanner REST, `--source chart` explicitly uses this chart adapter, and
+  `--source auto` is a chart-first compatibility mode that falls back to
+  scanner only if chart access fails before any chart mutation.
 - OHLCV reads: `ohlcv` reads the active chart's main-series bars. Symbol-level
   quote and info reads are Desktop-free, but historical bars remain
   chart-dependent until a credential-safe endpoint is proven. The first

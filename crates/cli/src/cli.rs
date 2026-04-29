@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use clap::{Parser, Subcommand};
+use clap::{Parser, Subcommand, ValueEnum};
 
 #[derive(Debug, Parser)]
 #[command(name = "tv")]
@@ -52,9 +52,17 @@ pub enum Command {
     },
     #[command(
         about = "Get real-time price quote",
-        long_about = "Get a real-time price quote.\n\nWithout SYMBOL, reads the current chart target. With SYMBOL, reads a symbol-targeted quote; this may temporarily switch the chart unless a non-mutating quote path is available. Scanner-backed symbol quotes include an additive `extended_hours` object for premarket and postmarket values when TradingView returns them. If more than one TradingView target is open, run `tv tab list` and pass `tv --target-id <ID> quote ...`."
+        long_about = "Get a real-time price quote.\n\nWithout SYMBOL, reads the current chart target. With SYMBOL, the default source is Desktop-free scanner REST. Use `--source chart` when you explicitly want the selected TradingView Desktop chart feed, or `--source auto` to prefer chart data and fall back to scanner only when the chart path is unavailable before mutation. Scanner-backed symbol quotes include `time`, `update_mode`, `delay_seconds`, and an additive `extended_hours` object for premarket and postmarket values when TradingView returns them. If more than one TradingView target is open for chart reads, run `tv tab list` and pass `tv --target-id <ID> quote ...`."
     )]
-    Quote { symbol: Option<String> },
+    Quote {
+        symbol: Option<String>,
+        #[arg(
+            long,
+            value_enum,
+            help = "Choose quote source: scanner, chart, or auto"
+        )]
+        source: Option<QuoteSource>,
+    },
     #[command(
         about = "Get Desktop-free quotes for multiple symbols",
         long_about = "Get Desktop-free scanner-backed quotes for multiple symbols.\n\nThe command preserves input order in data.items. Each successful item contains the same quote payload shape as `tv quote <SYMBOL>` when its Desktop-free scanner path succeeds. Failed items contain structured errors and do not fall back to chart target selection."
@@ -164,6 +172,13 @@ pub enum Command {
         #[arg(long, short)]
         output: String,
     },
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, ValueEnum)]
+pub enum QuoteSource {
+    Scanner,
+    Chart,
+    Auto,
 }
 
 #[derive(Debug, Subcommand)]

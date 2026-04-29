@@ -108,7 +108,8 @@ Keep responsibilities separated:
   override parsing, and position price validation. `tradingview_model::screener`
   owns Screener validation, target resolution, and storage payload shaping.
 - `crates/market/src/lib.rs` owns direct HTTP implementations behind
-  `tv search <QUERY>`, `tv info <SYMBOL>`, and `tv quote <SYMBOL>`.
+  `tv search <QUERY>`, `tv info <SYMBOL>`, the default
+  `tv quote <SYMBOL>` scanner source, and `tv quotes <SYMBOL>...`.
 - `crates/scanner/src/lib.rs` owns direct HTTP implementations behind
   `tv scanner hotlist` and `tv scanner scan`.
 - `crates/pine/src/lib.rs` owns Desktop-free Pine static analysis,
@@ -178,9 +179,10 @@ Keep responsibilities separated:
   JavaScript, entity post-checks, and live chart reads.
 - `crates/cli/src/ops/market.rs` is the chart-dependent Market operation
   adapter facade. Its `direct` module delegates Desktop-free symbol search,
-  symbol info, and symbol quote reads to `tradingview_market`; its `quote` and
-  `ohlcv` modules keep current-chart quote fallback, quote freshness checks,
-  and chart-bars reads in the CLI package.
+  symbol info, and scanner quote reads to `tradingview_market`; its `quote`
+  and `ohlcv` modules keep current-chart quote reads, `--source chart` /
+  `--source auto` chart execution, quote freshness checks, and chart-bars reads
+  in the CLI package.
 - `crates/cli/src/ops/ui.rs` is the generic UI automation compatibility
   adapter facade. It groups DOM actions, input events, selector lookup, and
   eval execution under `crates/cli/src/ops/ui/`. The unsafe `ui eval` gate

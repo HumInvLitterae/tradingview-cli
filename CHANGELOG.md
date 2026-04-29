@@ -16,6 +16,8 @@ package version omits the leading `v`.
 - Added Desktop-free `tv scanner metainfo` for scanner field metadata
   discovery.
 - Added Desktop-free `tv quotes <SYMBOL>...` for ordered batch quote reads.
+- Added explicit `tv quote <SYMBOL> --source scanner|chart|auto` selection and
+  scanner quote `time` / `update_mode` / `delay_seconds` metadata.
 
 ## v0.3.0 - 2026-04-29
 
