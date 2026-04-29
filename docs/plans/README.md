@@ -8,12 +8,8 @@ for release and next-phase planning.
 
 - `tradingview-cli-release-builds.md`: tag-triggered GitHub Release builds
   for Linux, macOS, and Windows binaries.
-- `tradingview-cli-desktop-app-window-helper-split.md`: share TradingView
-  Desktop app-window/new-tab helper code between `tab` operations and
-  `screener open --full-page` before release readiness.
-- `tradingview-cli-workspace-dependency-centralization.md`: centralize
-  dependency versions and internal crate paths in root
-  `[workspace.dependencies]`.
+- `tradingview-cli-v0.3.0-release-readiness.md`: prepare version metadata,
+  release notes, package guidance, and validation evidence for `v0.3.0`.
 
 ## Archived plans
 
@@ -77,6 +73,9 @@ Important archived plan categories:
   range filter modification
 - full-page Screener target opening through existing-target reuse, CDP target
   creation attempt, and bounded Desktop new-tab tile fallback
+- shared TradingView Desktop app-window/new-tab helper extraction before
+  release readiness
+- workspace package metadata and dependency centralization
 
 For command contract details, prefer the notes under `docs/notes/` before
 reading archived implementation plans.

@@ -7,6 +7,10 @@ package version omits the leading `v`.
 
 ## Unreleased
 
+Nothing yet.
+
+## v0.3.0 - 2026-04-29
+
 ### Added
 
 - Added a `v0.3.0` roadmap that prioritizes upstream PR re-checks,

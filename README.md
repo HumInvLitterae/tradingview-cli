@@ -80,12 +80,12 @@ TradingView Desktop live smoke checks are intentionally separate from CI because
 
 ## Release Builds
 
-GitHub Releases are the first supported binary distribution path. Pushing a version tag such as `v0.2.0` creates release assets named:
+GitHub Releases are the first supported binary distribution path. Pushing a version tag such as `v0.3.0` creates release assets named:
 
-- `tv-v0.2.0-x86_64-unknown-linux-gnu.tar.gz`
-- `tv-v0.2.0-x86_64-apple-darwin.tar.gz`
-- `tv-v0.2.0-aarch64-apple-darwin.tar.gz`
-- `tv-v0.2.0-x86_64-pc-windows-msvc.zip`
+- `tv-v0.3.0-x86_64-unknown-linux-gnu.tar.gz`
+- `tv-v0.3.0-x86_64-apple-darwin.tar.gz`
+- `tv-v0.3.0-aarch64-apple-darwin.tar.gz`
+- `tv-v0.3.0-x86_64-pc-windows-msvc.zip`
 - `SHA256SUMS`
 
 Each archive contains the `tv` or `tv.exe` binary, `README.md`, `CHANGELOG.md`, `LICENSE`, a user-facing `AGENTS.md` and `CLAUDE.md`, and runtime-oriented TradingView CLI skills under `.agents/skills/` and `.claude/skills/`, including chart analysis, multi-symbol scanning, Pine, replay, Screener, and strategy workflows. Verify the downloaded archive against `SHA256SUMS`, unpack it, and place the executable on your `PATH`.
@@ -99,7 +99,7 @@ Package-manager installers, code signing, notarization, and crates.io publicatio
 Install `tv` from a GitHub Release archive for your OS, or build it from the repository root while developing:
 
 ```bash
-cargo install --path .
+cargo install --path crates/cli
 ```
 
 Launch TradingView Desktop with Chrome DevTools Protocol enabled. The bounded launcher searches common install locations and defaults to `127.0.0.1:9222`:
@@ -286,7 +286,7 @@ baseline remains the commands run by CI.
 - old JavaScript CLI command migration coverage for the known CLI surface
 - stable architecture, development, packaging, migration, and internal API
   references under `docs/`
-- a post-`v0.2.0` `v0.3.0` roadmap at `docs/v0.3-roadmap.md`
+- a `v0.3.0` roadmap and release-readiness record at `docs/v0.3-roadmap.md`
 - historical command contract, lifecycle, and deferred-surface notes under
   `docs/notes/`
 - a public-safe internal TradingView API dependency and DOM replacement
