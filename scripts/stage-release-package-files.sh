@@ -30,9 +30,11 @@ skills=(
   # Runtime user-facing skills only. Do not copy development-only skills such as
   # continuity, conventional-commits, discovering-skills, or release-prep.
   chart-analysis
+  market-data-interpretation
   multi-symbol-scan
   pine-develop
   replay-practice
+  screener-result-analysis
   screener-workflow
   strategy-report
 )

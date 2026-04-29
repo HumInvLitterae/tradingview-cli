@@ -52,9 +52,13 @@ When reporting commands to the user, write them as `tv ...` unless the local exe
 The release archive includes CLI-oriented skills under `.agents/skills/` and `.claude/skills/`:
 
 - `chart-analysis`: live chart review and screenshot-backed context.
+- `market-data-interpretation`: quote, scanner, chart, OHLCV, freshness, and
+  extended-hours interpretation.
 - `multi-symbol-scan`: small serial symbol scans and comparisons.
 - `pine-develop`: Pine Script read/edit/check/compile workflows.
 - `replay-practice`: bounded TradingView replay practice.
+- `screener-result-analysis`: scanner and Screener result explanation without
+  turning rows into buy or sell recommendations.
 - `screener-workflow`: Stock Screener target selection, reads, dry-run-first
   screen/filter/column operation, and disposable test-screen cleanup.
 - `strategy-report`: strategy metrics, trades, and equity review.

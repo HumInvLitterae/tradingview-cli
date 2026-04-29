@@ -25,6 +25,8 @@ package version omits the leading `v`.
 - Clarified the `v0.4.0` market-data read boundary: scanner REST reads are
   sufficient for current watchlist-style needs, while Desktop-free historical
   bars remain a research/lab candidate rather than a stable command.
+- Added runtime skills for market-data source interpretation and scanner /
+  Screener result analysis.
 
 ## v0.3.0 - 2026-04-29
 

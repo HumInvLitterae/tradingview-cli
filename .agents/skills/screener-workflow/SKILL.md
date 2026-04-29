@@ -39,32 +39,10 @@ scanner field exists before building a scan.
 
 ## Interpreting Results
 
-Treat scanner and Screener rows as research candidates, not buy or sell
-recommendations.
-
-When reporting results:
-
-1. Name the source first: scanner REST scan, visible Screener rows, current
-   chart reads, or visual screenshot interpretation.
-2. State the criteria that produced the rows: filters, columns, sort, screen
-   name, or hotlist slug.
-3. Explain why rows matched instead of presenting them as picks. For example,
-   point to valuation, growth, quality, momentum, sector, liquidity, or
-   extended-hours fields that were actually returned.
-4. Look for concentration and bias: sector/industry clustering, market-cap
-   skew, missing values, delayed scanner data, or unusually broad/narrow result
-   counts.
-5. Give next research steps rather than investment advice. Prefer follow-up
-   reads such as `tv info <SYMBOL>`, `tv quote <SYMBOL>`,
-   `tv quotes <SYMBOL>...`, `tv quote <SYMBOL> --source chart`, or chart
-   `tv ohlcv --summary` only when chart context is needed.
-6. If the user wants deeper comparison, keep the output educational: compare
-   metrics side by side, call out missing data, and separate observed data from
-   interpretation.
-
-For broad scanner runs, a compact first pass is usually enough: show the top
-rows, total count, sort key, and the fields that drove the screen. Save or
-export complete result sets only when the user asks for an artifact.
+For result explanation, use `screener-result-analysis`. Keep this skill focused
+on operating the Screener target and saved state. A compact first pass is
+usually enough: source, filters or screen name, columns, sort key, result count,
+top rows, and any intended next read.
 
 ## Mutations
 

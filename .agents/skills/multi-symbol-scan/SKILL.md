@@ -43,6 +43,10 @@ Use this skill to compare several TradingView symbols through the Rust `tv` CLI 
 9. Capture screenshots selectively for finalists or ambiguous cases with `tv screenshot --region chart --output <PATH>`.
 10. Present a ranked shortlist and explain which observations came from scanner REST data, chart reads, or visual interpretation.
 
+Use `market-data-interpretation` when quote freshness, source differences,
+extended-hours fields, or missing values matter. Use `screener-result-analysis`
+when explaining why scanner or Screener rows matched a screen.
+
 ## OHLCV Recovery
 
 If a finalist chart read returns an `ohlcv` failure while symbol or quote reads

@@ -47,6 +47,9 @@ Use this skill for live TradingView chart review through the Rust `tv` CLI.
    `tv ohlcv --summary`.
 10. Capture visual evidence only when useful: `tv screenshot --region chart --output <PATH>`.
 
+Use `market-data-interpretation` when source selection, scanner delay metadata,
+extended-hours fields, or chart-vs-scanner differences matter.
+
 ## OHLCV Recovery
 
 If `tv ohlcv` fails but `tv quote` or `tv symbol` works, keep the full JSON

@@ -58,9 +58,11 @@ repository root contributor guides.
 Runtime skills currently included:
 
 - `chart-analysis`
+- `market-data-interpretation`
 - `multi-symbol-scan`
 - `pine-develop`
 - `replay-practice`
+- `screener-result-analysis`
 - `screener-workflow`
 - `strategy-report`
 
