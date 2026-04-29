@@ -73,6 +73,9 @@ pub async fn dispatch(
         }
         Command::Scanner { command } => match command {
             ScannerCommand::Hotlist { slug, limit } => ops::scanner_hotlist(&slug, limit).await,
+            ScannerCommand::Metainfo { market, fields } => {
+                ops::scanner_metainfo(ops::ScannerMetainfoRequest { market, fields }).await
+            }
             ScannerCommand::Scan {
                 market,
                 exchange,

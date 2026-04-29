@@ -188,6 +188,13 @@ pub enum ScannerCommand {
         #[arg(long, short = 'n')]
         limit: Option<usize>,
     },
+    #[command(about = "Discover TradingView scanner field metadata")]
+    Metainfo {
+        #[arg(long, default_value = "america")]
+        market: String,
+        #[arg(long = "field")]
+        fields: Vec<String>,
+    },
     #[command(about = "Run a read-only TradingView Stock Screener REST scan")]
     Scan {
         #[arg(long, default_value = "america")]

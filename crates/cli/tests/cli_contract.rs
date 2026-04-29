@@ -67,6 +67,7 @@ fn scanner_help_lists_hotlist_subcommand() {
         .assert()
         .success()
         .stdout(predicate::str::contains("hotlist"))
+        .stdout(predicate::str::contains("metainfo"))
         .stdout(predicate::str::contains("scan"));
 
     tv().args(["scanner", "hotlist", "--help"])
@@ -74,6 +75,12 @@ fn scanner_help_lists_hotlist_subcommand() {
         .success()
         .stdout(predicate::str::contains("<SLUG>"))
         .stdout(predicate::str::contains("--limit"));
+
+    tv().args(["scanner", "metainfo", "--help"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("--market"))
+        .stdout(predicate::str::contains("--field"));
 
     tv().args(["scanner", "scan", "--help"])
         .assert()

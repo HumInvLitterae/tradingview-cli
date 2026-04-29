@@ -101,6 +101,9 @@ Current command family:
 Safety boundary:
 
 - this path is read-only and does not require a TradingView Desktop target
+- price-bearing scanner REST reads are not a realtime entitlement guarantee;
+  freshness can depend on exchange rules, TradingView feed selection, and
+  market-data subscription state
 - it returns scanner quote fields such as symbol, description, close, open,
   high, low, volume, change, exchange, type, and subtype
 - it also requests TradingView scanner extended-hours columns when available:
@@ -124,6 +127,26 @@ Safety boundary:
 - if quote chart fallback is used after a technical scanner failure, the
   fallback must still fail when the observed symbol does not match the
   requested symbol
+
+## Scanner metainfo REST read
+
+Category: unauthenticated TradingView scanner REST metadata read.
+
+Current command family:
+
+- `scanner metainfo [--market <MARKET>] [--field <FIELD>]...`
+
+Safety boundary:
+
+- this path is read-only and does not require a TradingView Desktop target
+- it reads scanner field metadata, not prices, so quote freshness and
+  real-time market-data entitlement are separate concerns
+- the current CLI supports the same initial market boundary as `scanner scan`:
+  `america`
+- output is normalized to public-safe field summaries. The CLI does not expose
+  raw metainfo payloads or a raw passthrough mode
+- malformed or unexpectedly shaped responses should become
+  `internal_api_unavailable`
 
 ## Symbol search REST read
 
@@ -274,6 +297,7 @@ Current command families:
 
 - `search`
 - `scanner hotlist`
+- `scanner metainfo`
 - `scanner scan`
 - `info <SYMBOL>`
 - `quote <SYMBOL>` before chart fallback
@@ -281,6 +305,8 @@ Current command families:
 Safety boundary:
 
 - these commands are read-only
+- scanner price reads are useful for screening but are not guaranteed to be
+  realtime for every exchange or subscription state
 - supported markets and field names are intentionally explicit
 - unexpected response shapes are rejected rather than normalized by guesswork
 

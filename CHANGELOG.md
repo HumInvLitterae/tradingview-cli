@@ -13,6 +13,8 @@ package version omits the leading `v`.
   `tv quote <SYMBOL>` scanner reads.
 - Added confirmed premarket and postmarket scanner REST columns to
   `tv scanner scan --columns ...` for Desktop-free extended-hours scans.
+- Added Desktop-free `tv scanner metainfo` for scanner field metadata
+  discovery.
 
 ## v0.3.0 - 2026-04-29
 

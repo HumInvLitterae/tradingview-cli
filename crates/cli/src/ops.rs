@@ -62,7 +62,9 @@ pub use replay::{
     replay_autoplay, replay_start, replay_status, replay_step, replay_stop, replay_trade,
 };
 pub use saved_layout::{saved_layout_list, saved_layout_switch};
-pub use scanner::{ScannerScanRequest, scanner_hotlist, scanner_scan};
+pub use scanner::{
+    ScannerMetainfoRequest, ScannerScanRequest, scanner_hotlist, scanner_metainfo, scanner_scan,
+};
 pub use screener::{
     screener_close, screener_columns_actions, screener_columns_add, screener_columns_config,
     screener_columns_list, screener_columns_remove, screener_columns_reorder,

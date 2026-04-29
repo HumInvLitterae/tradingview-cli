@@ -14,6 +14,8 @@ for release and next-phase planning.
   fields to Desktop-free `tv quote <SYMBOL>` scanner reads.
 - `tradingview-cli-scanner-extended-hours-columns.md`: allow confirmed
   premarket and postmarket scanner columns in `tv scanner scan --columns`.
+- `tradingview-cli-scanner-metainfo-read.md`: add Desktop-free scanner field
+  metadata discovery through `tv scanner metainfo`.
 
 ## Archived plans
 
