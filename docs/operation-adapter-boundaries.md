@@ -67,9 +67,10 @@ now:
 - OHLCV reads: `ohlcv` reads the active chart's main-series bars. Symbol-level
   quote and info reads are Desktop-free, but historical bars remain
   chart-dependent until a credential-safe endpoint is proven. The first
-  Desktop-free bars feasibility pass found only an undocumented WebSocket
-  research candidate, so a future browserless bars command should be separate
-  from `ohlcv` unless a later plan proves equivalence.
+  Desktop-free bars feasibility pass is complete for now and found only an
+  undocumented WebSocket research candidate, so a future browserless bars
+  command should be separate from `ohlcv` unless a later plan proves
+  equivalence.
 - Drawing and indicator chart operations: these execute chart APIs and verify
   newly created, updated, hidden, or removed entities.
 - Replay operations: these use Replay page APIs and chart-local Replay state.
@@ -112,7 +113,13 @@ retries. The current high-value candidates are:
 - Browserless historical bars: comparable-project evidence exists through an
   experimental TradingView WebSocket chart-session protocol, but it remains
   `research_only` until bounded live smoke and freshness/entitlement boundaries
-  are documented.
+  are documented. If pursued, it should start as a lab-gated symbol-targeted
+  command rather than changing `tv ohlcv`.
+
+The scanner REST watchlist-style read lane is not a current replacement
+candidate because it is already practically covered by `scanner scan`,
+extended-hours columns, `scanner metainfo`, `quote`, and `quotes`. Add more
+scanner REST reads only for a concrete workflow and clear endpoint evidence.
 
 These are not current crate-extraction tasks. Each needs its own evidence-gated
 ExecPlan before behavior changes.

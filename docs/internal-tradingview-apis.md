@@ -131,6 +131,11 @@ Safety boundary:
 - when the same extended-hours columns are requested through `scanner scan`,
   they remain table fields under each symbol row's `field_values` object rather
   than being reshaped into a nested object
+- the current scanner REST watchlist-style read lane is sufficient for known
+  practical needs: single quote, ordered batch quote, scanner table scan,
+  explicit extended-hours columns, and metainfo field discovery. Additions
+  should be driven by a concrete operator workflow and endpoint evidence rather
+  than broad field harvesting.
 - scanner validation failures, missing rows, ambiguous rows, and returned
   symbol mismatches are symbol-resolution failures. They do not trigger chart
   fallback, including in `--source auto`.
@@ -182,6 +187,9 @@ Safety boundary:
 
 - classify Desktop-free historical bars as `research_candidate`, not
   `api_backed`
+- the feasibility pass is complete for now, but no stable Rust CLI command has
+  been implemented. This is a deferred research boundary, not a completed
+  feature and not a canceled idea.
 - do not add cookie/session import, login automation, or authenticated direct
   HTTP/WebSocket setup without a separate safety plan
 - do not replace `tv ohlcv`; it reads current chart bars through the selected

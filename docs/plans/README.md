@@ -14,9 +14,9 @@ for release and next-phase planning.
   fields to Desktop-free `tv quote <SYMBOL>` scanner reads.
 - `tradingview-cli-scanner-extended-hours-columns.md`: allow confirmed
   premarket and postmarket scanner columns in `tv scanner scan --columns`.
-- `tradingview-cli-market-scanner-typed-api-docs.md`: document the typed
-  `tradingview-market` and `tradingview-scanner` Rust APIs with rustdoc and a
-  stable `docs/rust-api.md` guide.
+- `tradingview-cli-v0.4-market-data-lane-review.md`: clarify the completed,
+  deferred, and next-candidate boundaries for the `v0.4.0` market data read
+  lane.
 
 ## Archived plans
 

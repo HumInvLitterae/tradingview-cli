@@ -22,6 +22,9 @@ package version omits the leading `v`.
   `tradingview-scanner` crates while preserving CLI JSON payloads.
 - Documented the typed market/scanner Rust API boundary with crate-level
   rustdoc and `docs/rust-api.md`.
+- Clarified the `v0.4.0` market-data read boundary: scanner REST reads are
+  sufficient for current watchlist-style needs, while Desktop-free historical
+  bars remain a research/lab candidate rather than a stable command.
 
 ## v0.3.0 - 2026-04-29
 
