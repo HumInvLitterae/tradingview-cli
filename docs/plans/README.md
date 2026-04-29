@@ -14,8 +14,9 @@ for release and next-phase planning.
   fields to Desktop-free `tv quote <SYMBOL>` scanner reads.
 - `tradingview-cli-scanner-extended-hours-columns.md`: allow confirmed
   premarket and postmarket scanner columns in `tv scanner scan --columns`.
-- `tradingview-cli-quote-source-selection.md`: add explicit quote source
-  selection and expose scanner market-data timestamp/feed metadata.
+- `tradingview-cli-market-scanner-api-boundary.md`: add typed reusable read
+  APIs to `tradingview-market` and `tradingview-scanner` while preserving CLI
+  JSON wrappers.
 
 ## Archived plans
 
@@ -81,6 +82,7 @@ Important archived plan categories:
 - ordered Desktop-free batch quote reads through `tv quotes <SYMBOL>...`
 - Desktop-free historical bars feasibility and WebSocket lab boundary research
 - explicit quote source selection and scanner quote timestamp/feed metadata
+- typed read API boundary for `tradingview-market` and `tradingview-scanner`
 - full-page Screener target opening through existing-target reuse, CDP target
   creation attempt, and bounded Desktop new-tab tile fallback
 - shared TradingView Desktop app-window/new-tab helper extraction before

@@ -4,9 +4,15 @@ use tradingview_core::{AppError, ErrorKind};
 use crate::{
     normalize::{bare_symbol, split_exchange_symbol},
     search::symbol_search,
+    types::SymbolInfo,
 };
 
 pub async fn symbol_info(symbol: &str) -> Result<Value, AppError> {
+    serde_json::to_value(symbol_info_typed(symbol).await?)
+        .map_err(|err| AppError::new(ErrorKind::Internal, err.to_string()))
+}
+
+pub async fn symbol_info_typed(symbol: &str) -> Result<SymbolInfo, AppError> {
     let requested_symbol = symbol.trim();
     if requested_symbol.is_empty() {
         return Err(AppError::new(
@@ -16,7 +22,10 @@ pub async fn symbol_info(symbol: &str) -> Result<Value, AppError> {
     }
     let search = symbol_search(requested_symbol).await?;
     let target = resolve_symbol_search_match(requested_symbol, &search)?;
-    Ok(symbol_info_from_search_result(requested_symbol, &target))
+    Ok(symbol_info_from_search_result_typed(
+        requested_symbol,
+        &target,
+    ))
 }
 
 pub(crate) fn resolve_symbol_search_match(
@@ -85,7 +94,19 @@ pub(crate) fn resolve_symbol_search_match(
     }
 }
 
+#[cfg(test)]
 pub(crate) fn symbol_info_from_search_result(requested_symbol: &str, target: &Value) -> Value {
+    serde_json::to_value(symbol_info_from_search_result_typed(
+        requested_symbol,
+        target,
+    ))
+    .expect("symbol info response should serialize")
+}
+
+pub(crate) fn symbol_info_from_search_result_typed(
+    requested_symbol: &str,
+    target: &Value,
+) -> SymbolInfo {
     let symbol = target
         .get("symbol")
         .and_then(Value::as_str)
@@ -106,20 +127,20 @@ pub(crate) fn symbol_info_from_search_result(requested_symbol: &str, target: &Va
                 format!("{exchange}:{symbol}")
             }
         });
-    json!({
-        "symbol": symbol,
-        "full_name": full_name,
-        "exchange": exchange,
-        "description": target.get("description").cloned().unwrap_or(Value::Null),
-        "type": target.get("type").cloned().unwrap_or(Value::Null),
-        "pro_name": full_name,
-        "typespecs": Value::Null,
-        "resolution": Value::Null,
-        "chart_type": Value::Null,
-        "source": "symbol_search_rest",
-        "non_mutating": true,
-        "requested_symbol": requested_symbol,
-    })
+    SymbolInfo {
+        symbol: symbol.to_string(),
+        full_name: full_name.clone(),
+        exchange: exchange.to_string(),
+        description: target.get("description").cloned().unwrap_or(Value::Null),
+        symbol_type: target.get("type").cloned().unwrap_or(Value::Null),
+        pro_name: full_name,
+        typespecs: Value::Null,
+        resolution: Value::Null,
+        chart_type: Value::Null,
+        source: "symbol_search_rest".to_string(),
+        non_mutating: true,
+        requested_symbol: requested_symbol.to_string(),
+    }
 }
 
 pub(crate) fn preferred_symbol_candidates(requested_symbol: &str, search: &Value) -> Vec<Value> {
@@ -248,5 +269,26 @@ mod tests {
         assert_eq!(result["source"], "symbol_search_rest");
         assert_eq!(result["non_mutating"], true);
         assert_eq!(result["requested_symbol"], "IONQ");
+    }
+
+    #[test]
+    fn symbol_info_from_search_result_typed_returns_current_info_shape() {
+        let target = json!({
+            "symbol": "IONQ",
+            "description": "IonQ, Inc.",
+            "exchange": "NYSE",
+            "type": "stock",
+            "full_name": "NYSE:IONQ"
+        });
+
+        let result = symbol_info_from_search_result_typed("IONQ", &target);
+
+        assert_eq!(result.symbol, "IONQ");
+        assert_eq!(result.full_name, "NYSE:IONQ");
+        assert_eq!(result.exchange, "NYSE");
+        assert_eq!(result.description, json!("IonQ, Inc."));
+        assert_eq!(result.symbol_type, json!("stock"));
+        assert_eq!(result.source, "symbol_search_rest");
+        assert!(result.non_mutating);
     }
 }

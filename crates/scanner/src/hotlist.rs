@@ -3,6 +3,7 @@ use serde_json::{Value, json};
 use tradingview_core::{AppError, ErrorKind};
 
 use super::common::field_values_object;
+use super::types::{ScannerHotlistResult, ScannerRow};
 
 const HOTLIST_BASE_URL: &str = "https://scanner.tradingview.com/presets";
 const HOTLIST_REGION: &str = "US";
@@ -22,6 +23,14 @@ const HOTLIST_SLUGS: &[&str] = &[
 ];
 
 pub async fn scanner_hotlist(slug: &str, limit: Option<usize>) -> Result<Value, AppError> {
+    serde_json::to_value(scanner_hotlist_typed(slug, limit).await?)
+        .map_err(|err| AppError::new(ErrorKind::Internal, err.to_string()))
+}
+
+pub async fn scanner_hotlist_typed(
+    slug: &str,
+    limit: Option<usize>,
+) -> Result<ScannerHotlistResult, AppError> {
     let slug = validate_hotlist_slug(slug)?;
     let limit = normalize_hotlist_limit(limit)?;
     let url = hotlist_url(slug)?;
@@ -44,7 +53,7 @@ pub async fn scanner_hotlist(slug: &str, limit: Option<usize>) -> Result<Value, 
         .await
         .map_err(|err| AppError::new(ErrorKind::InternalApiUnavailable, err.to_string()))?;
 
-    normalize_hotlist_response(slug, limit, &value)
+    normalize_hotlist_response_typed(slug, limit, &value)
 }
 
 fn validate_hotlist_slug(slug: &str) -> Result<&'static str, AppError> {
@@ -88,7 +97,17 @@ fn hotlist_url(slug: &str) -> Result<reqwest::Url, AppError> {
     .map_err(|err| AppError::new(ErrorKind::Internal, err.to_string()))
 }
 
+#[cfg(test)]
 fn normalize_hotlist_response(slug: &str, limit: usize, value: &Value) -> Result<Value, AppError> {
+    serde_json::to_value(normalize_hotlist_response_typed(slug, limit, value)?)
+        .map_err(|err| AppError::new(ErrorKind::Internal, err.to_string()))
+}
+
+fn normalize_hotlist_response_typed(
+    slug: &str,
+    limit: usize,
+    value: &Value,
+) -> Result<ScannerHotlistResult, AppError> {
     let object = value
         .as_object()
         .ok_or_else(|| malformed_hotlist("response"))?;
@@ -109,19 +128,19 @@ fn normalize_hotlist_response(slug: &str, limit: usize, value: &Value) -> Result
         .map(|row| normalize_hotlist_symbol(row, &fields))
         .collect::<Result<Vec<_>, _>>()?;
 
-    Ok(json!({
-        "source": HOTLIST_SOURCE,
-        "region": HOTLIST_REGION,
-        "slug": slug,
-        "limit": limit,
-        "count": normalized_symbols.len(),
-        "total_count": total_count,
-        "fields": fields,
-        "symbols": normalized_symbols,
-    }))
+    Ok(ScannerHotlistResult {
+        source: HOTLIST_SOURCE.to_string(),
+        region: HOTLIST_REGION.to_string(),
+        slug: slug.to_string(),
+        limit,
+        count: normalized_symbols.len(),
+        total_count,
+        fields,
+        symbols: normalized_symbols,
+    })
 }
 
-fn normalize_hotlist_symbol(row: &Value, fields: &[String]) -> Result<Value, AppError> {
+fn normalize_hotlist_symbol(row: &Value, fields: &[String]) -> Result<ScannerRow, AppError> {
     let object = row
         .as_object()
         .ok_or_else(|| malformed_hotlist("symbol row"))?;
@@ -136,11 +155,11 @@ fn normalize_hotlist_symbol(row: &Value, fields: &[String]) -> Result<Value, App
         .ok_or_else(|| malformed_hotlist("symbol row f"))?;
     let field_values = field_values_object(fields, values);
 
-    Ok(json!({
-        "symbol": symbol,
-        "values": values,
-        "field_values": field_values,
-    }))
+    Ok(ScannerRow {
+        symbol: symbol.to_string(),
+        values: values.clone(),
+        field_values: Value::Object(field_values),
+    })
 }
 
 fn string_array(value: Option<&Value>, label: &str) -> Result<Vec<String>, AppError> {
@@ -221,6 +240,26 @@ mod tests {
         assert_eq!(result["symbols"][0]["values"], json!([123456, 1.5]));
         assert_eq!(result["symbols"][0]["field_values"]["volume"], 123456);
         assert_eq!(result["symbols"][0]["field_values"]["change"], 1.5);
+    }
+
+    #[test]
+    fn normalize_hotlist_response_typed_preserves_fields_and_rows() {
+        let payload = json!({
+            "fields": ["volume", "change"],
+            "symbols": [
+                { "s": "NASDAQ:AAPL", "f": [123456, 1.5] }
+            ],
+            "totalCount": 20
+        });
+
+        let result = normalize_hotlist_response_typed("volume_gainers", 1, &payload).unwrap();
+
+        assert_eq!(result.source, "scanner_preset_rest");
+        assert_eq!(result.region, "US");
+        assert_eq!(result.slug, "volume_gainers");
+        assert_eq!(result.fields, ["volume", "change"]);
+        assert_eq!(result.symbols[0].symbol, "NASDAQ:AAPL");
+        assert_eq!(result.symbols[0].field_values["volume"], 123456);
     }
 
     #[test]

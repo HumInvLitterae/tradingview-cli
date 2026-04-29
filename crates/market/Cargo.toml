@@ -7,5 +7,6 @@ publish.workspace = true
 
 [dependencies]
 reqwest = { workspace = true, features = ["json"] }
+serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
 tradingview-core = { workspace = true }

@@ -18,6 +18,8 @@ package version omits the leading `v`.
 - Added Desktop-free `tv quotes <SYMBOL>...` for ordered batch quote reads.
 - Added explicit `tv quote <SYMBOL> --source scanner|chart|auto` selection and
   scanner quote `time` / `update_mode` / `delay_seconds` metadata.
+- Added typed reusable read APIs to the internal `tradingview-market` and
+  `tradingview-scanner` crates while preserving CLI JSON payloads.
 
 ## v0.3.0 - 2026-04-29
 

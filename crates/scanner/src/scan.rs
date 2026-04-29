@@ -3,6 +3,7 @@ use serde_json::{Value, json};
 use tradingview_core::{AppError, ErrorKind};
 
 use super::common::field_values_object;
+use super::types::{ScannerRow, ScannerScanResult, ScannerSort};
 
 const SCAN_BASE_URL: &str = "https://scanner.tradingview.com";
 const SCAN_SOURCE: &str = "scanner_scan_rest";
@@ -94,6 +95,13 @@ pub struct ScannerScanRequest {
 }
 
 pub async fn scanner_scan(request: ScannerScanRequest) -> Result<Value, AppError> {
+    serde_json::to_value(scanner_scan_typed(request).await?)
+        .map_err(|err| AppError::new(ErrorKind::Internal, err.to_string()))
+}
+
+pub async fn scanner_scan_typed(
+    request: ScannerScanRequest,
+) -> Result<ScannerScanResult, AppError> {
     let normalized = normalize_scan_request(request)?;
     let url = scan_url(&normalized.market)?;
     let response = reqwest::Client::new()
@@ -116,7 +124,7 @@ pub async fn scanner_scan(request: ScannerScanRequest) -> Result<Value, AppError
         .await
         .map_err(|err| AppError::new(ErrorKind::InternalApiUnavailable, err.to_string()))?;
 
-    normalize_scan_response(&normalized, &value)
+    normalize_scan_response_typed(&normalized, &value)
 }
 
 fn scan_url(market: &str) -> Result<reqwest::Url, AppError> {
@@ -537,10 +545,19 @@ fn finite(value: Option<f64>, label: &str) -> Result<Option<f64>, AppError> {
     }
 }
 
+#[cfg(test)]
 fn normalize_scan_response(
     request: &NormalizedScannerScanRequest,
     value: &Value,
 ) -> Result<Value, AppError> {
+    serde_json::to_value(normalize_scan_response_typed(request, value)?)
+        .map_err(|err| AppError::new(ErrorKind::Internal, err.to_string()))
+}
+
+fn normalize_scan_response_typed(
+    request: &NormalizedScannerScanRequest,
+    value: &Value,
+) -> Result<ScannerScanResult, AppError> {
     let object = value
         .as_object()
         .ok_or_else(|| malformed_scan("response"))?;
@@ -559,23 +576,23 @@ fn normalize_scan_response(
         .map(|row| normalize_scan_symbol(row, &request.columns))
         .collect::<Result<Vec<_>, _>>()?;
 
-    Ok(json!({
-        "source": SCAN_SOURCE,
-        "market": request.market,
-        "limit": request.limit,
-        "count": normalized_symbols.len(),
-        "total_count": total_count,
-        "columns": request.columns,
-        "sort": {
-            "field": request.sort_field,
-            "order": request.sort_order,
+    Ok(ScannerScanResult {
+        source: SCAN_SOURCE.to_string(),
+        market: request.market.clone(),
+        limit: request.limit,
+        count: normalized_symbols.len(),
+        total_count,
+        columns: request.columns.clone(),
+        sort: ScannerSort {
+            field: request.sort_field.clone(),
+            order: request.sort_order.clone(),
         },
-        "filters": request.filters,
-        "symbols": normalized_symbols,
-    }))
+        filters: request.filters.clone(),
+        symbols: normalized_symbols,
+    })
 }
 
-fn normalize_scan_symbol(row: &Value, columns: &[String]) -> Result<Value, AppError> {
+fn normalize_scan_symbol(row: &Value, columns: &[String]) -> Result<ScannerRow, AppError> {
     let object = row
         .as_object()
         .ok_or_else(|| malformed_scan("symbol row"))?;
@@ -590,11 +607,11 @@ fn normalize_scan_symbol(row: &Value, columns: &[String]) -> Result<Value, AppEr
         .ok_or_else(|| malformed_scan("symbol row d"))?;
     let field_values = field_values_object(columns, values);
 
-    Ok(json!({
-        "symbol": symbol,
-        "values": values,
-        "field_values": field_values,
-    }))
+    Ok(ScannerRow {
+        symbol: symbol.to_string(),
+        values: values.clone(),
+        field_values: Value::Object(field_values),
+    })
 }
 
 fn malformed_scan(label: &str) -> AppError {
@@ -1171,6 +1188,58 @@ mod tests {
             json!(["AAPL", 200.0, 123456])
         );
         assert_eq!(result["symbols"][0]["field_values"]["close"], 200.0);
+    }
+
+    #[test]
+    fn normalize_scan_response_typed_preserves_columns_and_field_values() {
+        let request = normalize_scan_request(ScannerScanRequest {
+            market: "america".to_string(),
+            exchanges: Vec::new(),
+            columns: Some("name,close,premarket_close".to_string()),
+            sort: Some("close".to_string()),
+            asc: true,
+            desc: false,
+            limit: Some(3),
+            min_price: None,
+            max_price: None,
+            min_volume: None,
+            min_market_cap: None,
+            sectors: Vec::new(),
+            industries: Vec::new(),
+            symbol_types: Vec::new(),
+            subtypes: Vec::new(),
+            min_change: None,
+            max_change: None,
+            min_relative_volume: None,
+            max_pe: None,
+            min_average_volume: None,
+            min_performance_week: None,
+            max_performance_week: None,
+            min_performance_month: None,
+            max_performance_month: None,
+            min_performance_quarter: None,
+            max_performance_quarter: None,
+            min_rsi: None,
+            max_rsi: None,
+            min_recommendation: None,
+            max_recommendation: None,
+        })
+        .unwrap();
+        let payload = json!({
+            "totalCount": 1,
+            "data": [
+                { "s": "NASDAQ:AAPL", "d": ["AAPL", 266.39, 268.2] }
+            ]
+        });
+
+        let result = normalize_scan_response_typed(&request, &payload).unwrap();
+
+        assert_eq!(result.market, "america");
+        assert_eq!(result.columns, ["name", "close", "premarket_close"]);
+        assert_eq!(result.sort.field, "close");
+        assert_eq!(result.sort.order, "asc");
+        assert_eq!(result.symbols[0].symbol, "NASDAQ:AAPL");
+        assert_eq!(result.symbols[0].field_values["premarket_close"], 268.2);
     }
 
     #[test]

@@ -1980,6 +1980,7 @@ name = "tradingview-market"
 version = "0.3.0"
 dependencies = [
  "reqwest",
+ "serde",
  "serde_json",
  "tradingview-core",
 ]
@@ -2007,6 +2008,7 @@ name = "tradingview-scanner"
 version = "0.3.0"
 dependencies = [
  "reqwest",
+ "serde",
  "serde_json",
  "tradingview-core",
 ]

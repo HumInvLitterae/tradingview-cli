@@ -5,6 +5,10 @@ use crate::{
     info::preferred_symbol_candidates,
     normalize::{bare_symbol, split_exchange_symbol},
     search::symbol_search,
+    types::{
+        BatchQuoteItem, BatchQuotes, ExtendedHoursQuote, FreshnessCheck, Quote, QuoteError,
+        SessionQuote,
+    },
 };
 
 const QUOTE_SCAN_URL: &str = "https://scanner.tradingview.com/america/scan";
@@ -40,6 +44,11 @@ const QUOTE_SCAN_COLUMNS: &[&str] = &[
 ];
 
 pub async fn quote_symbol(symbol: &str) -> Result<Value, AppError> {
+    serde_json::to_value(quote_symbol_typed(symbol).await?)
+        .map_err(|err| AppError::new(ErrorKind::Internal, err.to_string()))
+}
+
+pub async fn quote_symbol_typed(symbol: &str) -> Result<Quote, AppError> {
     let requested_symbol = symbol.trim();
     if requested_symbol.is_empty() {
         return Err(AppError::new(
@@ -48,7 +57,7 @@ pub async fn quote_symbol(symbol: &str) -> Result<Value, AppError> {
         ));
     }
     let value = quote_symbol_via_scanner(requested_symbol).await?;
-    match normalize_scanner_quote_response(requested_symbol, &value) {
+    match normalize_scanner_quote_response_typed(requested_symbol, &value) {
         Ok(quote) => Ok(quote),
         Err(err) if err.kind == ErrorKind::Validation => {
             Err(add_symbol_search_candidates(err, requested_symbol).await)
@@ -58,6 +67,14 @@ pub async fn quote_symbol(symbol: &str) -> Result<Value, AppError> {
 }
 
 pub async fn quote_symbols(symbols: Vec<String>) -> Result<Value, AppError> {
+    match quote_symbols_typed(symbols).await {
+        Ok(quotes) => serde_json::to_value(quotes)
+            .map_err(|err| AppError::new(ErrorKind::Internal, err.to_string())),
+        Err(error) => Err(error),
+    }
+}
+
+pub async fn quote_symbols_typed(symbols: Vec<String>) -> Result<BatchQuotes, AppError> {
     let requested_symbols = normalize_quote_symbols(symbols)?;
     let requested_count = requested_symbols.len();
     let mut items = Vec::with_capacity(requested_count);
@@ -65,14 +82,15 @@ pub async fn quote_symbols(symbols: Vec<String>) -> Result<Value, AppError> {
     let mut first_error: Option<AppError> = None;
 
     for requested_symbol in requested_symbols {
-        match quote_symbol(&requested_symbol).await {
+        match quote_symbol_typed(&requested_symbol).await {
             Ok(quote) => {
                 resolved_count += 1;
-                items.push(json!({
-                    "requested_symbol": requested_symbol,
-                    "ok": true,
-                    "quote": quote,
-                }));
+                items.push(BatchQuoteItem {
+                    requested_symbol,
+                    ok: true,
+                    quote: Some(quote),
+                    error: None,
+                });
             }
             Err(error) => {
                 if first_error.is_none() {
@@ -82,11 +100,12 @@ pub async fn quote_symbols(symbols: Vec<String>) -> Result<Value, AppError> {
                         details: error.details.clone(),
                     });
                 }
-                items.push(json!({
-                    "requested_symbol": requested_symbol,
-                    "ok": false,
-                    "error": error_payload(error),
-                }));
+                items.push(BatchQuoteItem {
+                    requested_symbol,
+                    ok: false,
+                    quote: None,
+                    error: Some(error_payload(error)),
+                });
             }
         }
     }
@@ -97,17 +116,17 @@ pub async fn quote_symbols(symbols: Vec<String>) -> Result<Value, AppError> {
 fn finalize_quote_items(
     requested_count: usize,
     resolved_count: usize,
-    items: Vec<Value>,
+    items: Vec<BatchQuoteItem>,
     first_error: Option<AppError>,
-) -> Result<Value, AppError> {
+) -> Result<BatchQuotes, AppError> {
     let error_count = requested_count.saturating_sub(resolved_count);
-    let payload = json!({
-        "source": "scanner_scan_rest",
-        "requested_count": requested_count,
-        "resolved_count": resolved_count,
-        "error_count": error_count,
-        "items": items,
-    });
+    let payload = BatchQuotes {
+        source: "scanner_scan_rest".to_string(),
+        requested_count,
+        resolved_count,
+        error_count,
+        items,
+    };
 
     if resolved_count > 0 {
         Ok(payload)
@@ -122,7 +141,10 @@ fn finalize_quote_items(
             first_error.kind,
             "TradingView scanner quote did not resolve any requested symbols",
         )
-        .with_details(payload))
+        .with_details(
+            serde_json::to_value(payload)
+                .map_err(|err| AppError::new(ErrorKind::Internal, err.to_string()))?,
+        ))
     }
 }
 
@@ -148,12 +170,12 @@ fn normalize_quote_symbols(symbols: Vec<String>) -> Result<Vec<String>, AppError
     Ok(normalized)
 }
 
-fn error_payload(error: AppError) -> Value {
-    json!({
-        "kind": error.kind,
-        "message": error.message,
-        "details": error.details,
-    })
+fn error_payload(error: AppError) -> QuoteError {
+    QuoteError {
+        kind: error.kind,
+        message: error.message,
+        details: error.details,
+    }
 }
 
 async fn quote_symbol_via_scanner(symbol: &str) -> Result<Value, AppError> {
@@ -196,10 +218,22 @@ async fn quote_symbol_via_scanner(symbol: &str) -> Result<Value, AppError> {
         .map_err(|err| AppError::new(ErrorKind::InternalApiUnavailable, err.to_string()))
 }
 
+#[cfg(test)]
 fn normalize_scanner_quote_response(
     requested_symbol: &str,
     value: &Value,
 ) -> Result<Value, AppError> {
+    serde_json::to_value(normalize_scanner_quote_response_typed(
+        requested_symbol,
+        value,
+    )?)
+    .map_err(|err| AppError::new(ErrorKind::Internal, err.to_string()))
+}
+
+fn normalize_scanner_quote_response_typed(
+    requested_symbol: &str,
+    value: &Value,
+) -> Result<Quote, AppError> {
     let rows = value.get("data").and_then(Value::as_array).ok_or_else(|| {
         AppError::new(
             ErrorKind::InternalApiUnavailable,
@@ -268,57 +302,58 @@ fn normalize_scanner_quote_response(
     let field = |index: usize| values.get(index).cloned().unwrap_or(Value::Null);
     let close = field(2);
     let update_mode = field(27);
-    Ok(json!({
-        "symbol": full_symbol,
-        "time": field(26),
-        "last": close,
-        "close": field(2),
-        "open": field(3),
-        "high": field(4),
-        "low": field(5),
-        "volume": field(6),
-        "change": field(7),
-        "description": field(1),
-        "exchange": field(8),
-        "type": field(9),
-        "subtype": field(10),
-        "extended_hours": {
-            "premarket": {
-                "open": field(11),
-                "high": field(12),
-                "low": field(13),
-                "last": field(14),
-                "close": field(14),
-                "change_percent": field(15),
-                "change_abs": field(16),
-                "gap_percent": field(17),
-                "volume": field(18),
+    Ok(Quote {
+        symbol: full_symbol.to_string(),
+        time: field(26),
+        last: close,
+        close: field(2),
+        open: field(3),
+        high: field(4),
+        low: field(5),
+        volume: field(6),
+        change: field(7),
+        description: field(1),
+        exchange: field(8),
+        symbol_type: field(9),
+        subtype: field(10),
+        extended_hours: ExtendedHoursQuote {
+            premarket: SessionQuote {
+                open: field(11),
+                high: field(12),
+                low: field(13),
+                last: field(14),
+                close: field(14),
+                change_percent: field(15),
+                change_abs: field(16),
+                gap_percent: Some(field(17)),
+                volume: field(18),
             },
-            "postmarket": {
-                "open": field(19),
-                "high": field(20),
-                "low": field(21),
-                "last": field(22),
-                "close": field(22),
-                "change_percent": field(23),
-                "change_abs": field(24),
-                "volume": field(25),
+            postmarket: SessionQuote {
+                open: field(19),
+                high: field(20),
+                low: field(21),
+                last: field(22),
+                close: field(22),
+                change_percent: field(23),
+                change_abs: field(24),
+                gap_percent: None,
+                volume: field(25),
             },
         },
-        "update_mode": update_mode,
-        "delay_seconds": parse_update_delay_seconds(&field(27)),
-        "source": "scanner_scan_rest",
-        "non_mutating": true,
-        "requested_symbol": requested_symbol,
-        "original_symbol": Value::Null,
-        "observed_symbol": full_symbol,
-        "switch_performed": false,
-        "restored": true,
-        "freshness_check": {
-            "kind": "requested_symbol_matches_observed_symbol",
-            "passed": true,
+        update_mode,
+        delay_seconds: parse_update_delay_seconds(&field(27)),
+        source: "scanner_scan_rest".to_string(),
+        non_mutating: true,
+        requested_symbol: requested_symbol.to_string(),
+        original_symbol: Value::Null,
+        observed_symbol: full_symbol.to_string(),
+        switch_performed: false,
+        restored: true,
+        freshness_check: FreshnessCheck {
+            kind: "requested_symbol_matches_observed_symbol".to_string(),
+            passed: true,
         },
-    }))
+    })
 }
 
 fn parse_update_delay_seconds(update_mode: &Value) -> Value {
@@ -447,6 +482,31 @@ mod tests {
     }
 
     #[test]
+    fn normalize_scanner_quote_response_typed_preserves_feed_metadata() {
+        let payload = json!({
+            "data": [{
+                "s": "NASDAQ:AAPL",
+                "d": [
+                    "AAPL", "Apple Inc.", 266.39, 266.09, 268.36, 265.07,
+                    16427115, -1.72, "NASDAQ", "stock", "common",
+                    null, null, null, 268.2, null, null, null, 174665,
+                    null, null, null, null, null, null, null,
+                    1777469400, "delayed_streaming_900"
+                ]
+            }]
+        });
+
+        let quote = normalize_scanner_quote_response_typed("AAPL", &payload).unwrap();
+
+        assert_eq!(quote.symbol, "NASDAQ:AAPL");
+        assert_eq!(quote.time, json!(1777469400));
+        assert_eq!(quote.update_mode, json!("delayed_streaming_900"));
+        assert_eq!(quote.delay_seconds, json!(900));
+        assert_eq!(quote.extended_hours.premarket.last, json!(268.2));
+        assert!(quote.freshness_check.passed);
+    }
+
+    #[test]
     fn normalize_scanner_quote_response_defaults_missing_extended_hours_to_null() {
         let payload = json!({
             "totalCount": 1,
@@ -558,28 +618,40 @@ mod tests {
 
     #[test]
     fn finalize_quote_items_preserves_order_and_counts_for_mixed_results() {
+        let quote = normalize_scanner_quote_response_typed(
+            "AAPL",
+            &json!({
+                "data": [{
+                    "s": "NASDAQ:AAPL",
+                    "d": [
+                        "AAPL", "Apple Inc.", 266.39, null, null, null, null, null,
+                        "NASDAQ", "stock", "common"
+                    ]
+                }]
+            }),
+        )
+        .unwrap();
         let items = vec![
-            json!({
-                "requested_symbol": "AAPL",
-                "ok": true,
-                "quote": {
-                    "symbol": "NASDAQ:AAPL",
-                    "requested_symbol": "AAPL",
-                    "source": "scanner_scan_rest"
-                }
-            }),
-            json!({
-                "requested_symbol": "BANANA",
-                "ok": false,
-                "error": {
-                    "kind": "validation",
-                    "message": "missing",
-                    "details": { "resolution_error": "not_found" }
-                }
-            }),
+            BatchQuoteItem {
+                requested_symbol: "AAPL".to_string(),
+                ok: true,
+                quote: Some(quote),
+                error: None,
+            },
+            BatchQuoteItem {
+                requested_symbol: "BANANA".to_string(),
+                ok: false,
+                quote: None,
+                error: Some(QuoteError {
+                    kind: ErrorKind::Validation,
+                    message: "missing".to_string(),
+                    details: Some(json!({ "resolution_error": "not_found" })),
+                }),
+            },
         ];
 
         let payload = finalize_quote_items(2, 1, items, None).unwrap();
+        let payload = serde_json::to_value(payload).unwrap();
 
         assert_eq!(payload["source"], "scanner_scan_rest");
         assert_eq!(payload["requested_count"], 2);
@@ -592,16 +664,45 @@ mod tests {
     }
 
     #[test]
+    fn finalize_quote_items_returns_typed_batch_result() {
+        let items = vec![BatchQuoteItem {
+            requested_symbol: "BANANA".to_string(),
+            ok: false,
+            quote: None,
+            error: Some(QuoteError {
+                kind: ErrorKind::Validation,
+                message: "missing".to_string(),
+                details: Some(json!({ "resolution_error": "not_found" })),
+            }),
+        }];
+
+        let error = finalize_quote_items(
+            1,
+            0,
+            items,
+            Some(AppError::new(ErrorKind::Validation, "missing")),
+        )
+        .unwrap_err();
+
+        assert_eq!(error.details.as_ref().unwrap()["items"][0]["ok"], false);
+        assert_eq!(
+            error.details.as_ref().unwrap()["items"][0]["error"]["details"]["resolution_error"],
+            "not_found"
+        );
+    }
+
+    #[test]
     fn finalize_quote_items_returns_error_with_ordered_details_when_all_fail() {
-        let items = vec![json!({
-            "requested_symbol": "BANANA",
-            "ok": false,
-            "error": {
-                "kind": "validation",
-                "message": "missing",
-                "details": { "resolution_error": "not_found" }
-            }
-        })];
+        let items = vec![BatchQuoteItem {
+            requested_symbol: "BANANA".to_string(),
+            ok: false,
+            quote: None,
+            error: Some(QuoteError {
+                kind: ErrorKind::Validation,
+                message: "missing".to_string(),
+                details: Some(json!({ "resolution_error": "not_found" })),
+            }),
+        }];
         let first_error = AppError::new(ErrorKind::Validation, "missing");
 
         let error = finalize_quote_items(1, 0, items, Some(first_error)).unwrap_err();

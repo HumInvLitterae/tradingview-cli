@@ -104,9 +104,13 @@ This project uses Rust 2024.
   crate may use `tradingview-core` and `serde_json`, but it must stay free of
   network, CDP, clap, and UI dependencies.
 - Put credential-free, Desktop-free market reads in `crates/market/` when they
-  do not depend on CDP, chart state, or UI automation.
+  do not depend on CDP, chart state, or UI automation. Prefer typed result
+  structs for reusable Rust APIs; keep JSON wrappers only for CLI payload
+  compatibility.
 - Put credential-free, Desktop-free scanner reads in `crates/scanner/` when
-  they can be exercised without TradingView Desktop.
+  they can be exercised without TradingView Desktop. Prefer typed result
+  structs for reusable Rust APIs; keep JSON wrappers only for CLI payload
+  compatibility.
 - Put Desktop-free Pine helpers in `crates/pine/` when they are local source
   analysis or Pine facade checks. Keep Pine Editor operations in the CLI
   package because they depend on CDP, Monaco, and visible TradingView UI state.

@@ -2,6 +2,8 @@ use serde_json::{Map, Value, json};
 
 use tradingview_core::{AppError, ErrorKind};
 
+use super::types::{ScannerFieldInfo, ScannerMetainfoResult};
+
 const METAINFO_BASE_URL: &str = "https://scanner.tradingview.com";
 const METAINFO_SOURCE: &str = "scanner_metainfo_rest";
 const SUPPORTED_METAINFO_MARKETS: &[&str] = &["america"];
@@ -19,6 +21,13 @@ struct NormalizedMetainfoRequest {
 }
 
 pub async fn scanner_metainfo(request: ScannerMetainfoRequest) -> Result<Value, AppError> {
+    serde_json::to_value(scanner_metainfo_typed(request).await?)
+        .map_err(|err| AppError::new(ErrorKind::Internal, err.to_string()))
+}
+
+pub async fn scanner_metainfo_typed(
+    request: ScannerMetainfoRequest,
+) -> Result<ScannerMetainfoResult, AppError> {
     let normalized = normalize_metainfo_request(request)?;
     let url = metainfo_url(&normalized.market)?;
     let client = reqwest::Client::new();
@@ -45,7 +54,7 @@ pub async fn scanner_metainfo(request: ScannerMetainfoRequest) -> Result<Value, 
         .await
         .map_err(|err| AppError::new(ErrorKind::InternalApiUnavailable, err.to_string()))?;
 
-    normalize_metainfo_response(&normalized, &value)
+    normalize_metainfo_response_typed(&normalized, &value)
 }
 
 fn normalize_metainfo_request(
@@ -94,10 +103,19 @@ fn metainfo_url(market: &str) -> Result<reqwest::Url, AppError> {
         .map_err(|err| AppError::new(ErrorKind::Internal, err.to_string()))
 }
 
+#[cfg(test)]
 fn normalize_metainfo_response(
     request: &NormalizedMetainfoRequest,
     value: &Value,
 ) -> Result<Value, AppError> {
+    serde_json::to_value(normalize_metainfo_response_typed(request, value)?)
+        .map_err(|err| AppError::new(ErrorKind::Internal, err.to_string()))
+}
+
+fn normalize_metainfo_response_typed(
+    request: &NormalizedMetainfoRequest,
+    value: &Value,
+) -> Result<ScannerMetainfoResult, AppError> {
     let object = value
         .as_object()
         .ok_or_else(|| malformed_metainfo("response"))?;
@@ -117,44 +135,31 @@ fn normalize_metainfo_response(
             .collect::<Vec<_>>();
         let mut matched = Vec::new();
         for field in all_fields {
-            let name = field
-                .get("name")
-                .and_then(Value::as_str)
-                .unwrap_or_default();
-            if requested.contains(&name) {
+            if requested.contains(&field.name.as_str()) {
                 matched.push(field);
             }
         }
         let missing = request
             .fields
             .iter()
-            .filter(|field| {
-                !matched.iter().any(|item| {
-                    item.get("name")
-                        .and_then(Value::as_str)
-                        .is_some_and(|name| name == *field)
-                })
-            })
+            .filter(|field| !matched.iter().any(|item| item.name == **field))
             .cloned()
             .collect();
         (matched, missing)
     };
 
-    let mut payload = Map::new();
-    payload.insert("source".to_string(), json!(METAINFO_SOURCE));
-    payload.insert("market".to_string(), json!(request.market));
-    payload.insert("requested_fields".to_string(), json!(request.fields));
-    payload.insert("field_count".to_string(), json!(fields.len()));
-    payload.insert("fields".to_string(), json!(fields));
-    payload.insert("missing_fields".to_string(), json!(missing_fields));
-    if let Some(currency) = object.get("financial_currency") {
-        payload.insert("financial_currency".to_string(), currency.clone());
-    }
-
-    Ok(Value::Object(payload))
+    Ok(ScannerMetainfoResult {
+        source: METAINFO_SOURCE.to_string(),
+        market: request.market.clone(),
+        requested_fields: request.fields.clone(),
+        field_count: fields.len(),
+        fields,
+        missing_fields,
+        financial_currency: object.get("financial_currency").cloned(),
+    })
 }
 
-fn normalize_fields(value: &Value) -> Result<Vec<Value>, AppError> {
+fn normalize_fields(value: &Value) -> Result<Vec<ScannerFieldInfo>, AppError> {
     match value {
         Value::Array(fields) => fields.iter().map(normalize_field).collect(),
         Value::Object(fields) => fields
@@ -165,12 +170,14 @@ fn normalize_fields(value: &Value) -> Result<Vec<Value>, AppError> {
     }
 }
 
-fn normalize_field(value: &Value) -> Result<Value, AppError> {
+fn normalize_field(value: &Value) -> Result<ScannerFieldInfo, AppError> {
     match value {
-        Value::String(name) if !name.trim().is_empty() => Ok(json!({
-            "name": name.trim(),
-            "type": Value::Null,
-        })),
+        Value::String(name) if !name.trim().is_empty() => Ok(ScannerFieldInfo {
+            name: name.trim().to_string(),
+            field_type: Value::Null,
+            label: None,
+            range: None,
+        }),
         Value::Object(object) => {
             let name = first_string(object, &["n", "name", "id", "propName"])
                 .ok_or_else(|| malformed_metainfo("field name"))?;
@@ -185,7 +192,7 @@ fn normalize_field(value: &Value) -> Result<Value, AppError> {
     }
 }
 
-fn normalize_field_object(key: &str, value: &Value) -> Result<Value, AppError> {
+fn normalize_field_object(key: &str, value: &Value) -> Result<ScannerFieldInfo, AppError> {
     match value {
         Value::Object(object) => Ok(field_payload(
             first_string(object, &["propName", "name"]).unwrap_or(key),
@@ -193,10 +200,12 @@ fn normalize_field_object(key: &str, value: &Value) -> Result<Value, AppError> {
             first_string(object, &["title", "shortName", "label"]),
             object.get("range").or_else(|| object.get("r")),
         )),
-        _ => Ok(json!({
-            "name": key,
-            "type": Value::Null,
-        })),
+        _ => Ok(ScannerFieldInfo {
+            name: key.to_string(),
+            field_type: Value::Null,
+            label: None,
+            range: None,
+        }),
     }
 }
 
@@ -205,20 +214,15 @@ fn field_payload(
     field_type: Option<&str>,
     label: Option<&str>,
     range: Option<&Value>,
-) -> Value {
-    let mut payload = Map::new();
-    payload.insert("name".to_string(), json!(name));
-    payload.insert(
-        "type".to_string(),
-        field_type.map(Value::from).unwrap_or(Value::Null),
-    );
-    if let Some(label) = label.filter(|value| *value != name) {
-        payload.insert("label".to_string(), json!(label));
+) -> ScannerFieldInfo {
+    ScannerFieldInfo {
+        name: name.to_string(),
+        field_type: field_type.map(Value::from).unwrap_or(Value::Null),
+        label: label
+            .filter(|value| *value != name)
+            .map(ToString::to_string),
+        range: range.cloned(),
     }
-    if let Some(range) = range {
-        payload.insert("range".to_string(), range.clone());
-    }
-    Value::Object(payload)
 }
 
 fn first_string<'a>(object: &'a Map<String, Value>, keys: &[&str]) -> Option<&'a str> {
@@ -286,6 +290,32 @@ mod tests {
         assert_eq!(result["fields"][0]["type"], "price");
         assert_eq!(result["fields"][0]["range"], json!([0, 1000]));
         assert_eq!(result["missing_fields"], json!(["banana"]));
+    }
+
+    #[test]
+    fn normalize_metainfo_response_typed_preserves_requested_and_missing_fields() {
+        let request = normalize_metainfo_request(ScannerMetainfoRequest {
+            market: "america".to_string(),
+            fields: vec!["close".to_string(), "banana".to_string()],
+        })
+        .unwrap();
+        let payload = json!({
+            "financial_currency": "USD",
+            "fields": [
+                { "n": "close", "t": "price", "r": [0, 1000] }
+            ]
+        });
+
+        let result = normalize_metainfo_response_typed(&request, &payload).unwrap();
+
+        assert_eq!(result.source, "scanner_metainfo_rest");
+        assert_eq!(result.market, "america");
+        assert_eq!(result.requested_fields, ["close", "banana"]);
+        assert_eq!(result.field_count, 1);
+        assert_eq!(result.fields[0].name, "close");
+        assert_eq!(result.fields[0].field_type, json!("price"));
+        assert_eq!(result.missing_fields, ["banana"]);
+        assert_eq!(result.financial_currency, Some(json!("USD")));
     }
 
     #[test]

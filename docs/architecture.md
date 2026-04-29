@@ -67,11 +67,15 @@ installed binary remains `tv`.
   depends on `tradingview-core` but does not depend on clap, CDP, HTTP clients,
   page-session execution, or UI automation.
 - `crates/market/src/lib.rs` owns Desktop-free market reads for symbol search,
-  symbol metadata, and symbol quote lookup. It uses credential-free TradingView
-  HTTP endpoints and does not depend on CDP, chart state, or UI automation.
+  symbol metadata, and symbol quote lookup. It exposes typed read results as
+  the reusable Rust API and keeps JSON-returning wrappers for the CLI payload
+  contract. It uses credential-free TradingView HTTP endpoints and does not
+  depend on CDP, chart state, or UI automation.
 - `crates/scanner/src/lib.rs` owns Desktop-free scanner reads for hotlists and
-  basic scanner scans. It uses credential-free scanner HTTP endpoints and does
-  not depend on CDP, chart state, or UI automation.
+  basic scanner scans. It exposes typed read results as the reusable Rust API
+  and keeps JSON-returning wrappers for the CLI payload contract. It uses
+  credential-free scanner HTTP endpoints and does not depend on CDP, chart
+  state, or UI automation.
 - `crates/pine/src/lib.rs` owns Desktop-free Pine helpers for local static
   analysis, `alertcondition()` discovery, and Pine facade checks. Pine Editor
   operations remain in the root CLI crate because they depend on CDP.
