@@ -117,6 +117,8 @@ package version omits the leading `v`.
   new-tab Screener tile fallback and reports `creation_method`.
 - Added `--direction <long|short>` as an alias for the positional `DIRECTION`
   argument on `tv draw position`.
+- Shared TradingView Desktop app-window/new-tab helper code between `tab`
+  operations and `screener open --full-page` while preserving command behavior.
 
 ## v0.2.0 - 2026-04-27
 

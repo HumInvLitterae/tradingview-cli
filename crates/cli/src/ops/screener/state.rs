@@ -5,6 +5,7 @@ use tradingview_cdp::{CdpClient, RuntimeEvaluator, Target, TransportConfig};
 use tradingview_core::{AppError, ErrorKind};
 
 use super::{
+    super::desktop::{create_new_app_tab, current_new_tab_target, wait_for_new_tab_target},
     super::ui::ui_keyboard,
     engine::{
         SCREENER_SOURCE, ensure_dialog_open, expanded_expression, read_screener_state,
@@ -194,8 +195,19 @@ async fn wait_for_screener_target(
 
 async fn open_screener_from_new_tab(config: &TransportConfig) -> Result<Target, AppError> {
     if current_new_tab_target(config).await?.is_none() {
-        click_create_new_app_tab(config).await?;
-        wait_for_new_tab_target(config).await?;
+        create_new_app_tab(config).await?;
+        wait_for_new_tab_target(
+            config,
+            NEW_TAB_TARGET_WAIT_ATTEMPTS,
+            NEW_TAB_TARGET_WAIT_MS,
+            json!({
+                "source": SCREENER_SOURCE,
+                "action": "open_full_page",
+                "full_page": true,
+                "creation_method": "new_tab_tile",
+            }),
+        )
+        .await?;
     }
 
     let mut last_result = Value::Null;
@@ -259,64 +271,6 @@ async fn open_screener_from_new_tab(config: &TransportConfig) -> Result<Target, 
         .with_details(last_result));
     }
     wait_for_screener_target(config, None, "new_tab_tile").await
-}
-
-async fn current_new_tab_target(config: &TransportConfig) -> Result<Option<Target>, AppError> {
-    let targets = tradingview_cdp::fetch_targets(config).await?;
-    Ok(first_new_tab_target(&targets).cloned())
-}
-
-fn first_new_tab_target(targets: &[Target]) -> Option<&Target> {
-    targets
-        .iter()
-        .find(|target| tradingview_cdp::is_new_tab_target(target))
-}
-
-async fn wait_for_new_tab_target(config: &TransportConfig) -> Result<Target, AppError> {
-    for _ in 0..NEW_TAB_TARGET_WAIT_ATTEMPTS {
-        if let Some(target) = current_new_tab_target(config).await? {
-            return Ok(target);
-        }
-        sleep(Duration::from_millis(NEW_TAB_TARGET_WAIT_MS)).await;
-    }
-
-    Err(AppError::new(
-        ErrorKind::InternalApiUnavailable,
-        "TradingView new app tab target did not appear",
-    )
-    .with_details(json!({
-        "source": SCREENER_SOURCE,
-        "action": "open_full_page",
-        "full_page": true,
-        "creation_method": "new_tab_tile",
-        "wait_attempts": NEW_TAB_TARGET_WAIT_ATTEMPTS,
-    })))
-}
-
-async fn click_create_new_app_tab(config: &TransportConfig) -> Result<(), AppError> {
-    let targets = tradingview_cdp::fetch_targets(config).await?;
-    let app_target = targets
-        .iter()
-        .find(|target| tradingview_cdp::is_app_window_target(target))
-        .ok_or_else(|| {
-            AppError::new(
-                ErrorKind::InternalApiUnavailable,
-                "TradingView app window target was not found",
-            )
-        })?;
-    let mut runtime = CdpClient::connect(app_target).await?;
-    let result = runtime
-        .evaluate(CLICK_CREATE_NEW_APP_TAB_EXPRESSION, false)
-        .await?;
-    if value_bool(&result, "clicked") {
-        Ok(())
-    } else {
-        Err(AppError::new(
-            ErrorKind::InternalApiUnavailable,
-            "TradingView create-new-tab button was not found",
-        )
-        .with_details(result))
-    }
 }
 
 fn full_page_creation_error(
@@ -386,15 +340,6 @@ fn full_page_open_payload(
         "url": tradingview_cdp::target_url_for_handoff(target),
     })
 }
-
-const CLICK_CREATE_NEW_APP_TAB_EXPRESSION: &str = r#"
-(function() {
-    var button = document.querySelector("button.create-new-tab-button");
-    if (!button) return { clicked: false, reason: "missing_create_new_tab_button" };
-    button.click();
-    return { clicked: true };
-})()
-"#;
 
 const CLICK_NEW_TAB_SCREENER_TILE_EXPRESSION: &str = r#"
 (function() {

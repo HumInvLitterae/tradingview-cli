@@ -119,6 +119,11 @@ Keep responsibilities separated:
 - `crates/cli/src/ops.rs` is a thin facade that declares operation adapter
   modules and re-exports operation functions used by the application dispatch
   layer.
+- `crates/cli/src/ops/desktop.rs` owns shared TradingView Desktop app-window
+  helpers used by operation adapters, such as app-tab reads, create-new-tab
+  clicks, close-tab clicks, and Desktop new-tab target waits. It stays in the
+  CLI package because it depends on CDP runtime evaluation and Desktop UI
+  structure; it is not domain/model logic.
 - `crates/cli/src/app/dispatch.rs` may call `tradingview_model::*` directly when it is
   converting CLI command variants into validated primitive values or domain
   request types. It should call `ops::*` for executable TradingView

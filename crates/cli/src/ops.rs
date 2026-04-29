@@ -3,6 +3,7 @@ mod chart;
 mod common;
 mod data;
 mod data_depth;
+mod desktop;
 mod diagnostics;
 mod drawing;
 mod indicator;

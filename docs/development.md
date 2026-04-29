@@ -107,6 +107,11 @@ This project uses Rust 2024.
 - Put shared TradingView Desktop CDP connection code in `crates/cdp/`. Do not
   duplicate target discovery, `RuntimeEvaluator`, screenshot/input event
   primitives, or target handoff helpers inside operation modules.
+- Put shared TradingView Desktop app-window helpers in
+  `crates/cli/src/ops/desktop.rs` when multiple operation adapters need the
+  same Desktop shell behavior, such as app-tab reads or new-tab launcher
+  clicks. Keep product-specific launch behavior, such as opening the Screener
+  tile from the Desktop new-tab page, in the owning operation adapter.
 - Keep each library crate's `lib.rs` as a facade. When implementation grows,
   split into same-directory modules rather than gathering everything in
   `lib.rs`.

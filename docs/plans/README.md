@@ -8,9 +8,9 @@ for release and next-phase planning.
 
 - `tradingview-cli-release-builds.md`: tag-triggered GitHub Release builds
   for Linux, macOS, and Windows binaries.
-- `tradingview-cli-screener-full-page-open.md`: add `tv screener open
-  --full-page` so storage-backed Screener workflows can prepare a full-page
-  Screener target without manual setup.
+- `tradingview-cli-desktop-app-window-helper-split.md`: share TradingView
+  Desktop app-window/new-tab helper code between `tab` operations and
+  `screener open --full-page` before release readiness.
 
 ## Archived plans
 
@@ -72,6 +72,8 @@ Important archived plan categories:
 - operation adapter boundary audit after model extraction
 - bounded Screener filter storage mutation audit and storage-backed numeric
   range filter modification
+- full-page Screener target opening through existing-target reuse, CDP target
+  creation attempt, and bounded Desktop new-tab tile fallback
 
 For command contract details, prefer the notes under `docs/notes/` before
 reading archived implementation plans.

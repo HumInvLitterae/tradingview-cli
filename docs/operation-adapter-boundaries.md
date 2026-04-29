@@ -101,8 +101,6 @@ retries. The current high-value candidates are:
   filters selected by index, but add and option modify remain `research_only`.
 - Screener screens create, rename, save-as, save, and switch: storage or
   command evidence may reduce catalog/menu/dialog dependency.
-- App-tab new and close: a non-DOM application command may exist, but exact
-  target and tab-count post-check evidence is required.
 - Pine compile/save replacement: keep as `research_only` unless a safe endpoint
   preserves the same editor/account semantics without raw account metadata.
 
@@ -130,6 +128,10 @@ extractions over new crates. Good candidates are:
 
 - page-session request wrappers that standardize error mapping without
   exposing raw payloads;
+- shared Desktop app-window helpers when two adapters need the same app-tab or
+  new-tab launcher behavior. The first helper lives in
+  `crates/cli/src/ops/desktop.rs` and is used by `tab` and Screener full-page
+  open;
 - post-check helper patterns for mutation success boundaries;
 - safe JavaScript serialization helpers;
 - readiness diagnostics for chart, Screener, Pine Editor, and Replay state.
