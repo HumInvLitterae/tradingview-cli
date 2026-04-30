@@ -7,6 +7,12 @@ package version omits the leading `v`.
 
 ## Unreleased
 
+### Fixed
+
+- Hardened `tv quote <SYMBOL> --source chart` so chart-backed symbol quotes
+  wait for chart bars to reflect the requested symbol, retry once on readiness
+  timeout, and fail instead of returning stale previous-symbol data.
+
 ## v0.4.0 - 2026-04-30
 
 ### Added

@@ -26,7 +26,9 @@ Use this skill to compare several TradingView symbols through the Rust `tv` CLI 
    checks, and `tv info <SYMBOL>` for symbol metadata.
 3. Treat scanner-backed price reads as screening evidence rather than a
    realtime entitlement guarantee. Use `tv quote <SYMBOL> --source chart` only
-   for symbols where the selected TradingView Desktop chart feed matters.
+   for symbols where the selected TradingView Desktop chart feed matters. Do
+   not implement manual sleep or double-call workarounds; chart-source quote
+   readiness is handled by the CLI and will fail if stale chart bars remain.
 4. Set the timeframe once with `tv timeframe <RESOLUTION>` when the scan uses a shared timeframe.
 5. Switch the chart with `tv symbol <SYMBOL>` only when OHLCV, visible studies,
    drawings, or screenshots are needed. After switching, confirm fresh chart

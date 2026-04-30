@@ -33,8 +33,11 @@ If `update_mode` shows a delayed feed, say so plainly.
 
 Chart-sourced reads can be closer to the user's selected TradingView Desktop
 feed, but they depend on the active chart target, chart readiness, symbol
-switching, and post-checks. `tv ohlcv` is chart-dependent; do not describe it
-as Desktop-free historical bars.
+switching, and post-checks. `tv quote <SYMBOL> --source chart` performs its own
+bounded readiness wait and one retry; do not add manual sleep or double-call
+workarounds downstream. If it fails, report the structured freshness details or
+use scanner source explicitly when scanner freshness is acceptable. `tv ohlcv`
+is chart-dependent; do not describe it as Desktop-free historical bars.
 
 ## Extended Hours
 

@@ -82,7 +82,10 @@ Safety boundary:
   explicitly chooses the selected TradingView Desktop chart feed, and
   `--source auto` is chart-first with scanner fallback only if chart access
   fails before any chart mutation. Chart switching must fail if the observed
-  quote symbol does not match the requested symbol.
+  quote symbol does not match the requested symbol. It must also wait for the
+  chart bars backing the quote payload to reflect the requested symbol, retry
+  that readiness wait once on timeout, and fail instead of reporting success
+  if bars still look stale.
 - `ohlcv` depends on the selected chart target's main-series bars collection.
   When the chart API or bars collection is unavailable, it should fail with
   structured readiness details and a target-selection recovery hint rather than
@@ -140,7 +143,8 @@ Safety boundary:
   symbol mismatches are symbol-resolution failures. They do not trigger chart
   fallback, including in `--source auto`.
 - `--source chart` and the chart side of `--source auto` must still fail when
-  the observed symbol does not match the requested symbol.
+  the observed symbol does not match the requested symbol or when the
+  requested-symbol bars do not become fresh within the bounded readiness wait.
 
 ## Scanner metainfo REST read
 

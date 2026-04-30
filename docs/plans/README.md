@@ -6,13 +6,14 @@ for release and next-phase planning.
 
 ## Current and future plans
 
-- `tradingview-cli-v0.4.0-release-readiness.md`: version, changelog, release
-  notes, release archive staging, and final validation before tagging `v0.4.0`.
+- `tradingview-cli-quote-chart-readiness.md`: harden
+  `tv quote <SYMBOL> --source chart` so it waits for chart bars to reflect the
+  requested symbol before returning success.
 - `tradingview-cli-release-builds.md`: tag-triggered GitHub Release builds
   for Linux, macOS, and Windows binaries.
 
-No new `v0.4.0` feature implementation plan is currently active. Feature work
-is paused while release readiness is completed.
+No new `v0.4.0` feature implementation plan is currently active. The current
+post-release work is a quote chart-source correctness fix.
 
 ## Archived plans
 
@@ -86,6 +87,7 @@ Important archived plan categories:
 - shared TradingView Desktop app-window/new-tab helper extraction before
   release readiness
 - workspace package metadata and dependency centralization
+- v0.4.0 release readiness
 
 For command contract details, prefer the notes under `docs/notes/` before
 reading archived implementation plans.
