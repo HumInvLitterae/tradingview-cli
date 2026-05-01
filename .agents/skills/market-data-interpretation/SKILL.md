@@ -18,6 +18,8 @@ Always name the data source before interpreting values:
 - `tv quote <SYMBOL> --source auto`: chart-first, scanner fallback only before
   chart mutation.
 - `tv scanner scan` and `tv scanner metainfo`: scanner REST.
+- `TV_EXPERIMENTAL_BARS=1 tv bars <EXCHANGE:SYMBOL>`: experimental
+  Desktop-free WebSocket bars.
 - `tv ohlcv`: selected chart bars through TradingView Desktop/CDP.
 - screenshots and visible values: current visual chart state.
 
@@ -38,6 +40,12 @@ bounded readiness wait and one retry; do not add manual sleep or double-call
 workarounds downstream. If it fails, report the structured freshness details or
 use scanner source explicitly when scanner freshness is acceptable. `tv ohlcv`
 is chart-dependent; do not describe it as Desktop-free historical bars.
+
+`tv bars` is different from both scanner REST and `tv ohlcv`. It is a
+lab-gated browserless historical bars prototype using an undocumented
+TradingView WebSocket path. Use it only when the user or workflow explicitly
+accepts experimental data; report `source`, `experimental`, `data_quality`,
+and warnings. Do not treat it as a stable replacement for chart-sourced OHLCV.
 
 For Desktop-backed reads, inspect structured readiness fields before escalating
 to visual tools: `tv status` / `tv tab list` expose endpoint and target

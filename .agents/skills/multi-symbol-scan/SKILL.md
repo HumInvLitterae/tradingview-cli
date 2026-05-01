@@ -33,6 +33,9 @@ Use this skill to compare several TradingView symbols through the Rust `tv` CLI 
    for symbols where the selected TradingView Desktop chart feed matters. Do
    not implement manual sleep or double-call workarounds; chart-source quote
    readiness is handled by the CLI and will fail if stale chart bars remain.
+   Use `TV_EXPERIMENTAL_BARS=1 tv bars <EXCHANGE:SYMBOL> --count <N>` only as
+   a lab-gated browserless bars check when experimental WebSocket data is
+   acceptable; keep it separate from stable `tv ohlcv` chart evidence.
 4. Set the timeframe once with `tv timeframe <RESOLUTION>` when the scan uses a shared timeframe.
 5. Switch the chart with `tv symbol <SYMBOL>` only when OHLCV, visible studies,
    drawings, or screenshots are needed. After switching, confirm fresh chart
