@@ -50,7 +50,10 @@ mod quote;
 mod search;
 mod types;
 
-pub use fundamentals::{fundamentals_symbol, fundamentals_symbol_typed};
+pub use fundamentals::{
+    fundamentals_symbol, fundamentals_symbol_typed, fundamentals_symbol_with_groups,
+    fundamentals_symbol_with_groups_typed,
+};
 pub use info::{symbol_info, symbol_info_typed};
 pub use quote::{quote_symbol, quote_symbol_typed, quote_symbols, quote_symbols_typed};
 pub use search::{search_symbols_typed, symbol_search};

@@ -176,7 +176,7 @@ Category: unauthenticated TradingView scanner REST read.
 
 Current command family:
 
-- `fundamentals <SYMBOL> [--field <FIELD>]...`
+- `fundamentals <SYMBOL> [--group <GROUP>]... [--field <FIELD>]...`
 - `scanner scan --columns ...` when callers request fundamental or earnings
   fields as table columns
 
@@ -188,6 +188,12 @@ Safety boundary:
 - default fields are intentionally curated around symbol identity,
   sector/industry, market cap, valuation, EPS, dividend yield, and earnings
   date/time fields
+- field groups are local scanner field bundles, not separate TradingView
+  financial statement APIs; supported groups are `earnings`, `valuation`,
+  `dividends`, and `financials`
+- when groups and explicit fields are both used, group fields are expanded
+  first, explicit fields are appended, and duplicate field names are removed
+  while preserving order
 - earnings date/time fields, such as `earnings_release_next_date`,
   `earnings_release_date`, and `earnings_release_next_time`, are returned as
   TradingView scanner values; the CLI does not infer timezone, before-market,

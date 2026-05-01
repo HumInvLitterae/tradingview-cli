@@ -28,8 +28,8 @@ Use this skill to compare several TradingView symbols through the Rust `tv` CLI 
 2. For a small finalist set, use `tv quotes <SYMBOL>...` for ordered
    Desktop-free batch quote reads, `tv quote <SYMBOL>` for one-off quote
    checks, `tv info <SYMBOL>` for symbol metadata, and
-   `tv fundamentals <SYMBOL>` when earnings timing or basic fundamentals
-   affect the screen.
+   `tv fundamentals <SYMBOL> --group earnings|valuation|dividends|financials`
+   when earnings timing or basic fundamentals affect the screen.
 3. Treat scanner-backed price reads as screening evidence rather than a
    realtime entitlement guarantee. Use `tv quote <SYMBOL> --source chart` only
    for symbols where the selected TradingView Desktop chart feed matters. Do
@@ -78,8 +78,9 @@ runtimes.
 
 Use `tv timeframe <RESOLUTION>` for shared timeframe setup. `tv interval` is
 not a command. Use `tv info <SYMBOL>` for Desktop-free symbol metadata,
-`tv fundamentals <SYMBOL>` for scanner-backed fundamental fields, and use
-`tv info` without a symbol only for current-chart metadata.
+`tv fundamentals <SYMBOL>` with `--group` or `--field` for scanner-backed
+fundamental fields, and use `tv info` without a symbol only for current-chart
+metadata.
 
 ## Boundaries
 

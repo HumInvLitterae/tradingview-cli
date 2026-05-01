@@ -17,6 +17,8 @@ package version omits the leading `v`.
   through TradingView's undocumented WebSocket chart-session path.
 - Added Desktop-free `tv fundamentals <SYMBOL>` for scanner-backed fundamental
   fields, including earnings date/time fields when TradingView returns them.
+- Added repeatable `tv fundamentals --group earnings|valuation|dividends|financials`
+  field bundles for easier Desktop-free fundamentals reads.
 
 ### Changed
 

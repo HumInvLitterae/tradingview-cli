@@ -76,6 +76,9 @@ pub struct Fundamentals {
     pub market: String,
     /// Requested or default scanner field names.
     pub fields: Vec<String>,
+    /// Requested field groups, when the caller used group expansion.
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub requested_groups: Vec<String>,
     /// Object mapping field names to TradingView scanner values.
     pub field_values: Value,
     /// Fields whose value slot was missing from the scanner row.

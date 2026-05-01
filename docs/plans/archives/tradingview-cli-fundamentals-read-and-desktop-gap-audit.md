@@ -19,7 +19,7 @@ The slice also records a TradingView Desktop capability gap audit so the project
 - [x] (2026-05-02) Added the Desktop capability gap audit note.
 - [x] (2026-05-02) Updated README, internal API docs, v0.5 roadmap, skills, changelog, and local continuity.
 - [x] (2026-05-02) Ran focused, full, skill, packaging, smoke, and hygiene validation.
-- [ ] Commit the related change as `feat(market): Add fundamentals read`.
+- [x] (2026-05-02) Committed the related change as `feat(market): Add fundamentals read`.
 
 ## Surprises & Discoveries
 
@@ -97,8 +97,8 @@ columns.
 
 Validate changed skills and packaging:
 
-    python3 "${CODEX_HOME:-$HOME/.codex}/skills/.system/skill-creator/scripts/quick_validate.py" .agents/skills/market-data-interpretation
-    python3 "${CODEX_HOME:-$HOME/.codex}/skills/.system/skill-creator/scripts/quick_validate.py" .agents/skills/multi-symbol-scan
+    python3 "$HOME/.codex/skills/.system/skill-creator/scripts/quick_validate.py" .agents/skills/market-data-interpretation
+    python3 "$HOME/.codex/skills/.system/skill-creator/scripts/quick_validate.py" .agents/skills/multi-symbol-scan
     bash -n scripts/stage-release-package-files.sh
 
 Run the tracked-doc hygiene check:
@@ -124,8 +124,8 @@ Validation completed successfully:
     cargo test --workspace
     cargo metadata --no-deps --format-version 1
     git diff --check
-    python3 "${CODEX_HOME:-$HOME/.codex}/skills/.system/skill-creator/scripts/quick_validate.py" .agents/skills/market-data-interpretation
-    python3 "${CODEX_HOME:-$HOME/.codex}/skills/.system/skill-creator/scripts/quick_validate.py" .agents/skills/multi-symbol-scan
+    python3 "$HOME/.codex/skills/.system/skill-creator/scripts/quick_validate.py" .agents/skills/market-data-interpretation
+    python3 "$HOME/.codex/skills/.system/skill-creator/scripts/quick_validate.py" .agents/skills/multi-symbol-scan
     bash -n scripts/stage-release-package-files.sh
 
 ## Idempotence and Recovery

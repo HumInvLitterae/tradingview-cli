@@ -42,10 +42,12 @@ pub enum Command {
     Search { query: Vec<String> },
     #[command(
         about = "Get Desktop-free symbol fundamentals",
-        long_about = "Get scanner-backed fundamental fields for one symbol without connecting to TradingView Desktop.\n\nThe default fields include symbol identity, sector and industry, market cap, valuation, EPS, dividend yield, and earnings date/time fields. Use repeated `--field <FIELD>` options to request specific supported fields. Earnings date/time values are returned as TradingView scanner values without timezone or before/after-market interpretation."
+        long_about = "Get scanner-backed fundamental fields for one symbol without connecting to TradingView Desktop.\n\nThe default fields include symbol identity, sector and industry, market cap, valuation, EPS, dividend yield, and earnings date/time fields. Use repeated `--group <GROUP>` options for curated field bundles such as earnings, valuation, dividends, and financials. Use repeated `--field <FIELD>` options to request specific supported fields. Earnings date/time values are returned as TradingView scanner values without timezone or before/after-market interpretation."
     )]
     Fundamentals {
         symbol: String,
+        #[arg(long = "group")]
+        groups: Vec<String>,
         #[arg(long = "field")]
         fields: Vec<String>,
     },

@@ -27,6 +27,48 @@ const DEFAULT_FUNDAMENTAL_FIELDS: &[&str] = &[
     "earnings_release_date",
 ];
 
+const EARNINGS_FUNDAMENTAL_FIELDS: &[&str] = &[
+    "earnings_release_next_date",
+    "earnings_release_date",
+    "earnings_release_next_time",
+    "earnings_release_next_calendar_date",
+    "earnings_release_calendar_date",
+    "earnings_release_next_trading_date_fy",
+    "earnings_release_trading_date_fy",
+    "earnings_publication_type_next_fq",
+];
+
+const VALUATION_FUNDAMENTAL_FIELDS: &[&str] = &[
+    "market_cap_basic",
+    "price_earnings_ttm",
+    "price_earnings_forward_fy",
+    "earnings_per_share_basic_ttm",
+    "earnings_per_share_basic_fq",
+    "earnings_per_share_fq",
+    "earnings_per_share_forecast_next_fq",
+    "earnings_per_share_forecast_next_fy",
+];
+
+const DIVIDENDS_FUNDAMENTAL_FIELDS: &[&str] = &[
+    "dividend_yield_recent",
+    "dividends_yield_current",
+    "dividend_ex_date_recent",
+    "dividend_ex_date_upcoming",
+    "dividend_payment_date_recent",
+    "dividend_payment_date_upcoming",
+];
+
+const FINANCIALS_FUNDAMENTAL_FIELDS: &[&str] = &[
+    "total_revenue_ttm",
+    "total_revenue_fq",
+    "net_income_ttm",
+    "net_income_fq",
+    "revenue_forecast_next_fq",
+    "revenue_forecast_next_fy",
+];
+
+const SUPPORTED_FUNDAMENTAL_GROUPS: &[&str] = &["earnings", "valuation", "dividends", "financials"];
+
 const SUPPORTED_FUNDAMENTAL_FIELDS: &[&str] = &[
     "name",
     "description",
@@ -66,7 +108,15 @@ const SUPPORTED_FUNDAMENTAL_FIELDS: &[&str] = &[
 ];
 
 pub async fn fundamentals_symbol(symbol: &str, fields: Vec<String>) -> Result<Value, AppError> {
-    serde_json::to_value(fundamentals_symbol_typed(symbol, fields).await?)
+    fundamentals_symbol_with_groups(symbol, Vec::new(), fields).await
+}
+
+pub async fn fundamentals_symbol_with_groups(
+    symbol: &str,
+    groups: Vec<String>,
+    fields: Vec<String>,
+) -> Result<Value, AppError> {
+    serde_json::to_value(fundamentals_symbol_with_groups_typed(symbol, groups, fields).await?)
         .map_err(|err| AppError::new(ErrorKind::Internal, err.to_string()))
 }
 
@@ -78,6 +128,19 @@ pub async fn fundamentals_symbol_typed(
     symbol: &str,
     fields: Vec<String>,
 ) -> Result<Fundamentals, AppError> {
+    fundamentals_symbol_with_groups_typed(symbol, Vec::new(), fields).await
+}
+
+/// Reads scanner-backed fundamental fields with optional field groups.
+///
+/// Groups are convenience bundles around supported scanner fields. They do not
+/// change the data source and do not infer meanings beyond TradingView's raw
+/// scanner values.
+pub async fn fundamentals_symbol_with_groups_typed(
+    symbol: &str,
+    groups: Vec<String>,
+    fields: Vec<String>,
+) -> Result<Fundamentals, AppError> {
     let requested_symbol = symbol.trim();
     if requested_symbol.is_empty() {
         return Err(AppError::new(
@@ -85,9 +148,14 @@ pub async fn fundamentals_symbol_typed(
             "fundamentals symbol must not be empty",
         ));
     }
-    let fields = normalize_fundamental_fields(fields)?;
-    let value = fundamentals_symbol_via_scanner(requested_symbol, &fields).await?;
-    match normalize_fundamentals_response_typed(requested_symbol, &fields, &value) {
+    let selection = normalize_fundamental_selection(groups, fields)?;
+    let value = fundamentals_symbol_via_scanner(requested_symbol, &selection.fields).await?;
+    match normalize_fundamentals_response_typed(
+        requested_symbol,
+        &selection.fields,
+        &selection.groups,
+        &value,
+    ) {
         Ok(payload) => Ok(payload),
         Err(err) if err.kind == ErrorKind::Validation => {
             Err(add_symbol_search_candidates(err, requested_symbol).await)
@@ -96,15 +164,40 @@ pub async fn fundamentals_symbol_typed(
     }
 }
 
+#[derive(Debug, Clone, PartialEq)]
+struct FundamentalSelection {
+    groups: Vec<String>,
+    fields: Vec<String>,
+}
+
+#[cfg(test)]
 fn normalize_fundamental_fields(fields: Vec<String>) -> Result<Vec<String>, AppError> {
-    if fields.is_empty() {
+    normalize_fundamental_selection(Vec::new(), fields).map(|selection| selection.fields)
+}
+
+fn normalize_fundamental_selection(
+    groups: Vec<String>,
+    fields: Vec<String>,
+) -> Result<FundamentalSelection, AppError> {
+    if groups.is_empty() && fields.is_empty() {
         return Ok(DEFAULT_FUNDAMENTAL_FIELDS
             .iter()
             .map(|field| (*field).to_string())
-            .collect());
+            .collect::<Vec<_>>()
+            .into());
     }
 
-    let mut normalized = Vec::with_capacity(fields.len());
+    let mut normalized_groups = Vec::with_capacity(groups.len());
+    let mut normalized = Vec::new();
+    for group in groups {
+        let group = normalize_fundamental_group(&group)?;
+        if !normalized_groups.iter().any(|value| value == group) {
+            normalized_groups.push(group.to_string());
+            for field in fundamental_group_fields(group) {
+                push_supported_fundamental_field(&mut normalized, field)?;
+            }
+        }
+    }
     for field in fields {
         let field = field.trim();
         if field.is_empty() {
@@ -113,23 +206,76 @@ fn normalize_fundamental_fields(fields: Vec<String>) -> Result<Vec<String>, AppE
                 "--field must not be empty",
             ));
         }
-        let supported = SUPPORTED_FUNDAMENTAL_FIELDS
-            .iter()
-            .copied()
-            .find(|candidate| *candidate == field)
-            .ok_or_else(|| {
-                AppError::new(
-                    ErrorKind::Validation,
-                    format!("Unsupported fundamentals field: {field}"),
-                )
-                .with_details(json!({ "supported_fields": SUPPORTED_FUNDAMENTAL_FIELDS }))
-            })?;
-        if !normalized.iter().any(|value| value == supported) {
-            normalized.push(supported.to_string());
-        }
+        push_supported_fundamental_field(&mut normalized, field)?;
     }
 
-    Ok(normalized)
+    Ok(FundamentalSelection {
+        groups: normalized_groups,
+        fields: normalized,
+    })
+}
+
+impl From<Vec<String>> for FundamentalSelection {
+    fn from(fields: Vec<String>) -> Self {
+        Self {
+            groups: Vec::new(),
+            fields,
+        }
+    }
+}
+
+fn normalize_fundamental_group(group: &str) -> Result<&'static str, AppError> {
+    let group = group.trim();
+    if group.is_empty() {
+        return Err(AppError::new(
+            ErrorKind::Validation,
+            "--group must not be empty",
+        ));
+    }
+    SUPPORTED_FUNDAMENTAL_GROUPS
+        .iter()
+        .copied()
+        .find(|candidate| *candidate == group)
+        .ok_or_else(|| {
+            AppError::new(
+                ErrorKind::Validation,
+                format!("Unsupported fundamentals group: {group}"),
+            )
+            .with_details(json!({
+                "supported_groups": SUPPORTED_FUNDAMENTAL_GROUPS,
+            }))
+        })
+}
+
+fn fundamental_group_fields(group: &str) -> &'static [&'static str] {
+    match group {
+        "earnings" => EARNINGS_FUNDAMENTAL_FIELDS,
+        "valuation" => VALUATION_FUNDAMENTAL_FIELDS,
+        "dividends" => DIVIDENDS_FUNDAMENTAL_FIELDS,
+        "financials" => FINANCIALS_FUNDAMENTAL_FIELDS,
+        _ => &[],
+    }
+}
+
+fn push_supported_fundamental_field(
+    normalized: &mut Vec<String>,
+    field: &str,
+) -> Result<(), AppError> {
+    let supported = SUPPORTED_FUNDAMENTAL_FIELDS
+        .iter()
+        .copied()
+        .find(|candidate| *candidate == field)
+        .ok_or_else(|| {
+            AppError::new(
+                ErrorKind::Validation,
+                format!("Unsupported fundamentals field: {field}"),
+            )
+            .with_details(json!({ "supported_fields": SUPPORTED_FUNDAMENTAL_FIELDS }))
+        })?;
+    if !normalized.iter().any(|value| value == supported) {
+        normalized.push(supported.to_string());
+    }
+    Ok(())
 }
 
 async fn fundamentals_symbol_via_scanner(
@@ -185,6 +331,7 @@ fn normalize_fundamentals_response(
     serde_json::to_value(normalize_fundamentals_response_typed(
         requested_symbol,
         fields,
+        &[],
         value,
     )?)
     .map_err(|err| AppError::new(ErrorKind::Internal, err.to_string()))
@@ -193,6 +340,7 @@ fn normalize_fundamentals_response(
 fn normalize_fundamentals_response_typed(
     requested_symbol: &str,
     fields: &[String],
+    groups: &[String],
     value: &Value,
 ) -> Result<Fundamentals, AppError> {
     let rows = value.get("data").and_then(Value::as_array).ok_or_else(|| {
@@ -279,6 +427,7 @@ fn normalize_fundamentals_response_typed(
         observed_symbol: full_symbol.to_string(),
         market: FUNDAMENTALS_MARKET.to_string(),
         fields: fields.to_vec(),
+        requested_groups: groups.to_vec(),
         field_values: Value::Object(field_values),
         missing_fields,
         non_mutating: true,
@@ -342,6 +491,49 @@ mod tests {
     }
 
     #[test]
+    fn normalize_fundamental_selection_expands_groups_before_fields() {
+        let selection = normalize_fundamental_selection(
+            vec!["earnings".to_string(), "dividends".to_string()],
+            vec![
+                "price_earnings_ttm".to_string(),
+                "earnings_release_next_date".to_string(),
+            ],
+        )
+        .unwrap();
+
+        assert_eq!(selection.groups, vec!["earnings", "dividends"]);
+        assert_eq!(selection.fields[0], "earnings_release_next_date");
+        assert!(
+            selection
+                .fields
+                .contains(&"dividend_ex_date_upcoming".to_string())
+        );
+        assert!(selection.fields.contains(&"price_earnings_ttm".to_string()));
+        assert_eq!(
+            selection
+                .fields
+                .iter()
+                .filter(|field| *field == "earnings_release_next_date")
+                .count(),
+            1
+        );
+    }
+
+    #[test]
+    fn normalize_fundamental_selection_rejects_unknown_group() {
+        let error =
+            normalize_fundamental_selection(vec!["banana".to_string()], Vec::new()).unwrap_err();
+
+        assert_eq!(error.kind, ErrorKind::Validation);
+        assert!(
+            error.details.as_ref().unwrap()["supported_groups"]
+                .as_array()
+                .unwrap()
+                .contains(&json!("earnings"))
+        );
+    }
+
+    #[test]
     fn normalize_fundamentals_response_returns_public_safe_payload() {
         let fields = vec![
             "name".to_string(),
@@ -365,6 +557,7 @@ mod tests {
         assert_eq!(result["observed_symbol"], "NASDAQ:AAPL");
         assert_eq!(result["market"], "america");
         assert_eq!(result["fields"], json!(fields));
+        assert!(result.get("requested_groups").is_none());
         assert_eq!(result["field_values"]["name"], "AAPL");
         assert_eq!(result["field_values"]["price_earnings_ttm"], 31.2);
         assert_eq!(
@@ -374,6 +567,26 @@ mod tests {
         assert_eq!(result["field_values"]["earnings_release_next_time"], 1);
         assert_eq!(result["missing_fields"], json!([]));
         assert_eq!(result["non_mutating"], true);
+    }
+
+    #[test]
+    fn normalize_fundamentals_response_serializes_requested_groups_when_present() {
+        let fields = vec!["earnings_release_next_date".to_string()];
+        let groups = vec!["earnings".to_string()];
+        let payload = json!({
+            "data": [{
+                "s": "NASDAQ:AAPL",
+                "d": [1777852800]
+            }]
+        });
+
+        let result = serde_json::to_value(
+            normalize_fundamentals_response_typed("AAPL", &fields, &groups, &payload).unwrap(),
+        )
+        .unwrap();
+
+        assert_eq!(result["requested_groups"], json!(["earnings"]));
+        assert_eq!(result["fields"], json!(fields));
     }
 
     #[test]

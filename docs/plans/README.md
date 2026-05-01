@@ -6,15 +6,16 @@ for release and next-phase planning.
 
 ## Current and future plans
 
-- `tradingview-cli-fundamentals-read-and-desktop-gap-audit.md`: add a
-  Desktop-free `tv fundamentals <SYMBOL>` read and record a TradingView Desktop
-  capability gap audit.
+- `tradingview-cli-fundamentals-field-groups.md`: add curated field groups to
+  Desktop-free `tv fundamentals <SYMBOL>` and record public-safe scanner
+  metainfo evidence for those groups.
 
 The current `v0.5.0` roadmap has completed the first Desktop-backed readiness
 diagnostics slice, added a lab-gated browserless bars prototype, scoped
 Computer Use out of generic runtime guidance, and deferred Codex app visual
-recovery skill work. The current slice adds scanner-backed fundamentals and
-uses a capability audit to keep future missing-feature work deliberate.
+recovery skill work. The current slice refines scanner-backed fundamentals with
+repeatable `--group` bundles for earnings, valuation, dividends, and
+financials.
 
 ## Archived plans
 

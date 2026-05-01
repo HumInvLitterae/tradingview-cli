@@ -115,8 +115,9 @@ retries. The current high-value candidates are:
 
 The scanner REST watchlist-style read lane is not a current replacement
 candidate because it is already practically covered by `scanner scan`,
-extended-hours columns, `scanner metainfo`, `quote`, and `quotes`. Add more
-scanner REST reads only for a concrete workflow and clear endpoint evidence.
+extended-hours columns, `scanner metainfo`, `quote`, `quotes`, and
+scanner-backed `fundamentals` field groups. Add more scanner REST reads only
+for a concrete workflow and clear endpoint evidence.
 
 These are not current crate-extraction tasks. Each needs its own evidence-gated
 ExecPlan before behavior changes.

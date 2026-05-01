@@ -100,6 +100,7 @@ fn fundamentals_help_explains_desktop_free_read() {
         .assert()
         .success()
         .stdout(predicate::str::contains("<SYMBOL>"))
+        .stdout(predicate::str::contains("--group"))
         .stdout(predicate::str::contains("--field"))
         .stdout(predicate::str::contains("Desktop"))
         .stdout(predicate::str::contains("earnings"));
@@ -135,6 +136,24 @@ fn fundamentals_rejects_invalid_inputs_before_connecting() {
             .as_array()
             .unwrap()
             .contains(&json!("earnings_release_next_date"))
+    );
+
+    let unknown_group = tv()
+        .env("TV_CDP_PORT", "9")
+        .args(["fundamentals", "NYSE:IONQ", "--group", "banana"])
+        .assert()
+        .failure()
+        .code(1);
+    let stderr = String::from_utf8(unknown_group.get_output().stderr.clone()).unwrap();
+    let value: Value = serde_json::from_str(&stderr).unwrap();
+    assert_eq!(value["success"], false);
+    assert_eq!(value["command"], "fundamentals");
+    assert_eq!(value["error"]["kind"], "validation");
+    assert!(
+        value["error"]["details"]["supported_groups"]
+            .as_array()
+            .unwrap()
+            .contains(&json!("earnings"))
     );
 }
 

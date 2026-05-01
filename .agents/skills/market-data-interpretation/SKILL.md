@@ -50,9 +50,12 @@ and warnings. Do not treat it as a stable replacement for chart-sourced OHLCV.
 
 `tv fundamentals` is a Desktop-free scanner read, not a chart read. Use it for
 raw fields such as market cap, P/E, EPS, dividend yield, and earnings
-date/time. Treat `field_values` as the source of truth. Do not infer timezone
-or before/after-market meaning from earnings date/time fields unless another
-source explicitly supplies that interpretation.
+date/time. Prefer `--group earnings`, `--group valuation`, `--group dividends`,
+or `--group financials` when the task needs a coherent bundle; use `--field`
+for exact scanner fields. Treat `field_values` as the source of truth. Do not
+infer timezone, before/after-market meaning, financial analysis, or investment
+recommendations from these fields unless another source explicitly supplies
+that interpretation.
 
 For Desktop-backed reads, inspect structured readiness fields before escalating
 to visual checks: `tv status` / `tv tab list` expose endpoint and target
