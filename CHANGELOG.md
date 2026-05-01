@@ -23,6 +23,8 @@ package version omits the leading `v`.
   target, and chart-bars readiness before falling back to visual checks.
 - Recorded bounded evidence for the lab-gated `tv bars` prototype while keeping
   it CLI-owned and experimental until protocol stability is clearer.
+- Scoped Computer Use guidance in docs and runtime skills so CLI-only agents
+  use structured `tv` diagnostics and screenshots as the portable fallback.
 
 ## v0.4.1 - 2026-05-01
 

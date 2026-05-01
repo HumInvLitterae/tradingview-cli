@@ -6,14 +6,14 @@ for release and next-phase planning.
 
 ## Current and future plans
 
-- `tradingview-cli-lab-bars-evidence-review.md`: record bounded evidence for
-  the lab-gated `tv bars <SYMBOL>` prototype and keep the Desktop-free
-  historical-bars boundary explicit before follow-up work.
+- `tradingview-cli-computer-use-boundary-docs.md`: scope Computer Use guidance
+  to environments that actually provide it, keeping default runtime docs and
+  skills portable for CLI-only agents.
 
 The current `v0.5.0` roadmap has completed the first Desktop-backed readiness
 diagnostics slice and added a lab-gated browserless bars prototype. The next
-slice reviews evidence and stabilizes the boundary before deciding whether to
-continue the bars lane.
+slice clarifies that portable recovery should use structured `tv` diagnostics
+and screenshots first, with Computer Use only as an optional Codex app aid.
 
 ## Archived plans
 
@@ -45,6 +45,7 @@ Important archived plan categories:
   explicit quote source selection, typed market/scanner Rust APIs, and the
   v0.4 market data lane review
 - lab-gated browserless historical bars prototype
+- lab bars evidence review and v0.5 data-lane boundary
 - runtime market-data interpretation and scanner/Screener result-analysis
   skills
 - first behavior-preserving binary/library crate boundary

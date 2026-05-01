@@ -48,11 +48,15 @@ accepts experimental data; report `source`, `experimental`, `data_quality`,
 and warnings. Do not treat it as a stable replacement for chart-sourced OHLCV.
 
 For Desktop-backed reads, inspect structured readiness fields before escalating
-to visual tools: `tv status` / `tv tab list` expose endpoint and target
+to visual checks: `tv status` / `tv tab list` expose endpoint and target
 readiness, `tv state` exposes chart readiness, chart-source quote exposes
-`freshness_check`, and OHLCV failures expose chart-bars details. Computer Use is
-useful for visual confirmation or UI recovery after these fields are
-inconclusive; it should not replace them as the first diagnostic step.
+`freshness_check`, and OHLCV failures expose chart-bars details. The portable
+visual fallback is `tv screenshot --region chart|full --output <PATH>` plus
+user/manual inspection when needed.
+
+If the current environment is the Codex app and Computer Use is available, it
+can help inspect or recover visible UI state after structured CLI checks. Do not
+assume Computer Use exists in Codex CLI, release archives, or non-Codex agents.
 
 ## Extended Hours
 

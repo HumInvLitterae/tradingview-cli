@@ -130,6 +130,11 @@ undocumented WebSocket chart-session protocol. A broad `tv diagnose` command
 remains deferred until existing diagnostics prove insufficient. See
 `docs/v0.5-roadmap.md` for the current roadmap.
 
+Computer Use is not a general runtime dependency for these boundaries. Portable
+agent guidance should use structured `tv` diagnostics and `tv screenshot` for
+visual evidence. Computer Use may be mentioned only as an optional Codex app
+aid when the current environment explicitly provides it.
+
 ## Intentional DOM boundaries
 
 Do not start replacement work from these unless new evidence changes their

@@ -63,8 +63,15 @@ still work, do not keep retrying the same target. Preserve the full JSON error
 envelope, inspect `error.details.phase`, `bar_index_state`, and
 `next_action_hint`, rerun `tv tab list`, choose the active chart target's
 `target_cli_args`, run `tv --target-id <ID> state`, and retry
-`tv --target-id <ID> ohlcv --count 1`. Use Computer Use only after structured
-target and chart readiness fields do not explain the visible state.
+`tv --target-id <ID> ohlcv --count 1`. If structured target and chart
+readiness fields do not explain the visible state, capture
+`tv screenshot --region chart --output <PATH>` or ask the user to inspect the
+chart.
+
+If the current environment is the Codex app and Computer Use is available, it
+can be used as an optional visual inspection aid after the CLI checks. Do not
+assume it is available for Codex CLI, packaged agents, or other CLI-only
+runtimes.
 
 Use `tv timeframe <RESOLUTION>` for shared timeframe setup. `tv interval` is
 not a command. Use `tv info <SYMBOL>` for Desktop-free symbol metadata, and use

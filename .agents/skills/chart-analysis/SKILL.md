@@ -20,9 +20,9 @@ Use this skill for live TradingView chart review through the Rust `tv` CLI.
    `tv --target-id <ID> quote`, for follow-up chart commands. Do not use
    `TV_CDP_TARGET_ID`.
 4. Run `tv state` to confirm chart API and bars readiness before asking for
-   visual confirmation. Use Computer Use only when structured readiness fields
-   do not explain the visible chart state or the user explicitly needs visual
-   UI recovery.
+   visual confirmation. For portable visual evidence, use
+   `tv screenshot --region chart --output <PATH>` rather than assuming an
+   external visual-control tool exists.
 5. Run `tv discover` and `tv ui-state` when the chart surface itself is unclear.
 
 ## Core Workflow
@@ -70,10 +70,14 @@ error envelope and inspect `error.kind`, `error.details.phase`,
 `error.details.chart_readiness` / `bar_index_state`, and `next_action_hint`
 instead of piping through `head` or `tail`. Then rerun `tv tab list`, choose the
 active chart target's `target_cli_args`, run `tv --target-id <ID> state`, and
-retry `tv --target-id <ID> ohlcv --count 1`. Ask the user to foreground or
-click the chart, or use Computer Use to inspect the visible surface, only after
-target reselection and structured readiness inspection do not explain the
-failure.
+retry `tv --target-id <ID> ohlcv --count 1`. If the structured fields still do
+not explain the failure, capture a chart screenshot or ask the user to
+foreground/click the chart.
+
+If the current environment is the Codex app and Computer Use is available, it
+can be used as an optional visual inspection or UI recovery aid after the
+structured CLI checks. Do not make Computer Use part of the default workflow for
+Codex CLI, packaged agents, or other CLI-only runtimes.
 
 Use `tv timeframe <RESOLUTION>` for timeframe changes. `tv interval` is not a
 command. Use `tv info <SYMBOL>` for Desktop-free symbol metadata, and use
