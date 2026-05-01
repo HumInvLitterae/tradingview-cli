@@ -78,6 +78,10 @@ Safety boundary:
 - user input must be serialized into JavaScript, not hand-escaped
 - mutation commands must verify the observable after-state before returning
   success
+- `status`, `tab list`, and `state` are the first-line readiness diagnostics.
+  They expose CDP endpoint information, target handoff (`target_cli_args`), and
+  chart-readiness hints so agents can inspect structured state before using
+  visual fallback or Computer Use.
 - `quote <SYMBOL>` defaults to non-mutating scanner REST. `--source chart`
   explicitly chooses the selected TradingView Desktop chart feed, and
   `--source auto` is chart-first with scanner fallback only if chart access

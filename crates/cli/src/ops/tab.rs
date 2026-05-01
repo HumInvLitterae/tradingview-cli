@@ -52,6 +52,11 @@ pub async fn tab_list(config: &TransportConfig) -> Result<Value, AppError> {
         "app_tabs": app_tabs,
         "cdp_host": config.host,
         "cdp_port": config.port,
+        "desktop_readiness": tab_readiness_summary(
+            tabs.len(),
+            screener_targets.len(),
+            app_window_targets.len(),
+        ),
     }))
 }
 
@@ -323,6 +328,36 @@ fn target_cli_args(target_id: &str) -> Vec<String> {
     vec!["--target-id".to_string(), target_id.to_string()]
 }
 
+fn tab_readiness_summary(
+    chart_target_count: usize,
+    screener_target_count: usize,
+    app_window_target_count: usize,
+) -> Value {
+    let target_selection = match chart_target_count {
+        0 => "none",
+        1 => "selected",
+        _ => "ambiguous",
+    };
+    let next_action_hint = match chart_target_count {
+        0 => {
+            "No chart target is available. Open a TradingView chart tab, then rerun `tv tab list`."
+        }
+        1 => {
+            "Use tabs[0].target_cli_args for chart-dependent commands when you need an explicit target."
+        }
+        _ => {
+            "Multiple chart targets are available. Choose the intended tabs[].target_cli_args and pass `tv --target-id <ID> <command>`."
+        }
+    };
+    json!({
+        "target_selection": target_selection,
+        "chart_target_count": chart_target_count,
+        "screener_target_count": screener_target_count,
+        "app_window_target_count": app_window_target_count,
+        "next_action_hint": next_action_hint,
+    })
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -480,6 +515,20 @@ mod tests {
             "tv --target-id target-2 <command>"
         );
         assert_eq!(payload["chart_id"], "target-2");
+    }
+
+    #[test]
+    fn tab_readiness_summary_marks_ambiguous_chart_targets() {
+        let summary = tab_readiness_summary(2, 1, 1);
+
+        assert_eq!(summary["target_selection"], "ambiguous");
+        assert_eq!(summary["chart_target_count"], 2);
+        assert!(
+            summary["next_action_hint"]
+                .as_str()
+                .unwrap()
+                .contains("--target-id")
+        );
     }
 
     #[test]

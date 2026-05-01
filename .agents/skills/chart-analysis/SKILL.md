@@ -10,9 +10,20 @@ Use this skill for live TradingView chart review through the Rust `tv` CLI.
 ## Start With Readiness
 
 1. Run `tv status`.
-2. If there is no connection, run `tv launch` once. If it still cannot connect, explain that the user must launch TradingView with a remote debugging port or provide `tv launch --path <PATH>`.
-3. If multiple chart targets are open or the connected chart is unclear, run `tv tab list` and use the desired target's `target_cli_args`, for example `tv --target-id <ID> quote`, for follow-up chart commands. Do not use `TV_CDP_TARGET_ID`.
-4. Run `tv discover` and `tv ui-state` when the chart surface itself is unclear.
+2. Inspect `desktop_readiness`, `target_cli_args`, `chart_readiness`, and
+   `next_action_hint` before using visual fallback. If there is no connection,
+   run `tv launch` once. If it still cannot connect, explain that the user must
+   launch TradingView with a remote debugging port or provide
+   `tv launch --path <PATH>`.
+3. If multiple chart targets are open or the connected chart is unclear, run
+   `tv tab list` and use the desired target's `target_cli_args`, for example
+   `tv --target-id <ID> quote`, for follow-up chart commands. Do not use
+   `TV_CDP_TARGET_ID`.
+4. Run `tv state` to confirm chart API and bars readiness before asking for
+   visual confirmation. Use Computer Use only when structured readiness fields
+   do not explain the visible chart state or the user explicitly needs visual
+   UI recovery.
+5. Run `tv discover` and `tv ui-state` when the chart surface itself is unclear.
 
 ## Core Workflow
 
@@ -55,11 +66,13 @@ extended-hours fields, or chart-vs-scanner differences matter.
 ## OHLCV Recovery
 
 If `tv ohlcv` fails but `tv quote` or `tv symbol` works, keep the full JSON
-error envelope and inspect `error.kind` and `error.details` instead of piping
-through `head` or `tail`. Then rerun `tv tab list`, choose the active chart
-target's `target_cli_args`, run `tv --target-id <ID> state`, and retry
-`tv --target-id <ID> ohlcv --count 1`. Ask the user to foreground or click the
-chart only after target reselection and `state` inspection do not explain the
+error envelope and inspect `error.kind`, `error.details.phase`,
+`error.details.chart_readiness` / `bar_index_state`, and `next_action_hint`
+instead of piping through `head` or `tail`. Then rerun `tv tab list`, choose the
+active chart target's `target_cli_args`, run `tv --target-id <ID> state`, and
+retry `tv --target-id <ID> ohlcv --count 1`. Ask the user to foreground or
+click the chart, or use Computer Use to inspect the visible surface, only after
+target reselection and structured readiness inspection do not explain the
 failure.
 
 Use `tv timeframe <RESOLUTION>` for timeframe changes. `tv interval` is not a

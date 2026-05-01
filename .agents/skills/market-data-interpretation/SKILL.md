@@ -39,6 +39,13 @@ workarounds downstream. If it fails, report the structured freshness details or
 use scanner source explicitly when scanner freshness is acceptable. `tv ohlcv`
 is chart-dependent; do not describe it as Desktop-free historical bars.
 
+For Desktop-backed reads, inspect structured readiness fields before escalating
+to visual tools: `tv status` / `tv tab list` expose endpoint and target
+readiness, `tv state` exposes chart readiness, chart-source quote exposes
+`freshness_check`, and OHLCV failures expose chart-bars details. Computer Use is
+useful for visual confirmation or UI recovery after these fields are
+inconclusive; it should not replace them as the first diagnostic step.
+
 ## Extended Hours
 
 Scanner-backed quotes may include `extended_hours.premarket` and

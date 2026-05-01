@@ -91,13 +91,27 @@ impl TransportConfig {
 pub async fn fetch_targets(config: &TransportConfig) -> Result<Vec<Target>, AppError> {
     let response = reqwest::get(config.list_url())
         .await
-        .map_err(|err| AppError::new(ErrorKind::Connection, err.to_string()))?;
+        .map_err(|err| {
+            AppError::new(ErrorKind::Connection, err.to_string()).with_details(json!({
+                "cdp_host": config.host,
+                "cdp_port": config.port,
+                "endpoint": config.list_url(),
+                "next_action_hint": "Run `tv status` to confirm the CDP endpoint, or run `tv launch` to start TradingView Desktop with remote debugging enabled.",
+            }))
+        })?;
 
     if !response.status().is_success() {
         return Err(AppError::new(
             ErrorKind::Connection,
             format!("CDP target list returned HTTP {}", response.status()),
-        ));
+        )
+        .with_details(json!({
+            "cdp_host": config.host,
+            "cdp_port": config.port,
+            "endpoint": config.list_url(),
+            "status": response.status().as_u16(),
+            "next_action_hint": "Run `tv status` to confirm the CDP endpoint, or run `tv launch` to restart TradingView Desktop with remote debugging enabled.",
+        })));
     }
 
     response

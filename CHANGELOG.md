@@ -13,6 +13,12 @@ package version omits the leading `v`.
   Desktop-backed agent operation lanes, plus the first Desktop readiness
   diagnostics ExecPlan.
 
+### Changed
+
+- Improved Desktop readiness diagnostics across `status`, `tab list`, `state`,
+  chart-source quote, and OHLCV failure details so agents can inspect endpoint,
+  target, and chart-bars readiness before falling back to visual checks.
+
 ## v0.4.1 - 2026-05-01
 
 ### Fixed

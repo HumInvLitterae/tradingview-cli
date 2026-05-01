@@ -3,7 +3,9 @@ use serde_json::Value;
 use tradingview_cdp::RuntimeEvaluator;
 use tradingview_core::AppError;
 
-use super::common::{CHART_API, CHART_TYPES, js_string, parse_chart_type, require_finite};
+use super::common::{
+    BARS_PATH, CHART_API, CHART_TYPES, js_string, parse_chart_type, require_finite,
+};
 
 pub async fn state(runtime: &mut impl RuntimeEvaluator) -> Result<Value, AppError> {
     runtime
@@ -12,9 +14,11 @@ pub async fn state(runtime: &mut impl RuntimeEvaluator) -> Result<Value, AppErro
                 r#"
                 (function() {{
                     var chart = {CHART_API};
+                    var bars = null;
                     var visibleRange = null;
                     var studies = [];
                     try {{ visibleRange = chart.getVisibleRange(); }} catch(e) {{}}
+                    try {{ bars = {BARS_PATH}; }} catch(e) {{}}
                     try {{
                         var allStudies = chart.getAllStudies();
                         studies = allStudies.map(function(s) {{
@@ -23,14 +27,35 @@ pub async fn state(runtime: &mut impl RuntimeEvaluator) -> Result<Value, AppErro
                     }} catch(e) {{}}
                     var resolution = chart.resolution();
                     var chartType = chart.chartType();
+                    var barsAvailable = !!(bars && typeof bars.lastIndex === 'function' && typeof bars.firstIndex === 'function');
+                    var firstIndex = null;
+                    var lastIndex = null;
+                    try {{ if (barsAvailable) firstIndex = bars.firstIndex(); }} catch(e) {{}}
+                    try {{ if (barsAvailable) lastIndex = bars.lastIndex(); }} catch(e) {{}}
                     return {{
+                        source: "chart_api",
                         symbol: chart.symbol(),
                         resolution: resolution,
                         timeframe: resolution,
                         chartType: chartType,
                         chart_type: chartType,
                         studies: studies,
-                        visible_range: visibleRange
+                        visible_range: visibleRange,
+                        chart_readiness: {{
+                            chart_api_available: true,
+                            bars_available: barsAvailable,
+                            chart_symbol: chart.symbol(),
+                            resolution: resolution,
+                            bar_index_state: {{
+                                has_first_index: barsAvailable,
+                                has_last_index: barsAvailable,
+                                first_index: firstIndex,
+                                last_index: lastIndex
+                            }},
+                            next_action_hint: barsAvailable
+                                ? "Chart API and bars index methods are available. Use `tv ohlcv --count 1` to confirm readable bar values."
+                                : "Chart API is available, but bars index methods are not ready. Run `tv tab list`, select the active chart target, then retry `tv --target-id <ID> state` and `tv --target-id <ID> ohlcv --count 1`."
+                        }}
                     }};
                 }})()
                 "#
@@ -357,6 +382,33 @@ mod tests {
 
     use super::super::test_support::FakeRuntime;
     use super::*;
+
+    #[tokio::test]
+    async fn state_includes_chart_readiness_expression() {
+        let payload = json!({
+            "source": "chart_api",
+            "symbol": "NASDAQ:AAPL",
+            "resolution": "D",
+            "timeframe": "D",
+            "chartType": 1,
+            "chart_type": 1,
+            "studies": [],
+            "visible_range": null,
+            "chart_readiness": {
+                "chart_api_available": true,
+                "bars_available": true,
+                "chart_symbol": "NASDAQ:AAPL",
+                "resolution": "D"
+            }
+        });
+        let mut runtime = FakeRuntime::new([payload.clone()]);
+
+        let result = state(&mut runtime).await.unwrap();
+
+        assert_eq!(result, payload);
+        assert!(runtime.evaluated[0].0.contains("chart_readiness"));
+        assert!(runtime.evaluated[0].0.contains("barsAvailable"));
+    }
 
     #[tokio::test]
     async fn set_symbol_serializes_user_input_as_js_string() {

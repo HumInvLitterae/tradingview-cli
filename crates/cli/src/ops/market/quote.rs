@@ -540,6 +540,7 @@ fn ensure_quote_matches_request(
             "kind": "requested_symbol_matches_observed_symbol",
             "passed": false,
         },
+        "next_action_hint": "Run `tv tab list` to confirm the selected chart target, then retry with `tv --target-id <ID> quote <SYMBOL> --source chart`. Use `--source scanner` only if scanner feed freshness is acceptable.",
     })))
 }
 
@@ -741,6 +742,12 @@ mod tests {
 
         assert_eq!(error.kind, ErrorKind::InternalApiUnavailable);
         assert!(error.message.contains("freshness"));
+        assert!(
+            error.details.unwrap()["next_action_hint"]
+                .as_str()
+                .unwrap()
+                .contains("--source scanner")
+        );
     }
 
     #[tokio::test]

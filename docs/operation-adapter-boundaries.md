@@ -124,10 +124,13 @@ scanner REST reads only for a concrete workflow and clear endpoint evidence.
 These are not current crate-extraction tasks. Each needs its own evidence-gated
 ExecPlan before behavior changes.
 
-For `v0.5.0`, the first planned work is not another replacement candidate. It
-is a Desktop-backed readiness diagnostics pass that should make target, chart,
-source, and chart-bars readiness easier for agents to inspect before operation.
-See `docs/v0.5-roadmap.md` for the current roadmap.
+For `v0.5.0`, the first work is not another replacement candidate. It is a
+Desktop-backed readiness diagnostics pass that makes target, chart, source, and
+chart-bars readiness easier for agents to inspect before operation. The first
+slice is additive to existing `status`, `tab list`, `state`, chart-source
+quote, and OHLCV payloads; a broad `tv diagnose` command is intentionally
+deferred until existing diagnostics prove insufficient. See
+`docs/v0.5-roadmap.md` for the current roadmap.
 
 ## Intentional DOM boundaries
 

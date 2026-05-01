@@ -11,16 +11,16 @@ This is not a plan to implement every diagnostic idea at once. It is the first d
 ## Progress
 
 - [x] (2026-05-01) Created this ExecPlan as the first `v0.5.0` implementation candidate.
-- [ ] Review existing readiness and diagnostic payloads for `status`, `tab list`, `state`, `quote --source chart`, and `ohlcv`.
-- [ ] Decide whether the implementation should add payload fields to existing commands, add a small `tv diagnose` / `tv readiness` command, or stay as docs/skills only.
-- [ ] Implement the chosen smallest behavior change.
-- [ ] Update runtime skills so agents do not paper over readiness failures with unbounded sleep, repeated retries, or blind Computer Use.
-- [ ] Validate with focused tests, CLI contract tests, docs hygiene, and a live smoke if TradingView Desktop is available.
+- [x] (2026-05-02) Reviewed existing readiness and diagnostic payloads for `status`, `tab list`, `state`, `quote --source chart`, and `ohlcv`.
+- [x] (2026-05-02) Decided to add payload fields to existing commands first; a small `tv diagnose` / `tv readiness` command is deferred.
+- [x] (2026-05-02) Implemented additive endpoint, target, chart, quote freshness, and OHLCV readiness diagnostics on the existing command surface.
+- [x] (2026-05-02) Updated runtime skills so agents do not paper over readiness failures with unbounded sleep, repeated retries, or blind Computer Use.
+- [x] (2026-05-02) Validated with focused tests, CLI contract tests, skill validation, docs hygiene, and live Desktop smoke.
 - [ ] Commit the related changes.
 
 ## Surprises & Discoveries
 
-- None yet.
+- `quote --source chart` and `ohlcv` already had most of the hard readiness behavior from earlier fixes. The larger gap was the first-line diagnostic flow: `status`, `tab list`, and `state` did not present the same target/readiness handoff shape.
 
 ## Decision Log
 
@@ -32,9 +32,25 @@ This is not a plan to implement every diagnostic idea at once. It is the first d
   Rationale: Existing commands already return some diagnostic data. The first implementation should identify the smallest additive change that improves agent operation without creating a vague catch-all command.
   Date/Author: 2026-05-01 / Codex
 
+- Decision: Implement additive diagnostics on existing commands first and defer `tv diagnose` / `tv readiness`.
+  Rationale: `tab list`, `status`, `state`, chart-source quote, and OHLCV already form the operational recovery path. Adding structured endpoint, target, chart readiness, and next-action hints there improves downstream use without introducing a broad overlapping command.
+  Date/Author: 2026-05-02 / Codex
+
 ## Outcomes & Retrospective
 
-- Pending implementation.
+- Implemented the additive path. `status` and `tab list` now expose Desktop
+  readiness summaries, `state` exposes chart readiness, CDP endpoint failures
+  include endpoint hints, and chart-source quote mismatch failures include a
+  recovery hint. `ohlcv` already had the intended structured bars-readiness
+  details and remains unchanged except for the related skill/docs guidance.
+- Validation passed with focused status/tab/quote/OHLCV tests, full CLI
+  contract tests, skill validation for the changed runtime skills, full
+  workspace tests, `cargo fmt --check`, `cargo clippy --workspace
+  --all-targets --all-features -- -D warnings`, `cargo metadata --no-deps
+  --format-version 1`, and `git diff --check`.
+- Live Desktop smoke confirmed `status`, `tab list`, `state`, chart-source
+  quote freshness, `ohlcv --count 1`, and original-symbol restore. Live target
+  ids were not recorded in tracked docs.
 
 ## Context and Orientation
 
@@ -55,7 +71,7 @@ The repository already treats `tv` and Computer Use as complementary. `tv` is be
 
 First, review the current JSON payloads and error details for the existing diagnostic commands. Use source inspection and tests rather than changing behavior immediately. Look for duplicated concepts such as target selection, active target, chart symbol, chart bars availability, quote freshness, Screener full-page readiness, and next-action hints.
 
-Second, choose the smallest implementation shape. Prefer additive fields on existing payloads if they solve the agent problem. Add a new command only if the same readiness summary would otherwise require agents to run many commands and merge results themselves. If a new command is needed, it should be narrow, read-only, and named around readiness rather than broad debugging.
+Second, choose the smallest implementation shape. The selected shape is additive fields on existing payloads. A new command is deferred until downstream evidence shows that agents still need a one-shot summary after reading the existing structured outputs.
 
 Third, implement the chosen shape with structured errors and tests. Do not add unbounded retries. Do not hide readiness failures by falling back to Computer Use or DOM actions. If readiness cannot be established, return a clear error or diagnostic payload with a next action.
 
@@ -72,7 +88,7 @@ Run all commands from the repository root.
 
 2. If the implementation is additive to existing payloads, update the affected operation modules and contract tests. Likely candidates are chart state, tab/status diagnostics, chart-source quote, and OHLCV failure details. Keep existing fields and exit codes compatible.
 
-3. If the implementation needs a new command, add a read-only command that reports Desktop readiness without mutating chart or account state. It must include target handoff, selected source readiness, chart symbol, chart bars availability, and next-action hints when possible.
+3. Do not add a new command in this slice. Reconsider a read-only readiness command only if downstream agents still need to merge too many command outputs after this additive pass.
 
 4. Update runtime skills and docs:
    - `docs/v0.5-roadmap.md`
