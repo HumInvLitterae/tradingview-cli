@@ -25,6 +25,8 @@ package version omits the leading `v`.
   it CLI-owned and experimental until protocol stability is clearer.
 - Scoped Computer Use guidance in docs and runtime skills so CLI-only agents
   use structured `tv` diagnostics and screenshots as the portable fallback.
+- Recorded a future Codex app-only Computer Use visual recovery skill as
+  deferred until concrete downstream recovery patterns justify it.
 
 ## v0.4.1 - 2026-05-01
 

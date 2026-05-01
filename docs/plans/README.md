@@ -6,14 +6,15 @@ for release and next-phase planning.
 
 ## Current and future plans
 
-- `tradingview-cli-computer-use-boundary-docs.md`: scope Computer Use guidance
-  to environments that actually provide it, keeping default runtime docs and
-  skills portable for CLI-only agents.
+- `tradingview-cli-codex-app-computer-use-skill-research.md`: record a future
+  Codex app-only Computer Use visual recovery skill as promising but deferred,
+  without adding a runtime skill yet.
 
 The current `v0.5.0` roadmap has completed the first Desktop-backed readiness
-diagnostics slice and added a lab-gated browserless bars prototype. The next
-slice clarifies that portable recovery should use structured `tv` diagnostics
-and screenshots first, with Computer Use only as an optional Codex app aid.
+diagnostics slice, added a lab-gated browserless bars prototype, and scoped
+Computer Use out of generic runtime guidance. The next slice records a future
+Codex app-only visual recovery skill as deferred until more concrete downstream
+patterns exist.
 
 ## Archived plans
 
@@ -46,6 +47,7 @@ Important archived plan categories:
   v0.4 market data lane review
 - lab-gated browserless historical bars prototype
 - lab bars evidence review and v0.5 data-lane boundary
+- Computer Use boundary docs and skills cleanup
 - runtime market-data interpretation and scanner/Screener result-analysis
   skills
 - first behavior-preserving binary/library crate boundary
