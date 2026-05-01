@@ -51,7 +51,7 @@ pub use layout::{
     watchlist_add_bulk, watchlist_get, watchlist_remove,
 };
 pub use market::{
-    ohlcv_bars, ohlcv_summary, quote, quote_symbol, quote_symbols, symbol_info_direct,
+    bars, ohlcv_bars, ohlcv_summary, quote, quote_symbol, quote_symbols, symbol_info_direct,
     symbol_search,
 };
 pub use pine::{

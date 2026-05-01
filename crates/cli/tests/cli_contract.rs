@@ -20,6 +20,7 @@ fn help_lists_v1_commands() {
         .stdout(predicate::str::contains("values"))
         .stdout(predicate::str::contains("discover"))
         .stdout(predicate::str::contains("quotes"))
+        .stdout(predicate::str::contains("bars"))
         .stdout(predicate::str::contains("ui-state"))
         .stdout(predicate::str::contains("watchlist"))
         .stdout(predicate::str::contains("alert"))
@@ -90,6 +91,84 @@ fn quotes_rejects_invalid_inputs_before_connecting() {
     assert_eq!(value["success"], false);
     assert_eq!(value["command"], "quotes");
     assert_eq!(value["error"]["kind"], "validation");
+}
+
+#[test]
+fn bars_help_explains_lab_gate_and_desktop_free_boundary() {
+    tv().args(["bars", "--help"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("<SYMBOL>"))
+        .stdout(predicate::str::contains("--timeframe"))
+        .stdout(predicate::str::contains("--count"))
+        .stdout(predicate::str::contains("TV_EXPERIMENTAL_BARS=1"))
+        .stdout(predicate::str::contains("Desktop"))
+        .stdout(predicate::str::contains("tv ohlcv"));
+}
+
+#[test]
+fn bars_rejects_disabled_gate_before_network() {
+    let assert = tv()
+        .env_remove("TV_EXPERIMENTAL_BARS")
+        .env("TV_CDP_PORT", "9")
+        .args(["bars", "NASDAQ:AAPL", "--count", "5"])
+        .assert()
+        .failure()
+        .code(1);
+    let stderr = String::from_utf8(assert.get_output().stderr.clone()).unwrap();
+    let value: Value = serde_json::from_str(&stderr).unwrap();
+    assert_eq!(value["success"], false);
+    assert_eq!(value["command"], "bars");
+    assert_eq!(value["error"]["kind"], "validation");
+    assert_eq!(
+        value["error"]["details"]["required_env"],
+        "TV_EXPERIMENTAL_BARS"
+    );
+}
+
+#[test]
+fn bars_rejects_invalid_inputs_before_network() {
+    let bare_symbol = tv()
+        .env("TV_EXPERIMENTAL_BARS", "1")
+        .env("TV_CDP_PORT", "9")
+        .args(["bars", "AAPL", "--count", "5"])
+        .assert()
+        .failure()
+        .code(1);
+    let stderr = String::from_utf8(bare_symbol.get_output().stderr.clone()).unwrap();
+    let value: Value = serde_json::from_str(&stderr).unwrap();
+    assert_eq!(value["command"], "bars");
+    assert_eq!(value["error"]["kind"], "validation");
+    assert_eq!(
+        value["error"]["details"]["expected_format"],
+        "EXCHANGE:SYMBOL"
+    );
+
+    let zero_count = tv()
+        .env("TV_EXPERIMENTAL_BARS", "1")
+        .env("TV_CDP_PORT", "9")
+        .args(["bars", "NASDAQ:AAPL", "--count", "0"])
+        .assert()
+        .failure()
+        .code(1);
+    let stderr = String::from_utf8(zero_count.get_output().stderr.clone()).unwrap();
+    let value: Value = serde_json::from_str(&stderr).unwrap();
+    assert_eq!(value["command"], "bars");
+    assert_eq!(value["error"]["kind"], "validation");
+    assert_eq!(value["error"]["details"]["maximum"], 500);
+
+    let too_many = tv()
+        .env("TV_EXPERIMENTAL_BARS", "1")
+        .env("TV_CDP_PORT", "9")
+        .args(["bars", "NASDAQ:AAPL", "--count", "501"])
+        .assert()
+        .failure()
+        .code(1);
+    let stderr = String::from_utf8(too_many.get_output().stderr.clone()).unwrap();
+    let value: Value = serde_json::from_str(&stderr).unwrap();
+    assert_eq!(value["command"], "bars");
+    assert_eq!(value["error"]["kind"], "validation");
+    assert_eq!(value["error"]["details"]["maximum"], 500);
 }
 
 #[test]

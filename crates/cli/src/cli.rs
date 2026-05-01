@@ -85,6 +85,17 @@ pub enum Command {
         count: Option<usize>,
     },
     #[command(
+        about = "Fetch experimental Desktop-free historical bars",
+        long_about = "Fetch experimental historical OHLCV bars without TradingView Desktop or CDP.\n\nThis command uses an undocumented TradingView WebSocket path and is intentionally lab-gated. Set TV_EXPERIMENTAL_BARS=1 to enable it. SYMBOL must be exchange-qualified, for example NASDAQ:AAPL or NYSE:IONQ. `tv ohlcv` remains the stable selected-chart/CDP bars command."
+    )]
+    Bars {
+        symbol: String,
+        #[arg(long, default_value = "1D")]
+        timeframe: String,
+        #[arg(long, short = 'n', default_value_t = 100)]
+        count: usize,
+    },
+    #[command(
         about = "Get or set the chart symbol",
         long_about = "Get or set the chart symbol.\n\nRun without SYMBOL to read the current chart symbol. Pass SYMBOL as a positional argument to set it, for example `tv symbol NASDAQ:MU`. There is no --set flag. If more than one TradingView target is open, run `tv tab list` and pass `tv --target-id <ID> symbol ...`."
     )]
@@ -872,6 +883,7 @@ impl Command {
             Self::Discover => "discover",
             Self::UiState => "ui-state",
             Self::Ohlcv { .. } => "ohlcv",
+            Self::Bars { .. } => "bars",
             Self::Symbol { .. } => "symbol",
             Self::Timeframe { .. } => "timeframe",
             Self::Type { .. } => "type",

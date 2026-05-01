@@ -442,6 +442,11 @@ pub async fn dispatch(
                 ops::ohlcv_bars(&mut runtime, count).await
             }
         }
+        Command::Bars {
+            symbol,
+            timeframe,
+            count,
+        } => ops::bars(&symbol, &timeframe, count).await,
         Command::Symbol { symbol } => {
             let mut runtime = connect_runtime(config).await?;
             match symbol {

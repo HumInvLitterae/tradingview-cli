@@ -12,11 +12,13 @@ path = "src/main.rs"
 
 [dependencies]
 clap = { workspace = true, features = ["derive"] }
+futures-util = { workspace = true }
 image = { workspace = true, features = ["png"] }
 reqwest = { workspace = true, features = ["json"] }
 serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
 tokio = { workspace = true, features = ["macros", "rt-multi-thread", "time", "net"] }
+tokio-tungstenite = { workspace = true }
 tradingview-cdp = { workspace = true }
 tradingview-core = { workspace = true }
 tradingview-market = { workspace = true }
