@@ -6,15 +6,14 @@ for release and next-phase planning.
 
 ## Current and future plans
 
-- `tradingview-cli-v0.5-desktop-readiness-diagnostics.md`: prepare the first
-  `v0.5.0` implementation slice for Desktop-backed target, chart, and data
-  readiness diagnostics.
-- `tradingview-cli-release-builds.md`: tag-triggered GitHub Release builds
-  for Linux, macOS, and Windows binaries.
+- `tradingview-cli-lab-bars-evidence-review.md`: record bounded evidence for
+  the lab-gated `tv bars <SYMBOL>` prototype and keep the Desktop-free
+  historical-bars boundary explicit before follow-up work.
 
-The current `v0.5.0` roadmap starts from Desktop-backed readiness diagnostics
-while keeping Desktop-free market data and browserless bars in their documented
-research lanes.
+The current `v0.5.0` roadmap has completed the first Desktop-backed readiness
+diagnostics slice and added a lab-gated browserless bars prototype. The next
+slice reviews evidence and stabilizes the boundary before deciding whether to
+continue the bars lane.
 
 ## Archived plans
 
@@ -45,6 +44,7 @@ Important archived plan categories:
   scanner extended-hours columns, scanner metainfo, ordered batch quotes,
   explicit quote source selection, typed market/scanner Rust APIs, and the
   v0.4 market data lane review
+- lab-gated browserless historical bars prototype
 - runtime market-data interpretation and scanner/Screener result-analysis
   skills
 - first behavior-preserving binary/library crate boundary

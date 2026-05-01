@@ -65,12 +65,10 @@ now:
   `--source auto` is a chart-first compatibility mode that falls back to
   scanner only if chart access fails before any chart mutation.
 - OHLCV reads: `ohlcv` reads the active chart's main-series bars. Symbol-level
-  quote and info reads are Desktop-free, but historical bars remain
-  chart-dependent until a credential-safe endpoint is proven. The first
-  Desktop-free bars feasibility pass is complete for now and found only an
-  undocumented WebSocket research candidate, so a future browserless bars
-  command should be separate from `ohlcv` unless a later plan proves
-  equivalence.
+  quote and info reads are Desktop-free. Historical bars now have a separate
+  lab-gated `tv bars <SYMBOL>` prototype through an undocumented WebSocket
+  chart-session path, but `ohlcv` remains chart-dependent unless a later plan
+  proves equivalence.
 - Drawing and indicator chart operations: these execute chart APIs and verify
   newly created, updated, hidden, or removed entities.
 - Replay operations: these use Replay page APIs and chart-local Replay state.
@@ -111,10 +109,9 @@ retries. The current high-value candidates are:
 - Pine compile/save replacement: keep as `research_only` unless a safe endpoint
   preserves the same editor/account semantics without raw account metadata.
 - Browserless historical bars: comparable-project evidence exists through an
-  experimental TradingView WebSocket chart-session protocol, but it remains
-  `research_only` until bounded live smoke and freshness/entitlement boundaries
-  are documented. If pursued, it should start as a lab-gated symbol-targeted
-  command rather than changing `tv ohlcv`.
+  experimental TradingView WebSocket chart-session protocol. The Rust CLI now
+  has a bounded lab-gated `tv bars <SYMBOL>` prototype, but it remains
+  experimental and separate from `tv ohlcv`.
 
 The scanner REST watchlist-style read lane is not a current replacement
 candidate because it is already practically covered by `scanner scan`,
@@ -124,12 +121,13 @@ scanner REST reads only for a concrete workflow and clear endpoint evidence.
 These are not current crate-extraction tasks. Each needs its own evidence-gated
 ExecPlan before behavior changes.
 
-For `v0.5.0`, the first work is not another replacement candidate. It is a
-Desktop-backed readiness diagnostics pass that makes target, chart, source, and
-chart-bars readiness easier for agents to inspect before operation. The first
-slice is additive to existing `status`, `tab list`, `state`, chart-source
-quote, and OHLCV payloads; a broad `tv diagnose` command is intentionally
-deferred until existing diagnostics prove insufficient. See
+For `v0.5.0`, Desktop-backed readiness diagnostics landed first. The current
+Desktop-free data experiment is `tv bars`, kept as a CLI-owned lab adapter
+rather than a `tradingview-market` typed API until protocol stability and
+downstream value are clearer. Initial bounded smoke confirms daily and hourly
+reads can succeed, but the command remains lab-only because it depends on an
+undocumented WebSocket chart-session protocol. A broad `tv diagnose` command
+remains deferred until existing diagnostics prove insufficient. See
 `docs/v0.5-roadmap.md` for the current roadmap.
 
 ## Intentional DOM boundaries

@@ -12,12 +12,17 @@ package version omits the leading `v`.
 - Added the `v0.5.0` roadmap draft with separate Desktop-free data and
   Desktop-backed agent operation lanes, plus the first Desktop readiness
   diagnostics ExecPlan.
+- Added experimental `tv bars <SYMBOL> --timeframe <TIMEFRAME> --count <N>`
+  behind `TV_EXPERIMENTAL_BARS=1` for bounded Desktop-free historical bars
+  through TradingView's undocumented WebSocket chart-session path.
 
 ### Changed
 
 - Improved Desktop readiness diagnostics across `status`, `tab list`, `state`,
   chart-source quote, and OHLCV failure details so agents can inspect endpoint,
   target, and chart-bars readiness before falling back to visual checks.
+- Recorded bounded evidence for the lab-gated `tv bars` prototype while keeping
+  it CLI-owned and experimental until protocol stability is clearer.
 
 ## v0.4.1 - 2026-05-01
 

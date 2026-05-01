@@ -176,8 +176,10 @@ Category: undocumented TradingView browserless WebSocket protocol.
 
 Current command family:
 
-- none. Rust does not currently expose Desktop-free historical bars or
-  browserless streaming commands.
+- `bars <SYMBOL> --timeframe <TIMEFRAME> --count <N>` when
+  `TV_EXPERIMENTAL_BARS=1` is set. This is a lab-gated read, not a stable
+  replacement for `ohlcv`.
+- Rust does not currently expose browserless streaming commands.
 
 Comparable evidence:
 
@@ -190,22 +192,30 @@ Comparable evidence:
   It has an anonymous-token path, but also optional session-cookie-related
   configuration. Rust should therefore not treat it as equivalent to the
   credential-free scanner REST reads.
+- The Rust lab prototype has been smoke-tested with bounded daily bars for
+  public exchange-qualified symbols and an hourly request for a public
+  exchange-qualified symbol. This is evidence that the path can work, not a
+  guarantee that the undocumented protocol is stable.
 
 Safety boundary:
 
-- classify Desktop-free historical bars as `research_candidate`, not
+- classify Desktop-free historical bars as `lab_experimental`, not
   `api_backed`
-- the feasibility pass is complete for now, but no stable Rust CLI command has
-  been implemented. This is a deferred research boundary, not a completed
-  feature and not a canceled idea.
+- the feasibility pass is complete and the Rust CLI now has a bounded lab
+  prototype. This is still not a stable feature and not equivalent to
+  credential-free scanner REST.
 - do not add cookie/session import, login automation, or authenticated direct
   HTTP/WebSocket setup without a separate safety plan
 - do not replace `tv ohlcv`; it reads current chart bars through the selected
   Desktop target
-- if this becomes a Rust feature, prefer a separate lab-gated symbol-targeted
-  command and keep requests bounded by count or duration
+- `tv bars` is a separate symbol-targeted command and keeps requests bounded
+  by count
+- the first prototype requires exchange-qualified symbols and does not add
+  extended sessions, streaming, bare-symbol resolution, or authenticated reads
 - failures, malformed protocol frames, missing series completion, and symbol
   errors must become structured failures rather than empty successful bar lists
+- keep evidence summaries high level. Do not write raw WebSocket frames,
+  session ids, or live protocol payloads into tracked docs
 
 ## Symbol search REST read
 
