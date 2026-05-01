@@ -7,6 +7,12 @@ package version omits the leading `v`.
 
 ## Unreleased
 
+### Added
+
+- Added the `v0.5.0` roadmap draft with separate Desktop-free data and
+  Desktop-backed agent operation lanes, plus the first Desktop readiness
+  diagnostics ExecPlan.
+
 ## v0.4.1 - 2026-05-01
 
 ### Fixed

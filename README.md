@@ -294,6 +294,7 @@ baseline remains the commands run by CI.
 - a `v0.3.0` roadmap and release-readiness record at `docs/v0.3-roadmap.md`,
   plus a `v0.4.x` roadmap and release-readiness record at
   `docs/v0.4-roadmap.md`
+- a `v0.5.0` roadmap draft at `docs/v0.5-roadmap.md`
 - historical command contract, lifecycle, and deferred-surface notes under
   `docs/notes/`
 - a public-safe internal TradingView API dependency and DOM replacement

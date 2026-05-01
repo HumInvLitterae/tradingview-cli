@@ -6,13 +6,15 @@ for release and next-phase planning.
 
 ## Current and future plans
 
-- `tradingview-cli-v0.4.1-release-readiness.md`: prepare the `v0.4.1` patch
-  release for the chart-source quote readiness fix.
+- `tradingview-cli-v0.5-desktop-readiness-diagnostics.md`: prepare the first
+  `v0.5.0` implementation slice for Desktop-backed target, chart, and data
+  readiness diagnostics.
 - `tradingview-cli-release-builds.md`: tag-triggered GitHub Release builds
   for Linux, macOS, and Windows binaries.
 
-No new `v0.4.x` feature implementation plan is currently active. The current
-work is patch release preparation for a quote chart-source correctness fix.
+The current `v0.5.0` roadmap starts from Desktop-backed readiness diagnostics
+while keeping Desktop-free market data and browserless bars in their documented
+research lanes.
 
 ## Archived plans
 
@@ -88,6 +90,7 @@ Important archived plan categories:
 - workspace package metadata and dependency centralization
 - v0.4.0 release readiness
 - quote chart-source readiness hardening for stale-bar guard
+- v0.4.1 release readiness
 
 For command contract details, prefer the notes under `docs/notes/` before
 reading archived implementation plans.
