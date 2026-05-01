@@ -71,6 +71,15 @@ pub async fn dispatch(
             }
             ops::symbol_search(&query).await
         }
+        Command::Fundamentals { symbol, fields } => {
+            if symbol.trim().is_empty() {
+                return Err(AppError::new(
+                    ErrorKind::Validation,
+                    "fundamentals symbol must not be empty",
+                ));
+            }
+            ops::fundamentals_symbol(&symbol, fields).await
+        }
         Command::Scanner { command } => match command {
             ScannerCommand::Hotlist { slug, limit } => ops::scanner_hotlist(&slug, limit).await,
             ScannerCommand::Metainfo { market, fields } => {

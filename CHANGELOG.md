@@ -15,6 +15,8 @@ package version omits the leading `v`.
 - Added experimental `tv bars <SYMBOL> --timeframe <TIMEFRAME> --count <N>`
   behind `TV_EXPERIMENTAL_BARS=1` for bounded Desktop-free historical bars
   through TradingView's undocumented WebSocket chart-session path.
+- Added Desktop-free `tv fundamentals <SYMBOL>` for scanner-backed fundamental
+  fields, including earnings date/time fields when TradingView returns them.
 
 ### Changed
 
@@ -27,6 +29,8 @@ package version omits the leading `v`.
   use structured `tv` diagnostics and screenshots as the portable fallback.
 - Recorded a future Codex app-only Computer Use visual recovery skill as
   deferred until concrete downstream recovery patterns justify it.
+- Recorded a TradingView Desktop capability gap audit so future missing-feature
+  work is prioritized by operator value rather than broad Desktop parity.
 
 ## v0.4.1 - 2026-05-01
 

@@ -170,6 +170,36 @@ Safety boundary:
 - malformed or unexpectedly shaped responses should become
   `internal_api_unavailable`
 
+## Scanner fundamentals REST read
+
+Category: unauthenticated TradingView scanner REST read.
+
+Current command family:
+
+- `fundamentals <SYMBOL> [--field <FIELD>]...`
+- `scanner scan --columns ...` when callers request fundamental or earnings
+  fields as table columns
+
+Safety boundary:
+
+- this path is read-only and does not require a TradingView Desktop target
+- it reads scanner fundamental fields for a single resolved symbol and returns
+  raw scanner values under `field_values`
+- default fields are intentionally curated around symbol identity,
+  sector/industry, market cap, valuation, EPS, dividend yield, and earnings
+  date/time fields
+- earnings date/time fields, such as `earnings_release_next_date`,
+  `earnings_release_date`, and `earnings_release_next_time`, are returned as
+  TradingView scanner values; the CLI does not infer timezone, before-market,
+  or after-market semantics
+- symbol no-row, exchange mismatch, ambiguity, or returned-symbol mismatch are
+  validation errors with candidate symbols when possible; they do not fall
+  back to chart state
+- unknown requested fields fail before network access with supported field
+  details
+- do not add raw scanner payloads or account-local values to public payloads or
+  tracked docs
+
 ## TradingView WebSocket bars research
 
 Category: undocumented TradingView browserless WebSocket protocol.

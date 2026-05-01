@@ -62,6 +62,29 @@ pub struct SymbolInfo {
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize)]
+/// Scanner-backed fundamental fields for one resolved symbol.
+pub struct Fundamentals {
+    /// Public source marker.
+    pub source: String,
+    /// Symbol text supplied by the caller.
+    pub requested_symbol: String,
+    /// Exchange-qualified resolved symbol.
+    pub symbol: String,
+    /// Symbol observed in the scanner response.
+    pub observed_symbol: String,
+    /// Scanner market used for the read.
+    pub market: String,
+    /// Requested or default scanner field names.
+    pub fields: Vec<String>,
+    /// Object mapping field names to TradingView scanner values.
+    pub field_values: Value,
+    /// Fields whose value slot was missing from the scanner row.
+    pub missing_fields: Vec<String>,
+    /// True because scanner fundamentals reads do not mutate a chart.
+    pub non_mutating: bool,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize)]
 /// Scanner-backed quote for one resolved symbol.
 pub struct Quote {
     /// Exchange-qualified resolved symbol.

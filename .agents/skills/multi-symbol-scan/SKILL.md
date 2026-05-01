@@ -27,7 +27,9 @@ Use this skill to compare several TradingView symbols through the Rust `tv` CLI 
    scanner field availability.
 2. For a small finalist set, use `tv quotes <SYMBOL>...` for ordered
    Desktop-free batch quote reads, `tv quote <SYMBOL>` for one-off quote
-   checks, and `tv info <SYMBOL>` for symbol metadata.
+   checks, `tv info <SYMBOL>` for symbol metadata, and
+   `tv fundamentals <SYMBOL>` when earnings timing or basic fundamentals
+   affect the screen.
 3. Treat scanner-backed price reads as screening evidence rather than a
    realtime entitlement guarantee. Use `tv quote <SYMBOL> --source chart` only
    for symbols where the selected TradingView Desktop chart feed matters. Do
@@ -53,8 +55,9 @@ Use this skill to compare several TradingView symbols through the Rust `tv` CLI 
 10. Present a ranked shortlist and explain which observations came from scanner REST data, chart reads, or visual interpretation.
 
 Use `market-data-interpretation` when quote freshness, source differences,
-extended-hours fields, or missing values matter. Use `screener-result-analysis`
-when explaining why scanner or Screener rows matched a screen.
+extended-hours fields, fundamentals, earnings date/time fields, or missing
+values matter. Use `screener-result-analysis` when explaining why scanner or
+Screener rows matched a screen.
 
 ## OHLCV Recovery
 
@@ -74,7 +77,8 @@ assume it is available for Codex CLI, packaged agents, or other CLI-only
 runtimes.
 
 Use `tv timeframe <RESOLUTION>` for shared timeframe setup. `tv interval` is
-not a command. Use `tv info <SYMBOL>` for Desktop-free symbol metadata, and use
+not a command. Use `tv info <SYMBOL>` for Desktop-free symbol metadata,
+`tv fundamentals <SYMBOL>` for scanner-backed fundamental fields, and use
 `tv info` without a symbol only for current-chart metadata.
 
 ## Boundaries

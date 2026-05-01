@@ -6,15 +6,15 @@ for release and next-phase planning.
 
 ## Current and future plans
 
-- `tradingview-cli-codex-app-computer-use-skill-research.md`: record a future
-  Codex app-only Computer Use visual recovery skill as promising but deferred,
-  without adding a runtime skill yet.
+- `tradingview-cli-fundamentals-read-and-desktop-gap-audit.md`: add a
+  Desktop-free `tv fundamentals <SYMBOL>` read and record a TradingView Desktop
+  capability gap audit.
 
 The current `v0.5.0` roadmap has completed the first Desktop-backed readiness
-diagnostics slice, added a lab-gated browserless bars prototype, and scoped
-Computer Use out of generic runtime guidance. The next slice records a future
-Codex app-only visual recovery skill as deferred until more concrete downstream
-patterns exist.
+diagnostics slice, added a lab-gated browserless bars prototype, scoped
+Computer Use out of generic runtime guidance, and deferred Codex app visual
+recovery skill work. The current slice adds scanner-backed fundamentals and
+uses a capability audit to keep future missing-feature work deliberate.
 
 ## Archived plans
 
@@ -48,6 +48,7 @@ Important archived plan categories:
 - lab-gated browserless historical bars prototype
 - lab bars evidence review and v0.5 data-lane boundary
 - Computer Use boundary docs and skills cleanup
+- Codex app Computer Use visual recovery skill research and deferral
 - runtime market-data interpretation and scanner/Screener result-analysis
   skills
 - first behavior-preserving binary/library crate boundary

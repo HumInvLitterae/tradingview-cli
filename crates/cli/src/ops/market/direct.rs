@@ -10,6 +10,10 @@ pub async fn symbol_info_direct(symbol: &str) -> Result<Value, AppError> {
     tradingview_market::symbol_info(symbol).await
 }
 
+pub async fn fundamentals_symbol(symbol: &str, fields: Vec<String>) -> Result<Value, AppError> {
+    tradingview_market::fundamentals_symbol(symbol, fields).await
+}
+
 pub async fn quote_symbol(symbol: &str) -> Result<Value, AppError> {
     tradingview_market::quote_symbol(symbol).await
 }

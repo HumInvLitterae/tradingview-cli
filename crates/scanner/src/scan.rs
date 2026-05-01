@@ -38,6 +38,11 @@ const SUPPORTED_SCAN_COLUMNS: &[&str] = &[
     "price_earnings_ttm",
     "earnings_per_share_basic_ttm",
     "dividend_yield_recent",
+    "earnings_release_next_date",
+    "earnings_release_date",
+    "earnings_release_next_time",
+    "earnings_release_next_calendar_date",
+    "earnings_publication_type_next_fq",
     "Perf.W",
     "Perf.1M",
     "Perf.3M",
@@ -988,6 +993,94 @@ mod tests {
                 "postmarket_volume"
             ])
         );
+
+        let defaults = normalize_scan_request(ScannerScanRequest {
+            market: "america".to_string(),
+            exchanges: Vec::new(),
+            columns: None,
+            sort: None,
+            asc: false,
+            desc: false,
+            limit: None,
+            min_price: None,
+            max_price: None,
+            min_volume: None,
+            min_market_cap: None,
+            sectors: Vec::new(),
+            industries: Vec::new(),
+            symbol_types: Vec::new(),
+            subtypes: Vec::new(),
+            min_change: None,
+            max_change: None,
+            min_relative_volume: None,
+            max_pe: None,
+            min_average_volume: None,
+            min_performance_week: None,
+            max_performance_week: None,
+            min_performance_month: None,
+            max_performance_month: None,
+            min_performance_quarter: None,
+            max_performance_quarter: None,
+            min_rsi: None,
+            max_rsi: None,
+            min_recommendation: None,
+            max_recommendation: None,
+        })
+        .unwrap();
+        assert_eq!(defaults.columns, DEFAULT_SCAN_COLUMNS);
+    }
+
+    #[test]
+    fn normalize_scan_request_accepts_earnings_columns_without_changing_defaults() {
+        let request = ScannerScanRequest {
+            market: "america".to_string(),
+            exchanges: Vec::new(),
+            columns: Some(
+                "name,earnings_release_next_date,earnings_release_date,earnings_release_next_time"
+                    .to_string(),
+            ),
+            sort: Some("earnings_release_next_date".to_string()),
+            asc: true,
+            desc: false,
+            limit: Some(5),
+            min_price: None,
+            max_price: None,
+            min_volume: None,
+            min_market_cap: None,
+            sectors: Vec::new(),
+            industries: Vec::new(),
+            symbol_types: Vec::new(),
+            subtypes: Vec::new(),
+            min_change: None,
+            max_change: None,
+            min_relative_volume: None,
+            max_pe: None,
+            min_average_volume: None,
+            min_performance_week: None,
+            max_performance_week: None,
+            min_performance_month: None,
+            max_performance_month: None,
+            min_performance_quarter: None,
+            max_performance_quarter: None,
+            min_rsi: None,
+            max_rsi: None,
+            min_recommendation: None,
+            max_recommendation: None,
+        };
+
+        let normalized = normalize_scan_request(request).unwrap();
+
+        assert_eq!(
+            normalized.columns,
+            [
+                "name",
+                "earnings_release_next_date",
+                "earnings_release_date",
+                "earnings_release_next_time"
+            ]
+        );
+        assert_eq!(normalized.sort_field, "earnings_release_next_date");
+        assert_eq!(normalized.sort_order, "asc");
 
         let defaults = normalize_scan_request(ScannerScanRequest {
             market: "america".to_string(),

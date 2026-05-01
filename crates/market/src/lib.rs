@@ -1,14 +1,15 @@
 //! Desktop-free TradingView market reads.
 //!
 //! This crate contains credential-free, read-only helpers for symbol search,
-//! symbol metadata, single-symbol quotes, and ordered batch quotes. It does not
-//! connect to TradingView Desktop, CDP, chart state, UI automation, or account
-//! mutation paths.
+//! symbol metadata, single-symbol fundamentals, single-symbol quotes, and
+//! ordered batch quotes. It does not connect to TradingView Desktop, CDP, chart
+//! state, UI automation, or account mutation paths.
 //!
 //! Prefer the typed functions for Rust callers:
 //!
 //! - [`search_symbols_typed`] for symbol search candidates.
 //! - [`symbol_info_typed`] for Desktop-free symbol metadata.
+//! - [`fundamentals_symbol_typed`] for scanner-backed fundamental fields.
 //! - [`quote_symbol_typed`] for one scanner-backed quote.
 //! - [`quote_symbols_typed`] for ordered batch quotes.
 //!
@@ -42,16 +43,18 @@
 //! # }
 //! ```
 
+mod fundamentals;
 mod info;
 mod normalize;
 mod quote;
 mod search;
 mod types;
 
+pub use fundamentals::{fundamentals_symbol, fundamentals_symbol_typed};
 pub use info::{symbol_info, symbol_info_typed};
 pub use quote::{quote_symbol, quote_symbol_typed, quote_symbols, quote_symbols_typed};
 pub use search::{search_symbols_typed, symbol_search};
 pub use types::{
-    BatchQuoteItem, BatchQuotes, ExtendedHoursQuote, FreshnessCheck, Quote, QuoteError,
-    SessionQuote, SymbolInfo, SymbolSearchResponse, SymbolSearchResult,
+    BatchQuoteItem, BatchQuotes, ExtendedHoursQuote, FreshnessCheck, Fundamentals, Quote,
+    QuoteError, SessionQuote, SymbolInfo, SymbolSearchResponse, SymbolSearchResult,
 };

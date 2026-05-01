@@ -40,6 +40,15 @@ pub enum Command {
     Info { symbol: Option<String> },
     #[command(about = "Search TradingView symbols")]
     Search { query: Vec<String> },
+    #[command(
+        about = "Get Desktop-free symbol fundamentals",
+        long_about = "Get scanner-backed fundamental fields for one symbol without connecting to TradingView Desktop.\n\nThe default fields include symbol identity, sector and industry, market cap, valuation, EPS, dividend yield, and earnings date/time fields. Use repeated `--field <FIELD>` options to request specific supported fields. Earnings date/time values are returned as TradingView scanner values without timezone or before/after-market interpretation."
+    )]
+    Fundamentals {
+        symbol: String,
+        #[arg(long = "field")]
+        fields: Vec<String>,
+    },
     #[command(about = "Read TradingView scanner preset data")]
     Scanner {
         #[command(subcommand)]
@@ -875,6 +884,7 @@ impl Command {
             Self::State => "state",
             Self::Info { .. } => "info",
             Self::Search { .. } => "search",
+            Self::Fundamentals { .. } => "fundamentals",
             Self::Scanner { .. } => "scanner",
             Self::Screener { .. } => "screener",
             Self::Quote { .. } => "quote",

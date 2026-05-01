@@ -17,6 +17,7 @@ Always name the data source before interpreting values:
 - `tv quote <SYMBOL> --source chart`: selected TradingView Desktop chart feed.
 - `tv quote <SYMBOL> --source auto`: chart-first, scanner fallback only before
   chart mutation.
+- `tv fundamentals <SYMBOL>`: scanner REST fundamental fields for one symbol.
 - `tv scanner scan` and `tv scanner metainfo`: scanner REST.
 - `TV_EXPERIMENTAL_BARS=1 tv bars <EXCHANGE:SYMBOL>`: experimental
   Desktop-free WebSocket bars.
@@ -46,6 +47,12 @@ lab-gated browserless historical bars prototype using an undocumented
 TradingView WebSocket path. Use it only when the user or workflow explicitly
 accepts experimental data; report `source`, `experimental`, `data_quality`,
 and warnings. Do not treat it as a stable replacement for chart-sourced OHLCV.
+
+`tv fundamentals` is a Desktop-free scanner read, not a chart read. Use it for
+raw fields such as market cap, P/E, EPS, dividend yield, and earnings
+date/time. Treat `field_values` as the source of truth. Do not infer timezone
+or before/after-market meaning from earnings date/time fields unless another
+source explicitly supplies that interpretation.
 
 For Desktop-backed reads, inspect structured readiness fields before escalating
 to visual checks: `tv status` / `tv tab list` expose endpoint and target
@@ -80,6 +87,8 @@ Handle gaps explicitly:
   items separately from successful quotes.
 - if scanner and chart sources differ, report both source names and avoid
   forcing a single "correct" value without further evidence.
+- if a fundamentals field is missing or `null`, report it as unknown rather
+  than as zero or "no earnings".
 
 ## Reporting Shape
 
@@ -91,4 +100,4 @@ Keep reports compact:
 4. Name what is still unknown.
 5. Suggest the next read only if it changes confidence, such as
    `tv quote <SYMBOL> --source chart`, `tv info <SYMBOL>`,
-   `tv ohlcv --summary`, or a screenshot.
+   `tv fundamentals <SYMBOL>`, `tv ohlcv --summary`, or a screenshot.
