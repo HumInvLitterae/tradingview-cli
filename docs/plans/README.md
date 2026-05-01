@@ -6,14 +6,13 @@ for release and next-phase planning.
 
 ## Current and future plans
 
-- `tradingview-cli-quote-chart-readiness.md`: harden
-  `tv quote <SYMBOL> --source chart` so it waits for chart bars to reflect the
-  requested symbol before returning success.
+- `tradingview-cli-v0.4.1-release-readiness.md`: prepare the `v0.4.1` patch
+  release for the chart-source quote readiness fix.
 - `tradingview-cli-release-builds.md`: tag-triggered GitHub Release builds
   for Linux, macOS, and Windows binaries.
 
-No new `v0.4.0` feature implementation plan is currently active. The current
-post-release work is a quote chart-source correctness fix.
+No new `v0.4.x` feature implementation plan is currently active. The current
+work is patch release preparation for a quote chart-source correctness fix.
 
 ## Archived plans
 
@@ -88,6 +87,7 @@ Important archived plan categories:
   release readiness
 - workspace package metadata and dependency centralization
 - v0.4.0 release readiness
+- quote chart-source readiness hardening for stale-bar guard
 
 For command contract details, prefer the notes under `docs/notes/` before
 reading archived implementation plans.

@@ -7,6 +7,8 @@ package version omits the leading `v`.
 
 ## Unreleased
 
+## v0.4.1 - 2026-05-01
+
 ### Fixed
 
 - Hardened `tv quote <SYMBOL> --source chart` so chart-backed symbol quotes
