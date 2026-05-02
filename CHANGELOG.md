@@ -14,6 +14,8 @@ package version omits the leading `v`.
 - Added `docs/command-source-taxonomy.md` to classify commands as
   Desktop-free reads, Desktop-backed reads, Desktop-backed operations, hybrid
   commands, or experimental commands while keeping one `tv` binary.
+- Added an opt-in ignored Rust integration smoke for chart-source quote
+  sequence endurance checks against a live TradingView Desktop session.
 
 ### Changed
 

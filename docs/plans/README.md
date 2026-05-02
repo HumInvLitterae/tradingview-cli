@@ -6,13 +6,11 @@ for release and next-phase planning.
 
 ## Current and future plans
 
-- `tradingview-cli-quote-chart-stable-readiness.md`: harden
-  `tv quote <SYMBOL> --source chart` so chart-source quote succeeds only after
-  stable requested-symbol readiness is proven.
+- `tradingview-cli-chart-quote-live-smoke.md`: add an opt-in ignored Rust
+  integration smoke for chart-source quote sequence endurance.
 
-The current patch slice keeps existing command behavior but strengthens the
-Desktop-backed chart quote freshness contract before broader `v0.6.0`
-observation work continues.
+The current patch follow-up keeps CI deterministic while giving maintainers a
+manual way to exercise repeated Desktop chart symbol switches before release.
 
 ## Archived plans
 
@@ -96,6 +94,7 @@ Important archived plan categories:
 - v0.4.1 release readiness
 - v0.5 pre-release refactor audit
 - v0.5.0 release readiness
+- quote chart-source stable readiness hardening
 
 For command contract details, prefer the notes under `docs/notes/` before
 reading archived implementation plans.
