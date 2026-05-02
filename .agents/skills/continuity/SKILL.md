@@ -30,6 +30,7 @@ Create a comprehensive task list that covers every aspect of the plan so that it
 - Keep them consistent: when the plan or state changes, update the ledger at the intent/progress level (not every micro-step).
 
 ## In replies
+- Default: Include a brief “Ledger Snapshot” (Goal + Now/Next + Open Questions) in the response to the user.
 - Print the full ledger only when it materially changes or when the user asks.
 
 ## `CONTINUITY.md` format (keep headings)
@@ -42,8 +43,3 @@ Create a comprehensive task list that covers every aspect of the plan so that it
 - Next:
 - Open questions (UNCONFIRMED if needed):
 - Working set (files/ids/commands):
-
-## Related
-
-- **`/delegation-worker`**: Execute delegated implementation tasks from a coordinator with zero handoff ambiguity.
-- **`/parallel-delegation`**: Coordinate parallel work across multiple Codex workers while avoiding conflicts in shared docs and code ownership. 
