@@ -6,17 +6,17 @@ for release and next-phase planning.
 
 ## Current and future plans
 
-- `tradingview-cli-v0.5-pre-release-refactor-audit.md`: pause feature work
-  before `v0.5.0` release readiness, audit code structure, and perform only
-  low-risk cleanup needed to keep the latest market read internals maintainable.
+- `tradingview-cli-v0.5.0-release-readiness.md`: prepare versioned release
+  notes, package metadata, release archive staging, and validation evidence for
+  `v0.5.0`.
 
 The current `v0.5.0` roadmap has completed the first Desktop-backed readiness
 diagnostics slice, added a lab-gated browserless bars prototype, scoped
 Computer Use out of generic runtime guidance, deferred Codex app visual
-recovery skill work, and refined scanner-backed fundamentals with repeatable
-field groups. The current slice is a short pre-release refactor audit. It does
-not add new CLI behavior; it only verifies whether the release can proceed and
-splits the newest fundamentals internals if validation stays behavior-compatible.
+recovery skill work, refined scanner-backed fundamentals with repeatable field
+groups, and completed a short pre-release refactor audit. The current slice is
+`v0.5.0` release readiness. It does not add new CLI behavior; it fixes the
+versioned release documents and validates package staging before tag creation.
 
 ## Archived plans
 
@@ -98,6 +98,7 @@ Important archived plan categories:
 - v0.4.0 release readiness
 - quote chart-source readiness hardening for stale-bar guard
 - v0.4.1 release readiness
+- v0.5 pre-release refactor audit
 
 For command contract details, prefer the notes under `docs/notes/` before
 reading archived implementation plans.

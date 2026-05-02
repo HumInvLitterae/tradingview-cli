@@ -7,6 +7,10 @@ package version omits the leading `v`.
 
 ## Unreleased
 
+No changes yet.
+
+## v0.5.0 - 2026-05-02
+
 ### Added
 
 - Added the `v0.5.0` roadmap draft with separate Desktop-free data and

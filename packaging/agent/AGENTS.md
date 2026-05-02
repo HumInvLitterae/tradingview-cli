@@ -28,18 +28,22 @@ When reporting commands to the user, write them as `tv ...` unless the local exe
 
 ## Safety Rules
 
-- Prefer read-only commands first: `status`, `state`, `info`, `quote`,
-  `quotes`, `ohlcv`, `values`, `scanner scan`, `scanner metainfo`,
+- Prefer read-only commands first: `status`, `state`, `info`, `fundamentals`,
+  `quote`, `quotes`, `ohlcv`, `values`, `scanner scan`, `scanner metainfo`,
   `watchlist get`, `pane list`, `layout list`, `alert list`, `pine get`, and
-  `screenshot`.
+  `screenshot`. `tv bars` is read-only but experimental and requires
+  `TV_EXPERIMENTAL_BARS=1`.
 - If `ohlcv` fails while `quote` or `symbol` works, keep the full JSON error envelope, inspect `error.details`, rerun `tv tab list`, choose the active target's `target_cli_args`, run `tv --target-id <ID> state`, and retry `tv --target-id <ID> ohlcv --count 1`.
 - Use `tv timeframe <RESOLUTION>` for timeframe changes. `tv interval` is not
-  a command. Use `tv info <SYMBOL>`, `tv quote <SYMBOL>`, and
-  `tv quotes <SYMBOL>...` for Desktop-free symbol metadata and quote reads; use
-  `tv info` or `tv quote` without a symbol only for current-chart metadata or
-  quote data. Scanner-backed quote reads expose `time`, `update_mode`,
-  `delay_seconds`, and extended-hours fields when TradingView returns them, but
-  they are screening reads rather than realtime entitlement guarantees. Use
+  a command. Use `tv info <SYMBOL>`, `tv fundamentals <SYMBOL>`,
+  `tv quote <SYMBOL>`, and `tv quotes <SYMBOL>...` for Desktop-free symbol
+  metadata, fundamentals, and quote reads; use `tv info` or `tv quote` without
+  a symbol only for current-chart metadata or quote data. Scanner-backed quote
+  reads expose `time`, `update_mode`, `delay_seconds`, and extended-hours fields
+  when TradingView returns them, but they are screening reads rather than
+  realtime entitlement guarantees. `tv fundamentals` returns scanner values
+  under `field_values` and supports
+  `--group earnings|valuation|dividends|financials`. Use
   `tv quote <SYMBOL> --source chart` only when the selected TradingView Desktop
   chart feed matters.
 - Before mutating chart, account, Pine, replay, layout, tab, drawing, alert, or watchlist state, explain the expected effect and get explicit user approval.
