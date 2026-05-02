@@ -6,14 +6,13 @@ for release and next-phase planning.
 
 ## Current and future plans
 
-- `tradingview-cli-v0.6-roadmap-and-source-taxonomy.md`: add the `v0.6.0`
-  roadmap and define the command source taxonomy for the single `tv` binary.
+- `tradingview-cli-quote-chart-stable-readiness.md`: harden
+  `tv quote <SYMBOL> --source chart` so chart-source quote succeeds only after
+  stable requested-symbol readiness is proven.
 
-The current `v0.6.0` planning slice keeps one `tv` binary and introduces
-source categories instead of splitting Desktop-free and Desktop-backed
-commands into separate executables. It also records the next observation-first
-direction and treats the post-`v0.5.0` chart-source quote mismatch as a
-separate patch candidate.
+The current patch slice keeps existing command behavior but strengthens the
+Desktop-backed chart quote freshness contract before broader `v0.6.0`
+observation work continues.
 
 ## Archived plans
 

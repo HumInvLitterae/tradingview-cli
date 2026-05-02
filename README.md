@@ -220,12 +220,12 @@ CLI.
 
 Chart-source quote commands mutate the selected chart while reading. The CLI
 serializes symbol-targeted chart quote commands, waits for requested-symbol
-chart bars to become fresh, retries that readiness wait once on timeout,
-restores the original symbol, and fails instead of reporting success if the
-observed quote symbol or bar freshness does not match the request. A reported
-post-`v0.5.0` mismatch remains a patch candidate; downstream agents should
-preserve `freshness_check` and readiness details rather than adding sleep or
-double-call workarounds.
+chart bars to become fresh, requires two consecutive ready samples, retries
+that readiness wait once on timeout, restores the original symbol, and fails
+instead of reporting success if the observed quote symbol, chart symbol, or bar
+freshness does not match the request. Downstream agents should preserve
+`freshness_check` and readiness details rather than adding sleep or double-call
+workarounds.
 
 `tv pine alertconditions [--file <PATH>]` is local static discovery for Pine
 source. It estimates `alertcondition()` candidate ids such as `plot_1` without
