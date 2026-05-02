@@ -7,6 +7,8 @@ package version omits the leading `v`.
 
 ## Unreleased
 
+## v0.5.1 - 2026-05-02
+
 ### Added
 
 - Added a `v0.6.0` roadmap draft for observation-first workflows and
