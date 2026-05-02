@@ -80,12 +80,12 @@ TradingView Desktop live smoke checks are intentionally separate from CI because
 
 ## Release Builds
 
-GitHub Releases are the first supported binary distribution path. Pushing a version tag such as `v0.5.0` creates release assets named:
+GitHub Releases are the first supported binary distribution path. Pushing a version tag such as `v0.5.1` creates release assets named:
 
-- `tv-v0.5.0-x86_64-unknown-linux-gnu.tar.gz`
-- `tv-v0.5.0-x86_64-apple-darwin.tar.gz`
-- `tv-v0.5.0-aarch64-apple-darwin.tar.gz`
-- `tv-v0.5.0-x86_64-pc-windows-msvc.zip`
+- `tv-v0.5.1-x86_64-unknown-linux-gnu.tar.gz`
+- `tv-v0.5.1-x86_64-apple-darwin.tar.gz`
+- `tv-v0.5.1-aarch64-apple-darwin.tar.gz`
+- `tv-v0.5.1-x86_64-pc-windows-msvc.zip`
 - `SHA256SUMS`
 
 Each archive contains the `tv` or `tv.exe` binary, `README.md`, `CHANGELOG.md`, `LICENSE`, a user-facing `AGENTS.md` and `CLAUDE.md`, and runtime-oriented TradingView CLI skills under `.agents/skills/` and `.claude/skills/`, including chart analysis, market-data interpretation, multi-symbol scanning, Pine, replay, Screener operation, scanner/Screener result analysis, and strategy workflows. Verify the downloaded archive against `SHA256SUMS`, unpack it, and place the executable on your `PATH`.
@@ -337,7 +337,8 @@ baseline remains the commands run by CI.
 - a `v0.3.0` roadmap and release-readiness record at `docs/v0.3-roadmap.md`,
   plus a `v0.4.x` roadmap and release-readiness record at
   `docs/v0.4-roadmap.md`
-- a `v0.5.0` roadmap draft at `docs/v0.5-roadmap.md`
+- a `v0.5.x` roadmap and release-readiness record at
+  `docs/v0.5-roadmap.md`
 - a `v0.6.0` roadmap draft at `docs/v0.6-roadmap.md`
 - a command source taxonomy at `docs/command-source-taxonomy.md`
 - historical command contract, lifecycle, and deferred-surface notes under

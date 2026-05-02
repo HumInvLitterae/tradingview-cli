@@ -6,11 +6,13 @@ for release and next-phase planning.
 
 ## Current and future plans
 
-- `tradingview-cli-chart-quote-live-smoke.md`: add an opt-in ignored Rust
-  integration smoke for chart-source quote sequence endurance.
+- `tradingview-cli-v0.5.1-release-readiness.md`: prepare the focused
+  `v0.5.1` patch release for chart-source quote readiness hardening and the
+  opt-in live endurance smoke.
 
-The current patch follow-up keeps CI deterministic while giving maintainers a
-manual way to exercise repeated Desktop chart symbol switches before release.
+The current patch follow-up stops feature work, updates versioned release
+documents, stages the release archive locally, and leaves tag creation and push
+to the user.
 
 ## Archived plans
 
@@ -95,6 +97,7 @@ Important archived plan categories:
 - v0.5 pre-release refactor audit
 - v0.5.0 release readiness
 - quote chart-source stable readiness hardening
+- chart-source quote opt-in live endurance smoke
 
 For command contract details, prefer the notes under `docs/notes/` before
 reading archived implementation plans.
