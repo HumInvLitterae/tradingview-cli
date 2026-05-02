@@ -21,6 +21,12 @@ package version omits the leading `v`.
   record `quote --source chart` mismatch hardening as a separate patch
   candidate.
 
+### Fixed
+
+- Hardened `tv quote <SYMBOL> --source chart` readiness so chart-backed symbol
+  quotes require matching quote/chart symbols and consecutive stable
+  requested-symbol bar samples before reporting success.
+
 ## v0.5.0 - 2026-05-02
 
 ### Added

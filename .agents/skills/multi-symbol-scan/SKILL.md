@@ -38,7 +38,8 @@ screenshots. Treat `tv quote --source auto` as hybrid source selection and
    realtime entitlement guarantee. Use `tv quote <SYMBOL> --source chart` only
    for symbols where the selected TradingView Desktop chart feed matters. Do
    not implement manual sleep or double-call workarounds; chart-source quote
-   readiness is handled by the CLI and will fail if stale chart bars remain.
+   readiness is handled by the CLI with consecutive stable samples and will
+   fail if stale chart bars remain.
    Use `TV_EXPERIMENTAL_BARS=1 tv bars <EXCHANGE:SYMBOL> --count <N>` only as
    a lab-gated browserless bars check when experimental WebSocket data is
    acceptable; keep it separate from stable `tv ohlcv` chart evidence.

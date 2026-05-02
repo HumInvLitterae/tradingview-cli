@@ -25,6 +25,7 @@ const QUOTE_READINESS_INTERVAL: Duration = Duration::from_millis(0);
 const QUOTE_READINESS_MAX_POLLS: usize = 100;
 #[cfg(test)]
 const QUOTE_READINESS_MAX_POLLS: usize = 4;
+const QUOTE_STABLE_SAMPLES_REQUIRED: usize = 2;
 
 pub async fn quote(
     runtime: &mut impl RuntimeEvaluator,
@@ -36,11 +37,9 @@ pub async fn quote(
         .map(str::to_string);
 
     let Some(requested_symbol) = requested_symbol else {
-        let mut quote = read_current_quote(runtime).await?;
-        let observed_symbol = quote
-            .get("symbol")
-            .and_then(Value::as_str)
-            .map(str::to_string);
+        let sample = read_current_quote_sample(runtime).await?;
+        let mut quote = sample.quote;
+        let observed_symbol = sample.quote_symbol;
         add_quote_metadata(
             &mut quote,
             QuoteMetadata {
@@ -56,14 +55,14 @@ pub async fn quote(
     };
 
     let _lock = QuoteSymbolLock::acquire().await?;
-    let original_quote = read_current_quote(runtime).await?;
-    let original_symbol = quote_symbol(&original_quote).ok_or_else(|| {
+    let original_sample = read_current_quote_sample(runtime).await?;
+    let original_symbol = original_sample.quote_symbol.clone().ok_or_else(|| {
         AppError::new(
             ErrorKind::InternalApiUnavailable,
             "Could not determine current chart symbol before quote switch",
         )
     })?;
-    let original_signature = QuoteBarSignature::from_quote(&original_quote);
+    let original_signature = original_sample.signature.clone();
     let switch_performed = bare_symbol(&original_symbol) != bare_symbol(&requested_symbol);
 
     let quote_readiness = if switch_performed {
@@ -76,15 +75,19 @@ pub async fn quote(
         .await
     } else {
         Ok(QuoteReadiness {
-            quote: original_quote,
+            quote: original_sample.quote,
             observed_symbol: Some(original_symbol.clone()),
             polls: 0,
             freshness_check: json!({
-                "kind": "requested_symbol_matches_observed_symbol_and_new_bars",
+                "kind": "current_chart_quote_read",
                 "passed": true,
                 "attempts": 0,
                 "polls": 0,
                 "elapsed_ms": 0,
+                "stable_samples_required": 1,
+                "stable_samples_seen": 1,
+                "chart_symbol_matched": true,
+                "quote_symbol_matched": true,
                 "bar_signature_changed": false,
                 "bar_values_available": original_signature.is_some(),
             }),
@@ -225,9 +228,13 @@ async fn read_current_quote(runtime: &mut impl RuntimeEvaluator) -> Result<Value
                     var chart = {CHART_API};
                     var bars = {BARS_PATH};
                     var ext = {{}};
+                    var chartSymbol = "";
+                    try {{ chartSymbol = chart.symbol(); }} catch(e) {{}}
                     try {{ ext = chart.symbolExt() || {{}}; }} catch(e) {{}}
                     var quote = {{
-                        symbol: chart.symbol(),
+                        symbol: chartSymbol,
+                        chart_symbol: chartSymbol,
+                        bar_index: null,
                         time: null,
                         last: null,
                         close: null,
@@ -240,7 +247,9 @@ async fn read_current_quote(runtime: &mut impl RuntimeEvaluator) -> Result<Value
                         type: ext.type || null
                     }};
                     if (bars && typeof bars.lastIndex === 'function') {{
-                        var last = bars.valueAt(bars.lastIndex());
+                        var lastIndex = bars.lastIndex();
+                        quote.bar_index = lastIndex;
+                        var last = bars.valueAt(lastIndex);
                         if (last) {{
                             quote.time = last[0];
                             quote.open = last[1];
@@ -260,10 +269,27 @@ async fn read_current_quote(runtime: &mut impl RuntimeEvaluator) -> Result<Value
         .await
 }
 
+async fn read_current_quote_sample(
+    runtime: &mut impl RuntimeEvaluator,
+) -> Result<QuoteSample, AppError> {
+    let quote = read_current_quote(runtime).await?;
+    Ok(QuoteSample::from_quote(quote))
+}
+
 fn quote_symbol(quote: &Value) -> Option<String> {
     quote
         .get("symbol")
         .and_then(Value::as_str)
+        .map(str::trim)
+        .filter(|symbol| !symbol.is_empty())
+        .map(str::to_string)
+}
+
+fn chart_symbol(quote: &Value) -> Option<String> {
+    quote
+        .get("chart_symbol")
+        .and_then(Value::as_str)
+        .or_else(|| quote.get("symbol").and_then(Value::as_str))
         .map(str::trim)
         .filter(|symbol| !symbol.is_empty())
         .map(str::to_string)
@@ -308,12 +334,16 @@ async fn read_requested_quote_with_readiness(
     }
 
     let timeout = last_timeout.unwrap_or_else(|| ReadinessTimeout {
-        observed_symbol: None,
+        quote_symbol: None,
+        chart_symbol: None,
         polls: total_polls,
         elapsed_ms: elapsed_ms(started),
         last_signature: None,
         bar_values_available: false,
         bar_signature_changed: false,
+        quote_symbol_matched: false,
+        chart_symbol_matched: false,
+        stable_samples_seen: 0,
     });
     Err(readiness_timeout_error(
         requested_symbol,
@@ -331,42 +361,68 @@ async fn wait_for_quote_readiness(
     overall_started: Instant,
 ) -> Result<QuoteReadiness, ReadinessTimeout> {
     let mut polls = 0usize;
-    let mut last_observed_symbol = None;
+    let mut last_quote_symbol = None;
+    let mut last_chart_symbol = None;
     let mut last_signature = None;
     let mut last_bar_values_available = false;
     let mut last_bar_signature_changed = false;
+    let mut last_quote_symbol_matched = false;
+    let mut last_chart_symbol_matched = false;
+    let mut stable_samples_seen = 0usize;
 
     loop {
         polls += 1;
-        if let Ok(quote) = read_current_quote(runtime).await {
-            let observed_symbol = quote_symbol(&quote);
-            let signature = QuoteBarSignature::from_quote(&quote);
+        if let Ok(sample) = read_current_quote_sample(runtime).await {
+            let observed_symbol = sample.quote_symbol.clone();
+            let chart_symbol = sample.chart_symbol.clone();
+            let signature = sample.signature.clone();
             let bar_values_available = signature.is_some();
             let bar_signature_changed = original_signature
                 .zip(signature.as_ref())
                 .is_none_or(|(before, after)| before != after);
-            let symbol_matches = observed_symbol
+            let quote_symbol_matches = observed_symbol
+                .as_deref()
+                .is_some_and(|observed| bare_symbol(observed) == bare_symbol(requested_symbol));
+            let chart_symbol_matches = chart_symbol
                 .as_deref()
                 .is_some_and(|observed| bare_symbol(observed) == bare_symbol(requested_symbol));
 
-            last_observed_symbol = observed_symbol.clone();
+            last_quote_symbol = observed_symbol.clone();
+            last_chart_symbol = chart_symbol.clone();
             last_signature = signature;
             last_bar_values_available = bar_values_available;
             last_bar_signature_changed = bar_signature_changed;
+            last_quote_symbol_matched = quote_symbol_matches;
+            last_chart_symbol_matched = chart_symbol_matches;
 
-            if symbol_matches && bar_values_available && bar_signature_changed {
+            if quote_symbol_matches
+                && chart_symbol_matches
+                && bar_values_available
+                && bar_signature_changed
+            {
+                stable_samples_seen += 1;
+            } else {
+                stable_samples_seen = 0;
+            }
+
+            if stable_samples_seen >= QUOTE_STABLE_SAMPLES_REQUIRED {
                 return Ok(QuoteReadiness {
-                    quote,
+                    quote: sample.quote,
                     observed_symbol,
                     polls,
                     freshness_check: json!({
-                        "kind": "requested_symbol_matches_observed_symbol_and_new_bars",
+                        "kind": "stable_requested_chart_quote_and_new_bars",
                         "passed": true,
                         "attempts": attempt,
                         "polls": polls,
                         "elapsed_ms": elapsed_ms(overall_started),
+                        "stable_samples_required": QUOTE_STABLE_SAMPLES_REQUIRED,
+                        "stable_samples_seen": stable_samples_seen,
+                        "chart_symbol_matched": true,
+                        "quote_symbol_matched": true,
                         "bar_signature_changed": true,
                         "bar_values_available": true,
+                        "chart_symbol": chart_symbol,
                     }),
                 });
             }
@@ -376,12 +432,16 @@ async fn wait_for_quote_readiness(
             || attempt_started.elapsed() >= QUOTE_READINESS_TIMEOUT
         {
             return Err(ReadinessTimeout {
-                observed_symbol: last_observed_symbol,
+                quote_symbol: last_quote_symbol,
+                chart_symbol: last_chart_symbol,
                 polls,
                 elapsed_ms: elapsed_ms(overall_started),
                 last_signature,
                 bar_values_available: last_bar_values_available,
                 bar_signature_changed: last_bar_signature_changed,
+                quote_symbol_matched: last_quote_symbol_matched,
+                chart_symbol_matched: last_chart_symbol_matched,
+                stable_samples_seen,
             });
         }
 
@@ -401,15 +461,20 @@ fn readiness_timeout_error(
     .with_details(json!({
         "requested_symbol": requested_symbol,
         "original_symbol": original_symbol,
-        "observed_symbol": timeout.observed_symbol,
+        "observed_symbol": timeout.quote_symbol,
+        "chart_symbol": timeout.chart_symbol,
         "attempts": 2,
         "polls": timeout.polls,
         "elapsed_ms": timeout.elapsed_ms,
         "freshness_check": {
-            "kind": "requested_symbol_matches_observed_symbol_and_new_bars",
+            "kind": "stable_requested_chart_quote_and_new_bars",
             "passed": false,
             "bar_values_available": timeout.bar_values_available,
             "bar_signature_changed": timeout.bar_signature_changed,
+            "chart_symbol_matched": timeout.chart_symbol_matched,
+            "quote_symbol_matched": timeout.quote_symbol_matched,
+            "stable_samples_required": QUOTE_STABLE_SAMPLES_REQUIRED,
+            "stable_samples_seen": timeout.stable_samples_seen,
             "last_bar_signature": timeout.last_signature.map(|signature| signature.to_diagnostic()),
         },
         "next_action_hint": "The chart source did not become fresh in time. Retry the command or use `--source scanner` if scanner feed freshness is acceptable.",
@@ -554,7 +619,30 @@ fn bare_symbol(symbol: &str) -> String {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
+struct QuoteSample {
+    quote: Value,
+    quote_symbol: Option<String>,
+    chart_symbol: Option<String>,
+    signature: Option<QuoteBarSignature>,
+}
+
+impl QuoteSample {
+    fn from_quote(quote: Value) -> Self {
+        let quote_symbol = quote_symbol(&quote);
+        let chart_symbol = chart_symbol(&quote);
+        let signature = QuoteBarSignature::from_quote(&quote);
+        Self {
+            quote,
+            quote_symbol,
+            chart_symbol,
+            signature,
+        }
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
 struct QuoteBarSignature {
+    bar_index: Value,
     time: Value,
     open: Value,
     high: Value,
@@ -567,6 +655,7 @@ struct QuoteBarSignature {
 impl QuoteBarSignature {
     fn from_quote(quote: &Value) -> Option<Self> {
         let signature = Self {
+            bar_index: quote.get("bar_index").cloned().unwrap_or(Value::Null),
             time: quote.get("time").cloned().unwrap_or(Value::Null),
             open: quote.get("open").cloned().unwrap_or(Value::Null),
             high: quote.get("high").cloned().unwrap_or(Value::Null),
@@ -584,16 +673,16 @@ impl QuoteBarSignature {
 
     fn has_bar_values(&self) -> bool {
         !self.time.is_null()
-            || !self.open.is_null()
-            || !self.high.is_null()
-            || !self.low.is_null()
-            || !self.close.is_null()
-            || !self.last.is_null()
-            || !self.volume.is_null()
+            && (!self.open.is_null()
+                || !self.high.is_null()
+                || !self.low.is_null()
+                || !self.close.is_null()
+                || !self.last.is_null())
     }
 
     fn to_diagnostic(&self) -> Value {
         json!({
+            "bar_index": self.bar_index,
             "time": self.time,
             "open": self.open,
             "high": self.high,
@@ -613,12 +702,16 @@ struct QuoteReadiness {
 }
 
 struct ReadinessTimeout {
-    observed_symbol: Option<String>,
+    quote_symbol: Option<String>,
+    chart_symbol: Option<String>,
     polls: usize,
     elapsed_ms: u128,
     last_signature: Option<QuoteBarSignature>,
     bar_values_available: bool,
     bar_signature_changed: bool,
+    quote_symbol_matched: bool,
+    chart_symbol_matched: bool,
+    stable_samples_seen: usize,
 }
 
 impl ReadinessTimeout {
@@ -681,6 +774,7 @@ mod tests {
             quote_payload("NASDAQ:AAPL", 1, 10.0),
             json!({"requested_symbol": "NASDAQ:MSFT", "observed_symbol": "NASDAQ:MSFT"}),
             quote_payload("NASDAQ:MSFT", 2, 42.0),
+            quote_payload("NASDAQ:MSFT", 2, 42.0),
             json!({"requested_symbol": "NASDAQ:AAPL", "observed_symbol": "NASDAQ:AAPL"}),
         ]);
 
@@ -711,6 +805,7 @@ mod tests {
         let mut runtime = FakeRuntime::new([
             quote_payload("NASDAQ:AAPL", 1, 10.0),
             json!({"requested_symbol": "NASDAQ:MSFT", "observed_symbol": "NASDAQ:MSFT"}),
+            quote_payload("NASDAQ:MSFT", 2, 42.0),
             quote_payload("NASDAQ:MSFT", 2, 42.0),
             json!({"requested_symbol": "NASDAQ:AAPL", "observed_symbol": "NASDAQ:MSFT"}),
         ]);
@@ -757,6 +852,7 @@ mod tests {
             json!({"requested_symbol": "NASDAQ:MSFT", "observed_symbol": "NASDAQ:MSFT"}),
             quote_payload("NASDAQ:MSFT", 1, 10.0),
             quote_payload("NASDAQ:MSFT", 2, 42.0),
+            quote_payload("NASDAQ:MSFT", 2, 42.0),
             json!({"requested_symbol": "NASDAQ:AAPL", "observed_symbol": "NASDAQ:AAPL"}),
         ]);
 
@@ -765,8 +861,9 @@ mod tests {
         assert_eq!(result["symbol"], "NASDAQ:MSFT");
         assert_eq!(result["last"], 42.0);
         assert_eq!(result["freshness_check"]["attempts"], 1);
-        assert_eq!(result["freshness_check"]["polls"], 2);
+        assert_eq!(result["freshness_check"]["polls"], 3);
         assert_eq!(result["freshness_check"]["bar_signature_changed"], true);
+        assert_eq!(result["freshness_check"]["stable_samples_seen"], 2);
     }
 
     #[tokio::test]
@@ -780,6 +877,7 @@ mod tests {
             quote_payload("NASDAQ:MSFT", 1, 10.0),
             json!({"requested_symbol": "NASDAQ:MSFT", "observed_symbol": "NASDAQ:MSFT"}),
             quote_payload("NASDAQ:MSFT", 2, 42.0),
+            quote_payload("NASDAQ:MSFT", 2, 42.0),
             json!({"requested_symbol": "NASDAQ:AAPL", "observed_symbol": "NASDAQ:AAPL"}),
         ]);
 
@@ -787,6 +885,88 @@ mod tests {
 
         assert_eq!(result["symbol"], "NASDAQ:MSFT");
         assert_eq!(result["freshness_check"]["attempts"], 2);
-        assert_eq!(result["freshness_check"]["polls"], 5);
+        assert_eq!(result["freshness_check"]["polls"], 6);
+    }
+
+    fn quote_payload_with_chart_symbol(
+        symbol: &str,
+        chart_symbol: &str,
+        time: i64,
+        last: f64,
+    ) -> Value {
+        let mut payload = quote_payload(symbol, time, last);
+        payload["chart_symbol"] = json!(chart_symbol);
+        payload
+    }
+
+    #[tokio::test]
+    async fn quote_does_not_succeed_when_quote_symbol_matches_but_chart_symbol_is_stale() {
+        let mut runtime = FakeRuntime::new([
+            quote_payload_with_chart_symbol("NASDAQ:AAPL", "NASDAQ:AAPL", 1, 10.0),
+            json!({"requested_symbol": "NASDAQ:MSFT", "observed_symbol": "NASDAQ:MSFT"}),
+            quote_payload_with_chart_symbol("NASDAQ:MSFT", "NASDAQ:AAPL", 2, 42.0),
+            quote_payload_with_chart_symbol("NASDAQ:MSFT", "NASDAQ:AAPL", 2, 42.0),
+            quote_payload_with_chart_symbol("NASDAQ:MSFT", "NASDAQ:AAPL", 2, 42.0),
+            quote_payload_with_chart_symbol("NASDAQ:MSFT", "NASDAQ:AAPL", 2, 42.0),
+            json!({"requested_symbol": "NASDAQ:MSFT", "observed_symbol": "NASDAQ:MSFT"}),
+            quote_payload_with_chart_symbol("NASDAQ:MSFT", "NASDAQ:AAPL", 2, 42.0),
+            quote_payload_with_chart_symbol("NASDAQ:MSFT", "NASDAQ:AAPL", 2, 42.0),
+            quote_payload_with_chart_symbol("NASDAQ:MSFT", "NASDAQ:AAPL", 2, 42.0),
+            quote_payload_with_chart_symbol("NASDAQ:MSFT", "NASDAQ:AAPL", 2, 42.0),
+            json!({"requested_symbol": "NASDAQ:AAPL", "observed_symbol": "NASDAQ:AAPL"}),
+        ]);
+
+        let error = quote(&mut runtime, Some("NASDAQ:MSFT")).await.unwrap_err();
+
+        assert_eq!(error.kind, ErrorKind::InternalApiUnavailable);
+        let details = error.details.unwrap();
+        assert_eq!(details["chart_symbol"], "NASDAQ:AAPL");
+        assert_eq!(details["freshness_check"]["quote_symbol_matched"], true);
+        assert_eq!(details["freshness_check"]["chart_symbol_matched"], false);
+    }
+
+    #[tokio::test]
+    async fn quote_does_not_succeed_when_chart_symbol_matches_but_quote_symbol_is_stale() {
+        let mut runtime = FakeRuntime::new([
+            quote_payload_with_chart_symbol("NASDAQ:AAPL", "NASDAQ:AAPL", 1, 10.0),
+            json!({"requested_symbol": "NASDAQ:MSFT", "observed_symbol": "NASDAQ:MSFT"}),
+            quote_payload_with_chart_symbol("NASDAQ:AAPL", "NASDAQ:MSFT", 2, 42.0),
+            quote_payload_with_chart_symbol("NASDAQ:AAPL", "NASDAQ:MSFT", 2, 42.0),
+            quote_payload_with_chart_symbol("NASDAQ:AAPL", "NASDAQ:MSFT", 2, 42.0),
+            quote_payload_with_chart_symbol("NASDAQ:AAPL", "NASDAQ:MSFT", 2, 42.0),
+            json!({"requested_symbol": "NASDAQ:MSFT", "observed_symbol": "NASDAQ:MSFT"}),
+            quote_payload_with_chart_symbol("NASDAQ:AAPL", "NASDAQ:MSFT", 2, 42.0),
+            quote_payload_with_chart_symbol("NASDAQ:AAPL", "NASDAQ:MSFT", 2, 42.0),
+            quote_payload_with_chart_symbol("NASDAQ:AAPL", "NASDAQ:MSFT", 2, 42.0),
+            quote_payload_with_chart_symbol("NASDAQ:AAPL", "NASDAQ:MSFT", 2, 42.0),
+            json!({"requested_symbol": "NASDAQ:AAPL", "observed_symbol": "NASDAQ:AAPL"}),
+        ]);
+
+        let error = quote(&mut runtime, Some("NASDAQ:MSFT")).await.unwrap_err();
+
+        assert_eq!(error.kind, ErrorKind::InternalApiUnavailable);
+        let details = error.details.unwrap();
+        assert_eq!(details["observed_symbol"], "NASDAQ:AAPL");
+        assert_eq!(details["freshness_check"]["quote_symbol_matched"], false);
+        assert_eq!(details["freshness_check"]["chart_symbol_matched"], true);
+    }
+
+    #[tokio::test]
+    async fn quote_requires_consecutive_ready_samples_before_success() {
+        let mut runtime = FakeRuntime::new([
+            quote_payload_with_chart_symbol("NASDAQ:AAPL", "NASDAQ:AAPL", 1, 10.0),
+            json!({"requested_symbol": "NASDAQ:MSFT", "observed_symbol": "NASDAQ:MSFT"}),
+            quote_payload_with_chart_symbol("NASDAQ:MSFT", "NASDAQ:MSFT", 2, 42.0),
+            quote_payload_with_chart_symbol("NASDAQ:AAPL", "NASDAQ:MSFT", 2, 42.0),
+            quote_payload_with_chart_symbol("NASDAQ:MSFT", "NASDAQ:MSFT", 2, 42.0),
+            quote_payload_with_chart_symbol("NASDAQ:MSFT", "NASDAQ:MSFT", 2, 42.0),
+            json!({"requested_symbol": "NASDAQ:AAPL", "observed_symbol": "NASDAQ:AAPL"}),
+        ]);
+
+        let result = quote(&mut runtime, Some("NASDAQ:MSFT")).await.unwrap();
+
+        assert_eq!(result["symbol"], "NASDAQ:MSFT");
+        assert_eq!(result["freshness_check"]["polls"], 4);
+        assert_eq!(result["freshness_check"]["stable_samples_seen"], 2);
     }
 }

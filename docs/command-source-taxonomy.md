@@ -75,6 +75,9 @@ Use this category when one command can choose between Desktop-free and
 Desktop-backed paths. The current primary example is
 `tv quote <SYMBOL> --source auto`, which is chart-first and falls back to
 scanner only if the chart path is unavailable before any chart mutation.
+After the chart path starts switching symbols, fallback is no longer allowed:
+chart-source quote must prove that the quote symbol, current chart symbol, and
+requested-symbol bars are stable, or return a structured readiness error.
 
 Recommended agent use: use explicit `--source scanner` or `--source chart`
 when source consistency matters. Use `--source auto` only when chart-first
