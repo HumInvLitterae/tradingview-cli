@@ -14,7 +14,7 @@ After the previous slice, users can run `tv fundamentals <SYMBOL>` to read a cur
 - [x] (2026-05-02 00:10Z) Added `--group` parsing and group expansion for `tv fundamentals`.
 - [x] (2026-05-02 00:30Z) Updated durable docs, skills, and field-evidence notes.
 - [x] (2026-05-02 00:50Z) Ran focused tests, full workspace validation, skill validation, packaging syntax check, read-only smoke, metadata, diff, and hygiene checks.
-- [ ] Commit the related changes as `feat(market): Add fundamentals field groups`.
+- [x] (2026-05-02 01:00Z) Committed the related changes as `feat(market): Add fundamentals field groups`.
 
 ## Surprises & Discoveries
 

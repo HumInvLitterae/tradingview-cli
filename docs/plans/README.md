@@ -6,16 +6,17 @@ for release and next-phase planning.
 
 ## Current and future plans
 
-- `tradingview-cli-fundamentals-field-groups.md`: add curated field groups to
-  Desktop-free `tv fundamentals <SYMBOL>` and record public-safe scanner
-  metainfo evidence for those groups.
+- `tradingview-cli-v0.5-pre-release-refactor-audit.md`: pause feature work
+  before `v0.5.0` release readiness, audit code structure, and perform only
+  low-risk cleanup needed to keep the latest market read internals maintainable.
 
 The current `v0.5.0` roadmap has completed the first Desktop-backed readiness
 diagnostics slice, added a lab-gated browserless bars prototype, scoped
-Computer Use out of generic runtime guidance, and deferred Codex app visual
-recovery skill work. The current slice refines scanner-backed fundamentals with
-repeatable `--group` bundles for earnings, valuation, dividends, and
-financials.
+Computer Use out of generic runtime guidance, deferred Codex app visual
+recovery skill work, and refined scanner-backed fundamentals with repeatable
+field groups. The current slice is a short pre-release refactor audit. It does
+not add new CLI behavior; it only verifies whether the release can proceed and
+splits the newest fundamentals internals if validation stays behavior-compatible.
 
 ## Archived plans
 
@@ -52,6 +53,7 @@ Important archived plan categories:
 - Codex app Computer Use visual recovery skill research and deferral
 - runtime market-data interpretation and scanner/Screener result-analysis
   skills
+- fundamentals read and field-group additions
 - first behavior-preserving binary/library crate boundary
 - core contract crate extraction
 - Desktop-free market crate extraction

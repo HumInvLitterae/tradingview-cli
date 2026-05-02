@@ -127,6 +127,11 @@ This project uses Rust 2024.
 - Keep each library crate's `lib.rs` as a facade. When implementation grows,
   split into same-directory modules rather than gathering everything in
   `lib.rs`.
+- For Desktop-free read crates such as `tradingview-market` and
+  `tradingview-scanner`, prefer splitting a grown read surface into field or
+  request selection, endpoint request construction, and response normalization
+  modules before release. Keep the crate-level public API stable and expose the
+  split modules only when a later plan intentionally makes them reusable.
 - Do not move chart-dependent market reads, Screener code, account mutation,
   or UI automation into another workspace crate merely because they are
   reusable in theory. Extract them only when a concrete follow-up plan proves
