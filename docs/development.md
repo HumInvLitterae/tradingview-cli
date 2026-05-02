@@ -183,6 +183,28 @@ Live CDP smoke checks are useful but environment-dependent. Keep them separate
 from automated tests and record meaningful results in the relevant ExecPlan or
 note without account-local identifiers.
 
+Some live checks are available as ignored integration tests. They are opt-in
+only and must not become CI requirements. For chart-source quote endurance
+checks, build the CLI and run:
+
+```bash
+TV_LIVE_CHART_QUOTE_SMOKE=1 cargo test -p tradingview-cli --test live_chart_quote -- --ignored --nocapture
+```
+
+Optional environment variables:
+
+- `TV_LIVE_CHART_QUOTE_SYMBOLS`: comma-separated public symbols, defaulting to
+  `PLUG,AAPL,MSFT,IONQ,MU,PLUG`.
+- `TV_LIVE_CHART_QUOTE_RUNS`: positive repeat count, defaulting to `1`.
+- `TV_LIVE_CHART_QUOTE_TARGET_ID`: explicit CDP target id when multiple chart
+  targets are open. Do not paste live target ids into tracked docs.
+
+The ignored test validates public-safe summary fields only: requested symbol,
+observed quote symbol, chart symbol, `freshness_check`, stable sample count,
+and restore status. Switched-symbol reads require at least two stable samples;
+same-symbol fast-path reads may report one stable sample because no chart
+switch occurred.
+
 ## Validation baseline
 
 For code changes, run:
