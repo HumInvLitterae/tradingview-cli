@@ -35,6 +35,11 @@ those enable calls while still accepting `Runtime.evaluate`,
 Before adding more DOM retries, check whether a page-session API, storage
 payload, or endpoint can replace the visible UI path. The public-safe reference
 for these dependencies is `docs/internal-tradingview-apis.md`.
+For user and agent workflow guidance, `docs/command-source-taxonomy.md`
+classifies commands as Desktop-free reads, Desktop-backed reads,
+Desktop-backed operations, hybrid commands, or experimental commands. The
+project keeps one `tv` binary for now; it does not split Desktop-free and
+Desktop-backed functionality into separate executables.
 `docs/operation-adapter-boundaries.md` records which remaining operation
 families intentionally stay in `ops`, which are API/storage replacement
 candidates, and which kinds of logic belong in `tradingview-model` or the

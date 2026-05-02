@@ -6,6 +6,9 @@ description: Operate TradingView Stock Screener with the Rust `tv` CLI. Use when
 # Screener Workflow
 
 Use this skill for TradingView Stock Screener work through the Rust `tv` CLI.
+Screener work spans two source categories: `tv scanner ...` commands are
+Desktop-free reads, while `tv screener ...` commands are Desktop-backed reads
+or operations against the visible/full-page TradingView Screener target.
 
 ## Start With The Target
 
@@ -32,8 +35,9 @@ Start with read-only commands before changing saved state:
 - `tv screener columns config`
 - `tv screener columns actions`
 
-Use `tv scanner hotlist` and `tv scanner scan` for broad market discovery. Use
-`tv screener get` when the user needs the currently visible Screener rows.
+Use `tv scanner hotlist` and `tv scanner scan` for broad Desktop-free market
+discovery. Use `tv screener get` when the user needs the currently visible
+Screener rows.
 Use `tv scanner metainfo --field <FIELD>` when you need to confirm whether a
 scanner field exists before building a scan.
 

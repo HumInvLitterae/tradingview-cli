@@ -14,6 +14,13 @@ This is not an integration guide for third-party callers. Do not add session
 credentials, auth headers, account-linked identifiers, full raw payloads, or
 copy-paste mutation recipes to this file.
 
+For user-facing command source names, use
+`docs/command-source-taxonomy.md`. In this file, scanner REST and symbol-search
+HTTP reads are Desktop-free reads, chart page objects and screenshots are
+Desktop-backed reads, page-session account/storage changes are Desktop-backed
+operations, `quote --source auto` is hybrid, and lab-gated WebSocket bars are
+experimental. The project keeps a single `tv` binary for now.
+
 ## Documentation boundary
 
 It is acceptable to document:
@@ -232,6 +239,10 @@ Comparable evidence:
   public exchange-qualified symbols and an hourly request for a public
   exchange-qualified symbol. This is evidence that the path can work, not a
   guarantee that the undocumented protocol is stable.
+- Existing `tv stream ...` commands are not browserless WebSocket streams;
+  they are Desktop-backed current-chart JSONL polling reads. Future
+  observation work may improve their event contract or add browserless stream
+  candidates, but the source boundary must remain explicit.
 
 Safety boundary:
 

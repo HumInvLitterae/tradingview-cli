@@ -12,17 +12,17 @@ Rust `tv` CLI rather than merely running the command.
 
 Always name the data source before interpreting values:
 
-- `tv quote <SYMBOL>` and `tv quotes <SYMBOL>...`: scanner REST by default.
-- `tv quote <SYMBOL> --source scanner`: scanner REST only.
-- `tv quote <SYMBOL> --source chart`: selected TradingView Desktop chart feed.
-- `tv quote <SYMBOL> --source auto`: chart-first, scanner fallback only before
-  chart mutation.
-- `tv fundamentals <SYMBOL>`: scanner REST fundamental fields for one symbol.
-- `tv scanner scan` and `tv scanner metainfo`: scanner REST.
+- Desktop-free reads: `tv quote <SYMBOL>`, `tv quotes <SYMBOL>...`,
+  `tv fundamentals <SYMBOL>`, `tv scanner scan`, and
+  `tv scanner metainfo`.
+- Desktop-backed reads: `tv quote <SYMBOL> --source chart`, current-chart
+  `tv quote`, `tv ohlcv`, screenshots, and current visible values.
+- Hybrid reads: `tv quote <SYMBOL> --source auto`, which is chart-first with
+  scanner fallback only before chart mutation.
 - `TV_EXPERIMENTAL_BARS=1 tv bars <EXCHANGE:SYMBOL>`: experimental
   Desktop-free WebSocket bars.
-- `tv ohlcv`: selected chart bars through TradingView Desktop/CDP.
-- screenshots and visible values: current visual chart state.
+- `tv stream ...`: Desktop-backed current-chart JSONL polling, not
+  browserless WebSocket streaming.
 
 Do not blend scanner REST, chart feed, and visible chart observations as if
 they were the same source.

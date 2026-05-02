@@ -6,17 +6,14 @@ for release and next-phase planning.
 
 ## Current and future plans
 
-- `tradingview-cli-v0.5.0-release-readiness.md`: prepare versioned release
-  notes, package metadata, release archive staging, and validation evidence for
-  `v0.5.0`.
+- `tradingview-cli-v0.6-roadmap-and-source-taxonomy.md`: add the `v0.6.0`
+  roadmap and define the command source taxonomy for the single `tv` binary.
 
-The current `v0.5.0` roadmap has completed the first Desktop-backed readiness
-diagnostics slice, added a lab-gated browserless bars prototype, scoped
-Computer Use out of generic runtime guidance, deferred Codex app visual
-recovery skill work, refined scanner-backed fundamentals with repeatable field
-groups, and completed a short pre-release refactor audit. The current slice is
-`v0.5.0` release readiness. It does not add new CLI behavior; it fixes the
-versioned release documents and validates package staging before tag creation.
+The current `v0.6.0` planning slice keeps one `tv` binary and introduces
+source categories instead of splitting Desktop-free and Desktop-backed
+commands into separate executables. It also records the next observation-first
+direction and treats the post-`v0.5.0` chart-source quote mismatch as a
+separate patch candidate.
 
 ## Archived plans
 
@@ -99,6 +96,7 @@ Important archived plan categories:
 - quote chart-source readiness hardening for stale-bar guard
 - v0.4.1 release readiness
 - v0.5 pre-release refactor audit
+- v0.5.0 release readiness
 
 For command contract details, prefer the notes under `docs/notes/` before
 reading archived implementation plans.

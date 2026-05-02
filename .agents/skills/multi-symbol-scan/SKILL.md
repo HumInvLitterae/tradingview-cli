@@ -6,6 +6,10 @@ description: Scan or compare a small set of TradingView symbols with the Rust `t
 # Multi-Symbol Scan
 
 Use this skill to compare several TradingView symbols through the Rust `tv` CLI without pretending an unavailable bulk batch-run helper exists.
+Default to Desktop-free reads for broad comparison. Move to Desktop-backed
+reads only for finalists that need selected-chart OHLCV, visible studies, or
+screenshots. Treat `tv quote --source auto` as hybrid source selection and
+`tv bars` as experimental lab data.
 
 ## Start With Scope
 
@@ -46,7 +50,8 @@ Use this skill to compare several TradingView symbols through the Rust `tv` CLI 
    `tv data lines`, `tv data labels`, or `tv data boxes` only for symbols that
    need chart context.
 7. Use `tv stream quote`, `tv stream bars`, or `tv stream all` only for short
-   live-monitoring windows after the scan identifies symbols worth watching.
+   Desktop-backed current-chart monitoring windows after the scan identifies
+   symbols worth watching.
 8. After user approval, add selected symbols with
    `tv watchlist add-bulk <SYMBOL>... --allow-partial`; it inherits the
    API-backed single-symbol add path and reports duplicates or partial

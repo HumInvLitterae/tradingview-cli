@@ -8,6 +8,13 @@ Use the bundled `tv` binary as the only interface for TradingView automation. Th
 
 This project is not affiliated with TradingView Inc. It does not bypass TradingView access controls, subscriptions, paywalls, exchange data agreements, or script ownership rules. Market data, Pine scripts, alerts, layouts, and account state remain subject to TradingView and data-provider terms.
 
+`tv` is one binary with different source categories. Desktop-free reads do not
+need TradingView Desktop. Desktop-backed reads depend on the selected Desktop
+target or visible state. Desktop-backed operations may change chart, account,
+editor, Replay, Screener, layout, drawing, alert, watchlist, or UI state.
+Hybrid commands choose between sources explicitly, and experimental commands
+are lab-gated.
+
 ## Finding the CLI
 
 Prefer `tv` when it is on `PATH`. If the release archive was unpacked but not installed, use the local executable in the unpacked directory:
@@ -45,7 +52,7 @@ When reporting commands to the user, write them as `tv ...` unless the local exe
   under `field_values` and supports
   `--group earnings|valuation|dividends|financials`. Use
   `tv quote <SYMBOL> --source chart` only when the selected TradingView Desktop
-  chart feed matters.
+  chart feed matters, and preserve `freshness_check` details if it fails.
 - Before mutating chart, account, Pine, replay, layout, tab, drawing, alert, or watchlist state, explain the expected effect and get explicit user approval.
 - Use dry-run modes when available, especially for broad actions such as `alert delete --all --dry-run`, `draw clear --dry-run`, and `layout switch --dry-run`.
 - Do not record real account-local identifiers in shared notes unless the user explicitly asks. Scrub saved-script ids, saved-script names, alert ids, layout ids, chart target ids, usernames, emails, account names, and machine-local paths.

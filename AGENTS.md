@@ -16,24 +16,27 @@ Read these in order before making major decisions:
 
 1. `CONTINUITY.md`
 2. `README.md`
-3. `docs/v0.4-roadmap.md`
-4. `docs/v0.3-roadmap.md`
-5. `docs/architecture.md`
-6. `docs/development.md`
-7. `docs/rust-api.md`
-8. `docs/release-packaging.md`
-9. `docs/breaking-changes-from-js-cli.md`
-10. `docs/internal-tradingview-apis.md`
-11. `docs/notes/next-agent-handoff-prompt-2026-04-24.md`
-12. `docs/notes/rust-cli-contract-migration-2026-04-24.md`
-13. `docs/notes/legacy-cli-command-migration-inventory-2026-04-24.md`
-14. `docs/notes/remaining-deferred-surface-audit-2026-04-25.md`
-15. `docs/notes/upstream-pr-triage-2026-04-25.md`
-16. `docs/notes/upstream-pr-recheck-2026-04-27.md`
-17. `docs/plans/README.md`
-18. `docs/notes/tradingview-mcp-investigation-2026-04-24.md`
-19. `.agents/PLANS.md`
-20. `.agents/skills/continuity/SKILL.md` when the continuity skill is active
+3. `docs/v0.6-roadmap.md`
+4. `docs/command-source-taxonomy.md`
+5. `docs/v0.5-roadmap.md`
+6. `docs/v0.4-roadmap.md`
+7. `docs/v0.3-roadmap.md`
+8. `docs/architecture.md`
+9. `docs/development.md`
+10. `docs/rust-api.md`
+11. `docs/release-packaging.md`
+12. `docs/breaking-changes-from-js-cli.md`
+13. `docs/internal-tradingview-apis.md`
+14. `docs/notes/next-agent-handoff-prompt-2026-04-24.md`
+15. `docs/notes/rust-cli-contract-migration-2026-04-24.md`
+16. `docs/notes/legacy-cli-command-migration-inventory-2026-04-24.md`
+17. `docs/notes/remaining-deferred-surface-audit-2026-04-25.md`
+18. `docs/notes/upstream-pr-triage-2026-04-25.md`
+19. `docs/notes/upstream-pr-recheck-2026-04-27.md`
+20. `docs/plans/README.md`
+21. `docs/notes/tradingview-mcp-investigation-2026-04-24.md`
+22. `.agents/PLANS.md`
+23. `.agents/skills/continuity/SKILL.md` when the continuity skill is active
 
 Historical ExecPlans live under `docs/plans/archives/`. Read them only when you need slice-level implementation history or rationale that is not already summarized in the current notes.
 

@@ -6,6 +6,10 @@ description: Analyze a live TradingView chart with the Rust `tv` CLI. Use when t
 # Chart Analysis
 
 Use this skill for live TradingView chart review through the Rust `tv` CLI.
+This is primarily a Desktop-backed read workflow: the selected TradingView
+Desktop chart, visible studies, chart bars, and screenshots are the source of
+truth. Use Desktop-free reads only for quick symbol metadata, scanner-backed
+quotes, or fundamentals before mutating chart state.
 
 ## Start With Readiness
 
@@ -56,8 +60,8 @@ Use this skill for live TradingView chart review through the Rust `tv` CLI.
 8. Inspect or adjust the date window with `tv range`, `tv scroll <DATE>`, or
    `tv range --from <UNIX_SECONDS> --to <UNIX_SECONDS>`.
 9. Use `tv stream quote` or `tv stream bars` only when the task needs
-   short-lived live monitoring; ordinary chart reads should use `tv quote` and
-   `tv ohlcv --summary`.
+   short-lived Desktop-backed current-chart monitoring; ordinary chart reads
+   should use `tv quote` and `tv ohlcv --summary`.
 10. Capture visual evidence only when useful: `tv screenshot --region chart --output <PATH>`.
 
 Use `market-data-interpretation` when source selection, scanner delay metadata,

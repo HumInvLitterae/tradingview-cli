@@ -1,0 +1,114 @@
+# Command Source Taxonomy
+
+This document defines how to describe where `tv` commands get data from and
+whether they can change TradingView state.
+
+The project is not splitting the binary for now. `tv` remains the single user
+command, and commands are classified by source and side-effect boundary instead
+of by separate executable names. A future split such as `tv` plus `tvb` or
+`tvd` may be reconsidered only after these boundaries prove stable in
+downstream use.
+
+## Categories
+
+### Desktop-free read
+
+`requires_desktop`: no. `may_mutate`: no. `fallback_allowed`: no Desktop
+fallback unless a command explicitly says otherwise. `freshness_boundary`:
+depends on the endpoint. Scanner price reads are useful screening reads but
+are not realtime entitlement guarantees.
+
+Use this category when the command can run without TradingView Desktop, CDP, or
+visible chart state. Examples include `tv info <SYMBOL>`,
+`tv fundamentals <SYMBOL>`, `tv quote <SYMBOL>` with the default scanner
+source, `tv quotes <SYMBOL>...`, `tv scanner scan`, `tv scanner hotlist`, and
+`tv scanner metainfo`.
+
+Recommended agent use: prefer these commands for broad discovery, one-off
+symbol metadata, fundamentals, and quote reads when the exact selected Desktop
+chart feed is not required. Report source and freshness metadata when the
+result is price-bearing.
+
+### Desktop-backed read
+
+`requires_desktop`: yes. `may_mutate`: no intended account mutation, though
+some reads depend on visible chart or page state. `fallback_allowed`: no hidden
+Desktop-free fallback unless the command explicitly names it. `freshness_boundary`:
+depends on target selection, chart readiness, and the visible TradingView app
+state.
+
+Use this category when the command reads the selected Desktop target or visible
+state. Examples include `tv status`, `tv tab list`, `tv state`,
+`tv ohlcv`, `tv quote` without a symbol, `tv quote <SYMBOL> --source chart`,
+`tv screenshot`, current-chart `tv info`, and chart-model data reads.
+
+Recommended agent use: run readiness commands first, preserve structured error
+details, and use `tv screenshot --region chart|full --output <PATH>` only when
+structured fields do not explain the visible state.
+
+### Desktop-backed operation
+
+`requires_desktop`: yes. `may_mutate`: yes. `fallback_allowed`: only before a
+mutation request is sent and only when the operation documents the fallback.
+`freshness_boundary`: success requires a post-check against live TradingView
+state.
+
+Use this category when the command can change chart, account, editor, Replay,
+Screener, layout, drawing, alert, watchlist, or generic UI state. Examples
+include `tv symbol <SYMBOL>`, `tv watchlist add`, `tv watchlist remove`,
+`tv alert create`, `tv screener ...` mutation commands, `tv pine save`,
+`tv draw position`, Replay controls, layout switching, and generic `tv ui`
+automation.
+
+Recommended agent use: explain the expected side effect, use `--dry-run` when
+available, get user approval before normal mutation, and report whether
+readback or post-check confirmed the requested after-state.
+
+### Hybrid
+
+`requires_desktop`: depends on selected source. `may_mutate`: can mutate chart
+state when the Desktop-backed path switches symbols. `fallback_allowed`: only
+as specified by the command. `freshness_boundary`: report the source actually
+used.
+
+Use this category when one command can choose between Desktop-free and
+Desktop-backed paths. The current primary example is
+`tv quote <SYMBOL> --source auto`, which is chart-first and falls back to
+scanner only if the chart path is unavailable before any chart mutation.
+
+Recommended agent use: use explicit `--source scanner` or `--source chart`
+when source consistency matters. Use `--source auto` only when chart-first
+behavior is desired and the scanner fallback is acceptable before mutation.
+
+### Experimental
+
+`requires_desktop`: command-specific. `may_mutate`: no unless explicitly
+documented. `fallback_allowed`: no implicit fallback. `freshness_boundary`:
+must be reported as experimental and not treated as stable market data.
+
+Use this category for lab-gated commands that are intentionally not stable
+surface yet. The current example is
+`TV_EXPERIMENTAL_BARS=1 tv bars <EXCHANGE:SYMBOL>`, which uses an
+undocumented TradingView WebSocket chart-session path and does not replace
+chart-backed `tv ohlcv`.
+
+Recommended agent use: use only when the user or workflow explicitly accepts
+experimental data. Report `source`, `experimental`, `data_quality`, and
+warnings. Do not build durable downstream assumptions on this category without
+a later stabilization plan.
+
+## Agent Guidance
+
+Default to the narrowest source that answers the question:
+
+- use Desktop-free reads for broad screening, metadata, fundamentals, and
+  scanner-backed quotes;
+- use Desktop-backed reads when the selected TradingView Desktop chart or
+  visible state is the source of truth;
+- use Desktop-backed operations only after the user accepts the side effect;
+- use hybrid commands only when the fallback contract is useful to the task;
+- use experimental commands only when lab data is explicitly acceptable.
+
+When sources disagree, do not collapse them into a single value. Report the
+source names and freshness fields, then decide whether another read changes the
+answer.

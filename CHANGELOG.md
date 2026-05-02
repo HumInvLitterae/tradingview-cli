@@ -7,7 +7,19 @@ package version omits the leading `v`.
 
 ## Unreleased
 
-No changes yet.
+### Added
+
+- Added a `v0.6.0` roadmap draft for observation-first workflows and
+  Desktop-backed readiness/recovery follow-up.
+- Added `docs/command-source-taxonomy.md` to classify commands as
+  Desktop-free reads, Desktop-backed reads, Desktop-backed operations, hybrid
+  commands, or experimental commands while keeping one `tv` binary.
+
+### Changed
+
+- Updated docs and runtime skills to use the command source taxonomy and to
+  record `quote --source chart` mismatch hardening as a separate patch
+  candidate.
 
 ## v0.5.0 - 2026-05-02
 

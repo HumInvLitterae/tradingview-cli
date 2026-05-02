@@ -188,7 +188,44 @@ tv pine alertconditions --file my-indicator.pine
 tv screenshot --region chart --output target/tv-chart.png
 ```
 
-Most commands operate on the current chart target. Mutation commands such as `symbol <SYMBOL>`, `watchlist add`, `watchlist add-bulk`, `watchlist remove`, `screener screens switch`, `screener screens save`, `screener screens create`, `screener screens rename`, `screener screens save-as`, `screener screens delete`, `screener filters add`, `screener filters modify`, `screener filters remove`, `screener filters clear`, `screener columns add`, `screener columns remove`, `screener columns reorder`, `alert create`, `alert create-indicator`, `draw position`, `draw clear`, `pine save`, `layout switch`, and generic `ui` automation can change TradingView account, chart, editor, or UI state; prefer their read-only or `--dry-run` forms when available. `tv info <SYMBOL>`, `tv fundamentals <SYMBOL>`, `tv quote <SYMBOL>`, and `tv quotes <SYMBOL>...` are Desktop-free symbol reads by default: `info` uses TradingView symbol search metadata, `fundamentals` uses scanner REST fundamental fields, and `quote` / `quotes` use scanner REST quote data. `tv fundamentals` returns raw TradingView scanner values under `field_values`; use `--group earnings|valuation|dividends|financials` for curated field bundles and `--field <FIELD>` for exact fields. Earnings date/time fields are not interpreted into a timezone or before/after-market label by the CLI. Use `tv quote <SYMBOL> --source chart` when you explicitly want the selected TradingView Desktop chart feed, or `tv quote <SYMBOL> --source auto` when you want chart-first behavior with scanner fallback only if the chart path is unavailable before mutation. Scanner-backed quote payloads include regular quote fields, `time`, `update_mode`, parsed `delay_seconds` when the mode is clearly delayed, and an additive `extended_hours` object for premarket and postmarket values when TradingView returns them; top-level `last` and `close` are not replaced by extended-hours values. `tv quotes` preserves input order in `items[]`; each successful item contains the same scanner quote payload shape as `tv quote <SYMBOL>`, and each failed item contains a structured error for the requested symbol. Credential-free scanner price reads are useful for screening but are not a realtime entitlement guarantee: freshness can depend on the exchange, TradingView feed, and market-data subscription state. `tv scanner metainfo` is different; it reads scanner field metadata rather than prices. `tv bars <SYMBOL>` is an experimental Desktop-free historical bars prototype that uses an undocumented TradingView WebSocket path, requires `TV_EXPERIMENTAL_BARS=1`, requires an exchange-qualified symbol such as `NASDAQ:AAPL`, and does not replace `tv ohlcv`. `tv info` without a symbol and `tv quote` without a symbol still read current-chart data through CDP. Chart source selection serializes symbol-targeted quote commands with a short process lock, waits for requested-symbol chart bars to become fresh, retries that readiness wait once on timeout, restores the original symbol, and fails instead of reporting success if the observed quote symbol or bar freshness does not match the request. `restored: true` only means the original chart symbol was restored; it is not by itself a quote freshness guarantee. `tv watchlist add` and `tv watchlist remove` prefer TradingView's logged-in symbols-list API for the active custom watchlist and verify the symbol's presence or absence after mutation; if that API cannot be used before mutation, they fall back to the older visible-panel DOM path. `tv alert create` prefers TradingView's logged-in alert endpoint, verifies the created alert through a list readback, and falls back to the visible dialog only when the API path fails before the create request is sent. `tv alert create-indicator` uses the same alert endpoint family for Pine `alertcondition()` alerts: dry-run verifies the local source candidate and saved-script match, while normal mode creates only when required metadata is available and verifies the new alert by list readback. It does not ask users to paste saved-script identifiers or raw endpoint payloads. `tv screener screens switch` targets exact screen names and verifies the active title after clicking; by default it uses the active screen title menu, while `--catalog` uses the saved-screen catalog. If TradingView does not activate the target, it fails instead of reporting success. `tv screener screens save` clicks only the exact visible `Save screen` / `スクリーンを保存` action and supports `--dry-run`; use it only on prepared test or disposable Screener screens. `tv screener screens create`, `rename`, and `save-as` are limited to test or disposable names for normal mutations and report success only after the active screen title changes to the requested name. `tv screener screens delete` resolves exact saved-screen names through the logged-in Screener storage API, requires `--confirm-delete` for normal mutation, refuses non-test names and active screens, and reports success only after the deleted name is absent from the saved-screen list. `tv screener filters add` searches the visible add-filter catalog, selects a numeric range preset, and reports success only after a new visible filter pill appears; use `--dry-run` first on a prepared test screen. `tv screener filters modify` supports visible numeric range presets such as `0% 〜 10%` or `10%以上`, and single visible option selection through `--option`; it validates finite range values before CDP connection, rejects mixed range/option input, and verifies the visible filter text after a normal mutation. Multi-option add/remove semantics and free-text filter editors are not genericized. `tv screener filters remove` and `tv screener filters clear` use the active saved screen's storage filter set for normal mutation, are limited to test or disposable screen names, require storage re-fetch post-checks, and request a best-effort full-page Screener refresh when available; `clear` still requires `--confirm-clear` unless it is a dry run. `tv screener columns add`, `remove`, and `reorder` update the active saved screen's storage column set, are limited to test or disposable screen names for normal mutation, and report success only after the saved storage order matches the requested result. `columns add` is intentionally low-level: it inserts a known storage column id and JSON-object params rather than searching by display name. `tv draw position` returns an `entity_id`; clean up test drawings with `tv draw remove <ENTITY_ID>` rather than `draw clear`. `tv ui eval` is a dangerous old-CLI compatibility command that runs arbitrary JavaScript in the authenticated TradingView page context and is disabled unless `TV_ALLOW_UNSAFE_UI_EVAL=1` is set.
+`tv` remains a single binary, but commands have different source and
+side-effect boundaries. See `docs/command-source-taxonomy.md` for the durable
+classification.
+
+- Desktop-free reads do not require TradingView Desktop or CDP. Examples:
+  `tv info <SYMBOL>`, `tv fundamentals <SYMBOL>`, `tv quote <SYMBOL>`,
+  `tv quotes <SYMBOL>...`, `tv scanner scan`, and `tv scanner metainfo`.
+- Desktop-backed reads use the selected TradingView Desktop target or visible
+  state. Examples: `tv state`, `tv ohlcv`, current-chart `tv info` /
+  `tv quote`, `tv quote <SYMBOL> --source chart`, and `tv screenshot`.
+- Desktop-backed operations can change chart, account, editor, Replay,
+  Screener, layout, drawing, alert, watchlist, or generic UI state. Prefer
+  read-only commands and `--dry-run` first, and get user approval before normal
+  mutation.
+- Hybrid commands have explicit source or fallback behavior. The main example
+  is `tv quote <SYMBOL> --source auto`, which is chart-first and falls back to
+  scanner only if the chart path is unavailable before any chart mutation.
+- Experimental commands are lab-gated. `TV_EXPERIMENTAL_BARS=1 tv bars
+  <EXCHANGE:SYMBOL>` uses an undocumented TradingView WebSocket path and does
+  not replace chart-backed `tv ohlcv`.
+
+Scanner-backed quote payloads include regular quote fields, `time`,
+`update_mode`, parsed `delay_seconds` when the mode is clearly delayed, and an
+additive `extended_hours` object for premarket and postmarket values when
+TradingView returns them. Credential-free scanner price reads are useful for
+screening but are not a realtime entitlement guarantee. `tv fundamentals`
+returns raw TradingView scanner values under `field_values`; earnings date/time
+fields are not interpreted into a timezone or before/after-market label by the
+CLI.
+
+Chart-source quote commands mutate the selected chart while reading. The CLI
+serializes symbol-targeted chart quote commands, waits for requested-symbol
+chart bars to become fresh, retries that readiness wait once on timeout,
+restores the original symbol, and fails instead of reporting success if the
+observed quote symbol or bar freshness does not match the request. A reported
+post-`v0.5.0` mismatch remains a patch candidate; downstream agents should
+preserve `freshness_check` and readiness details rather than adding sleep or
+double-call workarounds.
 
 `tv pine alertconditions [--file <PATH>]` is local static discovery for Pine
 source. It estimates `alertcondition()` candidate ids such as `plot_1` without
@@ -301,6 +338,8 @@ baseline remains the commands run by CI.
   plus a `v0.4.x` roadmap and release-readiness record at
   `docs/v0.4-roadmap.md`
 - a `v0.5.0` roadmap draft at `docs/v0.5-roadmap.md`
+- a `v0.6.0` roadmap draft at `docs/v0.6-roadmap.md`
+- a command source taxonomy at `docs/command-source-taxonomy.md`
 - historical command contract, lifecycle, and deferred-surface notes under
   `docs/notes/`
 - a public-safe internal TradingView API dependency and DOM replacement
@@ -315,21 +354,24 @@ baseline remains the commands run by CI.
 Read these in order:
 
 1. `docs/notes/next-agent-handoff-prompt-2026-04-24.md`
-2. `docs/v0.4-roadmap.md`
-3. `docs/v0.3-roadmap.md`
-4. `docs/architecture.md`
-5. `docs/development.md`
-6. `docs/rust-api.md`
-7. `docs/release-packaging.md`
-8. `docs/breaking-changes-from-js-cli.md`
-9. `docs/internal-tradingview-apis.md`
-10. `docs/notes/rust-cli-contract-migration-2026-04-24.md`
-11. `docs/notes/legacy-cli-command-migration-inventory-2026-04-24.md`
-12. `docs/notes/remaining-deferred-surface-audit-2026-04-25.md`
-13. `docs/notes/upstream-pr-triage-2026-04-25.md`
-14. `docs/notes/upstream-pr-recheck-2026-04-27.md`
-15. `docs/plans/README.md`
-16. `docs/notes/tradingview-mcp-investigation-2026-04-24.md`
+2. `docs/v0.6-roadmap.md`
+3. `docs/command-source-taxonomy.md`
+4. `docs/v0.5-roadmap.md`
+5. `docs/v0.4-roadmap.md`
+6. `docs/v0.3-roadmap.md`
+7. `docs/architecture.md`
+8. `docs/development.md`
+9. `docs/rust-api.md`
+10. `docs/release-packaging.md`
+11. `docs/breaking-changes-from-js-cli.md`
+12. `docs/internal-tradingview-apis.md`
+13. `docs/notes/rust-cli-contract-migration-2026-04-24.md`
+14. `docs/notes/legacy-cli-command-migration-inventory-2026-04-24.md`
+15. `docs/notes/remaining-deferred-surface-audit-2026-04-25.md`
+16. `docs/notes/upstream-pr-triage-2026-04-25.md`
+17. `docs/notes/upstream-pr-recheck-2026-04-27.md`
+18. `docs/plans/README.md`
+19. `docs/notes/tradingview-mcp-investigation-2026-04-24.md`
 
 The first capability and boundary research milestone, the Rust v1 implementation milestone, the read/provider migration slices, chart/pane/watchlist/alert/layout/indicator/drawing/Pine/tab/replay/stream/launch slices, command lifecycle balance audit, remaining deferred surface audit, operation-layer and data-operation module refactors, development guideline pass, remaining old CLI migration closure slice, and first release readiness pass are complete. Upstream pull request follow-up has addressed the initial narrow Rust fixes and additions, including `tv data shapes`, `tv data labels` truncation metadata, `tv scanner hotlist`, `tv scanner scan`, read-oriented `tv screener` dialog and metadata commands, menu-visible and catalog Screener screen switching, Screener screen action/save support, guarded Screener screen lifecycle, storage-backed Screener filter remove/clear, guarded Screener filter add/modify, storage-backed Screener column config/add/remove/reorder, API-backed `tv watchlist add/remove` mutation with DOM fallback, API-backed `tv alert create` mutation with readback verification, Desktop-free `tv info <SYMBOL>` and `tv quote [SYMBOL]` reads, static Pine `alertcondition()` discovery, and guarded API-backed indicator alertcondition alert creation. The main planned Screener surface is now in stabilization; `columns reset` and broader multi-option/free-text filter editing remain evidence-gated. Future stabilization should check storage/API options before adding more DOM retries.
 

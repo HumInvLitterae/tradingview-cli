@@ -7,6 +7,12 @@ The short version: `ops` is not leftover CLI surface. It is the executable
 TradingView adapter layer. Code should leave `ops` only when the new location
 has a clearer dependency boundary than live TradingView execution.
 
+For user-facing source terminology, use `docs/command-source-taxonomy.md`.
+That document classifies commands by source and side-effect boundary while this
+document explains implementation placement. The project keeps one `tv` binary
+for now; Desktop-free and Desktop-backed commands are separated by taxonomy,
+not by executable name.
+
 ## Layer model
 
 The current internal layers are:
@@ -130,6 +136,12 @@ reads can succeed, but the command remains lab-only because it depends on an
 undocumented WebSocket chart-session protocol. A broad `tv diagnose` command
 remains deferred until existing diagnostics prove insufficient. See
 `docs/v0.5-roadmap.md` for the current roadmap.
+
+For `v0.6.0`, the first roadmap task is source taxonomy and observation-first
+planning. Existing Desktop-backed `tv stream ...` commands are current-chart
+JSONL polling reads. Future work may improve their event contract or add
+browserless observation candidates, but it should not blur the source
+categories or hide readiness failures.
 
 Computer Use is not a general runtime dependency for these boundaries. Portable
 agent guidance should use structured `tv` diagnostics and `tv screenshot` for
