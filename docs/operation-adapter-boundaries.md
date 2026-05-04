@@ -79,6 +79,12 @@ now:
   chart-session path, but `ohlcv` remains chart-dependent unless a later plan
   proves equivalence. Raw and summary OHLCV payloads retain `source:
   "direct_bars"` and report Desktop-backed read metadata.
+- Desktop-free market and scanner reads: `search`, symbol-targeted `info`,
+  scanner-source `quote`, `quotes`, `fundamentals`, `scanner scan`,
+  `scanner hotlist`, and `scanner metainfo` live in the reusable market and
+  scanner read crates. Their success payloads expose `source_category:
+  "desktop_free_read"`, `requires_desktop: false`, and `non_mutating: true`
+  so agents can keep REST evidence separate from Desktop chart evidence.
 - Drawing and indicator chart operations: these execute chart APIs and verify
   newly created, updated, hidden, or removed entities.
 - Replay operations: these use Replay page APIs and chart-local Replay state.

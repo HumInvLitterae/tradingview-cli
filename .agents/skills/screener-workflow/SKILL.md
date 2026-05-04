@@ -37,8 +37,10 @@ Start with read-only commands before changing saved state:
 - `tv screener columns actions`
 
 Use `tv scanner hotlist` and `tv scanner scan` for broad Desktop-free market
-discovery. Use `tv screener get` when the user needs the currently visible
-Screener rows.
+discovery. Preserve their `source_category: "desktop_free_read"`,
+`requires_desktop: false`, and `non_mutating: true` metadata when comparing
+them with Desktop-backed Screener rows. Use `tv screener get` when the user
+needs the currently visible Screener rows.
 Use `tv scanner metainfo --field <FIELD>` when you need to confirm whether a
 scanner field exists before building a scan.
 If visible Screener state remains unclear after structured reads, use

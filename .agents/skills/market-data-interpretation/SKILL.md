@@ -14,7 +14,9 @@ Always name the data source before interpreting values:
 
 - Desktop-free reads: `tv quote <SYMBOL>`, `tv quotes <SYMBOL>...`,
   `tv fundamentals <SYMBOL>`, `tv scanner scan`, and
-  `tv scanner metainfo`.
+  `tv scanner metainfo`. Stable Desktop-free payloads should report
+  `source_category: "desktop_free_read"`, `requires_desktop: false`, and
+  `non_mutating: true`.
 - Desktop-backed reads: `tv quote <SYMBOL> --source chart`, current-chart
   `tv quote`, `tv ohlcv`, screenshots, and current visible values.
 - Hybrid reads: `tv quote <SYMBOL> --source auto`, which is chart-first with

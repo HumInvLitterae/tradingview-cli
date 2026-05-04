@@ -7,6 +7,8 @@ use crate::{
     types::SymbolInfo,
 };
 
+const DESKTOP_FREE_READ_CATEGORY: &str = "desktop_free_read";
+
 pub async fn symbol_info(symbol: &str) -> Result<Value, AppError> {
     serde_json::to_value(symbol_info_typed(symbol).await?)
         .map_err(|err| AppError::new(ErrorKind::Internal, err.to_string()))
@@ -142,6 +144,8 @@ pub(crate) fn symbol_info_from_search_result_typed(
         resolution: Value::Null,
         chart_type: Value::Null,
         source: "symbol_search_rest".to_string(),
+        source_category: DESKTOP_FREE_READ_CATEGORY.to_string(),
+        requires_desktop: false,
         non_mutating: true,
         requested_symbol: requested_symbol.to_string(),
     }
@@ -271,6 +275,8 @@ mod tests {
         assert_eq!(result["type"], "stock");
         assert_eq!(result["pro_name"], "NYSE:IONQ");
         assert_eq!(result["source"], "symbol_search_rest");
+        assert_eq!(result["source_category"], "desktop_free_read");
+        assert_eq!(result["requires_desktop"], false);
         assert_eq!(result["non_mutating"], true);
         assert_eq!(result["requested_symbol"], "IONQ");
     }
@@ -293,6 +299,8 @@ mod tests {
         assert_eq!(result.description, json!("IonQ, Inc."));
         assert_eq!(result.symbol_type, json!("stock"));
         assert_eq!(result.source, "symbol_search_rest");
+        assert_eq!(result.source_category, "desktop_free_read");
+        assert!(!result.requires_desktop);
         assert!(result.non_mutating);
     }
 }

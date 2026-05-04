@@ -6,12 +6,14 @@ for release and next-phase planning.
 
 ## Current and future plans
 
-- `tradingview-cli-core-read-source-metadata.md`: add source taxonomy metadata
-  to core Desktop-backed read payloads such as `status`, `tab list`, `state`,
-  `ohlcv`, and chart-source quote.
+- `tradingview-cli-desktop-free-read-source-metadata.md`: add source taxonomy
+  metadata to Desktop-free market and scanner read payloads such as `info`,
+  scanner-source `quote`, `quotes`, `fundamentals`, `scanner scan`,
+  `scanner hotlist`, and `scanner metainfo`.
 
-The current `v0.6.0` implementation slice keeps `diagnose` deferred and
-continues source taxonomy polish without adding new command surface.
+The current `v0.6.0` implementation slice keeps `diagnose` deferred, keeps
+experimental `bars` separate, and continues source taxonomy polish without
+adding new command surface.
 
 ## Archived plans
 
@@ -103,6 +105,7 @@ Important archived plan categories:
 - stream source taxonomy metadata for sample and heartbeat JSONL events
 - Desktop readiness integrated read command
 - screenshot source taxonomy and visual evidence metadata
+- core Desktop-backed read source taxonomy metadata
 
 For command contract details, prefer the notes under `docs/notes/` before
 reading archived implementation plans.

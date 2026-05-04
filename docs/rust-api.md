@@ -28,13 +28,14 @@ Prefer the typed functions from `tradingview-market` for Rust callers:
 
 - `search_symbols_typed(query)`
 - `symbol_info_typed(symbol)`
+- `fundamentals_symbol_typed(symbol, fields)`
 - `quote_symbol_typed(symbol)`
 - `quote_symbols_typed(symbols)`
 
-The JSON-returning functions `symbol_search`, `symbol_info`, `quote_symbol`,
-and `quote_symbols` remain public for CLI payload compatibility. New Rust code
-should not parse those JSON payloads unless it is specifically preserving the
-`tv` command contract.
+The JSON-returning functions `symbol_search`, `symbol_info`,
+`fundamentals_symbol`, `quote_symbol`, and `quote_symbols` remain public for
+CLI payload compatibility. New Rust code should not parse those JSON payloads
+unless it is specifically preserving the `tv` command contract.
 
 Example shape:
 
@@ -45,6 +46,8 @@ Market quote reads use TradingView scanner data. They are useful for screening
 and Desktop-free checks, but they are not execution-grade realtime guarantees.
 Use `Quote::time`, `Quote::update_mode`, and `Quote::delay_seconds` when the
 caller needs to show feed timing or delayed-streaming metadata.
+Desktop-free market typed results expose `source_category:
+"desktop_free_read"`, `requires_desktop: false`, and `non_mutating: true`.
 
 ## Scanner reads
 
@@ -61,6 +64,8 @@ The JSON-returning functions `scanner_hotlist`, `scanner_scan`, and
 because scanner columns can contain numbers, strings, booleans, or nulls
 depending on the requested column and market state. A later internal API review
 may introduce stronger field-value enums if downstream consumers need that.
+Scanner typed results expose `source_category: "desktop_free_read"`,
+`requires_desktop: false`, and `non_mutating: true`.
 
 Example shape:
 

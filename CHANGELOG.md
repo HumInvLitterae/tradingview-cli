@@ -22,6 +22,9 @@ package version omits the leading `v`.
   payloads, including `writes_file` and `visual_evidence`.
 - Added source taxonomy metadata to core Desktop-backed read payloads including
   `status`, `tab list`, `state`, `ohlcv`, and chart-source quote.
+- Added source taxonomy metadata to Desktop-free market and scanner read
+  payloads including `search`, `info`, scanner-source `quote`, `quotes`,
+  `fundamentals`, `scanner scan`, `scanner hotlist`, and `scanner metainfo`.
 
 ### Fixed
 

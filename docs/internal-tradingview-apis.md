@@ -129,6 +129,9 @@ Current command family:
 Safety boundary:
 
 - this path is read-only and does not require a TradingView Desktop target
+- stable scanner REST quote, batch quote, scanner table, hotlist, and
+  metainfo payloads report `source_category: "desktop_free_read"`,
+  `requires_desktop: false`, and `non_mutating: true`
 - price-bearing scanner REST reads are not a realtime entitlement guarantee;
   freshness can depend on exchange rules, TradingView feed selection, and
   market-data subscription state
@@ -177,6 +180,8 @@ Current command family:
 Safety boundary:
 
 - this path is read-only and does not require a TradingView Desktop target
+- output reports `source_category: "desktop_free_read"`,
+  `requires_desktop: false`, and `non_mutating: true`
 - it reads scanner field metadata, not prices, so quote freshness and
   real-time market-data entitlement are separate concerns
 - the current CLI supports the same initial market boundary as `scanner scan`:
@@ -199,6 +204,8 @@ Current command family:
 Safety boundary:
 
 - this path is read-only and does not require a TradingView Desktop target
+- output reports `source_category: "desktop_free_read"`,
+  `requires_desktop: false`, and `non_mutating: true`
 - it reads scanner fundamental fields for a single resolved symbol and returns
   raw scanner values under `field_values`
 - default fields are intentionally curated around symbol identity,
@@ -287,6 +294,9 @@ Current command families:
 Safety boundary:
 
 - this path is read-only and does not require a TradingView Desktop target
+- `search` and symbol-targeted `info` payloads report
+  `source_category: "desktop_free_read"`, `requires_desktop: false`, and
+  `non_mutating: true`
 - `info <SYMBOL>` resolves exchange-qualified input strictly; bare input uses
   TradingView's search ordering and returns the first exact symbol match
 - the command returns practical metadata such as symbol, full name, exchange,

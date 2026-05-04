@@ -196,8 +196,11 @@ side-effect boundaries. See `docs/command-source-taxonomy.md` for the durable
 classification.
 
 - Desktop-free reads do not require TradingView Desktop or CDP. Examples:
-  `tv info <SYMBOL>`, `tv fundamentals <SYMBOL>`, `tv quote <SYMBOL>`,
-  `tv quotes <SYMBOL>...`, `tv scanner scan`, and `tv scanner metainfo`.
+  `tv search <QUERY>`, `tv info <SYMBOL>`, `tv fundamentals <SYMBOL>`,
+  `tv quote <SYMBOL>`, `tv quotes <SYMBOL>...`, `tv scanner scan`, and
+  `tv scanner metainfo`. Stable Desktop-free read payloads report
+  `source_category: "desktop_free_read"`, `requires_desktop: false`, and
+  `non_mutating: true`.
 - Desktop-backed reads use the selected TradingView Desktop target or visible
   state. Start with `tv readiness` when an agent needs to know whether the
   current Desktop target, chart API, and bars are usable. Examples:

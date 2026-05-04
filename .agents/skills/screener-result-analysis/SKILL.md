@@ -18,6 +18,8 @@ recommendations. Explain what the screen found and what to research next.
 Before interpreting results, identify:
 
 - source: scanner REST, visible full-page Screener rows, hotlist, or chart read;
+  preserve `source_category`, `requires_desktop`, and `non_mutating` when they
+  are present in the payload;
 - filters, columns, sort, hotlist slug, or saved screen name;
 - result count and whether the output is a full set or only the first rows;
 - freshness notes from `market-data-interpretation` when quote fields are used.

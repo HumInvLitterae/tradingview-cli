@@ -6,6 +6,7 @@ use super::types::{ScannerFieldInfo, ScannerMetainfoResult};
 
 const METAINFO_BASE_URL: &str = "https://scanner.tradingview.com";
 const METAINFO_SOURCE: &str = "scanner_metainfo_rest";
+const DESKTOP_FREE_READ_CATEGORY: &str = "desktop_free_read";
 const SUPPORTED_METAINFO_MARKETS: &[&str] = &["america"];
 
 #[derive(Debug)]
@@ -155,6 +156,9 @@ fn normalize_metainfo_response_typed(
 
     Ok(ScannerMetainfoResult {
         source: METAINFO_SOURCE.to_string(),
+        source_category: DESKTOP_FREE_READ_CATEGORY.to_string(),
+        requires_desktop: false,
+        non_mutating: true,
         market: request.market.clone(),
         requested_fields: request.fields.clone(),
         field_count: fields.len(),
@@ -287,6 +291,9 @@ mod tests {
         let result = normalize_metainfo_response(&request, &payload).unwrap();
 
         assert_eq!(result["source"], "scanner_metainfo_rest");
+        assert_eq!(result["source_category"], "desktop_free_read");
+        assert_eq!(result["requires_desktop"], false);
+        assert_eq!(result["non_mutating"], true);
         assert_eq!(result["market"], "america");
         assert_eq!(result["requested_fields"], json!(["close", "banana"]));
         assert_eq!(result["field_count"], 1);
@@ -314,6 +321,9 @@ mod tests {
         let result = normalize_metainfo_response_typed(&request, &payload).unwrap();
 
         assert_eq!(result.source, "scanner_metainfo_rest");
+        assert_eq!(result.source_category, "desktop_free_read");
+        assert!(!result.requires_desktop);
+        assert!(result.non_mutating);
         assert_eq!(result.market, "america");
         assert_eq!(result.requested_fields, ["close", "banana"]);
         assert_eq!(result.field_count, 1);
