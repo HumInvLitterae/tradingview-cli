@@ -13,6 +13,7 @@ fn help_lists_v1_commands() {
         .assert()
         .success()
         .stdout(predicate::str::contains("status"))
+        .stdout(predicate::str::contains("readiness"))
         .stdout(predicate::str::contains("launch"))
         .stdout(predicate::str::contains("info"))
         .stdout(predicate::str::contains("search"))
@@ -39,6 +40,17 @@ fn help_lists_v1_commands() {
         .stdout(predicate::str::contains("type"))
         .stdout(predicate::str::contains("scroll"))
         .stdout(predicate::str::contains("screenshot"))
+        .stdout(predicate::str::contains("--target-id"));
+}
+
+#[test]
+fn readiness_help_explains_desktop_backed_non_mutating_read() {
+    tv().args(["readiness", "--help"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("Desktop"))
+        .stdout(predicate::str::contains("chart API"))
+        .stdout(predicate::str::contains("non-mutating"))
         .stdout(predicate::str::contains("--target-id"));
 }
 
@@ -2377,6 +2389,28 @@ fn connection_failure_uses_structured_json_and_exit_code_2() {
     let value: Value = serde_json::from_str(&stderr).unwrap();
     assert_eq!(value["success"], false);
     assert_eq!(value["command"], "status");
+    assert_eq!(value["error"]["kind"], "connection");
+    assert_eq!(value["error"]["details"]["cdp_port"], 9);
+    assert!(
+        value["error"]["details"]["next_action_hint"]
+            .as_str()
+            .unwrap()
+            .contains("tv launch")
+    );
+}
+
+#[test]
+fn readiness_connection_failure_uses_structured_json_and_exit_code_2() {
+    let assert = tv()
+        .env("TV_CDP_PORT", "9")
+        .arg("readiness")
+        .assert()
+        .failure()
+        .code(2);
+    let stderr = String::from_utf8(assert.get_output().stderr.clone()).unwrap();
+    let value: Value = serde_json::from_str(&stderr).unwrap();
+    assert_eq!(value["success"], false);
+    assert_eq!(value["command"], "readiness");
     assert_eq!(value["error"]["kind"], "connection");
     assert_eq!(value["error"]["details"]["cdp_port"], 9);
     assert!(

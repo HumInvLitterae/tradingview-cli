@@ -85,10 +85,13 @@ Safety boundary:
 - user input must be serialized into JavaScript, not hand-escaped
 - mutation commands must verify the observable after-state before returning
   success
-- `status`, `tab list`, and `state` are the first-line readiness diagnostics.
-  They expose CDP endpoint information, target handoff (`target_cli_args`), and
-  chart-readiness hints so agents can inspect structured state before using
-  screenshots, manual visual inspection, or environment-specific visual tools.
+- `readiness` is the first-line Desktop-backed readiness read. It aggregates
+  CDP endpoint information, target handoff (`target_cli_args`), chart API
+  readiness, and a one-bar OHLCV readiness check without mutating chart,
+  account, or page state.
+- `status`, `tab list`, `state`, and `ohlcv --count 1` remain lower-level
+  follow-up reads when the aggregated readiness payload points to a specific
+  endpoint, target, chart, or bars problem.
 - `quote <SYMBOL>` defaults to non-mutating scanner REST. `--source chart`
   explicitly chooses the selected TradingView Desktop chart feed, and
   `--source auto` is chart-first with scanner fallback only if chart access

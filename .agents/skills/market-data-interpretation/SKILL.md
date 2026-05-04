@@ -59,12 +59,14 @@ infer timezone, before/after-market meaning, financial analysis, or investment
 recommendations from these fields unless another source explicitly supplies
 that interpretation.
 
-For Desktop-backed reads, inspect structured readiness fields before escalating
-to visual checks: `tv status` / `tv tab list` expose endpoint and target
-readiness, `tv state` exposes chart readiness, chart-source quote exposes
-`freshness_check`, and OHLCV failures expose chart-bars details. The portable
-visual fallback is `tv screenshot --region chart|full --output <PATH>` plus
-user/manual inspection when needed.
+For Desktop-backed reads, inspect `tv readiness` before escalating to visual
+checks. It summarizes endpoint, target selection, chart readiness, bars
+readiness, and next-action hints. Use `tv tab list`, `tv state`, or
+`tv ohlcv --count 1` as follow-up reads when the readiness payload points
+there. Chart-source quote exposes `freshness_check`, and OHLCV failures expose
+chart-bars details. The portable visual fallback is
+`tv screenshot --region chart|full --output <PATH>` plus user/manual
+inspection when needed.
 
 For `tv stream ...`, interpret each JSONL line by `data._event`. A `sample`
 event means the chart/page sample changed after metadata-insensitive dedupe. A

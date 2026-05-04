@@ -130,6 +130,7 @@ Then run commands against the active TradingView Desktop session:
 
 ```bash
 tv status
+tv readiness
 tv tab list
 tv --target-id <CDP_TARGET_ID> quote AAPL
 tv quotes AAPL MSFT NYSE:IONQ
@@ -198,7 +199,9 @@ classification.
   `tv info <SYMBOL>`, `tv fundamentals <SYMBOL>`, `tv quote <SYMBOL>`,
   `tv quotes <SYMBOL>...`, `tv scanner scan`, and `tv scanner metainfo`.
 - Desktop-backed reads use the selected TradingView Desktop target or visible
-  state. Examples: `tv state`, `tv ohlcv`, current-chart `tv info` /
+  state. Start with `tv readiness` when an agent needs to know whether the
+  current Desktop target, chart API, and bars are usable. Examples:
+  `tv readiness`, `tv state`, `tv ohlcv`, current-chart `tv info` /
   `tv quote`, `tv quote <SYMBOL> --source chart`, and `tv screenshot`.
 - Desktop-backed operations can change chart, account, editor, Replay,
   Screener, layout, drawing, alert, watchlist, or generic UI state. Prefer

@@ -13,9 +13,10 @@ quotes, or fundamentals before mutating chart state.
 
 ## Start With Readiness
 
-1. Run `tv status`.
-2. Inspect `desktop_readiness`, `target_cli_args`, `chart_readiness`, and
-   `next_action_hint` before using visual fallback. If there is no connection,
+1. Run `tv readiness`.
+2. Inspect `ready`, `target_selection`, `selected_target.target_cli_args`,
+   `chart_readiness`, `bars_readiness`, and `next_action_hint` before using
+   visual fallback. If there is no connection,
    run `tv launch` once. If it still cannot connect, explain that the user must
    launch TradingView with a remote debugging port or provide
    `tv launch --path <PATH>`.
@@ -23,10 +24,10 @@ quotes, or fundamentals before mutating chart state.
    `tv tab list` and use the desired target's `target_cli_args`, for example
    `tv --target-id <ID> quote`, for follow-up chart commands. Do not use
    `TV_CDP_TARGET_ID`.
-4. Run `tv state` to confirm chart API and bars readiness before asking for
-   visual confirmation. For portable visual evidence, use
-   `tv screenshot --region chart --output <PATH>` rather than assuming an
-   external visual-control tool exists.
+4. Use `tv state` or `tv ohlcv --count 1` only when `tv readiness` shows that
+   a specific chart or bars detail still needs follow-up. For portable visual
+   evidence, use `tv screenshot --region chart --output <PATH>` rather than
+   assuming an external visual-control tool exists.
 5. Run `tv discover` and `tv ui-state` when the chart surface itself is unclear.
 
 ## Core Workflow

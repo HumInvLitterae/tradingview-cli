@@ -38,6 +38,7 @@ pub async fn dispatch(
 ) -> Result<serde_json::Value, AppError> {
     match command {
         Command::Status => ops::status(config).await,
+        Command::Readiness => ops::readiness(config).await,
         Command::Launch {
             port,
             path,

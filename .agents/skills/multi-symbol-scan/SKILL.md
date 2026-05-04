@@ -14,9 +14,10 @@ screenshots. Treat `tv quote --source auto` as hybrid source selection and
 ## Start With Scope
 
 1. Confirm the symbol list, timeframe, and screening criteria from the user request.
-2. Run `tv status`; if needed, run `tv watchlist get` to inspect the current TradingView watchlist.
-3. Inspect `desktop_readiness` and `next_action_hint` from `tv status` before
-   assuming the Desktop session is usable. If more than one chart target is
+2. Run `tv readiness`; if needed, run `tv watchlist get` to inspect the current TradingView watchlist.
+3. Inspect `ready`, `target_selection`, `chart_readiness`, `bars_readiness`,
+   and `next_action_hint` before assuming the Desktop session is usable. If
+   more than one chart target is
    open, run `tv tab list` and use `target_cli_args`, for example
    `tv --target-id <ID> ...`, for any chart-specific follow-up. Do not use
    `TV_CDP_TARGET_ID`.
@@ -74,7 +75,7 @@ Screener rows matched a screen.
 If a finalist chart read returns an `ohlcv` failure while symbol or quote reads
 still work, do not keep retrying the same target. Preserve the full JSON error
 envelope, inspect `error.details.phase`, `bar_index_state`, and
-`next_action_hint`, rerun `tv tab list`, choose the active chart target's
+`next_action_hint`, rerun `tv readiness`, choose the active chart target's
 `target_cli_args`, run `tv --target-id <ID> state`, and retry
 `tv --target-id <ID> ohlcv --count 1`. If structured target and chart
 readiness fields do not explain the visible state, capture
