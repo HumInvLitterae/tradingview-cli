@@ -47,7 +47,9 @@ quotes, or fundamentals before mutating chart state.
 4. Read chart context with `tv state`, `tv info`, `tv quote`, and
    `tv ohlcv --summary`. `tv info` without a symbol and `tv quote` without a
    symbol read the current chart; `tv info <SYMBOL>` and
-   `tv quote <SYMBOL>` use Desktop-free reads by default.
+   `tv quote <SYMBOL>` use Desktop-free reads by default. Preserve
+   `source_category`, `requires_desktop`, and `non_mutating` when comparing
+   Desktop-backed chart reads with Desktop-free scanner reads.
 5. Use `tv quote <SYMBOL> --source chart` when the selected Desktop chart feed
    matters, and `tv quote <SYMBOL> --source auto` when chart-first behavior
    with scanner fallback is acceptable. Do not add manual sleep or double-call

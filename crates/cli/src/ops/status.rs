@@ -5,7 +5,7 @@ use tradingview_cdp::{
 };
 use tradingview_core::AppError;
 
-use super::common::{CHART_API, merge_object};
+use super::common::{CHART_API, desktop_backed_read_metadata, merge_object};
 
 pub async fn status(config: &TransportConfig) -> Result<Value, AppError> {
     let targets = transport::fetch_targets(config).await?;
@@ -34,6 +34,7 @@ pub async fn status(config: &TransportConfig) -> Result<Value, AppError> {
                 "The requested target was selected. Use the returned target_cli_args for follow-up chart-dependent commands."
             ),
         });
+        add_status_metadata(&mut data);
         let mut runtime = CdpClient::connect(&target).await?;
         if let Ok(chart) = chart_status(&mut runtime).await {
             merge_object(&mut data, chart);
@@ -65,50 +66,59 @@ pub async fn status(config: &TransportConfig) -> Result<Value, AppError> {
                     "A single chart-compatible target was selected. Use target_cli_args when running follow-up chart-dependent commands."
                 ),
             });
+            add_status_metadata(&mut data);
             let mut runtime = CdpClient::connect(&target).await?;
             if let Ok(chart) = chart_status(&mut runtime).await {
                 merge_object(&mut data, chart);
             }
             data
         }
-        TargetSelection::None => json!({
-            "connected": false,
-            "cdp_connected": false,
-            "cdp_host": config.host,
-            "cdp_port": config.port,
-            "chart_symbol": "unknown",
-            "chart_resolution": "unknown",
-            "chart_type": null,
-            "api_available": false,
-            "error": "No TradingView chart target found",
-            "candidates": targets_with_handoff(&targets),
-            "desktop_readiness": desktop_readiness_summary(
-                config,
-                &targets,
-                "none",
-                None,
-                "Run `tv tab list` to inspect available CDP targets. Open or select a TradingView chart target before running chart-dependent commands."
-            ),
-        }),
-        TargetSelection::Ambiguous(candidates) => json!({
-            "connected": false,
-            "cdp_connected": false,
-            "cdp_host": config.host,
-            "cdp_port": config.port,
-            "chart_symbol": "unknown",
-            "chart_resolution": "unknown",
-            "chart_type": null,
-            "api_available": false,
-            "error": "Multiple TradingView chart targets found",
-            "candidates": targets_with_handoff(&candidates),
-            "desktop_readiness": desktop_readiness_summary(
-                config,
-                &targets,
-                "ambiguous",
-                None,
-                "Run `tv tab list`, choose the intended chart target, then retry as `tv --target-id <ID> <command>`."
-            ),
-        }),
+        TargetSelection::None => {
+            let mut data = json!({
+                "connected": false,
+                "cdp_connected": false,
+                "cdp_host": config.host,
+                "cdp_port": config.port,
+                "chart_symbol": "unknown",
+                "chart_resolution": "unknown",
+                "chart_type": null,
+                "api_available": false,
+                "error": "No TradingView chart target found",
+                "candidates": targets_with_handoff(&targets),
+                "desktop_readiness": desktop_readiness_summary(
+                    config,
+                    &targets,
+                    "none",
+                    None,
+                    "Run `tv tab list` to inspect available CDP targets. Open or select a TradingView chart target before running chart-dependent commands."
+                ),
+            });
+            add_status_metadata(&mut data);
+            data
+        }
+        TargetSelection::Ambiguous(candidates) => {
+            let mut data = json!({
+                "connected": false,
+                "cdp_connected": false,
+                "cdp_host": config.host,
+                "cdp_port": config.port,
+                "chart_symbol": "unknown",
+                "chart_resolution": "unknown",
+                "chart_type": null,
+                "api_available": false,
+                "error": "Multiple TradingView chart targets found",
+                "candidates": targets_with_handoff(&candidates),
+                "desktop_readiness": desktop_readiness_summary(
+                    config,
+                    &targets,
+                    "ambiguous",
+                    None,
+                    "Run `tv tab list`, choose the intended chart target, then retry as `tv --target-id <ID> <command>`."
+                ),
+            });
+            add_status_metadata(&mut data);
+            data
+        }
     };
     Ok(data)
 }
@@ -148,6 +158,10 @@ fn desktop_readiness_summary(
         "app_window_targets": targets_with_handoff_refs(&app_window_targets),
         "next_action_hint": next_action_hint,
     })
+}
+
+fn add_status_metadata(data: &mut Value) {
+    merge_object(data, desktop_backed_read_metadata("desktop_status", true));
 }
 
 fn is_chart_target(target: &transport::Target) -> bool {
@@ -261,5 +275,16 @@ mod tests {
             summary["chart_targets"][0]["target_cli_args"],
             json!(["--target-id", "chart"])
         );
+    }
+
+    #[test]
+    fn status_none_selection_includes_source_metadata() {
+        let mut data = serde_json::json!({"connected": false});
+        add_status_metadata(&mut data);
+
+        assert_eq!(data["source"], "desktop_status");
+        assert_eq!(data["source_category"], "desktop_backed_read");
+        assert_eq!(data["requires_desktop"], true);
+        assert_eq!(data["non_mutating"], true);
     }
 }

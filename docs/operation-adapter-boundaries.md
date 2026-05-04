@@ -69,12 +69,16 @@ now:
   live chart page objects and chart readiness. `tv quote <SYMBOL>` defaults to
   scanner REST, `--source chart` explicitly uses this chart adapter, and
   `--source auto` is a chart-first compatibility mode that falls back to
-  scanner only if chart access fails before any chart mutation.
+  scanner only if chart access fails before any chart mutation. Core
+  Desktop-backed read payloads expose `source_category:
+  "desktop_backed_read"`, `requires_desktop: true`, and `non_mutating` so
+  agents can distinguish reads from chart/account operations.
 - OHLCV reads: `ohlcv` reads the active chart's main-series bars. Symbol-level
   quote and info reads are Desktop-free. Historical bars now have a separate
   lab-gated `tv bars <SYMBOL>` prototype through an undocumented WebSocket
   chart-session path, but `ohlcv` remains chart-dependent unless a later plan
-  proves equivalence.
+  proves equivalence. Raw and summary OHLCV payloads retain `source:
+  "direct_bars"` and report Desktop-backed read metadata.
 - Drawing and indicator chart operations: these execute chart APIs and verify
   newly created, updated, hidden, or removed entities.
 - Replay operations: these use Replay page APIs and chart-local Replay state.

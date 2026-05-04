@@ -204,7 +204,9 @@ classification.
   `tv readiness`, `tv state`, `tv ohlcv`, current-chart `tv info` /
   `tv quote`, `tv quote <SYMBOL> --source chart`, and `tv screenshot`.
   Screenshots are visual evidence reads: they do not mutate TradingView state,
-  but they do write the requested local output file.
+  but they do write the requested local output file. Core Desktop-backed read
+  payloads report `source_category`, `requires_desktop`, and `non_mutating`
+  so agents can keep their evidence source visible.
 - Desktop-backed operations can change chart, account, editor, Replay,
   Screener, layout, drawing, alert, watchlist, or generic UI state. Prefer
   read-only commands and `--dry-run` first, and get user approval before normal

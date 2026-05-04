@@ -6,10 +6,11 @@ use serde_json::{Value, json};
 use tradingview_cdp::{self as transport, CdpClient, Target, TransportConfig};
 use tradingview_core::{AppError, ErrorKind};
 
+use super::common::{desktop_backed_read_metadata, merge_object};
 use super::desktop::{
-    AppTab, app_tabs_from_targets, app_window_target, app_window_targets_from_targets,
-    click_close_app_tab, click_create_new_app_tab, new_app_tabs, read_app_tabs,
-    wait_for_app_tab_update,
+    AppTab, AppWindowTarget, app_tabs_from_targets, app_window_target,
+    app_window_targets_from_targets, click_close_app_tab, click_create_new_app_tab, new_app_tabs,
+    read_app_tabs, wait_for_app_tab_update,
 };
 
 const TAB_NEW_WAIT_MS: u64 = 2_000;
@@ -41,7 +42,23 @@ pub async fn tab_list(config: &TransportConfig) -> Result<Value, AppError> {
     let app_window_targets = app_window_targets_from_targets(&targets);
     let app_tabs = app_tabs_from_targets(&targets).await;
 
-    Ok(json!({
+    Ok(tab_list_payload(
+        config,
+        tabs,
+        screener_targets,
+        app_window_targets,
+        app_tabs,
+    ))
+}
+
+fn tab_list_payload(
+    config: &TransportConfig,
+    tabs: Vec<ChartTab>,
+    screener_targets: Vec<ScreenerTarget>,
+    app_window_targets: Vec<AppWindowTarget>,
+    app_tabs: Vec<AppTab>,
+) -> Value {
+    let mut payload = json!({
         "tab_count": tabs.len(),
         "tabs": tabs,
         "screener_target_count": screener_targets.len(),
@@ -57,7 +74,12 @@ pub async fn tab_list(config: &TransportConfig) -> Result<Value, AppError> {
             screener_targets.len(),
             app_window_targets.len(),
         ),
-    }))
+    });
+    merge_object(
+        &mut payload,
+        desktop_backed_read_metadata("desktop_target_list", true),
+    );
+    payload
 }
 
 pub async fn tab_switch(config: &TransportConfig, index: usize) -> Result<Value, AppError> {
@@ -529,6 +551,24 @@ mod tests {
                 .unwrap()
                 .contains("--target-id")
         );
+    }
+
+    #[test]
+    fn tab_list_payload_includes_source_metadata() {
+        let config = TransportConfig {
+            host: "127.0.0.1".to_string(),
+            port: 9222,
+            target_id: None,
+        };
+
+        let payload =
+            tab_list_payload(&config, vec![chart_tab(0, "chart")], vec![], vec![], vec![]);
+
+        assert_eq!(payload["source"], "desktop_target_list");
+        assert_eq!(payload["source_category"], "desktop_backed_read");
+        assert_eq!(payload["requires_desktop"], true);
+        assert_eq!(payload["non_mutating"], true);
+        assert_eq!(payload["tab_count"], 1);
     }
 
     #[test]

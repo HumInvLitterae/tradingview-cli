@@ -9,6 +9,7 @@ pub(super) const BARS_PATH: &str =
 pub(super) const DEFAULT_OHLCV_COUNT: usize = 100;
 pub(super) const MAX_OHLCV_COUNT: usize = 500;
 pub(super) const MAX_TRADES_COUNT: usize = 20;
+pub(super) const DESKTOP_BACKED_READ_CATEGORY: &str = "desktop_backed_read";
 pub(super) const CHART_TYPES: [&str; 10] = [
     "Bars",
     "Candles",
@@ -44,6 +45,15 @@ pub(super) fn merge_object(target: &mut Value, source: Value) {
     for (key, value) in source {
         target.insert(key.clone(), value.clone());
     }
+}
+
+pub(super) fn desktop_backed_read_metadata(source: &str, non_mutating: bool) -> Value {
+    json!({
+        "source": source,
+        "source_category": DESKTOP_BACKED_READ_CATEGORY,
+        "requires_desktop": true,
+        "non_mutating": non_mutating,
+    })
 }
 
 pub(super) fn parse_chart_type(value: &str) -> Result<(usize, &'static str), AppError> {

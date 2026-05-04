@@ -57,7 +57,8 @@ screenshots. Treat `tv quote --source auto` as hybrid source selection and
    and `--heartbeat-ms` so the agent receives a finite JSONL observation
    window. Read stream `source_category`, `requires_desktop`, and
    `non_mutating` metadata before comparing those observations with
-   Desktop-free scanner or quote results.
+   Desktop-free scanner or quote results. Apply the same source metadata check
+   to `tv state`, `tv ohlcv`, and chart-source quote payloads.
 8. After user approval, add selected symbols with
    `tv watchlist add-bulk <SYMBOL>... --allow-partial`; it inherits the
    API-backed single-symbol add path and reports duplicates or partial

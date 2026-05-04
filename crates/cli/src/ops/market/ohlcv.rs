@@ -3,7 +3,10 @@ use serde_json::{Value, json};
 use tradingview_cdp::RuntimeEvaluator;
 use tradingview_core::{AppError, ErrorKind};
 
-use super::super::common::{BARS_PATH, CHART_API, DEFAULT_OHLCV_COUNT, MAX_OHLCV_COUNT, round2};
+use super::super::common::{
+    BARS_PATH, CHART_API, DEFAULT_OHLCV_COUNT, MAX_OHLCV_COUNT, desktop_backed_read_metadata,
+    merge_object, round2,
+};
 
 pub async fn ohlcv_bars(
     runtime: &mut impl RuntimeEvaluator,
@@ -31,6 +34,10 @@ pub async fn ohlcv_bars(
                             _tv_ohlcv_error: true,
                             phase: "ohlcv_bars_read",
                             reason: reason,
+                            source: "direct_bars",
+                            source_category: "desktop_backed_read",
+                            requires_desktop: true,
+                            non_mutating: true,
                             chart_api_available: !!chart,
                             bars_available: !!bars,
                             chart_symbol: chart ? safeCall(function() {{ return chart.symbol(); }}) : null,
@@ -91,6 +98,9 @@ pub async fn ohlcv_bars(
                         bar_count: result.length,
                         total_available: (typeof bars.size === 'function') ? bars.size() : null,
                         source: "direct_bars",
+                        source_category: "desktop_backed_read",
+                        requires_desktop: true,
+                        non_mutating: true,
                         bars: result
                     }};
                 }})()
@@ -210,6 +220,10 @@ fn summarize_ohlcv(data: Value) -> Result<Value, AppError> {
             summary[field] = value.clone();
         }
     }
+    merge_object(
+        &mut summary,
+        desktop_backed_read_metadata("direct_bars", true),
+    );
     Ok(summary)
 }
 
@@ -281,6 +295,9 @@ mod tests {
             "timeframe": "D",
             "bar_count": 2,
             "source": "direct_bars",
+            "source_category": "desktop_backed_read",
+            "requires_desktop": true,
+            "non_mutating": true,
             "bars": [
                 {"time": 1, "open": 100.0, "high": 110.0, "low": 95.0, "close": 105.0, "volume": 10.0},
                 {"time": 2, "open": 105.0, "high": 120.0, "low": 101.0, "close": 115.0, "volume": 20.0}
@@ -289,6 +306,9 @@ mod tests {
         let mut runtime = FakeRuntime::new([payload.clone()]);
         let result = ohlcv_bars(&mut runtime, Some(2)).await.unwrap();
         assert_eq!(result, payload);
+        assert_eq!(result["source_category"], "desktop_backed_read");
+        assert_eq!(result["requires_desktop"], true);
+        assert_eq!(result["non_mutating"], true);
         assert!(runtime.evaluated[0].0.contains("bar_count"));
     }
 
@@ -314,6 +334,10 @@ mod tests {
         assert_eq!(summary["avg_volume"], 20.0);
         assert_eq!(summary["change"], 15.0);
         assert_eq!(summary["change_pct"], "15%");
+        assert_eq!(summary["source"], "direct_bars");
+        assert_eq!(summary["source_category"], "desktop_backed_read");
+        assert_eq!(summary["requires_desktop"], true);
+        assert_eq!(summary["non_mutating"], true);
         assert!(summary["last_5_bars"].as_array().unwrap().len() == 2);
     }
 

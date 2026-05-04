@@ -6,12 +6,12 @@ for release and next-phase planning.
 
 ## Current and future plans
 
-- `tradingview-cli-screenshot-source-metadata.md`: add source taxonomy and
-  visual evidence metadata to `tv screenshot` payloads.
+- `tradingview-cli-core-read-source-metadata.md`: add source taxonomy metadata
+  to core Desktop-backed read payloads such as `status`, `tab list`, `state`,
+  `ohlcv`, and chart-source quote.
 
 The current `v0.6.0` implementation slice keeps `diagnose` deferred and
-clarifies screenshot as a Desktop-backed visual evidence read rather than a
-new troubleshooting command.
+continues source taxonomy polish without adding new command surface.
 
 ## Archived plans
 
@@ -102,6 +102,7 @@ Important archived plan categories:
   JSONL events
 - stream source taxonomy metadata for sample and heartbeat JSONL events
 - Desktop readiness integrated read command
+- screenshot source taxonomy and visual evidence metadata
 
 For command contract details, prefer the notes under `docs/notes/` before
 reading archived implementation plans.

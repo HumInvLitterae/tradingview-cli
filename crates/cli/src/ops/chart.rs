@@ -34,6 +34,9 @@ pub async fn state(runtime: &mut impl RuntimeEvaluator) -> Result<Value, AppErro
                     try {{ if (barsAvailable) lastIndex = bars.lastIndex(); }} catch(e) {{}}
                     return {{
                         source: "chart_api",
+                        source_category: "desktop_backed_read",
+                        requires_desktop: true,
+                        non_mutating: true,
                         symbol: chart.symbol(),
                         resolution: resolution,
                         timeframe: resolution,
@@ -387,6 +390,9 @@ mod tests {
     async fn state_includes_chart_readiness_expression() {
         let payload = json!({
             "source": "chart_api",
+            "source_category": "desktop_backed_read",
+            "requires_desktop": true,
+            "non_mutating": true,
             "symbol": "NASDAQ:AAPL",
             "resolution": "D",
             "timeframe": "D",
@@ -406,6 +412,9 @@ mod tests {
         let result = state(&mut runtime).await.unwrap();
 
         assert_eq!(result, payload);
+        assert_eq!(result["source_category"], "desktop_backed_read");
+        assert_eq!(result["requires_desktop"], true);
+        assert_eq!(result["non_mutating"], true);
         assert!(runtime.evaluated[0].0.contains("chart_readiness"));
         assert!(runtime.evaluated[0].0.contains("barsAvailable"));
     }
