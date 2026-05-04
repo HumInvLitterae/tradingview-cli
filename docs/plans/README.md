@@ -6,12 +6,12 @@ for release and next-phase planning.
 
 ## Current and future plans
 
-- `tradingview-cli-desktop-readiness-command.md`: add `tv readiness` as a
-  Desktop-backed, non-mutating read that summarizes CDP target, chart, and bars
-  readiness before chart-dependent workflows.
+- `tradingview-cli-screenshot-source-metadata.md`: add source taxonomy and
+  visual evidence metadata to `tv screenshot` payloads.
 
-The current `v0.6.0` implementation slice keeps `diagnose` deferred and adds a
-narrow readiness read rather than a broad troubleshooting command.
+The current `v0.6.0` implementation slice keeps `diagnose` deferred and
+clarifies screenshot as a Desktop-backed visual evidence read rather than a
+new troubleshooting command.
 
 ## Archived plans
 
@@ -101,6 +101,7 @@ Important archived plan categories:
 - stream observation controls for bounded duration, max-event, and heartbeat
   JSONL events
 - stream source taxonomy metadata for sample and heartbeat JSONL events
+- Desktop readiness integrated read command
 
 For command contract details, prefer the notes under `docs/notes/` before
 reading archived implementation plans.

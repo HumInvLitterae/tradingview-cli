@@ -203,6 +203,8 @@ classification.
   current Desktop target, chart API, and bars are usable. Examples:
   `tv readiness`, `tv state`, `tv ohlcv`, current-chart `tv info` /
   `tv quote`, `tv quote <SYMBOL> --source chart`, and `tv screenshot`.
+  Screenshots are visual evidence reads: they do not mutate TradingView state,
+  but they do write the requested local output file.
 - Desktop-backed operations can change chart, account, editor, Replay,
   Screener, layout, drawing, alert, watchlist, or generic UI state. Prefer
   read-only commands and `--dry-run` first, and get user approval before normal
@@ -245,7 +247,7 @@ mode uses the alert endpoint and post-create readback; if required saved-script
 or input metadata cannot be resolved safely, it fails before sending the create
 request. The command does not print saved-script identifiers.
 
-Screenshots require an explicit `--output <PATH>` file path. Parent directories are created automatically, so agent or Claude Desktop workflows should choose a readable output path directly instead of relying on a default screenshots directory.
+Screenshots require an explicit `--output <PATH>` file path. Parent directories are created automatically, so agent or Claude Desktop workflows should choose a readable output path directly instead of relying on a default screenshots directory. Screenshot payloads include `source: "desktop_screenshot"`, `source_category: "desktop_backed_read"`, `non_mutating: true`, `writes_file: true`, and `visual_evidence: true`.
 
 The default CDP endpoint is `127.0.0.1:9222`. Override it with `TV_CDP_HOST` and `TV_CDP_PORT` when needed, for example if a local setup still requires `localhost`.
 

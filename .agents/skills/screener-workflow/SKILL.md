@@ -40,6 +40,9 @@ discovery. Use `tv screener get` when the user needs the currently visible
 Screener rows.
 Use `tv scanner metainfo --field <FIELD>` when you need to confirm whether a
 scanner field exists before building a scan.
+If visible Screener state remains unclear after structured reads, use
+`tv screenshot --region full --output <PATH>` as portable visual evidence.
+Screenshots do not mutate TradingView state, but they do write a local file.
 
 ## Interpreting Results
 

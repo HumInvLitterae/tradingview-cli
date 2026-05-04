@@ -6,19 +6,22 @@ use serde_json::{Value, json};
 use tradingview_cdp::{RuntimeEvaluator, ScreenshotClip};
 use tradingview_core::{AppError, ErrorKind};
 
+const SCREENSHOT_SOURCE: &str = "desktop_screenshot";
+const SCREENSHOT_SOURCE_CATEGORY: &str = "desktop_backed_read";
+
 pub async fn screenshot_full(
     runtime: &mut impl RuntimeEvaluator,
     output_path: &str,
 ) -> Result<Value, AppError> {
     let bytes = runtime.capture_screenshot().await?;
-    write_screenshot(output_path, &bytes)?;
-    Ok(json!({
+    write_screenshot(output_path, &bytes, "full")?;
+    Ok(with_screenshot_metadata(json!({
         "file_path": output_path,
         "method": "cdp",
         "output_path": output_path,
         "region": "full",
         "size_bytes": bytes.len(),
-    }))
+    })))
 }
 
 pub async fn screenshot_chart(
@@ -59,8 +62,8 @@ pub async fn screenshot_chart(
             )
         }
     };
-    write_screenshot(output_path, &bytes)?;
-    Ok(json!({
+    write_screenshot(output_path, &bytes, "chart")?;
+    Ok(with_screenshot_metadata(json!({
         "capture_mode": capture_mode,
         "output_path": output_path,
         "file_path": output_path,
@@ -68,10 +71,39 @@ pub async fn screenshot_chart(
         "region": "chart",
         "size_bytes": bytes.len(),
         "clip": bounds.clip,
-    }))
+    })))
 }
 
-fn write_screenshot(output_path: &str, bytes: &[u8]) -> Result<(), AppError> {
+fn with_screenshot_metadata(mut payload: Value) -> Value {
+    if let Some(object) = payload.as_object_mut() {
+        object.insert("source".to_string(), json!(SCREENSHOT_SOURCE));
+        object.insert(
+            "source_category".to_string(),
+            json!(SCREENSHOT_SOURCE_CATEGORY),
+        );
+        object.insert("requires_desktop".to_string(), json!(true));
+        object.insert("non_mutating".to_string(), json!(true));
+        object.insert("writes_file".to_string(), json!(true));
+        object.insert("visual_evidence".to_string(), json!(true));
+    }
+    payload
+}
+
+fn screenshot_error_details(phase: &str, region: &str) -> Value {
+    json!({
+        "phase": phase,
+        "region": region,
+        "source": SCREENSHOT_SOURCE,
+        "source_category": SCREENSHOT_SOURCE_CATEGORY,
+        "requires_desktop": true,
+        "non_mutating": true,
+        "writes_file": false,
+        "visual_evidence": false,
+        "next_action_hint": "Run `tv readiness` to inspect Desktop target and chart readiness. If the chart is visually present, retry `tv screenshot --region chart --output <PATH>` against the intended target_cli_args.",
+    })
+}
+
+fn write_screenshot(output_path: &str, bytes: &[u8], region: &str) -> Result<(), AppError> {
     let path = Path::new(output_path);
     if let Some(parent) = path
         .parent()
@@ -82,6 +114,7 @@ fn write_screenshot(output_path: &str, bytes: &[u8]) -> Result<(), AppError> {
                 ErrorKind::Internal,
                 format!("Could not create screenshot output directory: {err}"),
             )
+            .with_details(screenshot_error_details("create_output_directory", region))
         })?;
     }
     fs::write(path, bytes).map_err(|err| {
@@ -89,6 +122,7 @@ fn write_screenshot(output_path: &str, bytes: &[u8]) -> Result<(), AppError> {
             ErrorKind::Internal,
             format!("Could not write screenshot output: {err}"),
         )
+        .with_details(screenshot_error_details("write_output_file", region))
     })?;
     Ok(())
 }
@@ -103,7 +137,8 @@ fn screenshot_bounds_from_value(bounds: &Value) -> Result<ScreenshotBounds, AppE
         return Err(AppError::new(
             ErrorKind::InternalApiUnavailable,
             "Could not find TradingView chart bounds for screenshot",
-        ));
+        )
+        .with_details(screenshot_error_details("chart_bounds_missing", "chart")));
     };
     let number = |key: &str| -> Result<f64, AppError> {
         object.get(key).and_then(Value::as_f64).ok_or_else(|| {
@@ -111,6 +146,7 @@ fn screenshot_bounds_from_value(bounds: &Value) -> Result<ScreenshotBounds, AppE
                 ErrorKind::InternalApiUnavailable,
                 format!("TradingView chart bounds did not include numeric {key}"),
             )
+            .with_details(screenshot_error_details("chart_bounds_invalid", "chart"))
         })
     };
     let clip = ScreenshotClip {
@@ -137,7 +173,7 @@ fn screenshot_bounds_from_value(bounds: &Value) -> Result<ScreenshotBounds, AppE
             ErrorKind::InternalApiUnavailable,
             "TradingView chart bounds were invalid for screenshot",
         )
-        .with_details(bounds.clone()));
+        .with_details(screenshot_error_details("chart_bounds_invalid", "chart")));
     }
     Ok(ScreenshotBounds {
         clip,
@@ -155,6 +191,7 @@ fn crop_screenshot_to_bounds(
             ErrorKind::InternalApiUnavailable,
             format!("Could not decode screenshot PNG for chart crop: {err}"),
         )
+        .with_details(screenshot_error_details("decode_full_screenshot", "chart"))
     })?;
     let image_width = image.width();
     let image_height = image.height();
@@ -162,7 +199,8 @@ fn crop_screenshot_to_bounds(
         return Err(AppError::new(
             ErrorKind::InternalApiUnavailable,
             "Screenshot PNG was empty",
-        ));
+        )
+        .with_details(screenshot_error_details("decode_full_screenshot", "chart")));
     }
 
     let scale_x = image_width as f64 / bounds.viewport_width;
@@ -187,7 +225,8 @@ fn crop_screenshot_to_bounds(
         return Err(AppError::new(
             ErrorKind::InternalApiUnavailable,
             "TradingView chart bounds were outside the screenshot",
-        ));
+        )
+        .with_details(screenshot_error_details("crop_chart_screenshot", "chart")));
     }
 
     let cropped = image.crop_imm(x, y, width, height);
@@ -199,6 +238,7 @@ fn crop_screenshot_to_bounds(
                 ErrorKind::Internal,
                 format!("Could not encode cropped chart screenshot: {err}"),
             )
+            .with_details(screenshot_error_details("encode_chart_crop", "chart"))
         })?;
     Ok(cursor.into_inner())
 }
@@ -236,6 +276,12 @@ mod tests {
         assert_eq!(data["file_path"], output.to_str().unwrap());
         assert_eq!(data["method"], "cdp");
         assert_eq!(data["size_bytes"], 4);
+        assert_eq!(data["source"], "desktop_screenshot");
+        assert_eq!(data["source_category"], "desktop_backed_read");
+        assert_eq!(data["requires_desktop"], true);
+        assert_eq!(data["non_mutating"], true);
+        assert_eq!(data["writes_file"], true);
+        assert_eq!(data["visual_evidence"], true);
         assert_eq!(runtime.screenshot_count, 1);
         assert_eq!(fs::read(output).unwrap(), vec![137, 80, 78, 71]);
     }
@@ -282,6 +328,12 @@ mod tests {
         assert_eq!(data["file_path"], output.to_str().unwrap());
         assert_eq!(data["method"], "cdp");
         assert!(data["size_bytes"].as_u64().unwrap() > 0);
+        assert_eq!(data["source"], "desktop_screenshot");
+        assert_eq!(data["source_category"], "desktop_backed_read");
+        assert_eq!(data["requires_desktop"], true);
+        assert_eq!(data["non_mutating"], true);
+        assert_eq!(data["writes_file"], true);
+        assert_eq!(data["visual_evidence"], true);
         assert_eq!(data["clip"]["x"], 10.0);
         assert_eq!(data["clip"]["width"], 640.0);
         assert!(
@@ -348,6 +400,18 @@ mod tests {
             .expect_err("zero-width chart bounds should be rejected");
 
         assert_eq!(err.kind, ErrorKind::InternalApiUnavailable);
+        let details = err.details.unwrap();
+        assert_eq!(details["phase"], "chart_bounds_invalid");
+        assert_eq!(details["region"], "chart");
+        assert_eq!(details["source_category"], "desktop_backed_read");
+        assert_eq!(details["requires_desktop"], true);
+        assert_eq!(details["non_mutating"], true);
+        assert!(
+            details["next_action_hint"]
+                .as_str()
+                .unwrap()
+                .contains("tv readiness")
+        );
         assert_eq!(runtime.screenshot_count, 0);
         assert_eq!(runtime.clipped_screenshot_count, 0);
     }

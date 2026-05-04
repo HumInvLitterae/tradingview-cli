@@ -62,7 +62,10 @@ screenshots. Treat `tv quote --source auto` as hybrid source selection and
    `tv watchlist add-bulk <SYMBOL>... --allow-partial`; it inherits the
    API-backed single-symbol add path and reports duplicates or partial
    failures.
-9. Capture screenshots selectively for finalists or ambiguous cases with `tv screenshot --region chart --output <PATH>`.
+9. Capture screenshots selectively for finalists or ambiguous cases with
+   `tv screenshot --region chart --output <PATH>`. Treat screenshot output as
+   Desktop-backed visual evidence with `writes_file: true`, not as a market
+   data source.
 10. Present a ranked shortlist and explain which observations came from scanner REST data, chart reads, or visual interpretation.
 
 Use `market-data-interpretation` when quote freshness, source differences,

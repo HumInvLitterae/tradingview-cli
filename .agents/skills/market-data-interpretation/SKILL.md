@@ -66,7 +66,9 @@ readiness, and next-action hints. Use `tv tab list`, `tv state`, or
 there. Chart-source quote exposes `freshness_check`, and OHLCV failures expose
 chart-bars details. The portable visual fallback is
 `tv screenshot --region chart|full --output <PATH>` plus user/manual
-inspection when needed.
+inspection when needed. Screenshot payloads are visual evidence, not market
+data; preserve `source`, `source_category`, `writes_file`, and
+`visual_evidence` when citing them.
 
 For `tv stream ...`, interpret each JSONL line by `data._event`. A `sample`
 event means the chart/page sample changed after metadata-insensitive dedupe. A

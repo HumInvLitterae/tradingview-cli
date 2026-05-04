@@ -40,8 +40,10 @@ state.
 Use this category when the command reads the selected Desktop target or visible
 state. Examples include `tv status`, `tv readiness`, `tv tab list`, `tv state`,
 `tv ohlcv`, `tv quote` without a symbol, `tv quote <SYMBOL> --source chart`,
-`tv screenshot`, current-chart `tv info`, chart-model data reads, and
-`tv stream ...` JSONL observation commands.
+current-chart `tv info`, chart-model data reads, `tv screenshot`, and
+`tv stream ...` JSONL observation commands. Screenshots are non-mutating
+visual evidence reads, but they do write a local output file and report
+`writes_file: true`.
 
 Recommended agent use: run `tv readiness` first when chart target, chart API,
 or bars readiness is uncertain. Preserve structured readiness fields, then use
