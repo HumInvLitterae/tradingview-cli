@@ -69,6 +69,8 @@ quotes, or fundamentals before mutating chart state.
    `non_mutating: true`; use those fields to keep them separate from
    Desktop-free scanner reads.
 10. Capture visual evidence only when useful: `tv screenshot --region chart --output <PATH>`.
+    Treat screenshot payloads as Desktop-backed visual evidence reads; they are
+    `non_mutating: true` but `writes_file: true`.
 
 Use `market-data-interpretation` when source selection, scanner delay metadata,
 extended-hours fields, or chart-vs-scanner differences matter.

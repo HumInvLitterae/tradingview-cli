@@ -18,6 +18,8 @@ package version omits the leading `v`.
 - Added `tv readiness` as a Desktop-backed, non-mutating read that summarizes
   CDP target selection, chart API readiness, OHLCV bar readiness, and next
   action hints.
+- Added source taxonomy and visual evidence metadata to `tv screenshot`
+  payloads, including `writes_file` and `visual_evidence`.
 
 ### Fixed
 

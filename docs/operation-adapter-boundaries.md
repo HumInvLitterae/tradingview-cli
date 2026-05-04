@@ -91,7 +91,9 @@ now:
   `source_category: "desktop_backed_read"`, `requires_desktop: true`, and
   `non_mutating: true`.
 - Screenshots: chart-region screenshots use DOM geometry before CDP screenshot
-  capture.
+  capture. This is intentional visual evidence, not a TradingView data API.
+  Screenshot payloads are Desktop-backed reads with `non_mutating: true`,
+  `writes_file: true`, and `visual_evidence: true`.
 - Generic `ui` commands: these are compatibility automation by definition and
   should not become a broader domain API.
 - Launch, status, and tab diagnostics: these are process/CDP/app-window
@@ -158,6 +160,11 @@ OHLCV readiness check without switching symbols, activating tabs, or capturing
 screenshots. If CDP is reachable but target selection or bars are not ready,
 it returns `success: true` with `ready: false` and public-safe next-action
 hints. Broad `tv diagnose` behavior remains deferred.
+
+`tv screenshot` is the portable visual evidence follow-up when structured
+fields do not explain the visible state. It does not mutate TradingView state,
+but it writes the requested local output file, so payloads expose
+`writes_file: true`.
 
 Computer Use is not a general runtime dependency for these boundaries. Portable
 agent guidance should use structured `tv` diagnostics and `tv screenshot` for
