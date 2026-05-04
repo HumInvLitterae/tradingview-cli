@@ -6,13 +6,13 @@ for release and next-phase planning.
 
 ## Current and future plans
 
-- `tradingview-cli-v0.6.0-release-readiness.md`: prepare `v0.6.0` version,
-  changelog, release notes, public release asset examples, and release archive
-  staging without adding features or refactors.
+- `tradingview-cli-observe-chart.md`: plan the first `v0.7.0`
+  implementation slice, `tv observe chart`, as a workflow-level JSONL
+  observation command built from readiness and bounded stream behavior.
 
-The current `v0.6.0` slice is release readiness. It keeps `diagnose` deferred,
-keeps experimental `bars` separate, and stops feature/refactor work before tag
-creation.
+The current `v0.7.0` planning slice keeps `diagnose`, binary splitting,
+browserless streaming stabilization, MCP server work, daemon behavior, and
+Computer Use-specific runtime skills deferred.
 
 ## Archived plans
 
@@ -108,6 +108,7 @@ Important archived plan categories:
 - Desktop-free market and scanner read source taxonomy metadata
 - root `tv --version` / `tv -V` support
 - public documentation and agent-guide audience cleanup
+- v0.6.0 release readiness
 
 For command contract details, prefer the notes under `docs/notes/` before
 reading archived implementation plans.
