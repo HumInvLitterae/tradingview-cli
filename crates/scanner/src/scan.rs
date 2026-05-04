@@ -7,6 +7,7 @@ use super::types::{ScannerRow, ScannerScanResult, ScannerSort};
 
 const SCAN_BASE_URL: &str = "https://scanner.tradingview.com";
 const SCAN_SOURCE: &str = "scanner_scan_rest";
+const DESKTOP_FREE_READ_CATEGORY: &str = "desktop_free_read";
 const DEFAULT_SCAN_LIMIT: usize = 20;
 const MAX_SCAN_LIMIT: usize = 100;
 const DEFAULT_SCAN_COLUMNS: &[&str] = &[
@@ -588,6 +589,9 @@ fn normalize_scan_response_typed(
 
     Ok(ScannerScanResult {
         source: SCAN_SOURCE.to_string(),
+        source_category: DESKTOP_FREE_READ_CATEGORY.to_string(),
+        requires_desktop: false,
+        non_mutating: true,
         market: request.market.clone(),
         limit: request.limit,
         count: normalized_symbols.len(),
@@ -1275,6 +1279,9 @@ mod tests {
         let result = normalize_scan_response(&request, &payload).unwrap();
 
         assert_eq!(result["source"], "scanner_scan_rest");
+        assert_eq!(result["source_category"], "desktop_free_read");
+        assert_eq!(result["requires_desktop"], false);
+        assert_eq!(result["non_mutating"], true);
         assert_eq!(result["market"], "america");
         assert_eq!(result["count"], 1);
         assert_eq!(result["total_count"], 2);
@@ -1332,6 +1339,10 @@ mod tests {
 
         let result = normalize_scan_response_typed(&request, &payload).unwrap();
 
+        assert_eq!(result.source, "scanner_scan_rest");
+        assert_eq!(result.source_category, "desktop_free_read");
+        assert!(!result.requires_desktop);
+        assert!(result.non_mutating);
         assert_eq!(result.market, "america");
         assert_eq!(result.columns, ["name", "close", "premarket_close"]);
         assert_eq!(result.sort.field, "close");

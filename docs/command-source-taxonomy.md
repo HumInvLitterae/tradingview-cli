@@ -21,8 +21,10 @@ are not realtime entitlement guarantees.
 Use this category when the command can run without TradingView Desktop, CDP, or
 visible chart state. Examples include `tv info <SYMBOL>`,
 `tv fundamentals <SYMBOL>`, `tv quote <SYMBOL>` with the default scanner
-source, `tv quotes <SYMBOL>...`, `tv scanner scan`, `tv scanner hotlist`, and
-`tv scanner metainfo`.
+source, `tv quotes <SYMBOL>...`, `tv search <QUERY>`, `tv scanner scan`,
+`tv scanner hotlist`, and `tv scanner metainfo`. Stable Desktop-free read
+payloads report `source_category: "desktop_free_read"`,
+`requires_desktop: false`, and `non_mutating: true`.
 
 Recommended agent use: prefer these commands for broad discovery, one-off
 symbol metadata, fundamentals, and quote reads when the exact selected Desktop

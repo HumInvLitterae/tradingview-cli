@@ -17,6 +17,12 @@ pub struct ScannerRow {
 pub struct ScannerHotlistResult {
     /// Public source marker.
     pub source: String,
+    /// Command source category used by the CLI source taxonomy.
+    pub source_category: String,
+    /// False because this read does not require TradingView Desktop.
+    pub requires_desktop: bool,
+    /// True because scanner hotlist reads do not mutate TradingView state.
+    pub non_mutating: bool,
     /// Hotlist region marker used by TradingView presets.
     pub region: String,
     /// Hotlist slug requested by the caller.
@@ -38,6 +44,12 @@ pub struct ScannerHotlistResult {
 pub struct ScannerScanResult {
     /// Public source marker.
     pub source: String,
+    /// Command source category used by the CLI source taxonomy.
+    pub source_category: String,
+    /// False because this read does not require TradingView Desktop.
+    pub requires_desktop: bool,
+    /// True because scanner table reads do not mutate TradingView state.
+    pub non_mutating: bool,
     /// Scanner market, such as `america`.
     pub market: String,
     /// Limit applied to the returned rows.
@@ -70,6 +82,12 @@ pub struct ScannerSort {
 pub struct ScannerMetainfoResult {
     /// Public source marker.
     pub source: String,
+    /// Command source category used by the CLI source taxonomy.
+    pub source_category: String,
+    /// False because this read does not require TradingView Desktop.
+    pub requires_desktop: bool,
+    /// True because scanner metainfo reads do not mutate TradingView state.
+    pub non_mutating: bool,
     /// Scanner market, such as `america`.
     pub market: String,
     /// Field names requested by the caller.

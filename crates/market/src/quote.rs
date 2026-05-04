@@ -12,6 +12,7 @@ use crate::{
 };
 
 const QUOTE_SCAN_URL: &str = "https://scanner.tradingview.com/america/scan";
+const DESKTOP_FREE_READ_CATEGORY: &str = "desktop_free_read";
 const QUOTE_SCAN_COLUMNS: &[&str] = &[
     "name",
     "description",
@@ -131,6 +132,9 @@ fn finalize_quote_items(
     let error_count = requested_count.saturating_sub(resolved_count);
     let payload = BatchQuotes {
         source: "scanner_scan_rest".to_string(),
+        source_category: DESKTOP_FREE_READ_CATEGORY.to_string(),
+        requires_desktop: false,
+        non_mutating: true,
         requested_count,
         resolved_count,
         error_count,
@@ -352,6 +356,8 @@ fn normalize_scanner_quote_response_typed(
         update_mode,
         delay_seconds: parse_update_delay_seconds(&field(27)),
         source: "scanner_scan_rest".to_string(),
+        source_category: DESKTOP_FREE_READ_CATEGORY.to_string(),
+        requires_desktop: false,
         non_mutating: true,
         requested_symbol: requested_symbol.to_string(),
         original_symbol: Value::Null,
@@ -460,6 +466,8 @@ mod tests {
         assert_eq!(result["close"], 266.39);
         assert_eq!(result["description"], "Apple Inc.");
         assert_eq!(result["source"], "scanner_scan_rest");
+        assert_eq!(result["source_category"], "desktop_free_read");
+        assert_eq!(result["requires_desktop"], false);
         assert_eq!(result["time"], 1777469400);
         assert_eq!(result["update_mode"], "delayed_streaming_900");
         assert_eq!(result["delay_seconds"], 900);
@@ -663,11 +671,20 @@ mod tests {
         let payload = serde_json::to_value(payload).unwrap();
 
         assert_eq!(payload["source"], "scanner_scan_rest");
+        assert_eq!(payload["source_category"], "desktop_free_read");
+        assert_eq!(payload["requires_desktop"], false);
+        assert_eq!(payload["non_mutating"], true);
         assert_eq!(payload["requested_count"], 2);
         assert_eq!(payload["resolved_count"], 1);
         assert_eq!(payload["error_count"], 1);
         assert_eq!(payload["items"][0]["requested_symbol"], "AAPL");
         assert_eq!(payload["items"][0]["quote"]["source"], "scanner_scan_rest");
+        assert_eq!(
+            payload["items"][0]["quote"]["source_category"],
+            "desktop_free_read"
+        );
+        assert_eq!(payload["items"][0]["quote"]["requires_desktop"], false);
+        assert_eq!(payload["items"][0]["quote"]["non_mutating"], true);
         assert_eq!(payload["items"][1]["requested_symbol"], "BANANA");
         assert_eq!(payload["items"][1]["error"]["kind"], "validation");
     }

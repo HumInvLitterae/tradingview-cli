@@ -5,6 +5,7 @@ use crate::{normalize::bare_symbol, types::Fundamentals};
 
 const FUNDAMENTALS_SOURCE: &str = "scanner_fundamentals_rest";
 const FUNDAMENTALS_MARKET: &str = "america";
+const DESKTOP_FREE_READ_CATEGORY: &str = "desktop_free_read";
 
 #[cfg(test)]
 pub(super) fn normalize_fundamentals_response(
@@ -106,6 +107,8 @@ pub(super) fn normalize_fundamentals_response_typed(
 
     Ok(Fundamentals {
         source: FUNDAMENTALS_SOURCE.to_string(),
+        source_category: DESKTOP_FREE_READ_CATEGORY.to_string(),
+        requires_desktop: false,
         requested_symbol: requested_symbol.to_string(),
         symbol: full_symbol.to_string(),
         observed_symbol: full_symbol.to_string(),
@@ -157,6 +160,8 @@ mod tests {
         let result = normalize_fundamentals_response("AAPL", &fields, &payload).unwrap();
 
         assert_eq!(result["source"], "scanner_fundamentals_rest");
+        assert_eq!(result["source_category"], "desktop_free_read");
+        assert_eq!(result["requires_desktop"], false);
         assert_eq!(result["requested_symbol"], "AAPL");
         assert_eq!(result["symbol"], "NASDAQ:AAPL");
         assert_eq!(result["observed_symbol"], "NASDAQ:AAPL");
@@ -192,6 +197,9 @@ mod tests {
 
         assert_eq!(result["requested_groups"], json!(["earnings"]));
         assert_eq!(result["fields"], json!(fields));
+        assert_eq!(result["source_category"], "desktop_free_read");
+        assert_eq!(result["requires_desktop"], false);
+        assert_eq!(result["non_mutating"], true);
     }
 
     #[test]

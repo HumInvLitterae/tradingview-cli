@@ -7,6 +7,7 @@ use crate::{
 };
 
 const SYMBOL_SEARCH_URL: &str = "https://symbol-search.tradingview.com/symbol_search/v3/";
+const DESKTOP_FREE_READ_CATEGORY: &str = "desktop_free_read";
 
 pub async fn symbol_search(query: &str) -> Result<Value, AppError> {
     serde_json::to_value(search_symbols_typed(query).await?)
@@ -112,6 +113,9 @@ pub(crate) fn normalize_symbol_search_response_typed(
     SymbolSearchResponse {
         query: query.to_string(),
         source: "rest_api".to_string(),
+        source_category: DESKTOP_FREE_READ_CATEGORY.to_string(),
+        requires_desktop: false,
+        non_mutating: true,
         count: results.len(),
         results,
     }
@@ -138,6 +142,9 @@ mod tests {
 
         assert_eq!(result["query"], "AAPL");
         assert_eq!(result["source"], "rest_api");
+        assert_eq!(result["source_category"], "desktop_free_read");
+        assert_eq!(result["requires_desktop"], false);
+        assert_eq!(result["non_mutating"], true);
         assert_eq!(result["count"], 1);
         assert_eq!(result["results"][0]["symbol"], "AAPL");
         assert_eq!(result["results"][0]["description"], "Apple Inc");
@@ -159,6 +166,9 @@ mod tests {
 
         assert_eq!(result.query, "AAPL");
         assert_eq!(result.source, "rest_api");
+        assert_eq!(result.source_category, "desktop_free_read");
+        assert!(!result.requires_desktop);
+        assert!(result.non_mutating);
         assert_eq!(result.count, 1);
         assert_eq!(result.results[0].symbol, "AAPL");
         assert_eq!(result.results[0].symbol_type, "stock");

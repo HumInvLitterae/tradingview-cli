@@ -9,6 +9,12 @@ pub struct SymbolSearchResponse {
     pub query: String,
     /// Public source marker used by the CLI JSON payload.
     pub source: String,
+    /// Command source category used by the CLI source taxonomy.
+    pub source_category: String,
+    /// False because this read does not require TradingView Desktop.
+    pub requires_desktop: bool,
+    /// True because this read does not mutate a chart.
+    pub non_mutating: bool,
     /// Number of normalized results.
     pub count: usize,
     /// Ordered search candidates returned by TradingView.
@@ -55,6 +61,10 @@ pub struct SymbolInfo {
     pub chart_type: Value,
     /// Public source marker.
     pub source: String,
+    /// Command source category used by the CLI source taxonomy.
+    pub source_category: String,
+    /// False because this read does not require TradingView Desktop.
+    pub requires_desktop: bool,
     /// True because this read does not mutate a chart.
     pub non_mutating: bool,
     /// Symbol text supplied by the caller.
@@ -66,6 +76,10 @@ pub struct SymbolInfo {
 pub struct Fundamentals {
     /// Public source marker.
     pub source: String,
+    /// Command source category used by the CLI source taxonomy.
+    pub source_category: String,
+    /// False because this read does not require TradingView Desktop.
+    pub requires_desktop: bool,
     /// Symbol text supplied by the caller.
     pub requested_symbol: String,
     /// Exchange-qualified resolved symbol.
@@ -125,6 +139,10 @@ pub struct Quote {
     pub delay_seconds: Value,
     /// Public source marker.
     pub source: String,
+    /// Command source category used by the CLI source taxonomy.
+    pub source_category: String,
+    /// False because this read does not require TradingView Desktop.
+    pub requires_desktop: bool,
     /// True because scanner quote reads do not mutate a chart.
     pub non_mutating: bool,
     /// Symbol text supplied by the caller.
@@ -188,6 +206,12 @@ pub struct FreshnessCheck {
 pub struct BatchQuotes {
     /// Public source marker.
     pub source: String,
+    /// Command source category used by the CLI source taxonomy.
+    pub source_category: String,
+    /// False because this read does not require TradingView Desktop.
+    pub requires_desktop: bool,
+    /// True because scanner batch quote reads do not mutate a chart.
+    pub non_mutating: bool,
     /// Number of requested symbols.
     pub requested_count: usize,
     /// Number of symbols resolved successfully.

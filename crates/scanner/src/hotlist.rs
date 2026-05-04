@@ -8,6 +8,7 @@ use super::types::{ScannerHotlistResult, ScannerRow};
 const HOTLIST_BASE_URL: &str = "https://scanner.tradingview.com/presets";
 const HOTLIST_REGION: &str = "US";
 const HOTLIST_SOURCE: &str = "scanner_preset_rest";
+const DESKTOP_FREE_READ_CATEGORY: &str = "desktop_free_read";
 const DEFAULT_HOTLIST_LIMIT: usize = 20;
 const MAX_HOTLIST_LIMIT: usize = 20;
 const HOTLIST_SLUGS: &[&str] = &[
@@ -134,6 +135,9 @@ fn normalize_hotlist_response_typed(
 
     Ok(ScannerHotlistResult {
         source: HOTLIST_SOURCE.to_string(),
+        source_category: DESKTOP_FREE_READ_CATEGORY.to_string(),
+        requires_desktop: false,
+        non_mutating: true,
         region: HOTLIST_REGION.to_string(),
         slug: slug.to_string(),
         limit,
@@ -234,6 +238,9 @@ mod tests {
         let result = normalize_hotlist_response("volume_gainers", 1, &payload).unwrap();
 
         assert_eq!(result["source"], "scanner_preset_rest");
+        assert_eq!(result["source_category"], "desktop_free_read");
+        assert_eq!(result["requires_desktop"], false);
+        assert_eq!(result["non_mutating"], true);
         assert_eq!(result["region"], "US");
         assert_eq!(result["slug"], "volume_gainers");
         assert_eq!(result["limit"], 1);
@@ -259,6 +266,9 @@ mod tests {
         let result = normalize_hotlist_response_typed("volume_gainers", 1, &payload).unwrap();
 
         assert_eq!(result.source, "scanner_preset_rest");
+        assert_eq!(result.source_category, "desktop_free_read");
+        assert!(!result.requires_desktop);
+        assert!(result.non_mutating);
         assert_eq!(result.region, "US");
         assert_eq!(result.slug, "volume_gainers");
         assert_eq!(result.fields, ["volume", "change"]);
