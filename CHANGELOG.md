@@ -7,6 +7,11 @@ package version omits the leading `v`.
 
 ## Unreleased
 
+### Documentation
+
+- Added the `v0.7.0` roadmap draft for agent-ready observation workflows and
+  the first `tv observe chart` implementation plan.
+
 ## v0.6.0 - 2026-05-05
 
 ### Added
