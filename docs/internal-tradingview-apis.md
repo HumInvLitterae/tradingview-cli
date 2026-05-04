@@ -244,7 +244,9 @@ Comparable evidence:
 - Existing `tv stream ...` commands are not browserless WebSocket streams;
   they are Desktop-backed current-chart JSONL polling reads. Future
   observation work may improve their event contract or add browserless stream
-  candidates, but the source boundary must remain explicit.
+  candidates, but the source boundary must remain explicit. Stream sample and
+  heartbeat events currently report `source: "desktop_chart_stream"` and
+  `source_category: "desktop_backed_read"`.
 
 Safety boundary:
 

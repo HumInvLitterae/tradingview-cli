@@ -8,6 +8,8 @@ use tradingview_core::{AppError, ErrorKind};
 use super::common::{CHART_API, CHART_WIDGET_COLLECTION, js_string};
 
 const MIN_STREAM_INTERVAL_MS: u64 = 100;
+const STREAM_SOURCE: &str = "desktop_chart_stream";
+const STREAM_SOURCE_CATEGORY: &str = "desktop_backed_read";
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum StreamKind {
@@ -169,6 +171,10 @@ fn add_stream_metadata(sample: &mut Value, kind: StreamKind) -> Result<(), AppEr
     object.insert("_stream".to_string(), json!(kind.label()));
     object.insert("_ts".to_string(), json!(ts));
     object.insert("_event".to_string(), json!("sample"));
+    object.insert("source".to_string(), json!(STREAM_SOURCE));
+    object.insert("source_category".to_string(), json!(STREAM_SOURCE_CATEGORY));
+    object.insert("requires_desktop".to_string(), json!(true));
+    object.insert("non_mutating".to_string(), json!(true));
     Ok(())
 }
 
@@ -186,6 +192,10 @@ pub fn stream_heartbeat(
         "_stream": request.kind.label(),
         "_event": "heartbeat",
         "_ts": ts,
+        "source": STREAM_SOURCE,
+        "source_category": STREAM_SOURCE_CATEGORY,
+        "requires_desktop": true,
+        "non_mutating": true,
         "elapsed_ms": elapsed_ms,
         "sample_count": sample_count,
         "last_sample_ts": last_sample_ts,
@@ -506,6 +516,10 @@ mod tests {
         assert_eq!(sample["symbol"], "NASDAQ:AAPL");
         assert_eq!(sample["_stream"], "quote");
         assert_eq!(sample["_event"], "sample");
+        assert_eq!(sample["source"], "desktop_chart_stream");
+        assert_eq!(sample["source_category"], "desktop_backed_read");
+        assert_eq!(sample["requires_desktop"], true);
+        assert_eq!(sample["non_mutating"], true);
         assert!(sample["_ts"].as_u64().unwrap() > 0);
         assert!(runtime.evaluated[0].0.contains("chart.symbol()"));
     }
@@ -520,6 +534,10 @@ mod tests {
 
         assert_eq!(heartbeat["_stream"], "quote");
         assert_eq!(heartbeat["_event"], "heartbeat");
+        assert_eq!(heartbeat["source"], "desktop_chart_stream");
+        assert_eq!(heartbeat["source_category"], "desktop_backed_read");
+        assert_eq!(heartbeat["requires_desktop"], true);
+        assert_eq!(heartbeat["non_mutating"], true);
         assert_eq!(heartbeat["elapsed_ms"], 2500);
         assert_eq!(heartbeat["sample_count"], 3);
         assert_eq!(heartbeat["last_sample_ts"], 123);

@@ -275,7 +275,7 @@ prefer Desktop-free `tv info <SYMBOL>` and `tv quote <SYMBOL>`. Use `tv info`
 without a symbol only when you need the current chart's loaded symbol metadata.
 The chart timeframe command is `tv timeframe <RESOLUTION>`, not `interval`.
 
-Commands print structured JSON. Most successful commands print one `success: true` envelope to stdout. `tv stream ...` commands print newline-delimited JSON envelopes, one line per changed sample. Stream sample payloads include `_event: "sample"`; bounded streams can also emit `_event: "heartbeat"` when `--heartbeat-ms` is set. Use `--duration-ms` or `--max-events` for finite observation windows. Without those options, stream commands remain intentionally long-running. Failed non-stream commands print a `success: false` envelope to stderr; stream polling errors after startup are printed to stderr and the stream continues.
+Commands print structured JSON. Most successful commands print one `success: true` envelope to stdout. `tv stream ...` commands print newline-delimited JSON envelopes, one line per changed sample. Stream sample payloads include `_event: "sample"`; bounded streams can also emit `_event: "heartbeat"` when `--heartbeat-ms` is set. Stream events also include `source: "desktop_chart_stream"`, `source_category: "desktop_backed_read"`, `requires_desktop: true`, and `non_mutating: true`. Use `--duration-ms` or `--max-events` for finite observation windows. Without those options, stream commands remain intentionally long-running. Failed non-stream commands print a `success: false` envelope to stderr; stream polling errors after startup are printed to stderr and the stream continues.
 
 Exit codes are:
 

@@ -13,6 +13,8 @@ package version omits the leading `v`.
   commands: `--duration-ms`, `--max-events`, and `--heartbeat-ms`.
 - Added additive stream event metadata with `_event: "sample"` for changed
   samples and `_event: "heartbeat"` for heartbeat JSONL envelopes.
+- Added source taxonomy metadata to stream sample and heartbeat events:
+  `source`, `source_category`, `requires_desktop`, and `non_mutating`.
 
 ### Fixed
 
