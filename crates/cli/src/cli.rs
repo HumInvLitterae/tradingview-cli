@@ -4,6 +4,7 @@ use clap::{Args, Parser, Subcommand, ValueEnum};
 
 #[derive(Debug, Parser)]
 #[command(name = "tv")]
+#[command(version)]
 #[command(about = "Rust-native TradingView Desktop CLI via Chrome DevTools Protocol")]
 pub struct Cli {
     #[arg(

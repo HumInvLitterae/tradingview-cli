@@ -6,14 +6,12 @@ for release and next-phase planning.
 
 ## Current and future plans
 
-- `tradingview-cli-desktop-free-read-source-metadata.md`: add source taxonomy
-  metadata to Desktop-free market and scanner read payloads such as `info`,
-  scanner-source `quote`, `quotes`, `fundamentals`, `scanner scan`,
-  `scanner hotlist`, and `scanner metainfo`.
+- `tradingview-cli-version-flag.md`: add root `tv --version` / `tv -V`
+  support for release archive and local binary sanity checks.
 
 The current `v0.6.0` implementation slice keeps `diagnose` deferred, keeps
-experimental `bars` separate, and continues source taxonomy polish without
-adding new command surface.
+experimental `bars` separate, and performs small CLI surface polish before the
+next release-readiness pass.
 
 ## Archived plans
 
@@ -106,6 +104,7 @@ Important archived plan categories:
 - Desktop readiness integrated read command
 - screenshot source taxonomy and visual evidence metadata
 - core Desktop-backed read source taxonomy metadata
+- Desktop-free market and scanner read source taxonomy metadata
 
 For command contract details, prefer the notes under `docs/notes/` before
 reading archived implementation plans.

@@ -24,6 +24,9 @@ Prefer `tv` when it is on `PATH`. If the release archive was unpacked but not in
 
 When reporting commands to the user, write them as `tv ...` unless the local executable path matters.
 
+Run `tv --version` to confirm the binary is available and to report its package
+version when troubleshooting.
+
 ## Startup
 
 1. Run `tv status`.

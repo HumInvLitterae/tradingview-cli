@@ -90,6 +90,9 @@ GitHub Releases are the first supported binary distribution path. Pushing a vers
 
 Each archive contains the `tv` or `tv.exe` binary, `README.md`, `CHANGELOG.md`, `LICENSE`, a user-facing `AGENTS.md` and `CLAUDE.md`, and runtime-oriented TradingView CLI skills under `.agents/skills/` and `.claude/skills/`, including chart analysis, market-data interpretation, multi-symbol scanning, Pine, replay, Screener operation, scanner/Screener result analysis, and strategy workflows. Verify the downloaded archive against `SHA256SUMS`, unpack it, and place the executable on your `PATH`.
 
+After unpacking or installing, run `tv --version` to confirm the binary and
+package version.
+
 The repository root `AGENTS.md` and `CLAUDE.md` are contributor-facing development guides. Release archives instead include user-facing agent guides for operating `tv` safely through an AI agent.
 
 Package-manager installers, code signing, notarization, and crates.io publication are not part of the first release workflow.
@@ -304,7 +307,8 @@ cargo run -- status
 cargo run -- quote
 ```
 
-Use `tv --help` or `cargo run -- --help` for the full command list.
+Use `tv --version` to confirm the installed binary version. Use `tv --help` or
+`cargo run -- --help` for the full command list.
 
 Optional local Git guardrails can be installed with Git 2.54 or newer. If you
 use `mise`, run:
