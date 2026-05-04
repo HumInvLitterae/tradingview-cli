@@ -9,6 +9,8 @@ package version omits the leading `v`.
 
 ### Added
 
+- Added root `tv --version` / `tv -V` support for release archive and local
+  binary sanity checks.
 - Added bounded observation controls to Desktop-backed `tv stream ...`
   commands: `--duration-ms`, `--max-events`, and `--heartbeat-ms`.
 - Added additive stream event metadata with `_event: "sample"` for changed

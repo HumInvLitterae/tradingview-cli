@@ -8,6 +8,21 @@ fn tv() -> Command {
 }
 
 #[test]
+fn version_flag_prints_package_version() {
+    tv().arg("--version")
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("tv"))
+        .stdout(predicate::str::contains(env!("CARGO_PKG_VERSION")));
+
+    tv().arg("-V")
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("tv"))
+        .stdout(predicate::str::contains(env!("CARGO_PKG_VERSION")));
+}
+
+#[test]
 fn help_lists_v1_commands() {
     tv().arg("--help")
         .assert()
