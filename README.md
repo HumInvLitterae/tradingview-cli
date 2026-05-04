@@ -1,36 +1,146 @@
 # TradingView CLI
 
-TradingView CLI is a Rust-native command-line replacement for the current TradingView MCP Bridge usage in sibling trading-analysis projects.
+`tv` is a Rust-native command-line tool for TradingView workflows. It combines
+TradingView Desktop automation through Chrome DevTools Protocol with
+Desktop-free TradingView data reads for quotes, scanner rows, symbol metadata,
+and fundamentals.
 
-This project is inspired by practical workflows built around [TradingView MCP Bridge](https://github.com/tradesdontlie/tradingview-mcp) by `tradesdontlie`. That project established the useful bridge pattern this repository is now narrowing into a CLI-first tool. This repository is not affiliated with TradingView Inc.
+This project is inspired by practical workflows built around
+[TradingView MCP Bridge](https://github.com/tradesdontlie/tradingview-mcp) by
+`tradesdontlie`, but this repository is intentionally CLI-first. It is not an
+MCP server and is not affiliated with TradingView Inc.
 
-This tool requires the user's own valid TradingView Desktop installation, logged-in session, and data entitlements. It does not bypass TradingView access controls, subscriptions, paywalls, or exchange/data-provider licensing. It controls the locally running desktop app through Chrome DevTools Protocol and undocumented TradingView application interfaces, which may change or break without notice. Market data, Pine scripts, and TradingView account state remain subject to TradingView, exchange, data-provider, and script-author terms.
+This tool requires the user's own valid TradingView account, data
+entitlements, and, for Desktop-backed commands, a local TradingView Desktop
+session. It does not bypass TradingView access controls, subscriptions,
+paywalls, or exchange/data-provider licensing. Market data, Pine scripts,
+alerts, layouts, and account state remain subject to TradingView and
+data-provider terms.
 
-## Current status
+## What `tv` Does
 
-This repository now contains the first Rust-native `tv` CLI implementation.
+`tv` is one binary with several source categories:
 
-The first implementation focuses on a narrow CLI surface for connecting to an already-running TradingView Desktop instance through Chrome DevTools Protocol on `127.0.0.1:9222`.
+- Desktop-free reads: symbol search, symbol info, scanner-backed quote reads,
+  batch quotes, fundamentals, scanner scans, hotlists, and metainfo.
+- Desktop-backed reads: chart state, OHLCV from the selected chart, screenshots,
+  readiness diagnostics, and chart-source quotes.
+- Desktop-backed operations: chart symbol/timeframe/type changes, watchlist,
+  alerts, drawings, Pine Editor, Replay, Screener, panes, layouts, tabs, and
+  compatibility UI automation.
+- Hybrid commands: commands with explicit source or fallback behavior, such as
+  `tv quote <SYMBOL> --source auto`.
+- Experimental commands: lab-gated behavior such as browserless `tv bars`.
 
-The old TradingView MCP Bridge CLI command migration is now closed for the known JavaScript CLI surface. If new evidence shows a missed old CLI command, treat it as migration backlog unless a repository decision explicitly marks it out of scope. The MCP server is different: implementing an MCP server is not planned for this project.
+See `docs/command-source-taxonomy.md` for the durable command classification
+and source/fallback semantics.
 
-## Purpose
+## Safety Boundary
 
-This is a CLI-first tool that focuses on the practical capabilities currently needed from the existing TradingView bridge:
+Some commands only read public or browser-accessible TradingView data. Other
+commands operate the user's local Desktop session or page state. Before using a
+command that may change chart, account, editor, Replay, Screener, drawing,
+alert, watchlist, or UI state, prefer read-only commands and dry-run modes where
+available.
 
-- bounded TradingView Desktop connectivity
-- reliable command-line interaction
-- capability surfaces that can later support provider, review, and operator workflows
+The default Chrome DevTools endpoint is `127.0.0.1:9222`. Override it with
+`TV_CDP_HOST` and `TV_CDP_PORT` only when your local setup requires it.
 
-The replacement is Rust-native, CLI-centered, and narrower than a full MCP-compatible reimplementation.
+## Installation
 
-An MCP server is not planned for this project. Downstream integration should start through ordinary process invocation and JSON CLI output rather than by recreating the original MCP server surface.
+GitHub Releases are the first supported binary distribution path. Version tags
+such as `v0.5.1` publish native archives like:
 
-## Compatibility policy
+- `tv-v0.5.1-x86_64-unknown-linux-gnu.tar.gz`
+- `tv-v0.5.1-x86_64-apple-darwin.tar.gz`
+- `tv-v0.5.1-aarch64-apple-darwin.tar.gz`
+- `tv-v0.5.1-x86_64-pc-windows-msvc.zip`
+- `SHA256SUMS`
 
-This Rust CLI is intended to replace practical usage of the old `tv` CLI over time, but it is not a drop-in JSON wire-format clone.
+Each archive contains the `tv` or `tv.exe` binary, `README.md`,
+`CHANGELOG.md`, `LICENSE`, user-facing agent guides, and runtime-oriented
+TradingView CLI skills. Verify the archive against `SHA256SUMS`, unpack it,
+place the executable on your `PATH`, and confirm the binary:
 
-The Rust CLI intentionally uses stable command envelopes:
+```bash
+tv --version
+```
+
+During local development, build or install from the workspace root:
+
+```bash
+cargo install --path crates/cli
+```
+
+Package-manager installers, code signing, notarization, and crates.io
+publication are not part of the current release workflow.
+
+## Quick Start
+
+Desktop-free reads do not require TradingView Desktop:
+
+```bash
+tv search "Apple"
+tv info NASDAQ:AAPL
+tv quote AAPL
+tv quotes AAPL MSFT NYSE:IONQ
+tv fundamentals NYSE:IONQ --group earnings
+tv scanner scan --type stock --columns name,close,volume --limit 10
+tv scanner metainfo --market america --field close --field premarket_close
+```
+
+To use Desktop-backed reads or operations, launch TradingView Desktop with CDP
+enabled:
+
+```bash
+tv launch
+tv readiness
+tv tab list
+tv state
+tv ohlcv --summary --count 100
+tv screenshot --region chart --output target/tv-chart.png
+```
+
+If multiple TradingView targets are open, use `target_cli_args` returned by
+`tv tab list` or `tv readiness`:
+
+```bash
+tv --target-id <CDP_TARGET_ID> state
+tv --target-id <CDP_TARGET_ID> ohlcv --count 1
+```
+
+Common Desktop operations:
+
+```bash
+tv symbol NASDAQ:AAPL
+tv timeframe 1D
+tv watchlist get
+tv alert list
+tv pine get
+tv screener open --full-page
+tv screener filters add --name RSI --min 70 --dry-run
+tv draw position long --entry-price 100 --stop-loss 95 --take-profit 110
+```
+
+Bounded stream observations emit newline-delimited JSON:
+
+```bash
+tv stream quote --duration-ms 10000 --heartbeat-ms 2000
+tv stream bars --max-events 5
+```
+
+Experimental browserless historical bars are lab-gated:
+
+```bash
+TV_EXPERIMENTAL_BARS=1 tv bars NASDAQ:AAPL --timeframe 1D --count 5
+```
+
+Use `tv --help` for the full command list and `tv <COMMAND> --help` for command
+details.
+
+## Output Contract
+
+Most successful commands print one JSON envelope to stdout:
 
 ```json
 {
@@ -42,7 +152,7 @@ The Rust CLI intentionally uses stable command envelopes:
 }
 ```
 
-Errors use the same envelope shape with structured details:
+Errors use the same envelope shape on stderr:
 
 ```json
 {
@@ -56,239 +166,8 @@ Errors use the same envelope shape with structured details:
 }
 ```
 
-The old JavaScript CLI usually returned command fields at the top level, for example `{ "success": true, "symbol": "NASDAQ:AAPL" }`. Downstream adapters must therefore read command payloads from `data` when migrating to this Rust CLI.
-
-The wire shape may differ, but information compatibility is required for migrated commands: information available from the old CLI should remain available from the Rust CLI once the corresponding command is implemented. New fields may be added. Removing old practical information requires an explicit decision and migration note.
-
-For a migration-focused summary, read `docs/breaking-changes-from-js-cli.md`.
-
-## Non-goals
-
-- no copied JavaScript bridge code
-- no MCP server implementation
-- no claim of JSON wire-format compatibility with the old JavaScript CLI
-- no package-manager installer yet
-
-## Validation
-
-GitHub Actions runs the automated Rust baseline on push and pull request: `cargo fmt --check`, `cargo clippy --workspace --all-targets --all-features -- -D warnings`, and `cargo test --workspace` across Linux, macOS, and Windows.
-
-Tagged releases matching `v*` build native release archives for Linux, macOS, and Windows and publish them to GitHub Releases with `SHA256SUMS`.
-If `docs/releases/<tag>.md` exists, the release workflow uses it as the GitHub Release body; otherwise it falls back to generated notes. The GitHub Release title already contains the tag, so release body files should not need a top-level version heading.
-
-TradingView Desktop live smoke checks are intentionally separate from CI because they require a logged-in desktop session with Chrome DevTools Protocol enabled. See `docs/development.md` for the opt-in chart-source quote endurance smoke.
-
-## Release Builds
-
-GitHub Releases are the first supported binary distribution path. Pushing a version tag such as `v0.5.1` creates release assets named:
-
-- `tv-v0.5.1-x86_64-unknown-linux-gnu.tar.gz`
-- `tv-v0.5.1-x86_64-apple-darwin.tar.gz`
-- `tv-v0.5.1-aarch64-apple-darwin.tar.gz`
-- `tv-v0.5.1-x86_64-pc-windows-msvc.zip`
-- `SHA256SUMS`
-
-Each archive contains the `tv` or `tv.exe` binary, `README.md`, `CHANGELOG.md`, `LICENSE`, a user-facing `AGENTS.md` and `CLAUDE.md`, and runtime-oriented TradingView CLI skills under `.agents/skills/` and `.claude/skills/`, including chart analysis, market-data interpretation, multi-symbol scanning, Pine, replay, Screener operation, scanner/Screener result analysis, and strategy workflows. Verify the downloaded archive against `SHA256SUMS`, unpack it, and place the executable on your `PATH`.
-
-After unpacking or installing, run `tv --version` to confirm the binary and
-package version.
-
-The repository root `AGENTS.md` and `CLAUDE.md` are contributor-facing development guides. Release archives instead include user-facing agent guides for operating `tv` safely through an AI agent.
-
-Package-manager installers, code signing, notarization, and crates.io publication are not part of the first release workflow.
-
-## Quick Start
-
-Install `tv` from a GitHub Release archive for your OS, or build it from the repository root while developing:
-
-```bash
-cargo install --path crates/cli
-```
-
-Launch TradingView Desktop with Chrome DevTools Protocol enabled. The bounded launcher searches common install locations and defaults to `127.0.0.1:9222`:
-
-```bash
-tv launch
-```
-
-On Windows, the standalone Desktop build is the recommended install for `tv launch`. Microsoft Store/MSIX `TradingView.Desktop 3.1.0.7818` has been smoke-tested with the current direct AppX launch path and can open CDP, but Store/MSIX behavior can still change with TradingView Desktop, Electron, or Microsoft Store packaging updates. On macOS, the launcher first tries a direct app spawn and then falls back to `open -a TradingView --args ...` if CDP does not become ready. The launcher does not close an existing TradingView session unless `--kill-existing` is explicit:
-
-```bash
-tv launch --kill-existing
-```
-
-If the launcher cannot find TradingView Desktop, pass an explicit executable path:
-
-```bash
-tv launch --path "/Applications/TradingView.app/Contents/MacOS/TradingView"
-```
-
-Common TradingView Desktop executable paths include:
-
-- macOS: `/Applications/TradingView.app/Contents/MacOS/TradingView`
-- Windows: `%ProgramFiles%\TradingView\TradingView.exe`, preferably from the standalone Desktop installer. Store/MSIX `TradingView.Desktop 3.1.0.7818` has also been verified through direct AppX launch; if Store/MSIX CDP startup fails on another version, use the standalone build or pass an explicit `--path`.
-- Linux: `/opt/TradingView/tradingview`, `/opt/TradingView/TradingView`, or `/snap/tradingview/current/tradingview`
-
-Then run commands against the active TradingView Desktop session:
-
-```bash
-tv status
-tv readiness
-tv tab list
-tv --target-id <CDP_TARGET_ID> quote AAPL
-tv quotes AAPL MSFT NYSE:IONQ
-tv fundamentals NYSE:IONQ
-tv fundamentals NYSE:IONQ --group earnings
-tv fundamentals AAPL --group valuation --group dividends
-tv fundamentals AAPL --field earnings_release_next_date --field earnings_release_next_time
-tv scanner hotlist volume_gainers --limit 10
-tv scanner metainfo --market america --field close --field premarket_close --field postmarket_close
-tv scanner scan --exchange NASDAQ --exchange NYSE --sort market_cap_basic --desc --limit 10
-tv scanner scan --type stock --sector "Technology Services" --min-relative-volume 1.5 --sort relative_volume_10d_calc --desc --limit 10
-tv scanner scan --type stock --min-average-volume 1000000 --min-performance-week 5 --max-rsi 70 --sort Perf.W --desc --limit 10
-tv scanner scan --type stock --max-change -5 --sort change --asc --columns name,change,volume --limit 10
-tv scanner scan --type stock --columns name,close,premarket_close,premarket_volume,postmarket_close,postmarket_volume --limit 10
-tv scanner scan --type stock --columns name,earnings_release_next_date,earnings_release_date,price_earnings_ttm --limit 10
-TV_EXPERIMENTAL_BARS=1 tv bars NASDAQ:AAPL --timeframe 1D --count 5
-tv stream quote --duration-ms 10000 --heartbeat-ms 2000
-tv stream bars --max-events 5
-tv screener get --limit 10
-tv screener screens actions
-tv screener screens list
-tv screener screens list --catalog
-tv screener screens switch --name "米国株（テスト用）" --dry-run
-tv screener screens switch --name "CLI-Test2" --catalog --dry-run
-tv screener screens save --dry-run
-tv screener screens create --name CLI-Test-Codex --dry-run
-tv screener screens rename --name CLI-Test-Codex --to CLI-Test-Codex-Renamed --dry-run
-tv screener screens save-as --name CLI-Test-Codex-Copy --dry-run
-tv screener screens delete --name CLI-Test-Codex --dry-run
-tv screener screens delete --name CLI-Test-Codex --confirm-delete
-tv screener filters list
-tv screener filters actions
-tv screener filters add --name RSI --min 70 --dry-run
-tv screener filters modify --text "EMA (21)" --min 10 --dry-run
-tv screener filters modify --text "アナリストの評価" --option "買い" --dry-run
-tv screener filters remove --text PER --dry-run
-tv screener columns list
-tv screener columns config
-tv screener columns actions
-tv screener columns add --id TechnicalRating --params-json '{"resolution":"TimeResolution1D"}' --after-index 11 --dry-run
-tv screener columns remove --name "EMA (21)" --dry-run
-tv screener columns reorder --from-index 12 --to-index 11 --dry-run
-tv quote
-tv quote AAPL
-tv info AAPL
-tv ohlcv --summary --count 100
-tv watchlist get
-tv watchlist add-bulk NASDAQ:AAPL NASDAQ:MSFT --delay-ms 500 --allow-partial
-tv layout list
-tv alert list
-tv alert create-indicator --script "My Indicator" --file my-indicator.pine --condition-title "Long" --dry-run
-tv alert create-indicator --script "My Indicator" --file my-indicator.pine --condition-title "Long" --message "tv-cli smoke"
-tv pane list
-tv data shapes --count 100
-tv draw position long --entry-price 100 --stop-loss 95 --take-profit 110
-tv pine get
-tv pine alertconditions --file my-indicator.pine
-tv screenshot --region chart --output target/tv-chart.png
-```
-
-`tv` remains a single binary, but commands have different source and
-side-effect boundaries. See `docs/command-source-taxonomy.md` for the durable
-classification.
-
-- Desktop-free reads do not require TradingView Desktop or CDP. Examples:
-  `tv search <QUERY>`, `tv info <SYMBOL>`, `tv fundamentals <SYMBOL>`,
-  `tv quote <SYMBOL>`, `tv quotes <SYMBOL>...`, `tv scanner scan`, and
-  `tv scanner metainfo`. Stable Desktop-free read payloads report
-  `source_category: "desktop_free_read"`, `requires_desktop: false`, and
-  `non_mutating: true`.
-- Desktop-backed reads use the selected TradingView Desktop target or visible
-  state. Start with `tv readiness` when an agent needs to know whether the
-  current Desktop target, chart API, and bars are usable. Examples:
-  `tv readiness`, `tv state`, `tv ohlcv`, current-chart `tv info` /
-  `tv quote`, `tv quote <SYMBOL> --source chart`, and `tv screenshot`.
-  Screenshots are visual evidence reads: they do not mutate TradingView state,
-  but they do write the requested local output file. Core Desktop-backed read
-  payloads report `source_category`, `requires_desktop`, and `non_mutating`
-  so agents can keep their evidence source visible.
-- Desktop-backed operations can change chart, account, editor, Replay,
-  Screener, layout, drawing, alert, watchlist, or generic UI state. Prefer
-  read-only commands and `--dry-run` first, and get user approval before normal
-  mutation.
-- Hybrid commands have explicit source or fallback behavior. The main example
-  is `tv quote <SYMBOL> --source auto`, which is chart-first and falls back to
-  scanner only if the chart path is unavailable before any chart mutation.
-- Experimental commands are lab-gated. `TV_EXPERIMENTAL_BARS=1 tv bars
-  <EXCHANGE:SYMBOL>` uses an undocumented TradingView WebSocket path and does
-  not replace chart-backed `tv ohlcv`.
-
-Scanner-backed quote payloads include regular quote fields, `time`,
-`update_mode`, parsed `delay_seconds` when the mode is clearly delayed, and an
-additive `extended_hours` object for premarket and postmarket values when
-TradingView returns them. Credential-free scanner price reads are useful for
-screening but are not a realtime entitlement guarantee. `tv fundamentals`
-returns raw TradingView scanner values under `field_values`; earnings date/time
-fields are not interpreted into a timezone or before/after-market label by the
-CLI.
-
-Chart-source quote commands mutate the selected chart while reading. The CLI
-serializes symbol-targeted chart quote commands, waits for requested-symbol
-chart bars to become fresh, requires two consecutive ready samples, retries
-that readiness wait once on timeout, restores the original symbol, and fails
-instead of reporting success if the observed quote symbol, chart symbol, or bar
-freshness does not match the request. Downstream agents should preserve
-`freshness_check` and readiness details rather than adding sleep or double-call
-workarounds.
-
-`tv pine alertconditions [--file <PATH>]` is local static discovery for Pine
-source. It estimates `alertcondition()` candidate ids such as `plot_1` without
-connecting to TradingView or creating alerts. Treat the output as a best-effort
-planning aid; TradingView compile and later guarded alert dry-run behavior
-remain the authority for account alert creation.
-
-`tv alert create-indicator ... [--dry-run]` creates or previews Pine
-`alertcondition()` alerts. It combines a local Pine source candidate with an
-exact saved-script name visible to the logged-in TradingView session. Normal
-mode uses the alert endpoint and post-create readback; if required saved-script
-or input metadata cannot be resolved safely, it fails before sending the create
-request. The command does not print saved-script identifiers.
-
-Screenshots require an explicit `--output <PATH>` file path. Parent directories are created automatically, so agent or Claude Desktop workflows should choose a readable output path directly instead of relying on a default screenshots directory. Screenshot payloads include `source: "desktop_screenshot"`, `source_category: "desktop_backed_read"`, `non_mutating: true`, `writes_file: true`, and `visual_evidence: true`.
-
-The default CDP endpoint is `127.0.0.1:9222`. Override it with `TV_CDP_HOST` and `TV_CDP_PORT` when needed, for example if a local setup still requires `localhost`.
-
-### Multiple Chart Targets
-
-If more than one TradingView chart target is open, run `tv tab list`, choose the intended `target_id`, and pass it explicitly:
-
-```bash
-tv --target-id <CDP_TARGET_ID> quote
-tv --target-id <CDP_TARGET_ID> ohlcv --summary
-tv --target-id <CDP_TARGET_ID> symbol NASDAQ:MU
-```
-
-`tv tab list` and `tv tab switch <INDEX>` return `target_cli_args`, which can be reused directly for the next command. `--target-id` is the only explicit target handoff; `TV_CDP_TARGET_ID` is no longer part of the public contract.
-
-Use `tv screener open --full-page` to reuse a Stock Screener page tab and get
-its `target_cli_args`. The command also attempts the local CDP new-target path,
-but current TradingView Desktop builds may reject that endpoint. When that
-happens, the command falls back to TradingView Desktop's new-tab Screener tile
-and reports `creation_method: "new_tab_tile"` if a full-page target appears.
-`tv tab list` also returns `screener_targets` when a Stock Screener page tab is
-already open.
-
-If `tv ohlcv` fails while `tv quote` or `tv symbol` still works, do not keep
-retrying the same command blindly. Preserve the full JSON error envelope, check
-`error.details`, rerun `tv tab list`, choose the active chart target's
-`target_cli_args`, then run `tv --target-id <ID> state` and
-`tv --target-id <ID> ohlcv --count 1`. For one-off symbol metadata or quotes,
-prefer Desktop-free `tv info <SYMBOL>` and `tv quote <SYMBOL>`. Use `tv info`
-without a symbol only when you need the current chart's loaded symbol metadata.
-The chart timeframe command is `tv timeframe <RESOLUTION>`, not `interval`.
-
-Commands print structured JSON. Most successful commands print one `success: true` envelope to stdout. `tv stream ...` commands print newline-delimited JSON envelopes, one line per changed sample. Stream sample payloads include `_event: "sample"`; bounded streams can also emit `_event: "heartbeat"` when `--heartbeat-ms` is set. Stream events also include `source: "desktop_chart_stream"`, `source_category: "desktop_backed_read"`, `requires_desktop: true`, and `non_mutating: true`. Use `--duration-ms` or `--max-events` for finite observation windows. Without those options, stream commands remain intentionally long-running. Failed non-stream commands print a `success: false` envelope to stderr; stream polling errors after startup are printed to stderr and the stream continues.
+`tv stream ...` commands print newline-delimited JSON envelopes. Stream samples
+use `_event: "sample"` and optional heartbeats use `_event: "heartbeat"`.
 
 Exit codes are:
 
@@ -298,99 +177,52 @@ Exit codes are:
 - `3`: TradingView internal API unavailable
 - `4`: timeout
 
+The Rust CLI intentionally differs from the old JavaScript CLI wire format.
+Downstream adapters should read command payloads from `data`. For migration
+details, see `docs/breaking-changes-from-js-cli.md`.
+
+## Documentation
+
+- `docs/command-source-taxonomy.md`: command source categories, fallback
+  boundaries, mutation expectations, and recommended agent use.
+- `docs/architecture.md`: workspace architecture, crate boundaries, operation
+  adapters, JSON contract, and safety model.
+- `docs/rust-api.md`: currently documented typed Rust API boundary for internal
+  reusable read crates.
+- `docs/development.md`: coding style, validation, tests, and contribution
+  workflow.
+- `docs/release-packaging.md`: release archive contents and packaging checks.
+- `docs/internal-tradingview-apis.md`: public-safe reference for non-public
+  TradingView dependencies.
+- `docs/v0.6-roadmap.md`: current roadmap direction.
+
+Historical notes and completed ExecPlans live under `docs/notes/` and
+`docs/plans/archives/`. They explain how the current surface was built, but
+they are not the best starting point for normal use.
+
 ## Development
 
-During local development, you can run commands without installing the binary:
+The repository is a Cargo workspace. The `tv` binary is provided by the
+`tradingview-cli` package under `crates/cli/`.
+
+Useful local commands:
 
 ```bash
-cargo run -- status
-cargo run -- quote
+cargo fmt --check
+cargo clippy --workspace --all-targets --all-features -- -D warnings
+cargo test --workspace
+cargo metadata --no-deps --format-version 1
 ```
 
-Use `tv --version` to confirm the installed binary version. Use `tv --help` or
-`cargo run -- --help` for the full command list.
-
-Optional local Git guardrails can be installed with Git 2.54 or newer. If you
-use `mise`, run:
+Optional local Git guardrails can be installed with Git 2.54 or newer:
 
 ```bash
 mise run hooks:install
 ```
 
-Without `mise`, run the installer directly:
-
-```bash
-scripts/install-config-hooks.sh
-```
-
-On Windows, use PowerShell:
-
-```powershell
-./scripts/install-config-hooks.ps1
-```
-
-These hooks are local development helpers only. The authoritative validation
-baseline remains the commands run by CI.
-
-## What is included
-
-- a Rust v1 `tv` CLI implementation
-- a GitHub Actions CI baseline for Rust formatting, linting, and tests
-- a GitHub Actions release workflow for tag-triggered native binary archives
-- optional Git 2.54 config-based local hooks with `mise` task shortcuts
-- `CHANGELOG.md` release notes for public versions
-- user-facing agent guides and runtime skills in release archives, including a
-  dedicated Stock Screener workflow skill
-- Desktop-free symbol metadata and quote reads through `tv info <SYMBOL>`,
-  `tv quote [SYMBOL]`, and `tv quotes <SYMBOL>...`
-- read-only TradingView scanner REST reads through `tv scanner hotlist`,
-  `tv scanner scan`, and `tv scanner metainfo`
-- TradingView Stock Screener dialog and full-page target handoff, menu-visible and catalog screen switching, exact screen action/save support, guarded test-screen lifecycle commands, storage-backed filter cleanup and range edits, filter add, preset-range filter modification, and storage-backed column inspection/add/remove/reorder through `tv screener status/open/get/screens active/actions/list/switch/save/create/rename/save-as/delete/filters list/actions/add/modify/remove/clear/columns list/config/actions/add/remove/reorder/close`
-- old JavaScript CLI command migration coverage for the known CLI surface
-- stable architecture, development, packaging, migration, and internal API
-  references under `docs/`
-- a Rust API reuse guide at `docs/rust-api.md`
-- a `v0.3.0` roadmap and release-readiness record at `docs/v0.3-roadmap.md`,
-  plus a `v0.4.x` roadmap and release-readiness record at
-  `docs/v0.4-roadmap.md`
-- a `v0.5.x` roadmap and release-readiness record at
-  `docs/v0.5-roadmap.md`
-- a `v0.6.0` roadmap draft at `docs/v0.6-roadmap.md`
-- a command source taxonomy at `docs/command-source-taxonomy.md`
-- historical command contract, lifecycle, and deferred-surface notes under
-  `docs/notes/`
-- a public-safe internal TradingView API dependency and DOM replacement
-  feasibility reference at `docs/internal-tradingview-apis.md`
-- a Screener completion and stabilization boundary note at `docs/notes/screener-surface-completion-and-stabilization.md`
-- historical implementation ExecPlans archived under `docs/plans/archives/`
-- repo-local CLI skills migrated from the original MCP workflow split, with
-  current scanner, Screener, watchlist, and alert operating boundaries reflected
-
-## Where to start
-
-Read these in order:
-
-1. `docs/notes/next-agent-handoff-prompt-2026-04-24.md`
-2. `docs/v0.6-roadmap.md`
-3. `docs/command-source-taxonomy.md`
-4. `docs/v0.5-roadmap.md`
-5. `docs/v0.4-roadmap.md`
-6. `docs/v0.3-roadmap.md`
-7. `docs/architecture.md`
-8. `docs/development.md`
-9. `docs/rust-api.md`
-10. `docs/release-packaging.md`
-11. `docs/breaking-changes-from-js-cli.md`
-12. `docs/internal-tradingview-apis.md`
-13. `docs/notes/rust-cli-contract-migration-2026-04-24.md`
-14. `docs/notes/legacy-cli-command-migration-inventory-2026-04-24.md`
-15. `docs/notes/remaining-deferred-surface-audit-2026-04-25.md`
-16. `docs/notes/upstream-pr-triage-2026-04-25.md`
-17. `docs/notes/upstream-pr-recheck-2026-04-27.md`
-18. `docs/plans/README.md`
-19. `docs/notes/tradingview-mcp-investigation-2026-04-24.md`
-
-The first capability and boundary research milestone, the Rust v1 implementation milestone, the read/provider migration slices, chart/pane/watchlist/alert/layout/indicator/drawing/Pine/tab/replay/stream/launch slices, command lifecycle balance audit, remaining deferred surface audit, operation-layer and data-operation module refactors, development guideline pass, remaining old CLI migration closure slice, and first release readiness pass are complete. Upstream pull request follow-up has addressed the initial narrow Rust fixes and additions, including `tv data shapes`, `tv data labels` truncation metadata, `tv scanner hotlist`, `tv scanner scan`, read-oriented `tv screener` dialog and metadata commands, menu-visible and catalog Screener screen switching, Screener screen action/save support, guarded Screener screen lifecycle, storage-backed Screener filter remove/clear, guarded Screener filter add/modify, storage-backed Screener column config/add/remove/reorder, API-backed `tv watchlist add/remove` mutation with DOM fallback, API-backed `tv alert create` mutation with readback verification, Desktop-free `tv info <SYMBOL>` and `tv quote [SYMBOL]` reads, static Pine `alertcondition()` discovery, and guarded API-backed indicator alertcondition alert creation. The main planned Screener surface is now in stabilization; `columns reset` and broader multi-option/free-text filter editing remain evidence-gated. Future stabilization should check storage/API options before adding more DOM retries.
+Without `mise`, run `scripts/install-config-hooks.sh`; on Windows, run
+`scripts/install-config-hooks.ps1` from PowerShell. These hooks are local
+helpers only. CI remains the authoritative validation baseline.
 
 ## License
 

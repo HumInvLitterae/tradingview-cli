@@ -6,12 +6,13 @@ for release and next-phase planning.
 
 ## Current and future plans
 
-- `tradingview-cli-version-flag.md`: add root `tv --version` / `tv -V`
-  support for release archive and local binary sanity checks.
+- `tradingview-cli-public-docs-audience-cleanup.md`: separate README,
+  contributor agent guides, and packaged runtime agent guidance by audience
+  before `v0.6.0` release readiness.
 
 The current `v0.6.0` implementation slice keeps `diagnose` deferred, keeps
-experimental `bars` separate, and performs small CLI surface polish before the
-next release-readiness pass.
+experimental `bars` separate, and cleans public/current docs before the next
+release-readiness pass.
 
 ## Archived plans
 
@@ -105,6 +106,7 @@ Important archived plan categories:
 - screenshot source taxonomy and visual evidence metadata
 - core Desktop-backed read source taxonomy metadata
 - Desktop-free market and scanner read source taxonomy metadata
+- root `tv --version` / `tv -V` support
 
 For command contract details, prefer the notes under `docs/notes/` before
 reading archived implementation plans.

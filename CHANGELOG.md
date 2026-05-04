@@ -34,6 +34,11 @@ package version omits the leading `v`.
   unchanged chart/page samples are not emitted solely because the sample
   timestamp changed.
 
+### Documentation
+
+- Clarified README, contributor agent guides, and packaged runtime agent guide
+  roles before the `v0.6.0` release-readiness pass.
+
 ## v0.5.1 - 2026-05-02
 
 ### Added
