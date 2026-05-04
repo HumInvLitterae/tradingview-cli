@@ -16,7 +16,7 @@ This work is CLI surface polish. It does not change command JSON envelopes, payl
 - [x] (2026-05-05T01:40Z) Added root clap version support and CLI contract coverage for `--version` / `-V`.
 - [x] (2026-05-05T01:43Z) Updated README, packaged agent guidance, changelog, roadmap, and plan index.
 - [x] (2026-05-05T01:58Z) Ran focused contract test, smoke checks, full workspace validation, packaging syntax check, and hygiene grep.
-- [ ] Commit the related changes.
+- [x] (2026-05-05T02:00Z) Committed the related changes as `7de423f feat(cli): Add version flag`.
 
 ## Surprises & Discoveries
 

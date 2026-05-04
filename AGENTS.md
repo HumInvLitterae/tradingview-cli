@@ -1,172 +1,132 @@
 # Agent Operating Guide
 
-This file is the root operating guide for coding agents in this repository.
+This file is the contributor-facing operating guide for coding agents working
+inside this repository. Release archives use `packaging/agent/AGENTS.md`
+instead; that file is for runtime users and their agents.
 
 ## Mission
 
-Build and maintain a Rust-native TradingView CLI that replaces the currently used TradingView bridge path in sibling trading-analysis projects.
+Build and maintain `tv`, a Rust-native TradingView CLI for Desktop-backed
+TradingView automation and Desktop-free TradingView data reads.
 
-The repository now contains the first Rust-native `tv` CLI implementation. The immediate goal is to keep that narrow v1 surface reliable, document the real operating contract, and choose any post-v1 work only after evidence shows it belongs in the core CLI.
-
-The known old JavaScript CLI command migration is now closed. If new evidence shows a missed old CLI command, treat it as migration backlog unless a durable project decision explicitly excludes it. The MCP server remains separate from that backlog and is not planned.
+The project is CLI-first. It is not an MCP server, and MCP server
+implementation is not planned. The known old JavaScript CLI command migration
+is closed; newly discovered old CLI commands are migration backlog unless a
+durable project decision explicitly excludes them.
 
 ## Sources of Truth
 
-Read these in order before making major decisions:
+Read current sources before historical notes:
 
 1. `CONTINUITY.md`
 2. `README.md`
 3. `docs/v0.6-roadmap.md`
 4. `docs/command-source-taxonomy.md`
-5. `docs/v0.5-roadmap.md`
-6. `docs/v0.4-roadmap.md`
-7. `docs/v0.3-roadmap.md`
-8. `docs/architecture.md`
-9. `docs/development.md`
-10. `docs/rust-api.md`
-11. `docs/release-packaging.md`
-12. `docs/breaking-changes-from-js-cli.md`
-13. `docs/internal-tradingview-apis.md`
-14. `docs/notes/next-agent-handoff-prompt-2026-04-24.md`
-15. `docs/notes/rust-cli-contract-migration-2026-04-24.md`
-16. `docs/notes/legacy-cli-command-migration-inventory-2026-04-24.md`
-17. `docs/notes/remaining-deferred-surface-audit-2026-04-25.md`
-18. `docs/notes/upstream-pr-triage-2026-04-25.md`
-19. `docs/notes/upstream-pr-recheck-2026-04-27.md`
-20. `docs/plans/README.md`
-21. `docs/notes/tradingview-mcp-investigation-2026-04-24.md`
-22. `.agents/PLANS.md`
-23. `.agents/skills/continuity/SKILL.md` when the continuity skill is active
+5. `docs/architecture.md`
+6. `docs/development.md`
+7. `docs/rust-api.md`
+8. `docs/release-packaging.md`
+9. `docs/breaking-changes-from-js-cli.md`
+10. `docs/internal-tradingview-apis.md`
+11. `docs/plans/README.md`
+12. `.agents/PLANS.md`
+13. `.agents/skills/continuity/SKILL.md` when the continuity skill is active
 
-Historical ExecPlans live under `docs/plans/archives/`. Read them only when you need slice-level implementation history or rationale that is not already summarized in the current notes.
+Older roadmap files, migration inventories, upstream PR triage notes, handoff
+prompts, and archived ExecPlans are historical context. Read them only when a
+current source points there or when you need the rationale for an older slice.
 
-If these sources disagree, preserve the higher-level user and system instructions, then update repository docs so the durable project state is clear again.
+If sources disagree, preserve higher-priority system and user instructions,
+then update repository docs so the durable state is clear again.
 
 ## Current Status
 
-The repository currently contains a working Rust v1 CLI plus the planning and investigation history that explains its boundary.
+The repository contains a working `tv` binary in a Cargo workspace.
 
-What is true right now:
+What is true now:
 
-- Rust v1 is implemented as a `tv` binary
-- v1 is CLI-first
-- MCP server implementation is not planned
-- the Rust JSON wire shape intentionally differs from the old JavaScript CLI
-- migrated commands must preserve the practical information available from the old CLI
-- newly discovered old CLI commands remain migration backlog unless explicitly excluded
-- the first capability and boundary research milestone is complete
-- the first Rust v1 implementation milestone is complete
-- the first read/provider migration slice is complete
-- the read utilities migration slice is complete
-- the chart-region screenshot slice is complete
-- the diagnostic read commands slice is complete
-- the advanced data reads slice is complete
-- the chart type slice is complete
-- the DOM-dependent data depth read slice is complete
-- the read-only alert list slice is complete
-- the watchlist add operator mutation slice is complete
-- the watchlist remove operator cleanup slice is complete
-- the alert create slice is complete
-- the pane mutation slice is complete
-- the alert delete slice is complete
-- the saved layout list and switch slice is complete; switching supports `--dry-run`
-- the indicator command lifecycle slice is complete
-- the drawing command lifecycle slice is complete, including bulk `draw clear --dry-run` preflight and post-clear verification
-- the Pine read, source set, compile, raw-compile compatibility, analyze, check, new, open, and save slices are complete
-- the tab command lifecycle slice is complete with explicit-index app-tab close safety
-- the replay command lifecycle slice is complete
-- the read-only stream command slice is complete and emits newline-delimited JSON envelopes
-- the bounded launch command slice is complete with no-kill default behavior
-- the remaining old CLI migration closure slice is complete; `layout switch`, `alert delete --all`, `pine raw-compile`, and generic `ui` commands are implemented
-- upstream PR follow-up has addressed the first narrow Rust fixes, read-only additions, and guardrails, including `tv data shapes`, `tv data labels` truncation metadata, `tv scanner hotlist`, and optional Git 2.54 config-based hooks
-- the `tradingview-cli` package now lives under `crates/cli/`; the repository root is a virtual Cargo workspace
-- the operation layer has been split from one oversized `crates/cli/src/ops.rs` into a thin facade plus feature modules under `crates/cli/src/ops/`
-- the data operation layer has been split from one large `crates/cli/src/ops/data.rs` into a thin facade plus capability modules under `crates/cli/src/ops/data/`
-- repo-local development guidelines now record module layout, style, contract, and validation rules for future work
-- the original MCP workflow skills have been migrated into repo-local CLI skills with current capability gaps marked
-- this repository should stay narrower than a full reimplementation of the old bridge
+- `tv` remains a single binary; command behavior is explained by source
+  taxonomy rather than by splitting Desktop-free and Desktop-backed binaries.
+- Desktop-free reads live primarily in `tradingview-market`,
+  `tradingview-scanner`, and `tradingview-pine`.
+- Desktop-backed reads and operations use `tradingview-cdp` and operation
+  adapters under `crates/cli/src/ops/`.
+- Shared JSON envelope and error contracts live in `tradingview-core`.
+- I/O-free validation, request interpretation, target resolution, and payload
+  shaping live in `tradingview-model`.
+- The CLI package lives under `crates/cli/`; the repository root is a virtual
+  Cargo workspace.
+- Release archives include the binary, public docs, user-facing agent guides,
+  and runtime skills. Development-only skills are intentionally excluded.
+- The Rust JSON wire shape intentionally differs from the old JavaScript CLI,
+  but migrated commands should preserve practical information.
+- MCP server implementation, cookie/session import/export, trading bots, and
+  broad generic UI expansion are not planned by default.
 
-## Near-Term Deliverables
+## Work Rules
 
-Prefer work that moves one of these forward:
-
-1. keeping `README.md`, handoff notes, and ExecPlans aligned with the implemented CLI
-2. validating the Rust CLI in real downstream provider, review, and operator workflows
-3. maintaining release packaging, distribution, and public-facing documentation
-4. checking original upstream pull requests for fixes or additions now that the first release is in place
-
-Supporting notes are welcome when they reduce ambiguity, but avoid speculative design sprawl.
-
-## Execution Rules
-
-1. Use ExecPlans for complex features or significant refactors, and maintain them exactly as required by `.agents/PLANS.md`.
-2. Treat tracked repository docs as the durable memory for this project. If a decision matters later, record it in `docs/` or `CONTINUITY.md`.
-3. Do not start implementation just because a capability exists in the old bridge. First justify why it belongs in the new CLI.
-4. When inspecting external or sibling repositories, summarize the relevant findings in this repository. Do not depend on private local memory.
-5. Never write machine-specific absolute filesystem paths into tracked repository files.
-6. Never write live account-local identifiers or private operational metadata into tracked repository files. When recording live smoke, scrub saved-script ids, saved-script names, alert ids, layout ids, chart target ids, usernames, emails, account names, local file paths, and any other value that identifies the operator's TradingView account or machine unless the value is intentionally public example data.
-7. Mark uncertainty as `UNCONFIRMED` instead of guessing.
-8. Keep the repo boundary clean. Downstream workflow helpers, skills, and adapters should stay outside the core CLI unless investigation proves they belong in the Rust CLI migration surface.
-9. Do not describe unimplemented old CLI commands as non-goals unless a project decision explicitly excludes them.
-10. Preserve information compatibility for migrated commands. Field names and envelope shape may change, but practical information available from the old CLI must remain available in the Rust CLI.
-11. Commit related changes in sensible batches when files are changed. Do not accumulate a large mixed set of unrelated edits.
-12. Never push to a remote unless the user explicitly asks in the current turn.
+1. Use ExecPlans for complex features or significant refactors, following
+   `.agents/PLANS.md`.
+2. Treat tracked repository docs as durable project memory. If a decision
+   matters later, record it in `docs/` or `CONTINUITY.md`.
+3. Do not add a command only because it existed in the old bridge. First record
+   the workflow value, safety boundary, compatibility expectation, and tests.
+4. Preserve information compatibility for migrated commands. Field names and
+   envelope shape may differ, but practical information should remain
+   available unless a migration note says otherwise.
+5. Never write machine-specific absolute paths, live account-local identifiers,
+   raw target ids, cookies, tokens, authorization values, or raw live payloads
+   into tracked repository files.
+6. Mark uncertainty as `UNCONFIRMED` instead of guessing.
+7. Keep repo boundaries clean. Downstream workflow helpers should stay outside
+   the core CLI unless investigation proves they belong here.
+8. Commit related changes in sensible batches. Do not accumulate unrelated
+   edits into one large mixed commit.
+9. Never push to a remote unless the user explicitly asks in the current turn.
 
 ## Documentation Policy
 
-1. Keep stable architecture, development, release packaging, migration, and API
-   reference documents directly under `docs/`.
-2. Keep planning documents under `docs/plans/`.
-   Historical completed plans belong under `docs/plans/archives/`.
-3. Keep research notes, inventories, and handoff material under `docs/notes/`.
-   Historical notes belong under `docs/notes/archives/`.
-4. Keep agent-only workflow standards under `.agents/`.
-5. Prefer English for agent-facing repository documents unless an existing file is intentionally Japanese.
-6. User-facing responses should remain concise Japanese unless the user asks otherwise.
+- `README.md` is a human-facing public overview.
+- This file and `CLAUDE.md` are contributor-facing agent guides and should stay
+  identical.
+- `packaging/agent/AGENTS.md` is the runtime guide copied into release
+  archives as both `AGENTS.md` and `CLAUDE.md`.
+- Stable architecture, development, release packaging, migration, API, and
+  internal dependency references live directly under `docs/`.
+- Current and future plans live under `docs/plans/`; completed plans live under
+  `docs/plans/archives/`.
+- Research notes, inventories, and handoff material live under `docs/notes/`.
+- Prefer English for repository docs unless an existing file is intentionally
+  Japanese.
 
 ## Change Strategy
 
 When new work starts, ask:
 
-1. Is this investigation, boundary definition, or implementation?
+1. Is this investigation, boundary definition, implementation, or release prep?
 2. What observable outcome should exist after this step?
-3. Which facts are known, and which are only inferred?
-4. What is the smallest durable doc update that keeps the next contributor unblocked?
+3. Which facts are known, and which are inferred?
+4. What is the smallest durable doc update that keeps the next contributor
+   unblocked?
 
-If the answer still depends on unresolved bridge facts, investigate first and write the evidence down before designing further.
+For release work, stop feature changes first. Version bumps, changelog edits,
+release notes, packaging checks, and CI triage should not be mixed with new
+feature implementation.
 
 ## Repository Structure
 
-- `README.md`: project overview and current status
-- `CONTINUITY.md`: compaction-safe continuity ledger for current durable state
-- `docs/architecture.md`: stable CLI architecture, module boundaries, JSON contract, and mutation safety model
-- `docs/v0.4-roadmap.md`: post-`v0.3.0` roadmap draft for market data reads, upstream PR monitoring, Desktop-free historical bars feasibility, and internal Rust API review
-- `docs/v0.3-roadmap.md`: post-`v0.2.0` roadmap for upstream PR re-check, API-backed stabilization, direct HTTP feasibility, and library crate split planning
-- `docs/development.md`: coding style, test style, validation, and commit guide
-- `docs/release-packaging.md`: GitHub Release archive contents, runtime skill packaging, and release validation guide
-- `docs/breaking-changes-from-js-cli.md`: short downstream migration guide for intentional old CLI differences
-- `docs/internal-tradingview-apis.md`: public-safe reference for non-public TradingView dependencies
-- `docs/notes/upstream-pr-triage-2026-04-25.md`: original upstream PR classification and Rust follow-up priorities
-- `docs/notes/upstream-pr-recheck-2026-04-27.md`: refreshed post-`v0.2.0` upstream PR delta and first compatibility candidates
-- `crates/cli/src/`: `tradingview-cli` package source, including the `tv` binary, application layer, CLI surface, and operation adapters
-- `crates/cli/src/ops.rs`: thin operation facade that re-exports feature modules
-- `crates/cli/src/ops/`: operation implementations grouped by capability
-- `crates/cli/src/ops/indicator.rs`: indicator add/remove/toggle/set operation implementation
-- `crates/cli/src/ops/drawing.rs`: drawing shape/list/get/remove/clear operation implementation
-- `crates/cli/src/ops/pine.rs`: thin Pine operation facade
-- `crates/cli/src/ops/pine/`: Pine Editor source/template/open, static analysis, and server-side check implementations
-- `crates/cli/src/ops/tab.rs`: tab list/switch/new/close operation implementation
-- `crates/cli/src/ops/replay.rs`: replay start/step/stop/status/autoplay/trade operation implementation
-- `crates/cli/src/ops/stream.rs`: read-only JSONL stream operation implementation
-- `crates/cli/src/ops/launch.rs`: bounded TradingView Desktop launch operation implementation
-- `crates/cli/src/ops/scanner.rs`: read-only TradingView scanner Hotlist REST operation implementation
-- `crates/cli/src/ops/saved_layout.rs`: saved chart layout list operation implementation
-- `crates/cli/src/ops/ui.rs`: generic UI automation compatibility command implementation
-- `crates/cli/src/ops/data.rs`: thin data operation facade
-- `crates/cli/src/ops/data/`: data operation implementations grouped by indicator, strategy, and drawing-derived reads
-- `scripts/git-hooks/`: optional local Git 2.54 config-based hook scripts
-- `docs/plans/`: active plan index and current ExecPlans
-- `docs/plans/archives/`: completed historical ExecPlans
-- `docs/notes/`: handoff notes, research notes, inventories
-- `.agents/PLANS.md`: ExecPlan standard used by this repository
-- `.agents/skills/`: repo-local skills and workflow helpers
+- `crates/cli/`: `tradingview-cli` package and `tv` binary.
+- `crates/core/`: shared errors, envelopes, and exit-code mapping.
+- `crates/model/`: I/O-free validation, request models, target resolution, and
+  payload shaping.
+- `crates/market/`: Desktop-free market reads such as search, info, quote,
+  batch quotes, and fundamentals.
+- `crates/scanner/`: Desktop-free scanner reads such as scan, hotlist, and
+  metainfo.
+- `crates/pine/`: Desktop-free Pine static analysis and facade checks.
+- `crates/cdp/`: TradingView Desktop CDP transport, target discovery, runtime
+  evaluation, screenshots, and input primitives.
+- `docs/`: stable docs, roadmaps, notes, release notes, and ExecPlans.
+- `.agents/skills/`: repo-local development and runtime skills.
+- `packaging/agent/`: release-archive agent guide source.
+- `scripts/`: release packaging and optional local helper scripts.
