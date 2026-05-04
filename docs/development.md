@@ -235,14 +235,6 @@ If the grep finds only validation-command examples or public-safe policy
 language, record that as acceptable. Remove any new local path, account id,
 credential, or raw live payload before committing.
 
-When validating repo-local skills with the `skill-creator` validator in an
-environment where Python packages are not already installed, provide external
-libraries through `uvx` instead of adding repository dependencies. For example:
-
-```bash
-uvx --with PyYAML python <skill-creator>/scripts/quick_validate.py .agents/skills/market-data-interpretation
-```
-
 ## Optional local hooks
 
 Git 2.54 config-based hooks are available as optional local guardrails.

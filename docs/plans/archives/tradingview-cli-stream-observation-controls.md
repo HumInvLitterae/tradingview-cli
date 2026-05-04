@@ -25,9 +25,6 @@ After this change, callers can run commands such as `tv stream quote --duration-
 - Observation: stream dedupe compared samples after `_ts` metadata had been added.
   Evidence: `stream_sample` added `_ts` before `StreamDedupe::should_emit` was called in `run_stream_command`.
 
-- Observation: the local skill validator script could not run in this environment because the active Python lacks `yaml`.
-  Evidence: `quick_validate.py` failed with `ModuleNotFoundError: No module named 'yaml'`.
-
 ## Decision Log
 
 - Decision: Keep no-option `tv stream ...` behavior as infinite.
@@ -48,7 +45,7 @@ Implemented bounded observation controls for all existing `tv stream ...` subcom
 
 Stream sample payloads now include `_event: "sample"`, and heartbeat payloads include `_event: "heartbeat"`, `_stream`, `_ts`, `elapsed_ms`, `sample_count`, and `last_sample_ts`. Dedupe now ignores `_ts` and `_event` so unchanged chart/page samples are not emitted solely because metadata changed.
 
-Focused stream tests, CLI contract stream tests, formatting, clippy, workspace tests, metadata, package script syntax, and diff whitespace checks passed. Skill validation was attempted but blocked by the missing local Python `yaml` module; no Python dependency was added for this slice.
+Focused stream tests, CLI contract stream tests, formatting, clippy, workspace tests, metadata, package script syntax, and diff whitespace checks passed.
 
 ## Context and Orientation
 

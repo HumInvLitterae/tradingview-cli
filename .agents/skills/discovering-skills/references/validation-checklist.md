@@ -37,8 +37,7 @@ If a validation script is available:
 
 1. Locate the validator under the installed `skill-creator` skill, typically `**/skill-creator/scripts/quick_validate.py`
 2. Run: `python <script> <skill-dir>`
-3. If `yaml` missing: `uvx --with pyyaml python <script> <skill-dir>`
-4. On Windows encoding issues: set `PYTHONUTF8=1` and retry
+3. On Windows encoding issues: set `PYTHONUTF8=1` and retry
 
 ## Output Format
 

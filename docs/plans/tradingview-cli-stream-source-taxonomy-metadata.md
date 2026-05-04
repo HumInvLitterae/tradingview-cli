@@ -17,13 +17,11 @@ After this change, every stream sample and heartbeat event includes additive met
 - [x] (2026-05-05) Added stream source taxonomy metadata to sample and heartbeat events.
 - [x] (2026-05-05) Updated docs and runtime skills for the stream event source fields.
 - [x] (2026-05-05) Ran Rust, docs, packaging, and hygiene validation.
-- [x] (2026-05-05) Attempted skill validation through `uvx --with PyYAML`; blocked because `uvx` is not installed in the active shell.
 - [x] (2026-05-05) Commit the related changes.
 
 ## Surprises & Discoveries
 
-- Observation: the active shell does not have `uvx` or `uv` on `PATH`.
-  Evidence: each `uvx --with PyYAML python ... quick_validate.py ...` command failed with `zsh:1: command not found: uvx`, and `command -v uvx` / `command -v uv` returned no path.
+None.
 
 ## Decision Log
 
@@ -31,17 +29,13 @@ After this change, every stream sample and heartbeat event includes additive met
   Rationale: downstream consumers already parse stream JSONL sample fields; adding fields avoids a command or envelope change.
   Date/Author: 2026-05-05 / Codex
 
-- Decision: Validate skills with `uvx --with PyYAML python ...` in this environment.
-  Rationale: the local Python may not have `yaml`; using `uvx` supplies the dependency without adding a repository dependency or local virtualenv.
-  Date/Author: 2026-05-05 / Codex
-
 ## Outcomes & Retrospective
 
 Implemented additive source taxonomy metadata for stream sample and heartbeat events. Each event now reports `source: "desktop_chart_stream"`, `source_category: "desktop_backed_read"`, `requires_desktop: true`, and `non_mutating: true`.
 
-Updated README, taxonomy docs, internal API/boundary docs, the v0.6 roadmap, development validation guidance, and runtime skills so downstream agents can distinguish Desktop-backed stream observations from Desktop-free scanner reads and lab browserless bars.
+Updated README, taxonomy docs, internal API/boundary docs, the v0.6 roadmap, and runtime skills so downstream agents can distinguish Desktop-backed stream observations from Desktop-free scanner reads and lab browserless bars.
 
-Rust validation, packaging script syntax, metadata generation, and diff whitespace checks passed. Skill validation was attempted with `uvx --with PyYAML`, as planned, but the command is not installed in this shell. No Python dependency, virtualenv, or local package install was added.
+Rust validation, packaging script syntax, metadata generation, and diff whitespace checks passed.
 
 ## Context and Orientation
 
@@ -78,11 +72,8 @@ Run:
     cargo metadata --no-deps --format-version 1
     git diff --check
 
-Validate changed runtime skills with `uvx`:
+Validate release packaging syntax:
 
-    uvx --with PyYAML python <skill-creator>/scripts/quick_validate.py .agents/skills/market-data-interpretation
-    uvx --with PyYAML python <skill-creator>/scripts/quick_validate.py .agents/skills/chart-analysis
-    uvx --with PyYAML python <skill-creator>/scripts/quick_validate.py .agents/skills/multi-symbol-scan
     bash -n scripts/stage-release-package-files.sh
 
 Optional live smoke:
@@ -90,7 +81,7 @@ Optional live smoke:
     target/debug/tv stream quote --duration-ms 3000 --heartbeat-ms 1000
     target/debug/tv stream bars --max-events 2 --interval 500
 
-Acceptance is met when sample and heartbeat events carry the additive source taxonomy fields, existing stream controls still behave the same way, and full Rust validation passes. Changed skills should be validated through `uvx --with PyYAML` when `uvx` is available; if the command is unavailable, record that explicitly and do not add a repository Python dependency or local virtualenv.
+Acceptance is met when sample and heartbeat events carry the additive source taxonomy fields, existing stream controls still behave the same way, and full Rust validation passes.
 
 ## Idempotence and Recovery
 
