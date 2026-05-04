@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use clap::{Parser, Subcommand, ValueEnum};
+use clap::{Args, Parser, Subcommand, ValueEnum};
 
 #[derive(Debug, Parser)]
 #[command(name = "tv")]
@@ -775,45 +775,57 @@ pub enum ReplayCommand {
 pub enum StreamCommand {
     #[command(about = "Stream real-time price ticks")]
     Quote {
-        #[arg(long, short)]
-        interval: Option<u64>,
+        #[command(flatten)]
+        options: StreamOptions,
     },
     #[command(about = "Stream last bar updates")]
     Bars {
-        #[arg(long, short)]
-        interval: Option<u64>,
+        #[command(flatten)]
+        options: StreamOptions,
     },
     #[command(about = "Stream visible indicator values")]
     Values {
-        #[arg(long, short)]
-        interval: Option<u64>,
+        #[command(flatten)]
+        options: StreamOptions,
     },
     #[command(about = "Stream Pine Script line.new() price levels")]
     Lines {
         #[arg(long, short)]
         filter: Option<String>,
-        #[arg(long, short)]
-        interval: Option<u64>,
+        #[command(flatten)]
+        options: StreamOptions,
     },
     #[command(about = "Stream Pine Script label.new() annotations")]
     Labels {
         #[arg(long, short)]
         filter: Option<String>,
-        #[arg(long, short)]
-        interval: Option<u64>,
+        #[command(flatten)]
+        options: StreamOptions,
     },
     #[command(about = "Stream Pine Script table.new() data")]
     Tables {
         #[arg(long, short)]
         filter: Option<String>,
-        #[arg(long, short)]
-        interval: Option<u64>,
+        #[command(flatten)]
+        options: StreamOptions,
     },
     #[command(about = "Stream all panes in the current layout")]
     All {
-        #[arg(long, short)]
-        interval: Option<u64>,
+        #[command(flatten)]
+        options: StreamOptions,
     },
+}
+
+#[derive(Debug, Clone, Copy, Args)]
+pub struct StreamOptions {
+    #[arg(long, short)]
+    pub interval: Option<u64>,
+    #[arg(long)]
+    pub duration_ms: Option<u64>,
+    #[arg(long)]
+    pub max_events: Option<u64>,
+    #[arg(long)]
+    pub heartbeat_ms: Option<u64>,
 }
 
 #[derive(Debug, Subcommand)]

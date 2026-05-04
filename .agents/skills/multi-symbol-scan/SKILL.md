@@ -50,9 +50,11 @@ screenshots. Treat `tv quote --source auto` as hybrid source selection and
 6. Gather `tv ohlcv --summary`, `tv values`, and drawing-derived reads such as
    `tv data lines`, `tv data labels`, or `tv data boxes` only for symbols that
    need chart context.
-7. Use `tv stream quote`, `tv stream bars`, or `tv stream all` only for short
-   Desktop-backed current-chart monitoring windows after the scan identifies
-   symbols worth watching.
+7. Use `tv stream quote`, `tv stream bars`, or `tv stream all` only for
+   bounded Desktop-backed current-chart monitoring windows after the scan
+   identifies symbols worth watching. Prefer `--duration-ms`, `--max-events`,
+   and `--heartbeat-ms` so the agent receives a finite JSONL observation
+   window.
 8. After user approval, add selected symbols with
    `tv watchlist add-bulk <SYMBOL>... --allow-partial`; it inherits the
    API-backed single-symbol add path and reports duplicates or partial

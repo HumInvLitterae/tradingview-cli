@@ -83,6 +83,10 @@ now:
   check` stay in `tradingview-pine`.
 - Data reads from chart, drawing, strategy, Depth of Market, and visible
   panels: these intentionally read live chart/page state.
+- Stream reads: `tv stream ...` repeatedly samples live chart/page state and
+  emits JSONL observation events. Bounded controls such as `--duration-ms`,
+  `--max-events`, and `--heartbeat-ms` belong in the CLI stream runner because
+  they manage process observation behavior rather than reusable domain logic.
 - Screenshots: chart-region screenshots use DOM geometry before CDP screenshot
   capture.
 - Generic `ui` commands: these are compatibility automation by definition and
@@ -137,11 +141,12 @@ undocumented WebSocket chart-session protocol. A broad `tv diagnose` command
 remains deferred until existing diagnostics prove insufficient. See
 `docs/v0.5-roadmap.md` for the current roadmap.
 
-For `v0.6.0`, the first roadmap task is source taxonomy and observation-first
-planning. Existing Desktop-backed `tv stream ...` commands are current-chart
-JSONL polling reads. Future work may improve their event contract or add
-browserless observation candidates, but it should not blur the source
-categories or hide readiness failures.
+For `v0.6.0`, source taxonomy and observation-first planning are recorded.
+Existing Desktop-backed `tv stream ...` commands are current-chart JSONL
+polling reads. They now support bounded observation controls and heartbeat
+events, but they remain Desktop-backed reads rather than browserless streams.
+Future work may add browserless observation candidates, but it should not blur
+the source categories or hide readiness failures.
 
 Computer Use is not a general runtime dependency for these boundaries. Portable
 agent guidance should use structured `tv` diagnostics and `tv screenshot` for

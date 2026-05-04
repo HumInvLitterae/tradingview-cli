@@ -7,6 +7,19 @@ package version omits the leading `v`.
 
 ## Unreleased
 
+### Added
+
+- Added bounded observation controls to Desktop-backed `tv stream ...`
+  commands: `--duration-ms`, `--max-events`, and `--heartbeat-ms`.
+- Added additive stream event metadata with `_event: "sample"` for changed
+  samples and `_event: "heartbeat"` for heartbeat JSONL envelopes.
+
+### Fixed
+
+- Stream dedupe now ignores stream metadata such as `_ts` and `_event`, so
+  unchanged chart/page samples are not emitted solely because the sample
+  timestamp changed.
+
 ## v0.5.1 - 2026-05-02
 
 ### Added

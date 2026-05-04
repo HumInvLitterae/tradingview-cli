@@ -78,7 +78,7 @@ pub use screener::{
 };
 pub use screenshot::{screenshot_chart, screenshot_full};
 pub use status::status;
-pub use stream::{StreamDedupe, StreamKind, StreamRequest, stream_sample};
+pub use stream::{StreamDedupe, StreamKind, StreamRequest, stream_heartbeat, stream_sample};
 pub use tab::{tab_close, tab_list, tab_new, tab_switch};
 pub use ui::{
     ui_click, ui_eval, ui_find, ui_fullscreen, ui_hover, ui_keyboard, ui_mouse, ui_panel,

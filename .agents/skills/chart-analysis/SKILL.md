@@ -60,9 +60,10 @@ quotes, or fundamentals before mutating chart state.
    includes such primitives.
 8. Inspect or adjust the date window with `tv range`, `tv scroll <DATE>`, or
    `tv range --from <UNIX_SECONDS> --to <UNIX_SECONDS>`.
-9. Use `tv stream quote` or `tv stream bars` only when the task needs
-   short-lived Desktop-backed current-chart monitoring; ordinary chart reads
-   should use `tv quote` and `tv ohlcv --summary`.
+9. Use bounded `tv stream quote` or `tv stream bars` only when the task needs
+   short-lived Desktop-backed current-chart monitoring, for example
+   `--duration-ms 10000 --heartbeat-ms 2000` or `--max-events 5`. Ordinary
+   chart reads should use `tv quote` and `tv ohlcv --summary`.
 10. Capture visual evidence only when useful: `tv screenshot --region chart --output <PATH>`.
 
 Use `market-data-interpretation` when source selection, scanner delay metadata,
