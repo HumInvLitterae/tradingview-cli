@@ -14,7 +14,8 @@ or operations against the visible/full-page TradingView Screener target.
 
 1. Run `tv readiness` for Desktop/CDP health and chart target ambiguity.
 2. Run `tv tab list` and prefer a full-page Screener target from
-   `screener_targets`.
+   `screener_targets`. Preserve `source_category`, `requires_desktop`, and
+   `non_mutating` when reporting Desktop-backed target evidence.
 3. Use the returned `target_cli_args`, for example
    `tv --target-id <ID> screener ...`, for follow-up commands.
 4. If no full-page Screener target is available, run

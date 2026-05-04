@@ -20,6 +20,8 @@ package version omits the leading `v`.
   action hints.
 - Added source taxonomy and visual evidence metadata to `tv screenshot`
   payloads, including `writes_file` and `visual_evidence`.
+- Added source taxonomy metadata to core Desktop-backed read payloads including
+  `status`, `tab list`, `state`, `ohlcv`, and chart-source quote.
 
 ### Fixed
 

@@ -44,6 +44,9 @@ current-chart `tv info`, chart-model data reads, `tv screenshot`, and
 `tv stream ...` JSONL observation commands. Screenshots are non-mutating
 visual evidence reads, but they do write a local output file and report
 `writes_file: true`.
+Core Desktop-backed reads report `source_category: "desktop_backed_read"`,
+`requires_desktop: true`, and `non_mutating` so agents can distinguish them
+from scanner REST reads and account/page operations.
 
 Recommended agent use: run `tv readiness` first when chart target, chart API,
 or bars readiness is uncertain. Preserve structured readiness fields, then use
@@ -87,6 +90,9 @@ scanner only if the chart path is unavailable before any chart mutation.
 After the chart path starts switching symbols, fallback is no longer allowed:
 chart-source quote must prove that the quote symbol, current chart symbol, and
 requested-symbol bars are stable, or return a structured readiness error.
+When chart-source quote switches the visible chart, its payload reports
+`non_mutating: false` together with `switch_performed`, `restored`, and
+`freshness_check`.
 
 Recommended agent use: use explicit `--source scanner` or `--source chart`
 when source consistency matters. Use `--source auto` only when chart-first

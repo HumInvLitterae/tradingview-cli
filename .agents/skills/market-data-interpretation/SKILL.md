@@ -64,7 +64,9 @@ checks. It summarizes endpoint, target selection, chart readiness, bars
 readiness, and next-action hints. Use `tv tab list`, `tv state`, or
 `tv ohlcv --count 1` as follow-up reads when the readiness payload points
 there. Chart-source quote exposes `freshness_check`, and OHLCV failures expose
-chart-bars details. The portable visual fallback is
+chart-bars details. Core Desktop-backed read payloads should expose
+`source_category`, `requires_desktop`, and `non_mutating`; keep those fields
+when explaining provenance. The portable visual fallback is
 `tv screenshot --region chart|full --output <PATH>` plus user/manual
 inspection when needed. Screenshot payloads are visual evidence, not market
 data; preserve `source`, `source_category`, `writes_file`, and

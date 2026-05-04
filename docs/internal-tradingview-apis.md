@@ -91,7 +91,9 @@ Safety boundary:
   account, or page state.
 - `status`, `tab list`, `state`, and `ohlcv --count 1` remain lower-level
   follow-up reads when the aggregated readiness payload points to a specific
-  endpoint, target, chart, or bars problem.
+  endpoint, target, chart, or bars problem. These core Desktop-backed reads
+  report source taxonomy metadata so downstream agents can keep Desktop-backed
+  evidence separate from scanner REST reads.
 - `quote <SYMBOL>` defaults to non-mutating scanner REST. `--source chart`
   explicitly chooses the selected TradingView Desktop chart feed, and
   `--source auto` is chart-first with scanner fallback only if chart access
@@ -100,7 +102,9 @@ Safety boundary:
   must also wait for the chart bars backing the quote payload to reflect the
   requested symbol, require consecutive ready samples, retry that readiness
   wait once on timeout, and fail instead of reporting success if bars still
-  look stale.
+  look stale. When chart-source quote switches the visible chart, its payload
+  reports `non_mutating: false` alongside `switch_performed`, `restored`, and
+  `freshness_check`.
 - `ohlcv` depends on the selected chart target's main-series bars collection.
   When the chart API or bars collection is unavailable, it should fail with
   structured readiness details and a target-selection recovery hint rather than

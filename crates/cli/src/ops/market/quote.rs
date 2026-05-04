@@ -459,6 +459,10 @@ fn readiness_timeout_error(
         "Quote freshness check timed out before chart bars reflected the requested symbol",
     )
     .with_details(json!({
+        "source": "chart_api",
+        "source_category": "desktop_backed_read",
+        "requires_desktop": true,
+        "non_mutating": false,
         "requested_symbol": requested_symbol,
         "original_symbol": original_symbol,
         "observed_symbol": timeout.quote_symbol,
@@ -493,6 +497,10 @@ fn add_restore_details_to_readiness_error(
     merge_object(
         &mut details,
         json!({
+            "source": "chart_api",
+            "source_category": "desktop_backed_read",
+            "requires_desktop": true,
+            "non_mutating": !switch_performed,
             "requested_symbol": requested_symbol,
             "original_symbol": original_symbol,
             "restore_observed_symbol": restore_observed,
@@ -549,6 +557,10 @@ async fn switch_quote_symbol(
             format!("Quote command could not switch chart symbol during {phase} phase"),
         )
         .with_details(json!({
+            "source": "chart_api",
+            "source_category": "desktop_backed_read",
+            "requires_desktop": true,
+            "non_mutating": false,
             "requested_symbol": symbol,
             "observed_symbol": observed,
             "phase": phase,
@@ -571,6 +583,9 @@ fn add_quote_metadata(quote: &mut Value, metadata: QuoteMetadata) {
         quote,
         json!({
             "source": "chart_api",
+            "source_category": "desktop_backed_read",
+            "requires_desktop": true,
+            "non_mutating": !metadata.switch_performed,
             "requested_symbol": metadata.requested_symbol,
             "original_symbol": metadata.original_symbol,
             "observed_symbol": metadata.observed_symbol,
@@ -597,6 +612,10 @@ fn ensure_quote_matches_request(
         "Quote freshness check failed because the observed quote symbol did not match the requested symbol",
     )
     .with_details(json!({
+        "source": "chart_api",
+        "source_category": "desktop_backed_read",
+        "requires_desktop": true,
+        "non_mutating": !switch_performed,
         "requested_symbol": requested_symbol,
         "observed_symbol": observed_symbol,
         "switch_performed": switch_performed,
@@ -766,6 +785,9 @@ mod tests {
         assert_eq!(result["observed_symbol"], "NASDAQ:AAPL");
         assert_eq!(result["switch_performed"], false);
         assert_eq!(result["restored"], true);
+        assert_eq!(result["source_category"], "desktop_backed_read");
+        assert_eq!(result["requires_desktop"], true);
+        assert_eq!(result["non_mutating"], true);
     }
 
     #[tokio::test]
@@ -786,6 +808,9 @@ mod tests {
         assert_eq!(result["observed_symbol"], "NASDAQ:MSFT");
         assert_eq!(result["switch_performed"], true);
         assert_eq!(result["restored"], true);
+        assert_eq!(result["source_category"], "desktop_backed_read");
+        assert_eq!(result["requires_desktop"], true);
+        assert_eq!(result["non_mutating"], false);
         assert_eq!(result["freshness_check"]["passed"], true);
     }
 
