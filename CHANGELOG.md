@@ -15,6 +15,9 @@ package version omits the leading `v`.
   samples and `_event: "heartbeat"` for heartbeat JSONL envelopes.
 - Added source taxonomy metadata to stream sample and heartbeat events:
   `source`, `source_category`, `requires_desktop`, and `non_mutating`.
+- Added `tv readiness` as a Desktop-backed, non-mutating read that summarizes
+  CDP target selection, chart API readiness, OHLCV bar readiness, and next
+  action hints.
 
 ### Fixed
 

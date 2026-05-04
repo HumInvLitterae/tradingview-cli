@@ -12,7 +12,7 @@ or operations against the visible/full-page TradingView Screener target.
 
 ## Start With The Target
 
-1. Run `tv status`.
+1. Run `tv readiness` for Desktop/CDP health and chart target ambiguity.
 2. Run `tv tab list` and prefer a full-page Screener target from
    `screener_targets`.
 3. Use the returned `target_cli_args`, for example

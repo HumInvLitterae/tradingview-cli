@@ -152,6 +152,13 @@ Desktop-backed reads rather than browserless streams.
 Future work may add browserless observation candidates, but it should not blur
 the source categories or hide readiness failures.
 
+`tv readiness` is the narrow Desktop-backed readiness read. It aggregates CDP
+target discovery, selected-target handoff, chart API readiness, and a one-bar
+OHLCV readiness check without switching symbols, activating tabs, or capturing
+screenshots. If CDP is reachable but target selection or bars are not ready,
+it returns `success: true` with `ready: false` and public-safe next-action
+hints. Broad `tv diagnose` behavior remains deferred.
+
 Computer Use is not a general runtime dependency for these boundaries. Portable
 agent guidance should use structured `tv` diagnostics and `tv screenshot` for
 visual evidence. Computer Use may be mentioned only as an optional Codex app

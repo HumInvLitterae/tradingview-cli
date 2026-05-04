@@ -38,15 +38,16 @@ depends on target selection, chart readiness, and the visible TradingView app
 state.
 
 Use this category when the command reads the selected Desktop target or visible
-state. Examples include `tv status`, `tv tab list`, `tv state`,
+state. Examples include `tv status`, `tv readiness`, `tv tab list`, `tv state`,
 `tv ohlcv`, `tv quote` without a symbol, `tv quote <SYMBOL> --source chart`,
 `tv screenshot`, current-chart `tv info`, chart-model data reads, and
 `tv stream ...` JSONL observation commands.
 
-Recommended agent use: run readiness commands first, preserve structured error
-details, and use `tv screenshot --region chart|full --output <PATH>` only when
-structured fields do not explain the visible state. For short monitoring
-windows, prefer bounded stream controls such as `--duration-ms`,
+Recommended agent use: run `tv readiness` first when chart target, chart API,
+or bars readiness is uncertain. Preserve structured readiness fields, then use
+`tv screenshot --region chart|full --output <PATH>` only when structured fields
+do not explain the visible state. For short monitoring windows, prefer bounded
+stream controls such as `--duration-ms`,
 `--max-events`, and `--heartbeat-ms` over unbounded polling. Stream JSONL
 events identify themselves with `source: "desktop_chart_stream"` and
 `source_category: "desktop_backed_read"` so agents can distinguish them from

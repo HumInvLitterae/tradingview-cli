@@ -6,13 +6,12 @@ for release and next-phase planning.
 
 ## Current and future plans
 
-- `tradingview-cli-stream-source-taxonomy-metadata.md`: add source taxonomy
-  metadata to existing Desktop-backed `tv stream ...` sample and heartbeat
-  JSONL events.
+- `tradingview-cli-desktop-readiness-command.md`: add `tv readiness` as a
+  Desktop-backed, non-mutating read that summarizes CDP target, chart, and bars
+  readiness before chart-dependent workflows.
 
-The current `v0.6.0` implementation slice keeps `stream` Desktop-backed and
-does not add a new `observe` command, browserless streaming surface, or
-additional stream option.
+The current `v0.6.0` implementation slice keeps `diagnose` deferred and adds a
+narrow readiness read rather than a broad troubleshooting command.
 
 ## Archived plans
 
@@ -101,6 +100,7 @@ Important archived plan categories:
 - v0.5.1 release readiness
 - stream observation controls for bounded duration, max-event, and heartbeat
   JSONL events
+- stream source taxonomy metadata for sample and heartbeat JSONL events
 
 For command contract details, prefer the notes under `docs/notes/` before
 reading archived implementation plans.

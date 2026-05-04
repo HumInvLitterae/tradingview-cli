@@ -22,6 +22,11 @@ pub struct Cli {
 pub enum Command {
     #[command(about = "Check CDP connection to TradingView")]
     Status,
+    #[command(
+        about = "Check Desktop chart readiness",
+        long_about = "Check whether TradingView Desktop, CDP target selection, chart API state, and one recent chart bar are ready for chart-dependent read commands.\n\nThis is a Desktop-backed, non-mutating read. It does not switch symbols, activate tabs, capture screenshots, or change account/page state. When CDP is reachable but the chart target or bars are not ready, it returns a successful envelope with data.ready=false and next-action hints."
+    )]
+    Readiness,
     #[command(about = "Launch TradingView Desktop with CDP enabled")]
     Launch {
         #[arg(long, short)]
@@ -894,6 +899,7 @@ impl Command {
     pub fn name(&self) -> &'static str {
         match self {
             Self::Status => "status",
+            Self::Readiness => "readiness",
             Self::Launch { .. } => "launch",
             Self::State => "state",
             Self::Info { .. } => "info",
