@@ -146,6 +146,8 @@ tv scanner scan --type stock --max-change -5 --sort change --asc --columns name,
 tv scanner scan --type stock --columns name,close,premarket_close,premarket_volume,postmarket_close,postmarket_volume --limit 10
 tv scanner scan --type stock --columns name,earnings_release_next_date,earnings_release_date,price_earnings_ttm --limit 10
 TV_EXPERIMENTAL_BARS=1 tv bars NASDAQ:AAPL --timeframe 1D --count 5
+tv stream quote --duration-ms 10000 --heartbeat-ms 2000
+tv stream bars --max-events 5
 tv screener get --limit 10
 tv screener screens actions
 tv screener screens list
@@ -273,7 +275,7 @@ prefer Desktop-free `tv info <SYMBOL>` and `tv quote <SYMBOL>`. Use `tv info`
 without a symbol only when you need the current chart's loaded symbol metadata.
 The chart timeframe command is `tv timeframe <RESOLUTION>`, not `interval`.
 
-Commands print structured JSON. Most successful commands print one `success: true` envelope to stdout. `tv stream ...` commands are intentionally long-running and print newline-delimited JSON envelopes, one line per changed sample. Failed commands print a `success: false` envelope to stderr.
+Commands print structured JSON. Most successful commands print one `success: true` envelope to stdout. `tv stream ...` commands print newline-delimited JSON envelopes, one line per changed sample. Stream sample payloads include `_event: "sample"`; bounded streams can also emit `_event: "heartbeat"` when `--heartbeat-ms` is set. Use `--duration-ms` or `--max-events` for finite observation windows. Without those options, stream commands remain intentionally long-running. Failed non-stream commands print a `success: false` envelope to stderr; stream polling errors after startup are printed to stderr and the stream continues.
 
 Exit codes are:
 

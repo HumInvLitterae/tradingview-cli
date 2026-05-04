@@ -21,8 +21,9 @@ Always name the data source before interpreting values:
   scanner fallback only before chart mutation.
 - `TV_EXPERIMENTAL_BARS=1 tv bars <EXCHANGE:SYMBOL>`: experimental
   Desktop-free WebSocket bars.
-- `tv stream ...`: Desktop-backed current-chart JSONL polling, not
-  browserless WebSocket streaming.
+- `tv stream ...`: Desktop-backed current-chart JSONL observation, not
+  browserless WebSocket streaming. Prefer bounded windows with
+  `--duration-ms`, `--max-events`, and optional `--heartbeat-ms`.
 
 Do not blend scanner REST, chart feed, and visible chart observations as if
 they were the same source.
@@ -64,6 +65,12 @@ readiness, `tv state` exposes chart readiness, chart-source quote exposes
 `freshness_check`, and OHLCV failures expose chart-bars details. The portable
 visual fallback is `tv screenshot --region chart|full --output <PATH>` plus
 user/manual inspection when needed.
+
+For `tv stream ...`, interpret each JSONL line by `data._event`. A `sample`
+event means the chart/page sample changed after metadata-insensitive dedupe. A
+`heartbeat` event means the stream is still alive but no changed sample was
+emitted in that heartbeat window. Do not count heartbeat events as market
+updates.
 
 If the current environment is the Codex app and Computer Use is available, it
 can help inspect or recover visible UI state after structured CLI checks. Do not

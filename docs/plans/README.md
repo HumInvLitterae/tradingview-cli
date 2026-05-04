@@ -6,13 +6,12 @@ for release and next-phase planning.
 
 ## Current and future plans
 
-- `tradingview-cli-v0.5.1-release-readiness.md`: prepare the focused
-  `v0.5.1` patch release for chart-source quote readiness hardening and the
-  opt-in live endurance smoke.
+- `tradingview-cli-stream-observation-controls.md`: add bounded duration,
+  max-event, and heartbeat controls to existing Desktop-backed
+  `tv stream ...` JSONL observation commands.
 
-The current patch follow-up stops feature work, updates versioned release
-documents, stages the release archive locally, and leaves tag creation and push
-to the user.
+The current `v0.6.0` implementation slice keeps `stream` Desktop-backed and
+does not add a new `observe` command or browserless streaming surface.
 
 ## Archived plans
 
@@ -98,6 +97,7 @@ Important archived plan categories:
 - v0.5.0 release readiness
 - quote chart-source stable readiness hardening
 - chart-source quote opt-in live endurance smoke
+- v0.5.1 release readiness
 
 For command contract details, prefer the notes under `docs/notes/` before
 reading archived implementation plans.

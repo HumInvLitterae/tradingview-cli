@@ -40,11 +40,14 @@ state.
 Use this category when the command reads the selected Desktop target or visible
 state. Examples include `tv status`, `tv tab list`, `tv state`,
 `tv ohlcv`, `tv quote` without a symbol, `tv quote <SYMBOL> --source chart`,
-`tv screenshot`, current-chart `tv info`, and chart-model data reads.
+`tv screenshot`, current-chart `tv info`, chart-model data reads, and
+`tv stream ...` JSONL observation commands.
 
 Recommended agent use: run readiness commands first, preserve structured error
 details, and use `tv screenshot --region chart|full --output <PATH>` only when
-structured fields do not explain the visible state.
+structured fields do not explain the visible state. For short monitoring
+windows, prefer bounded stream controls such as `--duration-ms`,
+`--max-events`, and `--heartbeat-ms` over unbounded polling.
 
 ### Desktop-backed operation
 

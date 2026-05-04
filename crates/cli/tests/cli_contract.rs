@@ -1234,7 +1234,17 @@ fn stream_help_lists_read_subcommands() {
         .assert()
         .success()
         .stdout(predicate::str::contains("--filter"))
-        .stdout(predicate::str::contains("--interval"));
+        .stdout(predicate::str::contains("--interval"))
+        .stdout(predicate::str::contains("--duration-ms"))
+        .stdout(predicate::str::contains("--max-events"))
+        .stdout(predicate::str::contains("--heartbeat-ms"));
+
+    tv().args(["stream", "quote", "--help"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("--duration-ms"))
+        .stdout(predicate::str::contains("--max-events"))
+        .stdout(predicate::str::contains("--heartbeat-ms"));
 }
 
 #[test]
@@ -1598,6 +1608,28 @@ fn stream_rejects_too_small_interval_before_connecting() {
     assert_eq!(value["command"], "stream");
     assert_eq!(value["error"]["kind"], "validation");
     assert_eq!(value["error"]["details"]["minimum_interval_ms"], 100);
+}
+
+#[test]
+fn stream_rejects_invalid_observation_controls_before_connecting() {
+    for (flag, field) in [
+        ("--duration-ms", "duration_ms"),
+        ("--max-events", "max_events"),
+        ("--heartbeat-ms", "heartbeat_ms"),
+    ] {
+        let assert = tv()
+            .env("TV_CDP_PORT", "9")
+            .args(["stream", "quote", flag, "0"])
+            .assert()
+            .failure()
+            .code(1);
+        let stderr = String::from_utf8(assert.get_output().stderr.clone()).unwrap();
+        let value: Value = serde_json::from_str(&stderr).unwrap();
+        assert_eq!(value["success"], false);
+        assert_eq!(value["command"], "stream");
+        assert_eq!(value["error"]["kind"], "validation");
+        assert_eq!(value["error"]["details"]["field"], field);
+    }
 }
 
 #[test]

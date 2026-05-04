@@ -48,6 +48,9 @@ pub struct StreamRequest {
     pub kind: StreamKind,
     pub interval_ms: u64,
     pub filter: Option<String>,
+    pub duration_ms: Option<u64>,
+    pub max_events: Option<u64>,
+    pub heartbeat_ms: Option<u64>,
 }
 
 impl StreamRequest {
@@ -56,8 +59,25 @@ impl StreamRequest {
         interval_ms: Option<u64>,
         filter: Option<String>,
     ) -> Result<Self, AppError> {
+        Self::with_controls(kind, interval_ms, filter, None, None, None)
+    }
+
+    pub fn with_controls(
+        kind: StreamKind,
+        interval_ms: Option<u64>,
+        filter: Option<String>,
+        duration_ms: Option<u64>,
+        max_events: Option<u64>,
+        heartbeat_ms: Option<u64>,
+    ) -> Result<Self, AppError> {
         let interval_ms = interval_ms.unwrap_or_else(|| kind.default_interval_ms());
         validate_stream_interval(interval_ms)?;
+        validate_positive_optional("duration_ms", duration_ms)?;
+        validate_positive_optional("max_events", max_events)?;
+        validate_positive_optional("heartbeat_ms", heartbeat_ms)?;
+        if let Some(heartbeat_ms) = heartbeat_ms {
+            validate_stream_interval(heartbeat_ms)?;
+        }
         let filter = filter.and_then(|value| {
             let trimmed = value.trim();
             (!trimmed.is_empty()).then(|| trimmed.to_string())
@@ -66,6 +86,9 @@ impl StreamRequest {
             kind,
             interval_ms,
             filter,
+            duration_ms,
+            max_events,
+            heartbeat_ms,
         })
     }
 }
@@ -77,10 +100,11 @@ pub struct StreamDedupe {
 
 impl StreamDedupe {
     pub fn should_emit(&mut self, sample: &Value) -> bool {
-        if self.last_sample.as_ref() == Some(sample) {
+        let comparable = comparable_sample(sample);
+        if self.last_sample.as_ref() == Some(&comparable) {
             return false;
         }
-        self.last_sample = Some(sample.clone());
+        self.last_sample = Some(comparable);
         true
     }
 }
@@ -94,6 +118,20 @@ pub fn validate_stream_interval(interval_ms: u64) -> Result<(), AppError> {
         .with_details(json!({
             "interval_ms": interval_ms,
             "minimum_interval_ms": MIN_STREAM_INTERVAL_MS,
+        })));
+    }
+    Ok(())
+}
+
+fn validate_positive_optional(field: &str, value: Option<u64>) -> Result<(), AppError> {
+    if value == Some(0) {
+        return Err(AppError::new(
+            ErrorKind::Validation,
+            format!("{field} must be greater than zero"),
+        )
+        .with_details(json!({
+            "field": field,
+            "value": 0,
         })));
     }
     Ok(())
@@ -130,7 +168,37 @@ fn add_stream_metadata(sample: &mut Value, kind: StreamKind) -> Result<(), AppEr
         .as_millis() as u64;
     object.insert("_stream".to_string(), json!(kind.label()));
     object.insert("_ts".to_string(), json!(ts));
+    object.insert("_event".to_string(), json!("sample"));
     Ok(())
+}
+
+pub fn stream_heartbeat(
+    request: &StreamRequest,
+    elapsed_ms: u64,
+    sample_count: u64,
+    last_sample_ts: Option<u64>,
+) -> Result<Value, AppError> {
+    let ts = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map_err(|err| AppError::new(ErrorKind::Internal, err.to_string()))?
+        .as_millis() as u64;
+    Ok(json!({
+        "_stream": request.kind.label(),
+        "_event": "heartbeat",
+        "_ts": ts,
+        "elapsed_ms": elapsed_ms,
+        "sample_count": sample_count,
+        "last_sample_ts": last_sample_ts,
+    }))
+}
+
+fn comparable_sample(sample: &Value) -> Value {
+    let mut comparable = sample.clone();
+    if let Some(object) = comparable.as_object_mut() {
+        object.remove("_ts");
+        object.remove("_event");
+    }
+    comparable
 }
 
 fn stream_expression(request: &StreamRequest) -> Result<String, AppError> {
@@ -374,6 +442,9 @@ mod tests {
 
         assert_eq!(request.interval_ms, 1000);
         assert_eq!(request.filter.as_deref(), Some("Profiler"));
+        assert_eq!(request.duration_ms, None);
+        assert_eq!(request.max_events, None);
+        assert_eq!(request.heartbeat_ms, None);
     }
 
     #[test]
@@ -385,11 +456,32 @@ mod tests {
     }
 
     #[test]
-    fn stream_dedupe_emits_first_and_changed_samples_only() {
+    fn stream_controls_reject_zero_values_before_connecting() {
+        let error =
+            StreamRequest::with_controls(StreamKind::Quote, None, None, Some(0), None, None)
+                .unwrap_err();
+        assert_eq!(error.kind, ErrorKind::Validation);
+        assert_eq!(error.details.unwrap()["field"], "duration_ms");
+
+        let error =
+            StreamRequest::with_controls(StreamKind::Quote, None, None, None, Some(0), None)
+                .unwrap_err();
+        assert_eq!(error.kind, ErrorKind::Validation);
+        assert_eq!(error.details.unwrap()["field"], "max_events");
+
+        let error =
+            StreamRequest::with_controls(StreamKind::Quote, None, None, None, None, Some(0))
+                .unwrap_err();
+        assert_eq!(error.kind, ErrorKind::Validation);
+        assert_eq!(error.details.unwrap()["field"], "heartbeat_ms");
+    }
+
+    #[test]
+    fn stream_dedupe_emits_first_and_changed_samples_only_ignoring_metadata() {
         let mut dedupe = StreamDedupe::default();
-        let first = json!({"symbol": "NASDAQ:AAPL", "close": 1});
-        let same = json!({"symbol": "NASDAQ:AAPL", "close": 1});
-        let changed = json!({"symbol": "NASDAQ:AAPL", "close": 2});
+        let first = json!({"symbol": "NASDAQ:AAPL", "close": 1, "_ts": 1, "_event": "sample"});
+        let same = json!({"symbol": "NASDAQ:AAPL", "close": 1, "_ts": 2, "_event": "sample"});
+        let changed = json!({"symbol": "NASDAQ:AAPL", "close": 2, "_ts": 3, "_event": "sample"});
 
         assert!(dedupe.should_emit(&first));
         assert!(!dedupe.should_emit(&same));
@@ -413,8 +505,25 @@ mod tests {
 
         assert_eq!(sample["symbol"], "NASDAQ:AAPL");
         assert_eq!(sample["_stream"], "quote");
+        assert_eq!(sample["_event"], "sample");
         assert!(sample["_ts"].as_u64().unwrap() > 0);
         assert!(runtime.evaluated[0].0.contains("chart.symbol()"));
+    }
+
+    #[test]
+    fn stream_heartbeat_returns_observation_metadata() {
+        let request =
+            StreamRequest::with_controls(StreamKind::Quote, None, None, None, None, Some(1000))
+                .unwrap();
+
+        let heartbeat = stream_heartbeat(&request, 2500, 3, Some(123)).unwrap();
+
+        assert_eq!(heartbeat["_stream"], "quote");
+        assert_eq!(heartbeat["_event"], "heartbeat");
+        assert_eq!(heartbeat["elapsed_ms"], 2500);
+        assert_eq!(heartbeat["sample_count"], 3);
+        assert_eq!(heartbeat["last_sample_ts"], 123);
+        assert!(heartbeat["_ts"].as_u64().unwrap() > 0);
     }
 
     #[tokio::test]
