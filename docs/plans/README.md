@@ -6,13 +6,13 @@ for release and next-phase planning.
 
 ## Current and future plans
 
-- `tradingview-cli-public-docs-audience-cleanup.md`: separate README,
-  contributor agent guides, and packaged runtime agent guidance by audience
-  before `v0.6.0` release readiness.
+- `tradingview-cli-v0.6.0-release-readiness.md`: prepare `v0.6.0` version,
+  changelog, release notes, public release asset examples, and release archive
+  staging without adding features or refactors.
 
-The current `v0.6.0` implementation slice keeps `diagnose` deferred, keeps
-experimental `bars` separate, and cleans public/current docs before the next
-release-readiness pass.
+The current `v0.6.0` slice is release readiness. It keeps `diagnose` deferred,
+keeps experimental `bars` separate, and stops feature/refactor work before tag
+creation.
 
 ## Archived plans
 
@@ -107,6 +107,7 @@ Important archived plan categories:
 - core Desktop-backed read source taxonomy metadata
 - Desktop-free market and scanner read source taxonomy metadata
 - root `tv --version` / `tv -V` support
+- public documentation and agent-guide audience cleanup
 
 For command contract details, prefer the notes under `docs/notes/` before
 reading archived implementation plans.

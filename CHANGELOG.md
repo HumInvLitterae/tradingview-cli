@@ -7,6 +7,8 @@ package version omits the leading `v`.
 
 ## Unreleased
 
+## v0.6.0 - 2026-05-05
+
 ### Added
 
 - Added root `tv --version` / `tv -V` support for release archive and local
