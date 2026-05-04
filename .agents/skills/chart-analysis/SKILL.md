@@ -63,7 +63,10 @@ quotes, or fundamentals before mutating chart state.
 9. Use bounded `tv stream quote` or `tv stream bars` only when the task needs
    short-lived Desktop-backed current-chart monitoring, for example
    `--duration-ms 10000 --heartbeat-ms 2000` or `--max-events 5`. Ordinary
-   chart reads should use `tv quote` and `tv ohlcv --summary`.
+   chart reads should use `tv quote` and `tv ohlcv --summary`. Stream JSONL
+   events should carry `source_category: "desktop_backed_read"` and
+   `non_mutating: true`; use those fields to keep them separate from
+   Desktop-free scanner reads.
 10. Capture visual evidence only when useful: `tv screenshot --region chart --output <PATH>`.
 
 Use `market-data-interpretation` when source selection, scanner delay metadata,

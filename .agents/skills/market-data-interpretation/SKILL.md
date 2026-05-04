@@ -70,7 +70,10 @@ For `tv stream ...`, interpret each JSONL line by `data._event`. A `sample`
 event means the chart/page sample changed after metadata-insensitive dedupe. A
 `heartbeat` event means the stream is still alive but no changed sample was
 emitted in that heartbeat window. Do not count heartbeat events as market
-updates.
+updates. Stream events should identify `source: "desktop_chart_stream"`,
+`source_category: "desktop_backed_read"`, `requires_desktop: true`, and
+`non_mutating: true`; treat them as current Desktop chart observations, not
+Desktop-free scanner reads.
 
 If the current environment is the Codex app and Computer Use is available, it
 can help inspect or recover visible UI state after structured CLI checks. Do not

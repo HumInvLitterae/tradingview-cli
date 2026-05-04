@@ -87,6 +87,9 @@ now:
   emits JSONL observation events. Bounded controls such as `--duration-ms`,
   `--max-events`, and `--heartbeat-ms` belong in the CLI stream runner because
   they manage process observation behavior rather than reusable domain logic.
+  Sample and heartbeat events carry `source: "desktop_chart_stream"`,
+  `source_category: "desktop_backed_read"`, `requires_desktop: true`, and
+  `non_mutating: true`.
 - Screenshots: chart-region screenshots use DOM geometry before CDP screenshot
   capture.
 - Generic `ui` commands: these are compatibility automation by definition and
@@ -144,7 +147,8 @@ remains deferred until existing diagnostics prove insufficient. See
 For `v0.6.0`, source taxonomy and observation-first planning are recorded.
 Existing Desktop-backed `tv stream ...` commands are current-chart JSONL
 polling reads. They now support bounded observation controls and heartbeat
-events, but they remain Desktop-backed reads rather than browserless streams.
+events, and the emitted events carry source taxonomy metadata, but they remain
+Desktop-backed reads rather than browserless streams.
 Future work may add browserless observation candidates, but it should not blur
 the source categories or hide readiness failures.
 

@@ -6,12 +6,13 @@ for release and next-phase planning.
 
 ## Current and future plans
 
-- `tradingview-cli-stream-observation-controls.md`: add bounded duration,
-  max-event, and heartbeat controls to existing Desktop-backed
-  `tv stream ...` JSONL observation commands.
+- `tradingview-cli-stream-source-taxonomy-metadata.md`: add source taxonomy
+  metadata to existing Desktop-backed `tv stream ...` sample and heartbeat
+  JSONL events.
 
 The current `v0.6.0` implementation slice keeps `stream` Desktop-backed and
-does not add a new `observe` command or browserless streaming surface.
+does not add a new `observe` command, browserless streaming surface, or
+additional stream option.
 
 ## Archived plans
 
@@ -98,6 +99,8 @@ Important archived plan categories:
 - quote chart-source stable readiness hardening
 - chart-source quote opt-in live endurance smoke
 - v0.5.1 release readiness
+- stream observation controls for bounded duration, max-event, and heartbeat
+  JSONL events
 
 For command contract details, prefer the notes under `docs/notes/` before
 reading archived implementation plans.

@@ -47,7 +47,10 @@ Recommended agent use: run readiness commands first, preserve structured error
 details, and use `tv screenshot --region chart|full --output <PATH>` only when
 structured fields do not explain the visible state. For short monitoring
 windows, prefer bounded stream controls such as `--duration-ms`,
-`--max-events`, and `--heartbeat-ms` over unbounded polling.
+`--max-events`, and `--heartbeat-ms` over unbounded polling. Stream JSONL
+events identify themselves with `source: "desktop_chart_stream"` and
+`source_category: "desktop_backed_read"` so agents can distinguish them from
+Desktop-free scanner reads or experimental browserless bars.
 
 ### Desktop-backed operation
 
