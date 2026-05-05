@@ -21,7 +21,7 @@ It should print newline-delimited JSON envelopes. The first envelope should desc
 - [x] (2026-05-05T05:45Z) Implemented JSONL event production using existing readiness and stream helpers where practical.
 - [x] (2026-05-05T05:45Z) Added tests and docs for the new observe workflow.
 - [x] (2026-05-05T06:10Z) Validated the implementation.
-- [ ] Commit the implementation.
+- [x] (2026-05-05T06:15Z) Committed the implementation as `feat(observe): Add chart observation command`.
 
 ## Surprises & Discoveries
 
