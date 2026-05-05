@@ -6,9 +6,9 @@ for release and next-phase planning.
 
 ## Current and future plans
 
-- `tradingview-cli-observe-chart.md`: plan the first `v0.7.0`
-  implementation slice, `tv observe chart`, as a workflow-level JSONL
-  observation command built from readiness and bounded stream behavior.
+- `tradingview-cli-observe-chart.md`: implement the first `v0.7.0`
+  slice, `tv observe chart`, as a workflow-level JSONL observation command
+  built from readiness and bounded stream behavior.
 
 The current `v0.7.0` planning slice keeps `diagnose`, binary splitting,
 browserless streaming stabilization, MCP server work, daemon behavior, and

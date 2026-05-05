@@ -1,5 +1,6 @@
 mod dispatch;
 mod input;
+mod observe;
 mod output;
 mod runner;
 mod runtime;

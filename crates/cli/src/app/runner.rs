@@ -6,6 +6,7 @@ use tradingview_core::{AppError, ErrorBody, ErrorEnvelope, ErrorKind, SuccessEnv
 use crate::{
     app::{
         dispatch::dispatch,
+        observe::run_observe_command,
         output::{print_json_stderr, print_json_stdout, startup_error},
         stream::run_stream_command,
     },
@@ -57,8 +58,9 @@ async fn async_main() -> ExitCode {
         }
     };
 
-    if let Command::Stream { command } = cli.command {
-        return match run_stream_command(command, &config).await {
+    let command = cli.command;
+    match command {
+        Command::Stream { command } => match run_stream_command(command, &config).await {
             Ok(()) => ExitCode::SUCCESS,
             Err(err) => {
                 let code = err.exit_code();
@@ -66,22 +68,31 @@ async fn async_main() -> ExitCode {
                 print_json_stderr(&envelope);
                 ExitCode::from(code)
             }
-        };
-    }
-
-    let command_name = cli.command.name();
-
-    match dispatch(cli.command, &config).await {
-        Ok(data) => {
-            let envelope = SuccessEnvelope::new(command_name, data);
-            print_json_stdout(&envelope);
-            ExitCode::SUCCESS
-        }
-        Err(err) => {
-            let code = err.exit_code();
-            let envelope = ErrorEnvelope::new(command_name, ErrorBody::from(err));
-            print_json_stderr(&envelope);
-            ExitCode::from(code)
+        },
+        Command::Observe { command } => match run_observe_command(command, &config).await {
+            Ok(()) => ExitCode::SUCCESS,
+            Err(err) => {
+                let code = err.exit_code();
+                let envelope = ErrorEnvelope::new("observe", ErrorBody::from(err));
+                print_json_stderr(&envelope);
+                ExitCode::from(code)
+            }
+        },
+        command => {
+            let command_name = command.name();
+            match dispatch(command, &config).await {
+                Ok(data) => {
+                    let envelope = SuccessEnvelope::new(command_name, data);
+                    print_json_stdout(&envelope);
+                    ExitCode::SUCCESS
+                }
+                Err(err) => {
+                    let code = err.exit_code();
+                    let envelope = ErrorEnvelope::new(command_name, ErrorBody::from(err));
+                    print_json_stderr(&envelope);
+                    ExitCode::from(code)
+                }
+            }
         }
     }
 }

@@ -7,6 +7,12 @@ package version omits the leading `v`.
 
 ## Unreleased
 
+### Added
+
+- Added `tv observe chart`, a Desktop-backed JSONL observation workflow that
+  emits readiness first, then selected-chart last-bar samples and heartbeats
+  with bounded `--duration-ms`, `--max-events`, and `--heartbeat-ms` controls.
+
 ### Documentation
 
 - Added the `v0.7.0` roadmap draft for agent-ready observation workflows and
