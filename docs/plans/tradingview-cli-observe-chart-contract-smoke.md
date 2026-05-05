@@ -17,14 +17,17 @@ The smoke should stay out of normal CI. It should help catch regressions in even
 ## Progress
 
 - [x] (2026-05-06T00:20Z) Created this ExecPlan and archived the completed first `tv observe chart` implementation plan.
-- [ ] Add opt-in ignored Rust integration smoke for `tv observe chart`.
-- [ ] Add or adjust focused tests only if the implementation needs helper extraction.
-- [ ] Update docs and skills with the optional smoke workflow.
-- [ ] Validate and commit the slice.
+- [x] (2026-05-06T00:45Z) Added opt-in ignored Rust integration smoke for `tv observe chart`.
+- [x] (2026-05-06T00:45Z) Confirmed no helper extraction was needed; no additional focused contract tests were added.
+- [x] (2026-05-06T00:45Z) Updated docs with the optional smoke workflow.
+- [x] (2026-05-06T01:05Z) Validated the slice.
+- [ ] Commit the slice.
 
 ## Surprises & Discoveries
 
-- None yet.
+- The smoke can validate the JSONL event sequence without changing the
+  `observe` implementation. The existing event metadata is sufficient for
+  public-safe assertions.
 
 ## Decision Log
 
@@ -42,7 +45,14 @@ The smoke should stay out of normal CI. It should help catch regressions in even
 
 ## Outcomes & Retrospective
 
-Pending implementation.
+Implemented `crates/cli/tests/live_observe_chart.rs` as an ignored,
+environment-gated integration smoke. It runs `tv observe chart` with a short
+bounded window by default, parses stdout/stderr as JSONL, verifies the first
+readiness event and later sample/heartbeat metadata, and keeps failure output
+to public-safe summaries.
+
+No new CLI surface, dependencies, or runtime skill workflow expansion was
+needed.
 
 ## Context and Orientation
 
@@ -135,7 +145,29 @@ If implementation becomes larger than expected, stop at the ignored smoke and do
 
 ## Artifacts and Notes
 
-No implementation evidence yet.
+Implementation touched:
+
+- `crates/cli/tests/live_observe_chart.rs`
+- `docs/development.md`
+- `docs/v0.7-roadmap.md`
+- `CHANGELOG.md`
+
+Validation evidence will be recorded after the final command pass.
+
+Final validation:
+
+    cargo test -p tradingview-cli --test live_observe_chart
+    cargo test -p tradingview-cli observe -- --nocapture
+    cargo test -p tradingview-cli --test cli_contract observe -- --nocapture
+    cargo fmt --check
+    cargo clippy --workspace --all-targets --all-features -- -D warnings
+    cargo test --workspace
+    cargo metadata --no-deps --format-version 1
+    git diff --check
+    bash -n scripts/stage-release-package-files.sh
+
+Result: passed. The changed-file hygiene grep reported only existing policy,
+validation-command, and source-boundary wording in durable docs.
 
 ## Interfaces and Dependencies
 
