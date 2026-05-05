@@ -17,6 +17,8 @@ package version omits the leading `v`.
 
 - Added the `v0.7.0` roadmap draft for agent-ready observation workflows and
   the first `tv observe chart` implementation plan.
+- Added the next `v0.7.0` plan for opt-in live smoke around the
+  `tv observe chart` JSONL event contract.
 
 ## v0.6.0 - 2026-05-05
 
