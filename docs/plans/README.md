@@ -6,13 +6,14 @@ for release and next-phase planning.
 
 ## Current and future plans
 
-- `tradingview-cli-observe-chart-contract-smoke.md`: add an opt-in ignored
-  Rust live smoke for the new `tv observe chart` JSONL contract before
-  expanding the observe surface.
+- `tradingview-cli-lab-bars-live-smoke.md`: add an opt-in ignored Rust live
+  smoke for the lab-gated `tv bars` JSON contract before considering any
+  browserless bars stabilization.
 
 The current `v0.7.0` planning slice keeps new observe modes, `diagnose`, binary
-splitting, browserless streaming stabilization, MCP server work, daemon
-behavior, and Computer Use-specific runtime skills deferred.
+splitting, browserless streaming stabilization, stable browserless historical
+bars, MCP server work, daemon behavior, and Computer Use-specific runtime
+skills deferred.
 
 ## Archived plans
 
@@ -110,6 +111,7 @@ Important archived plan categories:
 - public documentation and agent-guide audience cleanup
 - v0.6.0 release readiness
 - first `tv observe chart` workflow command
+- opt-in `tv observe chart` JSONL contract live smoke
 
 For command contract details, prefer the notes under `docs/notes/` before
 reading archived implementation plans.

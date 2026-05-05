@@ -21,7 +21,7 @@ The smoke should stay out of normal CI. It should help catch regressions in even
 - [x] (2026-05-06T00:45Z) Confirmed no helper extraction was needed; no additional focused contract tests were added.
 - [x] (2026-05-06T00:45Z) Updated docs with the optional smoke workflow.
 - [x] (2026-05-06T01:05Z) Validated the slice.
-- [ ] Commit the slice.
+- [x] (2026-05-05T17:24Z) Committed the slice.
 
 ## Surprises & Discoveries
 

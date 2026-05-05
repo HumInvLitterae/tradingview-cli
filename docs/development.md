@@ -226,6 +226,27 @@ readiness, later events use `command: "observe"`, sample events are bar stream
 samples, heartbeat events preserve sample counts, and source metadata marks the
 events as Desktop-backed non-mutating reads.
 
+For lab-gated `tv bars` WebSocket evidence checks, run:
+
+```bash
+TV_LIVE_BARS_SMOKE=1 cargo test -p tradingview-cli --test live_bars -- --ignored --nocapture
+```
+
+The ignored test sets `TV_EXPERIMENTAL_BARS=1` on the child `tv bars` command.
+Optional environment variables:
+
+- `TV_LIVE_BARS_SYMBOLS`: comma-separated exchange-qualified public symbols,
+  defaulting to `NASDAQ:AAPL,NYSE:IONQ`.
+- `TV_LIVE_BARS_TIMEFRAME`: timeframe passed to `tv bars`, defaulting to
+  `1D`.
+- `TV_LIVE_BARS_COUNT`: positive bounded bar count, defaulting to `5`.
+- `TV_LIVE_BARS_RUNS`: positive repeat count, defaulting to `1`.
+
+The ignored test validates only public contract fields: source, experimental
+flag, requested symbol, timeframe, bounded count, non-empty bars, and
+`data_quality`. Do not paste raw WebSocket output or live response payloads
+into tracked docs.
+
 ## Validation baseline
 
 For code changes, run:

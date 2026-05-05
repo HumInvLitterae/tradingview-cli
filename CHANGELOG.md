@@ -14,6 +14,8 @@ package version omits the leading `v`.
   with bounded `--duration-ms`, `--max-events`, and `--heartbeat-ms` controls.
 - Added an opt-in ignored Rust live smoke for the `tv observe chart` JSONL
   readiness, sample, and heartbeat contract.
+- Added an opt-in ignored Rust live smoke for the lab-gated `tv bars` JSON
+  contract and `data_quality` evidence.
 
 ### Documentation
 
@@ -21,6 +23,8 @@ package version omits the leading `v`.
   the first `tv observe chart` implementation plan.
 - Added the next `v0.7.0` plan for opt-in live smoke around the
   `tv observe chart` JSONL event contract.
+- Added the next `v0.7.0` plan for opt-in live smoke around the lab-gated
+  `tv bars` WebSocket read contract.
 
 ## v0.6.0 - 2026-05-05
 

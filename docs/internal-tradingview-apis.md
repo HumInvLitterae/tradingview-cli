@@ -255,6 +255,9 @@ Comparable evidence:
   public exchange-qualified symbols and an hourly request for a public
   exchange-qualified symbol. This is evidence that the path can work, not a
   guarantee that the undocumented protocol is stable.
+- An opt-in ignored Rust live smoke exists to re-check the public `tv bars`
+  JSON contract when needed. It should be treated as evidence tooling, not as a
+  CI guarantee or a stability promise.
 - Existing `tv stream ...` commands are not browserless WebSocket streams;
   they are Desktop-backed current-chart JSONL polling reads. Future
   observation work may improve their event contract or add browserless stream
@@ -275,6 +278,9 @@ Safety boundary:
   Desktop target
 - `tv bars` is a separate symbol-targeted command and keeps requests bounded
   by count
+- `tv bars` reports `data_quality` with `realtime_guarantee: false`,
+  `entitlement_checked: false`, completion state, and elapsed time. Callers
+  should read those fields before treating results as operational evidence.
 - the first prototype requires exchange-qualified symbols and does not add
   extended sessions, streaming, bare-symbol resolution, or authenticated reads
 - failures, malformed protocol frames, missing series completion, and symbol
