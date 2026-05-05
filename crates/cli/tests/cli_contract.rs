@@ -47,6 +47,7 @@ fn help_lists_v1_commands() {
         .stdout(predicate::str::contains("tab"))
         .stdout(predicate::str::contains("replay"))
         .stdout(predicate::str::contains("stream"))
+        .stdout(predicate::str::contains("observe"))
         .stdout(predicate::str::contains("ui"))
         .stdout(predicate::str::contains("data"))
         .stdout(predicate::str::contains("pane"))
@@ -1275,6 +1276,24 @@ fn stream_help_lists_read_subcommands() {
 }
 
 #[test]
+fn observe_help_lists_chart_workflow_and_controls() {
+    tv().args(["observe", "--help"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("chart"));
+
+    tv().args(["observe", "chart", "--help"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("readiness"))
+        .stdout(predicate::str::contains("last-bar"))
+        .stdout(predicate::str::contains("--interval"))
+        .stdout(predicate::str::contains("--duration-ms"))
+        .stdout(predicate::str::contains("--max-events"))
+        .stdout(predicate::str::contains("--heartbeat-ms"));
+}
+
+#[test]
 fn data_help_lists_advanced_read_subcommands() {
     tv().args(["data", "--help"])
         .assert()
@@ -1657,6 +1676,59 @@ fn stream_rejects_invalid_observation_controls_before_connecting() {
         assert_eq!(value["error"]["kind"], "validation");
         assert_eq!(value["error"]["details"]["field"], field);
     }
+}
+
+#[test]
+fn observe_rejects_too_small_interval_before_connecting() {
+    let assert = tv()
+        .env("TV_CDP_PORT", "9")
+        .args(["observe", "chart", "--interval", "99"])
+        .assert()
+        .failure()
+        .code(1);
+    let stderr = String::from_utf8(assert.get_output().stderr.clone()).unwrap();
+    let value: Value = serde_json::from_str(&stderr).unwrap();
+    assert_eq!(value["success"], false);
+    assert_eq!(value["command"], "observe");
+    assert_eq!(value["error"]["kind"], "validation");
+    assert_eq!(value["error"]["details"]["minimum_interval_ms"], 100);
+}
+
+#[test]
+fn observe_rejects_invalid_observation_controls_before_connecting() {
+    for (flag, field) in [
+        ("--duration-ms", "duration_ms"),
+        ("--max-events", "max_events"),
+        ("--heartbeat-ms", "heartbeat_ms"),
+    ] {
+        let assert = tv()
+            .env("TV_CDP_PORT", "9")
+            .args(["observe", "chart", flag, "0"])
+            .assert()
+            .failure()
+            .code(1);
+        let stderr = String::from_utf8(assert.get_output().stderr.clone()).unwrap();
+        let value: Value = serde_json::from_str(&stderr).unwrap();
+        assert_eq!(value["success"], false);
+        assert_eq!(value["command"], "observe");
+        assert_eq!(value["error"]["kind"], "validation");
+        assert_eq!(value["error"]["details"]["field"], field);
+    }
+}
+
+#[test]
+fn observe_connection_failure_uses_observe_error_envelope() {
+    let assert = tv()
+        .env("TV_CDP_PORT", "9")
+        .args(["observe", "chart", "--duration-ms", "100"])
+        .assert()
+        .failure()
+        .code(2);
+    let stderr = String::from_utf8(assert.get_output().stderr.clone()).unwrap();
+    let value: Value = serde_json::from_str(&stderr).unwrap();
+    assert_eq!(value["success"], false);
+    assert_eq!(value["command"], "observe");
+    assert_eq!(value["error"]["kind"], "connection");
 }
 
 #[test]

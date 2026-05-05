@@ -17,14 +17,18 @@ It should print newline-delimited JSON envelopes. The first envelope should desc
 ## Progress
 
 - [x] (2026-05-05T04:05Z) Created the `v0.7.0` roadmap and this initial implementation ExecPlan.
-- [ ] Implement `tv observe chart` CLI surface.
-- [ ] Implement JSONL event production using existing readiness and stream helpers where practical.
-- [ ] Add tests and docs for the new observe workflow.
-- [ ] Validate and commit the implementation.
+- [x] (2026-05-05T05:45Z) Implemented `tv observe chart` CLI surface.
+- [x] (2026-05-05T05:45Z) Implemented JSONL event production using existing readiness and stream helpers where practical.
+- [x] (2026-05-05T05:45Z) Added tests and docs for the new observe workflow.
+- [x] (2026-05-05T06:10Z) Validated the implementation.
+- [ ] Commit the implementation.
 
 ## Surprises & Discoveries
 
-- None yet.
+- The first implementation can reuse `StreamRequest`, `StreamDedupe`,
+  `stream_sample`, and `stream_heartbeat` directly. Keeping the observe loop
+  separate from `tv stream ...` avoided changing the lower-level stream
+  command contract.
 
 ## Decision Log
 
@@ -42,7 +46,14 @@ It should print newline-delimited JSON envelopes. The first envelope should desc
 
 ## Outcomes & Retrospective
 
-Pending implementation.
+Implemented `tv observe chart` as a top-level workflow command. The command
+emits a readiness JSONL envelope with `command: "observe"` and
+`data._event: "readiness"`, then uses selected-chart bar stream samples and
+heartbeats with the same bounded controls as `tv stream ...`.
+
+The implementation intentionally does not switch symbols, activate tabs,
+capture screenshots, or change account/page state. Existing `tv stream ...`
+commands remain the lower-level compatibility surface.
 
 ## Context and Orientation
 
@@ -119,7 +130,37 @@ This change should be additive. If observe event shaping proves difficult, keep 
 
 ## Artifacts and Notes
 
-No implementation evidence yet.
+Implementation touched:
+
+- `crates/cli/src/cli.rs`
+- `crates/cli/src/app/runner.rs`
+- `crates/cli/src/app/observe.rs`
+- `crates/cli/src/ops/observe.rs`
+- `crates/cli/tests/cli_contract.rs`
+
+Initial focused validation:
+
+    cargo test -p tradingview-cli observe -- --nocapture
+
+Result: passed before final full validation.
+
+Final validation:
+
+    cargo test -p tradingview-cli observe -- --nocapture
+    cargo test -p tradingview-cli stream -- --nocapture
+    cargo test -p tradingview-cli readiness -- --nocapture
+    cargo test -p tradingview-cli --test cli_contract observe -- --nocapture
+    cargo test -p tradingview-cli --test cli_contract stream -- --nocapture
+    cargo fmt --check
+    cargo clippy --workspace --all-targets --all-features -- -D warnings
+    cargo test --workspace
+    cargo metadata --no-deps --format-version 1
+    git diff --check
+    bash -n scripts/stage-release-package-files.sh
+
+Result: passed. Runtime skill validation passed for `chart-analysis`,
+`market-data-interpretation`, and `multi-symbol-scan`. The changed-file hygiene
+grep reported only existing source-boundary wording in `docs/v0.7-roadmap.md`.
 
 ## Interfaces and Dependencies
 

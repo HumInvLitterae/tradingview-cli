@@ -43,9 +43,11 @@ Use this category when the command reads the selected Desktop target or visible
 state. Examples include `tv status`, `tv readiness`, `tv tab list`, `tv state`,
 `tv ohlcv`, `tv quote` without a symbol, `tv quote <SYMBOL> --source chart`,
 current-chart `tv info`, chart-model data reads, `tv screenshot`, and
-`tv stream ...` JSONL observation commands. Screenshots are non-mutating
-visual evidence reads, but they do write a local output file and report
-`writes_file: true`.
+`tv stream ...` JSONL observation commands. `tv observe chart` is also a
+Desktop-backed read: it emits readiness first, then selected-chart bar samples
+and heartbeats as a workflow-level JSONL observation. Screenshots are
+non-mutating visual evidence reads, but they do write a local output file and
+report `writes_file: true`.
 Core Desktop-backed reads report `source_category: "desktop_backed_read"`,
 `requires_desktop: true`, and `non_mutating` so agents can distinguish them
 from scanner REST reads and account/page operations.
@@ -54,9 +56,11 @@ Recommended agent use: run `tv readiness` first when chart target, chart API,
 or bars readiness is uncertain. Preserve structured readiness fields, then use
 `tv screenshot --region chart|full --output <PATH>` only when structured fields
 do not explain the visible state. For short monitoring windows, prefer bounded
-stream controls such as `--duration-ms`,
-`--max-events`, and `--heartbeat-ms` over unbounded polling. Stream JSONL
-events identify themselves with `source: "desktop_chart_stream"` and
+`tv observe chart --duration-ms ... --heartbeat-ms ...` when readiness plus
+last-bar observation is the workflow you need. Use lower-level bounded stream
+controls such as `--duration-ms`, `--max-events`, and `--heartbeat-ms` when a
+specific `tv stream ...` sample type is needed. Stream and observe JSONL events
+identify chart samples with `source: "desktop_chart_stream"` and
 `source_category: "desktop_backed_read"` so agents can distinguish them from
 Desktop-free scanner reads or experimental browserless bars.
 

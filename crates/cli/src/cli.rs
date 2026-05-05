@@ -188,6 +188,14 @@ pub enum Command {
         #[command(subcommand)]
         command: StreamCommand,
     },
+    #[command(
+        about = "Observe TradingView workflows as JSONL",
+        long_about = "Observe TradingView workflows as newline-delimited JSON envelopes.\n\n`tv observe chart` is a Desktop-backed, non-mutating workflow read. It emits an initial readiness event and then bounded selected-chart sample or heartbeat events. It does not switch symbols, activate tabs, capture screenshots, or change account/page state."
+    )]
+    Observe {
+        #[command(subcommand)]
+        command: ObserveCommand,
+    },
     #[command(about = "Generic TradingView UI automation tools")]
     Ui {
         #[command(subcommand)]
@@ -822,6 +830,18 @@ pub enum StreamCommand {
     },
 }
 
+#[derive(Debug, Subcommand)]
+pub enum ObserveCommand {
+    #[command(
+        about = "Observe current chart readiness and last-bar updates",
+        long_about = "Observe the selected TradingView Desktop chart as newline-delimited JSON.\n\nThe first event is readiness metadata. Later events are last-bar samples and optional heartbeats. This command is Desktop-backed and non-mutating; it does not switch symbols, activate tabs, or capture screenshots."
+    )]
+    Chart {
+        #[command(flatten)]
+        options: StreamOptions,
+    },
+}
+
 #[derive(Debug, Clone, Copy, Args)]
 pub struct StreamOptions {
     #[arg(long, short)]
@@ -931,6 +951,7 @@ impl Command {
             Self::Tab { .. } => "tab",
             Self::Replay { .. } => "replay",
             Self::Stream { .. } => "stream",
+            Self::Observe { .. } => "observe",
             Self::Ui { .. } => "ui",
             Self::Screenshot { .. } => "screenshot",
         }

@@ -23,9 +23,11 @@ Always name the data source before interpreting values:
   scanner fallback only before chart mutation.
 - `TV_EXPERIMENTAL_BARS=1 tv bars <EXCHANGE:SYMBOL>`: experimental
   Desktop-free WebSocket bars.
+- `tv observe chart`: Desktop-backed JSONL workflow that emits readiness first,
+  then selected-chart last-bar samples and heartbeats.
 - `tv stream ...`: Desktop-backed current-chart JSONL observation, not
-  browserless WebSocket streaming. Prefer bounded windows with
-  `--duration-ms`, `--max-events`, and optional `--heartbeat-ms`.
+  browserless WebSocket streaming. Use it when you need a specific stream
+  sample type rather than the readiness-plus-chart workflow.
 
 Do not blend scanner REST, chart feed, and visible chart observations as if
 they were the same source.
@@ -74,11 +76,18 @@ inspection when needed. Screenshot payloads are visual evidence, not market
 data; preserve `source`, `source_category`, `writes_file`, and
 `visual_evidence` when citing them.
 
+For `tv observe chart`, interpret the first JSONL line as readiness
+(`data._event: "readiness"`), then read later `sample` and `heartbeat` events
+as selected-chart bar observations. Use bounded windows such as
+`--duration-ms`, `--max-events`, and optional `--heartbeat-ms` for agent
+workflows.
+
 For `tv stream ...`, interpret each JSONL line by `data._event`. A `sample`
 event means the chart/page sample changed after metadata-insensitive dedupe. A
 `heartbeat` event means the stream is still alive but no changed sample was
 emitted in that heartbeat window. Do not count heartbeat events as market
-updates. Stream events should identify `source: "desktop_chart_stream"`,
+updates. Stream and observe sample events should identify
+`source: "desktop_chart_stream"`,
 `source_category: "desktop_backed_read"`, `requires_desktop: true`, and
 `non_mutating: true`; treat them as current Desktop chart observations, not
 Desktop-free scanner reads.

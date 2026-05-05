@@ -125,9 +125,15 @@ tv draw position long --entry-price 100 --stop-loss 95 --take-profit 110
 Bounded stream observations emit newline-delimited JSON:
 
 ```bash
+tv observe chart --duration-ms 10000 --heartbeat-ms 2000
 tv stream quote --duration-ms 10000 --heartbeat-ms 2000
 tv stream bars --max-events 5
 ```
+
+Use `tv observe chart` when you want one Desktop-backed window that starts
+with readiness details and then follows the selected chart's last bar. Use the
+lower-level `tv stream ...` commands when you already know which specific chart
+sample type you need.
 
 Experimental browserless historical bars are lab-gated:
 

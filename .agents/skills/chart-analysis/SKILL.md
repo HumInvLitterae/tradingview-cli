@@ -63,13 +63,14 @@ quotes, or fundamentals before mutating chart state.
    includes such primitives.
 8. Inspect or adjust the date window with `tv range`, `tv scroll <DATE>`, or
    `tv range --from <UNIX_SECONDS> --to <UNIX_SECONDS>`.
-9. Use bounded `tv stream quote` or `tv stream bars` only when the task needs
-   short-lived Desktop-backed current-chart monitoring, for example
-   `--duration-ms 10000 --heartbeat-ms 2000` or `--max-events 5`. Ordinary
-   chart reads should use `tv quote` and `tv ohlcv --summary`. Stream JSONL
-   events should carry `source_category: "desktop_backed_read"` and
-   `non_mutating: true`; use those fields to keep them separate from
-   Desktop-free scanner reads.
+9. Use `tv observe chart --duration-ms 10000 --heartbeat-ms 2000` when the
+   task needs a short-lived Desktop-backed window that starts with readiness
+   and then follows the selected chart's last bar. Use lower-level bounded
+   `tv stream quote`, `tv stream bars`, or `tv stream all` only when a
+   specific sample type is needed. Ordinary chart reads should use `tv quote`
+   and `tv ohlcv --summary`. JSONL sample events should carry
+   `source_category: "desktop_backed_read"` and `non_mutating: true`; use
+   those fields to keep them separate from Desktop-free scanner reads.
 10. Capture visual evidence only when useful: `tv screenshot --region chart --output <PATH>`.
     Treat screenshot payloads as Desktop-backed visual evidence reads; they are
     `non_mutating: true` but `writes_file: true`.
@@ -104,6 +105,6 @@ Lead with the practical market read, then cite the observed CLI evidence. Separa
 
 ## Boundaries
 
-This Rust CLI can launch or reconnect to TradingView Desktop, read chart state, perform chart navigation, inspect chart-model data, manage indicators and drawings, list and switch saved chart layouts, work with Pine Editor state, use replay controls, and stream read-only chart samples as JSONL. Generic UI automation exists for compatibility, but prefer higher-level commands and use generic UI commands only after explicit user approval.
+This Rust CLI can launch or reconnect to TradingView Desktop, read chart state, perform chart navigation, inspect chart-model data, manage indicators and drawings, list and switch saved chart layouts, work with Pine Editor state, use replay controls, stream read-only chart samples as JSONL, and run `tv observe chart` for readiness-plus-last-bar observation. Generic UI automation exists for compatibility, but prefer higher-level commands and use generic UI commands only after explicit user approval.
 
 Read `references/workflow.md` when the task needs an old MCP-to-CLI command mapping or a reminder of unsupported chart-analysis features.
