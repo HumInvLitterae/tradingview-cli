@@ -12,6 +12,8 @@ package version omits the leading `v`.
 - Added `tv observe chart`, a Desktop-backed JSONL observation workflow that
   emits readiness first, then selected-chart last-bar samples and heartbeats
   with bounded `--duration-ms`, `--max-events`, and `--heartbeat-ms` controls.
+- Added an opt-in ignored Rust live smoke for the `tv observe chart` JSONL
+  readiness, sample, and heartbeat contract.
 
 ### Documentation
 

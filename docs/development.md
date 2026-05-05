@@ -205,6 +205,27 @@ and restore status. Switched-symbol reads require at least two stable samples;
 same-symbol fast-path reads may report one stable sample because no chart
 switch occurred.
 
+For `tv observe chart` JSONL contract checks, run:
+
+```bash
+TV_LIVE_OBSERVE_CHART_SMOKE=1 cargo test -p tradingview-cli --test live_observe_chart -- --ignored --nocapture
+```
+
+Optional environment variables:
+
+- `TV_LIVE_OBSERVE_CHART_TARGET_ID`: explicit CDP target id when multiple chart
+  targets are open. Do not paste live target ids into tracked docs.
+- `TV_LIVE_OBSERVE_CHART_DURATION_MS`: bounded observation duration,
+  defaulting to `3000`.
+- `TV_LIVE_OBSERVE_CHART_HEARTBEAT_MS`: heartbeat interval, defaulting to
+  `1000`.
+- `TV_LIVE_OBSERVE_CHART_MAX_EVENTS`: optional sample event cap.
+
+The ignored test validates public-safe JSONL summaries only: the first event is
+readiness, later events use `command: "observe"`, sample events are bar stream
+samples, heartbeat events preserve sample counts, and source metadata marks the
+events as Desktop-backed non-mutating reads.
+
 ## Validation baseline
 
 For code changes, run:
