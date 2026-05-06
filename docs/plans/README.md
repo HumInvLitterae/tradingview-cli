@@ -6,11 +6,11 @@ for release and next-phase planning.
 
 ## Current and future plans
 
-No active implementation ExecPlan is currently staged in this directory.
+Current plan:
 
-The first `v0.8.0` implementation slice, a Desktop-free `tv snapshot <SYMBOL>`
-evidence packet, is complete and archived. The next plan should be selected
-from `docs/v0.8-roadmap.md` after reviewing downstream snapshot usage.
+- `tradingview-cli-snapshot-workflow-docs.md`: align runtime skills and
+  workflow docs around the implemented Desktop-free `tv snapshot <SYMBOL>`
+  evidence packet.
 
 ## Archived plans
 

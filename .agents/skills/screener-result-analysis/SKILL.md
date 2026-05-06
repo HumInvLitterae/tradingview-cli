@@ -48,6 +48,8 @@ If a field is missing, say it is missing. Do not fill gaps from memory.
 Choose follow-up reads based on the question:
 
 - `tv info <SYMBOL>` for symbol metadata.
+- `tv snapshot <SYMBOL>` for a one-symbol Desktop-free evidence packet that
+  combines quote, info, and fundamentals sections before chart observation.
 - `tv quote <SYMBOL>` or `tv quotes <SYMBOL>...` for scanner-backed quote
   checks.
 - `tv quote <SYMBOL> --source chart` when the selected Desktop chart feed

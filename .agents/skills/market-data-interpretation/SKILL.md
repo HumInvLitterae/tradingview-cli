@@ -16,8 +16,8 @@ experimental bars, and fundamentals/event-like reads.
 
 Always name the data source before interpreting values:
 
-- Desktop-free reads: `tv quote <SYMBOL>`, `tv quotes <SYMBOL>...`,
-  `tv fundamentals <SYMBOL>`, `tv scanner scan`, and
+- Desktop-free reads: `tv snapshot <SYMBOL>`, `tv quote <SYMBOL>`,
+  `tv quotes <SYMBOL>...`, `tv fundamentals <SYMBOL>`, `tv scanner scan`, and
   `tv scanner metainfo`. Stable Desktop-free payloads should report
   `source_category: "desktop_free_read"`, `requires_desktop: false`, and
   `non_mutating: true`.
@@ -57,6 +57,15 @@ lab-gated browserless historical bars prototype using an undocumented
 TradingView WebSocket path. Use it only when the user or workflow explicitly
 accepts experimental data; report `source`, `experimental`, `data_quality`,
 and warnings. Do not treat it as a stable replacement for chart-sourced OHLCV.
+
+`tv snapshot <SYMBOL>` is the first-pass Desktop-free evidence packet for one
+symbol. It groups scanner-backed quote, symbol info, and fundamentals sections.
+Read each section's `ok`, `data`, or `error` independently, and preserve the
+top-level source metadata, section-level errors, and `next_action_hints`.
+Use lower-level `tv quote`, `tv info`, or `tv fundamentals` when the task needs
+only one section, and use `tv quotes` or scanner reads for multi-symbol
+comparison. Do not treat snapshot as batch, JSONL, chart-backed, screenshot, or
+experimental bars evidence.
 
 `tv fundamentals` is a Desktop-free scanner read, not a chart read. Use it for
 raw fields such as market cap, P/E, EPS, dividend yield, dividend dates/amounts,
@@ -136,5 +145,5 @@ Keep reports compact:
 3. Separate interpretation from observed data.
 4. Name what is still unknown.
 5. Suggest the next read only if it changes confidence, such as
-   `tv quote <SYMBOL> --source chart`, `tv info <SYMBOL>`,
+   `tv snapshot <SYMBOL>`, `tv quote <SYMBOL> --source chart`,
    `tv fundamentals <SYMBOL>`, `tv ohlcv --summary`, or a screenshot.
