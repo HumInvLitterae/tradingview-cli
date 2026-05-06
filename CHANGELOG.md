@@ -25,6 +25,8 @@ package version omits the leading `v`.
   `tv observe chart` JSONL event contract.
 - Added the next `v0.7.0` plan for opt-in live smoke around the lab-gated
   `tv bars` WebSocket read contract.
+- Added public-safe scanner field evidence for fundamentals, earnings,
+  dividends, and event-like fields before adding new event/calendar surface.
 
 ## v0.6.0 - 2026-05-05
 

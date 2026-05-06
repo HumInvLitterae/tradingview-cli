@@ -221,6 +221,9 @@ Safety boundary:
   `earnings_release_date`, and `earnings_release_next_time`, are returned as
   TradingView scanner values; the CLI does not infer timezone, before-market,
   or after-market semantics
+- scanner metainfo also exposes additional earnings and dividend-adjacent
+  fields, but they are still scanner fields, not a complete TradingView event
+  calendar. Public notes record field names and types only.
 - symbol no-row, exchange mismatch, ambiguity, or returned-symbol mismatch are
   validation errors with candidate symbols when possible; they do not fall
   back to chart state
