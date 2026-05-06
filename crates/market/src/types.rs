@@ -247,3 +247,65 @@ pub struct QuoteError {
     /// Optional structured error details.
     pub details: Option<Value>,
 }
+
+#[derive(Debug, Clone, PartialEq, Serialize)]
+/// Desktop-free evidence packet for one requested symbol.
+pub struct Snapshot {
+    /// Public source marker.
+    pub source: String,
+    /// Command source category used by the CLI source taxonomy.
+    pub source_category: String,
+    /// False because this read does not require TradingView Desktop.
+    pub requires_desktop: bool,
+    /// True because snapshot reads do not mutate a chart.
+    pub non_mutating: bool,
+    /// Symbol text supplied by the caller.
+    pub requested_symbol: String,
+    /// Best resolved exchange-qualified symbol from the successful sections.
+    pub symbol: Value,
+    /// Best observed symbol from the successful sections.
+    pub observed_symbol: Value,
+    /// Per-source evidence sections.
+    pub sections: SnapshotSections,
+    /// Public-safe section error summaries.
+    pub errors: Vec<SnapshotSectionError>,
+    /// Suggested follow-up commands when Desktop-backed or visual evidence is needed.
+    pub next_action_hints: Vec<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize)]
+/// Per-source evidence sections in a snapshot payload.
+pub struct SnapshotSections {
+    /// Scanner-backed quote evidence.
+    pub quote: SnapshotSection,
+    /// Desktop-free symbol metadata evidence.
+    pub info: SnapshotSection,
+    /// Scanner-backed fundamentals evidence.
+    pub fundamentals: SnapshotSection,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize)]
+/// One snapshot evidence section.
+pub struct SnapshotSection {
+    /// True when `data` is present.
+    pub ok: bool,
+    /// Successful section payload, preserving the existing command shape.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub data: Option<Value>,
+    /// Public-safe section error.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub error: Option<SnapshotSectionError>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize)]
+/// Public-safe per-section snapshot error.
+pub struct SnapshotSectionError {
+    /// Section name, such as `quote`, `info`, or `fundamentals`.
+    pub section: String,
+    /// Structured error kind.
+    pub kind: ErrorKind,
+    /// Human-readable error message.
+    pub message: String,
+    /// Optional structured error details.
+    pub details: Option<Value>,
+}

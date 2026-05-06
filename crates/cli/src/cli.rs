@@ -57,6 +57,17 @@ pub enum Command {
         #[arg(long = "field")]
         fields: Vec<String>,
     },
+    #[command(
+        about = "Get Desktop-free symbol evidence snapshot",
+        long_about = "Get a Desktop-free evidence packet for one symbol without connecting to TradingView Desktop.\n\nThe snapshot combines scanner quote, symbol info, and scanner-backed fundamentals sections into one JSON response. Repeated `--group <GROUP>` and `--field <FIELD>` options use the same fundamentals groups and supported fields as `tv fundamentals`; they affect only the fundamentals section. Use `tv observe chart` when selected-chart time-window evidence is needed."
+    )]
+    Snapshot {
+        symbol: String,
+        #[arg(long = "group")]
+        groups: Vec<String>,
+        #[arg(long = "field")]
+        fields: Vec<String>,
+    },
     #[command(about = "Read TradingView scanner preset data")]
     Scanner {
         #[command(subcommand)]
@@ -926,6 +937,7 @@ impl Command {
             Self::Info { .. } => "info",
             Self::Search { .. } => "search",
             Self::Fundamentals { .. } => "fundamentals",
+            Self::Snapshot { .. } => "snapshot",
             Self::Scanner { .. } => "scanner",
             Self::Screener { .. } => "screener",
             Self::Quote { .. } => "quote",

@@ -54,7 +54,7 @@ pub use layout::{
 };
 pub use market::{
     bars, fundamentals_symbol, ohlcv_bars, ohlcv_summary, quote, quote_symbol, quote_symbols,
-    symbol_info_direct, symbol_search,
+    snapshot_symbol, symbol_info_direct, symbol_search,
 };
 pub use observe::observe_readiness_event;
 pub use pine::{

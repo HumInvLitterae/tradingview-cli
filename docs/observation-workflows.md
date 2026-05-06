@@ -12,11 +12,17 @@ symbol metadata, fundamentals, or scanner-style filtering. These commands do
 not require TradingView Desktop or CDP:
 
 ```bash
+tv snapshot NASDAQ:AAPL
 tv quotes AAPL MSFT NYSE:IONQ
 tv scanner scan --type stock --columns name,close,volume --limit 10
 tv fundamentals NYSE:IONQ --group earnings
 tv scanner metainfo --market america --field close
 ```
+
+Use `tv snapshot <SYMBOL>` for a first-pass packet on one symbol. It combines
+scanner quote, symbol info, and scanner-backed fundamentals without connecting
+to TradingView Desktop. Use the lower-level commands when you need just one
+section, a multi-symbol comparison, or a scanner row set.
 
 Treat scanner-backed price reads as screening evidence, not as a realtime
 entitlement guarantee. Preserve `source_category`, `requires_desktop`,
@@ -26,7 +32,9 @@ entitlement guarantee. Preserve `source_category`, `requires_desktop`,
 ## Desktop-Backed Chart Observation
 
 Use Desktop-backed reads when the selected TradingView Desktop chart or visible
-chart feed is the source of truth. Start with readiness:
+chart feed is the source of truth. If `tv snapshot` gives enough static
+symbol context, do not start chart observation just to re-read quote, info, or
+fundamentals. When chart state over time matters, start with readiness:
 
 ```bash
 tv readiness

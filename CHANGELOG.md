@@ -7,6 +7,12 @@ package version omits the leading `v`.
 
 ## Unreleased
 
+### Added
+
+- Added `tv snapshot <SYMBOL>`, a Desktop-free single-symbol evidence packet
+  that combines scanner quote, symbol info, and scanner-backed fundamentals
+  sections with source metadata and section-level errors.
+
 ### Documentation
 
 - Added the `v0.8.0` roadmap draft and first `tv snapshot <SYMBOL>`

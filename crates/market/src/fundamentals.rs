@@ -68,6 +68,14 @@ pub async fn fundamentals_symbol_with_groups_typed(
     }
 }
 
+/// Validates fundamentals group and field selection without performing network I/O.
+pub fn validate_fundamentals_selection(
+    groups: Vec<String>,
+    fields: Vec<String>,
+) -> Result<(), AppError> {
+    normalize_fundamental_selection(groups, fields).map(|_| ())
+}
+
 async fn add_symbol_search_candidates(mut error: AppError, requested_symbol: &str) -> AppError {
     let Ok(search) = symbol_search(requested_symbol).await else {
         return error;
