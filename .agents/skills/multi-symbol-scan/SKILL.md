@@ -35,11 +35,12 @@ construction, not on duplicating the full source taxonomy.
    filters. Use `tv scanner metainfo --field <FIELD>` when you need to confirm
    scanner field availability.
 2. For a small finalist set, use `tv quotes <SYMBOL>...` for ordered
-   Desktop-free batch quote reads, `tv quote <SYMBOL>` for one-off quote
-   checks, `tv info <SYMBOL>` for symbol metadata, and
+   Desktop-free batch quote reads. Use `tv snapshot <SYMBOL>` for a one-symbol
+   first-pass evidence packet before mutating the chart; it combines quote,
+   symbol info, and fundamentals sections. Use lower-level `tv quote`,
+   `tv info`, or
    `tv fundamentals <SYMBOL> --group earnings|valuation|dividends|financials`
-   when earnings timing, dividend fields, or basic fundamentals affect the
-   screen. Preserve
+   only when one section is enough. Preserve
    `source_category: "desktop_free_read"`, `requires_desktop: false`, and
    `non_mutating: true` when reporting this REST-backed evidence.
 3. Treat scanner-backed price reads as screening evidence rather than a
@@ -99,9 +100,10 @@ assume it is available for Codex CLI, packaged agents, or other CLI-only
 runtimes.
 
 Use `tv timeframe <RESOLUTION>` for shared timeframe setup. `tv interval` is
-not a command. Use `tv info <SYMBOL>` for Desktop-free symbol metadata,
-`tv fundamentals <SYMBOL>` with `--group` or `--field` for scanner-backed
-fundamental fields, and use `tv info` without a symbol only for current-chart
+not a command. Use `tv snapshot <SYMBOL>` for one-symbol Desktop-free quote,
+info, and fundamentals context; use `tv info <SYMBOL>` or
+`tv fundamentals <SYMBOL>` with `--group` or `--field` only when that narrower
+section is all you need. Use `tv info` without a symbol only for current-chart
 metadata.
 
 ## Boundaries

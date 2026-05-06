@@ -17,6 +17,8 @@ package version omits the leading `v`.
 
 - Added the `v0.8.0` roadmap draft and first `tv snapshot <SYMBOL>`
   implementation plan for Desktop-free single-symbol evidence packets.
+- Synchronized workflow documentation and runtime skills around `tv snapshot`
+  as the one-symbol Desktop-free evidence packet before chart observation.
 
 ## v0.7.0 - 2026-05-06
 

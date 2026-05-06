@@ -8,8 +8,8 @@ description: Analyze a live TradingView chart with the Rust `tv` CLI. Use when t
 Use this skill for live TradingView chart review through the Rust `tv` CLI.
 This is primarily a Desktop-backed read workflow: the selected TradingView
 Desktop chart, visible studies, chart bars, and screenshots are the source of
-truth. Use Desktop-free reads only for quick symbol metadata, scanner-backed
-quotes, or fundamentals before mutating chart state.
+truth. Use Desktop-free reads only for one-symbol snapshot context, quick symbol
+metadata, scanner-backed quotes, or fundamentals before mutating chart state.
 
 For the current command-choice map, use `docs/observation-workflows.md`. Keep
 this skill focused on chart analysis rather than re-listing every `tv`
@@ -36,11 +36,13 @@ observation surface.
 
 ## Core Workflow
 
-1. For a one-off symbol quote or metadata check, prefer Desktop-free
-   `tv quote <SYMBOL>` and `tv info <SYMBOL>` before mutating the chart.
-   Scanner-backed quotes expose `time`, `update_mode`, `delay_seconds`, and
-   extended-hours fields when TradingView returns them, but they are not a
-   realtime entitlement guarantee.
+1. For one-symbol static context before mutating the chart, prefer
+   Desktop-free `tv snapshot <SYMBOL>`. It combines quote, symbol info, and
+   fundamentals sections. Use lower-level `tv quote <SYMBOL>` and
+   `tv info <SYMBOL>` only when that narrower read is enough. Scanner-backed
+   quotes expose `time`, `update_mode`, `delay_seconds`, and extended-hours
+   fields when TradingView returns them, but they are not a realtime entitlement
+   guarantee.
 2. Set the requested chart context with `tv symbol <SYMBOL>`,
    `tv timeframe <RESOLUTION>`, and `tv type <CHART_TYPE>` only when OHLCV,
    visible studies, drawings, screenshots, or current-chart metadata are
@@ -99,9 +101,10 @@ structured CLI checks. Do not make Computer Use part of the default workflow for
 Codex CLI, packaged agents, or other CLI-only runtimes.
 
 Use `tv timeframe <RESOLUTION>` for timeframe changes. `tv interval` is not a
-command. Use `tv info <SYMBOL>` for Desktop-free symbol metadata, and use
-`tv info` without a symbol only when you need metadata for the current chart's
-loaded symbol.
+command. Use `tv snapshot <SYMBOL>` for Desktop-free one-symbol context before
+chart mutation, `tv info <SYMBOL>` for narrower Desktop-free symbol metadata,
+and `tv info` without a symbol only when you need metadata for the current
+chart's loaded symbol.
 
 ## Reporting
 
