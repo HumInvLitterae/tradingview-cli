@@ -6,15 +6,15 @@ for release and next-phase planning.
 
 ## Current and future plans
 
-- `tradingview-cli-v0.7-observation-workflow-docs.md`: add a concise
-  observation workflow guide and synchronize runtime skills with the current
-  v0.7 command surface.
+- `tradingview-cli-fundamentals-event-field-enrichment.md`: enrich existing
+  `tv fundamentals --group earnings|dividends` bundles with scanner-metainfo
+  backed fields while keeping standalone `tv events` deferred.
 
 The current `v0.7.0` planning slice keeps new observe modes, `diagnose`, binary
 splitting, browserless streaming stabilization, stable browserless historical
 bars, standalone `tv events`, MCP server work, daemon behavior, and Computer
-Use-specific runtime skills deferred while documenting how to use the existing
-observation commands.
+Use-specific runtime skills deferred while making small evidence-backed
+Desktop-free fundamentals improvements.
 
 ## Archived plans
 
@@ -115,6 +115,7 @@ Important archived plan categories:
 - opt-in `tv observe chart` JSONL contract live smoke
 - opt-in lab-gated `tv bars` JSON contract live smoke
 - public-safe fundamentals/events scanner field evidence
+- v0.7 observation workflow guide and runtime skill alignment
 
 For command contract details, prefer the notes under `docs/notes/` before
 reading archived implementation plans.

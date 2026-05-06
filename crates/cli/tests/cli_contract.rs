@@ -165,6 +165,12 @@ fn fundamentals_rejects_invalid_inputs_before_connecting() {
             .unwrap()
             .contains(&json!("earnings_release_next_date"))
     );
+    assert!(
+        value["error"]["details"]["supported_fields"]
+            .as_array()
+            .unwrap()
+            .contains(&json!("dividend_amount_recent"))
+    );
 
     let unknown_group = tv()
         .env("TV_CDP_PORT", "9")
@@ -855,6 +861,18 @@ fn scanner_scan_rejects_invalid_inputs_before_network() {
     let stderr = String::from_utf8(invalid_column.get_output().stderr.clone()).unwrap();
     let value: Value = serde_json::from_str(&stderr).unwrap();
     assert_eq!(value["error"]["kind"], "validation");
+    assert!(
+        value["error"]["details"]["supported_fields"]
+            .as_array()
+            .unwrap()
+            .contains(&json!("earnings_release_next_trading_date_fq"))
+    );
+    assert!(
+        value["error"]["details"]["supported_fields"]
+            .as_array()
+            .unwrap()
+            .contains(&json!("dividend_amount_recent"))
+    );
 
     let invalid_limit = tv()
         .env("TV_CDP_PORT", "9")

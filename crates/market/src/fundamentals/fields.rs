@@ -24,7 +24,11 @@ const EARNINGS_FUNDAMENTAL_FIELDS: &[&str] = &[
     "earnings_release_calendar_date",
     "earnings_release_next_trading_date_fy",
     "earnings_release_trading_date_fy",
+    "earnings_release_next_trading_date_fq",
+    "earnings_release_trading_date_fq",
     "earnings_publication_type_next_fq",
+    "earnings_release_time",
+    "earnings_publication_type_fq",
 ];
 
 const VALUATION_FUNDAMENTAL_FIELDS: &[&str] = &[
@@ -45,6 +49,12 @@ const DIVIDENDS_FUNDAMENTAL_FIELDS: &[&str] = &[
     "dividend_ex_date_upcoming",
     "dividend_payment_date_recent",
     "dividend_payment_date_upcoming",
+    "dividend_amount_recent",
+    "dividend_amount_upcoming",
+    "dividend_frequency_recent",
+    "dividend_frequency_upcoming",
+    "next_dividend_date",
+    "expected_annual_dividends",
 ];
 
 const FINANCIALS_FUNDAMENTAL_FIELDS: &[&str] = &[
@@ -86,6 +96,12 @@ const SUPPORTED_FUNDAMENTAL_FIELDS: &[&str] = &[
     "dividend_ex_date_upcoming",
     "dividend_payment_date_recent",
     "dividend_payment_date_upcoming",
+    "dividend_amount_recent",
+    "dividend_amount_upcoming",
+    "dividend_frequency_recent",
+    "dividend_frequency_upcoming",
+    "next_dividend_date",
+    "expected_annual_dividends",
     "earnings_release_next_date",
     "earnings_release_date",
     "earnings_release_next_time",
@@ -93,7 +109,11 @@ const SUPPORTED_FUNDAMENTAL_FIELDS: &[&str] = &[
     "earnings_release_calendar_date",
     "earnings_release_next_trading_date_fy",
     "earnings_release_trading_date_fy",
+    "earnings_release_next_trading_date_fq",
+    "earnings_release_trading_date_fq",
     "earnings_publication_type_next_fq",
+    "earnings_release_time",
+    "earnings_publication_type_fq",
 ];
 
 #[derive(Debug, Clone, PartialEq)]
@@ -248,7 +268,17 @@ mod tests {
         assert!(
             selection
                 .fields
+                .contains(&"earnings_release_next_trading_date_fq".to_string())
+        );
+        assert!(
+            selection
+                .fields
                 .contains(&"dividend_ex_date_upcoming".to_string())
+        );
+        assert!(
+            selection
+                .fields
+                .contains(&"dividend_amount_recent".to_string())
         );
         assert!(selection.fields.contains(&"price_earnings_ttm".to_string()));
         assert_eq!(
@@ -258,6 +288,47 @@ mod tests {
                 .filter(|field| *field == "earnings_release_next_date")
                 .count(),
             1
+        );
+    }
+
+    #[test]
+    fn normalize_fundamental_selection_accepts_enriched_event_fields() {
+        let selection = normalize_fundamental_selection(
+            vec!["earnings".to_string()],
+            vec![
+                "earnings_release_next_trading_date_fq".to_string(),
+                "dividend_amount_recent".to_string(),
+            ],
+        )
+        .unwrap();
+
+        assert_eq!(
+            selection
+                .fields
+                .iter()
+                .filter(|field| *field == "earnings_release_next_trading_date_fq")
+                .count(),
+            1
+        );
+        assert!(
+            selection
+                .fields
+                .contains(&"earnings_release_trading_date_fq".to_string())
+        );
+        assert!(
+            selection
+                .fields
+                .contains(&"earnings_release_time".to_string())
+        );
+        assert!(
+            selection
+                .fields
+                .contains(&"earnings_publication_type_fq".to_string())
+        );
+        assert!(
+            selection
+                .fields
+                .contains(&"dividend_amount_recent".to_string())
         );
     }
 

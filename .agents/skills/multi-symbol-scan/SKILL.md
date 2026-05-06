@@ -38,7 +38,8 @@ construction, not on duplicating the full source taxonomy.
    Desktop-free batch quote reads, `tv quote <SYMBOL>` for one-off quote
    checks, `tv info <SYMBOL>` for symbol metadata, and
    `tv fundamentals <SYMBOL> --group earnings|valuation|dividends|financials`
-   when earnings timing or basic fundamentals affect the screen. Preserve
+   when earnings timing, dividend fields, or basic fundamentals affect the
+   screen. Preserve
    `source_category: "desktop_free_read"`, `requires_desktop: false`, and
    `non_mutating: true` when reporting this REST-backed evidence.
 3. Treat scanner-backed price reads as screening evidence rather than a
