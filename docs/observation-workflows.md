@@ -91,9 +91,11 @@ tv fundamentals AAPL --group dividends
 ```
 
 The earnings and dividend groups are scanner field bundles, not a complete
-TradingView event calendar or news feed. Treat `field_values` as the source of
-truth and avoid inferring timezone or before/after-market meaning unless
-another source supplies that interpretation.
+TradingView event calendar or news feed. The groups include scanner-confirmed
+earnings date/publication fields and dividend yield/date/amount/frequency
+fields. Treat `field_values` as the source of truth and avoid inferring
+timezone, before/after-market meaning, publication-code meaning, or investment
+significance unless another source supplies that interpretation.
 
 ## Deferred Surfaces
 

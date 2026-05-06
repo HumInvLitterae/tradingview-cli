@@ -30,6 +30,9 @@ package version omits the leading `v`.
 - Added an observation workflow guide and synchronized runtime skills for
   Desktop-free screening, Desktop-backed chart observation, visual evidence,
   experimental bars, and fundamentals/event-like fields.
+- Enriched `tv fundamentals --group earnings|dividends` and matching scanner
+  scan column validation with additional scanner-metainfo-backed earnings and
+  dividend fields.
 
 ## v0.6.0 - 2026-05-05
 

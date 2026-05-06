@@ -19,6 +19,8 @@ The v0.7 evidence pass found additional scanner fields around earnings and
 dividends, but not a distinct complete event calendar or news surface. The
 recommended next implementation, if needed, is to add small missing fields to
 existing `earnings` or `dividends` groups rather than creating `tv events`.
+The first follow-up implementation added the confirmed additional earnings and
+dividend candidates to those existing groups.
 
 ## Confirmed existing group fields
 
@@ -54,16 +56,16 @@ Additional scanner fields were visible and may be useful later:
 
 | Field | Type | Candidate use |
 | --- | --- | --- |
-| `earnings_release_next_trading_date_fq` | `time` | Add to `earnings` if fiscal-quarter trading date matters |
-| `earnings_release_trading_date_fq` | `time` | Add to `earnings` if fiscal-quarter trading date matters |
-| `earnings_release_time` | `number` | Add to `earnings` only if meaning can be documented safely |
-| `earnings_publication_type_fq` | `number` | Add to `earnings` only if current-quarter publication type is needed |
-| `dividend_amount_recent` | `fundamental_price` | Add to `dividends` if dividend amount is useful |
-| `dividend_amount_upcoming` | `fundamental_price` | Add to `dividends` if upcoming amount is useful |
-| `dividend_frequency_recent` | `text` | Add to `dividends` if frequency is useful |
-| `dividend_frequency_upcoming` | `text` | Add to `dividends` if frequency is useful |
-| `next_dividend_date` | `time` | Add to `dividends` if a compact next-date field is useful |
-| `expected_annual_dividends` | `number` | Add to `dividends` if annual dividend expectation is useful |
+| `earnings_release_next_trading_date_fq` | `time` | Implemented in `earnings` group |
+| `earnings_release_trading_date_fq` | `time` | Implemented in `earnings` group |
+| `earnings_release_time` | `number` | Implemented in `earnings` group as raw scanner value |
+| `earnings_publication_type_fq` | `number` | Implemented in `earnings` group as raw scanner value |
+| `dividend_amount_recent` | `fundamental_price` | Implemented in `dividends` group |
+| `dividend_amount_upcoming` | `fundamental_price` | Implemented in `dividends` group |
+| `dividend_frequency_recent` | `text` | Implemented in `dividends` group |
+| `dividend_frequency_upcoming` | `text` | Implemented in `dividends` group |
+| `next_dividend_date` | `time` | Implemented in `dividends` group |
+| `expected_annual_dividends` | `number` | Implemented in `dividends` group |
 
 The metainfo keyword pass also surfaced broad price/update fields such as
 `time`, `update_mode`, `premarket_time`, `postmarket_time`, and range-date
@@ -81,9 +83,10 @@ For current workflows, use:
 
 - `tv fundamentals <SYMBOL> --group earnings` for single-symbol earnings
   timing fields;
-- `tv fundamentals <SYMBOL> --group dividends` for dividend yield/date fields;
+- `tv fundamentals <SYMBOL> --group dividends` for dividend yield/date,
+  amount, frequency, and expected annual dividend fields;
 - `tv scanner metainfo --market america --field <FIELD>` to confirm a field
   exists before adding new groups or columns.
 
-Future implementation should start with small group additions backed by
+Future implementation beyond these group additions still needs separate
 scanner metainfo evidence. A standalone `tv events` command remains deferred.

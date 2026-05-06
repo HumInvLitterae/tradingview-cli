@@ -59,13 +59,14 @@ accepts experimental data; report `source`, `experimental`, `data_quality`,
 and warnings. Do not treat it as a stable replacement for chart-sourced OHLCV.
 
 `tv fundamentals` is a Desktop-free scanner read, not a chart read. Use it for
-raw fields such as market cap, P/E, EPS, dividend yield, and earnings
-date/time. Prefer `--group earnings`, `--group valuation`, `--group dividends`,
-or `--group financials` when the task needs a coherent bundle; use `--field`
-for exact scanner fields. Treat `field_values` as the source of truth. Do not
-infer timezone, before/after-market meaning, financial analysis, or investment
-recommendations from these fields unless another source explicitly supplies
-that interpretation. The current event-like evidence is still scanner field
+raw fields such as market cap, P/E, EPS, dividend yield, dividend dates/amounts,
+and earnings date/time. Prefer `--group earnings`, `--group valuation`,
+`--group dividends`, or `--group financials` when the task needs a coherent
+bundle; use `--field` for exact scanner fields. Treat `field_values` as the
+source of truth. Do not infer timezone, before/after-market meaning,
+publication-code meaning, financial analysis, or investment recommendations
+from these fields unless another source explicitly supplies that
+interpretation. The current event-like evidence is still scanner field
 metadata, not a complete event calendar.
 
 For Desktop-backed reads, inspect `tv readiness` before escalating to visual

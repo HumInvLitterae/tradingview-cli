@@ -43,7 +43,17 @@ const SUPPORTED_SCAN_COLUMNS: &[&str] = &[
     "earnings_release_date",
     "earnings_release_next_time",
     "earnings_release_next_calendar_date",
+    "earnings_release_next_trading_date_fq",
+    "earnings_release_trading_date_fq",
+    "earnings_release_time",
     "earnings_publication_type_next_fq",
+    "earnings_publication_type_fq",
+    "dividend_amount_recent",
+    "dividend_amount_upcoming",
+    "dividend_frequency_recent",
+    "dividend_frequency_upcoming",
+    "next_dividend_date",
+    "expected_annual_dividends",
     "Perf.W",
     "Perf.1M",
     "Perf.3M",
@@ -1040,7 +1050,7 @@ mod tests {
             market: "america".to_string(),
             exchanges: Vec::new(),
             columns: Some(
-                "name,earnings_release_next_date,earnings_release_date,earnings_release_next_time"
+                "name,earnings_release_next_date,earnings_release_date,earnings_release_next_time,earnings_release_next_trading_date_fq,dividend_amount_recent"
                     .to_string(),
             ),
             sort: Some("earnings_release_next_date".to_string()),
@@ -1080,7 +1090,9 @@ mod tests {
                 "name",
                 "earnings_release_next_date",
                 "earnings_release_date",
-                "earnings_release_next_time"
+                "earnings_release_next_time",
+                "earnings_release_next_trading_date_fq",
+                "dividend_amount_recent"
             ]
         );
         assert_eq!(normalized.sort_field, "earnings_release_next_date");
