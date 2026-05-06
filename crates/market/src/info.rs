@@ -26,7 +26,8 @@ pub async fn symbol_info_typed(symbol: &str) -> Result<SymbolInfo, AppError> {
             "info symbol must not be empty",
         ));
     }
-    let search = symbol_search(requested_symbol).await?;
+    let (_, requested_name) = split_exchange_symbol(requested_symbol);
+    let search = symbol_search(&requested_name).await?;
     let target = resolve_symbol_search_match(requested_symbol, &search)?;
     Ok(symbol_info_from_search_result_typed(
         requested_symbol,

@@ -33,6 +33,7 @@ fn help_lists_v1_commands() {
         .stdout(predicate::str::contains("info"))
         .stdout(predicate::str::contains("search"))
         .stdout(predicate::str::contains("fundamentals"))
+        .stdout(predicate::str::contains("snapshot"))
         .stdout(predicate::str::contains("scanner"))
         .stdout(predicate::str::contains("values"))
         .stdout(predicate::str::contains("discover"))
@@ -182,6 +183,71 @@ fn fundamentals_rejects_invalid_inputs_before_connecting() {
     let value: Value = serde_json::from_str(&stderr).unwrap();
     assert_eq!(value["success"], false);
     assert_eq!(value["command"], "fundamentals");
+    assert_eq!(value["error"]["kind"], "validation");
+    assert!(
+        value["error"]["details"]["supported_groups"]
+            .as_array()
+            .unwrap()
+            .contains(&json!("earnings"))
+    );
+}
+
+#[test]
+fn snapshot_help_explains_desktop_free_evidence_packet() {
+    tv().args(["snapshot", "--help"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("<SYMBOL>"))
+        .stdout(predicate::str::contains("--group"))
+        .stdout(predicate::str::contains("--field"))
+        .stdout(predicate::str::contains("Desktop-free"))
+        .stdout(predicate::str::contains("quote"))
+        .stdout(predicate::str::contains("fundamentals"))
+        .stdout(predicate::str::contains("observe chart"));
+}
+
+#[test]
+fn snapshot_rejects_invalid_inputs_before_connecting() {
+    let blank_symbol = tv()
+        .env("TV_CDP_PORT", "9")
+        .args(["snapshot", " "])
+        .assert()
+        .failure()
+        .code(1);
+    let stderr = String::from_utf8(blank_symbol.get_output().stderr.clone()).unwrap();
+    let value: Value = serde_json::from_str(&stderr).unwrap();
+    assert_eq!(value["success"], false);
+    assert_eq!(value["command"], "snapshot");
+    assert_eq!(value["error"]["kind"], "validation");
+
+    let unknown_field = tv()
+        .env("TV_CDP_PORT", "9")
+        .args(["snapshot", "NYSE:IONQ", "--field", "banana"])
+        .assert()
+        .failure()
+        .code(1);
+    let stderr = String::from_utf8(unknown_field.get_output().stderr.clone()).unwrap();
+    let value: Value = serde_json::from_str(&stderr).unwrap();
+    assert_eq!(value["success"], false);
+    assert_eq!(value["command"], "snapshot");
+    assert_eq!(value["error"]["kind"], "validation");
+    assert!(
+        value["error"]["details"]["supported_fields"]
+            .as_array()
+            .unwrap()
+            .contains(&json!("price_earnings_ttm"))
+    );
+
+    let unknown_group = tv()
+        .env("TV_CDP_PORT", "9")
+        .args(["snapshot", "NYSE:IONQ", "--group", "banana"])
+        .assert()
+        .failure()
+        .code(1);
+    let stderr = String::from_utf8(unknown_group.get_output().stderr.clone()).unwrap();
+    let value: Value = serde_json::from_str(&stderr).unwrap();
+    assert_eq!(value["success"], false);
+    assert_eq!(value["command"], "snapshot");
     assert_eq!(value["error"]["kind"], "validation");
     assert!(
         value["error"]["details"]["supported_groups"]

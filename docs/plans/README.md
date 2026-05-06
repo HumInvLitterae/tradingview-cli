@@ -6,15 +6,11 @@ for release and next-phase planning.
 
 ## Current and future plans
 
-- `tradingview-cli-symbol-snapshot.md`: add the first `v0.8.0` implementation
-  slice, a Desktop-free `tv snapshot <SYMBOL>` evidence packet that combines
-  scanner quote, symbol info, and fundamentals reads.
+No active implementation ExecPlan is currently staged in this directory.
 
-The current `v0.8.0` direction keeps `tv` as one binary and starts with
-Desktop-free single-symbol evidence packets. It leaves chart-backed snapshot
-sources, `diagnose`, binary splitting, browserless streaming stabilization,
-stable browserless historical bars, standalone `tv events`, MCP server work,
-daemon behavior, and Computer Use-specific runtime skills deferred.
+The first `v0.8.0` implementation slice, a Desktop-free `tv snapshot <SYMBOL>`
+evidence packet, is complete and archived. The next plan should be selected
+from `docs/v0.8-roadmap.md` after reviewing downstream snapshot usage.
 
 ## Archived plans
 
@@ -119,6 +115,7 @@ Important archived plan categories:
 - fundamentals earnings and dividends field enrichment
 - v0.7 pre-release completion and refactor audit
 - v0.7.0 release readiness
+- first Desktop-free `tv snapshot <SYMBOL>` evidence packet
 
 For command contract details, prefer the notes under `docs/notes/` before
 reading archived implementation plans.

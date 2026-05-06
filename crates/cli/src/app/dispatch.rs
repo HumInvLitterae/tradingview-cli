@@ -85,6 +85,19 @@ pub async fn dispatch(
             }
             ops::fundamentals_symbol(&symbol, groups, fields).await
         }
+        Command::Snapshot {
+            symbol,
+            groups,
+            fields,
+        } => {
+            if symbol.trim().is_empty() {
+                return Err(AppError::new(
+                    ErrorKind::Validation,
+                    "snapshot symbol must not be empty",
+                ));
+            }
+            ops::snapshot_symbol(&symbol, groups, fields).await
+        }
         Command::Scanner { command } => match command {
             ScannerCommand::Hotlist { slug, limit } => ops::scanner_hotlist(&slug, limit).await,
             ScannerCommand::Metainfo { market, fields } => {

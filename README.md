@@ -83,6 +83,7 @@ Desktop-free reads do not require TradingView Desktop:
 tv search "Apple"
 tv info NASDAQ:AAPL
 tv quote AAPL
+tv snapshot NASDAQ:AAPL
 tv quotes AAPL MSFT NYSE:IONQ
 tv fundamentals NYSE:IONQ --group earnings
 tv fundamentals AAPL --group dividends
