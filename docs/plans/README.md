@@ -8,9 +8,8 @@ for release and next-phase planning.
 
 Current plan:
 
-- `tradingview-cli-snapshot-workflow-docs.md`: align runtime skills and
-  workflow docs around the implemented Desktop-free `tv snapshot <SYMBOL>`
-  evidence packet.
+- `tradingview-cli-snapshot-live-smoke.md`: add an opt-in ignored Rust live
+  smoke for the Desktop-free `tv snapshot <SYMBOL>` JSON contract.
 
 ## Archived plans
 
@@ -116,6 +115,7 @@ Important archived plan categories:
 - v0.7 pre-release completion and refactor audit
 - v0.7.0 release readiness
 - first Desktop-free `tv snapshot <SYMBOL>` evidence packet
+- snapshot workflow documentation and runtime skill alignment
 
 For command contract details, prefer the notes under `docs/notes/` before
 reading archived implementation plans.

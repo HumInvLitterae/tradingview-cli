@@ -226,6 +226,27 @@ readiness, later events use `command: "observe"`, sample events are bar stream
 samples, heartbeat events preserve sample counts, and source metadata marks the
 events as Desktop-backed non-mutating reads.
 
+For `tv snapshot <SYMBOL>` live contract checks, run:
+
+```bash
+TV_LIVE_SNAPSHOT_SMOKE=1 cargo test -p tradingview-cli --test live_snapshot -- --ignored --nocapture
+```
+
+Optional environment variables:
+
+- `TV_LIVE_SNAPSHOT_SYMBOLS`: comma-separated public symbols, defaulting to
+  `NASDAQ:AAPL,NYSE:IONQ`.
+- `TV_LIVE_SNAPSHOT_GROUPS`: comma-separated fundamentals groups to pass as
+  repeated `--group` options.
+- `TV_LIVE_SNAPSHOT_FIELDS`: comma-separated fundamentals fields to pass as
+  repeated `--field` options.
+- `TV_LIVE_SNAPSHOT_RUNS`: positive repeat count, defaulting to `1`.
+
+The ignored test validates only public contract fields: source metadata,
+requested symbol, section success/error shape, top-level error summaries, and
+next-action hints. Do not paste raw snapshot output or live response payloads
+into tracked docs.
+
 For lab-gated `tv bars` WebSocket evidence checks, run:
 
 ```bash
