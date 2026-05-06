@@ -11,6 +11,10 @@ reads only for finalists that need selected-chart OHLCV, visible studies, or
 screenshots. Treat `tv quote --source auto` as hybrid source selection and
 `tv bars` as experimental lab data.
 
+For the current observation command sequence, use
+`docs/observation-workflows.md`. This skill should stay focused on shortlist
+construction, not on duplicating the full source taxonomy.
+
 ## Start With Scope
 
 1. Confirm the symbol list, timeframe, and screening criteria from the user request.

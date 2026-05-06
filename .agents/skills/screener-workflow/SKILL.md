@@ -10,6 +10,10 @@ Screener work spans two source categories: `tv scanner ...` commands are
 Desktop-free reads, while `tv screener ...` commands are Desktop-backed reads
 or operations against the visible/full-page TradingView Screener target.
 
+For follow-up chart observation after a screen, use
+`docs/observation-workflows.md` rather than expanding this skill with chart
+analysis steps.
+
 ## Start With The Target
 
 1. Run `tv readiness` for Desktop/CDP health and chart target ambiguity.

@@ -27,6 +27,9 @@ package version omits the leading `v`.
   `tv bars` WebSocket read contract.
 - Added public-safe scanner field evidence for fundamentals, earnings,
   dividends, and event-like fields before adding new event/calendar surface.
+- Added an observation workflow guide and synchronized runtime skills for
+  Desktop-free screening, Desktop-backed chart observation, visual evidence,
+  experimental bars, and fundamentals/event-like fields.
 
 ## v0.6.0 - 2026-05-05
 

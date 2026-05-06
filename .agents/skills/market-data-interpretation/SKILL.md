@@ -8,6 +8,10 @@ description: Interpret TradingView market data returned by the Rust `tv` CLI. Us
 Use this skill when a task depends on understanding market data returned by the
 Rust `tv` CLI rather than merely running the command.
 
+Use `docs/observation-workflows.md` when you need the current practical order
+for Desktop-free screening, Desktop-backed chart observation, screenshots,
+experimental bars, and fundamentals/event-like reads.
+
 ## Source First
 
 Always name the data source before interpreting values:
@@ -61,7 +65,8 @@ or `--group financials` when the task needs a coherent bundle; use `--field`
 for exact scanner fields. Treat `field_values` as the source of truth. Do not
 infer timezone, before/after-market meaning, financial analysis, or investment
 recommendations from these fields unless another source explicitly supplies
-that interpretation.
+that interpretation. The current event-like evidence is still scanner field
+metadata, not a complete event calendar.
 
 For Desktop-backed reads, inspect `tv readiness` before escalating to visual
 checks. It summarizes endpoint, target selection, chart readiness, bars
