@@ -6,15 +6,15 @@ for release and next-phase planning.
 
 ## Current and future plans
 
-- `tradingview-cli-v0.7.0-release-readiness.md`: prepare the `v0.7.0`
-  release state with version, changelog, release notes, package staging, and
-  validation evidence.
+- `tradingview-cli-symbol-snapshot.md`: add the first `v0.8.0` implementation
+  slice, a Desktop-free `tv snapshot <SYMBOL>` evidence packet that combines
+  scanner quote, symbol info, and fundamentals reads.
 
-The current `v0.7.0` slice stops feature work. It keeps new observe modes,
-`diagnose`, binary splitting, browserless streaming stabilization, stable
-browserless historical bars, standalone `tv events`, MCP server work, daemon
-behavior, and Computer Use-specific runtime skills deferred while preparing the
-release archive and tag-ready docs.
+The current `v0.8.0` direction keeps `tv` as one binary and starts with
+Desktop-free single-symbol evidence packets. It leaves chart-backed snapshot
+sources, `diagnose`, binary splitting, browserless streaming stabilization,
+stable browserless historical bars, standalone `tv events`, MCP server work,
+daemon behavior, and Computer Use-specific runtime skills deferred.
 
 ## Archived plans
 
@@ -118,6 +118,7 @@ Important archived plan categories:
 - v0.7 observation workflow guide and runtime skill alignment
 - fundamentals earnings and dividends field enrichment
 - v0.7 pre-release completion and refactor audit
+- v0.7.0 release readiness
 
 For command contract details, prefer the notes under `docs/notes/` before
 reading archived implementation plans.
