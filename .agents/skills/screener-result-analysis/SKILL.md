@@ -25,6 +25,9 @@ Before interpreting results, identify:
 - freshness notes from `market-data-interpretation` when quote fields are used.
 
 If the task needs field discovery, use `tv scanner metainfo --field <FIELD>`.
+If the task moves from scanner rows into chart observation, use
+`docs/observation-workflows.md` to choose between `tv readiness`,
+`tv observe chart`, lower-level `tv stream ...`, and screenshots.
 
 ## Explain Why Rows Matched
 
@@ -51,6 +54,9 @@ Choose follow-up reads based on the question:
   matters.
 - `tv ohlcv --summary` only after switching to a chart when chart bars are
   needed.
+- `tv observe chart --duration-ms <MS> --heartbeat-ms <MS>` when a bounded
+  readiness-plus-last-bar observation window is more useful than one static
+  chart read.
 - `tv screenshot --region chart --output <PATH>` when visual chart evidence is
   useful.
 

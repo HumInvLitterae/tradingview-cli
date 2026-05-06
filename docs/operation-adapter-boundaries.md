@@ -176,6 +176,12 @@ fields do not explain the visible state. It does not mutate TradingView state,
 but it writes the requested local output file, so payloads expose
 `writes_file: true`.
 
+For the operator-facing order of these reads, keep
+`docs/observation-workflows.md` aligned with this boundary document: broad
+screening starts with Desktop-free reads, chart observation starts with
+`tv readiness` or `tv observe chart`, and screenshots are evidence follow-up
+only when structured fields are insufficient.
+
 Computer Use is not a general runtime dependency for these boundaries. Portable
 agent guidance should use structured `tv` diagnostics and `tv screenshot` for
 visual evidence. Computer Use may be mentioned only as an optional Codex app

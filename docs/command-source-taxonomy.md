@@ -3,6 +3,9 @@
 This document defines how to describe where `tv` commands get data from and
 whether they can change TradingView state.
 
+For practical command sequences that combine these categories, see
+`docs/observation-workflows.md`.
+
 The project is not splitting the binary for now. `tv` remains the single user
 command, and commands are classified by source and side-effect boundary instead
 of by separate executable names. A future split such as `tv` plus `tvb` or

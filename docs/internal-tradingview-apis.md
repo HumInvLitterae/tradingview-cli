@@ -267,6 +267,10 @@ Comparable evidence:
   candidates, but the source boundary must remain explicit. Stream sample and
   heartbeat events currently report `source: "desktop_chart_stream"` and
   `source_category: "desktop_backed_read"`.
+- `tv observe chart` is a workflow-level Desktop-backed observation command. It
+  combines readiness and selected-chart last-bar observation; it does not use
+  the browserless WebSocket path and does not replace `tv stream ...` for
+  specific stream sample types.
 
 Safety boundary:
 

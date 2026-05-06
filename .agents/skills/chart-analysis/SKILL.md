@@ -11,6 +11,10 @@ Desktop chart, visible studies, chart bars, and screenshots are the source of
 truth. Use Desktop-free reads only for quick symbol metadata, scanner-backed
 quotes, or fundamentals before mutating chart state.
 
+For the current command-choice map, use `docs/observation-workflows.md`. Keep
+this skill focused on chart analysis rather than re-listing every `tv`
+observation surface.
+
 ## Start With Readiness
 
 1. Run `tv readiness`.

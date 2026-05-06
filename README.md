@@ -142,7 +142,9 @@ TV_EXPERIMENTAL_BARS=1 tv bars NASDAQ:AAPL --timeframe 1D --count 5
 ```
 
 Use `tv --help` for the full command list and `tv <COMMAND> --help` for command
-details.
+details. See `docs/observation-workflows.md` for practical command sequences
+that combine Desktop-free screening, Desktop-backed chart observation,
+screenshots, experimental bars, and fundamentals reads.
 
 ## Output Contract
 
@@ -191,6 +193,8 @@ details, see `docs/breaking-changes-from-js-cli.md`.
 
 - `docs/command-source-taxonomy.md`: command source categories, fallback
   boundaries, mutation expectations, and recommended agent use.
+- `docs/observation-workflows.md`: practical read sequences for screening,
+  chart observation, screenshots, experimental bars, and fundamentals.
 - `docs/architecture.md`: workspace architecture, crate boundaries, operation
   adapters, JSON contract, and safety model.
 - `docs/rust-api.md`: currently documented typed Rust API boundary for internal
@@ -200,7 +204,7 @@ details, see `docs/breaking-changes-from-js-cli.md`.
 - `docs/release-packaging.md`: release archive contents and packaging checks.
 - `docs/internal-tradingview-apis.md`: public-safe reference for non-public
   TradingView dependencies.
-- `docs/v0.6-roadmap.md`: current roadmap direction.
+- `docs/v0.7-roadmap.md`: current roadmap direction.
 
 Historical notes and completed ExecPlans live under `docs/notes/` and
 `docs/plans/archives/`. They explain how the current surface was built, but
