@@ -7,6 +7,10 @@ package version omits the leading `v`.
 
 ## Unreleased
 
+No unreleased changes.
+
+## v0.8.0 - 2026-05-06
+
 ### Added
 
 - Added `tv snapshot <SYMBOL>`, a Desktop-free single-symbol evidence packet
