@@ -6,17 +6,15 @@ for release and next-phase planning.
 
 ## Current and future plans
 
-- `tradingview-cli-v0.7-pre-release-audit.md`: stop new feature work and check
-  whether `v0.7.0` still needs any completion or small refactor before release
-  readiness.
+- `tradingview-cli-v0.7.0-release-readiness.md`: prepare the `v0.7.0`
+  release state with version, changelog, release notes, package staging, and
+  validation evidence.
 
-The current `v0.7.0` slice treats `tv observe chart`, observe live smoke, lab
-bars live smoke, observation workflow docs, and scanner-backed fundamentals
-field enrichment as complete enough for release. It keeps new observe modes,
+The current `v0.7.0` slice stops feature work. It keeps new observe modes,
 `diagnose`, binary splitting, browserless streaming stabilization, stable
 browserless historical bars, standalone `tv events`, MCP server work, daemon
-behavior, and Computer Use-specific runtime skills deferred unless the audit
-finds a release blocker.
+behavior, and Computer Use-specific runtime skills deferred while preparing the
+release archive and tag-ready docs.
 
 ## Archived plans
 
@@ -119,6 +117,7 @@ Important archived plan categories:
 - public-safe fundamentals/events scanner field evidence
 - v0.7 observation workflow guide and runtime skill alignment
 - fundamentals earnings and dividends field enrichment
+- v0.7 pre-release completion and refactor audit
 
 For command contract details, prefer the notes under `docs/notes/` before
 reading archived implementation plans.

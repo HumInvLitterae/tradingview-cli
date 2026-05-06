@@ -7,6 +7,8 @@ package version omits the leading `v`.
 
 ## Unreleased
 
+## v0.7.0 - 2026-05-06
+
 ### Added
 
 - Added `tv observe chart`, a Desktop-backed JSONL observation workflow that
