@@ -33,6 +33,8 @@ package version omits the leading `v`.
 - Enriched `tv fundamentals --group earnings|dividends` and matching scanner
   scan column validation with additional scanner-metainfo-backed earnings and
   dividend fields.
+- Recorded the pre-`v0.7.0` completion and refactor audit before release
+  readiness.
 
 ## v0.6.0 - 2026-05-05
 
