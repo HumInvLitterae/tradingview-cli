@@ -8,8 +8,8 @@ for release and next-phase planning.
 
 Current plan:
 
-- `tradingview-cli-snapshot-live-smoke.md`: add an opt-in ignored Rust live
-  smoke for the Desktop-free `tv snapshot <SYMBOL>` JSON contract.
+- `tradingview-cli-v0.8-pre-release-audit.md`: audit `v0.8.0` completion and
+  refactor risk before release readiness.
 
 ## Archived plans
 
@@ -116,6 +116,7 @@ Important archived plan categories:
 - v0.7.0 release readiness
 - first Desktop-free `tv snapshot <SYMBOL>` evidence packet
 - snapshot workflow documentation and runtime skill alignment
+- opt-in `tv snapshot` JSON contract live smoke
 
 For command contract details, prefer the notes under `docs/notes/` before
 reading archived implementation plans.
