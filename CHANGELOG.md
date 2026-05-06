@@ -12,6 +12,8 @@ package version omits the leading `v`.
 - Added `tv snapshot <SYMBOL>`, a Desktop-free single-symbol evidence packet
   that combines scanner quote, symbol info, and scanner-backed fundamentals
   sections with source metadata and section-level errors.
+- Added an opt-in ignored Rust live smoke for the Desktop-free `tv snapshot`
+  JSON contract.
 
 ### Documentation
 
