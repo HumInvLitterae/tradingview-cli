@@ -269,6 +269,23 @@ requested symbol, section success/error shape, top-level error summaries, and
 next-action hints. Do not paste raw snapshot output or live response payloads
 into tracked docs.
 
+For `tv compare <SYMBOL>...` live contract checks, run:
+
+```bash
+TV_LIVE_COMPARE_SMOKE=1 cargo test -p tradingview-cli --test live_compare -- --ignored --nocapture
+```
+
+Optional environment variables:
+
+- `TV_LIVE_COMPARE_SYMBOLS`: comma-separated public symbols, defaulting to
+  `NASDAQ:AAPL,NYSE:IONQ`.
+- `TV_LIVE_COMPARE_RUNS`: positive repeat count, defaulting to `1`.
+
+The ignored test validates only public contract fields: source metadata,
+requested count, ordered items, section success/error shape, top-level error
+summaries, and next-action hints. Do not paste raw compare output or live
+response payloads into tracked docs.
+
 For lab-gated `tv bars` WebSocket evidence checks, run:
 
 ```bash

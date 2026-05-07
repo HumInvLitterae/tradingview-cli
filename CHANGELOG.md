@@ -19,6 +19,8 @@ package version omits the leading `v`.
 - Fixed that smoke harness to pipe child `tv` stdout/stderr before parsing,
   then recorded successful width 2 and width 3 live runs without symbol
   mismatch.
+- Added an opt-in ignored Rust live smoke for the Desktop-free `tv compare`
+  JSON contract.
 
 ### Documentation
 

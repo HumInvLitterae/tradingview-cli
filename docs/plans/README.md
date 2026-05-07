@@ -8,9 +8,9 @@ for release and next-phase planning.
 
 Current plan:
 
-- `tradingview-cli-symbol-compare.md`: implemented the first Desktop-free
-  `tv compare <SYMBOL>...` comparison packet; keep here until the next v0.9
-  slice is selected.
+- `tradingview-cli-compare-live-smoke.md`: implemented an opt-in ignored Rust
+  live smoke for the `tv compare <SYMBOL>...` JSON contract. Keep it current
+  until the next v0.9 implementation slice is selected.
 
 ## Archived plans
 
@@ -122,6 +122,7 @@ Important archived plan categories:
 - v0.8.0 release readiness
 - chart-source quote concurrency audit and realtime source strategy decision
 - v0.9.0 roadmap and Desktop-free compare planning
+- first Desktop-free `tv compare <SYMBOL>...` comparison packet
 
 For command contract details, prefer the notes under `docs/notes/` before
 reading archived implementation plans.
