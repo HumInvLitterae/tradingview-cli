@@ -7,6 +7,12 @@ package version omits the leading `v`.
 
 ## Unreleased
 
+### Documentation
+
+- Drafted the `v0.10.0` roadmap direction for `compare` summary polish,
+  comparison workflow documentation, and evidence follow-up after the
+  `v0.9.0` release.
+
 ## v0.9.0 - 2026-05-07
 
 ### Added
