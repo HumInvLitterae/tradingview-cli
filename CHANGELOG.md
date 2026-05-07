@@ -7,7 +7,15 @@ package version omits the leading `v`.
 
 ## Unreleased
 
-No unreleased changes.
+### Tests
+
+- Added an opt-in ignored Rust live smoke for near-concurrent
+  chart-source quote reads.
+
+### Documentation
+
+- Clarified that chart-source quote is a correctness-first single-symbol read,
+  not a multi-symbol realtime batch source, before `v0.9.0` comparison work.
 
 ## v0.8.0 - 2026-05-06
 

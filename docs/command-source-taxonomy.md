@@ -67,6 +67,16 @@ identify chart samples with `source: "desktop_chart_stream"` and
 `source_category: "desktop_backed_read"` so agents can distinguish them from
 Desktop-free scanner reads or experimental browserless bars.
 
+Do not treat `tv quote <SYMBOL> --source chart` as a multi-symbol realtime
+batch source. It is a correctness-first single-symbol read that may switch and
+restore the visible chart to prove the selected-chart feed for one requested
+symbol. Use Desktop-free `tv quotes`, `scanner scan`, `snapshot`, or future
+comparison surfaces for broad symbol comparison unless the selected Desktop
+chart feed is specifically required. Concurrent or external chart mutations
+can still invalidate chart-source assumptions; downstream workflows should
+preserve structured freshness and restore fields rather than adding manual
+sleep or double-call loops.
+
 ### Desktop-backed operation
 
 `requires_desktop`: yes. `may_mutate`: yes. `fallback_allowed`: only before a

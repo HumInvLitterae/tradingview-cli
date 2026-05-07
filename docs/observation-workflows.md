@@ -62,6 +62,13 @@ Do not add manual sleeps or double-call loops around chart-source quote reads.
 The CLI performs its own readiness checks and returns structured errors when
 chart data is not ready.
 
+Avoid building multi-symbol realtime loops on
+`tv quote <SYMBOL> --source chart`. Chart-source quote is a serial,
+correctness-first read for the selected TradingView chart feed, and it may
+switch and restore the visible chart. For broad comparison, use Desktop-free
+reads such as `tv quotes`, `scanner scan`, or `snapshot`; move to chart-source
+quote only for a finalist where the selected chart feed itself matters.
+
 ## Visual Evidence Recovery
 
 Structured fields should come first. Use screenshots only when readiness,
