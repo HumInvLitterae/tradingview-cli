@@ -5,7 +5,8 @@ description: Scan or compare a small set of TradingView symbols with the Rust `t
 
 # Multi-Symbol Scan
 
-Use this skill to compare several TradingView symbols through the Rust `tv` CLI without pretending an unavailable bulk batch-run helper exists.
+Use this skill to compare several TradingView symbols through the Rust `tv`
+CLI using Desktop-free comparison first.
 Default to Desktop-free reads for broad comparison. Move to Desktop-backed
 reads only for finalists that need selected-chart OHLCV, visible studies, or
 screenshots. Treat `tv quote --source auto` as hybrid source selection and
@@ -34,11 +35,12 @@ construction, not on duplicating the full source taxonomy.
    broad read-only discovery when the criteria can be expressed as scanner
    filters. Use `tv scanner metainfo --field <FIELD>` when you need to confirm
    scanner field availability.
-2. For a small finalist set, use `tv quotes <SYMBOL>...` for ordered
-   Desktop-free batch quote reads. Use `tv snapshot <SYMBOL>` for a one-symbol
-   first-pass evidence packet before mutating the chart; it combines quote,
-   symbol info, and fundamentals sections. Use lower-level `tv quote`,
-   `tv info`, or
+2. For several known symbols, use `tv compare <SYMBOL>...` for an ordered
+   Desktop-free comparison packet with quote, info, and fundamentals sections.
+   Use `tv quotes <SYMBOL>...` only when ordered quote fields are enough. Use
+   `tv snapshot <SYMBOL>` for one-symbol first-pass evidence before mutating
+   the chart; it combines quote, symbol info, and fundamentals sections. Use
+   lower-level `tv quote`, `tv info`, or
    `tv fundamentals <SYMBOL> --group earnings|valuation|dividends|financials`
    only when one section is enough. Preserve
    `source_category: "desktop_free_read"`, `requires_desktop: false`, and
@@ -104,11 +106,11 @@ assume it is available for Codex CLI, packaged agents, or other CLI-only
 runtimes.
 
 Use `tv timeframe <RESOLUTION>` for shared timeframe setup. `tv interval` is
-not a command. Use `tv snapshot <SYMBOL>` for one-symbol Desktop-free quote,
-info, and fundamentals context; use `tv info <SYMBOL>` or
-`tv fundamentals <SYMBOL>` with `--group` or `--field` only when that narrower
-section is all you need. Use `tv info` without a symbol only for current-chart
-metadata.
+not a command. Use `tv compare <SYMBOL>...` for multi-symbol Desktop-free
+evidence, `tv snapshot <SYMBOL>` for one-symbol Desktop-free quote, info, and
+fundamentals context, and `tv info <SYMBOL>` or `tv fundamentals <SYMBOL>` with
+`--group` or `--field` only when that narrower section is all you need. Use
+`tv info` without a symbol only for current-chart metadata.
 
 ## Boundaries
 

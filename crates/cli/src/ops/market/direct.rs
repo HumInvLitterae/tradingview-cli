@@ -26,6 +26,10 @@ pub async fn snapshot_symbol(
     tradingview_market::snapshot_symbol(symbol, groups, fields).await
 }
 
+pub async fn compare_symbols(symbols: Vec<String>) -> Result<Value, AppError> {
+    tradingview_market::compare_symbols(symbols).await
+}
+
 pub async fn quote_symbol(symbol: &str) -> Result<Value, AppError> {
     tradingview_market::quote_symbol(symbol).await
 }

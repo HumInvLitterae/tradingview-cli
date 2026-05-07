@@ -24,15 +24,16 @@ are not realtime entitlement guarantees.
 Use this category when the command can run without TradingView Desktop, CDP, or
 visible chart state. Examples include `tv info <SYMBOL>`,
 `tv fundamentals <SYMBOL>`, `tv quote <SYMBOL>` with the default scanner
-source, `tv quotes <SYMBOL>...`, `tv search <QUERY>`, `tv scanner scan`,
-`tv scanner hotlist`, and `tv scanner metainfo`. Stable Desktop-free read
-payloads report `source_category: "desktop_free_read"`,
+source, `tv quotes <SYMBOL>...`, `tv compare <SYMBOL>...`,
+`tv search <QUERY>`, `tv scanner scan`, `tv scanner hotlist`, and
+`tv scanner metainfo`. Stable Desktop-free read payloads report
+`source_category: "desktop_free_read"`,
 `requires_desktop: false`, and `non_mutating: true`.
 
 Recommended agent use: prefer these commands for broad discovery, one-off
-symbol metadata, fundamentals, and quote reads when the exact selected Desktop
-chart feed is not required. Report source and freshness metadata when the
-result is price-bearing.
+symbol metadata, fundamentals, quote reads, and known-symbol comparison when
+the exact selected Desktop chart feed is not required. Report source and
+freshness metadata when the result is price-bearing.
 
 ### Desktop-backed read
 
@@ -70,12 +71,12 @@ Desktop-free scanner reads or experimental browserless bars.
 Do not treat `tv quote <SYMBOL> --source chart` as a multi-symbol realtime
 batch source. It is a correctness-first single-symbol read that may switch and
 restore the visible chart to prove the selected-chart feed for one requested
-symbol. Use Desktop-free `tv quotes`, `scanner scan`, `snapshot`, or future
-comparison surfaces for broad symbol comparison unless the selected Desktop
-chart feed is specifically required. Concurrent or external chart mutations
-can still invalidate chart-source assumptions; downstream workflows should
-preserve structured freshness and restore fields rather than adding manual
-sleep or double-call loops.
+symbol. Use Desktop-free `tv compare`, `tv quotes`, `scanner scan`, or
+`snapshot` for broad symbol comparison unless the selected Desktop chart feed
+is specifically required. Concurrent or external chart mutations can still
+invalidate chart-source assumptions; downstream workflows should preserve
+structured freshness and restore fields rather than adding manual sleep or
+double-call loops.
 
 ### Desktop-backed operation
 

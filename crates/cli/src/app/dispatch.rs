@@ -98,6 +98,21 @@ pub async fn dispatch(
             }
             ops::snapshot_symbol(&symbol, groups, fields).await
         }
+        Command::Compare { symbols } => {
+            if symbols.len() < 2 {
+                return Err(AppError::new(
+                    ErrorKind::Validation,
+                    "compare requires at least two symbols",
+                ));
+            }
+            if symbols.iter().any(|symbol| symbol.trim().is_empty()) {
+                return Err(AppError::new(
+                    ErrorKind::Validation,
+                    "compare symbol must not be empty",
+                ));
+            }
+            ops::compare_symbols(symbols).await
+        }
         Command::Scanner { command } => match command {
             ScannerCommand::Hotlist { slug, limit } => ops::scanner_hotlist(&slug, limit).await,
             ScannerCommand::Metainfo { market, fields } => {
