@@ -20,6 +20,17 @@ tv fundamentals NYSE:IONQ --group earnings
 tv scanner metainfo --market america --field close
 ```
 
+## Which Read To Use
+
+| Need | Prefer | Use when |
+| --- | --- | --- |
+| Several symbols, quote fields only | `tv quotes <SYMBOL>...` | You need ordered scanner-backed quote rows and do not need info or fundamentals sections. |
+| Several known symbols, first-pass evidence | `tv compare <SYMBOL>...` | You need quote, info, and default fundamentals side by side. Read `summary` for scanability and `items[]` for evidence. |
+| One symbol, Desktop-free detail | `tv snapshot <SYMBOL>` | You need quote, info, and fundamentals for one symbol before chart follow-up. |
+| Selected chart over a short window | `tv observe chart --duration-ms ...` | You need readiness plus selected-chart last-bar samples and heartbeats. |
+| Finalist chart-feed quote | `tv quote <SYMBOL> --source chart` | The selected TradingView Desktop chart feed for one symbol is the source that matters. |
+| Visible-state evidence gap | `tv screenshot --region chart|full --output <PATH>` | Structured reads do not explain the visible chart or Screener state. |
+
 Use `tv snapshot <SYMBOL>` for a first-pass packet on one symbol. It combines
 scanner quote, symbol info, and scanner-backed fundamentals without connecting
 to TradingView Desktop. Use `tv compare <SYMBOL>...` when the task is a

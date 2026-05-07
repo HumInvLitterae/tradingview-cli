@@ -37,6 +37,17 @@ Always name the data source before interpreting values:
 Do not blend scanner REST, chart feed, and visible chart observations as if
 they were the same source.
 
+## Read Selection
+
+| Need | Prefer |
+| --- | --- |
+| Several symbols, quote fields only | `tv quotes <SYMBOL>...` |
+| Several known symbols with quote, info, and fundamentals | `tv compare <SYMBOL>...` |
+| One symbol with Desktop-free detail | `tv snapshot <SYMBOL>` |
+| Selected chart over a short window | `tv observe chart --duration-ms ...` |
+| One finalist's selected-chart quote | `tv quote <SYMBOL> --source chart` |
+| Visual evidence after structured reads | `tv screenshot --region chart|full --output <PATH>` |
+
 ## Freshness And Session Boundaries
 
 Scanner REST price reads are useful for screening, but they are not realtime

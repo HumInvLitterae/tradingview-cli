@@ -15,6 +15,8 @@ package version omits the leading `v`.
 
 ### Documentation
 
+- Added workflow decision-table guidance for choosing between `quotes`,
+  `compare`, `snapshot`, chart observation, chart-source quote, and screenshots.
 - Drafted the `v0.10.0` roadmap direction for `compare` summary polish,
   comparison workflow documentation, and evidence follow-up after the
   `v0.9.0` release.

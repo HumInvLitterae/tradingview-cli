@@ -94,7 +94,9 @@ tv scanner metainfo --market america --field close --field premarket_close
 
 `tv compare` returns raw per-symbol evidence plus a machine-readable summary
 for resolution, section success, and missing-value counts. It does not rank,
-score, or recommend symbols.
+score, or recommend symbols. See `docs/observation-workflows.md` for the
+practical choice between `quotes`, `compare`, `snapshot`, and chart follow-up
+commands.
 
 To use Desktop-backed reads or operations, launch TradingView Desktop with CDP
 enabled:
