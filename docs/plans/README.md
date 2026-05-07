@@ -8,9 +8,10 @@ for release and next-phase planning.
 
 Current plan:
 
-- `tradingview-cli-v0.10.0-release-readiness.md`: prepare the `v0.10.0`
-  release state after compare summary readback, workflow decision-table polish,
-  and the pre-release audit.
+- `tradingview-cli-compare-contract-metadata.md`: plan additive `tv compare`
+  contract metadata for `v0.11.0`, including requested-order indexes,
+  machine-readable follow-up hints, field coverage readback, and a
+  command-local contract marker.
 
 ## Archived plans
 
@@ -130,6 +131,7 @@ Important archived plan categories:
 - v0.10 compare summary readback
 - v0.10 compare workflow decision table
 - v0.10 pre-release completion and refactor audit
+- v0.10.0 release readiness
 
 For command contract details, prefer the notes under `docs/notes/` before
 reading archived implementation plans.

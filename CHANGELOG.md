@@ -7,6 +7,12 @@ package version omits the leading `v`.
 
 ## Unreleased
 
+### Documentation
+
+- Added the `v0.11.0` roadmap direction for downstream-safe `compare` contract
+  metadata and the first implementation plan for additive compare readback
+  fields.
+
 ## v0.10.0 - 2026-05-08
 
 ### Added
