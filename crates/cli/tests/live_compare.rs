@@ -104,6 +104,7 @@ fn parse_output(symbols: &[String], output: std::process::Output, elapsed: Durat
 
 fn assert_compare_success(symbols: &[String], envelope: &Value, elapsed: Duration) {
     let data = envelope.get("data").unwrap_or(&Value::Null);
+    let summary = data.get("summary").unwrap_or(&Value::Null);
     let items = data
         .get("items")
         .and_then(Value::as_array)
@@ -123,6 +124,32 @@ fn assert_compare_success(symbols: &[String], envelope: &Value, elapsed: Duratio
         || data.get("requires_desktop").and_then(Value::as_bool) != Some(false)
         || data.get("non_mutating").and_then(Value::as_bool) != Some(true)
         || data.get("requested_count").and_then(Value::as_u64) != Some(symbols.len() as u64)
+        || summary.get("requested_count").and_then(Value::as_u64) != Some(symbols.len() as u64)
+        || summary.get("resolved_count").and_then(Value::as_u64)
+            != data.get("resolved_count").and_then(Value::as_u64)
+        || summary.get("error_count").and_then(Value::as_u64)
+            != data.get("error_count").and_then(Value::as_u64)
+        || summary
+            .get("quote_ok_count")
+            .and_then(Value::as_u64)
+            .is_none()
+        || summary
+            .get("info_ok_count")
+            .and_then(Value::as_u64)
+            .is_none()
+        || summary
+            .get("fundamentals_ok_count")
+            .and_then(Value::as_u64)
+            .is_none()
+        || summary
+            .get("missing_total_count")
+            .and_then(Value::as_u64)
+            .is_none()
+        || summary
+            .get("resolved_symbols")
+            .and_then(Value::as_array)
+            .map(|symbols| symbols.len())
+            != Some(symbols.len())
         || items.len() != symbols.len()
         || data.get("errors").and_then(Value::as_array).is_none()
         || data
@@ -139,11 +166,39 @@ fn assert_compare_success(symbols: &[String], envelope: &Value, elapsed: Duratio
     }
 
     let mut ok_count = 0usize;
+    let resolved_symbols = summary
+        .get("resolved_symbols")
+        .and_then(Value::as_array)
+        .expect("resolved_symbols was validated above");
     for (index, expected_symbol) in symbols.iter().enumerate() {
         let item = &items[index];
         if item.get("requested_symbol").and_then(Value::as_str) != Some(expected_symbol.as_str()) {
             panic!(
                 "compare live smoke item order validation failed: expected_symbol={} index={} elapsed_ms={} summary={}",
+                expected_symbol,
+                index,
+                elapsed.as_millis(),
+                summarize_envelope(envelope)
+            );
+        }
+        let resolved_symbol = &resolved_symbols[index];
+        if resolved_symbol
+            .get("requested_symbol")
+            .and_then(Value::as_str)
+            != Some(expected_symbol.as_str())
+            || resolved_symbol.get("ok").and_then(Value::as_bool)
+                != item.get("ok").and_then(Value::as_bool)
+            || resolved_symbol.get("symbol") != item.get("symbol")
+            || resolved_symbol.get("observed_symbol") != item.get("observed_symbol")
+            || resolved_symbol
+                .get("missing_total_count")
+                .and_then(Value::as_u64)
+                != item
+                    .pointer("/missing_summary/total_count")
+                    .and_then(Value::as_u64)
+        {
+            panic!(
+                "compare live smoke summary order validation failed: expected_symbol={} index={} elapsed_ms={} summary={}",
                 expected_symbol,
                 index,
                 elapsed.as_millis(),
@@ -262,7 +317,7 @@ fn summarize_envelope(envelope: &Value) -> String {
     let data = envelope.get("data").unwrap_or(&Value::Null);
     let error = envelope.get("error").unwrap_or(&Value::Null);
     format!(
-        "success={} command={} kind={} message={} source={} category={} requested_count={} resolved_count={} error_count={} items={} errors={} hints={}",
+        "success={} command={} kind={} message={} source={} category={} requested_count={} resolved_count={} error_count={} summary_resolved={} summary_missing={} items={} errors={} hints={}",
         bool_field(envelope, "success"),
         string_field(envelope, "command").unwrap_or("<missing>"),
         string_field(error, "kind").unwrap_or("<none>"),
@@ -272,6 +327,14 @@ fn summarize_envelope(envelope: &Value) -> String {
         count_field(data, "requested_count"),
         count_field(data, "resolved_count"),
         count_field(data, "error_count"),
+        count_field(
+            data.get("summary").unwrap_or(&Value::Null),
+            "resolved_count"
+        ),
+        count_field(
+            data.get("summary").unwrap_or(&Value::Null),
+            "missing_total_count"
+        ),
         item_summary(envelope),
         data.get("errors")
             .and_then(Value::as_array)

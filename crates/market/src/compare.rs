@@ -71,6 +71,7 @@ fn finalize_compare_items(
     let resolved_count = items.iter().filter(|item| item.ok).count();
     let error_count = requested_count.saturating_sub(resolved_count);
     let errors = compare_errors(&items);
+    let summary = compare_summary(requested_count, resolved_count, error_count, &items);
     let compare = Compare {
         source: COMPARE_SOURCE.to_string(),
         source_category: DESKTOP_FREE_READ_CATEGORY.to_string(),
@@ -79,6 +80,7 @@ fn finalize_compare_items(
         requested_count,
         resolved_count,
         error_count,
+        summary,
         items,
         errors,
         next_action_hints: vec![
@@ -182,6 +184,48 @@ fn compare_errors(items: &[CompareItem]) -> Vec<CompareItemError> {
             })
         })
         .collect()
+}
+
+fn compare_summary(
+    requested_count: usize,
+    resolved_count: usize,
+    error_count: usize,
+    items: &[CompareItem],
+) -> crate::types::CompareSummary {
+    let quote_ok_count = items.iter().filter(|item| item.sections.quote.ok).count();
+    let info_ok_count = items.iter().filter(|item| item.sections.info.ok).count();
+    let fundamentals_ok_count = items
+        .iter()
+        .filter(|item| item.sections.fundamentals.ok)
+        .count();
+    let missing_total_count = items
+        .iter()
+        .map(|item| item.missing_summary.total_count)
+        .sum();
+    let resolved_symbols = items
+        .iter()
+        .map(|item| crate::types::CompareResolvedSymbol {
+            requested_symbol: item.requested_symbol.clone(),
+            ok: item.ok,
+            symbol: item.symbol.clone(),
+            observed_symbol: item.observed_symbol.clone(),
+            quote_ok: item.sections.quote.ok,
+            info_ok: item.sections.info.ok,
+            fundamentals_ok: item.sections.fundamentals.ok,
+            missing_total_count: item.missing_summary.total_count,
+        })
+        .collect();
+
+    crate::types::CompareSummary {
+        requested_count,
+        resolved_count,
+        error_count,
+        quote_ok_count,
+        info_ok_count,
+        fundamentals_ok_count,
+        missing_total_count,
+        resolved_symbols,
+    }
 }
 
 fn first_error_kind(compare: &Compare) -> ErrorKind {
@@ -304,6 +348,92 @@ mod tests {
             vec!["dividends_yield_current".to_string()]
         );
         assert_eq!(missing_summary(&sections).total_count, 1);
+    }
+
+    #[test]
+    fn compare_summary_preserves_counts_and_symbol_order() {
+        let first = CompareItem {
+            requested_symbol: "AAPL".to_string(),
+            symbol: json!("NASDAQ:AAPL"),
+            observed_symbol: json!("AAPL"),
+            ok: true,
+            sections: SnapshotSections {
+                quote: SnapshotSection {
+                    ok: true,
+                    data: Some(json!({"symbol": "NASDAQ:AAPL"})),
+                    error: None,
+                },
+                info: SnapshotSection {
+                    ok: true,
+                    data: Some(json!({"symbol": "AAPL"})),
+                    error: None,
+                },
+                fundamentals: SnapshotSection {
+                    ok: true,
+                    data: Some(json!({"symbol": "NASDAQ:AAPL"})),
+                    error: None,
+                },
+            },
+            errors: Vec::new(),
+            missing_summary: CompareMissingSummary {
+                quote: Vec::new(),
+                info: Vec::new(),
+                fundamentals: vec!["next_dividend_date".to_string()],
+                total_count: 1,
+            },
+        };
+        let second = CompareItem {
+            requested_symbol: "NYSE:IONQ".to_string(),
+            symbol: Value::Null,
+            observed_symbol: Value::Null,
+            ok: false,
+            sections: SnapshotSections {
+                quote: SnapshotSection {
+                    ok: false,
+                    data: None,
+                    error: Some(SnapshotSectionError {
+                        section: "quote".to_string(),
+                        kind: ErrorKind::InternalApiUnavailable,
+                        message: "temporary failure".to_string(),
+                        details: None,
+                    }),
+                },
+                info: SnapshotSection {
+                    ok: false,
+                    data: None,
+                    error: None,
+                },
+                fundamentals: SnapshotSection {
+                    ok: false,
+                    data: None,
+                    error: None,
+                },
+            },
+            errors: Vec::new(),
+            missing_summary: CompareMissingSummary {
+                quote: Vec::new(),
+                info: Vec::new(),
+                fundamentals: Vec::new(),
+                total_count: 0,
+            },
+        };
+
+        let summary = compare_summary(2, 1, 1, &[first, second]);
+        assert_eq!(summary.requested_count, 2);
+        assert_eq!(summary.resolved_count, 1);
+        assert_eq!(summary.error_count, 1);
+        assert_eq!(summary.quote_ok_count, 1);
+        assert_eq!(summary.info_ok_count, 1);
+        assert_eq!(summary.fundamentals_ok_count, 1);
+        assert_eq!(summary.missing_total_count, 1);
+        assert_eq!(summary.resolved_symbols.len(), 2);
+        assert_eq!(summary.resolved_symbols[0].requested_symbol, "AAPL");
+        assert_eq!(summary.resolved_symbols[0].symbol, json!("NASDAQ:AAPL"));
+        assert_eq!(summary.resolved_symbols[0].observed_symbol, json!("AAPL"));
+        assert!(summary.resolved_symbols[0].ok);
+        assert_eq!(summary.resolved_symbols[0].missing_total_count, 1);
+        assert_eq!(summary.resolved_symbols[1].requested_symbol, "NYSE:IONQ");
+        assert!(!summary.resolved_symbols[1].ok);
     }
 
     #[test]

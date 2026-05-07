@@ -7,6 +7,12 @@ package version omits the leading `v`.
 
 ## Unreleased
 
+### Added
+
+- Added an additive `summary` to `tv compare <SYMBOL>...` so downstream tools
+  can read resolution, section-success, and missing-value counts without
+  replacing raw per-symbol `items`.
+
 ### Documentation
 
 - Drafted the `v0.10.0` roadmap direction for `compare` summary polish,

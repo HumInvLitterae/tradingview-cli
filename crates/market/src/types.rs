@@ -327,12 +327,56 @@ pub struct Compare {
     pub resolved_count: usize,
     /// Number of items with no successful evidence sections.
     pub error_count: usize,
+    /// Machine-readable readback summary derived from `items`.
+    pub summary: CompareSummary,
     /// Ordered per-symbol comparison items.
     pub items: Vec<CompareItem>,
     /// Public-safe symbol/section error summaries.
     pub errors: Vec<CompareItemError>,
     /// Suggested follow-up commands when Desktop-backed or visual evidence is needed.
     pub next_action_hints: Vec<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize)]
+/// Additive readback summary for a comparison packet.
+pub struct CompareSummary {
+    /// Number of requested symbols after validation.
+    pub requested_count: usize,
+    /// Number of items with at least one successful evidence section.
+    pub resolved_count: usize,
+    /// Number of items with no successful evidence sections.
+    pub error_count: usize,
+    /// Number of items with a successful quote section.
+    pub quote_ok_count: usize,
+    /// Number of items with a successful info section.
+    pub info_ok_count: usize,
+    /// Number of items with a successful fundamentals section.
+    pub fundamentals_ok_count: usize,
+    /// Total missing field count across all items.
+    pub missing_total_count: usize,
+    /// Ordered symbol resolution readback for downstream tools.
+    pub resolved_symbols: Vec<CompareResolvedSymbol>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize)]
+/// Symbol-level readback summary for one comparison item.
+pub struct CompareResolvedSymbol {
+    /// Symbol text supplied by the caller.
+    pub requested_symbol: String,
+    /// True when at least one evidence section succeeded.
+    pub ok: bool,
+    /// Best resolved exchange-qualified symbol from successful sections.
+    pub symbol: Value,
+    /// Best observed symbol from successful sections.
+    pub observed_symbol: Value,
+    /// True when the quote section succeeded.
+    pub quote_ok: bool,
+    /// True when the info section succeeded.
+    pub info_ok: bool,
+    /// True when the fundamentals section succeeded.
+    pub fundamentals_ok: bool,
+    /// Missing field count for this item.
+    pub missing_total_count: usize,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize)]

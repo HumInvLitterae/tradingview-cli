@@ -8,9 +8,10 @@ for release and next-phase planning.
 
 Current plan:
 
-- `tradingview-cli-v0.10-roadmap-and-next-slice.md`: draft the `v0.10.0`
-  roadmap after the `v0.9.0` release and hold the planning diff uncommitted
-  until downstream development-agent feedback is reviewed.
+- `tradingview-cli-compare-summary-polish.md`: add an additive machine-readable
+  `summary` to `tv compare <SYMBOL>...` so downstream tools can read
+  resolution, section-success, and missing-value counts without replacing raw
+  `items`.
 
 ## Archived plans
 
@@ -126,6 +127,7 @@ Important archived plan categories:
 - opt-in `tv compare <SYMBOL>...` JSON contract live smoke
 - v0.9 pre-release completion and refactor audit
 - v0.9.0 release readiness
+- v0.10.0 roadmap and first compare-summary planning
 
 For command contract details, prefer the notes under `docs/notes/` before
 reading archived implementation plans.

@@ -65,7 +65,7 @@ pub use search::{search_symbols_typed, symbol_search};
 pub use snapshot::{snapshot_symbol, snapshot_symbol_typed};
 pub use types::{
     BatchQuoteItem, BatchQuotes, Compare, CompareItem, CompareItemError, CompareMissingSummary,
-    ExtendedHoursQuote, FreshnessCheck, Fundamentals, Quote, QuoteError, SessionQuote, Snapshot,
-    SnapshotSection, SnapshotSectionError, SnapshotSections, SymbolInfo, SymbolSearchResponse,
-    SymbolSearchResult,
+    CompareResolvedSymbol, CompareSummary, ExtendedHoursQuote, FreshnessCheck, Fundamentals, Quote,
+    QuoteError, SessionQuote, Snapshot, SnapshotSection, SnapshotSectionError, SnapshotSections,
+    SymbolInfo, SymbolSearchResponse, SymbolSearchResult,
 };
