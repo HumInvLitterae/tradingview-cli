@@ -8,9 +8,9 @@ for release and next-phase planning.
 
 Current plan:
 
-- `tradingview-cli-v0.9-pre-release-audit.md`: verify that the `v0.9.0`
-  compare lane is complete, classify remaining work as deferred, and confirm
-  there is no small release-blocking refactor before release readiness.
+- `tradingview-cli-v0.9.0-release-readiness.md`: prepare the `v0.9.0`
+  release state by updating version, changelog, release notes, README asset
+  examples, package staging evidence, and release validation.
 
 ## Archived plans
 
@@ -124,6 +124,7 @@ Important archived plan categories:
 - v0.9.0 roadmap and Desktop-free compare planning
 - first Desktop-free `tv compare <SYMBOL>...` comparison packet
 - opt-in `tv compare <SYMBOL>...` JSON contract live smoke
+- v0.9 pre-release completion and refactor audit
 
 For command contract details, prefer the notes under `docs/notes/` before
 reading archived implementation plans.

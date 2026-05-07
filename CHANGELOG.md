@@ -7,6 +7,8 @@ package version omits the leading `v`.
 
 ## Unreleased
 
+## v0.9.0 - 2026-05-07
+
 ### Added
 
 - Added `tv compare <SYMBOL>...`, a Desktop-free multi-symbol comparison
