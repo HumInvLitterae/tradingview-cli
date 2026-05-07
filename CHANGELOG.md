@@ -7,6 +7,8 @@ package version omits the leading `v`.
 
 ## Unreleased
 
+## v0.10.0 - 2026-05-08
+
 ### Added
 
 - Added an additive `summary` to `tv compare <SYMBOL>...` so downstream tools
