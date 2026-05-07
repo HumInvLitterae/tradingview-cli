@@ -8,9 +8,9 @@ for release and next-phase planning.
 
 Current plan:
 
-- `tradingview-cli-compare-workflow-decision-table.md`: clarify when to use
-  `quotes`, `compare`, `snapshot`, `observe chart`, chart-source quote, and
-  screenshots after the `compare.summary` readback addition.
+- `tradingview-cli-v0.10-pre-release-audit.md`: audit `v0.10.0` completion
+  and refactor readiness after `compare.summary` readback and workflow
+  decision-table polish.
 
 ## Archived plans
 
@@ -128,6 +128,7 @@ Important archived plan categories:
 - v0.9.0 release readiness
 - v0.10.0 roadmap and first compare-summary planning
 - v0.10 compare summary readback
+- v0.10 compare workflow decision table
 
 For command contract details, prefer the notes under `docs/notes/` before
 reading archived implementation plans.
