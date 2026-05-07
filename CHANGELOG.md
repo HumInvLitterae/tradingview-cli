@@ -21,6 +21,8 @@ package version omits the leading `v`.
   not a multi-symbol realtime batch source, before `v0.9.0` comparison work.
 - Recorded the source decision that `v0.9.0` comparison planning should start
   from Desktop-free reads rather than chart-switching realtime loops.
+- Added the `v0.9.0` roadmap draft and first `tv compare <SYMBOL>...`
+  implementation plan for Desktop-free multi-symbol comparison.
 
 ## v0.8.0 - 2026-05-06
 

@@ -8,9 +8,8 @@ for release and next-phase planning.
 
 Current plan:
 
-- `tradingview-cli-v0.9-roadmap-and-compare-planning.md`: create the
-  `v0.9.0` roadmap and first Desktop-free comparison plan after the
-  chart-source quote concurrency audit.
+- `tradingview-cli-symbol-compare.md`: implement the first Desktop-free
+  `tv compare <SYMBOL>...` comparison packet.
 
 ## Archived plans
 
@@ -121,6 +120,7 @@ Important archived plan categories:
 - v0.8 pre-release completion and refactor audit
 - v0.8.0 release readiness
 - chart-source quote concurrency audit and realtime source strategy decision
+- v0.9.0 roadmap and Desktop-free compare planning
 
 For command contract details, prefer the notes under `docs/notes/` before
 reading archived implementation plans.
