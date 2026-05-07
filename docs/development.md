@@ -205,6 +205,28 @@ and restore status. Switched-symbol reads require at least two stable samples;
 same-symbol fast-path reads may report one stable sample because no chart
 switch occurred.
 
+For chart-source quote concurrency checks, run:
+
+```bash
+TV_LIVE_CHART_QUOTE_CONCURRENCY_SMOKE=1 cargo test -p tradingview-cli --test live_chart_quote_concurrency -- --ignored --nocapture
+```
+
+Optional environment variables:
+
+- `TV_LIVE_CHART_QUOTE_CONCURRENCY_SYMBOLS`: comma-separated public symbols,
+  defaulting to `PLUG,AAPL,MSFT,IONQ,MU,PLUG`.
+- `TV_LIVE_CHART_QUOTE_CONCURRENCY_RUNS`: positive repeat count, defaulting to
+  `1`.
+- `TV_LIVE_CHART_QUOTE_CONCURRENCY_TARGET_ID`: explicit CDP target id when
+  multiple chart targets are open. Do not paste live target ids into tracked
+  docs.
+- `TV_LIVE_CHART_QUOTE_CONCURRENCY_WIDTH`: number of near-concurrent child
+  `tv quote <SYMBOL> --source chart` processes per batch, defaulting to `2`.
+
+The ignored test checks whether near-concurrent chart-source quote processes
+serialize cleanly or expose mismatch/restore failures. It validates
+public-safe summary fields only and must not become a CI requirement.
+
 For `tv observe chart` JSONL contract checks, run:
 
 ```bash

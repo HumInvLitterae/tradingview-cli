@@ -8,8 +8,9 @@ for release and next-phase planning.
 
 Current plan:
 
-- `tradingview-cli-v0.8.0-release-readiness.md`: prepare the `v0.8.0`
-  version, changelog, release notes, package docs, and release archive staging.
+- `tradingview-cli-chart-quote-concurrency-audit.md`: audit rare
+  chart-source quote mismatches from a concurrency and source-strategy angle
+  before starting `v0.9.0` comparison work.
 
 ## Archived plans
 
@@ -118,6 +119,7 @@ Important archived plan categories:
 - snapshot workflow documentation and runtime skill alignment
 - opt-in `tv snapshot` JSON contract live smoke
 - v0.8 pre-release completion and refactor audit
+- v0.8.0 release readiness
 
 For command contract details, prefer the notes under `docs/notes/` before
 reading archived implementation plans.

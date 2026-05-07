@@ -51,6 +51,10 @@ and retries once; do not add manual sleep or double-call workarounds
 downstream. If it fails, report the structured freshness details or use scanner
 source explicitly when scanner freshness is acceptable. `tv ohlcv` is
 chart-dependent; do not describe it as Desktop-free historical bars.
+Do not use chart-source quote loops as a multi-symbol realtime batch source.
+They may contend with visible chart mutations, so prefer `tv quotes`, scanner
+reads, `tv snapshot`, or a future comparison command for broad symbol lists
+unless the selected chart feed for one symbol is the point of the task.
 
 `tv bars` is different from both scanner REST and `tv ohlcv`. It is a
 lab-gated browserless historical bars prototype using an undocumented

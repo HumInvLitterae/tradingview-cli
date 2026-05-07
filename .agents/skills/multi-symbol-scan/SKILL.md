@@ -48,7 +48,11 @@ construction, not on duplicating the full source taxonomy.
    for symbols where the selected TradingView Desktop chart feed matters. Do
    not implement manual sleep or double-call workarounds; chart-source quote
    readiness is handled by the CLI with consecutive stable samples and will
-   fail if stale chart bars remain.
+   fail if stale chart bars remain. Do not build multi-symbol realtime loops
+   on chart-source quote; concurrent or nearby chart mutations can still
+   contend with the visible chart. Prefer Desktop-free reads for broad
+   comparison, then use chart-source quote only for finalist symbols that need
+   the selected Desktop feed.
    Use `TV_EXPERIMENTAL_BARS=1 tv bars <EXCHANGE:SYMBOL> --count <N>` only as
    a lab-gated browserless bars check when experimental WebSocket data is
    acceptable; keep it separate from stable `tv ohlcv` chart evidence.
