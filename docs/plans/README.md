@@ -8,8 +8,9 @@ for release and next-phase planning.
 
 Current plan:
 
-- `tradingview-cli-symbol-compare.md`: implement the first Desktop-free
-  `tv compare <SYMBOL>...` comparison packet.
+- `tradingview-cli-symbol-compare.md`: implemented the first Desktop-free
+  `tv compare <SYMBOL>...` comparison packet; keep here until the next v0.9
+  slice is selected.
 
 ## Archived plans
 

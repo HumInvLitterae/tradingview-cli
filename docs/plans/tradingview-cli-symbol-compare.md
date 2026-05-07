@@ -3,6 +3,10 @@
 This ExecPlan defines the first implementation slice for the `v0.9.0`
 Desktop-free comparison lane.
 
+Status as of 2026-05-07: implemented. `tv compare <SYMBOL>...` now returns a
+Desktop-free comparison packet using quote, info, and default fundamentals
+evidence without Desktop/CDP or chart mutation.
+
 ## Purpose
 
 Add `tv compare <SYMBOL>...` as a Desktop-free comparison packet for several
@@ -114,3 +118,13 @@ evidence with source metadata and public-safe section errors.
 - Chart-source quote mismatch, if later reproduced, is handled in a separate
   patch lane.
 - Related implementation should be committed in one sensible batch.
+
+## Outcomes
+
+- Added the `tv compare <SYMBOL>...` CLI surface as a Desktop-free JSON command.
+- Added typed and JSON-returning compare APIs in `tradingview-market`.
+- Kept compare separate from chart-source quote, screenshots, lab bars,
+  scoring, ranking, and recommendation behavior.
+- Updated README, stable docs, and runtime skills so `compare` is the
+  multi-symbol evidence packet, `snapshot` is one-symbol detail, and
+  `observe chart` is Desktop-backed time-window follow-up.

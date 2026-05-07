@@ -68,6 +68,11 @@ pub enum Command {
         #[arg(long = "field")]
         fields: Vec<String>,
     },
+    #[command(
+        about = "Compare Desktop-free evidence for multiple symbols",
+        long_about = "Compare Desktop-free evidence for multiple symbols without connecting to TradingView Desktop.\n\nThe comparison packet preserves input order and includes scanner quote, symbol info, and default scanner-backed fundamentals sections for each symbol. It is intended for screening and evidence comparison, not realtime chart-feed batching or buy/sell recommendations. Use `tv snapshot <SYMBOL>` for one-symbol detail, and `tv observe chart` or `tv quote <SYMBOL> --source chart` for selected-chart follow-up after narrowing candidates."
+    )]
+    Compare { symbols: Vec<String> },
     #[command(about = "Read TradingView scanner preset data")]
     Scanner {
         #[command(subcommand)]
@@ -938,6 +943,7 @@ impl Command {
             Self::Search { .. } => "search",
             Self::Fundamentals { .. } => "fundamentals",
             Self::Snapshot { .. } => "snapshot",
+            Self::Compare { .. } => "compare",
             Self::Scanner { .. } => "scanner",
             Self::Screener { .. } => "screener",
             Self::Quote { .. } => "quote",

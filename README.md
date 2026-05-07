@@ -84,6 +84,7 @@ tv search "Apple"
 tv info NASDAQ:AAPL
 tv quote AAPL
 tv snapshot NASDAQ:AAPL
+tv compare NASDAQ:AAPL NYSE:IONQ
 tv quotes AAPL MSFT NYSE:IONQ
 tv fundamentals NYSE:IONQ --group earnings
 tv fundamentals AAPL --group dividends

@@ -34,6 +34,7 @@ fn help_lists_v1_commands() {
         .stdout(predicate::str::contains("search"))
         .stdout(predicate::str::contains("fundamentals"))
         .stdout(predicate::str::contains("snapshot"))
+        .stdout(predicate::str::contains("compare"))
         .stdout(predicate::str::contains("scanner"))
         .stdout(predicate::str::contains("values"))
         .stdout(predicate::str::contains("discover"))
@@ -255,6 +256,58 @@ fn snapshot_rejects_invalid_inputs_before_connecting() {
             .unwrap()
             .contains(&json!("earnings"))
     );
+}
+
+#[test]
+fn compare_help_explains_desktop_free_comparison() {
+    tv().args(["compare", "--help"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("SYMBOLS"))
+        .stdout(predicate::str::contains("Desktop-free"))
+        .stdout(predicate::str::contains("scanner quote"))
+        .stdout(predicate::str::contains("fundamentals"))
+        .stdout(predicate::str::contains("snapshot"))
+        .stdout(predicate::str::contains("observe chart"));
+}
+
+#[test]
+fn compare_rejects_invalid_inputs_before_connecting() {
+    let no_symbols = tv()
+        .env("TV_CDP_PORT", "9")
+        .arg("compare")
+        .assert()
+        .failure()
+        .code(1);
+    let stderr = String::from_utf8(no_symbols.get_output().stderr.clone()).unwrap();
+    let value: Value = serde_json::from_str(&stderr).unwrap();
+    assert_eq!(value["success"], false);
+    assert_eq!(value["command"], "compare");
+    assert_eq!(value["error"]["kind"], "validation");
+
+    let one_symbol = tv()
+        .env("TV_CDP_PORT", "9")
+        .args(["compare", "AAPL"])
+        .assert()
+        .failure()
+        .code(1);
+    let stderr = String::from_utf8(one_symbol.get_output().stderr.clone()).unwrap();
+    let value: Value = serde_json::from_str(&stderr).unwrap();
+    assert_eq!(value["success"], false);
+    assert_eq!(value["command"], "compare");
+    assert_eq!(value["error"]["kind"], "validation");
+
+    let blank_symbol = tv()
+        .env("TV_CDP_PORT", "9")
+        .args(["compare", "AAPL", " "])
+        .assert()
+        .failure()
+        .code(1);
+    let stderr = String::from_utf8(blank_symbol.get_output().stderr.clone()).unwrap();
+    let value: Value = serde_json::from_str(&stderr).unwrap();
+    assert_eq!(value["success"], false);
+    assert_eq!(value["command"], "compare");
+    assert_eq!(value["error"]["kind"], "validation");
 }
 
 #[test]

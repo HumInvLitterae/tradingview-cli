@@ -7,6 +7,11 @@ package version omits the leading `v`.
 
 ## Unreleased
 
+### Added
+
+- Added `tv compare <SYMBOL>...`, a Desktop-free multi-symbol comparison
+  packet with per-symbol quote, info, and default fundamentals evidence.
+
 ### Tests
 
 - Added an opt-in ignored Rust live smoke for near-concurrent

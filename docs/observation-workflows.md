@@ -13,6 +13,7 @@ not require TradingView Desktop or CDP:
 
 ```bash
 tv snapshot NASDAQ:AAPL
+tv compare NASDAQ:AAPL NYSE:IONQ
 tv quotes AAPL MSFT NYSE:IONQ
 tv scanner scan --type stock --columns name,close,volume --limit 10
 tv fundamentals NYSE:IONQ --group earnings
@@ -21,8 +22,10 @@ tv scanner metainfo --market america --field close
 
 Use `tv snapshot <SYMBOL>` for a first-pass packet on one symbol. It combines
 scanner quote, symbol info, and scanner-backed fundamentals without connecting
-to TradingView Desktop. Use the lower-level commands when you need just one
-section, a multi-symbol comparison, or a scanner row set.
+to TradingView Desktop. Use `tv compare <SYMBOL>...` when the task is a
+Desktop-free comparison across several known symbols. Use the lower-level
+commands when you need just one section, ordered quotes only, or a scanner row
+set.
 
 Treat scanner-backed price reads as screening evidence, not as a realtime
 entitlement guarantee. Preserve `source_category`, `requires_desktop`,
@@ -66,8 +69,9 @@ Avoid building multi-symbol realtime loops on
 `tv quote <SYMBOL> --source chart`. Chart-source quote is a serial,
 correctness-first read for the selected TradingView chart feed, and it may
 switch and restore the visible chart. For broad comparison, use Desktop-free
-reads such as `tv quotes`, `scanner scan`, or `snapshot`; move to chart-source
-quote only for a finalist where the selected chart feed itself matters.
+reads such as `tv compare`, `tv quotes`, `scanner scan`, or `snapshot`; move
+to chart-source quote only for a finalist where the selected chart feed itself
+matters.
 
 ## Visual Evidence Recovery
 

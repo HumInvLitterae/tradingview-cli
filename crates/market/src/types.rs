@@ -309,3 +309,75 @@ pub struct SnapshotSectionError {
     /// Optional structured error details.
     pub details: Option<Value>,
 }
+
+#[derive(Debug, Clone, PartialEq, Serialize)]
+/// Desktop-free comparison packet for several requested symbols.
+pub struct Compare {
+    /// Public source marker.
+    pub source: String,
+    /// Command source category used by the CLI source taxonomy.
+    pub source_category: String,
+    /// False because this read does not require TradingView Desktop.
+    pub requires_desktop: bool,
+    /// True because compare reads do not mutate a chart.
+    pub non_mutating: bool,
+    /// Number of requested symbols after validation.
+    pub requested_count: usize,
+    /// Number of items with at least one successful evidence section.
+    pub resolved_count: usize,
+    /// Number of items with no successful evidence sections.
+    pub error_count: usize,
+    /// Ordered per-symbol comparison items.
+    pub items: Vec<CompareItem>,
+    /// Public-safe symbol/section error summaries.
+    pub errors: Vec<CompareItemError>,
+    /// Suggested follow-up commands when Desktop-backed or visual evidence is needed.
+    pub next_action_hints: Vec<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize)]
+/// One requested symbol inside a comparison packet.
+pub struct CompareItem {
+    /// Symbol text supplied by the caller.
+    pub requested_symbol: String,
+    /// Best resolved exchange-qualified symbol from successful sections.
+    pub symbol: Value,
+    /// Best observed symbol from successful sections.
+    pub observed_symbol: Value,
+    /// True when at least one evidence section succeeded.
+    pub ok: bool,
+    /// Per-source evidence sections.
+    pub sections: SnapshotSections,
+    /// Public-safe section error summaries for this item.
+    pub errors: Vec<SnapshotSectionError>,
+    /// Missing-value summary for successful sections.
+    pub missing_summary: CompareMissingSummary,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize)]
+/// Missing-value summary for one comparison item.
+pub struct CompareMissingSummary {
+    /// Missing scanner quote fields when known.
+    pub quote: Vec<String>,
+    /// Missing symbol-info fields when known.
+    pub info: Vec<String>,
+    /// Missing scanner fundamentals fields when known.
+    pub fundamentals: Vec<String>,
+    /// Total missing field count across sections.
+    pub total_count: usize,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize)]
+/// Public-safe top-level compare error summary.
+pub struct CompareItemError {
+    /// Requested symbol associated with the section failure.
+    pub requested_symbol: String,
+    /// Section name, such as `quote`, `info`, or `fundamentals`.
+    pub section: String,
+    /// Structured error kind.
+    pub kind: ErrorKind,
+    /// Human-readable error message.
+    pub message: String,
+    /// Optional structured error details.
+    pub details: Option<Value>,
+}
