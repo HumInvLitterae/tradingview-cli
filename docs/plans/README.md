@@ -8,10 +8,9 @@ for release and next-phase planning.
 
 Current plan:
 
-- `tradingview-cli-compare-summary-polish.md`: add an additive machine-readable
-  `summary` to `tv compare <SYMBOL>...` so downstream tools can read
-  resolution, section-success, and missing-value counts without replacing raw
-  `items`.
+- `tradingview-cli-compare-workflow-decision-table.md`: clarify when to use
+  `quotes`, `compare`, `snapshot`, `observe chart`, chart-source quote, and
+  screenshots after the `compare.summary` readback addition.
 
 ## Archived plans
 
@@ -128,6 +127,7 @@ Important archived plan categories:
 - v0.9 pre-release completion and refactor audit
 - v0.9.0 release readiness
 - v0.10.0 roadmap and first compare-summary planning
+- v0.10 compare summary readback
 
 For command contract details, prefer the notes under `docs/notes/` before
 reading archived implementation plans.

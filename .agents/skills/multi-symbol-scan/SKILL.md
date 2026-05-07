@@ -16,6 +16,18 @@ For the current observation command sequence, use
 `docs/observation-workflows.md`. This skill should stay focused on shortlist
 construction, not on duplicating the full source taxonomy.
 
+## Read Selection
+
+| Need | Prefer |
+| --- | --- |
+| Broad scanner discovery | `tv scanner scan` or `tv scanner hotlist` |
+| Known-symbol first-pass comparison | `tv compare <SYMBOL>...` |
+| Quote-only comparison | `tv quotes <SYMBOL>...` |
+| One-symbol finalist detail | `tv snapshot <SYMBOL>` |
+| Finalist time-window chart evidence | `tv observe chart --duration-ms ...` |
+| Finalist chart-feed quote | `tv quote <SYMBOL> --source chart` |
+| Visual ambiguity | `tv screenshot --region chart --output <PATH>` |
+
 ## Start With Scope
 
 1. Confirm the symbol list, timeframe, and screening criteria from the user request.
@@ -84,7 +96,9 @@ construction, not on duplicating the full source taxonomy.
    `tv screenshot --region chart --output <PATH>`. Treat screenshot output as
    Desktop-backed visual evidence with `writes_file: true`, not as a market
    data source.
-10. Present a ranked shortlist and explain which observations came from scanner REST data, chart reads, or visual interpretation.
+10. Present a shortlist or candidate comparison and explain which observations
+    came from scanner REST data, chart reads, or visual interpretation. Do not
+    imply that `tv compare` itself ranked or recommended the symbols.
 
 Use `market-data-interpretation` when quote freshness, source differences,
 extended-hours fields, fundamentals, earnings date/time fields, or missing
