@@ -29,7 +29,8 @@ outcome is evidence for one of these decisions:
       processes.
 - [x] Recorded the source strategy boundary in docs and runtime skills.
 - [x] Ran validation.
-- [ ] Commit the related changes.
+- [x] Committed the related changes.
+- [x] Ran opt-in live concurrency smoke and recorded the source decision.
 
 ## Current Findings
 
@@ -124,9 +125,28 @@ Validation passed for the normal non-live path:
 The two modified runtime skills validated successfully. The broad hygiene grep
 reported only existing safety language and archived validation examples.
 
-The opt-in live concurrency smoke was not run in this slice. It is available
-for targeted investigation when a TradingView Desktop/CDP session is prepared:
+The opt-in live concurrency smoke can be rerun for targeted investigation when
+a TradingView Desktop/CDP session is prepared:
 
 ```bash
 TV_LIVE_CHART_QUOTE_CONCURRENCY_SMOKE=1 cargo test -p tradingview-cli --test live_chart_quote_concurrency -- --ignored --nocapture
 ```
+
+Follow-up live evidence on 2026-05-07:
+
+- TradingView Desktop/CDP readiness was available with one chart target.
+- The first live smoke attempt exposed a test harness issue: child process
+  stdout/stderr was inherited instead of piped, so the test could not parse the
+  public JSON envelope despite successful child commands. The harness now pipes
+  child stdout/stderr before parsing.
+- The opt-in live smoke passed with default width 2 over six public symbols.
+- The opt-in live smoke also passed with width 3 over the same public symbol
+  set.
+- No requested/observed/chart symbol mismatch, restore failure, or freshness
+  failure reproduced in those runs.
+
+Decision: move `v0.9.0` planning forward as Desktop-free comparison first.
+Chart-source quote remains a correctness-first single-symbol selected-chart
+feed check, not a multi-symbol realtime batch source. If a mismatch is later
+captured, treat it as a focused patch lane rather than broadening compare to
+chart-switching reads.

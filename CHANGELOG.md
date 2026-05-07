@@ -11,11 +11,16 @@ package version omits the leading `v`.
 
 - Added an opt-in ignored Rust live smoke for near-concurrent
   chart-source quote reads.
+- Fixed that smoke harness to pipe child `tv` stdout/stderr before parsing,
+  then recorded successful width 2 and width 3 live runs without symbol
+  mismatch.
 
 ### Documentation
 
 - Clarified that chart-source quote is a correctness-first single-symbol read,
   not a multi-symbol realtime batch source, before `v0.9.0` comparison work.
+- Recorded the source decision that `v0.9.0` comparison planning should start
+  from Desktop-free reads rather than chart-switching realtime loops.
 
 ## v0.8.0 - 2026-05-06
 

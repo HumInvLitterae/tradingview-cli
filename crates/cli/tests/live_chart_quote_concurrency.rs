@@ -1,5 +1,5 @@
 use std::{
-    process::{Child, Command, Output},
+    process::{Child, Command, Output, Stdio},
     time::{Duration, Instant},
 };
 
@@ -117,6 +117,7 @@ fn spawn_chart_quote(tv: &str, target_id: Option<&str>, symbol: &str, run: usize
         command.args(["--target-id", target_id]);
     }
     command.args(["quote", symbol, "--source", "chart"]);
+    command.stdout(Stdio::piped()).stderr(Stdio::piped());
     let started = Instant::now();
     let child = command.spawn().expect("test-built tv binary should start");
     RunningQuote {

@@ -8,9 +8,9 @@ for release and next-phase planning.
 
 Current plan:
 
-- `tradingview-cli-chart-quote-concurrency-audit.md`: audit rare
-  chart-source quote mismatches from a concurrency and source-strategy angle
-  before starting `v0.9.0` comparison work.
+- `tradingview-cli-v0.9-roadmap-and-compare-planning.md`: create the
+  `v0.9.0` roadmap and first Desktop-free comparison plan after the
+  chart-source quote concurrency audit.
 
 ## Archived plans
 
@@ -120,6 +120,7 @@ Important archived plan categories:
 - opt-in `tv snapshot` JSON contract live smoke
 - v0.8 pre-release completion and refactor audit
 - v0.8.0 release readiness
+- chart-source quote concurrency audit and realtime source strategy decision
 
 For command contract details, prefer the notes under `docs/notes/` before
 reading archived implementation plans.
