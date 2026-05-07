@@ -36,6 +36,9 @@ the exact selected Desktop chart feed is not required. Report source and
 freshness metadata when the result is price-bearing. For `tv compare`, use
 `summary` as an additive readback helper for resolution and section counts,
 then inspect the ordered `items` evidence for the actual comparison.
+`contract_version`, `requested_index`, per-item `follow_up_hints`, and
+`summary.field_coverage` are also readback metadata; they do not change the
+Desktop-free source boundary and do not imply ranking or recommendation.
 
 ### Desktop-backed read
 

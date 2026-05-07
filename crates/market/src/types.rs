@@ -313,6 +313,8 @@ pub struct SnapshotSectionError {
 #[derive(Debug, Clone, PartialEq, Serialize)]
 /// Desktop-free comparison packet for several requested symbols.
 pub struct Compare {
+    /// Command-local payload contract marker for downstream schema guards.
+    pub contract_version: String,
     /// Public source marker.
     pub source: String,
     /// Command source category used by the CLI source taxonomy.
@@ -354,13 +356,40 @@ pub struct CompareSummary {
     pub fundamentals_ok_count: usize,
     /// Total missing field count across all items.
     pub missing_total_count: usize,
+    /// Section and field-category coverage readback.
+    pub field_coverage: CompareFieldCoverage,
     /// Ordered symbol resolution readback for downstream tools.
     pub resolved_symbols: Vec<CompareResolvedSymbol>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize)]
+/// Section and field-category coverage readback for a comparison packet.
+pub struct CompareFieldCoverage {
+    /// Number of items with a successful quote section.
+    pub quote_ok_count: usize,
+    /// Number of missing quote fields across all items.
+    pub quote_missing_count: usize,
+    /// Number of items with a successful info section.
+    pub info_ok_count: usize,
+    /// Number of missing symbol-info fields across all items.
+    pub info_missing_count: usize,
+    /// Number of items with a successful fundamentals section.
+    pub fundamentals_ok_count: usize,
+    /// Number of missing fundamentals fields across all items.
+    pub fundamentals_missing_count: usize,
+    /// Number of missing earnings-group fundamentals fields.
+    pub earnings_missing_count: usize,
+    /// Number of missing dividends-group fundamentals fields.
+    pub dividends_missing_count: usize,
+    /// Total missing field count across all items.
+    pub total_missing_count: usize,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize)]
 /// Symbol-level readback summary for one comparison item.
 pub struct CompareResolvedSymbol {
+    /// Zero-based position in the validated input symbol list.
+    pub requested_index: usize,
     /// Symbol text supplied by the caller.
     pub requested_symbol: String,
     /// True when at least one evidence section succeeded.
@@ -382,6 +411,8 @@ pub struct CompareResolvedSymbol {
 #[derive(Debug, Clone, PartialEq, Serialize)]
 /// One requested symbol inside a comparison packet.
 pub struct CompareItem {
+    /// Zero-based position in the validated input symbol list.
+    pub requested_index: usize,
     /// Symbol text supplied by the caller.
     pub requested_symbol: String,
     /// Best resolved exchange-qualified symbol from successful sections.
@@ -396,6 +427,19 @@ pub struct CompareItem {
     pub errors: Vec<SnapshotSectionError>,
     /// Missing-value summary for successful sections.
     pub missing_summary: CompareMissingSummary,
+    /// Machine-readable available follow-up surfaces for this item.
+    pub follow_up_hints: Vec<CompareFollowUpHint>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize)]
+/// Machine-readable follow-up surface for one comparison item.
+pub struct CompareFollowUpHint {
+    /// Stable hint kind.
+    pub kind: String,
+    /// Executor-readable command string.
+    pub command: String,
+    /// Stable reason explaining what the command can add.
+    pub reason: String,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize)]

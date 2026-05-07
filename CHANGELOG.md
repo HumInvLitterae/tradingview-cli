@@ -7,6 +7,12 @@ package version omits the leading `v`.
 
 ## Unreleased
 
+### Added
+
+- Added compare contract metadata readback for downstream wrappers, including
+  a command-local contract marker, requested-order indexes, per-item follow-up
+  hints, and field coverage counts.
+
 ### Documentation
 
 - Added the `v0.11.0` roadmap direction for downstream-safe `compare` contract

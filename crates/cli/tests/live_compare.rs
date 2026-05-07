@@ -119,6 +119,7 @@ fn assert_compare_success(symbols: &[String], envelope: &Value, elapsed: Duratio
 
     if envelope.get("success").and_then(Value::as_bool) != Some(true)
         || envelope.get("command").and_then(Value::as_str) != Some("compare")
+        || data.get("contract_version").and_then(Value::as_str) != Some("compare.v1")
         || data.get("source").and_then(Value::as_str) != Some("compare_desktop_free")
         || data.get("source_category").and_then(Value::as_str) != Some("desktop_free_read")
         || data.get("requires_desktop").and_then(Value::as_bool) != Some(false)
@@ -145,6 +146,7 @@ fn assert_compare_success(symbols: &[String], envelope: &Value, elapsed: Duratio
             .get("missing_total_count")
             .and_then(Value::as_u64)
             .is_none()
+        || summary.get("field_coverage").is_none()
         || summary
             .get("resolved_symbols")
             .and_then(Value::as_array)
@@ -164,6 +166,7 @@ fn assert_compare_success(symbols: &[String], envelope: &Value, elapsed: Duratio
             summarize_envelope(envelope)
         );
     }
+    assert_field_coverage(symbols, summary, envelope, elapsed);
 
     let mut ok_count = 0usize;
     let resolved_symbols = summary
@@ -172,7 +175,10 @@ fn assert_compare_success(symbols: &[String], envelope: &Value, elapsed: Duratio
         .expect("resolved_symbols was validated above");
     for (index, expected_symbol) in symbols.iter().enumerate() {
         let item = &items[index];
-        if item.get("requested_symbol").and_then(Value::as_str) != Some(expected_symbol.as_str()) {
+        if item.get("requested_index").and_then(Value::as_u64) != Some(index as u64)
+            || item.get("requested_symbol").and_then(Value::as_str)
+                != Some(expected_symbol.as_str())
+        {
             panic!(
                 "compare live smoke item order validation failed: expected_symbol={} index={} elapsed_ms={} summary={}",
                 expected_symbol,
@@ -183,9 +189,13 @@ fn assert_compare_success(symbols: &[String], envelope: &Value, elapsed: Duratio
         }
         let resolved_symbol = &resolved_symbols[index];
         if resolved_symbol
-            .get("requested_symbol")
-            .and_then(Value::as_str)
-            != Some(expected_symbol.as_str())
+            .get("requested_index")
+            .and_then(Value::as_u64)
+            != Some(index as u64)
+            || resolved_symbol
+                .get("requested_symbol")
+                .and_then(Value::as_str)
+                != Some(expected_symbol.as_str())
             || resolved_symbol.get("ok").and_then(Value::as_bool)
                 != item.get("ok").and_then(Value::as_bool)
             || resolved_symbol.get("symbol") != item.get("symbol")
@@ -220,11 +230,58 @@ fn assert_compare_success(symbols: &[String], envelope: &Value, elapsed: Duratio
     }
 }
 
+fn assert_field_coverage(symbols: &[String], summary: &Value, envelope: &Value, elapsed: Duration) {
+    let coverage = summary.get("field_coverage").unwrap_or(&Value::Null);
+    if coverage.get("quote_ok_count").and_then(Value::as_u64)
+        != summary.get("quote_ok_count").and_then(Value::as_u64)
+        || coverage.get("info_ok_count").and_then(Value::as_u64)
+            != summary.get("info_ok_count").and_then(Value::as_u64)
+        || coverage
+            .get("fundamentals_ok_count")
+            .and_then(Value::as_u64)
+            != summary.get("fundamentals_ok_count").and_then(Value::as_u64)
+        || coverage.get("total_missing_count").and_then(Value::as_u64)
+            != summary.get("missing_total_count").and_then(Value::as_u64)
+        || coverage
+            .get("quote_missing_count")
+            .and_then(Value::as_u64)
+            .is_none()
+        || coverage
+            .get("info_missing_count")
+            .and_then(Value::as_u64)
+            .is_none()
+        || coverage
+            .get("fundamentals_missing_count")
+            .and_then(Value::as_u64)
+            .is_none()
+        || coverage
+            .get("earnings_missing_count")
+            .and_then(Value::as_u64)
+            .is_none()
+        || coverage
+            .get("dividends_missing_count")
+            .and_then(Value::as_u64)
+            .is_none()
+    {
+        panic!(
+            "compare live smoke field coverage validation failed: symbols={} elapsed_ms={} summary={}",
+            symbols.join(","),
+            elapsed.as_millis(),
+            summarize_envelope(envelope)
+        );
+    }
+}
+
 fn assert_item_shape(symbol: &str, item: &Value, envelope: &Value, elapsed: Duration) -> bool {
     let sections = item.get("sections").unwrap_or(&Value::Null);
     if item.get("ok").and_then(Value::as_bool).is_none()
         || item.get("errors").and_then(Value::as_array).is_none()
         || item.get("missing_summary").is_none()
+        || item
+            .get("follow_up_hints")
+            .and_then(Value::as_array)
+            .map(|hints| valid_follow_up_hints(hints))
+            != Some(true)
     {
         panic!(
             "compare live smoke invalid item shape: requested_symbol={} elapsed_ms={} summary={}",
@@ -262,6 +319,18 @@ fn assert_item_shape(symbol: &str, item: &Value, envelope: &Value, elapsed: Dura
     }
 
     item_ok
+}
+
+fn valid_follow_up_hints(hints: &[Value]) -> bool {
+    let kinds = ["snapshot", "observe_chart", "chart_quote", "screenshot"];
+    hints.len() == kinds.len()
+        && kinds.iter().all(|kind| {
+            hints.iter().any(|hint| {
+                hint.get("kind").and_then(Value::as_str) == Some(*kind)
+                    && hint.get("command").and_then(Value::as_str).is_some()
+                    && hint.get("reason").and_then(Value::as_str).is_some()
+            })
+        })
 }
 
 fn assert_section_shape(
@@ -317,11 +386,12 @@ fn summarize_envelope(envelope: &Value) -> String {
     let data = envelope.get("data").unwrap_or(&Value::Null);
     let error = envelope.get("error").unwrap_or(&Value::Null);
     format!(
-        "success={} command={} kind={} message={} source={} category={} requested_count={} resolved_count={} error_count={} summary_resolved={} summary_missing={} items={} errors={} hints={}",
+        "success={} command={} kind={} message={} contract={} source={} category={} requested_count={} resolved_count={} error_count={} summary_resolved={} summary_missing={} items={} errors={} hints={}",
         bool_field(envelope, "success"),
         string_field(envelope, "command").unwrap_or("<missing>"),
         string_field(error, "kind").unwrap_or("<none>"),
         string_field(error, "message").unwrap_or("<none>"),
+        string_field(data, "contract_version").unwrap_or("<missing>"),
         string_field(data, "source").unwrap_or("<missing>"),
         string_field(data, "source_category").unwrap_or("<missing>"),
         count_field(data, "requested_count"),
