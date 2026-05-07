@@ -89,9 +89,13 @@ fundamentals sections with section errors and missing summaries. Treat it as
 evidence comparison, not scoring or recommendation. Read `summary` first for
 resolution counts, section success counts, missing counts, and requested to
 resolved symbol mappings, then inspect raw `items[]` before drawing
-substantive conclusions. Use `tv quotes` when only ordered quote fields are
-needed, and use `tv snapshot <SYMBOL>` for a single symbol that needs more
-detail after comparison.
+substantive conclusions. Treat `contract_version`, `requested_index`,
+per-item `follow_up_hints`, and `summary.field_coverage` as downstream
+readback helpers for schema guards, input-order joins, follow-up surfaces, and
+evidence gaps. They do not rank candidates or replace raw evidence. Use
+`tv quotes` when only ordered quote fields are needed, and use
+`tv snapshot <SYMBOL>` for a single symbol that needs more detail after
+comparison.
 
 `tv fundamentals` is a Desktop-free scanner read, not a chart read. Use it for
 raw fields such as market cap, P/E, EPS, dividend yield, dividend dates/amounts,

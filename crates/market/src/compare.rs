@@ -3,13 +3,15 @@ use serde_json::Value;
 use tradingview_core::{AppError, ErrorKind};
 
 use crate::{
+    fundamentals::is_fundamental_field_in_group,
     fundamentals_symbol_typed, quote_symbol_typed, symbol_info_typed,
     types::{
-        Compare, CompareItem, CompareItemError, CompareMissingSummary, SnapshotSection,
-        SnapshotSectionError, SnapshotSections,
+        Compare, CompareFieldCoverage, CompareFollowUpHint, CompareItem, CompareItemError,
+        CompareMissingSummary, SnapshotSection, SnapshotSectionError, SnapshotSections,
     },
 };
 
+const COMPARE_CONTRACT_VERSION: &str = "compare.v1";
 const COMPARE_SOURCE: &str = "compare_desktop_free";
 const DESKTOP_FREE_READ_CATEGORY: &str = "desktop_free_read";
 
@@ -27,14 +29,14 @@ pub async fn compare_symbols_typed(symbols: Vec<String>) -> Result<Compare, AppE
     let requested_count = requested_symbols.len();
     let mut items = Vec::with_capacity(requested_count);
 
-    for requested_symbol in requested_symbols {
-        items.push(compare_one_symbol(requested_symbol).await);
+    for (requested_index, requested_symbol) in requested_symbols.into_iter().enumerate() {
+        items.push(compare_one_symbol(requested_index, requested_symbol).await);
     }
 
     finalize_compare_items(requested_count, items)
 }
 
-async fn compare_one_symbol(requested_symbol: String) -> CompareItem {
+async fn compare_one_symbol(requested_index: usize, requested_symbol: String) -> CompareItem {
     let quote = section_from_result("quote", quote_symbol_typed(&requested_symbol).await);
     let info = section_from_result("info", symbol_info_typed(&requested_symbol).await);
     let fundamentals = section_from_result(
@@ -52,15 +54,20 @@ async fn compare_one_symbol(requested_symbol: String) -> CompareItem {
         .iter()
         .any(|section| section.ok);
     let missing_summary = missing_summary(&sections);
+    let symbol = best_symbol(&sections);
+    let observed_symbol = best_observed_symbol(&sections);
+    let follow_up_hints = follow_up_hints(&symbol);
 
     CompareItem {
+        requested_index,
         requested_symbol,
-        symbol: best_symbol(&sections),
-        observed_symbol: best_observed_symbol(&sections),
+        symbol,
+        observed_symbol,
         ok,
         sections,
         errors,
         missing_summary,
+        follow_up_hints,
     }
 }
 
@@ -73,6 +80,7 @@ fn finalize_compare_items(
     let errors = compare_errors(&items);
     let summary = compare_summary(requested_count, resolved_count, error_count, &items);
     let compare = Compare {
+        contract_version: COMPARE_CONTRACT_VERSION.to_string(),
         source: COMPARE_SOURCE.to_string(),
         source_category: DESKTOP_FREE_READ_CATEGORY.to_string(),
         requires_desktop: false,
@@ -202,9 +210,12 @@ fn compare_summary(
         .iter()
         .map(|item| item.missing_summary.total_count)
         .sum();
+    let field_coverage =
+        field_coverage(quote_ok_count, info_ok_count, fundamentals_ok_count, items);
     let resolved_symbols = items
         .iter()
         .map(|item| crate::types::CompareResolvedSymbol {
+            requested_index: item.requested_index,
             requested_symbol: item.requested_symbol.clone(),
             ok: item.ok,
             symbol: item.symbol.clone(),
@@ -224,8 +235,81 @@ fn compare_summary(
         info_ok_count,
         fundamentals_ok_count,
         missing_total_count,
+        field_coverage,
         resolved_symbols,
     }
+}
+
+fn field_coverage(
+    quote_ok_count: usize,
+    info_ok_count: usize,
+    fundamentals_ok_count: usize,
+    items: &[CompareItem],
+) -> CompareFieldCoverage {
+    let quote_missing_count = items
+        .iter()
+        .map(|item| item.missing_summary.quote.len())
+        .sum();
+    let info_missing_count = items
+        .iter()
+        .map(|item| item.missing_summary.info.len())
+        .sum();
+    let fundamentals_missing_count = items
+        .iter()
+        .map(|item| item.missing_summary.fundamentals.len())
+        .sum();
+    let earnings_missing_count = items
+        .iter()
+        .flat_map(|item| item.missing_summary.fundamentals.iter())
+        .filter(|field| is_fundamental_field_in_group(field, "earnings"))
+        .count();
+    let dividends_missing_count = items
+        .iter()
+        .flat_map(|item| item.missing_summary.fundamentals.iter())
+        .filter(|field| is_fundamental_field_in_group(field, "dividends"))
+        .count();
+    let total_missing_count = items
+        .iter()
+        .map(|item| item.missing_summary.total_count)
+        .sum();
+
+    CompareFieldCoverage {
+        quote_ok_count,
+        quote_missing_count,
+        info_ok_count,
+        info_missing_count,
+        fundamentals_ok_count,
+        fundamentals_missing_count,
+        earnings_missing_count,
+        dividends_missing_count,
+        total_missing_count,
+    }
+}
+
+fn follow_up_hints(symbol: &Value) -> Vec<CompareFollowUpHint> {
+    let command_symbol = symbol.as_str().unwrap_or("<SYMBOL>");
+    vec![
+        CompareFollowUpHint {
+            kind: "snapshot".to_string(),
+            command: format!("tv snapshot {command_symbol}"),
+            reason: "one_symbol_detail".to_string(),
+        },
+        CompareFollowUpHint {
+            kind: "observe_chart".to_string(),
+            command: "tv observe chart --duration-ms <MS>".to_string(),
+            reason: "selected_chart_observation".to_string(),
+        },
+        CompareFollowUpHint {
+            kind: "chart_quote".to_string(),
+            command: format!("tv quote {command_symbol} --source chart"),
+            reason: "single_symbol_chart_quote".to_string(),
+        },
+        CompareFollowUpHint {
+            kind: "screenshot".to_string(),
+            command: "tv screenshot --region chart --output <PATH>".to_string(),
+            reason: "visual_evidence".to_string(),
+        },
+    ]
 }
 
 fn first_error_kind(compare: &Compare) -> ErrorKind {
@@ -353,6 +437,7 @@ mod tests {
     #[test]
     fn compare_summary_preserves_counts_and_symbol_order() {
         let first = CompareItem {
+            requested_index: 0,
             requested_symbol: "AAPL".to_string(),
             symbol: json!("NASDAQ:AAPL"),
             observed_symbol: json!("AAPL"),
@@ -378,11 +463,16 @@ mod tests {
             missing_summary: CompareMissingSummary {
                 quote: Vec::new(),
                 info: Vec::new(),
-                fundamentals: vec!["next_dividend_date".to_string()],
-                total_count: 1,
+                fundamentals: vec![
+                    "next_dividend_date".to_string(),
+                    "earnings_release_next_date".to_string(),
+                ],
+                total_count: 2,
             },
+            follow_up_hints: follow_up_hints(&json!("NASDAQ:AAPL")),
         };
         let second = CompareItem {
+            requested_index: 1,
             requested_symbol: "NYSE:IONQ".to_string(),
             symbol: Value::Null,
             observed_symbol: Value::Null,
@@ -416,6 +506,7 @@ mod tests {
                 fundamentals: Vec::new(),
                 total_count: 0,
             },
+            follow_up_hints: follow_up_hints(&Value::Null),
         };
 
         let summary = compare_summary(2, 1, 1, &[first, second]);
@@ -425,20 +516,44 @@ mod tests {
         assert_eq!(summary.quote_ok_count, 1);
         assert_eq!(summary.info_ok_count, 1);
         assert_eq!(summary.fundamentals_ok_count, 1);
-        assert_eq!(summary.missing_total_count, 1);
+        assert_eq!(summary.missing_total_count, 2);
+        assert_eq!(summary.field_coverage.quote_ok_count, 1);
+        assert_eq!(summary.field_coverage.quote_missing_count, 0);
+        assert_eq!(summary.field_coverage.info_ok_count, 1);
+        assert_eq!(summary.field_coverage.info_missing_count, 0);
+        assert_eq!(summary.field_coverage.fundamentals_ok_count, 1);
+        assert_eq!(summary.field_coverage.fundamentals_missing_count, 2);
+        assert_eq!(summary.field_coverage.earnings_missing_count, 1);
+        assert_eq!(summary.field_coverage.dividends_missing_count, 1);
+        assert_eq!(summary.field_coverage.total_missing_count, 2);
         assert_eq!(summary.resolved_symbols.len(), 2);
+        assert_eq!(summary.resolved_symbols[0].requested_index, 0);
         assert_eq!(summary.resolved_symbols[0].requested_symbol, "AAPL");
         assert_eq!(summary.resolved_symbols[0].symbol, json!("NASDAQ:AAPL"));
         assert_eq!(summary.resolved_symbols[0].observed_symbol, json!("AAPL"));
         assert!(summary.resolved_symbols[0].ok);
-        assert_eq!(summary.resolved_symbols[0].missing_total_count, 1);
+        assert_eq!(summary.resolved_symbols[0].missing_total_count, 2);
+        assert_eq!(summary.resolved_symbols[1].requested_index, 1);
         assert_eq!(summary.resolved_symbols[1].requested_symbol, "NYSE:IONQ");
         assert!(!summary.resolved_symbols[1].ok);
     }
 
     #[test]
+    fn follow_up_hints_are_machine_readable_without_recommendation() {
+        let hints = follow_up_hints(&json!("NASDAQ:AAPL"));
+        assert_eq!(hints.len(), 4);
+        assert_eq!(hints[0].kind, "snapshot");
+        assert_eq!(hints[0].command, "tv snapshot NASDAQ:AAPL");
+        assert_eq!(hints[0].reason, "one_symbol_detail");
+        assert!(hints.iter().any(|hint| hint.kind == "observe_chart"));
+        assert!(hints.iter().any(|hint| hint.kind == "chart_quote"));
+        assert!(hints.iter().any(|hint| hint.kind == "screenshot"));
+    }
+
+    #[test]
     fn compare_errors_include_requested_symbol_and_section() {
         let item = CompareItem {
+            requested_index: 0,
             requested_symbol: "AAPL".to_string(),
             symbol: Value::Null,
             observed_symbol: Value::Null,
@@ -477,6 +592,7 @@ mod tests {
                 fundamentals: Vec::new(),
                 total_count: 0,
             },
+            follow_up_hints: follow_up_hints(&Value::Null),
         };
 
         let errors = compare_errors(&[item]);

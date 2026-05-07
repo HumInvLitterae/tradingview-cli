@@ -202,6 +202,10 @@ fn fundamental_group_fields(group: &str) -> &'static [&'static str] {
     }
 }
 
+pub(super) fn fundamental_field_in_group(field: &str, group: &str) -> bool {
+    fundamental_group_fields(group).contains(&field)
+}
+
 fn push_supported_fundamental_field(
     normalized: &mut Vec<String>,
     field: &str,

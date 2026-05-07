@@ -42,7 +42,11 @@ set.
 resolution counts, section success counts, missing counts, and requested to
 resolved symbol mappings. Treat `summary` as readback only; inspect raw
 `items[]` before drawing substantive conclusions or choosing follow-up
-actions.
+actions. Compare payloads also include `contract_version`,
+`requested_index`, per-item `follow_up_hints`, and `summary.field_coverage`
+as downstream readback helpers. They make ordering, schema guards, follow-up
+surfaces, and evidence gaps easier to consume, but they do not rank symbols or
+replace raw evidence.
 
 Treat scanner-backed price reads as screening evidence, not as a realtime
 entitlement guarantee. Preserve `source_category`, `requires_desktop`,

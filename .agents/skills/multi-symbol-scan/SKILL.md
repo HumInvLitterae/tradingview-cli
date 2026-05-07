@@ -50,8 +50,10 @@ construction, not on duplicating the full source taxonomy.
 2. For several known symbols, use `tv compare <SYMBOL>...` for an ordered
    Desktop-free comparison packet with quote, info, and fundamentals sections.
    Read `summary` for requested/resolved/error counts, section success counts,
-   missing totals, and requested-to-resolved symbol mapping; keep raw `items[]`
-   as the evidence source for any actual comparison.
+   missing totals, requested-to-resolved symbol mapping, field coverage, and
+   requested-order indexes; keep raw `items[]` as the evidence source for any
+   actual comparison. Per-item `follow_up_hints` are available next evidence
+   surfaces, not recommendations.
    Use `tv quotes <SYMBOL>...` only when ordered quote fields are enough. Use
    `tv snapshot <SYMBOL>` for one-symbol first-pass evidence before mutating
    the chart; it combines quote, symbol info, and fundamentals sections. Use

@@ -24,11 +24,13 @@ recommendation, or realtime chart data.
 
 - [x] (2026-05-08T00:00Z) Created this ExecPlan and archived the completed
   v0.10.0 release-readiness ExecPlan.
-- [ ] Add additive contract metadata to typed `compare` results.
-- [ ] Update compare unit, CLI contract, and live-smoke tests.
-- [ ] Update docs and runtime skills to describe the new metadata as readback,
+- [x] (2026-05-08T00:00Z) Added additive contract metadata to typed
+  `compare` results.
+- [x] (2026-05-08T00:00Z) Updated compare unit, CLI contract, and live-smoke
+  tests.
+- [x] (2026-05-08T00:00Z) Updated docs and runtime skills to describe the new metadata as readback,
   not judgment.
-- [ ] Run validation and record outcomes.
+- [x] (2026-05-08T00:00Z) Ran full validation and recorded outcomes.
 
 ## Surprises & Discoveries
 
@@ -62,10 +64,17 @@ recommendation, or realtime chart data.
 
 ## Outcomes & Retrospective
 
-Not started. Fill this section after implementation and validation. The
-expected outcome is an additive `compare` payload that remains Desktop-free and
-keeps raw evidence intact while becoming easier for downstream wrappers to
-consume.
+Implemented additive `compare` contract metadata. The typed `Compare` payload
+now serializes `contract_version: "compare.v1"`, requested-order indexes on
+items and resolved-symbol summaries, per-item follow-up hints, and
+`summary.field_coverage`. Existing `items[]`, top-level counts,
+`summary.resolved_symbols[]`, `errors[]`, source metadata, and
+`next_action_hints` remain in place.
+
+Validation passed with focused compare tests, ignored live-smoke contract
+checks, skill validation, full workspace tests, formatting, clippy, metadata,
+packaging script syntax, diff check, hygiene grep, and read-only Desktop-free
+smokes.
 
 ## Context and Orientation
 

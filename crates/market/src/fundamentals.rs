@@ -8,7 +8,7 @@ mod fields;
 mod normalize;
 
 use client::fundamentals_symbol_via_scanner;
-use fields::normalize_fundamental_selection;
+use fields::{fundamental_field_in_group, normalize_fundamental_selection};
 use normalize::normalize_fundamentals_response_typed;
 
 pub async fn fundamentals_symbol(symbol: &str, fields: Vec<String>) -> Result<Value, AppError> {
@@ -74,6 +74,10 @@ pub fn validate_fundamentals_selection(
     fields: Vec<String>,
 ) -> Result<(), AppError> {
     normalize_fundamental_selection(groups, fields).map(|_| ())
+}
+
+pub(crate) fn is_fundamental_field_in_group(field: &str, group: &str) -> bool {
+    fundamental_field_in_group(field, group)
 }
 
 async fn add_symbol_search_candidates(mut error: AppError, requested_symbol: &str) -> AppError {

@@ -64,8 +64,9 @@ pub use quote::{quote_symbol, quote_symbol_typed, quote_symbols, quote_symbols_t
 pub use search::{search_symbols_typed, symbol_search};
 pub use snapshot::{snapshot_symbol, snapshot_symbol_typed};
 pub use types::{
-    BatchQuoteItem, BatchQuotes, Compare, CompareItem, CompareItemError, CompareMissingSummary,
-    CompareResolvedSymbol, CompareSummary, ExtendedHoursQuote, FreshnessCheck, Fundamentals, Quote,
-    QuoteError, SessionQuote, Snapshot, SnapshotSection, SnapshotSectionError, SnapshotSections,
-    SymbolInfo, SymbolSearchResponse, SymbolSearchResult,
+    BatchQuoteItem, BatchQuotes, Compare, CompareFieldCoverage, CompareFollowUpHint, CompareItem,
+    CompareItemError, CompareMissingSummary, CompareResolvedSymbol, CompareSummary,
+    ExtendedHoursQuote, FreshnessCheck, Fundamentals, Quote, QuoteError, SessionQuote, Snapshot,
+    SnapshotSection, SnapshotSectionError, SnapshotSections, SymbolInfo, SymbolSearchResponse,
+    SymbolSearchResult,
 };
