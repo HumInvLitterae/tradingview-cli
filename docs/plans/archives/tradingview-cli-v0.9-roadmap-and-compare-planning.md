@@ -44,4 +44,10 @@ If Rust code changes unexpectedly, run the normal baseline before commit.
 
 ## Outcomes
 
-Pending.
+Completed on 2026-05-07.
+
+- Added `docs/v0.9-roadmap.md`.
+- Created the first implementation ExecPlan for `tv compare <SYMBOL>...`.
+- Fixed the default source boundary: compare starts Desktop-free and does not
+  use chart-source quote loops.
+- Archived this planning ExecPlan after updating `docs/plans/README.md`.
