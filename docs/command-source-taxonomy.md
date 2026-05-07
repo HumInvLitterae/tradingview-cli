@@ -33,7 +33,9 @@ source, `tv quotes <SYMBOL>...`, `tv compare <SYMBOL>...`,
 Recommended agent use: prefer these commands for broad discovery, one-off
 symbol metadata, fundamentals, quote reads, and known-symbol comparison when
 the exact selected Desktop chart feed is not required. Report source and
-freshness metadata when the result is price-bearing.
+freshness metadata when the result is price-bearing. For `tv compare`, use
+`summary` as an additive readback helper for resolution and section counts,
+then inspect the ordered `items` evidence for the actual comparison.
 
 ### Desktop-backed read
 

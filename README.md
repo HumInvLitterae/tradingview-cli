@@ -92,6 +92,10 @@ tv scanner scan --type stock --columns name,close,volume --limit 10
 tv scanner metainfo --market america --field close --field premarket_close
 ```
 
+`tv compare` returns raw per-symbol evidence plus a machine-readable summary
+for resolution, section success, and missing-value counts. It does not rank,
+score, or recommend symbols.
+
 To use Desktop-backed reads or operations, launch TradingView Desktop with CDP
 enabled:
 

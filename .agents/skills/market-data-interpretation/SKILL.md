@@ -75,9 +75,12 @@ chart-backed, screenshot, or experimental bars evidence.
 `tv compare <SYMBOL>...` is the Desktop-free comparison packet for several
 known symbols. It preserves input order and returns per-symbol quote, info, and
 fundamentals sections with section errors and missing summaries. Treat it as
-evidence comparison, not scoring or recommendation. Use `tv quotes` when only
-ordered quote fields are needed, and use `tv snapshot <SYMBOL>` for a single
-symbol that needs more detail after comparison.
+evidence comparison, not scoring or recommendation. Read `summary` first for
+resolution counts, section success counts, missing counts, and requested to
+resolved symbol mappings, then inspect raw `items[]` before drawing
+substantive conclusions. Use `tv quotes` when only ordered quote fields are
+needed, and use `tv snapshot <SYMBOL>` for a single symbol that needs more
+detail after comparison.
 
 `tv fundamentals` is a Desktop-free scanner read, not a chart read. Use it for
 raw fields such as market cap, P/E, EPS, dividend yield, dividend dates/amounts,

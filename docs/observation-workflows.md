@@ -27,6 +27,12 @@ Desktop-free comparison across several known symbols. Use the lower-level
 commands when you need just one section, ordered quotes only, or a scanner row
 set.
 
+`tv compare` includes a top-level `summary` for scanability. Use it to read
+resolution counts, section success counts, missing counts, and requested to
+resolved symbol mappings. Treat `summary` as readback only; inspect raw
+`items[]` before drawing substantive conclusions or choosing follow-up
+actions.
+
 Treat scanner-backed price reads as screening evidence, not as a realtime
 entitlement guarantee. Preserve `source_category`, `requires_desktop`,
 `non_mutating`, and freshness fields such as `time`, `update_mode`, or

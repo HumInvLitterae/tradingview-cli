@@ -49,7 +49,9 @@ Choose follow-up reads based on the question:
 
 - `tv info <SYMBOL>` for symbol metadata.
 - `tv compare <SYMBOL>...` when several known candidates need Desktop-free
-  quote, info, and fundamentals evidence side by side.
+  quote, info, and fundamentals evidence side by side. Use `summary` for
+  quick resolution and section-success readback, then inspect raw `items[]`
+  before comparing candidates.
 - `tv snapshot <SYMBOL>` for a one-symbol Desktop-free evidence packet that
   combines quote, info, and fundamentals sections before chart observation.
 - `tv quote <SYMBOL>` or `tv quotes <SYMBOL>...` for scanner-backed quote
