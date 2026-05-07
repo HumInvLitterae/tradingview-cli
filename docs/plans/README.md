@@ -8,9 +8,9 @@ for release and next-phase planning.
 
 Current plan:
 
-- `tradingview-cli-v0.9.0-release-readiness.md`: prepare the `v0.9.0`
-  release state by updating version, changelog, release notes, README asset
-  examples, package staging evidence, and release validation.
+- `tradingview-cli-v0.10-roadmap-and-next-slice.md`: draft the `v0.10.0`
+  roadmap after the `v0.9.0` release and hold the planning diff uncommitted
+  until downstream development-agent feedback is reviewed.
 
 ## Archived plans
 
@@ -125,6 +125,7 @@ Important archived plan categories:
 - first Desktop-free `tv compare <SYMBOL>...` comparison packet
 - opt-in `tv compare <SYMBOL>...` JSON contract live smoke
 - v0.9 pre-release completion and refactor audit
+- v0.9.0 release readiness
 
 For command contract details, prefer the notes under `docs/notes/` before
 reading archived implementation plans.
