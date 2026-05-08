@@ -14,6 +14,9 @@ use crate::{
 const COMPARE_CONTRACT_VERSION: &str = "compare.v1";
 const COMPARE_SOURCE: &str = "compare_desktop_free";
 const DESKTOP_FREE_READ_CATEGORY: &str = "desktop_free_read";
+const COVERAGE_STATUS_BLOCKED: &str = "blocked";
+const COVERAGE_STATUS_COMPLETE: &str = "complete";
+const COVERAGE_STATUS_PARTIAL: &str = "partial";
 
 pub async fn compare_symbols(symbols: Vec<String>) -> Result<Value, AppError> {
     serde_json::to_value(compare_symbols_typed(symbols).await?)
@@ -231,6 +234,16 @@ fn compare_summary(
         requested_count,
         resolved_count,
         error_count,
+        coverage_status: coverage_status(
+            requested_count,
+            resolved_count,
+            error_count,
+            quote_ok_count,
+            info_ok_count,
+            fundamentals_ok_count,
+            missing_total_count,
+        )
+        .to_string(),
         quote_ok_count,
         info_ok_count,
         fundamentals_ok_count,
@@ -238,6 +251,32 @@ fn compare_summary(
         field_coverage,
         resolved_symbols,
     }
+}
+
+fn coverage_status(
+    requested_count: usize,
+    resolved_count: usize,
+    error_count: usize,
+    quote_ok_count: usize,
+    info_ok_count: usize,
+    fundamentals_ok_count: usize,
+    missing_total_count: usize,
+) -> &'static str {
+    if resolved_count == 0 {
+        return COVERAGE_STATUS_BLOCKED;
+    }
+
+    if requested_count == resolved_count
+        && error_count == 0
+        && quote_ok_count == requested_count
+        && info_ok_count == requested_count
+        && fundamentals_ok_count == requested_count
+        && missing_total_count == 0
+    {
+        return COVERAGE_STATUS_COMPLETE;
+    }
+
+    COVERAGE_STATUS_PARTIAL
 }
 
 fn field_coverage(
@@ -513,6 +552,7 @@ mod tests {
         assert_eq!(summary.requested_count, 2);
         assert_eq!(summary.resolved_count, 1);
         assert_eq!(summary.error_count, 1);
+        assert_eq!(summary.coverage_status, "partial");
         assert_eq!(summary.quote_ok_count, 1);
         assert_eq!(summary.info_ok_count, 1);
         assert_eq!(summary.fundamentals_ok_count, 1);
@@ -536,6 +576,40 @@ mod tests {
         assert_eq!(summary.resolved_symbols[1].requested_index, 1);
         assert_eq!(summary.resolved_symbols[1].requested_symbol, "NYSE:IONQ");
         assert!(!summary.resolved_symbols[1].ok);
+    }
+
+    #[test]
+    fn coverage_status_reports_complete_partial_and_blocked() {
+        assert_eq!(coverage_status(2, 2, 0, 2, 2, 2, 0), "complete");
+        assert_eq!(coverage_status(2, 2, 0, 2, 1, 2, 0), "partial");
+        assert_eq!(coverage_status(2, 2, 0, 2, 2, 2, 1), "partial");
+        assert_eq!(coverage_status(2, 1, 1, 1, 1, 1, 0), "partial");
+        assert_eq!(coverage_status(2, 0, 2, 0, 0, 0, 0), "blocked");
+    }
+
+    #[test]
+    fn total_failure_details_include_compare_contract_and_blocked_status() {
+        let first = failed_compare_item(0, "AAPL");
+        let second = failed_compare_item(1, "NYSE:IONQ");
+
+        let error = finalize_compare_items(2, vec![first, second]).unwrap_err();
+        let details = error.details.expect("compare failure includes details");
+
+        assert_eq!(details["contract_version"], "compare.v1");
+        assert_eq!(details["summary"]["coverage_status"], "blocked");
+        assert_eq!(details["requested_count"], 2);
+        assert_eq!(details["resolved_count"], 0);
+        assert_eq!(details["error_count"], 2);
+        assert_eq!(details["summary"]["resolved_count"], 0);
+        assert_eq!(
+            details["summary"]["field_coverage"]["total_missing_count"],
+            0
+        );
+        assert_eq!(details["items"][0]["requested_index"], 0);
+        assert_eq!(
+            details["summary"]["resolved_symbols"][1]["requested_index"],
+            1
+        );
     }
 
     #[test]
@@ -599,5 +673,74 @@ mod tests {
         assert_eq!(errors.len(), 1);
         assert_eq!(errors[0].requested_symbol, "AAPL");
         assert_eq!(errors[0].section, "quote");
+    }
+
+    fn failed_compare_item(requested_index: usize, requested_symbol: &str) -> CompareItem {
+        CompareItem {
+            requested_index,
+            requested_symbol: requested_symbol.to_string(),
+            symbol: Value::Null,
+            observed_symbol: Value::Null,
+            ok: false,
+            sections: SnapshotSections {
+                quote: SnapshotSection {
+                    ok: false,
+                    data: None,
+                    error: Some(SnapshotSectionError {
+                        section: "quote".to_string(),
+                        kind: ErrorKind::InternalApiUnavailable,
+                        message: "temporary failure".to_string(),
+                        details: None,
+                    }),
+                },
+                info: SnapshotSection {
+                    ok: false,
+                    data: None,
+                    error: Some(SnapshotSectionError {
+                        section: "info".to_string(),
+                        kind: ErrorKind::InternalApiUnavailable,
+                        message: "temporary failure".to_string(),
+                        details: None,
+                    }),
+                },
+                fundamentals: SnapshotSection {
+                    ok: false,
+                    data: None,
+                    error: Some(SnapshotSectionError {
+                        section: "fundamentals".to_string(),
+                        kind: ErrorKind::InternalApiUnavailable,
+                        message: "temporary failure".to_string(),
+                        details: None,
+                    }),
+                },
+            },
+            errors: vec![
+                SnapshotSectionError {
+                    section: "quote".to_string(),
+                    kind: ErrorKind::InternalApiUnavailable,
+                    message: "temporary failure".to_string(),
+                    details: None,
+                },
+                SnapshotSectionError {
+                    section: "info".to_string(),
+                    kind: ErrorKind::InternalApiUnavailable,
+                    message: "temporary failure".to_string(),
+                    details: None,
+                },
+                SnapshotSectionError {
+                    section: "fundamentals".to_string(),
+                    kind: ErrorKind::InternalApiUnavailable,
+                    message: "temporary failure".to_string(),
+                    details: None,
+                },
+            ],
+            missing_summary: CompareMissingSummary {
+                quote: Vec::new(),
+                info: Vec::new(),
+                fundamentals: Vec::new(),
+                total_count: 0,
+            },
+            follow_up_hints: follow_up_hints(&Value::Null),
+        }
     }
 }

@@ -131,6 +131,11 @@ fn assert_compare_success(symbols: &[String], envelope: &Value, elapsed: Duratio
         || summary.get("error_count").and_then(Value::as_u64)
             != data.get("error_count").and_then(Value::as_u64)
         || summary
+            .get("coverage_status")
+            .and_then(Value::as_str)
+            .map(valid_coverage_status)
+            != Some(true)
+        || summary
             .get("quote_ok_count")
             .and_then(Value::as_u64)
             .is_none()
@@ -167,6 +172,7 @@ fn assert_compare_success(symbols: &[String], envelope: &Value, elapsed: Duratio
         );
     }
     assert_field_coverage(symbols, summary, envelope, elapsed);
+    assert_coverage_status(symbols, summary, envelope, elapsed);
 
     let mut ok_count = 0usize;
     let resolved_symbols = summary
@@ -224,6 +230,71 @@ fn assert_compare_success(symbols: &[String], envelope: &Value, elapsed: Duratio
         panic!(
             "compare live smoke had no successful items: symbols={} elapsed_ms={} summary={}",
             symbols.join(","),
+            elapsed.as_millis(),
+            summarize_envelope(envelope)
+        );
+    }
+}
+
+fn assert_coverage_status(
+    symbols: &[String],
+    summary: &Value,
+    envelope: &Value,
+    elapsed: Duration,
+) {
+    let status = summary
+        .get("coverage_status")
+        .and_then(Value::as_str)
+        .unwrap_or("<missing>");
+    let requested = summary
+        .get("requested_count")
+        .and_then(Value::as_u64)
+        .unwrap_or_default();
+    let resolved = summary
+        .get("resolved_count")
+        .and_then(Value::as_u64)
+        .unwrap_or_default();
+    let errors = summary
+        .get("error_count")
+        .and_then(Value::as_u64)
+        .unwrap_or_default();
+    let quote_ok = summary
+        .get("quote_ok_count")
+        .and_then(Value::as_u64)
+        .unwrap_or_default();
+    let info_ok = summary
+        .get("info_ok_count")
+        .and_then(Value::as_u64)
+        .unwrap_or_default();
+    let fundamentals_ok = summary
+        .get("fundamentals_ok_count")
+        .and_then(Value::as_u64)
+        .unwrap_or_default();
+    let missing = summary
+        .get("missing_total_count")
+        .and_then(Value::as_u64)
+        .unwrap_or_default();
+
+    let expected = if resolved == 0 {
+        "blocked"
+    } else if requested == resolved
+        && errors == 0
+        && quote_ok == requested
+        && info_ok == requested
+        && fundamentals_ok == requested
+        && missing == 0
+    {
+        "complete"
+    } else {
+        "partial"
+    };
+
+    if status != expected {
+        panic!(
+            "compare live smoke coverage status mismatch: symbols={} expected={} actual={} elapsed_ms={} summary={}",
+            symbols.join(","),
+            expected,
+            status,
             elapsed.as_millis(),
             summarize_envelope(envelope)
         );
@@ -319,6 +390,10 @@ fn assert_item_shape(symbol: &str, item: &Value, envelope: &Value, elapsed: Dura
     }
 
     item_ok
+}
+
+fn valid_coverage_status(status: &str) -> bool {
+    matches!(status, "complete" | "partial" | "blocked")
 }
 
 fn valid_follow_up_hints(hints: &[Value]) -> bool {

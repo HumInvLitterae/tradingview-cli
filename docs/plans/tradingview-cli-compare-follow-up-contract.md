@@ -25,15 +25,19 @@ thin coverage status, and compare failure details with the same contract guard.
 
 - [x] (2026-05-08T06:23Z) Created this ExecPlan after the `v0.11.0` release
   and recorded the initial v0.12 compare follow-up contract direction.
-- [ ] Audit current compare payload construction, contract tests, docs, and
-  runtime skills.
-- [ ] Stabilize follow-up hint vocabulary and field coverage semantics in docs
-  and tests.
-- [ ] Add additive `summary.coverage_status` readback.
-- [ ] Ensure structured total-failure details expose the compare contract
-  marker and coverage readback.
-- [ ] Run focused compare tests, full Rust baseline, docs validation, and
-  package script validation.
+- [x] (2026-05-08T07:42Z) Audited current compare payload construction,
+  contract tests, docs, and runtime skills.
+- [x] (2026-05-08T07:42Z) Stabilized follow-up hint vocabulary and field
+  coverage semantics in docs and tests.
+- [x] (2026-05-08T07:42Z) Added additive `summary.coverage_status` readback.
+- [x] (2026-05-08T07:42Z) Ensured structured total-failure details expose the
+  compare contract marker and blocked coverage readback.
+- [x] (2026-05-08T07:42Z) Ran focused compare tests, full Rust baseline, docs
+  validation, runtime skill validation, and package script validation.
+- [x] (2026-05-08T07:42Z) Updated stable docs, runtime skills, roadmap, and
+  changelog for the completed slice.
+- [x] (2026-05-08T07:42Z) Prepared the completed slice for a single local
+  commit.
 
 ## Surprises & Discoveries
 
@@ -42,6 +46,18 @@ thin coverage status, and compare failure details with the same contract guard.
   Evidence: the current code and tests should be audited before implementation
   to confirm the shipped value. The initial decision is to keep the shipped
   value stable instead of renaming it.
+
+- Observation: structured total-failure already returned the compare payload
+  in error details.
+  Evidence: the implementation added `coverage_status` through the existing
+  `CompareSummary`, and the new unit test verifies error details contain
+  `contract_version: "compare.v1"` and `summary.coverage_status: "blocked"`.
+
+- Observation: the broad hygiene grep reports existing safety policy wording,
+  archived validation-command examples, and deferred-surface wording.
+  Evidence: no new local path, credential, raw target id, account-local
+  metadata, raw live payload, downstream repo path, or downstream private
+  workflow name was added by this slice.
 
 ## Decision Log
 
@@ -61,7 +77,18 @@ thin coverage status, and compare failure details with the same contract guard.
 
 ## Outcomes & Retrospective
 
-Not yet implemented. This plan is ready for the next implementation slice.
+Implemented. `tv compare <SYMBOL>...` now serializes additive
+`summary.coverage_status` with `complete`, `partial`, or `blocked` values.
+The field is derived from already finalized compare items and does not add
+network reads, source changes, ranking, scoring, or recommendations. Existing
+`items[]`, section errors, `summary.resolved_symbols[]`, `field_coverage`,
+`follow_up_hints[]`, top-level counts, `errors[]`, `next_action_hints`, and
+source metadata remain intact.
+
+Stable docs and runtime skills now explain that `coverage_status` is evidence
+coverage only. The total-failure path remains structured and now has test
+coverage proving that the compare payload in error details retains
+`contract_version: "compare.v1"` and blocked coverage status.
 
 ## Context and Orientation
 
@@ -157,6 +184,22 @@ Update compare contract tests so they prove:
 
 Run the validation commands listed below and record the outcomes in this plan.
 
+Validation evidence recorded for this completed slice:
+
+    cargo test -p tradingview-market compare -- --nocapture
+    cargo test -p tradingview-cli --test cli_contract compare -- --nocapture
+    cargo test -p tradingview-cli --test live_compare
+    cargo fmt --check
+    cargo clippy --workspace --all-targets --all-features -- -D warnings
+    cargo test --workspace
+    cargo metadata --no-deps --format-version 1
+    git diff --check
+    bash -n scripts/stage-release-package-files.sh
+
+The three changed runtime skills were also validated with the existing local
+skill validator. The exact validator path is local tooling and is intentionally
+not recorded in this public plan.
+
 ## Validation and Acceptance
 
 Run:
@@ -212,5 +255,5 @@ envelope schema version.
 
 ## Open Questions
 
-None for the first implementation slice. Larger item-level missing evidence
-and cross-command vocabulary alignment remain later v0.12 candidates.
+None for this completed slice. Larger item-level missing evidence and
+cross-command vocabulary alignment remain later v0.12 candidates.

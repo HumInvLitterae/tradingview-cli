@@ -44,9 +44,13 @@ resolved symbol mappings. Treat `summary` as readback only; inspect raw
 `items[]` before drawing substantive conclusions or choosing follow-up
 actions. Compare payloads also include `contract_version`,
 `requested_index`, per-item `follow_up_hints`, and `summary.field_coverage`
-as downstream readback helpers. They make ordering, schema guards, follow-up
-surfaces, and evidence gaps easier to consume, but they do not rank symbols or
-replace raw evidence.
+as downstream readback helpers. `summary.coverage_status` is a compact
+evidence-coverage readback: `complete` means every requested item has quote,
+info, and fundamentals sections with no missing fields; `partial` means some
+evidence exists but section errors or missing fields remain; `blocked` means
+the structured compare payload has no usable per-item evidence. These fields
+make ordering, schema guards, follow-up surfaces, and evidence gaps easier to
+consume, but they do not rank symbols or replace raw evidence.
 
 Treat scanner-backed price reads as screening evidence, not as a realtime
 entitlement guarantee. Preserve `source_category`, `requires_desktop`,

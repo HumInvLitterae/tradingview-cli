@@ -348,6 +348,8 @@ pub struct CompareSummary {
     pub resolved_count: usize,
     /// Number of items with no successful evidence sections.
     pub error_count: usize,
+    /// Evidence coverage status; this is not a ranking or recommendation.
+    pub coverage_status: String,
     /// Number of items with a successful quote section.
     pub quote_ok_count: usize,
     /// Number of items with a successful info section.
