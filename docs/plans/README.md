@@ -8,10 +8,10 @@ for release and next-phase planning.
 
 Current plan:
 
-- `tradingview-cli-v0.12.0-release-readiness.md`: prepare the `v0.12.0`
-  release state by updating package version, changelog, GitHub Release notes,
-  README release asset examples, release package staging evidence, and
-  validation results.
+- `tradingview-cli-chart-quote-session-boundary.md`: plan the first v0.13
+  slice around chart-source quote session and extended-hours boundaries so
+  agents do not mistake `quote --source chart` for scanner-backed
+  premarket/postmarket evidence.
 
 ## Archived plans
 
@@ -138,6 +138,7 @@ Important archived plan categories:
 - v0.12 compare follow-up contract polish
 - v0.12 compare missing evidence readback
 - v0.12 pre-release completion and refactor audit
+- v0.12.0 release readiness
 
 For command contract details, prefer the notes under `docs/notes/` before
 reading archived implementation plans.

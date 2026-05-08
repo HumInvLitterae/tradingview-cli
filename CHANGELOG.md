@@ -7,6 +7,12 @@ package version omits the leading `v`.
 
 ## Unreleased
 
+### Documentation
+
+- Added the `v0.13.0` roadmap direction for source and session boundary
+  clarity after `v0.12.0`, with the first implementation plan focused on
+  chart-source quote extended-hours feasibility and agent misread prevention.
+
 ## v0.12.0 - 2026-05-08
 
 ### Added
