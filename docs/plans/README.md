@@ -8,10 +8,9 @@ for release and next-phase planning.
 
 Current plan:
 
-- `tradingview-cli-v0.11-pre-release-audit.md`: audit `v0.11.0`
-  completion after additive `tv compare` contract metadata, confirm no
-  release-blocking contract or documentation drift remains, and prepare to
-  move to release readiness.
+- `tradingview-cli-v0.11.0-release-readiness.md`: prepare the `v0.11.0`
+  release by updating versioned release notes, package metadata, release
+  asset examples, packaging validation evidence, and release guardrails.
 
 ## Archived plans
 
@@ -133,6 +132,7 @@ Important archived plan categories:
 - v0.10 pre-release completion and refactor audit
 - v0.10.0 release readiness
 - v0.11 compare contract metadata
+- v0.11 pre-release completion and refactor audit
 
 For command contract details, prefer the notes under `docs/notes/` before
 reading archived implementation plans.
