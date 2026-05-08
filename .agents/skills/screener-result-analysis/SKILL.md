@@ -61,7 +61,8 @@ Choose follow-up reads based on the question:
 - `tv quote <SYMBOL>` or `tv quotes <SYMBOL>...` for scanner-backed quote
   checks.
 - `tv quote <SYMBOL> --source chart` when the selected Desktop chart feed
-  matters.
+  matters. Do not treat this as premarket or postmarket evidence; use
+  scanner-backed reads when extended-hours fields matter.
 - `tv ohlcv --summary` only after switching to a chart when chart bars are
   needed.
 - `tv observe chart --duration-ms <MS> --heartbeat-ms <MS>` when a bounded

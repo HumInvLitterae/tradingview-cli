@@ -88,6 +88,15 @@ invalidate chart-source assumptions; downstream workflows should preserve
 structured freshness and restore fields rather than adding manual sleep or
 double-call loops.
 
+Do not treat chart-source quote as scanner-style extended-hours evidence.
+Chart-source quote reads the selected chart main-series last bar and reports a
+`session_boundary` object with `price_session: "unknown"`,
+`extended_hours_status: "not_provided"`, and
+`extended_hours_guaranteed: false`. When premarket or postmarket fields matter,
+use scanner-backed `tv quote`, `tv quotes`, `tv snapshot`, or `tv compare`
+instead. The CLI does not inject scanner `extended_hours` values into
+chart-source payloads.
+
 ### Desktop-backed operation
 
 `requires_desktop`: yes. `may_mutate`: yes. `fallback_allowed`: only before a

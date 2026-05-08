@@ -7,6 +7,13 @@ package version omits the leading `v`.
 
 ## Unreleased
 
+### Added
+
+- Added additive `session_boundary` readback to chart-source quote payloads so
+  agents can see that `tv quote <SYMBOL> --source chart` reads the selected
+  chart main-series last bar and does not provide scanner-style extended-hours
+  fields.
+
 ### Documentation
 
 - Added the `v0.13.0` roadmap direction for source and session boundary
