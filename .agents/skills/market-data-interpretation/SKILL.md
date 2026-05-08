@@ -48,6 +48,13 @@ they were the same source.
 | One finalist's selected-chart quote | `tv quote <SYMBOL> --source chart` |
 | Visual evidence after structured reads | `tv screenshot --region chart|full --output <PATH>` |
 
+When `compare` or `snapshot` returns follow-up metadata, use the stable kind
+values literally: `snapshot`, `chart_quote`, `observe_chart`, and
+`screenshot`. `chart_quote` means selected-chart single-symbol chart-feed
+quote; it is not scanner-style premarket or postmarket evidence. Do not rename
+it to `quote_chart`. These hints are available evidence surfaces, not
+recommendations, rankings, or automatic reads.
+
 ## Freshness And Session Boundaries
 
 Scanner REST price reads are useful for screening, but they are not realtime

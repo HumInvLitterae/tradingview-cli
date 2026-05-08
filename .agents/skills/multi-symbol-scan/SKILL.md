@@ -54,10 +54,12 @@ construction, not on duplicating the full source taxonomy.
    requested-order indexes. `summary.coverage_status` is only evidence
    completeness (`complete`, `partial`, or `blocked`); keep raw `items[]` as
    the evidence source for any actual comparison. Per-item `follow_up_hints`
-   are available next evidence surfaces, not recommendations. Use
-   `items[].missing_evidence[]` to route section gaps to stable follow-up
-   kinds such as `snapshot` or `chart_quote`; do not treat those hints as
-   symbol ranking.
+   are available next evidence surfaces, not recommendations. Stable follow-up
+   kinds are `snapshot`, `chart_quote`, `observe_chart`, and `screenshot`;
+   keep `chart_quote` as the canonical selected-chart quote kind and do not
+   rename it to `quote_chart`. Use `items[].missing_evidence[]` to route
+   section gaps to stable follow-up kinds such as `snapshot` or `chart_quote`;
+   do not treat those hints as symbol ranking.
    Use `tv quotes <SYMBOL>...` only when ordered quote fields are enough. Use
    `tv snapshot <SYMBOL>` for one-symbol first-pass evidence before mutating
    the chart; it combines quote, symbol info, and fundamentals sections.

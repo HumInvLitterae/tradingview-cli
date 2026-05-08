@@ -22,6 +22,8 @@ package version omits the leading `v`.
 - Added additive `tv snapshot <SYMBOL>` contract metadata, including a
   command-local contract marker, coverage summary, missing-evidence readback,
   and machine-readable follow-up hints.
+- Clarified the stable follow-up vocabulary shared by `tv compare` and
+  `tv snapshot`, keeping `chart_quote` as the canonical chart-feed quote hint.
 
 ### Documentation
 

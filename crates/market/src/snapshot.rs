@@ -520,12 +520,72 @@ mod tests {
     fn snapshot_follow_up_hints_are_machine_readable_without_recommendation() {
         let hints = follow_up_hints(&json!("NASDAQ:AAPL"));
         assert_eq!(hints.len(), 3);
-        assert_eq!(hints[0].kind, "chart_quote");
+        assert_eq!(hints[0].kind, FOLLOW_UP_CHART_QUOTE);
         assert_eq!(hints[0].command, "tv quote NASDAQ:AAPL --source chart");
         assert_eq!(hints[0].reason, "single_symbol_chart_quote");
         assert!(hints[0].requires_desktop);
-        assert!(hints.iter().any(|hint| hint.kind == "observe_chart"));
-        assert!(hints.iter().any(|hint| hint.kind == "screenshot"));
+        let kinds = hints
+            .iter()
+            .map(|hint| hint.kind.as_str())
+            .collect::<Vec<_>>();
+        assert_eq!(
+            kinds,
+            vec![
+                FOLLOW_UP_CHART_QUOTE,
+                FOLLOW_UP_OBSERVE_CHART,
+                FOLLOW_UP_SCREENSHOT,
+            ]
+        );
+        assert!(!hints.iter().any(|hint| hint.kind == "quote_chart"));
+    }
+
+    #[test]
+    fn snapshot_missing_evidence_uses_stable_follow_up_vocabulary() {
+        let sections = SnapshotSections {
+            quote: SnapshotSection {
+                ok: false,
+                data: None,
+                error: Some(SnapshotSectionError {
+                    section: "quote".to_string(),
+                    kind: ErrorKind::InternalApiUnavailable,
+                    message: "temporary failure".to_string(),
+                    details: None,
+                }),
+            },
+            info: SnapshotSection {
+                ok: false,
+                data: None,
+                error: Some(SnapshotSectionError {
+                    section: "info".to_string(),
+                    kind: ErrorKind::InternalApiUnavailable,
+                    message: "temporary failure".to_string(),
+                    details: None,
+                }),
+            },
+            fundamentals: SnapshotSection {
+                ok: true,
+                data: Some(json!({
+                    "symbol": "NASDAQ:AAPL",
+                    "missing_fields": ["next_dividend_date"]
+                })),
+                error: None,
+            },
+        };
+        let evidence = missing_evidence(&sections);
+        let follow_ups = evidence
+            .iter()
+            .map(|entry| entry.suggested_follow_up.as_str())
+            .collect::<Vec<_>>();
+
+        assert_eq!(
+            follow_ups,
+            vec![
+                FOLLOW_UP_CHART_QUOTE,
+                FOLLOW_UP_SNAPSHOT,
+                FOLLOW_UP_SNAPSHOT
+            ]
+        );
+        assert!(!follow_ups.contains(&"quote_chart"));
     }
 
     #[test]
