@@ -129,6 +129,9 @@ after-market price in that panel while scanner REST, chart main-series quote,
 and the current quote-session selected field set reported different values.
 The same source discovery narrowed that value to the right-side detail
 widget's status/price nodes, with React metadata present on the matched node.
+An additional bounded CDP Network/WebSocket smoke observed symbol-related
+WebSocket traffic while the visible value was present, but did not identify a
+captured communication candidate containing the visible after-hours price.
 Until a later contract explicitly exposes this source, treat it as opt-in
 visible-UI source-discovery evidence, not as part of `tv quote --source
 chart`.

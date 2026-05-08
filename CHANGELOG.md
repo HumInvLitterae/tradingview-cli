@@ -30,6 +30,9 @@ package version omits the leading `v`.
 - Extended the Desktop visible after-hours panel source smoke with a compact
   lower-level right-panel detail widget summary, including matched status/price
   node descriptors and React metadata presence without raw DOM or raw props.
+- Added an opt-in ignored CDP Network/WebSocket smoke for after-hours source
+  discovery, reporting compact communication candidate summaries without raw
+  frames, raw response bodies, or public quote payload changes.
 - Added additive `tv snapshot <SYMBOL>` contract metadata, including a
   command-local contract marker, coverage summary, missing-evidence readback,
   and machine-readable follow-up hints.

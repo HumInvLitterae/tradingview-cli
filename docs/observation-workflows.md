@@ -157,7 +157,10 @@ inspection rather than assuming `quote --source chart` contains the same
 after-hours value. The current postmarket source discovery narrowed the RKLB
 visible value to the right-side detail widget's status/price nodes, with React
 metadata present on the matched node; treat that as a visible UI source until a
-separate contract exposes it.
+separate contract exposes it. A bounded CDP Network/WebSocket smoke observed
+symbol-related WebSocket traffic while that visible value was present, but did
+not find the visible after-hours price token in captured communication
+candidates.
 
 ## Visual Evidence Recovery
 
