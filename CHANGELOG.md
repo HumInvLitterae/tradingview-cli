@@ -42,6 +42,9 @@ package version omits the leading `v`.
 - Hardened the after-hours WebSocket correlation smoke to summarize public-safe
   TradingView `qsd` quote-data fields such as `rtc`, `rtc_time`, `rch`, and
   `rchp` when investigating visible after-market panel values.
+- Added a source-design plan for possible Desktop quote-data `qsd.rtc`
+  support, keeping it separate from chart-source quote and scanner
+  extended-hours payloads.
 - Added additive `tv snapshot <SYMBOL>` contract metadata, including a
   command-local contract marker, coverage summary, missing-evidence readback,
   and machine-readable follow-up hints.

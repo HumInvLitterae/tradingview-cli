@@ -8,13 +8,17 @@ for release and next-phase planning.
 
 Current plan:
 
-- `tradingview-cli-after-hours-websocket-correlation.md`: correlate compact
-  right-side visible after-hours price samples with bounded CDP WebSocket
-  quote-data candidates such as `qsd.rtc`, while avoiding quote-session
-  subscription and broad DOM probes.
+- `tradingview-cli-desktop-quote-data-rtc-source-design.md`: fix the source
+  boundary and feasibility criteria for treating TradingView `qsd.rtc`
+  quote-data WebSocket readback as a possible future `quote-data` source,
+  without mixing it into chart-source quote or scanner extended-hours payloads.
 
 Recently completed:
 
+- `tradingview-cli-after-hours-websocket-correlation.md`: correlated compact
+  right-side visible after-hours price samples with bounded CDP WebSocket
+  quote-data candidates such as `qsd.rtc`, while avoiding quote-session
+  subscription and broad DOM probes.
 - `tradingview-cli-desktop-after-hours-widget-store-evidence.md`: added an
   opt-in right-panel widget smoke and recorded that scoped React props exposed
   regular quote-like fields, but not the visible after-hours price token.

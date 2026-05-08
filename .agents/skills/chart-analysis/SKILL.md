@@ -92,7 +92,9 @@ observation surface.
    schema or `quote --source chart` payload. Follow-up HAR/live evidence makes
    TradingView `qsd.rtc` the strongest current candidate for the visible
    after-market value, but it remains internal WebSocket source discovery
-   until a separate payload contract exposes it.
+   until a separate payload contract exposes it. Any future support should be
+   a separately labeled Desktop quote-data read, not an implicit chart
+   main-series quote field.
 6. Read visible study values with `tv values` when indicators already exist on
    the chart.
 7. Read Pine drawing-derived levels or zones with `tv data lines`,
