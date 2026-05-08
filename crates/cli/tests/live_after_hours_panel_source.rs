@@ -312,6 +312,125 @@ fn read_visible_panel_summary(
     const matches = String(text || "").match(/\b\d{{1,4}}(?:,\d{{3}})*(?:\.\d+)?\b/g) || [];
     return Array.from(new Set(matches));
   }}
+  function safeText(value, max) {{
+    return String(value || "").replace(/\s+/g, " ").trim().slice(0, max);
+  }}
+  function attr(el, name) {{
+    return el && el.getAttribute && el.getAttribute(name) || null;
+  }}
+  function classTokens(el) {{
+    return String(el && el.className || "")
+      .split(/\s+/)
+      .filter(Boolean)
+      .filter(token => /widget|detail|price|last|market|status|session/i.test(token))
+      .slice(0, 8);
+  }}
+  function nodeSummary(el) {{
+    if (!el) return null;
+    return {{
+      tag: String(el.tagName || "").toLowerCase(),
+      data_name: attr(el, "data-name"),
+      data_qa_id: attr(el, "data-qa-id"),
+      data_test_id_widget_type: attr(el, "data-test-id-widget-type"),
+      role: attr(el, "role"),
+      aria_label: attr(el, "aria-label"),
+      class_tokens: classTokens(el),
+      text: safeText(normalizedText(el), 120),
+    }};
+  }}
+  function ancestorChain(el) {{
+    const chain = [];
+    let current = el;
+    for (let i = 0; current && i < 10; i += 1, current = current.parentElement) {{
+      chain.push(nodeSummary(current));
+    }}
+    return chain.filter(Boolean);
+  }}
+  function findDetailsStatusNode(nodes) {{
+    const status = nodes.find(el => attr(el, "data-qa-id") === "details-element status" && visible(el));
+    if (status) return status;
+    return nodes.find(el => /details-element status/i.test(String(attr(el, "data-qa-id") || "")) && visible(el)) || null;
+  }}
+  function findMatchedPriceNode(nodes, expectedPrice) {{
+    const priceRegex = /\d{{1,4}}(?:,\d{{3}})*\.\d+\s*USD/;
+    const candidates = nodes
+      .filter(visible)
+      .filter(el => {{
+        const rect = el.getBoundingClientRect();
+        if (rect.left < window.innerWidth * 0.58) return false;
+        const text = normalizedText(el);
+        if (!text || text.length > 180) return false;
+        if (expectedPrice && !text.includes(expectedPrice)) return false;
+        return priceRegex.test(text) || /price|lastPrice/i.test(String(el.className || ""));
+      }})
+      .sort((a, b) => normalizedText(a).length - normalizedText(b).length);
+    return candidates[0] || null;
+  }}
+  function reactKeys(el) {{
+    const names = [];
+    let current = el;
+    for (let depth = 0; current && depth < 8; depth += 1, current = current.parentElement) {{
+      for (const key of Object.getOwnPropertyNames(current)) {{
+        if (key.startsWith("__react")) uniquePush(names, key.replace(/\$.*/, "$"));
+      }}
+    }}
+    return names.slice(0, 12);
+  }}
+  function fiberFromNode(el) {{
+    let current = el;
+    for (let depth = 0; current && depth < 8; depth += 1, current = current.parentElement) {{
+      const key = Object.getOwnPropertyNames(current).find(name => name.startsWith("__reactFiber"));
+      if (key) return current[key];
+    }}
+    return null;
+  }}
+  function componentName(fiber) {{
+    if (!fiber) return null;
+    const type = fiber.elementType || fiber.type;
+    if (typeof type === "string") return type;
+    return type && (type.displayName || type.name) || (fiber.tag != null ? "tag:" + fiber.tag : null);
+  }}
+  function componentChain(fiber) {{
+    const names = [];
+    let current = fiber;
+    for (let depth = 0; current && depth < 14; depth += 1, current = current.return) {{
+      uniquePush(names, componentName(current));
+    }}
+    return names.filter(Boolean).slice(0, 12);
+  }}
+  function propCandidates(fiber, expectedPrice) {{
+    if (!fiber || !fiber.memoizedProps) return [];
+    const hits = [];
+    const seen = new Set();
+    const stack = [{{ path: "memoizedProps", value: fiber.memoizedProps, depth: 0 }}];
+    while (stack.length && hits.length < 10 && seen.size < 350) {{
+      const item = stack.pop();
+      const value = item.value;
+      if (value && typeof value === "object") {{
+        if (seen.has(value)) continue;
+        seen.add(value);
+      }}
+      if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") {{
+        const text = String(value);
+        if (
+          (expectedPrice && text.includes(expectedPrice)) ||
+          /アフター|after|post|USD|market/i.test(text)
+        ) {{
+          hits.push({{ path: item.path, value: text.slice(0, 80) }});
+        }}
+        continue;
+      }}
+      if (!value || typeof value !== "object" || item.depth >= 5) continue;
+      const keys = Object.keys(value).slice(0, 30);
+      for (const key of keys.reverse()) {{
+        if (/^_(owner|store|source|self)$/.test(key)) continue;
+        const child = value[key];
+        if (typeof child === "function") continue;
+        stack.push({{ path: item.path + "." + key, value: child, depth: item.depth + 1 }});
+      }}
+    }}
+    return hits;
+  }}
   const nodes = Array.from(document.querySelectorAll("aside, section, div, span"));
   const rightTexts = [];
   for (const el of nodes) {{
@@ -344,6 +463,9 @@ fn read_visible_panel_summary(
     ? snippetUsdMatches[snippetUsdMatches.length - 1]
     : (beforeUsdMatches.length ? beforeUsdMatches[beforeUsdMatches.length - 1] : null);
   const regularMatches = Array.from(panelText.matchAll(/(\d{{1,4}}(?:,\d{{3}})*\.\d+)\s*USD/g)).map(match => match[1]);
+  const detailStatusNode = findDetailsStatusNode(nodes);
+  const matchedPriceNode = findMatchedPriceNode(nodes, expectedPrice || afterPrice);
+  const matchedFiber = fiberFromNode(matchedPriceNode);
   return {{
     symbol,
     symbol_seen: panelText.includes(symbol),
@@ -356,6 +478,20 @@ fn read_visible_panel_summary(
     after_market_window_numbers: decimalTokens(afterWindow).slice(0, 12),
     snippet_count: compactSnippets.length,
     snippets: compactSnippets,
+    low_level: {{
+      matched_node_found: Boolean(matchedPriceNode),
+      matched_node: nodeSummary(matchedPriceNode),
+      detail_status_node_found: Boolean(detailStatusNode),
+      detail_status_node: nodeSummary(detailStatusNode),
+      ancestor_chain: ancestorChain(matchedPriceNode).slice(0, 8),
+      react: {{
+        react_key_count: reactKeys(matchedPriceNode).length,
+        react_keys: reactKeys(matchedPriceNode),
+        fiber_found: Boolean(matchedFiber),
+        component_names: componentChain(matchedFiber),
+        prop_candidates: propCandidates(matchedFiber, expectedPrice || afterPrice),
+      }},
+    }},
   }};
 }})()"#
     );
@@ -514,6 +650,17 @@ fn assert_panel_summary(panel: &Value, symbol: &str, expected_visible_price: Opt
             panel_summary(panel)
         );
     }
+    if expected_visible_price.is_some()
+        && panel
+            .pointer("/low_level/matched_node_found")
+            .and_then(Value::as_bool)
+            != Some(true)
+    {
+        panic!(
+            "visible panel found expected price but did not identify a matched low-level node: {}",
+            panel_summary(panel)
+        );
+    }
 }
 
 fn phase_matches_expected(expected: &str, observed: &str) -> bool {
@@ -604,7 +751,7 @@ fn selected_probe_summary(probe: &Value) -> String {
 
 fn panel_summary(panel: &Value) -> String {
     format!(
-        "symbol_seen={} after_label={} after_price={} expected_price={} expected_seen={} usd_candidates={} after_window_numbers={} snippets={}",
+        "symbol_seen={} after_label={} after_price={} expected_price={} expected_seen={} usd_candidates={} after_window_numbers={} snippets={} low_level={}",
         bool_field(panel, "symbol_seen"),
         bool_field(panel, "after_market_label_seen"),
         display_value(panel.get("visible_after_market_price")),
@@ -613,7 +760,75 @@ fn panel_summary(panel: &Value) -> String {
         display_array(panel.get("regular_usd_candidates")),
         display_array(panel.get("after_market_window_numbers")),
         display_array(panel.get("snippets")),
+        low_level_summary(panel.get("low_level")),
     )
+}
+
+fn low_level_summary(value: Option<&Value>) -> String {
+    let Some(value) = value else {
+        return "<missing>".to_string();
+    };
+    let react = value.get("react").unwrap_or(&Value::Null);
+    format!(
+        "matched={} matched_node={} detail_status={} ancestors={} react_fiber={} components={} prop_candidates={}",
+        bool_field(value, "matched_node_found"),
+        node_summary(value.get("matched_node")),
+        bool_field(value, "detail_status_node_found"),
+        display_node_array(value.get("ancestor_chain")),
+        bool_field(react, "fiber_found"),
+        display_array(react.get("component_names")),
+        display_prop_candidates(react.get("prop_candidates")),
+    )
+}
+
+fn node_summary(value: Option<&Value>) -> String {
+    let Some(value) = value else {
+        return "<none>".to_string();
+    };
+    let tag = string_field(value, "tag").unwrap_or("<tag>");
+    let data_name = string_field(value, "data_name").unwrap_or("-");
+    let qa = string_field(value, "data_qa_id").unwrap_or("-");
+    let widget = string_field(value, "data_test_id_widget_type").unwrap_or("-");
+    let classes = display_array(value.get("class_tokens"));
+    format!("{tag}/data={data_name}/qa={qa}/widget={widget}/class={classes}")
+}
+
+fn display_node_array(value: Option<&Value>) -> String {
+    value
+        .and_then(Value::as_array)
+        .map(|values| {
+            values
+                .iter()
+                .take(8)
+                .map(|value| node_summary(Some(value)))
+                .collect::<Vec<_>>()
+                .join(">")
+        })
+        .filter(|value| !value.is_empty())
+        .unwrap_or_else(|| "<none>".to_string())
+}
+
+fn display_prop_candidates(value: Option<&Value>) -> String {
+    value
+        .and_then(Value::as_array)
+        .map(|values| {
+            values
+                .iter()
+                .take(8)
+                .map(|value| {
+                    format!(
+                        "{}={}",
+                        string_field(value, "path").unwrap_or("<path>"),
+                        string_field(value, "value").unwrap_or("<value>")
+                    )
+                    .replace(';', ",")
+                    .replace('\n', " ")
+                })
+                .collect::<Vec<_>>()
+                .join("|")
+        })
+        .filter(|value| !value.is_empty())
+        .unwrap_or_else(|| "<none>".to_string())
 }
 
 fn summarize_probe(value: &Value) -> String {

@@ -127,8 +127,11 @@ The visible TradingView Desktop right-side detail panel is another distinct
 Desktop-backed visible UI source. A postmarket RKLB probe showed a visible
 after-market price in that panel while scanner REST, chart main-series quote,
 and the current quote-session selected field set reported different values.
+The same source discovery narrowed that value to the right-side detail
+widget's status/price nodes, with React metadata present on the matched node.
 Until a later contract explicitly exposes this source, treat it as opt-in
-source-discovery evidence, not as part of `tv quote --source chart`.
+visible-UI source-discovery evidence, not as part of `tv quote --source
+chart`.
 
 ### Desktop-backed operation
 

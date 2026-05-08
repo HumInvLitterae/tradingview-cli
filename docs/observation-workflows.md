@@ -154,7 +154,10 @@ the current quote-session selected fields. That value is useful for source
 discovery, but it is not yet part of a stable public `tv quote` payload. When
 the visible panel matters, use the dedicated opt-in smoke or screenshot-backed
 inspection rather than assuming `quote --source chart` contains the same
-after-hours value.
+after-hours value. The current postmarket source discovery narrowed the RKLB
+visible value to the right-side detail widget's status/price nodes, with React
+metadata present on the matched node; treat that as a visible UI source until a
+separate contract exposes it.
 
 ## Visual Evidence Recovery
 

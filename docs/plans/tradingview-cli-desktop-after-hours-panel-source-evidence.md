@@ -33,6 +33,11 @@ none of them. The test does not add a new user-facing command, does not modify
   fields, and the visible side panel can be summarized in one run.
 - [x] (2026-05-08T20:42Z) Updated current roadmap, plan index, source taxonomy
   docs, workflow docs, internal API notes, runtime skills, and changelog.
+- [x] (2026-05-08T21:10Z) Extended the smoke to report a lower-level
+  right-panel DOM source summary for the visible after-market price.
+- [x] (2026-05-08T21:10Z) Re-ran the RKLB postmarket smoke and confirmed that
+  the visible price maps to the TradingView right-side detail widget status
+  block rather than chart main-series or the selected quote-session fields.
 
 ## Surprises & Discoveries
 
@@ -57,6 +62,15 @@ none of them. The test does not add a new user-facing command, does not modify
   `update_mode=delayed_streaming_900`, `delay_seconds=900`, and a postmarket
   close below the visible after-market price.
 
+- Observation: the visible after-market value can be located below a more
+  specific right-panel detail widget source instead of only by broad visible
+  text.
+  Evidence: the RKLB postmarket smoke found the visible price under a
+  right-side detail widget, inside a `details-element status` block and a
+  `price` node. The public-safe summary also found React fiber metadata for
+  that node and compact prop candidates containing the visible price and
+  currency. Raw DOM and raw props were not recorded.
+
 ## Decision Log
 
 - Decision: Add a separate after-hours panel source smoke instead of extending
@@ -73,6 +87,14 @@ none of them. The test does not add a new user-facing command, does not modify
   support.
   Date/Author: 2026-05-08 / Codex.
 
+- Decision: Use the right-panel detail widget status block as the lowest
+  public-safe source identified in this slice.
+  Rationale: it is more specific than generic right-side text and explains why
+  the visible price differs from chart main-series and the selected
+  quote-session fields. It is still a visible UI source, not a stable
+  TradingView data API.
+  Date/Author: 2026-05-08 / Codex.
+
 - Decision: Keep scanner equality out of the success criteria.
   Rationale: scanner REST can be delayed while the visible panel can be based
   on a Desktop-backed streaming or UI-specific source.
@@ -83,10 +105,12 @@ none of them. The test does not add a new user-facing command, does not modify
 The new smoke proves that the visible Desktop after-market price can be
 captured as compact DOM-derived evidence during postmarket. It also proves
 that the current quote-session selected field set is insufficient for the RKLB
-visible after-market price. The next design decision is whether to expose a
-separate visible-panel after-hours read, continue searching for the underlying
-TradingView store or quote-session field, or keep this as diagnostic tooling
-only. Premarket behavior remains open.
+visible after-market price. A lower-level probe narrowed the visible value to
+the TradingView right-side detail widget status block and price node, with
+React metadata present on that node. The next design decision is whether to
+expose a separate visible-panel after-hours read, continue searching for a
+less brittle TradingView store or quote-session field behind that widget, or
+keep this as diagnostic tooling only. Premarket behavior remains open.
 
 ## Context and Orientation
 
@@ -125,7 +149,12 @@ text from the right side of the TradingView page, filter it to compact
 symbol/price/session snippets, and return only selected fields:
 `symbol_seen`, `after_market_label_seen`, `visible_after_market_price`,
 `expected_visible_price_seen`, a small list of USD candidates, a small list of
-numbers near the after-market label, and a short snippet list.
+numbers near the after-market label, and a short snippet list. It should also
+return a compact low-level summary for the matched visible price node:
+right-panel detail/status node descriptors, a short ancestor chain, whether
+React fiber metadata was present, component names, and short prop candidates
+that contain the expected visible value. It must not return raw DOM or raw
+React props.
 
 Update durable docs so agents understand that Desktop visible panel
 after-hours values can differ from scanner REST, chart main-series quote, and
@@ -193,6 +222,14 @@ Expected public-safe live output should look like this shape:
 In the RKLB postmarket run, the compact summary showed scanner delayed
 postmarket data, chart main-series and quote-session selected fields at
 `105.47`, and visible panel after-market price `110.17`.
+
+The lower-level RKLB rerun showed the visible price under the right-side
+detail widget's status block. The matched node was a compact `price` span
+inside a `lastPrice` wrapper and a `details-element status` block, within the
+detail widget. React fiber metadata was present, and compact prop candidates
+contained the visible price and currency. This is enough to identify the
+current visible UI source, but it is still not enough to treat the source as a
+stable API.
 
 ## Interfaces and Dependencies
 

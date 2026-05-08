@@ -126,9 +126,11 @@ Safety boundary:
   A postmarket RKLB probe showed that the visible after-market price can be
   extracted from the panel text while scanner REST, chart main-series quote,
   and the current quote-session selected field set report different values.
-  This is source-discovery evidence only; do not treat raw DOM text as a
-  stable API or merge it into chart-source quote payloads without a separate
-  contract.
+  A lower-level rerun narrowed the visible value to the detail widget's
+  status/price nodes, with React metadata present on the matched node. This is
+  source-discovery evidence only; do not treat raw DOM or React props as a
+  stable API or merge the visible value into chart-source quote payloads
+  without a separate contract.
 - `ohlcv` depends on the selected chart target's main-series bars collection.
   When the chart API or bars collection is unavailable, it should fail with
   structured readiness details and a target-selection recovery hint rather than

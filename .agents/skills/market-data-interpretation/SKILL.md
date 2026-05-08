@@ -90,7 +90,10 @@ The visible TradingView Desktop right-side symbol detail panel can show a
 separate after-hours price that differs from scanner REST, chart main-series
 quote, and the current quote-session selected field set. Treat that as
 Desktop-backed visible UI evidence until a stable CLI payload explicitly
-exposes it; do not infer it from `quote --source chart`.
+exposes it; do not infer it from `quote --source chart`. Current source
+discovery has narrowed this to the right-side detail widget status/price node
+for the observed RKLB postmarket case, but that is still visible UI evidence,
+not a stable data API.
 Do not use chart-source quote loops as a multi-symbol realtime batch source.
 They may contend with visible chart mutations, so prefer `tv quotes`, scanner
 reads, `tv compare`, or `tv snapshot` for broad symbol lists unless the
