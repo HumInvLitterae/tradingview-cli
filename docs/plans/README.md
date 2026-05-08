@@ -8,10 +8,9 @@ for release and next-phase planning.
 
 Current plan:
 
-- `tradingview-cli-snapshot-contract-metadata.md`: add additive
-  `tv snapshot <SYMBOL>` contract metadata so one-symbol Desktop-free evidence
-  packets expose coverage status, missing evidence, and machine-readable
-  follow-up hints.
+- `tradingview-cli-follow-up-vocabulary-alignment.md`: align and lock the
+  stable follow-up vocabulary shared by `compare` and `snapshot` metadata
+  without changing command payload shape.
 
 Active but waiting for market phase:
 
@@ -146,6 +145,7 @@ Important archived plan categories:
 - v0.12 pre-release completion and refactor audit
 - v0.12.0 release readiness
 - v0.13 chart-source quote session-boundary metadata
+- v0.13 snapshot contract metadata alignment
 
 For command contract details, prefer the notes under `docs/notes/` before
 reading archived implementation plans.

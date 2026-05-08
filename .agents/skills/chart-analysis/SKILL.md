@@ -38,8 +38,11 @@ observation surface.
 
 1. For one-symbol static context before mutating the chart, prefer
    Desktop-free `tv snapshot <SYMBOL>`. It combines quote, symbol info, and
-   fundamentals sections. Use lower-level `tv quote <SYMBOL>` and
-   `tv info <SYMBOL>` only when that narrower read is enough. Scanner-backed
+   fundamentals sections. Snapshot follow-up metadata uses the same stable
+   vocabulary as compare: `chart_quote`, `observe_chart`, and `screenshot`
+   name evidence surfaces, not recommendations or automatic reads. Use
+   lower-level `tv quote <SYMBOL>` and `tv info <SYMBOL>` only when that
+   narrower read is enough. Scanner-backed
    quotes expose `time`, `update_mode`, `delay_seconds`, and extended-hours
    fields when TradingView returns them, but they are not a realtime entitlement
    guarantee.

@@ -52,6 +52,13 @@ and fundamentals sections. They do not trigger chart reads, screenshots,
 retries, ranking, or recommendations, and the raw `sections` remain the source
 of evidence.
 
+Follow-up metadata uses a stable vocabulary across `compare` and `snapshot`:
+`snapshot`, `chart_quote`, `observe_chart`, and `screenshot`. These values are
+evidence-surface names only. They do not cross source boundaries automatically,
+do not mutate the chart by themselves, and do not imply that `chart_quote`
+contains scanner-style extended-hours values. `chart_quote` is the canonical
+value; do not treat `quote_chart` as an alias.
+
 ### Desktop-backed read
 
 `requires_desktop`: yes. `may_mutate`: no intended account mutation, though

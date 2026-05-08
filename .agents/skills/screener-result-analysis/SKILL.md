@@ -54,7 +54,9 @@ Choose follow-up reads based on the question:
   candidates. Per-item `follow_up_hints` name possible next evidence commands;
   they are not recommendations. Per-item `missing_evidence` names section gaps
   and stable follow-up kinds such as `snapshot` or `chart_quote` for routing
-  more evidence.
+  more evidence. Treat `snapshot`, `chart_quote`, `observe_chart`, and
+  `screenshot` as stable evidence-surface names; do not rename `chart_quote`
+  to `quote_chart`.
 - `tv snapshot <SYMBOL>` for a one-symbol Desktop-free evidence packet that
   combines quote, info, and fundamentals sections before chart observation.
   Read `summary` for coverage, `missing_evidence[]` for follow-up routing, and

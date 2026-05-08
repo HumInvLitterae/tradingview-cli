@@ -65,6 +65,25 @@ missing fields, the missing reason, and a stable follow-up kind such as
 follow-up surfaces, and evidence gaps easier to consume, but they do not rank
 symbols or replace raw evidence.
 
+## Follow-up Vocabulary
+
+`compare` and `snapshot` use the same stable follow-up vocabulary. These
+values describe evidence surfaces an agent may choose next; they are not
+recommendations and they are not executed automatically.
+
+| Kind | Meaning | Desktop |
+| --- | --- | --- |
+| `snapshot` | One-symbol Desktop-free detail or retry surface for quote, info, and fundamentals sections. | No |
+| `chart_quote` | Selected-chart single-symbol chart-feed quote follow-up. This is not scanner-style premarket or postmarket evidence. | Yes |
+| `observe_chart` | Selected-chart time-window observation with readiness, samples, and heartbeats. | Yes |
+| `screenshot` | Visual evidence when structured reads do not explain the visible state. | Yes |
+
+Use these same meanings in `compare.items[].follow_up_hints[]`,
+`compare.items[].missing_evidence[].suggested_follow_up`,
+`snapshot.follow_up_hints[]`, and
+`snapshot.missing_evidence[].suggested_follow_up`. The canonical chart-feed
+quote kind is `chart_quote`; do not introduce or infer a `quote_chart` alias.
+
 Treat scanner-backed price reads as screening evidence, not as a realtime
 entitlement guarantee. Preserve `source_category`, `requires_desktop`,
 `non_mutating`, and freshness fields such as `time`, `update_mode`, or

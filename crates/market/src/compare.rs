@@ -19,6 +19,8 @@ const COVERAGE_STATUS_BLOCKED: &str = "blocked";
 const COVERAGE_STATUS_COMPLETE: &str = "complete";
 const COVERAGE_STATUS_PARTIAL: &str = "partial";
 const FOLLOW_UP_CHART_QUOTE: &str = "chart_quote";
+const FOLLOW_UP_OBSERVE_CHART: &str = "observe_chart";
+const FOLLOW_UP_SCREENSHOT: &str = "screenshot";
 const FOLLOW_UP_SNAPSHOT: &str = "snapshot";
 const MISSING_REASON_FIELDS: &str = "missing_fields";
 const MISSING_REASON_SECTION_ERROR: &str = "section_error";
@@ -336,22 +338,22 @@ fn follow_up_hints(symbol: &Value) -> Vec<CompareFollowUpHint> {
     let command_symbol = symbol.as_str().unwrap_or("<SYMBOL>");
     vec![
         CompareFollowUpHint {
-            kind: "snapshot".to_string(),
+            kind: FOLLOW_UP_SNAPSHOT.to_string(),
             command: format!("tv snapshot {command_symbol}"),
             reason: "one_symbol_detail".to_string(),
         },
         CompareFollowUpHint {
-            kind: "observe_chart".to_string(),
+            kind: FOLLOW_UP_OBSERVE_CHART.to_string(),
             command: "tv observe chart --duration-ms <MS>".to_string(),
             reason: "selected_chart_observation".to_string(),
         },
         CompareFollowUpHint {
-            kind: "chart_quote".to_string(),
+            kind: FOLLOW_UP_CHART_QUOTE.to_string(),
             command: format!("tv quote {command_symbol} --source chart"),
             reason: "single_symbol_chart_quote".to_string(),
         },
         CompareFollowUpHint {
-            kind: "screenshot".to_string(),
+            kind: FOLLOW_UP_SCREENSHOT.to_string(),
             command: "tv screenshot --region chart --output <PATH>".to_string(),
             reason: "visual_evidence".to_string(),
         },
@@ -785,12 +787,73 @@ mod tests {
     fn follow_up_hints_are_machine_readable_without_recommendation() {
         let hints = follow_up_hints(&json!("NASDAQ:AAPL"));
         assert_eq!(hints.len(), 4);
-        assert_eq!(hints[0].kind, "snapshot");
+        assert_eq!(hints[0].kind, FOLLOW_UP_SNAPSHOT);
         assert_eq!(hints[0].command, "tv snapshot NASDAQ:AAPL");
         assert_eq!(hints[0].reason, "one_symbol_detail");
-        assert!(hints.iter().any(|hint| hint.kind == "observe_chart"));
-        assert!(hints.iter().any(|hint| hint.kind == "chart_quote"));
-        assert!(hints.iter().any(|hint| hint.kind == "screenshot"));
+        let kinds = hints
+            .iter()
+            .map(|hint| hint.kind.as_str())
+            .collect::<Vec<_>>();
+        assert_eq!(
+            kinds,
+            vec![
+                FOLLOW_UP_SNAPSHOT,
+                FOLLOW_UP_OBSERVE_CHART,
+                FOLLOW_UP_CHART_QUOTE,
+                FOLLOW_UP_SCREENSHOT,
+            ]
+        );
+        assert!(!hints.iter().any(|hint| hint.kind == "quote_chart"));
+    }
+
+    #[test]
+    fn missing_evidence_uses_stable_follow_up_vocabulary() {
+        let sections = SnapshotSections {
+            quote: SnapshotSection {
+                ok: false,
+                data: None,
+                error: Some(SnapshotSectionError {
+                    section: "quote".to_string(),
+                    kind: ErrorKind::InternalApiUnavailable,
+                    message: "temporary failure".to_string(),
+                    details: None,
+                }),
+            },
+            info: SnapshotSection {
+                ok: false,
+                data: None,
+                error: Some(SnapshotSectionError {
+                    section: "info".to_string(),
+                    kind: ErrorKind::InternalApiUnavailable,
+                    message: "temporary failure".to_string(),
+                    details: None,
+                }),
+            },
+            fundamentals: SnapshotSection {
+                ok: true,
+                data: Some(json!({
+                    "symbol": "NASDAQ:AAPL",
+                    "missing_fields": ["next_dividend_date"]
+                })),
+                error: None,
+            },
+        };
+        let summary = missing_summary(&sections);
+        let evidence = missing_evidence(&sections, &summary);
+        let follow_ups = evidence
+            .iter()
+            .map(|entry| entry.suggested_follow_up.as_str())
+            .collect::<Vec<_>>();
+
+        assert_eq!(
+            follow_ups,
+            vec![
+                FOLLOW_UP_CHART_QUOTE,
+                FOLLOW_UP_SNAPSHOT,
+                FOLLOW_UP_SNAPSHOT
+            ]
+        );
+        assert!(!follow_ups.contains(&"quote_chart"));
     }
 
     #[test]
