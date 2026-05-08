@@ -123,6 +123,13 @@ each other and remained tied to quote-session streaming values in the
 public-safe summary, so those fields still must not be treated as scanner-style
 `extended_hours` values.
 
+The visible TradingView Desktop right-side detail panel is another distinct
+Desktop-backed visible UI source. A postmarket RKLB probe showed a visible
+after-market price in that panel while scanner REST, chart main-series quote,
+and the current quote-session selected field set reported different values.
+Until a later contract explicitly exposes this source, treat it as opt-in
+source-discovery evidence, not as part of `tv quote --source chart`.
+
 ### Desktop-backed operation
 
 `requires_desktop`: yes. `may_mutate`: yes. `fallback_allowed`: only before a

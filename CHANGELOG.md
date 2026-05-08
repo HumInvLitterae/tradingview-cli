@@ -23,6 +23,10 @@ package version omits the leading `v`.
   `pre-market` phase spellings match the `postmarket` / `premarket` expected
   phases, and recorded public-safe postmarket evidence without adding public
   pre/post quote payload fields.
+- Added an opt-in ignored live smoke for Desktop visible after-hours panel
+  source discovery, comparing scanner REST, chart main-series quote,
+  quote-session selected fields, and compact right-panel visible text without
+  adding public quote payload fields.
 - Added additive `tv snapshot <SYMBOL>` contract metadata, including a
   command-local contract marker, coverage summary, missing-evidence readback,
   and machine-readable follow-up hints.
