@@ -122,19 +122,59 @@ fn assert_snapshot_success(symbol: &str, envelope: &Value, elapsed: Duration) {
     let sections = data.get("sections").unwrap_or(&Value::Null);
     let errors = data.get("errors").and_then(Value::as_array);
     let next_action_hints = data.get("next_action_hints").and_then(Value::as_array);
+    let missing_evidence = data.get("missing_evidence").and_then(Value::as_array);
+    let follow_up_hints = data.get("follow_up_hints").and_then(Value::as_array);
+    let summary = data.get("summary").unwrap_or(&Value::Null);
 
     if envelope.get("success").and_then(Value::as_bool) != Some(true)
         || envelope.get("command").and_then(Value::as_str) != Some("snapshot")
+        || data.get("contract_version").and_then(Value::as_str) != Some("snapshot.v1")
         || data.get("source").and_then(Value::as_str) != Some("snapshot_desktop_free")
         || data.get("source_category").and_then(Value::as_str) != Some("desktop_free_read")
         || data.get("requires_desktop").and_then(Value::as_bool) != Some(false)
         || data.get("non_mutating").and_then(Value::as_bool) != Some(true)
         || data.get("requested_symbol").and_then(Value::as_str) != Some(symbol)
+        || summary
+            .get("coverage_status")
+            .and_then(Value::as_str)
+            .is_none()
+        || summary.get("field_coverage").is_none()
         || errors.is_none()
+        || missing_evidence.is_none()
+        || follow_up_hints.is_none()
         || next_action_hints.is_none()
     {
         panic!(
             "snapshot live smoke metadata validation failed: requested_symbol={} elapsed_ms={} summary={}",
+            symbol,
+            elapsed.as_millis(),
+            summarize_envelope(envelope)
+        );
+    }
+    if !matches!(
+        summary.get("coverage_status").and_then(Value::as_str),
+        Some("complete" | "partial")
+    ) {
+        panic!(
+            "snapshot live smoke invalid coverage status: requested_symbol={} elapsed_ms={} summary={}",
+            symbol,
+            elapsed.as_millis(),
+            summarize_envelope(envelope)
+        );
+    }
+    let follow_up_hints = follow_up_hints.unwrap();
+    if !follow_up_hints
+        .iter()
+        .any(|hint| hint.get("kind").and_then(Value::as_str) == Some("chart_quote"))
+        || !follow_up_hints
+            .iter()
+            .any(|hint| hint.get("kind").and_then(Value::as_str) == Some("observe_chart"))
+        || !follow_up_hints
+            .iter()
+            .any(|hint| hint.get("kind").and_then(Value::as_str) == Some("screenshot"))
+    {
+        panic!(
+            "snapshot live smoke missing follow-up hints: requested_symbol={} elapsed_ms={} summary={}",
             symbol,
             elapsed.as_millis(),
             summarize_envelope(envelope)
@@ -220,18 +260,30 @@ fn summarize_envelope(envelope: &Value) -> String {
     let data = envelope.get("data").unwrap_or(&Value::Null);
     let error = envelope.get("error").unwrap_or(&Value::Null);
     format!(
-        "success={} command={} kind={} message={} requested={} source={} category={} sections={} errors={} hints={}",
+        "success={} command={} kind={} message={} requested={} contract={} source={} category={} coverage={} sections={} errors={} missing_evidence={} hints={} next_hints={}",
         bool_field(envelope, "success"),
         string_field(envelope, "command").unwrap_or("<missing>"),
         string_field(error, "kind").unwrap_or("<none>"),
         string_field(error, "message").unwrap_or("<none>"),
         string_field(data, "requested_symbol").unwrap_or("<missing>"),
+        string_field(data, "contract_version").unwrap_or("<missing>"),
         string_field(data, "source").unwrap_or("<missing>"),
         string_field(data, "source_category").unwrap_or("<missing>"),
+        data.pointer("/summary/coverage_status")
+            .and_then(Value::as_str)
+            .unwrap_or("<missing>"),
         section_summary(envelope),
         data.get("errors")
             .and_then(Value::as_array)
             .map(|errors| errors.len().to_string())
+            .unwrap_or_else(|| "<missing>".to_string()),
+        data.get("missing_evidence")
+            .and_then(Value::as_array)
+            .map(|items| items.len().to_string())
+            .unwrap_or_else(|| "<missing>".to_string()),
+        data.get("follow_up_hints")
+            .and_then(Value::as_array)
+            .map(|hints| hints.len().to_string())
             .unwrap_or_else(|| "<missing>".to_string()),
         data.get("next_action_hints")
             .and_then(Value::as_array)

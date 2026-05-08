@@ -57,6 +57,8 @@ Choose follow-up reads based on the question:
   more evidence.
 - `tv snapshot <SYMBOL>` for a one-symbol Desktop-free evidence packet that
   combines quote, info, and fundamentals sections before chart observation.
+  Read `summary` for coverage, `missing_evidence[]` for follow-up routing, and
+  raw `sections` for the evidence itself.
 - `tv info <SYMBOL>` for symbol metadata when that is the only needed section.
 - `tv quote <SYMBOL>` or `tv quotes <SYMBOL>...` for scanner-backed quote
   checks.

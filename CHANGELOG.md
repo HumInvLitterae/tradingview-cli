@@ -19,6 +19,9 @@ package version omits the leading `v`.
 - Clarified the quote-session live smoke timing guard so expected-phase
   mismatches are reported as `not_yet_in_expected_phase` instead of being
   mistaken for postmarket or premarket evidence.
+- Added additive `tv snapshot <SYMBOL>` contract metadata, including a
+  command-local contract marker, coverage summary, missing-evidence readback,
+  and machine-readable follow-up hints.
 
 ### Documentation
 

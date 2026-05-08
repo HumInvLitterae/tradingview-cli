@@ -60,7 +60,9 @@ construction, not on duplicating the full source taxonomy.
    symbol ranking.
    Use `tv quotes <SYMBOL>...` only when ordered quote fields are enough. Use
    `tv snapshot <SYMBOL>` for one-symbol first-pass evidence before mutating
-   the chart; it combines quote, symbol info, and fundamentals sections. Use
+   the chart; it combines quote, symbol info, and fundamentals sections.
+   Snapshot `summary` and `missing_evidence[]` provide one-symbol coverage and
+   follow-up routing readback, while raw `sections` remain the evidence. Use
    lower-level `tv quote`, `tv info`, or
    `tv fundamentals <SYMBOL> --group earnings|valuation|dividends|financials`
    only when one section is enough. Preserve
@@ -136,9 +138,10 @@ runtimes.
 Use `tv timeframe <RESOLUTION>` for shared timeframe setup. `tv interval` is
 not a command. Use `tv compare <SYMBOL>...` for multi-symbol Desktop-free
 evidence, `tv snapshot <SYMBOL>` for one-symbol Desktop-free quote, info, and
-fundamentals context, and `tv info <SYMBOL>` or `tv fundamentals <SYMBOL>` with
-`--group` or `--field` only when that narrower section is all you need. Use
-`tv info` without a symbol only for current-chart metadata.
+fundamentals context, including coverage and missing-evidence readback, and
+`tv info <SYMBOL>` or `tv fundamentals <SYMBOL>` with `--group` or `--field`
+only when that narrower section is all you need. Use `tv info` without a
+symbol only for current-chart metadata.
 
 ## Boundaries
 

@@ -45,6 +45,13 @@ fields, not which symbol is better. Per-item `missing_evidence` entries route
 known gaps to stable follow-up kinds such as `snapshot` or `chart_quote`
 without adding reads or changing the source category.
 
+`tv snapshot` uses the same Desktop-free boundary for one-symbol evidence.
+Its contract metadata, coverage summary, missing-evidence readback, and
+machine-readable follow-up hints describe the already collected quote, info,
+and fundamentals sections. They do not trigger chart reads, screenshots,
+retries, ranking, or recommendations, and the raw `sections` remain the source
+of evidence.
+
 ### Desktop-backed read
 
 `requires_desktop`: yes. `may_mutate`: no intended account mutation, though
