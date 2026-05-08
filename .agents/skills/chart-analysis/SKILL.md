@@ -76,7 +76,9 @@ observation surface.
    The visible right-side symbol detail panel can show a distinct after-hours
    price that is not in chart main-series quote or the current quote-session
    selected fields. Treat that as visible UI evidence until a stable CLI
-   payload explicitly exposes it.
+   payload explicitly exposes it. Current source discovery narrowed the
+   observed RKLB postmarket value to the right-side detail widget status/price
+   node, but it remains a visible UI source rather than chart-source quote.
 6. Read visible study values with `tv values` when indicators already exist on
    the chart.
 7. Read Pine drawing-derived levels or zones with `tv data lines`,
