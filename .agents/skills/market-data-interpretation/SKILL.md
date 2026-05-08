@@ -97,7 +97,11 @@ not a stable data API. A bounded CDP Network/WebSocket smoke observed
 symbol-related traffic while the visible value was present, but did not find
 the visible after-hours price token in captured communication candidates; do
 not cite Network traffic as the backing source unless a later stable candidate
-is identified.
+is identified. A later scoped in-page widget probe found the right-panel
+detail widget React chain and regular quote-like props, including current
+session and regular last-price fields, but did not expose the visible
+after-hours price token in compact prop/state hits. Do not describe the visible
+panel after-hours value as backed by a known store source.
 Do not use chart-source quote loops as a multi-symbol realtime batch source.
 They may contend with visible chart mutations, so prefer `tv quotes`, scanner
 reads, `tv compare`, or `tv snapshot` for broad symbol lists unless the

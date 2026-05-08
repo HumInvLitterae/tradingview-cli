@@ -160,7 +160,10 @@ metadata present on the matched node; treat that as a visible UI source until a
 separate contract exposes it. A bounded CDP Network/WebSocket smoke observed
 symbol-related WebSocket traffic while that visible value was present, but did
 not find the visible after-hours price token in captured communication
-candidates.
+candidates. A later scoped in-page widget inspection found the right-panel
+detail widget React chain and regular quote-like props, including current
+session and regular last-price fields, but did not expose the visible
+after-hours price token in compact prop/state hits.
 
 ## Visual Evidence Recovery
 

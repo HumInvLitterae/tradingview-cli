@@ -33,6 +33,9 @@ package version omits the leading `v`.
 - Added an opt-in ignored CDP Network/WebSocket smoke for after-hours source
   discovery, reporting compact communication candidate summaries without raw
   frames, raw response bodies, or public quote payload changes.
+- Added an opt-in ignored right-panel widget-store smoke for after-hours
+  source discovery, reporting whether scoped React fiber/props/state evidence
+  is exposed around the visible price node without raw DOM or raw state.
 - Added additive `tv snapshot <SYMBOL>` contract metadata, including a
   command-local contract marker, coverage summary, missing-evidence readback,
   and machine-readable follow-up hints.

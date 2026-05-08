@@ -132,6 +132,11 @@ widget's status/price nodes, with React metadata present on the matched node.
 An additional bounded CDP Network/WebSocket smoke observed symbol-related
 WebSocket traffic while the visible value was present, but did not identify a
 captured communication candidate containing the visible after-hours price.
+Scoped in-page widget inspection later found the right-panel detail widget
+React chain and regular quote-like props, including current-session and
+regular last-price fields, but did not expose the visible after-hours price
+token in the compact prop/state hits. The lowest identified source remains
+visible DOM text.
 Until a later contract explicitly exposes this source, treat it as opt-in
 visible-UI source-discovery evidence, not as part of `tv quote --source
 chart`.
