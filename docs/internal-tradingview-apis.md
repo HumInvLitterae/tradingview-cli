@@ -134,7 +134,11 @@ Safety boundary:
   communication candidates. A scoped in-page widget inspection later found the
   right-panel detail widget React chain and regular quote-like props, including
   current-session and regular last-price fields, but did not expose the visible
-  after-hours price token in compact prop/state hits. Do not treat raw DOM,
+  after-hours price token in compact prop/state hits. A bounded WebSocket
+  correlation smoke later sampled visible after-market prices during the same
+  capture window and found exact numeric matches in received WebSocket frame
+  summaries. This supports a push/WebSocket-backed source hypothesis but still
+  does not identify a stable field name or payload schema. Do not treat raw DOM,
   React props, or
   opportunistic Network frames as a stable API or merge the visible value into
   chart-source quote payloads without a separate contract.

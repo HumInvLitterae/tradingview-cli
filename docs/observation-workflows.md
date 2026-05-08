@@ -163,7 +163,11 @@ not find the visible after-hours price token in captured communication
 candidates. A later scoped in-page widget inspection found the right-panel
 detail widget React chain and regular quote-like props, including current
 session and regular last-price fields, but did not expose the visible
-after-hours price token in compact prop/state hits.
+after-hours price token in compact prop/state hits. A later bounded WebSocket
+correlation smoke sampled visible after-market prices during the same capture
+window and found exact numeric matches in received WebSocket frame summaries,
+supporting a push/WebSocket-backed source hypothesis without making it a stable
+payload source yet.
 
 ## Visual Evidence Recovery
 

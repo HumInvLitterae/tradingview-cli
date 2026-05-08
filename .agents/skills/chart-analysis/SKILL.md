@@ -86,6 +86,10 @@ observation surface.
    including current session and regular last-price fields, but did not expose
    the visible after-hours price token in compact prop/state hits, so do not
    claim a known widget-store source for the after-hours value.
+   A bounded WebSocket correlation smoke later found exact numeric matches for
+   sampled visible after-market prices in received WebSocket frame summaries.
+   Treat that as source-discovery evidence only; it is not yet a stable field
+   schema or `quote --source chart` payload.
 6. Read visible study values with `tv values` when indicators already exist on
    the chart.
 7. Read Pine drawing-derived levels or zones with `tv data lines`,

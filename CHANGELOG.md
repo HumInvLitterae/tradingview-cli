@@ -36,6 +36,9 @@ package version omits the leading `v`.
 - Added an opt-in ignored right-panel widget-store smoke for after-hours
   source discovery, reporting whether scoped React fiber/props/state evidence
   is exposed around the visible price node without raw DOM or raw state.
+- Added an opt-in ignored WebSocket correlation smoke for after-hours source
+  discovery, comparing compact visible right-panel price samples with CDP
+  WebSocket numeric candidates without quote-session subscription.
 - Added additive `tv snapshot <SYMBOL>` contract metadata, including a
   command-local contract marker, coverage summary, missing-evidence readback,
   and machine-readable follow-up hints.
@@ -55,6 +58,9 @@ package version omits the leading `v`.
   remain research evidence rather than public payload values.
 - Recorded the pre-`v0.13.0` completion and refactor audit before release
   readiness.
+- Recorded screenshot-backed RKLB evidence that visible right-panel
+  after-market prices can correlate exactly with received WebSocket numeric
+  candidates, while keeping public payload support deferred.
 
 ## v0.12.0 - 2026-05-08
 
