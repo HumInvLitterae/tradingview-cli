@@ -7,6 +7,13 @@ package version omits the leading `v`.
 
 ## Unreleased
 
+### Documentation
+
+- Added the `v0.12.0` roadmap direction for contract-stable evidence
+  follow-up after `v0.11.0`, with the first implementation plan focused on
+  `tv compare` follow-up hint vocabulary, field coverage semantics, coverage
+  status readback, and failure-side contract guards.
+
 ## v0.11.0 - 2026-05-08
 
 ### Added

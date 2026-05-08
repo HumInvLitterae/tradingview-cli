@@ -8,9 +8,10 @@ for release and next-phase planning.
 
 Current plan:
 
-- `tradingview-cli-v0.11.0-release-readiness.md`: prepare the `v0.11.0`
-  release by updating versioned release notes, package metadata, release
-  asset examples, packaging validation evidence, and release guardrails.
+- `tradingview-cli-compare-follow-up-contract.md`: stabilize `tv compare`
+  follow-up hint vocabulary, field coverage semantics, requested-order join
+  rules, coverage status readback, and failure-side contract guards for the
+  first `v0.12.0` implementation slice.
 
 ## Archived plans
 
@@ -133,6 +134,7 @@ Important archived plan categories:
 - v0.10.0 release readiness
 - v0.11 compare contract metadata
 - v0.11 pre-release completion and refactor audit
+- v0.11.0 release readiness
 
 For command contract details, prefer the notes under `docs/notes/` before
 reading archived implementation plans.
