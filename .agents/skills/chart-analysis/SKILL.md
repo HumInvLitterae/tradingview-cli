@@ -73,6 +73,10 @@ observation surface.
    confirmed the semantics. Postmarket `market-status.phase=post-market` is
    useful source evidence, but it is not enough by itself to treat quote-session
    pre/post close fields as scanner-style extended-hours values.
+   The visible right-side symbol detail panel can show a distinct after-hours
+   price that is not in chart main-series quote or the current quote-session
+   selected fields. Treat that as visible UI evidence until a stable CLI
+   payload explicitly exposes it.
 6. Read visible study values with `tv values` when indicators already exist on
    the chart.
 7. Read Pine drawing-derived levels or zones with `tv data lines`,

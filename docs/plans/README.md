@@ -8,13 +8,17 @@ for release and next-phase planning.
 
 Current plan:
 
-- `tradingview-cli-desktop-quote-session-live-evidence.md`: record postmarket
-  Desktop quote-session evidence, harden phase matching for TradingView's
-  hyphenated phase names, and keep premarket evidence waiting for the relevant
-  market phase.
+- `tradingview-cli-desktop-after-hours-panel-source-evidence.md`: identify
+  whether the visible Desktop right-panel after-hours price comes from scanner
+  REST, chart main-series quote, Desktop quote-session fields, or a separate
+  visible UI source.
 
 Recently completed:
 
+- `tradingview-cli-desktop-quote-session-live-evidence.md`: recorded
+  postmarket Desktop quote-session phase evidence and hardened phase matching
+  for TradingView's hyphenated phase names. Premarket evidence remains waiting
+  for the relevant market phase.
 - `tradingview-cli-v0.13-pre-release-audit.md`: audited completed v0.13
   source/session boundary and contract-hardening work before release
   readiness.

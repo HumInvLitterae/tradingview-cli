@@ -148,6 +148,14 @@ the selected quote-session pre/post close fields matched each other and
 remained tied to quote-session streaming values in the public-safe summary, so
 this is still not scanner-style `extended_hours` evidence.
 
+The Desktop right-side symbol detail panel can also show a visible
+after-market price that differs from scanner REST, chart main-series quote, and
+the current quote-session selected fields. That value is useful for source
+discovery, but it is not yet part of a stable public `tv quote` payload. When
+the visible panel matters, use the dedicated opt-in smoke or screenshot-backed
+inspection rather than assuming `quote --source chart` contains the same
+after-hours value.
+
 ## Visual Evidence Recovery
 
 Structured fields should come first. Use screenshots only when readiness,
