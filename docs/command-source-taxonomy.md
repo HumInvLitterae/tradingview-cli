@@ -39,6 +39,9 @@ then inspect the ordered `items` evidence for the actual comparison.
 `contract_version`, `requested_index`, per-item `follow_up_hints`, and
 `summary.field_coverage` are also readback metadata; they do not change the
 Desktop-free source boundary and do not imply ranking or recommendation.
+`summary.coverage_status` is evidence coverage only: `complete`, `partial`, or
+`blocked` describes whether requested items have usable sections and missing
+fields, not which symbol is better.
 
 ### Desktop-backed read
 

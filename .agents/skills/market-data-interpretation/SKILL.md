@@ -90,9 +90,10 @@ evidence comparison, not scoring or recommendation. Read `summary` first for
 resolution counts, section success counts, missing counts, and requested to
 resolved symbol mappings, then inspect raw `items[]` before drawing
 substantive conclusions. Treat `contract_version`, `requested_index`,
-per-item `follow_up_hints`, and `summary.field_coverage` as downstream
-readback helpers for schema guards, input-order joins, follow-up surfaces, and
-evidence gaps. They do not rank candidates or replace raw evidence. Use
+per-item `follow_up_hints`, `summary.field_coverage`, and
+`summary.coverage_status` as downstream readback helpers for schema guards,
+input-order joins, follow-up surfaces, and evidence gaps. `coverage_status`
+describes evidence completeness only; it is not a ranking or recommendation. Use
 `tv quotes` when only ordered quote fields are needed, and use
 `tv snapshot <SYMBOL>` for a single symbol that needs more detail after
 comparison.

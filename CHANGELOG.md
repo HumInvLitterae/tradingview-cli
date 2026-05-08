@@ -7,6 +7,12 @@ package version omits the leading `v`.
 
 ## Unreleased
 
+### Added
+
+- Added additive `summary.coverage_status` readback to `tv compare
+  <SYMBOL>...` so downstream tools can distinguish complete, partial, and
+  blocked evidence coverage without ranking or recommending symbols.
+
 ### Documentation
 
 - Added the `v0.12.0` roadmap direction for contract-stable evidence
