@@ -8,10 +8,10 @@ for release and next-phase planning.
 
 Current plan:
 
-- `tradingview-cli-compare-missing-evidence.md`: add item-level
-  `missing_evidence` readback to `tv compare` so downstream agents can route
-  incomplete quote, info, and fundamentals evidence to explicit follow-up
-  surfaces without changing command behavior.
+- `tradingview-cli-v0.12-pre-release-audit.md`: confirm the completed v0.12
+  compare metadata work is release-ready, verify docs and skills describe the
+  contract correctly, and decide whether to proceed to `v0.12.0` release
+  readiness.
 
 ## Archived plans
 
@@ -136,6 +136,7 @@ Important archived plan categories:
 - v0.11 pre-release completion and refactor audit
 - v0.11.0 release readiness
 - v0.12 compare follow-up contract polish
+- v0.12 compare missing evidence readback
 
 For command contract details, prefer the notes under `docs/notes/` before
 reading archived implementation plans.
