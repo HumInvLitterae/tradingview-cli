@@ -7,6 +7,8 @@ package version omits the leading `v`.
 
 ## Unreleased
 
+## v0.12.0 - 2026-05-08
+
 ### Added
 
 - Added additive `summary.coverage_status` readback to `tv compare
@@ -22,6 +24,8 @@ package version omits the leading `v`.
   follow-up after `v0.11.0`, with the first implementation plan focused on
   `tv compare` follow-up hint vocabulary, field coverage semantics, coverage
   status readback, and failure-side contract guards.
+- Recorded the pre-`v0.12.0` completion and refactor audit before release
+  readiness.
 
 ## v0.11.0 - 2026-05-08
 
