@@ -128,6 +128,11 @@ pub async fn quote(
             "Quote command could not restore the original chart symbol",
         )
         .with_details(json!({
+            "source": "chart_api",
+            "source_category": "desktop_backed_read",
+            "requires_desktop": true,
+            "non_mutating": !switch_performed,
+            "session_boundary": chart_quote_session_boundary(),
             "requested_symbol": requested_symbol,
             "original_symbol": original_symbol,
             "observed_symbol": restore_observed,
@@ -463,6 +468,7 @@ fn readiness_timeout_error(
         "source_category": "desktop_backed_read",
         "requires_desktop": true,
         "non_mutating": false,
+        "session_boundary": chart_quote_session_boundary(),
         "requested_symbol": requested_symbol,
         "original_symbol": original_symbol,
         "observed_symbol": timeout.quote_symbol,
@@ -501,6 +507,7 @@ fn add_restore_details_to_readiness_error(
             "source_category": "desktop_backed_read",
             "requires_desktop": true,
             "non_mutating": !switch_performed,
+            "session_boundary": chart_quote_session_boundary(),
             "requested_symbol": requested_symbol,
             "original_symbol": original_symbol,
             "restore_observed_symbol": restore_observed,
@@ -561,6 +568,7 @@ async fn switch_quote_symbol(
             "source_category": "desktop_backed_read",
             "requires_desktop": true,
             "non_mutating": false,
+            "session_boundary": chart_quote_session_boundary(),
             "requested_symbol": symbol,
             "observed_symbol": observed,
             "phase": phase,
@@ -586,6 +594,7 @@ fn add_quote_metadata(quote: &mut Value, metadata: QuoteMetadata) {
             "source_category": "desktop_backed_read",
             "requires_desktop": true,
             "non_mutating": !metadata.switch_performed,
+            "session_boundary": chart_quote_session_boundary(),
             "requested_symbol": metadata.requested_symbol,
             "original_symbol": metadata.original_symbol,
             "observed_symbol": metadata.observed_symbol,
@@ -616,6 +625,7 @@ fn ensure_quote_matches_request(
         "source_category": "desktop_backed_read",
         "requires_desktop": true,
         "non_mutating": !switch_performed,
+        "session_boundary": chart_quote_session_boundary(),
         "requested_symbol": requested_symbol,
         "observed_symbol": observed_symbol,
         "switch_performed": switch_performed,
@@ -626,6 +636,17 @@ fn ensure_quote_matches_request(
         },
         "next_action_hint": "Run `tv tab list` to confirm the selected chart target, then retry with `tv --target-id <ID> quote <SYMBOL> --source chart`. Use `--source scanner` only if scanner feed freshness is acceptable.",
     })))
+}
+
+fn chart_quote_session_boundary() -> Value {
+    json!({
+        "price_source": "selected_chart_main_series_last_bar",
+        "price_session": "unknown",
+        "extended_hours_status": "not_provided",
+        "extended_hours_guaranteed": false,
+        "scanner_extended_hours_included": false,
+        "reason": "chart_source_does_not_expose_scanner_extended_hours",
+    })
 }
 
 fn bare_symbol(symbol: &str) -> String {
@@ -753,6 +774,27 @@ mod tests {
     use super::*;
     use tradingview_core::ErrorKind;
 
+    fn assert_chart_session_boundary(value: &Value) {
+        assert_eq!(
+            value["session_boundary"]["price_source"],
+            "selected_chart_main_series_last_bar"
+        );
+        assert_eq!(value["session_boundary"]["price_session"], "unknown");
+        assert_eq!(
+            value["session_boundary"]["extended_hours_status"],
+            "not_provided"
+        );
+        assert_eq!(
+            value["session_boundary"]["extended_hours_guaranteed"],
+            false
+        );
+        assert_eq!(
+            value["session_boundary"]["scanner_extended_hours_included"],
+            false
+        );
+        assert!(value.get("extended_hours").is_none());
+    }
+
     #[test]
     fn bare_symbol_compares_exchange_prefixed_inputs() {
         assert_eq!(bare_symbol("NASDAQ:AAPL"), "AAPL");
@@ -788,6 +830,7 @@ mod tests {
         assert_eq!(result["source_category"], "desktop_backed_read");
         assert_eq!(result["requires_desktop"], true);
         assert_eq!(result["non_mutating"], true);
+        assert_chart_session_boundary(&result);
     }
 
     #[tokio::test]
@@ -812,6 +855,7 @@ mod tests {
         assert_eq!(result["requires_desktop"], true);
         assert_eq!(result["non_mutating"], false);
         assert_eq!(result["freshness_check"]["passed"], true);
+        assert_chart_session_boundary(&result);
     }
 
     #[tokio::test]
@@ -948,6 +992,7 @@ mod tests {
         assert_eq!(details["chart_symbol"], "NASDAQ:AAPL");
         assert_eq!(details["freshness_check"]["quote_symbol_matched"], true);
         assert_eq!(details["freshness_check"]["chart_symbol_matched"], false);
+        assert_chart_session_boundary(&details);
     }
 
     #[tokio::test]

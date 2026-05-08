@@ -105,6 +105,11 @@ Safety boundary:
   look stale. When chart-source quote switches the visible chart, its payload
   reports `non_mutating: false` alongside `switch_performed`, `restored`, and
   `freshness_check`.
+- chart-source quote reads the selected chart main-series last bar. It reports
+  a `session_boundary` object with `price_session: "unknown"` and
+  `extended_hours_status: "not_provided"` because this path does not expose
+  scanner-style premarket or postmarket fields. Do not merge scanner
+  `extended_hours` values into chart-source quote payloads.
 - `ohlcv` depends on the selected chart target's main-series bars collection.
   When the chart API or bars collection is unavailable, it should fail with
   structured readiness details and a target-selection recovery hint rather than

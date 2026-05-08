@@ -84,6 +84,7 @@ fn quote_help_explains_symbol_and_target_selection() {
         .stdout(predicate::str::contains("chart"))
         .stdout(predicate::str::contains("auto"))
         .stdout(predicate::str::contains("extended_hours"))
+        .stdout(predicate::str::contains("session_boundary"))
         .stdout(predicate::str::contains("--target-id"));
 }
 

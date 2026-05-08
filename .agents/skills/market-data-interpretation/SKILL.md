@@ -61,7 +61,12 @@ switching, and post-checks. `tv quote <SYMBOL> --source chart` performs its own
 bounded readiness wait, requires consecutive stable requested-symbol samples,
 and retries once; do not add manual sleep or double-call workarounds
 downstream. If it fails, report the structured freshness details or use scanner
-source explicitly when scanner freshness is acceptable. `tv ohlcv` is
+source explicitly when scanner freshness is acceptable. Chart-source quote
+reports `session_boundary`; treat `price_session: "unknown"` and
+`extended_hours_status: "not_provided"` as meaning the chart source does not
+guarantee scanner-style premarket or postmarket evidence. Use scanner-backed
+`tv quote`, `tv quotes`, `tv snapshot`, or `tv compare` when premarket or
+postmarket fields matter. `tv ohlcv` is
 chart-dependent; do not describe it as Desktop-free historical bars.
 Do not use chart-source quote loops as a multi-symbol realtime batch source.
 They may contend with visible chart mutations, so prefer `tv quotes`, scanner

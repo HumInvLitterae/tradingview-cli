@@ -75,7 +75,9 @@ construction, not on duplicating the full source taxonomy.
    on chart-source quote; concurrent or nearby chart mutations can still
    contend with the visible chart. Prefer Desktop-free reads for broad
    comparison, then use chart-source quote only for finalist symbols that need
-   the selected Desktop feed.
+   the selected Desktop feed. Do not use chart-source quote for premarket or
+   postmarket fields; use scanner-backed `tv quote`, `tv quotes`,
+   `tv snapshot`, or `tv compare` when extended-hours evidence matters.
    Use `TV_EXPERIMENTAL_BARS=1 tv bars <EXCHANGE:SYMBOL> --count <N>` only as
    a lab-gated browserless bars check when experimental WebSocket data is
    acceptable; keep it separate from stable `tv ohlcv` chart evidence.

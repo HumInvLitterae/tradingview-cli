@@ -85,7 +85,7 @@ pub enum Command {
     },
     #[command(
         about = "Get real-time price quote",
-        long_about = "Get a real-time price quote.\n\nWithout SYMBOL, reads the current chart target. With SYMBOL, the default source is Desktop-free scanner REST. Use `--source chart` when you explicitly want the selected TradingView Desktop chart feed, or `--source auto` to prefer chart data and fall back to scanner only when the chart path is unavailable before mutation. Scanner-backed symbol quotes include `time`, `update_mode`, `delay_seconds`, and an additive `extended_hours` object for premarket and postmarket values when TradingView returns them. If more than one TradingView target is open for chart reads, run `tv tab list` and pass `tv --target-id <ID> quote ...`."
+        long_about = "Get a real-time price quote.\n\nWithout SYMBOL, reads the current chart target. With SYMBOL, the default source is Desktop-free scanner REST. Use `--source chart` when you explicitly want the selected TradingView Desktop chart feed, or `--source auto` to prefer chart data and fall back to scanner only when the chart path is unavailable before mutation. Scanner-backed symbol quotes include `time`, `update_mode`, `delay_seconds`, and an additive `extended_hours` object for premarket and postmarket values when TradingView returns them. Chart-source quotes read the selected chart main-series last bar and report `session_boundary`; they do not guarantee scanner-style extended-hours fields. If more than one TradingView target is open for chart reads, run `tv tab list` and pass `tv --target-id <ID> quote ...`."
     )]
     Quote {
         symbol: Option<String>,

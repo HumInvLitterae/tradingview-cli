@@ -27,13 +27,18 @@ the limitation impossible for agents to miss.
   plan.
 - [x] (2026-05-08T09:40Z) Ran docs validation, package script syntax check,
   and public-safety hygiene grep.
-- [ ] Investigate chart-source quote page objects for session and
-  extended-hours evidence.
-- [ ] Decide whether to add chart-source extended-hours metadata or explicit
-  unavailable / not-guaranteed metadata.
-- [ ] Update docs, runtime skills, and tests to prevent source/session
-  misreads.
-- [ ] Commit the completed implementation slice.
+- [x] (2026-05-08T10:35Z) Inspected the chart-source quote adapter and
+  confirmed it reads `chart.symbol()`, `chart.symbolExt()`, and the selected
+  chart main-series `bars.valueAt(lastIndex)` rather than scanner
+  extended-hours fields.
+- [x] (2026-05-08T10:35Z) Chose explicit unavailable / not-guaranteed
+  readback for chart-source quote by adding additive `session_boundary`
+  metadata.
+- [x] (2026-05-08T10:35Z) Updated docs, runtime skills, and tests to prevent
+  source/session misreads.
+- [x] (2026-05-08T10:45Z) Ran focused quote tests, full workspace tests,
+  clippy, metadata, diff check, package script syntax check, and hygiene grep.
+- [x] (2026-05-08T10:50Z) Commit the completed implementation slice.
 
 ## Surprises & Discoveries
 
@@ -41,6 +46,12 @@ the limitation impossible for agents to miss.
   extended-hours fields from chart-source quote implementation.
   Evidence: scanner quote requests explicit premarket/postmarket scanner
   columns, while chart-source quote reads selected chart bars and `symbolExt`.
+
+- Observation: static inspection of the chart-source quote adapter found no
+  existing stable chart-source premarket or postmarket field.
+  Evidence: the adapter builds the quote payload from selected chart symbol
+  metadata and the last main-series bar values: `time`, `open`, `high`, `low`,
+  `close`, `last`, and `volume`.
 
 - Observation: the hygiene grep reported existing policy language, archived
   validation examples, and this plan's safety wording.
@@ -61,11 +72,22 @@ the limitation impossible for agents to miss.
   scanner extended-hours values come from explicit scanner REST columns.
   Date/Author: 2026-05-08 / Codex.
 
+- Decision: Ship `session_boundary` as an explicit not-provided readback
+  instead of adding premarket or postmarket price fields in this slice.
+  Rationale: this prevents agent misreads while preserving source provenance.
+  Date/Author: 2026-05-08 / Codex.
+
 ## Outcomes & Retrospective
 
-Planning completed. The next implementation slice should start from this plan
-and answer the chart-source extended-hours feasibility question with
-public-safe read-only evidence before changing payloads.
+The implementation added additive `session_boundary` metadata to chart-source
+quote payloads and chart-source quote error details. The metadata states that
+the price comes from the selected chart main-series last bar, that the price
+session is unknown, and that scanner-style extended-hours values are not
+provided or guaranteed by this source.
+
+The slice also updated docs and runtime skills so agents use scanner-backed
+`tv quote`, `tv quotes`, `tv snapshot`, or `tv compare` when premarket or
+postmarket fields matter.
 
 ## Context and Orientation
 
@@ -130,6 +152,8 @@ Run, at minimum:
     cargo metadata --no-deps --format-version 1
     git diff --check
     bash -n scripts/stage-release-package-files.sh
+    rg -n '(/Users/|C:\\|USER;|sessionid|cookie|authorization|bearer|raw live payload|account-local|target id|downstream)' README.md AGENTS.md CLAUDE.md CHANGELOG.md docs .agents/skills packaging scripts || true
+    rg -n "session_boundary|extended_hours|premarket|postmarket|quote --source chart|chart_quote|ranking|recommendation|realtime|diagnose|binary split|MCP|daemon" README.md CHANGELOG.md docs .agents/skills packaging/agent/AGENTS.md
 
 Optional live smoke may use `tv readiness`, `tv quote <SYMBOL> --source
 chart`, and `tv quote <SYMBOL> --source scanner`, but tracked docs must contain
@@ -156,7 +180,14 @@ feasibility question with read-only evidence.
 
 Passed:
 
+    cargo test -p tradingview-cli market::quote -- --nocapture
+    cargo test -p tradingview-cli --test cli_contract quote -- --nocapture
+    cargo test -p tradingview-market quote -- --nocapture
+    cargo fmt --check
+    cargo clippy --workspace --all-targets --all-features -- -D warnings
+    cargo test --workspace
+    cargo metadata --no-deps --format-version 1
     git diff --check
     bash -n scripts/stage-release-package-files.sh
-    rg -n "v0\\.13|extended_hours|premarket|postmarket|after-hours|quote --source chart|chart_quote|snapshot|coverage_status|missing_evidence|ranking|recommendation|realtime|diagnose|binary split|MCP|daemon" README.md CHANGELOG.md docs .agents/skills packaging/agent/AGENTS.md
-    rg -n '(/Users/|C:\\|USER;|sessionid|cookie|authorization|bearer|raw live payload|account-local|target id|local validation)' README.md AGENTS.md CLAUDE.md CHANGELOG.md docs .agents/skills packaging scripts || true
+    rg -n '(/Users/|C:\\|USER;|sessionid|cookie|authorization|bearer|raw live payload|account-local|target id|downstream)' README.md AGENTS.md CLAUDE.md CHANGELOG.md docs .agents/skills packaging scripts || true
+    rg -n "session_boundary|extended_hours|premarket|postmarket|quote --source chart|chart_quote|ranking|recommendation|realtime|diagnose|binary split|MCP|daemon" README.md CHANGELOG.md docs .agents/skills packaging/agent/AGENTS.md

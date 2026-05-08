@@ -101,6 +101,14 @@ reads such as `tv compare`, `tv quotes`, `scanner scan`, or `snapshot`; move
 to chart-source quote only for a finalist where the selected chart feed itself
 matters.
 
+Do not use chart-source quote as premarket or postmarket evidence.
+Chart-source quote reports `session_boundary` to make this explicit: the price
+comes from the selected chart main-series last bar, the price session is
+`unknown`, and scanner-style extended-hours fields are not included or
+guaranteed. If a workflow needs `extended_hours.premarket` or
+`extended_hours.postmarket`, use scanner-backed `tv quote`, `tv quotes`,
+`tv snapshot`, or `tv compare` and preserve that Desktop-free source boundary.
+
 ## Visual Evidence Recovery
 
 Structured fields should come first. Use screenshots only when readiness,

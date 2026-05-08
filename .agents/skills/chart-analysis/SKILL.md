@@ -61,7 +61,10 @@ observation surface.
    with scanner fallback is acceptable. Do not add manual sleep or double-call
    loops around chart-source quotes; the CLI handles bounded readiness waiting
    with consecutive stable samples and returns a structured failure if fresh
-   chart bars do not arrive.
+   chart bars do not arrive. Do not treat chart-source quote as premarket or
+   postmarket evidence; read `session_boundary`, and use scanner-backed
+   `tv quote`, `tv quotes`, `tv snapshot`, or `tv compare` when extended-hours
+   fields matter.
 6. Read visible study values with `tv values` when indicators already exist on
    the chart.
 7. Read Pine drawing-derived levels or zones with `tv data lines`,
