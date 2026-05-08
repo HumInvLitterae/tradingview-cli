@@ -8,9 +8,9 @@ for release and next-phase planning.
 
 Current plan:
 
-- `tradingview-cli-follow-up-vocabulary-alignment.md`: align and lock the
-  stable follow-up vocabulary shared by `compare` and `snapshot` metadata
-  without changing command payload shape.
+- `tradingview-cli-v0.13-pre-release-audit.md`: audit the completed v0.13
+  source/session boundary and contract-hardening work before release
+  readiness, without running phase-specific quote-session live evidence.
 
 Active but waiting for market phase:
 
@@ -146,6 +146,7 @@ Important archived plan categories:
 - v0.12.0 release readiness
 - v0.13 chart-source quote session-boundary metadata
 - v0.13 snapshot contract metadata alignment
+- v0.13 follow-up vocabulary alignment
 
 For command contract details, prefer the notes under `docs/notes/` before
 reading archived implementation plans.
