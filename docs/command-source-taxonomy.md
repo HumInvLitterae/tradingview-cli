@@ -97,6 +97,14 @@ use scanner-backed `tv quote`, `tv quotes`, `tv snapshot`, or `tv compare`
 instead. The CLI does not inject scanner `extended_hours` values into
 chart-source payloads.
 
+TradingView Desktop also exposes a page quote session that can return
+`premarket_*`, `postmarket_*`, and `market-status` field names. Treat that as a
+separate Desktop quote-session evidence candidate, not as the selected chart
+main-series quote. Regular-session probes showed those pre/post fields can
+track current streaming values rather than scanner-backed premarket values, so
+postmarket or premarket live evidence is required before exposing them as a
+stable payload source.
+
 ### Desktop-backed operation
 
 `requires_desktop`: yes. `may_mutate`: yes. `fallback_allowed`: only before a
