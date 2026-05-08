@@ -142,6 +142,25 @@ impl CdpClient {
         wait_for_response(&mut self.stream, id, self.timeout).await
     }
 
+    pub async fn next_event(&mut self, timeout: Duration) -> Result<Option<Value>, AppError> {
+        loop {
+            let Some(message) = tokio::time::timeout(timeout, self.stream.next())
+                .await
+                .map_err(|_| AppError::new(ErrorKind::Timeout, "CDP event wait timed out"))?
+            else {
+                return Err(AppError::new(
+                    ErrorKind::Connection,
+                    "CDP connection closed",
+                ));
+            };
+            let message = message.map_err(map_ws_error)?;
+            let Some(value) = parse_event_message(message)? else {
+                continue;
+            };
+            return Ok(Some(value));
+        }
+    }
+
     fn next_request_id(&mut self) -> u64 {
         let id = self.next_id;
         self.next_id += 1;
@@ -301,6 +320,27 @@ fn parse_response_message(
     }
 }
 
+fn parse_event_message(message: Message) -> Result<Option<Value>, AppError> {
+    match message {
+        Message::Text(text) => {
+            let value: Value = serde_json::from_str(&text).map_err(|err| {
+                AppError::new(ErrorKind::Connection, format!("Invalid CDP JSON: {err}"))
+            })?;
+            if value.get("method").and_then(Value::as_str).is_some() {
+                Ok(Some(value))
+            } else {
+                Ok(None)
+            }
+        }
+        Message::Binary(_) | Message::Ping(_) | Message::Pong(_) => Ok(None),
+        Message::Close(_) => Err(AppError::new(
+            ErrorKind::Connection,
+            "CDP connection closed",
+        )),
+        Message::Frame(_) => Ok(None),
+    }
+}
+
 fn match_response_value(request_id: u64, value: Value) -> Option<Result<Value, AppError>> {
     if value.get("id").and_then(Value::as_u64) != Some(request_id) {
         return None;
@@ -349,6 +389,19 @@ mod tests {
         let event = json!({ "method": "Runtime.consoleAPICalled", "params": {} });
 
         assert!(match_response_value(7, event).is_none());
+    }
+
+    #[test]
+    fn parses_cdp_event_messages() {
+        let event = Message::Text(
+            json!({ "method": "Network.webSocketFrameReceived", "params": {} })
+                .to_string()
+                .into(),
+        );
+
+        let parsed = parse_event_message(event).unwrap().unwrap();
+
+        assert_eq!(parsed["method"], "Network.webSocketFrameReceived");
     }
 
     #[test]

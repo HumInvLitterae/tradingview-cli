@@ -53,8 +53,8 @@ pub use layout::{
     watchlist_add_bulk, watchlist_get, watchlist_remove,
 };
 pub use market::{
-    bars, compare_symbols, fundamentals_symbol, ohlcv_bars, ohlcv_summary, quote, quote_symbol,
-    quote_symbols, snapshot_symbol, symbol_info_direct, symbol_search,
+    bars, compare_symbols, fundamentals_symbol, ohlcv_bars, ohlcv_summary, quote, quote_data,
+    quote_symbol, quote_symbols, snapshot_symbol, symbol_info_direct, symbol_search,
 };
 pub use observe::observe_readiness_event;
 pub use pine::{
