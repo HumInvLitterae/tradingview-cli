@@ -8,13 +8,17 @@ for release and next-phase planning.
 
 Current plan:
 
-- `tradingview-cli-desktop-after-hours-panel-source-evidence.md`: identify
-  whether the visible Desktop right-panel after-hours price comes from scanner
-  REST, chart main-series quote, Desktop quote-session fields, or a separate
-  visible UI source.
+- `tradingview-cli-desktop-after-hours-network-source-evidence.md`: inspect
+  CDP Network and WebSocket events in an opt-in smoke to look for a
+  lower-level communication source behind the visible Desktop right-panel
+  after-hours price.
 
 Recently completed:
 
+- `tradingview-cli-desktop-after-hours-panel-source-evidence.md`: identified
+  the visible Desktop right-panel after-hours price as a separate visible UI
+  source and narrowed the RKLB value to the right-side detail widget status /
+  price nodes.
 - `tradingview-cli-desktop-quote-session-live-evidence.md`: recorded
   postmarket Desktop quote-session phase evidence and hardened phase matching
   for TradingView's hyphenated phase names. Premarket evidence remains waiting

@@ -128,9 +128,12 @@ Safety boundary:
   and the current quote-session selected field set report different values.
   A lower-level rerun narrowed the visible value to the detail widget's
   status/price nodes, with React metadata present on the matched node. This is
-  source-discovery evidence only; do not treat raw DOM or React props as a
-  stable API or merge the visible value into chart-source quote payloads
-  without a separate contract.
+  source-discovery evidence only. A bounded CDP Network/WebSocket smoke
+  observed symbol-related WebSocket traffic while the visible value was
+  present, but did not find the visible after-hours price token in captured
+  communication candidates. Do not treat raw DOM, React props, or opportunistic
+  Network frames as a stable API or merge the visible value into chart-source
+  quote payloads without a separate contract.
 - `ohlcv` depends on the selected chart target's main-series bars collection.
   When the chart API or bars collection is unavailable, it should fail with
   structured readiness details and a target-selection recovery hint rather than

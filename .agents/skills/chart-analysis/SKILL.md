@@ -79,6 +79,9 @@ observation surface.
    payload explicitly exposes it. Current source discovery narrowed the
    observed RKLB postmarket value to the right-side detail widget status/price
    node, but it remains a visible UI source rather than chart-source quote.
+   A bounded CDP Network/WebSocket smoke did not find the visible price token
+   in captured communication candidates, so do not treat Network traffic as a
+   confirmed backing source yet.
 6. Read visible study values with `tv values` when indicators already exist on
    the chart.
 7. Read Pine drawing-derived levels or zones with `tv data lines`,
