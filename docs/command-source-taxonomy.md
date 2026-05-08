@@ -141,14 +141,13 @@ found exact numeric matches in received WebSocket frame summaries. That
 supports a push/WebSocket-backed source hypothesis. A follow-up HAR/live pass
 narrowed the current best candidate to `qsd.rtc` in TradingView quote-data
 WebSocket messages, with `rch` and `rchp` acting like regular-close-relative
-change readbacks. This is still source discovery, not a stable public quote
-payload contract.
-Until a later contract explicitly exposes this source, treat it as opt-in
-visible-UI source-discovery evidence, not as part of `tv quote --source
-chart`.
-If this becomes a public CLI read, it should be exposed as a separately
-labeled Desktop-backed quote-data source rather than being folded into
-chart-source quote or scanner REST extended-hours fields.
+change readbacks. This now has an explicit bounded read surface:
+`tv quote <SYMBOL> --source quote-data`. The payload is source-labeled as
+Desktop-backed WebSocket quote-data readback and remains separate from
+`tv quote --source chart` and scanner REST `extended_hours`. It should not be
+used as a multi-symbol realtime feed, and if no matching `qsd.rtc` arrives
+during the bounded wait it returns structured unavailable details rather than
+guessed data.
 
 ### Desktop-backed operation
 

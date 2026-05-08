@@ -45,6 +45,9 @@ package version omits the leading `v`.
 - Added a source-design plan for possible Desktop quote-data `qsd.rtc`
   support, keeping it separate from chart-source quote and scanner
   extended-hours payloads.
+- Added `tv quote <SYMBOL> --source quote-data` for explicit bounded
+  Desktop-backed WebSocket quote-data readback such as `qsd.rtc`, without
+  merging it into chart-source quote or scanner extended-hours payloads.
 - Added additive `tv snapshot <SYMBOL>` contract metadata, including a
   command-local contract marker, coverage summary, missing-evidence readback,
   and machine-readable follow-up hints.

@@ -8,13 +8,16 @@ for release and next-phase planning.
 
 Current plan:
 
-- `tradingview-cli-desktop-quote-data-rtc-source-design.md`: fix the source
-  boundary and feasibility criteria for treating TradingView `qsd.rtc`
-  quote-data WebSocket readback as a possible future `quote-data` source,
-  without mixing it into chart-source quote or scanner extended-hours payloads.
+- `tradingview-cli-quote-data-source.md`: add the explicit
+  `tv quote <SYMBOL> --source quote-data` source for bounded Desktop-backed
+  TradingView `qsd.rtc` quote-data readback without mixing it into
+  chart-source quote or scanner extended-hours payloads.
 
 Recently completed:
 
+- `tradingview-cli-desktop-quote-data-rtc-source-design.md`: fixed the source
+  boundary and feasibility criteria for treating TradingView `qsd.rtc`
+  quote-data WebSocket readback as a possible future `quote-data` source.
 - `tradingview-cli-after-hours-websocket-correlation.md`: correlated compact
   right-side visible after-hours price samples with bounded CDP WebSocket
   quote-data candidates such as `qsd.rtc`, while avoiding quote-session

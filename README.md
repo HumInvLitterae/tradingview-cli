@@ -144,6 +144,15 @@ with readiness details and then follows the selected chart's last bar. Use the
 lower-level `tv stream ...` commands when you already know which specific chart
 sample type you need.
 
+For an explicit Desktop-backed WebSocket quote-data readback, use:
+
+```bash
+tv quote NASDAQ:RKLB --source quote-data
+```
+
+This source reports TradingView quote-data fields such as `qsd.rtc` separately
+from chart main-series quotes and scanner `extended_hours`.
+
 Experimental browserless historical bars are lab-gated:
 
 ```bash

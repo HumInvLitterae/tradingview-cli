@@ -1167,6 +1167,10 @@ async fn dispatch_quote(
             ErrorKind::Validation,
             "`tv quote --source scanner` requires SYMBOL",
         )),
+        (None, Some(QuoteSource::QuoteData)) => Err(AppError::new(
+            ErrorKind::Validation,
+            "`tv quote --source quote-data` requires SYMBOL",
+        )),
         (None, _) => {
             let mut runtime = connect_runtime(config).await?;
             ops::quote(&mut runtime, None).await
@@ -1175,6 +1179,10 @@ async fn dispatch_quote(
         (Some(symbol), Some(QuoteSource::Chart)) => {
             let mut runtime = connect_runtime(config).await?;
             ops::quote(&mut runtime, Some(symbol)).await
+        }
+        (Some(symbol), Some(QuoteSource::QuoteData)) => {
+            let mut runtime = connect_runtime(config).await?;
+            ops::quote_data(&mut runtime, symbol).await
         }
         (Some(symbol), Some(QuoteSource::Auto)) => match connect_runtime(config).await {
             Ok(mut runtime) => ops::quote(&mut runtime, Some(symbol)).await,

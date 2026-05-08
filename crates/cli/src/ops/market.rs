@@ -2,6 +2,7 @@ mod bars;
 mod direct;
 mod ohlcv;
 mod quote;
+mod quote_data;
 
 pub use bars::bars;
 pub use direct::{
@@ -10,3 +11,4 @@ pub use direct::{
 };
 pub use ohlcv::{ohlcv_bars, ohlcv_summary};
 pub use quote::quote;
+pub use quote_data::quote_data;

@@ -167,13 +167,12 @@ after-hours price token in compact prop/state hits. A later bounded WebSocket
 correlation smoke sampled visible after-market prices during the same capture
 window and found exact numeric matches in received WebSocket frame summaries,
 supporting a push/WebSocket-backed source hypothesis without making it a stable
-payload source yet. A follow-up HAR/live pass makes `qsd.rtc` the strongest
+payload source yet. A follow-up HAR/live pass made `qsd.rtc` the strongest
 current field-level candidate for that visible after-market value, while
-`lp`/`regular_close` remain regular close-like readbacks. Treat `qsd.rtc` as
-source-discovery evidence only until a separate contract exposes it. If that
-contract is added later, it should be a separately labeled Desktop quote-data
-read, not an implicit extension of `tv quote --source chart` and not a merge
-with scanner REST `extended_hours`.
+`lp`/`regular_close` remain regular close-like readbacks. Use
+`tv quote <SYMBOL> --source quote-data` when that explicit Desktop-backed
+quote-data readback is needed. It is not an implicit extension of
+`tv quote --source chart` and does not merge scanner REST `extended_hours`.
 
 ## Visual Evidence Recovery
 
