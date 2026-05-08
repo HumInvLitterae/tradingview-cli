@@ -117,8 +117,11 @@ Safety boundary:
   `session-postmarket`, `premarket_close`, and `postmarket_close`. This is not
   the same source as chart main-series bars. During regular session, these
   pre/post fields can track current streaming values rather than scanner-backed
-  extended-hours values, so treat them as experimental live evidence until
-  postmarket and premarket behavior is confirmed.
+  extended-hours values. A postmarket probe observed `market-status.phase` as
+  `post-market`, but the selected pre/post close fields matched each other and
+  remained tied to quote-session streaming values, so treat them as
+  experimental live evidence until both postmarket and premarket behavior are
+  better understood.
 - `ohlcv` depends on the selected chart target's main-series bars collection.
   When the chart API or bars collection is unavailable, it should fail with
   structured readiness details and a target-selection recovery hint rather than

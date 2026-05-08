@@ -366,7 +366,9 @@ fn assert_probe_result(
         selected_probe_summary(probe)
     );
     if let Some(expected) = expected_phase
-        && !observed_phases.iter().any(|phase| phase == expected)
+        && !observed_phases
+            .iter()
+            .any(|phase| phase_matches_expected(expected, phase))
     {
         let observed = if observed_phases.is_empty() {
             "<missing>".to_string()
@@ -379,6 +381,19 @@ fn assert_probe_result(
         ));
     }
     None
+}
+
+fn phase_matches_expected(expected: &str, observed: &str) -> bool {
+    normalize_phase(expected) == normalize_phase(observed)
+}
+
+fn normalize_phase(phase: &str) -> String {
+    phase
+        .trim()
+        .chars()
+        .filter(|ch| ch.is_ascii_alphanumeric())
+        .flat_map(char::to_lowercase)
+        .collect()
 }
 
 fn scanner_summary(envelope: &Value) -> String {
@@ -485,4 +500,18 @@ fn compact_symbol(symbol: &str) -> String {
     } else {
         format!("{}...", &symbol[..32])
     }
+}
+
+#[test]
+fn phase_matching_accepts_tradingview_extended_hours_aliases() {
+    assert!(phase_matches_expected("postmarket", "post-market"));
+    assert!(phase_matches_expected("post-market", "postmarket"));
+    assert!(phase_matches_expected("premarket", "pre-market"));
+    assert!(phase_matches_expected("pre-market", "premarket"));
+}
+
+#[test]
+fn phase_matching_keeps_regular_distinct_from_extended_hours() {
+    assert!(!phase_matches_expected("postmarket", "regular"));
+    assert!(!phase_matches_expected("premarket", "regular"));
 }

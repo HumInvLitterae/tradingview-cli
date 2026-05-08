@@ -8,15 +8,16 @@ for release and next-phase planning.
 
 Current plan:
 
-- `tradingview-cli-v0.13-pre-release-audit.md`: audit the completed v0.13
+- `tradingview-cli-desktop-quote-session-live-evidence.md`: record postmarket
+  Desktop quote-session evidence, harden phase matching for TradingView's
+  hyphenated phase names, and keep premarket evidence waiting for the relevant
+  market phase.
+
+Recently completed:
+
+- `tradingview-cli-v0.13-pre-release-audit.md`: audited completed v0.13
   source/session boundary and contract-hardening work before release
-  readiness, without running phase-specific quote-session live evidence.
-
-Active but waiting for market phase:
-
-- `tradingview-cli-desktop-quote-session-live-evidence.md`: collect opt-in
-  TradingView Desktop quote-session premarket/postmarket evidence only after
-  the relevant U.S. market phase begins.
+  readiness.
 
 ## Archived plans
 

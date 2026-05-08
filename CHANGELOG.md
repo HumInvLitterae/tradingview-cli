@@ -19,6 +19,10 @@ package version omits the leading `v`.
 - Clarified the quote-session live smoke timing guard so expected-phase
   mismatches are reported as `not_yet_in_expected_phase` instead of being
   mistaken for postmarket or premarket evidence.
+- Hardened the quote-session live smoke so TradingView's `post-market` and
+  `pre-market` phase spellings match the `postmarket` / `premarket` expected
+  phases, and recorded public-safe postmarket evidence without adding public
+  pre/post quote payload fields.
 - Added additive `tv snapshot <SYMBOL>` contract metadata, including a
   command-local contract marker, coverage summary, missing-evidence readback,
   and machine-readable follow-up hints.

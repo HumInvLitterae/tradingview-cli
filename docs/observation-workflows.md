@@ -143,6 +143,10 @@ and `market-status` field names, but they are not yet a stable public evidence
 surface. During regular session, those fields may not mean the same thing as
 scanner-backed extended-hours values. Treat them as opt-in live evidence for
 source research until postmarket and premarket behavior is confirmed.
+Postmarket probing has shown `market-status.phase=post-market` can appear, but
+the selected quote-session pre/post close fields matched each other and
+remained tied to quote-session streaming values in the public-safe summary, so
+this is still not scanner-style `extended_hours` evidence.
 
 ## Visual Evidence Recovery
 
