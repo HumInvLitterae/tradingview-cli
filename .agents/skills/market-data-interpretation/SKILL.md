@@ -102,6 +102,11 @@ detail widget React chain and regular quote-like props, including current
 session and regular last-price fields, but did not expose the visible
 after-hours price token in compact prop/state hits. Do not describe the visible
 panel after-hours value as backed by a known store source.
+A bounded WebSocket correlation smoke later sampled visible after-market
+prices during the same capture window and found exact numeric matches in
+received WebSocket frame summaries. Treat that as source-discovery evidence
+for a push/WebSocket-backed hypothesis, not as a stable quote payload source or
+field schema.
 Do not use chart-source quote loops as a multi-symbol realtime batch source.
 They may contend with visible chart mutations, so prefer `tv quotes`, scanner
 reads, `tv compare`, or `tv snapshot` for broad symbol lists unless the

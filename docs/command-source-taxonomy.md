@@ -135,8 +135,11 @@ captured communication candidate containing the visible after-hours price.
 Scoped in-page widget inspection later found the right-panel detail widget
 React chain and regular quote-like props, including current-session and
 regular last-price fields, but did not expose the visible after-hours price
-token in the compact prop/state hits. The lowest identified source remains
-visible DOM text.
+token in the compact prop/state hits. A later bounded WebSocket correlation
+smoke sampled the visible after-market price during the same capture window and
+found exact numeric matches in received WebSocket frame summaries. That
+supports a push/WebSocket-backed source hypothesis, but it is still source
+discovery, not a stable public quote payload contract.
 Until a later contract explicitly exposes this source, treat it as opt-in
 visible-UI source-discovery evidence, not as part of `tv quote --source
 chart`.
