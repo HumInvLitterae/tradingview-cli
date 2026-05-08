@@ -8,13 +8,15 @@ for release and next-phase planning.
 
 Current plan:
 
-- `tradingview-cli-desktop-after-hours-network-source-evidence.md`: inspect
-  CDP Network and WebSocket events in an opt-in smoke to look for a
-  lower-level communication source behind the visible Desktop right-panel
-  after-hours price.
+- `tradingview-cli-desktop-after-hours-widget-store-evidence.md`: inspect the
+  right-panel detail widget's React fiber, props, and state in an opt-in smoke
+  to look for an in-page source behind the visible Desktop after-hours price.
 
 Recently completed:
 
+- `tradingview-cli-desktop-after-hours-network-source-evidence.md`: added an
+  opt-in CDP Network/WebSocket smoke and recorded that a bounded RKLB run saw
+  symbol-related traffic but not the visible after-hours price token.
 - `tradingview-cli-desktop-after-hours-panel-source-evidence.md`: identified
   the visible Desktop right-panel after-hours price as a separate visible UI
   source and narrowed the RKLB value to the right-side detail widget status /

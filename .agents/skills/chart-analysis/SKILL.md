@@ -81,7 +81,11 @@ observation surface.
    node, but it remains a visible UI source rather than chart-source quote.
    A bounded CDP Network/WebSocket smoke did not find the visible price token
    in captured communication candidates, so do not treat Network traffic as a
-   confirmed backing source yet.
+   confirmed backing source yet. A later scoped in-page widget probe found the
+   right-panel detail widget React chain and regular quote-like props,
+   including current session and regular last-price fields, but did not expose
+   the visible after-hours price token in compact prop/state hits, so do not
+   claim a known widget-store source for the after-hours value.
 6. Read visible study values with `tv values` when indicators already exist on
    the chart.
 7. Read Pine drawing-derived levels or zones with `tv data lines`,
