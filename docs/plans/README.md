@@ -8,10 +8,10 @@ for release and next-phase planning.
 
 Current plan:
 
-- `tradingview-cli-chart-quote-session-boundary.md`: plan the first v0.13
-  slice around chart-source quote session and extended-hours boundaries so
-  agents do not mistake `quote --source chart` for scanner-backed
-  premarket/postmarket evidence.
+- `tradingview-cli-desktop-quote-session-live-evidence.md`: add an opt-in live
+  smoke for TradingView Desktop quote-session premarket/postmarket fields so
+  postmarket and premarket behavior can be checked before exposing any new
+  public quote payload fields.
 
 ## Archived plans
 
@@ -139,6 +139,7 @@ Important archived plan categories:
 - v0.12 compare missing evidence readback
 - v0.12 pre-release completion and refactor audit
 - v0.12.0 release readiness
+- v0.13 chart-source quote session-boundary metadata
 
 For command contract details, prefer the notes under `docs/notes/` before
 reading archived implementation plans.

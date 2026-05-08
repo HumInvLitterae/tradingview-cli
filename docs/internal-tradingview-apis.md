@@ -110,6 +110,15 @@ Safety boundary:
   `extended_hours_status: "not_provided"` because this path does not expose
   scanner-style premarket or postmarket fields. Do not merge scanner
   `extended_hours` values into chart-source quote payloads.
+- TradingView Desktop chart pages expose a page quote session through
+  `window.getQuoteSessionInstance()` in current observed builds. Read-only
+  probes showed that it supports temporary symbol subscriptions and can return
+  selected fields such as `market-status`, `session-premarket`,
+  `session-postmarket`, `premarket_close`, and `postmarket_close`. This is not
+  the same source as chart main-series bars. During regular session, these
+  pre/post fields can track current streaming values rather than scanner-backed
+  extended-hours values, so treat them as experimental live evidence until
+  postmarket and premarket behavior is confirmed.
 - `ohlcv` depends on the selected chart target's main-series bars collection.
   When the chart API or bars collection is unavailable, it should fail with
   structured readiness details and a target-selection recovery hint rather than

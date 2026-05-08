@@ -205,6 +205,32 @@ and restore status. Switched-symbol reads require at least two stable samples;
 same-symbol fast-path reads may report one stable sample because no chart
 switch occurred.
 
+For Desktop quote-session extended-hours evidence checks, run this only during
+the relevant market phase:
+
+```bash
+TV_LIVE_QUOTE_SESSION_SMOKE=1 TV_LIVE_QUOTE_SESSION_EXPECT_PHASE=postmarket cargo test -p tradingview-cli --test live_quote_session_extended_hours -- --ignored --nocapture
+```
+
+Optional environment variables:
+
+- `TV_LIVE_QUOTE_SESSION_TARGET_ID`: explicit CDP target id when multiple
+  chart targets are open. Do not paste live target ids into tracked docs.
+- `TV_LIVE_QUOTE_SESSION_SYMBOL`: scanner quote symbol, defaulting to `OKLO`.
+- `TV_LIVE_QUOTE_SESSION_QUALIFIED_SYMBOL`: quote-session symbol, defaulting
+  to `NYSE:OKLO`.
+- `TV_LIVE_QUOTE_SESSION_CHART_SYMBOL`: optional current-chart symbol for
+  quote-session variants. If omitted, the test tries to read the current chart
+  symbol through chart-source quote.
+- `TV_LIVE_QUOTE_SESSION_EXPECT_PHASE`: optional expected
+  `market-status.phase`, such as `postmarket` or `premarket`.
+
+The ignored test compares scanner-backed extended-hours fields with selected
+TradingView Desktop quote-session fields. Scanner equality is not required:
+scanner reads may be delayed while Desktop quote-session values may be
+streaming or entitlement-dependent. The test prints only public-safe selected
+field summaries and must not become a CI requirement.
+
 For chart-source quote concurrency checks, run:
 
 ```bash

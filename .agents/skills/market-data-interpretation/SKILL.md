@@ -68,6 +68,13 @@ guarantee scanner-style premarket or postmarket evidence. Use scanner-backed
 `tv quote`, `tv quotes`, `tv snapshot`, or `tv compare` when premarket or
 postmarket fields matter. `tv ohlcv` is
 chart-dependent; do not describe it as Desktop-free historical bars.
+TradingView Desktop's page quote session can expose `premarket_*`,
+`postmarket_*`, and `market-status` field names during opt-in probes, but this
+is a separate source candidate from chart main-series quote. During regular
+session, those fields may track current streaming values rather than
+scanner-backed extended-hours values, so do not treat them as stable
+premarket/postmarket evidence until phase-specific smoke evidence confirms the
+semantics.
 Do not use chart-source quote loops as a multi-symbol realtime batch source.
 They may contend with visible chart mutations, so prefer `tv quotes`, scanner
 reads, `tv compare`, or `tv snapshot` for broad symbol lists unless the

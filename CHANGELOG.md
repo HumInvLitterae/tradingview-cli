@@ -13,12 +13,18 @@ package version omits the leading `v`.
   agents can see that `tv quote <SYMBOL> --source chart` reads the selected
   chart main-series last bar and does not provide scanner-style extended-hours
   fields.
+- Added an opt-in ignored live smoke for TradingView Desktop quote-session
+  extended-hours field evidence, so postmarket and premarket behavior can be
+  checked without adding new public quote payload fields.
 
 ### Documentation
 
 - Added the `v0.13.0` roadmap direction for source and session boundary
   clarity after `v0.12.0`, with the first implementation plan focused on
   chart-source quote extended-hours feasibility and agent misread prevention.
+- Reframed the current v0.13 plan around Desktop quote-session live evidence
+  after regular-session probes showed pre/post field names exist but should not
+  be treated as scanner-equivalent extended-hours values yet.
 
 ## v0.12.0 - 2026-05-08
 
