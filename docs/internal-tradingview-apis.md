@@ -137,11 +137,14 @@ Safety boundary:
   after-hours price token in compact prop/state hits. A bounded WebSocket
   correlation smoke later sampled visible after-market prices during the same
   capture window and found exact numeric matches in received WebSocket frame
-  summaries. This supports a push/WebSocket-backed source hypothesis but still
-  does not identify a stable field name or payload schema. Do not treat raw DOM,
-  React props, or
-  opportunistic Network frames as a stable API or merge the visible value into
-  chart-source quote payloads without a separate contract.
+  summaries. A follow-up Web TradingView HAR and live run narrowed the likely
+  source further to `qsd` quote-data WebSocket messages: `lp` and
+  `regular_close` remained the regular close-like value, while `rtc`,
+  `rtc_time`, `rch`, and `rchp` changed with the visible postmarket readback.
+  This makes `qsd.rtc` the strongest current candidate for the visible
+  after-market display. Do not treat raw DOM, React props, or opportunistic
+  Network frames as a stable API or merge the visible value into chart-source
+  quote payloads without a separate contract.
 - `ohlcv` depends on the selected chart target's main-series bars collection.
   When the chart API or bars collection is unavailable, it should fail with
   structured readiness details and a target-selection recovery hint rather than

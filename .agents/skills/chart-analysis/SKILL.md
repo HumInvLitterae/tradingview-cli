@@ -89,7 +89,10 @@ observation surface.
    A bounded WebSocket correlation smoke later found exact numeric matches for
    sampled visible after-market prices in received WebSocket frame summaries.
    Treat that as source-discovery evidence only; it is not yet a stable field
-   schema or `quote --source chart` payload.
+   schema or `quote --source chart` payload. Follow-up HAR/live evidence makes
+   TradingView `qsd.rtc` the strongest current candidate for the visible
+   after-market value, but it remains internal WebSocket source discovery
+   until a separate payload contract exposes it.
 6. Read visible study values with `tv values` when indicators already exist on
    the chart.
 7. Read Pine drawing-derived levels or zones with `tv data lines`,

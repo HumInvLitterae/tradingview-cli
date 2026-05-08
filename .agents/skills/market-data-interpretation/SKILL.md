@@ -106,7 +106,11 @@ A bounded WebSocket correlation smoke later sampled visible after-market
 prices during the same capture window and found exact numeric matches in
 received WebSocket frame summaries. Treat that as source-discovery evidence
 for a push/WebSocket-backed hypothesis, not as a stable quote payload source or
-field schema.
+field schema. Follow-up HAR/live evidence makes TradingView `qsd.rtc` the
+strongest current candidate for the visible after-market value, with
+`rtc_time`, `rch`, and `rchp` as related readbacks. This is still internal
+WebSocket source discovery; do not present it as a supported `tv quote` field
+until a separate payload contract exists.
 Do not use chart-source quote loops as a multi-symbol realtime batch source.
 They may contend with visible chart mutations, so prefer `tv quotes`, scanner
 reads, `tv compare`, or `tv snapshot` for broad symbol lists unless the

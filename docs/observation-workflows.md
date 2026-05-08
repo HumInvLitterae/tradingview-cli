@@ -167,7 +167,10 @@ after-hours price token in compact prop/state hits. A later bounded WebSocket
 correlation smoke sampled visible after-market prices during the same capture
 window and found exact numeric matches in received WebSocket frame summaries,
 supporting a push/WebSocket-backed source hypothesis without making it a stable
-payload source yet.
+payload source yet. A follow-up HAR/live pass makes `qsd.rtc` the strongest
+current field-level candidate for that visible after-market value, while
+`lp`/`regular_close` remain regular close-like readbacks. Treat `qsd.rtc` as
+source-discovery evidence only until a separate contract exposes it.
 
 ## Visual Evidence Recovery
 
