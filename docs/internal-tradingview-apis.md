@@ -144,7 +144,11 @@ Safety boundary:
   This makes `qsd.rtc` the strongest current candidate for the visible
   after-market display. Do not treat raw DOM, React props, or opportunistic
   Network frames as a stable API or merge the visible value into chart-source
-  quote payloads without a separate contract.
+  quote payloads without a separate contract. The current design direction is
+  to evaluate a separately labeled Desktop quote-data source, potentially
+  carrying `rtc`, `rtc_time`, `rch`, `rchp`, `current_session`,
+  `market_phase`, and `update_mode` as source-specific readbacks rather than
+  scanner-style extended-hours fields.
 - `ohlcv` depends on the selected chart target's main-series bars collection.
   When the chart API or bars collection is unavailable, it should fail with
   structured readiness details and a target-selection recovery hint rather than

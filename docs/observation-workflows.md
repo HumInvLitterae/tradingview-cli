@@ -170,7 +170,10 @@ supporting a push/WebSocket-backed source hypothesis without making it a stable
 payload source yet. A follow-up HAR/live pass makes `qsd.rtc` the strongest
 current field-level candidate for that visible after-market value, while
 `lp`/`regular_close` remain regular close-like readbacks. Treat `qsd.rtc` as
-source-discovery evidence only until a separate contract exposes it.
+source-discovery evidence only until a separate contract exposes it. If that
+contract is added later, it should be a separately labeled Desktop quote-data
+read, not an implicit extension of `tv quote --source chart` and not a merge
+with scanner REST `extended_hours`.
 
 ## Visual Evidence Recovery
 

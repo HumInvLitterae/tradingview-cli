@@ -146,6 +146,9 @@ payload contract.
 Until a later contract explicitly exposes this source, treat it as opt-in
 visible-UI source-discovery evidence, not as part of `tv quote --source
 chart`.
+If this becomes a public CLI read, it should be exposed as a separately
+labeled Desktop-backed quote-data source rather than being folded into
+chart-source quote or scanner REST extended-hours fields.
 
 ### Desktop-backed operation
 

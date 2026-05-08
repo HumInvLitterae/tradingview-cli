@@ -110,7 +110,9 @@ field schema. Follow-up HAR/live evidence makes TradingView `qsd.rtc` the
 strongest current candidate for the visible after-market value, with
 `rtc_time`, `rch`, and `rchp` as related readbacks. This is still internal
 WebSocket source discovery; do not present it as a supported `tv quote` field
-until a separate payload contract exists.
+until a separate payload contract exists. If support is added later, expect it
+to be a separately labeled Desktop quote-data source rather than part of
+`quote --source chart` or scanner REST `extended_hours`.
 Do not use chart-source quote loops as a multi-symbol realtime batch source.
 They may contend with visible chart mutations, so prefer `tv quotes`, scanner
 reads, `tv compare`, or `tv snapshot` for broad symbol lists unless the
