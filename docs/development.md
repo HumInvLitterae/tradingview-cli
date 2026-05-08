@@ -229,7 +229,9 @@ Optional environment variables:
   quote-session variants. If omitted, the test tries to read the current chart
   symbol through chart-source quote.
 - `TV_LIVE_QUOTE_SESSION_EXPECT_PHASE`: optional expected
-  `market-status.phase`, such as `postmarket` or `premarket`.
+  `market-status.phase`, such as `postmarket` or `premarket`. The test treats
+  TradingView's hyphenated phase names `post-market` and `pre-market` as
+  aliases for those expected values.
 
 The ignored test compares scanner-backed extended-hours fields with selected
 TradingView Desktop quote-session fields. Scanner equality is not required:

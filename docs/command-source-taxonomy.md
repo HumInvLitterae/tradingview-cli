@@ -116,8 +116,12 @@ TradingView Desktop also exposes a page quote session that can return
 separate Desktop quote-session evidence candidate, not as the selected chart
 main-series quote. Regular-session probes showed those pre/post fields can
 track current streaming values rather than scanner-backed premarket values, so
-postmarket or premarket live evidence is required before exposing them as a
-stable payload source.
+postmarket and premarket live evidence is required before exposing them as a
+stable payload source. A postmarket probe observed `market-status.phase` as
+`post-market`, but the selected quote-session pre/post close fields matched
+each other and remained tied to quote-session streaming values in the
+public-safe summary, so those fields still must not be treated as scanner-style
+`extended_hours` values.
 
 ### Desktop-backed operation
 

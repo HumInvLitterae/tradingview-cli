@@ -84,7 +84,8 @@ construction, not on duplicating the full source taxonomy.
    `tv snapshot`, or `tv compare` when extended-hours evidence matters.
    Desktop quote-session probes can expose pre/post field names, but they are
    phase-sensitive live evidence and not a stable multi-symbol screening
-   source.
+   source. A `post-market` phase observation does not make quote-session
+   pre/post close fields equivalent to scanner `extended_hours`.
    Use `TV_EXPERIMENTAL_BARS=1 tv bars <EXCHANGE:SYMBOL> --count <N>` only as
    a lab-gated browserless bars check when experimental WebSocket data is
    acceptable; keep it separate from stable `tv ohlcv` chart evidence.

@@ -70,7 +70,9 @@ observation surface.
    fields matter. Desktop page quote-session probes are separate experimental
    evidence and should not be substituted for chart main-series quote or
    scanner extended-hours values unless phase-specific live evidence has
-   confirmed the semantics.
+   confirmed the semantics. Postmarket `market-status.phase=post-market` is
+   useful source evidence, but it is not enough by itself to treat quote-session
+   pre/post close fields as scanner-style extended-hours values.
 6. Read visible study values with `tv values` when indicators already exist on
    the chart.
 7. Read Pine drawing-derived levels or zones with `tv data lines`,

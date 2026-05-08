@@ -81,7 +81,11 @@ is a separate source candidate from chart main-series quote. During regular
 session, those fields may track current streaming values rather than
 scanner-backed extended-hours values, so do not treat them as stable
 premarket/postmarket evidence until phase-specific smoke evidence confirms the
-semantics.
+semantics. Postmarket probing can show `market-status.phase=post-market`, but
+that alone is not enough to treat `premarket_close` or `postmarket_close` as
+scanner-style `extended_hours`; in observed postmarket output, those selected
+fields matched each other and remained tied to quote-session streaming values
+rather than forming a scanner-style `extended_hours` object.
 Do not use chart-source quote loops as a multi-symbol realtime batch source.
 They may contend with visible chart mutations, so prefer `tv quotes`, scanner
 reads, `tv compare`, or `tv snapshot` for broad symbol lists unless the

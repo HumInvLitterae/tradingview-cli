@@ -50,6 +50,15 @@ The test does not add a new user-facing command, does not modify
 - [x] (2026-05-09T00:00Z) Confirmed the timing guard with an explicit target:
   a regular-session run with `TV_LIVE_QUOTE_SESSION_EXPECT_PHASE=postmarket`
   exited successfully and printed `phase_result=not_yet_in_expected_phase`.
+- [x] (2026-05-09T00:00Z) Ran postmarket opt-in smoke after the U.S. market
+  close. A selected-chart `BATS:MU` probe observed `market-status.phase` as
+  `post-market`; scanner REST remained delayed and did not return a
+  postmarket close. This is postmarket phase evidence, but not yet evidence
+  that Desktop quote-session pre/post fields are scanner-style extended-hours
+  payload values.
+- [x] (2026-05-09T00:00Z) Hardened phase matching so
+  `TV_LIVE_QUOTE_SESSION_EXPECT_PHASE=postmarket` accepts TradingView's
+  observed `post-market` spelling, and `premarket` accepts `pre-market`.
 
 ## Surprises & Discoveries
 
@@ -81,6 +90,16 @@ The test does not add a new user-facing command, does not modify
   scanner-backed quote at the same time reported a delayed quote and a distinct
   premarket object, while postmarket values were absent. Because the observed
   phase was not `postmarket`, this run is not accepted as postmarket evidence.
+
+- Observation: after the U.S. market close, a selected-chart `BATS:MU`
+  Desktop quote-session probe observed `market-status.phase=post-market`.
+  Evidence: the opt-in smoke produced a public-safe summary showing a delayed
+  scanner quote with premarket data and no postmarket close, while the Desktop
+  quote session reported streaming values in `post-market` phase. In that
+  quote-session summary, `last_price`, `premarket_close`, and
+  `premarket_close` and `postmarket_close` matched each other and remained tied
+  to quote-session streaming values, so the field names still should not be
+  treated as scanner-style extended-hours payload fields.
 
 ## Decision Log
 
@@ -119,6 +138,22 @@ The test does not add a new user-facing command, does not modify
   regular-session pre/post fields.
   Date/Author: 2026-05-09 / Codex.
 
+- Decision: Accept `post-market` and `pre-market` as aliases for `postmarket`
+  and `premarket` in the live smoke.
+  Rationale: TradingView's quote session returned the hyphenated phase spelling
+  during postmarket. The smoke should not report `not_yet_in_expected_phase`
+  for a spelling difference when the session phase is otherwise the one being
+  tested.
+  Date/Author: 2026-05-09 / Codex.
+
+- Decision: Do not expose Desktop quote-session pre/post fields in public quote
+  payloads from this postmarket evidence alone.
+  Rationale: The postmarket phase was observed, but the selected pre/post close
+  fields matched each other and remained tied to quote-session streaming values.
+  That is useful source evidence, but not enough to claim the fields have
+  scanner `extended_hours` semantics.
+  Date/Author: 2026-05-09 / Codex.
+
 ## Outcomes & Retrospective
 
 This slice adds tooling and documentation for collecting postmarket and
@@ -143,6 +178,15 @@ A regular-session sanity run confirmed this behavior: the scanner source
 reported delayed quote data with premarket fields and no postmarket close,
 while the Desktop quote-session source reported `phase=regular` for the
 tested symbol and returned the timing guard instead of failing the test.
+
+A postmarket run confirmed that Desktop quote session can report a postmarket
+phase for the selected chart symbol. The observed phase string was
+`post-market`, so the smoke now normalizes hyphenated and non-hyphenated phase
+spellings. The run also reinforced the conservative source boundary: selected
+quote-session pre/post fields can equal the streaming last value, so they
+remain research evidence rather than public scanner-style extended-hours
+payload values. Premarket evidence is still open and should be collected in a
+real premarket window before broader payload support is considered.
 
 ## Context and Orientation
 
@@ -199,6 +243,10 @@ To collect evidence after the market close, run:
 Run this only after the relevant U.S. market has actually entered postmarket.
 If the output includes `phase_result=not_yet_in_expected_phase`, stop and wait;
 that run is a timing mismatch, not postmarket evidence.
+
+The smoke treats TradingView's hyphenated phase strings as aliases, so
+`post-market` satisfies `TV_LIVE_QUOTE_SESSION_EXPECT_PHASE=postmarket`, and
+`pre-market` satisfies `TV_LIVE_QUOTE_SESSION_EXPECT_PHASE=premarket`.
 
 To collect evidence during premarket, run:
 
