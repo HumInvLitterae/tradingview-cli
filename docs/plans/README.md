@@ -8,10 +8,16 @@ for release and next-phase planning.
 
 Current plan:
 
-- `tradingview-cli-desktop-quote-session-live-evidence.md`: add an opt-in live
-  smoke for TradingView Desktop quote-session premarket/postmarket fields so
-  postmarket and premarket behavior can be checked before exposing any new
-  public quote payload fields.
+- `tradingview-cli-snapshot-contract-metadata.md`: add additive
+  `tv snapshot <SYMBOL>` contract metadata so one-symbol Desktop-free evidence
+  packets expose coverage status, missing evidence, and machine-readable
+  follow-up hints.
+
+Active but waiting for market phase:
+
+- `tradingview-cli-desktop-quote-session-live-evidence.md`: collect opt-in
+  TradingView Desktop quote-session premarket/postmarket evidence only after
+  the relevant U.S. market phase begins.
 
 ## Archived plans
 

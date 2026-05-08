@@ -90,10 +90,15 @@ and warnings. Do not treat it as a stable replacement for chart-sourced OHLCV.
 symbol. It groups scanner-backed quote, symbol info, and fundamentals sections.
 Read each section's `ok`, `data`, or `error` independently, and preserve the
 top-level source metadata, section-level errors, and `next_action_hints`.
-Use lower-level `tv quote`, `tv info`, or `tv fundamentals` when the task needs
-only one section, and use `tv compare` when the task needs a structured
-multi-symbol evidence packet. Do not treat snapshot as batch, JSONL,
-chart-backed, screenshot, or experimental bars evidence.
+Treat `contract_version`, `summary.coverage_status`,
+`summary.field_coverage`, `missing_evidence[]`, and `follow_up_hints[]` as
+one-symbol readback helpers for coverage and follow-up routing. They do not
+replace raw `sections`, do not call the follow-up commands, and are not
+ranking, scoring, or recommendations. Use lower-level `tv quote`, `tv info`,
+or `tv fundamentals` when the task needs only one section, and use
+`tv compare` when the task needs a structured multi-symbol evidence packet.
+Do not treat snapshot as batch, JSONL, chart-backed, screenshot, or
+experimental bars evidence.
 
 `tv compare <SYMBOL>...` is the Desktop-free comparison packet for several
 known symbols. It preserves input order and returns per-symbol quote, info, and

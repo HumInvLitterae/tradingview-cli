@@ -38,6 +38,16 @@ Desktop-free comparison across several known symbols. Use the lower-level
 commands when you need just one section, ordered quotes only, or a scanner row
 set.
 
+`tv snapshot` also includes compare-style contract readback for a single
+symbol. Use `contract_version`, `summary.coverage_status`,
+`summary.field_coverage`, `missing_evidence[]`, and `follow_up_hints[]` to
+understand whether quote, info, or fundamentals evidence is complete and which
+follow-up surface is available. Treat those fields as coverage and routing
+metadata; the raw `sections.quote`, `sections.info`, and
+`sections.fundamentals` remain the evidence. Snapshot metadata does not rank,
+score, recommend, call chart-source quote, start observation, or capture a
+screenshot.
+
 `tv compare` includes a top-level `summary` for scanability. Use it to read
 resolution counts, section success counts, missing counts, and requested to
 resolved symbol mappings. Treat `summary` as readback only; inspect raw

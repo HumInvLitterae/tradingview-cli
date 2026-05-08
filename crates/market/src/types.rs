@@ -251,6 +251,8 @@ pub struct QuoteError {
 #[derive(Debug, Clone, PartialEq, Serialize)]
 /// Desktop-free evidence packet for one requested symbol.
 pub struct Snapshot {
+    /// Command-local payload contract marker for downstream schema guards.
+    pub contract_version: String,
     /// Public source marker.
     pub source: String,
     /// Command source category used by the CLI source taxonomy.
@@ -265,12 +267,56 @@ pub struct Snapshot {
     pub symbol: Value,
     /// Best observed symbol from the successful sections.
     pub observed_symbol: Value,
+    /// Machine-readable readback summary derived from `sections`.
+    pub summary: SnapshotSummary,
     /// Per-source evidence sections.
     pub sections: SnapshotSections,
     /// Public-safe section error summaries.
     pub errors: Vec<SnapshotSectionError>,
+    /// Machine-readable missing evidence and follow-up readback.
+    pub missing_evidence: Vec<SnapshotMissingEvidence>,
+    /// Machine-readable available follow-up surfaces.
+    pub follow_up_hints: Vec<SnapshotFollowUpHint>,
     /// Suggested follow-up commands when Desktop-backed or visual evidence is needed.
     pub next_action_hints: Vec<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize)]
+/// Additive readback summary for a one-symbol snapshot packet.
+pub struct SnapshotSummary {
+    /// Evidence coverage status; this is not a ranking or recommendation.
+    pub coverage_status: String,
+    /// True when the quote section succeeded.
+    pub quote_ok: bool,
+    /// True when the info section succeeded.
+    pub info_ok: bool,
+    /// True when the fundamentals section succeeded.
+    pub fundamentals_ok: bool,
+    /// Number of section errors.
+    pub error_count: usize,
+    /// Total known missing field count.
+    pub missing_total_count: usize,
+    /// Section and field-category coverage readback.
+    pub field_coverage: SnapshotFieldCoverage,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize)]
+/// Section and field-category coverage readback for a snapshot packet.
+pub struct SnapshotFieldCoverage {
+    /// True when the quote section succeeded.
+    pub quote_ok: bool,
+    /// Number of known missing quote fields.
+    pub quote_missing_count: usize,
+    /// True when the info section succeeded.
+    pub info_ok: bool,
+    /// Number of known missing symbol-info fields.
+    pub info_missing_count: usize,
+    /// True when the fundamentals section succeeded.
+    pub fundamentals_ok: bool,
+    /// Number of known missing fundamentals fields.
+    pub fundamentals_missing_count: usize,
+    /// Total known missing field count.
+    pub total_missing_count: usize,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize)]
@@ -308,6 +354,34 @@ pub struct SnapshotSectionError {
     pub message: String,
     /// Optional structured error details.
     pub details: Option<Value>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize)]
+/// Machine-readable follow-up surface for a snapshot packet.
+pub struct SnapshotFollowUpHint {
+    /// Stable hint kind.
+    pub kind: String,
+    /// Executor-readable command string.
+    pub command: String,
+    /// Stable reason explaining what the command can add.
+    pub reason: String,
+    /// True when the follow-up requires TradingView Desktop.
+    pub requires_desktop: bool,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize)]
+/// Missing evidence entry for one snapshot section.
+pub struct SnapshotMissingEvidence {
+    /// Section with missing evidence, such as `quote`, `info`, or `fundamentals`.
+    pub section: String,
+    /// Known missing fields when available.
+    pub missing_fields: Vec<String>,
+    /// Stable reason for the missing evidence.
+    pub missing_reason: String,
+    /// Stable follow-up kind that can help collect more evidence.
+    pub suggested_follow_up: String,
+    /// True when the suggested follow-up requires TradingView Desktop.
+    pub requires_desktop: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize)]
