@@ -212,6 +212,12 @@ the relevant market phase:
 TV_LIVE_QUOTE_SESSION_SMOKE=1 TV_LIVE_QUOTE_SESSION_EXPECT_PHASE=postmarket cargo test -p tradingview-cli --test live_quote_session_extended_hours -- --ignored --nocapture
 ```
 
+Do not run the postmarket or premarket smoke early and treat the result as
+evidence. If the observed quote-session phase does not match
+`TV_LIVE_QUOTE_SESSION_EXPECT_PHASE`, the test prints
+`phase_result=not_yet_in_expected_phase`; that is only a timing guard telling
+you to wait for the relevant U.S. session.
+
 Optional environment variables:
 
 - `TV_LIVE_QUOTE_SESSION_TARGET_ID`: explicit CDP target id when multiple

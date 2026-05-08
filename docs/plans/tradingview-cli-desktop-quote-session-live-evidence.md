@@ -43,6 +43,13 @@ The test does not add a new user-facing command, does not modify
   targets. The smoke executed successfully enough to collect quote-session
   summaries, but neither target observed `postmarket`; this does not establish
   postmarket evidence and should be rerun after the relevant U.S. market close.
+- [x] (2026-05-09T00:00Z) Hardened the ignored smoke so expected-phase
+  mismatch is reported as `not_yet_in_expected_phase` instead of a panic. This
+  lets regular-session sanity runs produce a public-safe timing result without
+  being mistaken for postmarket or premarket evidence.
+- [x] (2026-05-09T00:00Z) Confirmed the timing guard with an explicit target:
+  a regular-session run with `TV_LIVE_QUOTE_SESSION_EXPECT_PHASE=postmarket`
+  exited successfully and printed `phase_result=not_yet_in_expected_phase`.
 
 ## Surprises & Discoveries
 
@@ -104,6 +111,14 @@ The test does not add a new user-facing command, does not modify
   should not be treated as after-hours evidence.
   Date/Author: 2026-05-08 / Codex.
 
+- Decision: Treat expected-phase mismatch as a timing result, not as evidence
+  failure.
+  Rationale: running a postmarket or premarket smoke too early should tell the
+  maintainer that the requested session phase has not arrived. It should not
+  create another failed evidence record or encourage agents to reason from
+  regular-session pre/post fields.
+  Date/Author: 2026-05-09 / Codex.
+
 ## Outcomes & Retrospective
 
 This slice adds tooling and documentation for collecting postmarket and
@@ -118,6 +133,16 @@ main-series quote, and Desktop quote-session fields remain separate sources,
 and Desktop quote-session pre/post fields are still not public payload
 evidence. The next action is to rerun the same opt-in smoke after the relevant
 U.S. market close or during premarket.
+
+The smoke now reports `phase_result=not_yet_in_expected_phase` when
+`TV_LIVE_QUOTE_SESSION_EXPECT_PHASE` does not match any observed
+`market-status.phase`. That output is a timing guard only. It should not be
+recorded as postmarket or premarket evidence.
+
+A regular-session sanity run confirmed this behavior: the scanner source
+reported delayed quote data with premarket fields and no postmarket close,
+while the Desktop quote-session source reported `phase=regular` for the
+tested symbol and returned the timing guard instead of failing the test.
 
 ## Context and Orientation
 
@@ -171,9 +196,16 @@ To collect evidence after the market close, run:
 
     TV_LIVE_QUOTE_SESSION_SMOKE=1 TV_LIVE_QUOTE_SESSION_EXPECT_PHASE=postmarket cargo test -p tradingview-cli --test live_quote_session_extended_hours -- --ignored --nocapture
 
+Run this only after the relevant U.S. market has actually entered postmarket.
+If the output includes `phase_result=not_yet_in_expected_phase`, stop and wait;
+that run is a timing mismatch, not postmarket evidence.
+
 To collect evidence during premarket, run:
 
     TV_LIVE_QUOTE_SESSION_SMOKE=1 TV_LIVE_QUOTE_SESSION_EXPECT_PHASE=premarket cargo test -p tradingview-cli --test live_quote_session_extended_hours -- --ignored --nocapture
+
+Run this only during the relevant U.S. premarket window. A regular-session
+result does not answer the premarket question.
 
 If multiple chart targets are open, first choose the intended chart target and
 pass it through the environment:
@@ -218,7 +250,7 @@ explicitly with `TV_LIVE_QUOTE_SESSION_TARGET_ID`.
 
 Expected public-safe live output should look like this shape:
 
-    ok scanner=last=<value> update_mode=<mode> delay_seconds=<n> premarket_close=<value-or-null> postmarket_close=<value-or-null> quote_session=done=true update_count=<n> updates=<symbol>:phase=<phase> last=<value> pre=<value-or-null> post=<value-or-null> mode=<mode> elapsed_ms=<n>
+    ok scanner=last=<value> update_mode=<mode> delay_seconds=<n> premarket_close=<value-or-null> postmarket_close=<value-or-null> quote_session=done=true update_count=<n> updates=<symbol>:phase=<phase> last=<value> pre=<value-or-null> post=<value-or-null> mode=<mode> phase_result=not_yet_in_expected_phase expected=<phase> observed=<phase> elapsed_ms=<n>
 
 This output intentionally avoids raw JSON payloads, target ids, account-local
 metadata, cookies, tokens, authorization values, and machine-specific paths.

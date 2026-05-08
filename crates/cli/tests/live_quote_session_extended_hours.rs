@@ -93,12 +93,15 @@ fn quote_session_extended_hours_live_smoke() {
             summarize_probe(&probe_envelope)
         )
     });
-    assert_probe_result(&probe_symbols, expected_phase.as_deref(), probe);
+    let phase_result = assert_probe_result(&probe_symbols, expected_phase.as_deref(), probe);
 
     println!(
-        "ok scanner={} quote_session={} elapsed_ms={}",
+        "ok scanner={} quote_session={}{} elapsed_ms={}",
         scanner_summary(&scanner_envelope),
         selected_probe_summary(probe),
+        phase_result
+            .map(|message| format!(" phase_result={message}"))
+            .unwrap_or_default(),
         started.elapsed().as_millis()
     );
 }
@@ -305,7 +308,11 @@ fn assert_scanner_quote(symbol: &str, envelope: &Value, elapsed: Duration) {
     }
 }
 
-fn assert_probe_result(symbols: &[String], expected_phase: Option<&str>, probe: &Value) {
+fn assert_probe_result(
+    symbols: &[String],
+    expected_phase: Option<&str>,
+    probe: &Value,
+) -> Option<String> {
     let errors = probe
         .get("errors")
         .and_then(Value::as_array)
@@ -338,7 +345,7 @@ fn assert_probe_result(symbols: &[String], expected_phase: Option<&str>, probe: 
         );
     }
 
-    let mut phase_seen = false;
+    let mut observed_phases = Vec::new();
     let mut extended_field_seen = false;
     for update in updates.values() {
         let selected = update.get("selected").unwrap_or(&Value::Null);
@@ -346,26 +353,32 @@ fn assert_probe_result(symbols: &[String], expected_phase: Option<&str>, probe: 
             .get("market-status")
             .and_then(|status| status.get("phase"))
             .and_then(Value::as_str);
-        if expected_phase.is_some_and(|expected| phase == Some(expected)) {
-            phase_seen = true;
+        if let Some(phase) = phase {
+            push_unique(&mut observed_phases, phase.to_string());
         }
         if selected.get("premarket_close").is_some() || selected.get("postmarket_close").is_some() {
             extended_field_seen = true;
         }
-    }
-    if let Some(expected) = expected_phase {
-        assert!(
-            phase_seen,
-            "quote session probe did not observe expected phase {}: {}",
-            expected,
-            selected_probe_summary(probe)
-        );
     }
     assert!(
         extended_field_seen,
         "quote session probe did not observe premarket/postmarket fields: {}",
         selected_probe_summary(probe)
     );
+    if let Some(expected) = expected_phase
+        && !observed_phases.iter().any(|phase| phase == expected)
+    {
+        let observed = if observed_phases.is_empty() {
+            "<missing>".to_string()
+        } else {
+            observed_phases.join(",")
+        };
+        return Some(format!(
+            "not_yet_in_expected_phase expected={} observed={}",
+            expected, observed
+        ));
+    }
+    None
 }
 
 fn scanner_summary(envelope: &Value) -> String {

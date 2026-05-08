@@ -16,6 +16,9 @@ package version omits the leading `v`.
 - Added an opt-in ignored live smoke for TradingView Desktop quote-session
   extended-hours field evidence, so postmarket and premarket behavior can be
   checked without adding new public quote payload fields.
+- Clarified the quote-session live smoke timing guard so expected-phase
+  mismatches are reported as `not_yet_in_expected_phase` instead of being
+  mistaken for postmarket or premarket evidence.
 
 ### Documentation
 
