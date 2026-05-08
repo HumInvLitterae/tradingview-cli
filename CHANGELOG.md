@@ -25,6 +25,9 @@ package version omits the leading `v`.
 - Reframed the current v0.13 plan around Desktop quote-session live evidence
   after regular-session probes showed pre/post field names exist but should not
   be treated as scanner-equivalent extended-hours values yet.
+- Recorded that the first attempted postmarket Desktop quote-session smoke did
+  not observe a postmarket phase, so Desktop quote-session pre/post fields
+  remain research evidence rather than public payload values.
 
 ## v0.12.0 - 2026-05-08
 

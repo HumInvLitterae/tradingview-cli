@@ -38,6 +38,11 @@ The test does not add a new user-facing command, does not modify
 - [x] (2026-05-09T00:00Z) Updated current roadmap, development docs, source
   taxonomy docs, workflow docs, internal API notes, runtime skills, and
   changelog.
+- [x] (2026-05-08T16:34Z) Ran the opt-in smoke with
+  `TV_LIVE_QUOTE_SESSION_EXPECT_PHASE=postmarket` against two open chart
+  targets. The smoke executed successfully enough to collect quote-session
+  summaries, but neither target observed `postmarket`; this does not establish
+  postmarket evidence and should be rerun after the relevant U.S. market close.
 
 ## Surprises & Discoveries
 
@@ -58,6 +63,17 @@ The test does not add a new user-facing command, does not modify
   and `postmarket_close` tracked the streaming current price, while
   scanner-backed `extended_hours.premarket.close` reflected a distinct delayed
   premarket value.
+
+- Observation: the first user-requested "postmarket" smoke attempt still
+  observed regular-session quote-session behavior for the tested U.S. symbol.
+  Evidence: two open chart targets were probed. One target reported the tested
+  symbol with `market-status.phase=regular`, streaming last near the current
+  chart quote, and both pre/post close fields near the same streaming value.
+  The other target's current chart phase was missing, but the temporary tested
+  symbol subscription again reported `market-status.phase=regular`. A
+  scanner-backed quote at the same time reported a delayed quote and a distinct
+  premarket object, while postmarket values were absent. Because the observed
+  phase was not `postmarket`, this run is not accepted as postmarket evidence.
 
 ## Decision Log
 
@@ -80,6 +96,14 @@ The test does not add a new user-facing command, does not modify
   without a separate source label would make agent reasoning worse.
   Date/Author: 2026-05-09 / Codex.
 
+- Decision: Do not advance to Desktop quote-session payload support from the
+  first postmarket smoke attempt.
+  Rationale: the smoke harness worked, but the quote session reported regular
+  phase for the tested U.S. symbol. This matches the existing caution that
+  regular-session pre/post fields can look like current streaming values and
+  should not be treated as after-hours evidence.
+  Date/Author: 2026-05-08 / Codex.
+
 ## Outcomes & Retrospective
 
 This slice adds tooling and documentation for collecting postmarket and
@@ -87,6 +111,13 @@ premarket evidence. It does not yet decide whether Desktop quote-session
 extended-hours fields are suitable for stable payload support. That decision
 requires running the ignored smoke during the relevant market phases and
 recording only public-safe summaries.
+
+The first attempted postmarket run did not observe a postmarket phase. The
+result strengthens the existing boundary: scanner extended-hours, chart
+main-series quote, and Desktop quote-session fields remain separate sources,
+and Desktop quote-session pre/post fields are still not public payload
+evidence. The next action is to rerun the same opt-in smoke after the relevant
+U.S. market close or during premarket.
 
 ## Context and Orientation
 
