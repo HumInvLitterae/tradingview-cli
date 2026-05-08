@@ -33,6 +33,8 @@ struct CorrelationStats {
     websocket_frames_sent: u64,
     event_count: u64,
     candidates: Vec<FrameCandidate>,
+    quote_data: Vec<QuoteDataCandidate>,
+    quote_session_symbols: HashMap<String, Vec<String>>,
 }
 
 #[derive(Debug, Clone)]
@@ -45,6 +47,22 @@ struct FrameCandidate {
     contains_expected_price: bool,
     contains_after_token: bool,
     numeric_tokens: Vec<String>,
+}
+
+#[derive(Debug, Clone, Default, PartialEq)]
+struct QuoteDataCandidate {
+    source: String,
+    symbol: String,
+    lp: Option<String>,
+    regular_close: Option<String>,
+    rtc: Option<String>,
+    rtc_time: Option<String>,
+    rch: Option<String>,
+    rchp: Option<String>,
+    current_session: Option<String>,
+    market_phase: Option<String>,
+    update_mode: Option<String>,
+    matches_visible_after: bool,
 }
 
 #[derive(Debug, Clone)]
@@ -428,6 +446,9 @@ fn handle_cdp_event(
                 .get(request_id)
                 .cloned()
                 .unwrap_or_else(|| "<unknown-ws>".to_string());
+            if method.ends_with("Sent") {
+                maybe_update_quote_session_symbols(stats, payload);
+            }
             maybe_push_candidate(
                 stats,
                 FrameCandidate::from_text(
@@ -436,11 +457,12 @@ fn handle_cdp_event(
                     } else {
                         "ws_sent"
                     },
-                    source,
+                    source.clone(),
                     payload,
                     needles,
                 ),
             );
+            maybe_push_quote_data(stats, source, payload, needles);
         }
         _ => {}
     }
@@ -457,6 +479,237 @@ fn maybe_push_candidate(stats: &mut CorrelationStats, candidate: FrameCandidate)
         || !candidate.numeric_tokens.is_empty()
     {
         stats.candidates.push(candidate);
+    }
+}
+
+fn maybe_update_quote_session_symbols(stats: &mut CorrelationStats, payload: &str) {
+    for text in tradingview_socket_messages(payload) {
+        let Ok(value) = serde_json::from_str::<Value>(&text) else {
+            continue;
+        };
+        let Some(method) = value.get("m").and_then(Value::as_str) else {
+            continue;
+        };
+        if method != "quote_add_symbols" && method != "quote_remove_symbols" {
+            continue;
+        }
+        let Some(session) = value.pointer("/p/0").and_then(Value::as_str) else {
+            continue;
+        };
+        let symbols = value
+            .get("p")
+            .and_then(Value::as_array)
+            .map(|items| {
+                items
+                    .iter()
+                    .skip(1)
+                    .filter_map(Value::as_str)
+                    .map(str::to_string)
+                    .collect::<Vec<_>>()
+            })
+            .unwrap_or_default();
+        let entry = stats
+            .quote_session_symbols
+            .entry(session.to_string())
+            .or_default();
+        if method == "quote_add_symbols" {
+            for symbol in symbols {
+                if !entry.iter().any(|existing| existing == &symbol) {
+                    entry.push(symbol);
+                }
+            }
+        } else {
+            entry.retain(|existing| !symbols.iter().any(|symbol| symbol == existing));
+        }
+    }
+}
+
+fn maybe_push_quote_data(
+    stats: &mut CorrelationStats,
+    source: String,
+    payload: &str,
+    needles: ProbeNeedles<'_>,
+) {
+    if stats.quote_data.len() >= 48 {
+        return;
+    }
+    for text in tradingview_socket_messages(payload) {
+        let Ok(value) = serde_json::from_str::<Value>(&text) else {
+            continue;
+        };
+        if value.get("m").and_then(Value::as_str) != Some("qsd") {
+            continue;
+        }
+        let session = value
+            .pointer("/p/0")
+            .and_then(Value::as_str)
+            .unwrap_or_default();
+        let Some(item) = value.pointer("/p/1") else {
+            continue;
+        };
+        let symbol = item
+            .get("n")
+            .and_then(Value::as_str)
+            .unwrap_or_default()
+            .to_string();
+        let values = item.get("v").unwrap_or(&Value::Null);
+        let serialized_symbolish = format!(
+            "{} {} {} {}",
+            symbol,
+            values
+                .get("pro_name")
+                .and_then(Value::as_str)
+                .unwrap_or_default(),
+            values
+                .get("original_name")
+                .and_then(Value::as_str)
+                .unwrap_or_default(),
+            values.get("base_name").unwrap_or(&Value::Null)
+        );
+        let has_symbol_match = serialized_symbolish.contains(needles.symbol)
+            || serialized_symbolish.contains(needles.qualified_symbol);
+        let has_rtc_readback = values.get("rtc").is_some()
+            || values.get("rtc_time").is_some()
+            || values.get("rch").is_some()
+            || values.get("rchp").is_some();
+        let has_expected_price = needles
+            .expected_price
+            .map(|expected| !expected.is_empty() && item.to_string().contains(expected))
+            .unwrap_or(false);
+        let mapped_single_symbol_match = stats
+            .quote_session_symbols
+            .get(session)
+            .map(|symbols| {
+                symbols.len() == 1
+                    && symbols.iter().any(|mapped| {
+                        mapped.contains(needles.symbol) || mapped.contains(needles.qualified_symbol)
+                    })
+            })
+            .unwrap_or(false);
+        if !(has_symbol_match
+            || mapped_single_symbol_match
+            || has_expected_price && has_rtc_readback)
+        {
+            continue;
+        }
+        let candidate = QuoteDataCandidate {
+            source: source.clone(),
+            symbol: if has_symbol_match {
+                public_symbol_label(&symbol, needles)
+            } else if mapped_single_symbol_match {
+                stats
+                    .quote_session_symbols
+                    .get(session)
+                    .and_then(|symbols| symbols.first())
+                    .map(|mapped| public_symbol_label(mapped, needles))
+                    .unwrap_or_else(|| "<mapped-symbol>".to_string())
+            } else {
+                "<qsd-delta-without-symbol>".to_string()
+            },
+            lp: public_number(values.get("lp")),
+            regular_close: public_number(values.get("regular_close")),
+            rtc: public_number(values.get("rtc")),
+            rtc_time: public_number(values.get("rtc_time")),
+            rch: public_number(values.get("rch")),
+            rchp: public_number(values.get("rchp")),
+            current_session: values
+                .get("current_session")
+                .and_then(Value::as_str)
+                .map(str::to_string),
+            market_phase: values
+                .get("market-status")
+                .and_then(|status| status.get("phase"))
+                .and_then(Value::as_str)
+                .map(str::to_string),
+            update_mode: values
+                .get("update_mode")
+                .and_then(Value::as_str)
+                .map(str::to_string),
+            matches_visible_after: false,
+        };
+        if candidate.lp.is_some()
+            || candidate.regular_close.is_some()
+            || candidate.rtc.is_some()
+            || candidate.current_session.is_some()
+            || candidate.market_phase.is_some()
+            || candidate.rtc_time.is_some()
+        {
+            push_unique_quote_data(stats, candidate);
+        }
+    }
+}
+
+fn push_unique_quote_data(stats: &mut CorrelationStats, candidate: QuoteDataCandidate) {
+    let key = quote_data_key(&candidate);
+    if stats
+        .quote_data
+        .iter()
+        .any(|existing| quote_data_key(existing) == key)
+    {
+        return;
+    }
+    stats.quote_data.push(candidate);
+}
+
+fn quote_data_key(candidate: &QuoteDataCandidate) -> String {
+    format!(
+        "{}|{}|{}|{}|{}|{}|{}|{}|{}|{}",
+        candidate.source,
+        candidate.symbol,
+        candidate.lp.as_deref().unwrap_or(""),
+        candidate.regular_close.as_deref().unwrap_or(""),
+        candidate.rtc.as_deref().unwrap_or(""),
+        candidate.rtc_time.as_deref().unwrap_or(""),
+        candidate.rch.as_deref().unwrap_or(""),
+        candidate.rchp.as_deref().unwrap_or(""),
+        candidate.current_session.as_deref().unwrap_or(""),
+        candidate.market_phase.as_deref().unwrap_or("")
+    )
+}
+
+fn tradingview_socket_messages(payload: &str) -> Vec<String> {
+    if !payload.contains("~m~") {
+        return vec![payload.to_string()];
+    }
+    let mut messages = vec![];
+    let mut index = 0;
+    while let Some(prefix_offset) = payload[index..].find("~m~") {
+        let prefix_start = index + prefix_offset;
+        let len_start = prefix_start + 3;
+        let Some(len_end_offset) = payload[len_start..].find("~m~") else {
+            break;
+        };
+        let len_end = len_start + len_end_offset;
+        let Ok(message_len) = payload[len_start..len_end].parse::<usize>() else {
+            index = len_start;
+            continue;
+        };
+        let message_start = len_end + 3;
+        let message_end = message_start.saturating_add(message_len);
+        if message_end > payload.len() {
+            break;
+        }
+        messages.push(payload[message_start..message_end].to_string());
+        index = message_end;
+    }
+    messages
+}
+
+fn public_symbol_label(raw: &str, needles: ProbeNeedles<'_>) -> String {
+    if raw.contains(needles.qualified_symbol) {
+        return needles.qualified_symbol.to_string();
+    }
+    if raw.contains(needles.symbol) {
+        return needles.symbol.to_string();
+    }
+    "<matched-symbol>".to_string()
+}
+
+fn public_number(value: Option<&Value>) -> Option<String> {
+    match value {
+        Some(Value::Number(number)) => Some(number.to_string()),
+        Some(Value::String(text)) if !text.trim().is_empty() => Some(text.trim().to_string()),
+        _ => None,
     }
 }
 
@@ -524,8 +777,9 @@ fn minimal_visible_panel_expression(symbol: &str, expected_price: Option<&str>) 
 fn network_summary(stats: &CorrelationStats, samples: &[VisibleSample]) -> String {
     let visible_prices = visible_after_prices(samples);
     let exact_matches = exact_candidate_matches(stats, &visible_prices);
+    let quote_data = quote_data_summary(stats, &visible_prices);
     format!(
-        "events={} ws_created={} ws_received={} ws_sent={} candidates={} visible_prices={} exact_matches={} top={}",
+        "events={} ws_created={} ws_received={} ws_sent={} candidates={} visible_prices={} exact_matches={} quote_data={} top={}",
         stats.event_count,
         stats.websocket_created,
         stats.websocket_frames_received,
@@ -533,6 +787,7 @@ fn network_summary(stats: &CorrelationStats, samples: &[VisibleSample]) -> Strin
         stats.candidates.len(),
         visible_prices.join(","),
         exact_matches.join(","),
+        quote_data,
         stats
             .candidates
             .iter()
@@ -541,6 +796,37 @@ fn network_summary(stats: &CorrelationStats, samples: &[VisibleSample]) -> Strin
             .collect::<Vec<_>>()
             .join("|")
     )
+}
+
+fn quote_data_summary(stats: &CorrelationStats, visible_prices: &[String]) -> String {
+    stats
+        .quote_data
+        .iter()
+        .take(16)
+        .map(|candidate| {
+            let matches_visible_after = candidate
+                .rtc
+                .as_ref()
+                .map(|rtc| visible_prices.iter().any(|price| price == rtc))
+                .unwrap_or(false);
+            format!(
+                "{}:{} lp={} regular_close={} rtc={} rtc_time={} rch={} rchp={} session={} phase={} update_mode={} rtc_matches_visible_after={}",
+                candidate.source,
+                candidate.symbol,
+                candidate.lp.as_deref().unwrap_or("<none>"),
+                candidate.regular_close.as_deref().unwrap_or("<none>"),
+                candidate.rtc.as_deref().unwrap_or("<none>"),
+                candidate.rtc_time.as_deref().unwrap_or("<none>"),
+                candidate.rch.as_deref().unwrap_or("<none>"),
+                candidate.rchp.as_deref().unwrap_or("<none>"),
+                candidate.current_session.as_deref().unwrap_or("<none>"),
+                candidate.market_phase.as_deref().unwrap_or("<none>"),
+                candidate.update_mode.as_deref().unwrap_or("<none>"),
+                matches_visible_after,
+            )
+        })
+        .collect::<Vec<_>>()
+        .join("|")
 }
 
 fn exact_candidate_matches(stats: &CorrelationStats, visible_prices: &[String]) -> Vec<String> {
@@ -712,4 +998,73 @@ fn phase_matching_accepts_hyphenated_aliases() {
     assert!(phase_matches_expected("postmarket", "post-market"));
     assert!(phase_matches_expected("premarket", "pre-market"));
     assert!(!phase_matches_expected("postmarket", "regular"));
+}
+
+#[test]
+fn tradingview_socket_messages_splits_framed_payload() {
+    assert_eq!(
+        tradingview_socket_messages("~m~7~m~{\"a\":1}~m~7~m~{\"b\":2}"),
+        vec!["{\"a\":1}", "{\"b\":2}"]
+    );
+}
+
+#[test]
+fn quote_data_extracts_public_rtc_fields() {
+    let mut stats = CorrelationStats::default();
+    let payload = r#"{"m":"qsd","p":["qs",{"n":"NASDAQ:RKLB","s":"ok","v":{"lp":105.47,"regular_close":105.47,"rtc":104.55,"rtc_time":1778278370,"rch":-0.92,"rchp":-0.87,"current_session":"post_market","market-status":{"phase":"post-market"},"update_mode":"streaming"}}]}"#;
+    maybe_push_quote_data(
+        &mut stats,
+        "wss://prodata.tradingview.com/socket.io/websocket".to_string(),
+        payload,
+        ProbeNeedles {
+            symbol: "RKLB",
+            qualified_symbol: "NASDAQ:RKLB",
+            expected_price: Some("104.55"),
+        },
+    );
+    assert_eq!(stats.quote_data.len(), 1);
+    let candidate = &stats.quote_data[0];
+    assert_eq!(candidate.symbol, "NASDAQ:RKLB");
+    assert_eq!(candidate.lp.as_deref(), Some("105.47"));
+    assert_eq!(candidate.regular_close.as_deref(), Some("105.47"));
+    assert_eq!(candidate.rtc.as_deref(), Some("104.55"));
+    assert_eq!(candidate.current_session.as_deref(), Some("post_market"));
+    assert_eq!(candidate.market_phase.as_deref(), Some("post-market"));
+}
+
+#[test]
+fn quote_session_symbol_mapping_filters_unattributed_deltas() {
+    let mut stats = CorrelationStats::default();
+    maybe_update_quote_session_symbols(
+        &mut stats,
+        r#"{"m":"quote_add_symbols","p":["qs_rklb","NASDAQ:RKLB"]}"#,
+    );
+    maybe_push_quote_data(
+        &mut stats,
+        "wss://prodata.tradingview.com/socket.io/websocket".to_string(),
+        r#"{"m":"qsd","p":["qs_rklb",{"s":"ok","v":{"rtc":104.55,"rchp":-0.87}}]}"#,
+        ProbeNeedles {
+            symbol: "RKLB",
+            qualified_symbol: "NASDAQ:RKLB",
+            expected_price: None,
+        },
+    );
+    assert_eq!(stats.quote_data.len(), 1);
+    assert_eq!(stats.quote_data[0].symbol, "NASDAQ:RKLB");
+
+    maybe_update_quote_session_symbols(
+        &mut stats,
+        r#"{"m":"quote_add_symbols","p":["qs_watchlist","NASDAQ:RKLB","NASDAQ:GOOG"]}"#,
+    );
+    maybe_push_quote_data(
+        &mut stats,
+        "wss://prodata.tradingview.com/socket.io/websocket".to_string(),
+        r#"{"m":"qsd","p":["qs_watchlist",{"s":"ok","v":{"rtc":399.95,"rchp":-0.21}}]}"#,
+        ProbeNeedles {
+            symbol: "RKLB",
+            qualified_symbol: "NASDAQ:RKLB",
+            expected_price: None,
+        },
+    );
+    assert_eq!(stats.quote_data.len(), 1);
 }

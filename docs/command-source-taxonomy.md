@@ -138,8 +138,11 @@ regular last-price fields, but did not expose the visible after-hours price
 token in the compact prop/state hits. A later bounded WebSocket correlation
 smoke sampled the visible after-market price during the same capture window and
 found exact numeric matches in received WebSocket frame summaries. That
-supports a push/WebSocket-backed source hypothesis, but it is still source
-discovery, not a stable public quote payload contract.
+supports a push/WebSocket-backed source hypothesis. A follow-up HAR/live pass
+narrowed the current best candidate to `qsd.rtc` in TradingView quote-data
+WebSocket messages, with `rch` and `rchp` acting like regular-close-relative
+change readbacks. This is still source discovery, not a stable public quote
+payload contract.
 Until a later contract explicitly exposes this source, treat it as opt-in
 visible-UI source-discovery evidence, not as part of `tv quote --source
 chart`.

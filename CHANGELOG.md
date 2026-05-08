@@ -39,6 +39,9 @@ package version omits the leading `v`.
 - Added an opt-in ignored WebSocket correlation smoke for after-hours source
   discovery, comparing compact visible right-panel price samples with CDP
   WebSocket numeric candidates without quote-session subscription.
+- Hardened the after-hours WebSocket correlation smoke to summarize public-safe
+  TradingView `qsd` quote-data fields such as `rtc`, `rtc_time`, `rch`, and
+  `rchp` when investigating visible after-market panel values.
 - Added additive `tv snapshot <SYMBOL>` contract metadata, including a
   command-local contract marker, coverage summary, missing-evidence readback,
   and machine-readable follow-up hints.
@@ -61,6 +64,9 @@ package version omits the leading `v`.
 - Recorded screenshot-backed RKLB evidence that visible right-panel
   after-market prices can correlate exactly with received WebSocket numeric
   candidates, while keeping public payload support deferred.
+- Recorded HAR and live RKLB evidence that `qsd.rtc` is the strongest current
+  backing-source candidate for the visible after-market panel value, while
+  keeping it as source-discovery evidence rather than public payload support.
 
 ## v0.12.0 - 2026-05-08
 

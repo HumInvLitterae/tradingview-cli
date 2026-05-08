@@ -10,8 +10,8 @@ Current plan:
 
 - `tradingview-cli-after-hours-websocket-correlation.md`: correlate compact
   right-side visible after-hours price samples with bounded CDP WebSocket
-  numeric candidates, while avoiding quote-session subscription and broad DOM
-  probes.
+  quote-data candidates such as `qsd.rtc`, while avoiding quote-session
+  subscription and broad DOM probes.
 
 Recently completed:
 

@@ -36,7 +36,14 @@ option, payload field, or data source.
   public-safe evidence.
 - [x] (2026-05-08T22:25Z) Ran validation for the smoke, affected live-smoke
   compile checks, skills, workspace baseline, and packaging script syntax.
-- [ ] Commit the slice.
+- [x] (2026-05-09T22:45Z) Extended the smoke to parse public-safe `qsd`
+  quote-data readback fields such as `rtc`, `rtc_time`, `rch`, and `rchp`
+  from WebSocket frames.
+- [x] (2026-05-09T23:00Z) Ran screenshot-backed RKLB postmarket evidence and
+  confirmed visible after-market price samples matched RKLB `qsd.rtc`
+  candidates during the same bounded capture.
+- [x] (2026-05-09T23:20Z) Updated docs and skills, reran validation, and
+  prepared the RTC evidence hardening for commit.
 
 ## Surprises & Discoveries
 
@@ -55,6 +62,14 @@ option, payload field, or data source.
   avoiding this misread.
   Evidence: Before and after screenshots showed RKLB selected in the right-side
   detail panel while chart overlay text reflected the hovered bar.
+
+- Observation: A Web TradingView HAR and a follow-up live run both point to
+  `qsd` quote-data messages, not the previously probed pre/post close fields,
+  as the likely backing stream for the visible right-side after-market value.
+  In the live run, visible RKLB after-market samples changed during the
+  capture window, and RKLB `qsd.rtc` candidates matched later visible samples.
+  Evidence: The smoke recorded public-safe `rtc`, `rtc_time`, `rch`, and
+  `rchp` summaries while the right-side panel remained visible and stable.
 
 ## Decision Log
 
@@ -82,6 +97,14 @@ option, payload field, or data source.
   `tv quote --source chart`.
   Date/Author: 2026-05-08 / Codex.
 
+- Decision: Treat `qsd.rtc` as the strongest current candidate for the visible
+  after-market value, but not as a shipped public field yet.
+  Rationale: `rtc` matched visible after-market samples in a bounded live run
+  and `rch`/`rchp` look like regular-close-relative change readbacks. However,
+  the source is still an internal WebSocket quote-data stream and needs a
+  separate contract before any public payload support.
+  Date/Author: 2026-05-09 / Codex.
+
 ## Outcomes & Retrospective
 
 The smoke is implemented and produced positive correlation evidence in a
@@ -89,8 +112,11 @@ postmarket RKLB run: compact visible after-market samples changed during the
 capture window, and received WebSocket frame summaries contained exact numeric
 candidates matching those visible prices. This supports the hypothesis that
 the right-side detail panel after-market value is push-fed or WebSocket-backed.
-It does not yet identify a stable field name or payload schema, so public
-payload support remains deferred.
+The next hardening pass identified `qsd.rtc` as the best current field-level
+candidate: when the visible after-market value moved, RKLB quote-data
+summaries later carried matching `rtc` values plus `rtc_time`, `rch`, and
+`rchp` readbacks. This is still source-discovery evidence, not a public
+payload contract, so payload support remains deferred.
 
 ## Context and Orientation
 
