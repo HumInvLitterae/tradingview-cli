@@ -429,6 +429,8 @@ pub struct CompareItem {
     pub errors: Vec<SnapshotSectionError>,
     /// Missing-value summary for successful sections.
     pub missing_summary: CompareMissingSummary,
+    /// Machine-readable missing evidence and follow-up readback for this item.
+    pub missing_evidence: Vec<CompareMissingEvidence>,
     /// Machine-readable available follow-up surfaces for this item.
     pub follow_up_hints: Vec<CompareFollowUpHint>,
 }
@@ -455,6 +457,21 @@ pub struct CompareMissingSummary {
     pub fundamentals: Vec<String>,
     /// Total missing field count across sections.
     pub total_count: usize,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize)]
+/// Missing evidence entry for one comparison item section.
+pub struct CompareMissingEvidence {
+    /// Section with missing evidence, such as `quote`, `info`, or `fundamentals`.
+    pub section: String,
+    /// Known missing fields when available.
+    pub missing_fields: Vec<String>,
+    /// Stable reason for the missing evidence.
+    pub missing_reason: String,
+    /// Stable follow-up kind that can help collect more evidence.
+    pub suggested_follow_up: String,
+    /// True when the suggested follow-up requires TradingView Desktop.
+    pub requires_desktop: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize)]

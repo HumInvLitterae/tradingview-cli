@@ -7,7 +7,8 @@ use crate::{
     fundamentals_symbol_typed, quote_symbol_typed, symbol_info_typed,
     types::{
         Compare, CompareFieldCoverage, CompareFollowUpHint, CompareItem, CompareItemError,
-        CompareMissingSummary, SnapshotSection, SnapshotSectionError, SnapshotSections,
+        CompareMissingEvidence, CompareMissingSummary, SnapshotSection, SnapshotSectionError,
+        SnapshotSections,
     },
 };
 
@@ -17,6 +18,10 @@ const DESKTOP_FREE_READ_CATEGORY: &str = "desktop_free_read";
 const COVERAGE_STATUS_BLOCKED: &str = "blocked";
 const COVERAGE_STATUS_COMPLETE: &str = "complete";
 const COVERAGE_STATUS_PARTIAL: &str = "partial";
+const FOLLOW_UP_CHART_QUOTE: &str = "chart_quote";
+const FOLLOW_UP_SNAPSHOT: &str = "snapshot";
+const MISSING_REASON_FIELDS: &str = "missing_fields";
+const MISSING_REASON_SECTION_ERROR: &str = "section_error";
 
 pub async fn compare_symbols(symbols: Vec<String>) -> Result<Value, AppError> {
     serde_json::to_value(compare_symbols_typed(symbols).await?)
@@ -57,6 +62,7 @@ async fn compare_one_symbol(requested_index: usize, requested_symbol: String) ->
         .iter()
         .any(|section| section.ok);
     let missing_summary = missing_summary(&sections);
+    let missing_evidence = missing_evidence(&sections, &missing_summary);
     let symbol = best_symbol(&sections);
     let observed_symbol = best_observed_symbol(&sections);
     let follow_up_hints = follow_up_hints(&symbol);
@@ -70,6 +76,7 @@ async fn compare_one_symbol(requested_index: usize, requested_symbol: String) ->
         sections,
         errors,
         missing_summary,
+        missing_evidence,
         follow_up_hints,
     }
 }
@@ -392,6 +399,54 @@ fn missing_summary(sections: &SnapshotSections) -> CompareMissingSummary {
     }
 }
 
+fn missing_evidence(
+    sections: &SnapshotSections,
+    missing_summary: &CompareMissingSummary,
+) -> Vec<CompareMissingEvidence> {
+    let mut evidence = Vec::new();
+    push_section_error_missing_evidence(&mut evidence, "quote", &sections.quote);
+    push_section_error_missing_evidence(&mut evidence, "info", &sections.info);
+    push_section_error_missing_evidence(&mut evidence, "fundamentals", &sections.fundamentals);
+
+    if !missing_summary.fundamentals.is_empty() {
+        evidence.push(CompareMissingEvidence {
+            section: "fundamentals".to_string(),
+            missing_fields: missing_summary.fundamentals.clone(),
+            missing_reason: MISSING_REASON_FIELDS.to_string(),
+            suggested_follow_up: FOLLOW_UP_SNAPSHOT.to_string(),
+            requires_desktop: false,
+        });
+    }
+
+    evidence
+}
+
+fn push_section_error_missing_evidence(
+    evidence: &mut Vec<CompareMissingEvidence>,
+    section_name: &str,
+    section: &SnapshotSection,
+) {
+    if section.error.is_none() {
+        return;
+    }
+
+    evidence.push(CompareMissingEvidence {
+        section: section_name.to_string(),
+        missing_fields: Vec::new(),
+        missing_reason: MISSING_REASON_SECTION_ERROR.to_string(),
+        suggested_follow_up: missing_evidence_follow_up(section_name).to_string(),
+        requires_desktop: section_name == "quote",
+    });
+}
+
+fn missing_evidence_follow_up(section_name: &str) -> &'static str {
+    if section_name == "quote" {
+        FOLLOW_UP_CHART_QUOTE
+    } else {
+        FOLLOW_UP_SNAPSHOT
+    }
+}
+
 fn section_string_array(section: &SnapshotSection, key: &str) -> Vec<String> {
     section
         .data
@@ -466,11 +521,22 @@ mod tests {
 
         assert_eq!(best_symbol(&sections), json!("NASDAQ:AAPL"));
         assert_eq!(best_observed_symbol(&sections), json!("AAPL"));
+        let summary = missing_summary(&sections);
         assert_eq!(
-            missing_summary(&sections).fundamentals,
+            summary.fundamentals,
             vec!["dividends_yield_current".to_string()]
         );
-        assert_eq!(missing_summary(&sections).total_count, 1);
+        assert_eq!(summary.total_count, 1);
+        let evidence = missing_evidence(&sections, &summary);
+        assert_eq!(evidence.len(), 1);
+        assert_eq!(evidence[0].section, "fundamentals");
+        assert_eq!(evidence[0].missing_reason, "missing_fields");
+        assert_eq!(evidence[0].suggested_follow_up, "snapshot");
+        assert!(!evidence[0].requires_desktop);
+        assert_eq!(
+            evidence[0].missing_fields,
+            vec!["dividends_yield_current".to_string()]
+        );
     }
 
     #[test]
@@ -508,6 +574,16 @@ mod tests {
                 ],
                 total_count: 2,
             },
+            missing_evidence: vec![CompareMissingEvidence {
+                section: "fundamentals".to_string(),
+                missing_fields: vec![
+                    "next_dividend_date".to_string(),
+                    "earnings_release_next_date".to_string(),
+                ],
+                missing_reason: "missing_fields".to_string(),
+                suggested_follow_up: "snapshot".to_string(),
+                requires_desktop: false,
+            }],
             follow_up_hints: follow_up_hints(&json!("NASDAQ:AAPL")),
         };
         let second = CompareItem {
@@ -545,6 +621,13 @@ mod tests {
                 fundamentals: Vec::new(),
                 total_count: 0,
             },
+            missing_evidence: vec![CompareMissingEvidence {
+                section: "quote".to_string(),
+                missing_fields: Vec::new(),
+                missing_reason: "section_error".to_string(),
+                suggested_follow_up: "chart_quote".to_string(),
+                requires_desktop: true,
+            }],
             follow_up_hints: follow_up_hints(&Value::Null),
         };
 
@@ -607,8 +690,94 @@ mod tests {
         );
         assert_eq!(details["items"][0]["requested_index"], 0);
         assert_eq!(
+            details["items"][0]["missing_evidence"][0]["suggested_follow_up"],
+            "chart_quote"
+        );
+        assert_eq!(
+            details["items"][0]["missing_evidence"][0]["requires_desktop"],
+            true
+        );
+        assert_eq!(
+            details["items"][0]["missing_evidence"][1]["suggested_follow_up"],
+            "snapshot"
+        );
+        assert_eq!(
             details["summary"]["resolved_symbols"][1]["requested_index"],
             1
+        );
+    }
+
+    #[test]
+    fn missing_evidence_reports_section_errors_and_empty_state() {
+        let sections = SnapshotSections {
+            quote: SnapshotSection {
+                ok: false,
+                data: None,
+                error: Some(SnapshotSectionError {
+                    section: "quote".to_string(),
+                    kind: ErrorKind::InternalApiUnavailable,
+                    message: "temporary failure".to_string(),
+                    details: None,
+                }),
+            },
+            info: SnapshotSection {
+                ok: false,
+                data: None,
+                error: Some(SnapshotSectionError {
+                    section: "info".to_string(),
+                    kind: ErrorKind::InternalApiUnavailable,
+                    message: "temporary failure".to_string(),
+                    details: None,
+                }),
+            },
+            fundamentals: SnapshotSection {
+                ok: false,
+                data: None,
+                error: Some(SnapshotSectionError {
+                    section: "fundamentals".to_string(),
+                    kind: ErrorKind::InternalApiUnavailable,
+                    message: "temporary failure".to_string(),
+                    details: None,
+                }),
+            },
+        };
+        let summary = missing_summary(&sections);
+        let evidence = missing_evidence(&sections, &summary);
+
+        assert_eq!(evidence.len(), 3);
+        assert_eq!(evidence[0].section, "quote");
+        assert_eq!(evidence[0].missing_fields, Vec::<String>::new());
+        assert_eq!(evidence[0].missing_reason, "section_error");
+        assert_eq!(evidence[0].suggested_follow_up, "chart_quote");
+        assert!(evidence[0].requires_desktop);
+        assert_eq!(evidence[1].section, "info");
+        assert_eq!(evidence[1].suggested_follow_up, "snapshot");
+        assert!(!evidence[1].requires_desktop);
+        assert_eq!(evidence[2].section, "fundamentals");
+        assert_eq!(evidence[2].suggested_follow_up, "snapshot");
+        assert!(!evidence[2].requires_desktop);
+
+        let complete_sections = SnapshotSections {
+            quote: SnapshotSection {
+                ok: true,
+                data: Some(json!({"symbol": "NASDAQ:AAPL"})),
+                error: None,
+            },
+            info: SnapshotSection {
+                ok: true,
+                data: Some(json!({"symbol": "AAPL"})),
+                error: None,
+            },
+            fundamentals: SnapshotSection {
+                ok: true,
+                data: Some(json!({"symbol": "NASDAQ:AAPL"})),
+                error: None,
+            },
+        };
+        let complete_missing_summary = missing_summary(&complete_sections);
+        assert_eq!(
+            missing_evidence(&complete_sections, &complete_missing_summary),
+            Vec::<CompareMissingEvidence>::new()
         );
     }
 
@@ -666,6 +835,13 @@ mod tests {
                 fundamentals: Vec::new(),
                 total_count: 0,
             },
+            missing_evidence: vec![CompareMissingEvidence {
+                section: "quote".to_string(),
+                missing_fields: Vec::new(),
+                missing_reason: "section_error".to_string(),
+                suggested_follow_up: "chart_quote".to_string(),
+                requires_desktop: true,
+            }],
             follow_up_hints: follow_up_hints(&Value::Null),
         };
 
@@ -740,6 +916,29 @@ mod tests {
                 fundamentals: Vec::new(),
                 total_count: 0,
             },
+            missing_evidence: vec![
+                CompareMissingEvidence {
+                    section: "quote".to_string(),
+                    missing_fields: Vec::new(),
+                    missing_reason: "section_error".to_string(),
+                    suggested_follow_up: "chart_quote".to_string(),
+                    requires_desktop: true,
+                },
+                CompareMissingEvidence {
+                    section: "info".to_string(),
+                    missing_fields: Vec::new(),
+                    missing_reason: "section_error".to_string(),
+                    suggested_follow_up: "snapshot".to_string(),
+                    requires_desktop: false,
+                },
+                CompareMissingEvidence {
+                    section: "fundamentals".to_string(),
+                    missing_fields: Vec::new(),
+                    missing_reason: "section_error".to_string(),
+                    suggested_follow_up: "snapshot".to_string(),
+                    requires_desktop: false,
+                },
+            ],
             follow_up_hints: follow_up_hints(&Value::Null),
         }
     }

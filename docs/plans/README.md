@@ -8,10 +8,10 @@ for release and next-phase planning.
 
 Current plan:
 
-- `tradingview-cli-compare-follow-up-contract.md`: stabilize `tv compare`
-  follow-up hint vocabulary, field coverage semantics, requested-order join
-  rules, coverage status readback, and failure-side contract guards for the
-  first `v0.12.0` implementation slice.
+- `tradingview-cli-compare-missing-evidence.md`: add item-level
+  `missing_evidence` readback to `tv compare` so downstream agents can route
+  incomplete quote, info, and fundamentals evidence to explicit follow-up
+  surfaces without changing command behavior.
 
 ## Archived plans
 
@@ -135,6 +135,7 @@ Important archived plan categories:
 - v0.11 compare contract metadata
 - v0.11 pre-release completion and refactor audit
 - v0.11.0 release readiness
+- v0.12 compare follow-up contract polish
 
 For command contract details, prefer the notes under `docs/notes/` before
 reading archived implementation plans.

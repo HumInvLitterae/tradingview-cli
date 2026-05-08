@@ -93,7 +93,10 @@ substantive conclusions. Treat `contract_version`, `requested_index`,
 per-item `follow_up_hints`, `summary.field_coverage`, and
 `summary.coverage_status` as downstream readback helpers for schema guards,
 input-order joins, follow-up surfaces, and evidence gaps. `coverage_status`
-describes evidence completeness only; it is not a ranking or recommendation. Use
+describes evidence completeness only; it is not a ranking or recommendation.
+Use `items[].missing_evidence[]` to see which section is missing evidence and
+whether a stable follow-up such as `snapshot` or `chart_quote` is the relevant
+next readback surface; confirm conclusions against raw `items[]`. Use
 `tv quotes` when only ordered quote fields are needed, and use
 `tv snapshot <SYMBOL>` for a single symbol that needs more detail after
 comparison.

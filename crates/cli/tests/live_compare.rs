@@ -349,6 +349,11 @@ fn assert_item_shape(symbol: &str, item: &Value, envelope: &Value, elapsed: Dura
         || item.get("errors").and_then(Value::as_array).is_none()
         || item.get("missing_summary").is_none()
         || item
+            .get("missing_evidence")
+            .and_then(Value::as_array)
+            .map(|evidence| valid_missing_evidence(evidence))
+            .is_none()
+        || item
             .get("follow_up_hints")
             .and_then(Value::as_array)
             .map(|hints| valid_follow_up_hints(hints))
@@ -406,6 +411,29 @@ fn valid_follow_up_hints(hints: &[Value]) -> bool {
                     && hint.get("reason").and_then(Value::as_str).is_some()
             })
         })
+}
+
+fn valid_missing_evidence(evidence: &[Value]) -> bool {
+    evidence.iter().all(|entry| {
+        let section = entry.get("section").and_then(Value::as_str);
+        let reason = entry.get("missing_reason").and_then(Value::as_str);
+        let follow_up = entry.get("suggested_follow_up").and_then(Value::as_str);
+        let requires_desktop = entry.get("requires_desktop").and_then(Value::as_bool);
+        let missing_fields_are_array = entry
+            .get("missing_fields")
+            .and_then(Value::as_array)
+            .is_some();
+
+        missing_fields_are_array
+            && matches!(section, Some("quote" | "info" | "fundamentals"))
+            && matches!(reason, Some("section_error" | "missing_fields"))
+            && matches!(follow_up, Some("chart_quote" | "snapshot"))
+            && matches!(
+                (section, follow_up, requires_desktop),
+                (Some("quote"), Some("chart_quote"), Some(true))
+                    | (Some("info" | "fundamentals"), Some("snapshot"), Some(false))
+            )
+    })
 }
 
 fn assert_section_shape(

@@ -41,7 +41,9 @@ then inspect the ordered `items` evidence for the actual comparison.
 Desktop-free source boundary and do not imply ranking or recommendation.
 `summary.coverage_status` is evidence coverage only: `complete`, `partial`, or
 `blocked` describes whether requested items have usable sections and missing
-fields, not which symbol is better.
+fields, not which symbol is better. Per-item `missing_evidence` entries route
+known gaps to stable follow-up kinds such as `snapshot` or `chart_quote`
+without adding reads or changing the source category.
 
 ### Desktop-backed read
 
