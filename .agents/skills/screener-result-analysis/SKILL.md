@@ -52,7 +52,9 @@ Choose follow-up reads based on the question:
   quick resolution, section-success, field-coverage, coverage-status, and
   requested-order readback, then inspect raw `items[]` before comparing
   candidates. Per-item `follow_up_hints` name possible next evidence commands;
-  they are not recommendations.
+  they are not recommendations. Per-item `missing_evidence` names section gaps
+  and stable follow-up kinds such as `snapshot` or `chart_quote` for routing
+  more evidence.
 - `tv snapshot <SYMBOL>` for a one-symbol Desktop-free evidence packet that
   combines quote, info, and fundamentals sections before chart observation.
 - `tv info <SYMBOL>` for symbol metadata when that is the only needed section.

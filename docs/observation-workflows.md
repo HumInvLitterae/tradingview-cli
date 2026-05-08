@@ -48,9 +48,12 @@ as downstream readback helpers. `summary.coverage_status` is a compact
 evidence-coverage readback: `complete` means every requested item has quote,
 info, and fundamentals sections with no missing fields; `partial` means some
 evidence exists but section errors or missing fields remain; `blocked` means
-the structured compare payload has no usable per-item evidence. These fields
-make ordering, schema guards, follow-up surfaces, and evidence gaps easier to
-consume, but they do not rank symbols or replace raw evidence.
+the structured compare payload has no usable per-item evidence.
+`items[].missing_evidence[]` names the section with missing evidence, known
+missing fields, the missing reason, and a stable follow-up kind such as
+`snapshot` or `chart_quote`. These fields make ordering, schema guards,
+follow-up surfaces, and evidence gaps easier to consume, but they do not rank
+symbols or replace raw evidence.
 
 Treat scanner-backed price reads as screening evidence, not as a realtime
 entitlement guarantee. Preserve `source_category`, `requires_desktop`,

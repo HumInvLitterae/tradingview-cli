@@ -12,6 +12,9 @@ package version omits the leading `v`.
 - Added additive `summary.coverage_status` readback to `tv compare
   <SYMBOL>...` so downstream tools can distinguish complete, partial, and
   blocked evidence coverage without ranking or recommending symbols.
+- Added additive `items[].missing_evidence[]` readback to `tv compare
+  <SYMBOL>...` so downstream tools can route quote, info, and fundamentals
+  evidence gaps to explicit follow-up surfaces.
 
 ### Documentation
 
