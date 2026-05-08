@@ -36,6 +36,8 @@ package version omits the leading `v`.
 - Recorded that the first attempted postmarket Desktop quote-session smoke did
   not observe a postmarket phase, so Desktop quote-session pre/post fields
   remain research evidence rather than public payload values.
+- Recorded the pre-`v0.13.0` completion and refactor audit before release
+  readiness.
 
 ## v0.12.0 - 2026-05-08
 
