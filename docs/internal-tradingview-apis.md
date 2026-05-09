@@ -148,7 +148,9 @@ Safety boundary:
   Desktop-backed WebSocket quote-data readback surface for this source. It
   can carry `rtc`, `rtc_time`, `rch`, `rchp`, `current_session`,
   `market_phase`, and `update_mode` as source-specific readbacks rather than
-  scanner-style extended-hours fields.
+  scanner-style extended-hours fields. The next maturity step is additive
+  contract and availability metadata so an agent can distinguish "no matching
+  quote-data frame arrived" from "the symbol has no price".
 - `ohlcv` depends on the selected chart target's main-series bars collection.
   When the chart API or bars collection is unavailable, it should fail with
   structured readiness details and a target-selection recovery hint rather than
