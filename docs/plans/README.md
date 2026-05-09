@@ -8,12 +8,15 @@ for release and next-phase planning.
 
 Current plan:
 
-- `tradingview-cli-v0.13-pre-release-audit-update.md`: refresh the v0.13
-  pre-release audit after adding the explicit quote-data source and its
-  opt-in live contract smoke.
+- `tradingview-cli-quote-help-source-boundary.md`: clarify `tv quote` and
+  `tv quotes` help so scanner-backed reads are not mistaken for guaranteed
+  realtime data.
 
 Recently completed:
 
+- `tradingview-cli-v0.13-pre-release-audit-update.md`: refreshed the v0.13
+  pre-release audit after adding the explicit quote-data source and its
+  opt-in live contract smoke.
 - `tradingview-cli-quote-data-live-smoke.md`: added an opt-in ignored live
   contract smoke for `tv quote <SYMBOL> --source quote-data`, accepting
   structured unavailable results when no bounded `qsd.rtc` frame arrives.

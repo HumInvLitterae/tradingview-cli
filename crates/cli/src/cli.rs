@@ -84,21 +84,21 @@ pub enum Command {
         command: ScreenerCommand,
     },
     #[command(
-        about = "Get real-time price quote",
-        long_about = "Get a real-time price quote.\n\nWithout SYMBOL, reads the current chart target. With SYMBOL, the default source is Desktop-free scanner REST. Use `--source chart` when you explicitly want the selected TradingView Desktop chart feed, or `--source auto` to prefer chart data and fall back to scanner only when the chart path is unavailable before mutation. Use `--source quote-data` for a bounded Desktop-backed WebSocket quote-data readback such as `qsd.rtc`; it is separate from chart main-series quote and scanner extended-hours. Scanner-backed symbol quotes include `time`, `update_mode`, `delay_seconds`, and an additive `extended_hours` object for premarket and postmarket values when TradingView returns them. Chart-source quotes read the selected chart main-series last bar and report `session_boundary`; they do not guarantee scanner-style extended-hours fields. If more than one TradingView target is open for chart reads, run `tv tab list` and pass `tv --target-id <ID> quote ...`."
+        about = "Get source-labeled quote data",
+        long_about = "Get quote data from an explicit source.\n\nWithout SYMBOL, reads the current chart target. With SYMBOL, the default source is Desktop-free scanner REST. Scanner-backed symbol quotes are not a realtime guarantee; inspect `time`, `update_mode`, and `delay_seconds` for freshness, and use the additive `extended_hours` object for premarket and postmarket values when TradingView returns them. Use `--source chart` when you explicitly want the selected TradingView Desktop chart feed. Chart-source quotes read the selected chart main-series last bar and report `session_boundary`; they do not guarantee scanner-style extended-hours fields. Use `--source auto` to prefer chart data and fall back to scanner only when the chart path is unavailable before mutation; auto does not use quote-data. Use `--source quote-data` for a bounded Desktop-backed WebSocket quote-data readback such as `qsd.rtc`; it is separate from chart main-series quote and scanner extended-hours. If more than one TradingView target is open for chart reads, run `tv tab list` and pass `tv --target-id <ID> quote ...`."
     )]
     Quote {
         symbol: Option<String>,
         #[arg(
             long,
             value_enum,
-            help = "Choose quote source: scanner, chart, or auto"
+            help = "Choose quote source: scanner, chart, quote-data, or auto"
         )]
         source: Option<QuoteSource>,
     },
     #[command(
-        about = "Get Desktop-free quotes for multiple symbols",
-        long_about = "Get Desktop-free scanner-backed quotes for multiple symbols.\n\nThe command preserves input order in data.items. Each successful item contains the same quote payload shape as `tv quote <SYMBOL>` when its Desktop-free scanner path succeeds. Failed items contain structured errors and do not fall back to chart target selection."
+        about = "Get scanner-backed quotes for multiple symbols",
+        long_about = "Get Desktop-free scanner-backed quotes for multiple symbols.\n\nScanner-backed quotes are not a realtime guarantee; inspect each item's `time`, `update_mode`, and `delay_seconds` for freshness. The command preserves input order in data.items. Each successful item contains the same quote payload shape as `tv quote <SYMBOL>` when its Desktop-free scanner path succeeds. Failed items contain structured errors and do not fall back to chart target selection."
     )]
     Quotes { symbols: Vec<String> },
     #[command(about = "Get current indicator values")]

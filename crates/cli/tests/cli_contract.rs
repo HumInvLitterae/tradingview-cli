@@ -39,6 +39,11 @@ fn help_lists_v1_commands() {
         .stdout(predicate::str::contains("values"))
         .stdout(predicate::str::contains("discover"))
         .stdout(predicate::str::contains("quotes"))
+        .stdout(predicate::str::contains("Get source-labeled quote data"))
+        .stdout(predicate::str::contains(
+            "Get scanner-backed quotes for multiple symbols",
+        ))
+        .stdout(predicate::str::contains("Get real-time price quote").not())
         .stdout(predicate::str::contains("bars"))
         .stdout(predicate::str::contains("ui-state"))
         .stdout(predicate::str::contains("watchlist"))
@@ -84,8 +89,14 @@ fn quote_help_explains_symbol_and_target_selection() {
         .stdout(predicate::str::contains("chart"))
         .stdout(predicate::str::contains("quote-data"))
         .stdout(predicate::str::contains("auto"))
+        .stdout(predicate::str::contains("realtime guarantee"))
+        .stdout(predicate::str::contains("time"))
+        .stdout(predicate::str::contains("update_mode"))
+        .stdout(predicate::str::contains("delay_seconds"))
         .stdout(predicate::str::contains("extended_hours"))
         .stdout(predicate::str::contains("session_boundary"))
+        .stdout(predicate::str::contains("auto does not use quote-data"))
+        .stdout(predicate::str::contains("Get a real-time price quote").not())
         .stdout(predicate::str::contains("--target-id"));
 }
 
@@ -95,8 +106,13 @@ fn quotes_help_explains_batch_symbol_reads() {
         .assert()
         .success()
         .stdout(predicate::str::contains("[SYMBOLS]"))
-        .stdout(predicate::str::contains("Desktop-free"))
-        .stdout(predicate::str::contains("data.items"));
+        .stdout(predicate::str::contains("scanner-backed"))
+        .stdout(predicate::str::contains("realtime guarantee"))
+        .stdout(predicate::str::contains("time"))
+        .stdout(predicate::str::contains("update_mode"))
+        .stdout(predicate::str::contains("delay_seconds"))
+        .stdout(predicate::str::contains("data.items"))
+        .stdout(predicate::str::contains("real-time").not());
 }
 
 #[test]
