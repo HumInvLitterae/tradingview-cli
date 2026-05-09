@@ -76,6 +76,8 @@ package version omits the leading `v`.
 - Recorded HAR and live RKLB evidence that `qsd.rtc` is the strongest current
   backing-source candidate for the visible after-market panel value, while
   keeping it as source-discovery evidence rather than public payload support.
+- Refreshed the pre-`v0.13.0` audit after adding the explicit quote-data
+  source and its opt-in live contract smoke.
 
 ## v0.12.0 - 2026-05-08
 
