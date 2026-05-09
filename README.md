@@ -98,6 +98,11 @@ score, or recommend symbols. See `docs/observation-workflows.md` for the
 practical choice between `quotes`, `compare`, `snapshot`, and chart follow-up
 commands.
 
+Scanner-backed `tv quote <SYMBOL>` and `tv quotes <SYMBOL>...` are
+Desktop-free, but they are not a realtime guarantee. Inspect `time`,
+`update_mode`, and `delay_seconds` in price-bearing payloads when freshness
+matters.
+
 To use Desktop-backed reads or operations, launch TradingView Desktop with CDP
 enabled:
 

@@ -78,6 +78,8 @@ package version omits the leading `v`.
   keeping it as source-discovery evidence rather than public payload support.
 - Refreshed the pre-`v0.13.0` audit after adding the explicit quote-data
   source and its opt-in live contract smoke.
+- Clarified `tv quote` and `tv quotes` help so scanner-backed reads are not
+  mistaken for guaranteed realtime data and point users to freshness metadata.
 
 ## v0.12.0 - 2026-05-08
 
