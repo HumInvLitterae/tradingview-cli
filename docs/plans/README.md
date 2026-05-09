@@ -8,12 +8,15 @@ for release and next-phase planning.
 
 Current plan:
 
-- `tradingview-cli-quote-data-availability-diagnostics.md`: add
-  machine-readable quote-data unavailable reasons, wait-summary counters, and
-  session readback without changing the explicit source boundary.
+- `tradingview-cli-v0.14-pre-release-audit.md`: audit quote-data source
+  boundaries, availability diagnostics, docs, runtime skills, and deferred
+  work before `v0.14.0` release readiness.
 
 Recently completed:
 
+- `tradingview-cli-quote-data-availability-diagnostics.md`: added
+  machine-readable quote-data unavailable reasons, wait-summary counters, and
+  session readback without changing the explicit source boundary.
 - `tradingview-cli-quote-data-session-contract.md`: added additive
   `quote-data` contract metadata and source-availability readback for
   `tv quote <SYMBOL> --source quote-data`.
