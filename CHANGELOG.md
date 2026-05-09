@@ -7,6 +7,8 @@ package version omits the leading `v`.
 
 ## Unreleased
 
+## v0.14.0 - 2026-05-10
+
 ### Added
 
 - Added `contract_version: "quote_data.v1"` and `source_availability`

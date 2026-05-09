@@ -8,12 +8,15 @@ for release and next-phase planning.
 
 Current plan:
 
-- `tradingview-cli-v0.14-pre-release-audit.md`: audit quote-data source
-  boundaries, availability diagnostics, docs, runtime skills, and deferred
-  work before `v0.14.0` release readiness.
+- `tradingview-cli-v0.14.0-release-readiness.md`: prepare the `v0.14.0`
+  release state, including version, changelog, release notes, README asset
+  examples, and package validation.
 
 Recently completed:
 
+- `tradingview-cli-v0.14-pre-release-audit.md`: audited quote-data source
+  boundaries, availability diagnostics, docs, runtime skills, and deferred
+  work before `v0.14.0` release readiness.
 - `tradingview-cli-quote-data-availability-diagnostics.md`: added
   machine-readable quote-data unavailable reasons, wait-summary counters, and
   session readback without changing the explicit source boundary.
