@@ -173,6 +173,9 @@ current field-level candidate for that visible after-market value, while
 `tv quote <SYMBOL> --source quote-data` when that explicit Desktop-backed
 quote-data readback is needed. It is not an implicit extension of
 `tv quote --source chart` and does not merge scanner REST `extended_hours`.
+If no matching `qsd.rtc` frame arrives during the bounded wait, treat the
+structured unavailable result as source availability rather than as a reason
+to guess a price.
 
 ## Visual Evidence Recovery
 
