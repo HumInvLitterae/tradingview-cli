@@ -147,9 +147,11 @@ Desktop-backed WebSocket quote-data readback and remains separate from
 `tv quote --source chart` and scanner REST `extended_hours`. It should not be
 used as a multi-symbol realtime feed, and if no matching `qsd.rtc` arrives
 during the bounded wait it returns structured unavailable details rather than
-guessed data. The v0.14 direction is to make that unavailable path more
-machine-readable with command-local contract metadata and source-availability
-readback, while preserving the same source boundary.
+guessed data. In v0.14, quote-data payloads and structured unavailable
+details carry command-local `contract_version: "quote_data.v1"` and
+`source_availability` readback. Treat `source_availability.status:
+"unavailable"` as "no matching quote-data source evidence arrived during the
+bounded wait", not as "the symbol has no price".
 
 ### Desktop-backed operation
 

@@ -9,6 +9,7 @@ const QUOTE_DATA_WAIT: Duration = Duration::from_millis(3_500);
 #[cfg(test)]
 const QUOTE_DATA_WAIT: Duration = Duration::from_millis(50);
 const EVENT_POLL_TIMEOUT: Duration = Duration::from_millis(250);
+const QUOTE_DATA_CONTRACT_VERSION: &str = "quote_data.v1";
 
 pub async fn quote_data(runtime: &mut CdpClient, symbol: &str) -> Result<Value, AppError> {
     let requested_symbol = symbol.trim();
@@ -32,10 +33,13 @@ pub async fn quote_data(runtime: &mut CdpClient, symbol: &str) -> Result<Value, 
             Err(err) => return Err(err),
         };
         if let Some(candidate) = observer.handle_event(&event) {
+            let elapsed = started.elapsed();
+            let wait_summary = observer.summary(elapsed);
             return Ok(success_payload(
                 requested_symbol,
                 candidate,
-                started.elapsed(),
+                elapsed,
+                wait_summary,
             ));
         }
     }
@@ -242,8 +246,10 @@ fn success_payload(
     requested_symbol: &str,
     candidate: QuoteDataCandidate,
     elapsed: Duration,
+    wait_summary: Value,
 ) -> Value {
     json!({
+        "contract_version": QUOTE_DATA_CONTRACT_VERSION,
         "source": "desktop_quote_data_ws",
         "source_category": "desktop_backed_read",
         "requires_desktop": true,
@@ -256,6 +262,7 @@ fn success_payload(
         "chart_main_series_included": false,
         "bounded_wait_ms": QUOTE_DATA_WAIT.as_millis(),
         "elapsed_ms": elapsed.as_millis(),
+        "source_availability": source_availability(true, true, wait_summary),
         "quote_data": {
             "rtc": candidate.rtc,
             "rtc_time": candidate.rtc_time,
@@ -270,11 +277,13 @@ fn success_payload(
 }
 
 fn unavailable_error(requested_symbol: &str, wait_summary: Value) -> AppError {
+    let source_availability = source_availability(false, false, wait_summary.clone());
     AppError::new(
         ErrorKind::InternalApiUnavailable,
         "TradingView quote-data WebSocket did not provide qsd.rtc for the requested symbol within the bounded wait",
     )
     .with_details(json!({
+        "contract_version": QUOTE_DATA_CONTRACT_VERSION,
         "source": "desktop_quote_data_ws",
         "source_category": "desktop_backed_read",
         "requires_desktop": true,
@@ -284,9 +293,20 @@ fn unavailable_error(requested_symbol: &str, wait_summary: Value) -> AppError {
         "price_source": "tradingview_quote_data_qsd",
         "scanner_extended_hours_included": false,
         "chart_main_series_included": false,
+        "source_availability": source_availability,
         "wait_summary": wait_summary,
         "next_action_hint": "Retry while the selected TradingView page is streaming the requested symbol, or use `--source scanner` for scanner REST extended_hours when delayed scanner data is acceptable.",
     }))
+}
+
+fn source_availability(available: bool, rtc_observed: bool, wait_summary: Value) -> Value {
+    json!({
+        "available": available,
+        "status": if available { "available" } else { "unavailable" },
+        "rtc_observed": rtc_observed,
+        "raw_frame_included": false,
+        "wait_summary": wait_summary,
+    })
 }
 
 fn tradingview_socket_messages(payload: &str) -> Vec<String> {
@@ -413,10 +433,28 @@ mod tests {
                 update_mode: json!("streaming"),
             },
             Duration::from_millis(12),
+            json!({
+                "bounded_wait_ms": 50,
+                "elapsed_ms": 12,
+                "websocket_events_seen": 1,
+                "websocket_frames_seen": 1,
+                "qsd_messages_seen": 1,
+                "matching_qsd_messages_seen": 1,
+                "raw_frame_included": false,
+            }),
         );
 
+        assert_eq!(payload["contract_version"], QUOTE_DATA_CONTRACT_VERSION);
         assert_eq!(payload["source"], "desktop_quote_data_ws");
         assert_eq!(payload["quote_data"]["rtc"], json!(104.55));
+        assert_eq!(payload["source_availability"]["available"], true);
+        assert_eq!(payload["source_availability"]["status"], "available");
+        assert_eq!(payload["source_availability"]["rtc_observed"], true);
+        assert_eq!(payload["source_availability"]["raw_frame_included"], false);
+        assert_eq!(
+            payload["source_availability"]["wait_summary"]["matching_qsd_messages_seen"],
+            1
+        );
         assert!(payload.get("extended_hours").is_none());
         assert_eq!(payload["chart_main_series_included"], false);
         assert_eq!(payload["scanner_extended_hours_included"], false);
@@ -434,8 +472,17 @@ mod tests {
         );
         let details = error.details.unwrap();
 
+        assert_eq!(details["contract_version"], QUOTE_DATA_CONTRACT_VERSION);
         assert_eq!(details["source"], "desktop_quote_data_ws");
         assert_eq!(details["wait_summary"]["raw_frame_included"], false);
+        assert_eq!(details["source_availability"]["available"], false);
+        assert_eq!(details["source_availability"]["status"], "unavailable");
+        assert_eq!(details["source_availability"]["rtc_observed"], false);
+        assert_eq!(details["source_availability"]["raw_frame_included"], false);
+        assert_eq!(
+            details["source_availability"]["wait_summary"]["raw_frame_included"],
+            false
+        );
         assert!(details.get("raw").is_none());
     }
 }

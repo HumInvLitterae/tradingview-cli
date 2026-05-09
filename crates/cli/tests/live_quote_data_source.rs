@@ -133,6 +133,7 @@ fn assert_quote_data_success(symbol: &str, envelope: &Value, elapsed: Duration) 
     let data = envelope.get("data").unwrap_or(&Value::Null);
     let quote_data = data.get("quote_data").unwrap_or(&Value::Null);
     if envelope.get("command").and_then(Value::as_str) != Some("quote")
+        || data.get("contract_version").and_then(Value::as_str) != Some("quote_data.v1")
         || data.get("source").and_then(Value::as_str) != Some("desktop_quote_data_ws")
         || data.get("source_category").and_then(Value::as_str) != Some("desktop_backed_read")
         || data.get("requires_desktop").and_then(Value::as_bool) != Some(true)
@@ -144,6 +145,26 @@ fn assert_quote_data_success(symbol: &str, envelope: &Value, elapsed: Duration) 
             != Some(false)
         || data
             .get("chart_main_series_included")
+            .and_then(Value::as_bool)
+            != Some(false)
+        || data
+            .pointer("/source_availability/available")
+            .and_then(Value::as_bool)
+            != Some(true)
+        || data
+            .pointer("/source_availability/status")
+            .and_then(Value::as_str)
+            != Some("available")
+        || data
+            .pointer("/source_availability/rtc_observed")
+            .and_then(Value::as_bool)
+            != Some(true)
+        || data
+            .pointer("/source_availability/raw_frame_included")
+            .and_then(Value::as_bool)
+            != Some(false)
+        || data
+            .pointer("/source_availability/wait_summary/raw_frame_included")
             .and_then(Value::as_bool)
             != Some(false)
         || quote_data.get("rtc").is_none()
@@ -176,6 +197,7 @@ fn assert_quote_data_unavailable(
     }
     if envelope.get("command").and_then(Value::as_str) != Some("quote")
         || error.get("kind").and_then(Value::as_str) != Some("internal_api_unavailable")
+        || details.get("contract_version").and_then(Value::as_str) != Some("quote_data.v1")
         || details.get("source").and_then(Value::as_str) != Some("desktop_quote_data_ws")
         || details.get("source_category").and_then(Value::as_str) != Some("desktop_backed_read")
         || details.get("requires_desktop").and_then(Value::as_bool) != Some(true)
@@ -183,6 +205,26 @@ fn assert_quote_data_unavailable(
         || details.get("requested_symbol").and_then(Value::as_str) != Some(symbol)
         || details
             .pointer("/wait_summary/raw_frame_included")
+            .and_then(Value::as_bool)
+            != Some(false)
+        || details
+            .pointer("/source_availability/available")
+            .and_then(Value::as_bool)
+            != Some(false)
+        || details
+            .pointer("/source_availability/status")
+            .and_then(Value::as_str)
+            != Some("unavailable")
+        || details
+            .pointer("/source_availability/rtc_observed")
+            .and_then(Value::as_bool)
+            != Some(false)
+        || details
+            .pointer("/source_availability/raw_frame_included")
+            .and_then(Value::as_bool)
+            != Some(false)
+        || details
+            .pointer("/source_availability/wait_summary/raw_frame_included")
             .and_then(Value::as_bool)
             != Some(false)
     {
@@ -231,11 +273,14 @@ fn summarize_envelope(envelope: &Value) -> String {
     let error = envelope.get("error").unwrap_or(&Value::Null);
     let details = error.get("details").unwrap_or(&Value::Null);
     format!(
-        "success={} command={} kind={} message={} source={} requested={} observed={} rtc_present={} market_phase={} current_session={} wait_summary={}",
+        "success={} command={} kind={} message={} contract={} source={} requested={} observed={} availability={} rtc_present={} market_phase={} current_session={} wait_summary={}",
         bool_field(envelope, "success"),
         string_field(envelope, "command").unwrap_or("<missing>"),
         string_field(error, "kind").unwrap_or("<none>"),
         string_field(error, "message").unwrap_or("<none>"),
+        string_field(data, "contract_version")
+            .or_else(|| string_field(details, "contract_version"))
+            .unwrap_or("<missing>"),
         string_field(data, "source")
             .or_else(|| string_field(details, "source"))
             .unwrap_or("<missing>"),
@@ -244,6 +289,10 @@ fn summarize_envelope(envelope: &Value) -> String {
             .unwrap_or("<missing>"),
         string_field(data, "observed_symbol")
             .or_else(|| string_field(details, "observed_symbol"))
+            .unwrap_or("<missing>"),
+        data.pointer("/source_availability/status")
+            .or_else(|| details.pointer("/source_availability/status"))
+            .and_then(Value::as_str)
             .unwrap_or("<missing>"),
         data.pointer("/quote_data/rtc").is_some(),
         data.pointer("/quote_data/market_phase")
