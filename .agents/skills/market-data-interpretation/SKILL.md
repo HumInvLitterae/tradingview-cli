@@ -116,7 +116,12 @@ unavailable details when no matching `qsd.rtc` arrives during the bounded
 wait. Read `contract_version: "quote_data.v1"` and `source_availability` to
 distinguish an available `qsd.rtc` readback from bounded-wait source
 unavailability; do not treat unavailable quote-data as evidence that the
-symbol has no market price.
+symbol has no market price. Use `source_availability.unavailable_reason` only
+as source diagnostics: retry quote-data for missing WebSocket/qsd activity,
+check the Desktop streaming symbol for `no_matching_symbol`, and use scanner
+REST only when delayed data is acceptable for `no_rtc`. On success,
+`quote_data.session_readback` normalizes TradingView-provided session strings;
+do not infer a session that TradingView did not report.
 Do not use chart-source quote loops as a multi-symbol realtime batch source.
 They may contend with visible chart mutations, so prefer `tv quotes`, scanner
 reads, `tv compare`, or `tv snapshot` for broad symbol lists unless the

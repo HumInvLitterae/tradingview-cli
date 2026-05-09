@@ -152,6 +152,12 @@ Safety boundary:
   unavailable details now carry `contract_version: "quote_data.v1"` and
   `source_availability`, so an agent can distinguish "no matching quote-data
   frame arrived" from "the symbol has no price" without reading raw frames.
+  `source_availability.unavailable_reason` further classifies source
+  diagnostics such as no WebSocket activity, no qsd messages, no matching
+  symbol, or matching qsd without `rtc`. Success payloads include
+  `quote_data.session_readback`, which normalizes TradingView-provided
+  `market_phase` and `current_session` spelling only; it does not infer a
+  session or convert quote-data into scanner `extended_hours`.
 - `ohlcv` depends on the selected chart target's main-series bars collection.
   When the chart API or bars collection is unavailable, it should fail with
   structured readiness details and a target-selection recovery hint rather than

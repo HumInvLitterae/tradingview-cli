@@ -159,12 +159,47 @@ fn assert_quote_data_success(symbol: &str, envelope: &Value, elapsed: Duration) 
             .pointer("/source_availability/rtc_observed")
             .and_then(Value::as_bool)
             != Some(true)
+        || !data
+            .pointer("/source_availability/unavailable_reason")
+            .is_some_and(Value::is_null)
+        || data
+            .pointer("/source_availability/timed_out")
+            .and_then(Value::as_bool)
+            != Some(false)
+        || !data
+            .pointer("/source_availability/next_action")
+            .is_some_and(Value::is_null)
         || data
             .pointer("/source_availability/raw_frame_included")
             .and_then(Value::as_bool)
             != Some(false)
         || data
             .pointer("/source_availability/wait_summary/raw_frame_included")
+            .and_then(Value::as_bool)
+            != Some(false)
+        || data
+            .pointer("/source_availability/wait_summary/qsd_with_rtc_seen")
+            .and_then(Value::as_u64)
+            .is_none()
+        || data
+            .pointer("/source_availability/wait_summary/matching_symbol_qsd_seen")
+            .and_then(Value::as_u64)
+            .is_none()
+        || data
+            .pointer("/source_availability/wait_summary/matching_symbol_without_rtc_seen")
+            .and_then(Value::as_u64)
+            .is_none()
+        || data
+            .pointer("/source_availability/wait_summary/quote_session_symbol_mappings_seen")
+            .and_then(Value::as_u64)
+            .is_none()
+        || quote_data.get("session_readback").is_none()
+        || quote_data
+            .pointer("/session_readback/session_source")
+            .and_then(Value::as_str)
+            != Some("tradingview_quote_data_fields")
+        || quote_data
+            .pointer("/session_readback/session_inferred")
             .and_then(Value::as_bool)
             != Some(false)
         || quote_data.get("rtc").is_none()
@@ -220,6 +255,18 @@ fn assert_quote_data_unavailable(
             .and_then(Value::as_bool)
             != Some(false)
         || details
+            .pointer("/source_availability/unavailable_reason")
+            .and_then(Value::as_str)
+            .is_none()
+        || details
+            .pointer("/source_availability/timed_out")
+            .and_then(Value::as_bool)
+            != Some(true)
+        || details
+            .pointer("/source_availability/next_action")
+            .and_then(Value::as_str)
+            .is_none()
+        || details
             .pointer("/source_availability/raw_frame_included")
             .and_then(Value::as_bool)
             != Some(false)
@@ -227,6 +274,22 @@ fn assert_quote_data_unavailable(
             .pointer("/source_availability/wait_summary/raw_frame_included")
             .and_then(Value::as_bool)
             != Some(false)
+        || details
+            .pointer("/source_availability/wait_summary/qsd_with_rtc_seen")
+            .and_then(Value::as_u64)
+            .is_none()
+        || details
+            .pointer("/source_availability/wait_summary/matching_symbol_qsd_seen")
+            .and_then(Value::as_u64)
+            .is_none()
+        || details
+            .pointer("/source_availability/wait_summary/matching_symbol_without_rtc_seen")
+            .and_then(Value::as_u64)
+            .is_none()
+        || details
+            .pointer("/source_availability/wait_summary/quote_session_symbol_mappings_seen")
+            .and_then(Value::as_u64)
+            .is_none()
     {
         panic!(
             "quote-data live smoke unavailable validation failed: symbol={} elapsed_ms={} summary={}",
@@ -273,7 +336,7 @@ fn summarize_envelope(envelope: &Value) -> String {
     let error = envelope.get("error").unwrap_or(&Value::Null);
     let details = error.get("details").unwrap_or(&Value::Null);
     format!(
-        "success={} command={} kind={} message={} contract={} source={} requested={} observed={} availability={} rtc_present={} market_phase={} current_session={} wait_summary={}",
+        "success={} command={} kind={} message={} contract={} source={} requested={} observed={} availability={} reason={} next_action={} rtc_present={} market_phase={} current_session={} wait_summary={}",
         bool_field(envelope, "success"),
         string_field(envelope, "command").unwrap_or("<missing>"),
         string_field(error, "kind").unwrap_or("<none>"),
@@ -294,6 +357,14 @@ fn summarize_envelope(envelope: &Value) -> String {
             .or_else(|| details.pointer("/source_availability/status"))
             .and_then(Value::as_str)
             .unwrap_or("<missing>"),
+        data.pointer("/source_availability/unavailable_reason")
+            .or_else(|| details.pointer("/source_availability/unavailable_reason"))
+            .and_then(Value::as_str)
+            .unwrap_or("<none>"),
+        data.pointer("/source_availability/next_action")
+            .or_else(|| details.pointer("/source_availability/next_action"))
+            .and_then(Value::as_str)
+            .unwrap_or("<none>"),
         data.pointer("/quote_data/rtc").is_some(),
         data.pointer("/quote_data/market_phase")
             .and_then(Value::as_str)

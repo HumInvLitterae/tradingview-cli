@@ -151,7 +151,13 @@ guessed data. In v0.14, quote-data payloads and structured unavailable
 details carry command-local `contract_version: "quote_data.v1"` and
 `source_availability` readback. Treat `source_availability.status:
 "unavailable"` as "no matching quote-data source evidence arrived during the
-bounded wait", not as "the symbol has no price".
+bounded wait", not as "the symbol has no price". The same object includes
+`unavailable_reason`, `timed_out`, and `next_action` for source diagnostics.
+Those reasons distinguish missing WebSocket activity, missing qsd messages,
+symbol mismatch, and matching qsd messages without `rtc`; they are not
+ranking, scoring, or market-price absence signals. Success payloads also
+include `quote_data.session_readback` with normalized spellings of
+TradingView-provided session fields only.
 
 ### Desktop-backed operation
 

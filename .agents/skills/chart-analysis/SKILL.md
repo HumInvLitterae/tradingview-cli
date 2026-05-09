@@ -98,7 +98,10 @@ observation surface.
    wait. Read `contract_version: "quote_data.v1"` and `source_availability`
    to separate an available `qsd.rtc` readback from bounded-wait source
    unavailability. Treat unavailable quote-data as source availability, not
-   as proof that the symbol has no price.
+   as proof that the symbol has no price. Use
+   `source_availability.unavailable_reason` only for source diagnostics, and
+   use `quote_data.session_readback` only as normalized spelling of
+   TradingView-provided session fields, not inferred session classification.
 6. Read visible study values with `tv values` when indicators already exist on
    the chart.
 7. Read Pine drawing-derived levels or zones with `tv data lines`,
