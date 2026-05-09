@@ -48,6 +48,9 @@ package version omits the leading `v`.
 - Added `tv quote <SYMBOL> --source quote-data` for explicit bounded
   Desktop-backed WebSocket quote-data readback such as `qsd.rtc`, without
   merging it into chart-source quote or scanner extended-hours payloads.
+- Added an opt-in ignored live contract smoke for `tv quote <SYMBOL> --source
+  quote-data`, validating both success payloads and structured unavailable
+  results without raw WebSocket frames.
 - Added additive `tv snapshot <SYMBOL>` contract metadata, including a
   command-local contract marker, coverage summary, missing-evidence readback,
   and machine-readable follow-up hints.

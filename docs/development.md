@@ -239,6 +239,29 @@ scanner reads may be delayed while Desktop quote-session values may be
 streaming or entitlement-dependent. The test prints only public-safe selected
 field summaries and must not become a CI requirement.
 
+For explicit Desktop quote-data source contract checks, run:
+
+```bash
+TV_LIVE_QUOTE_DATA_SMOKE=1 cargo test -p tradingview-cli --test live_quote_data_source -- --ignored --nocapture
+```
+
+Optional environment variables:
+
+- `TV_LIVE_QUOTE_DATA_SYMBOL`: public symbol to pass to
+  `tv quote <SYMBOL> --source quote-data`, defaulting to `NASDAQ:RKLB`.
+- `TV_LIVE_QUOTE_DATA_RUNS`: positive repeat count, defaulting to `1`.
+- `TV_LIVE_QUOTE_DATA_EXPECT_PHASE`: optional reporting hint such as
+  `postmarket` or `premarket`. The test reports observed quote-data phase
+  fields when a success payload is available; phase equality is not a scanner
+  comparison.
+- `TV_LIVE_QUOTE_DATA_ALLOW_UNAVAILABLE`: defaults to `1`. Set to `0` only
+  when you expect a matching `qsd.rtc` frame during the bounded window.
+
+The ignored test validates public contract fields only. A bounded no-frame
+result is acceptable by default when it returns structured
+`internal_api_unavailable` details with `raw_frame_included: false`. Do not
+paste raw WebSocket frames, live payloads, or target ids into tracked docs.
+
 For chart-source quote concurrency checks, run:
 
 ```bash

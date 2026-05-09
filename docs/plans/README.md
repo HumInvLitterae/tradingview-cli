@@ -8,13 +8,16 @@ for release and next-phase planning.
 
 Current plan:
 
-- `tradingview-cli-quote-data-source.md`: add the explicit
-  `tv quote <SYMBOL> --source quote-data` source for bounded Desktop-backed
-  TradingView `qsd.rtc` quote-data readback without mixing it into
-  chart-source quote or scanner extended-hours payloads.
+- `tradingview-cli-quote-data-live-smoke.md`: add an opt-in ignored live
+  contract smoke for `tv quote <SYMBOL> --source quote-data`, accepting
+  structured unavailable results when no bounded `qsd.rtc` frame arrives.
 
 Recently completed:
 
+- `tradingview-cli-quote-data-source.md`: added the explicit
+  `tv quote <SYMBOL> --source quote-data` source for bounded Desktop-backed
+  TradingView `qsd.rtc` quote-data readback without mixing it into
+  chart-source quote or scanner extended-hours payloads.
 - `tradingview-cli-desktop-quote-data-rtc-source-design.md`: fixed the source
   boundary and feasibility criteria for treating TradingView `qsd.rtc`
   quote-data WebSocket readback as a possible future `quote-data` source.
