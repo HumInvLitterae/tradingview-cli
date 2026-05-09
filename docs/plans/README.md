@@ -8,12 +8,15 @@ for release and next-phase planning.
 
 Current plan:
 
-- `tradingview-cli-quote-help-source-boundary.md`: clarify `tv quote` and
-  `tv quotes` help so scanner-backed reads are not mistaken for guaranteed
-  realtime data.
+- `tradingview-cli-v0.13.0-release-readiness.md`: prepare the `v0.13.0`
+  release state, including version, changelog, release notes, README asset
+  examples, and package validation.
 
 Recently completed:
 
+- `tradingview-cli-quote-help-source-boundary.md`: clarified `tv quote` and
+  `tv quotes` help so scanner-backed reads are not mistaken for guaranteed
+  realtime data.
 - `tradingview-cli-v0.13-pre-release-audit-update.md`: refreshed the v0.13
   pre-release audit after adding the explicit quote-data source and its
   opt-in live contract smoke.

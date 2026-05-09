@@ -7,6 +7,8 @@ package version omits the leading `v`.
 
 ## Unreleased
 
+## v0.13.0 - 2026-05-09
+
 ### Added
 
 - Added additive `session_boundary` readback to chart-source quote payloads so
