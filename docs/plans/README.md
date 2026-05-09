@@ -8,12 +8,15 @@ for release and next-phase planning.
 
 Current plan:
 
-- `tradingview-cli-v0.13.0-release-readiness.md`: prepare the `v0.13.0`
-  release state, including version, changelog, release notes, README asset
-  examples, and package validation.
+- `tradingview-cli-quote-data-session-contract.md`: add additive
+  `quote-data` contract metadata and source-availability readback for
+  `tv quote <SYMBOL> --source quote-data`.
 
 Recently completed:
 
+- `tradingview-cli-v0.13.0-release-readiness.md`: prepared the `v0.13.0`
+  release state, including version, changelog, release notes, README asset
+  examples, and package validation.
 - `tradingview-cli-quote-help-source-boundary.md`: clarified `tv quote` and
   `tv quotes` help so scanner-backed reads are not mistaken for guaranteed
   realtime data.

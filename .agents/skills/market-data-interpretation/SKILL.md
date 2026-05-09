@@ -113,7 +113,8 @@ strongest current candidate for the visible after-market value, with
 Desktop-backed quote-data readback. It is separate from `quote --source chart`
 and scanner REST `extended_hours`, and it can fail with structured
 unavailable details when no matching `qsd.rtc` arrives during the bounded
-wait.
+wait. Read that as source availability, not as evidence that the symbol has no
+market price.
 Do not use chart-source quote loops as a multi-symbol realtime batch source.
 They may contend with visible chart mutations, so prefer `tv quotes`, scanner
 reads, `tv compare`, or `tv snapshot` for broad symbol lists unless the

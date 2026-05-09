@@ -7,6 +7,12 @@ package version omits the leading `v`.
 
 ## Unreleased
 
+### Documentation
+
+- Added the `v0.14.0` roadmap direction for quote-data maturity and source
+  availability clarity, with the first implementation plan focused on
+  additive quote-data contract metadata and structured unavailable readback.
+
 ## v0.13.0 - 2026-05-09
 
 ### Added
