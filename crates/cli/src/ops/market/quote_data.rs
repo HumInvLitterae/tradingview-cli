@@ -69,7 +69,11 @@ struct QuoteDataObserver<'a> {
     websocket_events_seen: u64,
     websocket_frames_seen: u64,
     qsd_messages_seen: u64,
+    qsd_with_rtc_seen: u64,
+    matching_symbol_qsd_seen: u64,
+    matching_symbol_without_rtc_seen: u64,
     matching_qsd_messages_seen: u64,
+    quote_session_symbol_mappings_seen: u64,
 }
 
 impl<'a> QuoteDataObserver<'a> {
@@ -80,7 +84,11 @@ impl<'a> QuoteDataObserver<'a> {
             websocket_events_seen: 0,
             websocket_frames_seen: 0,
             qsd_messages_seen: 0,
+            qsd_with_rtc_seen: 0,
+            matching_symbol_qsd_seen: 0,
+            matching_symbol_without_rtc_seen: 0,
             matching_qsd_messages_seen: 0,
+            quote_session_symbol_mappings_seen: 0,
         }
     }
 
@@ -136,6 +144,7 @@ impl<'a> QuoteDataObserver<'a> {
                 .entry(session.to_string())
                 .or_default();
             if method == "quote_add_symbols" {
+                self.quote_session_symbol_mappings_seen += symbols.len() as u64;
                 for symbol in symbols {
                     if !entry.iter().any(|existing| existing == &symbol) {
                         entry.push(symbol);
@@ -164,22 +173,28 @@ impl<'a> QuoteDataObserver<'a> {
                 continue;
             };
             let values = item.get("v").unwrap_or(&Value::Null);
-            let Some(rtc) = values.get("rtc").filter(|value| !value.is_null()) else {
-                continue;
-            };
             let symbol = item
                 .get("n")
                 .and_then(Value::as_str)
                 .unwrap_or_default()
                 .trim();
             let mapped_symbol = self.mapped_single_symbol(session);
-            if !self.symbol_matches_item(symbol, values)
-                && !mapped_symbol
+            let item_matches_request = self.symbol_matches_item(symbol, values)
+                || mapped_symbol
                     .as_deref()
-                    .is_some_and(|mapped| symbol_matches(mapped, self.requested_symbol))
-            {
+                    .is_some_and(|mapped| symbol_matches(mapped, self.requested_symbol));
+            let Some(rtc) = values.get("rtc").filter(|value| !value.is_null()) else {
+                if item_matches_request {
+                    self.matching_symbol_qsd_seen += 1;
+                    self.matching_symbol_without_rtc_seen += 1;
+                }
+                continue;
+            };
+            self.qsd_with_rtc_seen += 1;
+            if !item_matches_request {
                 continue;
             }
+            self.matching_symbol_qsd_seen += 1;
             self.matching_qsd_messages_seen += 1;
             return Some(QuoteDataCandidate {
                 symbol: if symbol_matches(symbol, self.requested_symbol) {
@@ -236,7 +251,11 @@ impl<'a> QuoteDataObserver<'a> {
             "websocket_events_seen": self.websocket_events_seen,
             "websocket_frames_seen": self.websocket_frames_seen,
             "qsd_messages_seen": self.qsd_messages_seen,
+            "qsd_with_rtc_seen": self.qsd_with_rtc_seen,
+            "matching_symbol_qsd_seen": self.matching_symbol_qsd_seen,
+            "matching_symbol_without_rtc_seen": self.matching_symbol_without_rtc_seen,
             "matching_qsd_messages_seen": self.matching_qsd_messages_seen,
+            "quote_session_symbol_mappings_seen": self.quote_session_symbol_mappings_seen,
             "raw_frame_included": false,
         })
     }
@@ -248,6 +267,10 @@ fn success_payload(
     elapsed: Duration,
     wait_summary: Value,
 ) -> Value {
+    let session_readback = session_readback(
+        candidate.market_phase.clone(),
+        candidate.current_session.clone(),
+    );
     json!({
         "contract_version": QUOTE_DATA_CONTRACT_VERSION,
         "source": "desktop_quote_data_ws",
@@ -262,22 +285,31 @@ fn success_payload(
         "chart_main_series_included": false,
         "bounded_wait_ms": QUOTE_DATA_WAIT.as_millis(),
         "elapsed_ms": elapsed.as_millis(),
-        "source_availability": source_availability(true, true, wait_summary),
+        "source_availability": source_availability(true, true, wait_summary, None, false, None),
         "quote_data": {
             "rtc": candidate.rtc,
             "rtc_time": candidate.rtc_time,
             "rch": candidate.rch,
             "rchp": candidate.rchp,
-            "current_session": candidate.current_session,
-            "market_phase": candidate.market_phase,
+            "current_session": candidate.current_session.clone(),
+            "market_phase": candidate.market_phase.clone(),
             "update_mode": candidate.update_mode,
+            "session_readback": session_readback,
         },
         "note": "quote-data source is a Desktop-backed WebSocket readback and is not scanner extended_hours or chart main-series quote",
     })
 }
 
 fn unavailable_error(requested_symbol: &str, wait_summary: Value) -> AppError {
-    let source_availability = source_availability(false, false, wait_summary.clone());
+    let unavailable_reason = unavailable_reason_from_summary(&wait_summary);
+    let source_availability = source_availability(
+        false,
+        false,
+        wait_summary.clone(),
+        Some(unavailable_reason),
+        true,
+        Some(next_action_for_unavailable(unavailable_reason)),
+    );
     AppError::new(
         ErrorKind::InternalApiUnavailable,
         "TradingView quote-data WebSocket did not provide qsd.rtc for the requested symbol within the bounded wait",
@@ -299,14 +331,93 @@ fn unavailable_error(requested_symbol: &str, wait_summary: Value) -> AppError {
     }))
 }
 
-fn source_availability(available: bool, rtc_observed: bool, wait_summary: Value) -> Value {
+fn source_availability(
+    available: bool,
+    rtc_observed: bool,
+    wait_summary: Value,
+    unavailable_reason: Option<&str>,
+    timed_out: bool,
+    next_action: Option<&str>,
+) -> Value {
     json!({
         "available": available,
         "status": if available { "available" } else { "unavailable" },
         "rtc_observed": rtc_observed,
+        "unavailable_reason": unavailable_reason,
+        "timed_out": timed_out,
+        "next_action": next_action,
         "raw_frame_included": false,
         "wait_summary": wait_summary,
     })
+}
+
+fn session_readback(market_phase: Value, current_session: Value) -> Value {
+    let market_phase_normalized =
+        normalize_session_value(market_phase.as_str().unwrap_or_default());
+    let current_session_normalized =
+        normalize_session_value(current_session.as_str().unwrap_or_default());
+    json!({
+        "market_phase": market_phase,
+        "market_phase_normalized": market_phase_normalized,
+        "current_session": current_session,
+        "current_session_normalized": current_session_normalized,
+        "session_source": "tradingview_quote_data_fields",
+        "session_inferred": false,
+    })
+}
+
+fn normalize_session_value(value: &str) -> Value {
+    let normalized = value
+        .trim()
+        .to_ascii_lowercase()
+        .replace(['-', '_', ' '], "");
+    if normalized.is_empty() {
+        Value::Null
+    } else {
+        json!(normalized)
+    }
+}
+
+fn unavailable_reason_from_summary(wait_summary: &Value) -> &'static str {
+    if wait_summary
+        .get("websocket_events_seen")
+        .and_then(Value::as_u64)
+        .unwrap_or(0)
+        == 0
+    {
+        "no_websocket_events"
+    } else if wait_summary
+        .get("websocket_frames_seen")
+        .and_then(Value::as_u64)
+        .unwrap_or(0)
+        == 0
+    {
+        "no_websocket_frames"
+    } else if wait_summary
+        .get("qsd_messages_seen")
+        .and_then(Value::as_u64)
+        .unwrap_or(0)
+        == 0
+    {
+        "no_qsd_messages"
+    } else if wait_summary
+        .get("matching_symbol_qsd_seen")
+        .and_then(Value::as_u64)
+        .unwrap_or(0)
+        == 0
+    {
+        "no_matching_symbol"
+    } else {
+        "no_rtc"
+    }
+}
+
+fn next_action_for_unavailable(unavailable_reason: &str) -> &'static str {
+    match unavailable_reason {
+        "no_matching_symbol" => "check_desktop_streaming_symbol",
+        "no_rtc" => "use_scanner_if_delayed_rest_ok",
+        _ => "retry_quote_data",
+    }
 }
 
 fn tradingview_socket_messages(payload: &str) -> Vec<String> {
@@ -369,6 +480,34 @@ mod tests {
         })
     }
 
+    fn websocket_created_event() -> Value {
+        json!({
+            "method": "Network.webSocketCreated",
+            "params": {
+                "requestId": "public-test"
+            }
+        })
+    }
+
+    fn unavailable_details_from_summary(summary: Value) -> Value {
+        unavailable_error("NASDAQ:RKLB", summary).details.unwrap()
+    }
+
+    #[test]
+    fn session_readback_normalizes_spelling_without_inference() {
+        let readback = session_readback(json!("post-market"), json!("pre market"));
+
+        assert_eq!(readback["market_phase"], "post-market");
+        assert_eq!(readback["market_phase_normalized"], "postmarket");
+        assert_eq!(readback["current_session"], "pre market");
+        assert_eq!(readback["current_session_normalized"], "premarket");
+        assert_eq!(readback["session_inferred"], false);
+
+        let unknown = session_readback(Value::Null, json!(""));
+        assert_eq!(unknown["market_phase_normalized"], Value::Null);
+        assert_eq!(unknown["current_session_normalized"], Value::Null);
+    }
+
     #[test]
     fn quote_data_observer_extracts_rtc_readback() {
         let mut observer = QuoteDataObserver::new("NASDAQ:RKLB");
@@ -416,6 +555,60 @@ mod tests {
             observer.summary(Duration::ZERO)["matching_qsd_messages_seen"],
             0
         );
+        assert_eq!(
+            observer.summary(Duration::ZERO)["matching_symbol_qsd_seen"],
+            0
+        );
+    }
+
+    #[test]
+    fn quote_data_observer_counts_matching_qsd_without_rtc() {
+        let mut observer = QuoteDataObserver::new("NASDAQ:RKLB");
+        let event = qsd_event(
+            r#"{"m":"qsd","p":["qs",{"n":"NASDAQ:RKLB","s":"ok","v":{"current_session":"post_market"}}]}"#,
+        );
+
+        assert!(observer.handle_event(&event).is_none());
+        let summary = observer.summary(Duration::ZERO);
+        assert_eq!(summary["qsd_messages_seen"], 1);
+        assert_eq!(summary["qsd_with_rtc_seen"], 0);
+        assert_eq!(summary["matching_symbol_qsd_seen"], 1);
+        assert_eq!(summary["matching_symbol_without_rtc_seen"], 1);
+        assert_eq!(summary["matching_qsd_messages_seen"], 0);
+    }
+
+    #[test]
+    fn quote_data_observer_counts_qsd_with_rtc_before_symbol_match() {
+        let mut observer = QuoteDataObserver::new("NASDAQ:RKLB");
+        let event =
+            qsd_event(r#"{"m":"qsd","p":["qs",{"n":"NASDAQ:AAPL","s":"ok","v":{"rtc":199.5}}]}"#);
+
+        assert!(observer.handle_event(&event).is_none());
+        let summary = observer.summary(Duration::ZERO);
+        assert_eq!(summary["qsd_messages_seen"], 1);
+        assert_eq!(summary["qsd_with_rtc_seen"], 1);
+        assert_eq!(summary["matching_symbol_qsd_seen"], 0);
+        assert_eq!(summary["matching_qsd_messages_seen"], 0);
+    }
+
+    #[test]
+    fn quote_data_observer_counts_quote_session_symbol_mappings() {
+        let mut observer = QuoteDataObserver::new("NASDAQ:RKLB");
+        let sent = json!({
+            "method": "Network.webSocketFrameSent",
+            "params": {
+                "response": {
+                    "payloadData": r#"{"m":"quote_add_symbols","p":["qs_rklb","NASDAQ:RKLB","NASDAQ:AAPL"]}"#
+                }
+            }
+        });
+
+        observer.handle_event(&sent);
+
+        assert_eq!(
+            observer.summary(Duration::ZERO)["quote_session_symbol_mappings_seen"],
+            2
+        );
     }
 
     #[test]
@@ -439,7 +632,11 @@ mod tests {
                 "websocket_events_seen": 1,
                 "websocket_frames_seen": 1,
                 "qsd_messages_seen": 1,
+                "qsd_with_rtc_seen": 1,
+                "matching_symbol_qsd_seen": 1,
+                "matching_symbol_without_rtc_seen": 0,
                 "matching_qsd_messages_seen": 1,
+                "quote_session_symbol_mappings_seen": 0,
                 "raw_frame_included": false,
             }),
         );
@@ -450,10 +647,32 @@ mod tests {
         assert_eq!(payload["source_availability"]["available"], true);
         assert_eq!(payload["source_availability"]["status"], "available");
         assert_eq!(payload["source_availability"]["rtc_observed"], true);
+        assert_eq!(
+            payload["source_availability"]["unavailable_reason"],
+            Value::Null
+        );
+        assert_eq!(payload["source_availability"]["timed_out"], false);
+        assert_eq!(payload["source_availability"]["next_action"], Value::Null);
         assert_eq!(payload["source_availability"]["raw_frame_included"], false);
         assert_eq!(
             payload["source_availability"]["wait_summary"]["matching_qsd_messages_seen"],
             1
+        );
+        assert_eq!(
+            payload["quote_data"]["session_readback"]["market_phase_normalized"],
+            "postmarket"
+        );
+        assert_eq!(
+            payload["quote_data"]["session_readback"]["current_session_normalized"],
+            "postmarket"
+        );
+        assert_eq!(
+            payload["quote_data"]["session_readback"]["session_source"],
+            "tradingview_quote_data_fields"
+        );
+        assert_eq!(
+            payload["quote_data"]["session_readback"]["session_inferred"],
+            false
         );
         assert!(payload.get("extended_hours").is_none());
         assert_eq!(payload["chart_main_series_included"], false);
@@ -467,6 +686,13 @@ mod tests {
             json!({
                 "bounded_wait_ms": 50,
                 "websocket_events_seen": 1,
+                "websocket_frames_seen": 1,
+                "qsd_messages_seen": 1,
+                "qsd_with_rtc_seen": 0,
+                "matching_symbol_qsd_seen": 1,
+                "matching_symbol_without_rtc_seen": 1,
+                "matching_qsd_messages_seen": 0,
+                "quote_session_symbol_mappings_seen": 0,
                 "raw_frame_included": false,
             }),
         );
@@ -478,11 +704,108 @@ mod tests {
         assert_eq!(details["source_availability"]["available"], false);
         assert_eq!(details["source_availability"]["status"], "unavailable");
         assert_eq!(details["source_availability"]["rtc_observed"], false);
+        assert_eq!(
+            details["source_availability"]["unavailable_reason"],
+            "no_rtc"
+        );
+        assert_eq!(details["source_availability"]["timed_out"], true);
+        assert_eq!(
+            details["source_availability"]["next_action"],
+            "use_scanner_if_delayed_rest_ok"
+        );
         assert_eq!(details["source_availability"]["raw_frame_included"], false);
         assert_eq!(
             details["source_availability"]["wait_summary"]["raw_frame_included"],
             false
         );
         assert!(details.get("raw").is_none());
+    }
+
+    #[test]
+    fn unavailable_reason_reports_no_websocket_events() {
+        let details = unavailable_details_from_summary(
+            QuoteDataObserver::new("NASDAQ:RKLB").summary(Duration::ZERO),
+        );
+
+        assert_eq!(
+            details["source_availability"]["unavailable_reason"],
+            "no_websocket_events"
+        );
+        assert_eq!(
+            details["source_availability"]["next_action"],
+            "retry_quote_data"
+        );
+    }
+
+    #[test]
+    fn unavailable_reason_reports_no_websocket_frames() {
+        let mut observer = QuoteDataObserver::new("NASDAQ:RKLB");
+        observer.handle_event(&websocket_created_event());
+
+        let details = unavailable_details_from_summary(observer.summary(Duration::ZERO));
+
+        assert_eq!(
+            details["source_availability"]["unavailable_reason"],
+            "no_websocket_frames"
+        );
+        assert_eq!(
+            details["source_availability"]["next_action"],
+            "retry_quote_data"
+        );
+    }
+
+    #[test]
+    fn unavailable_reason_reports_no_qsd_messages() {
+        let mut observer = QuoteDataObserver::new("NASDAQ:RKLB");
+        observer.handle_event(&qsd_event(r#"{"m":"timescale_update","p":["cs",{}]}"#));
+
+        let details = unavailable_details_from_summary(observer.summary(Duration::ZERO));
+
+        assert_eq!(
+            details["source_availability"]["unavailable_reason"],
+            "no_qsd_messages"
+        );
+        assert_eq!(
+            details["source_availability"]["next_action"],
+            "retry_quote_data"
+        );
+    }
+
+    #[test]
+    fn unavailable_reason_reports_no_matching_symbol() {
+        let mut observer = QuoteDataObserver::new("NASDAQ:RKLB");
+        observer.handle_event(&qsd_event(
+            r#"{"m":"qsd","p":["qs",{"n":"NASDAQ:AAPL","s":"ok","v":{"rtc":199.5}}]}"#,
+        ));
+
+        let details = unavailable_details_from_summary(observer.summary(Duration::ZERO));
+
+        assert_eq!(
+            details["source_availability"]["unavailable_reason"],
+            "no_matching_symbol"
+        );
+        assert_eq!(
+            details["source_availability"]["next_action"],
+            "check_desktop_streaming_symbol"
+        );
+    }
+
+    #[test]
+    fn unavailable_reason_reports_no_rtc() {
+        let mut observer = QuoteDataObserver::new("NASDAQ:RKLB");
+        observer.handle_event(&qsd_event(
+            r#"{"m":"qsd","p":["qs",{"n":"NASDAQ:RKLB","s":"ok","v":{"current_session":"regular"}}]}"#,
+        ));
+
+        let details = unavailable_details_from_summary(observer.summary(Duration::ZERO));
+
+        assert_eq!(
+            details["source_availability"]["unavailable_reason"],
+            "no_rtc"
+        );
+        assert_eq!(
+            details["source_availability"]["next_action"],
+            "use_scanner_if_delayed_rest_ok"
+        );
     }
 }

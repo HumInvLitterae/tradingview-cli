@@ -8,12 +8,15 @@ for release and next-phase planning.
 
 Current plan:
 
-- `tradingview-cli-quote-data-session-contract.md`: add additive
-  `quote-data` contract metadata and source-availability readback for
-  `tv quote <SYMBOL> --source quote-data`.
+- `tradingview-cli-quote-data-availability-diagnostics.md`: add
+  machine-readable quote-data unavailable reasons, wait-summary counters, and
+  session readback without changing the explicit source boundary.
 
 Recently completed:
 
+- `tradingview-cli-quote-data-session-contract.md`: added additive
+  `quote-data` contract metadata and source-availability readback for
+  `tv quote <SYMBOL> --source quote-data`.
 - `tradingview-cli-v0.13.0-release-readiness.md`: prepared the `v0.13.0`
   release state, including version, changelog, release notes, README asset
   examples, and package validation.

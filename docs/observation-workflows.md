@@ -179,6 +179,13 @@ to guess a price. Quote-data success payloads and unavailable details expose
 `contract_version: "quote_data.v1"` and `source_availability` so agents can
 distinguish an available source readback from a bounded-wait source
 unavailable result without adding automatic fallback or source mixing.
+`source_availability.unavailable_reason` is a source diagnostic such as
+`no_websocket_events`, `no_qsd_messages`, `no_matching_symbol`, or `no_rtc`.
+Use it to decide whether to retry quote-data, verify the Desktop streaming
+symbol, or use scanner REST if delayed data is acceptable. Do not treat it as
+price absence or a trading signal. Success payloads include
+`quote_data.session_readback` for normalized spellings of TradingView-provided
+session fields without inferring a session that TradingView did not report.
 
 ## Visual Evidence Recovery
 

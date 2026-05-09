@@ -13,6 +13,9 @@ package version omits the leading `v`.
   readback to explicit `tv quote <SYMBOL> --source quote-data` success
   payloads and structured unavailable details, without mixing in scanner
   `extended_hours` or chart main-series fields.
+- Added quote-data availability diagnostics, including machine-readable
+  unavailable reasons, additional public-safe wait-summary counts, and
+  session readback normalization for explicit `--source quote-data` reads.
 
 ### Documentation
 
