@@ -27,10 +27,10 @@ chart-source quote behavior.
 ## Progress
 
 - [x] (2026-05-09T19:20Z) Created this ExecPlan after the `v0.13.0` release.
-- [ ] Add quote-data contract metadata and source-availability readback.
-- [ ] Update tests for success and structured unavailable details.
-- [ ] Synchronize docs and runtime skills.
-- [ ] Run validation and record outcomes.
+- [x] (2026-05-09T19:45Z) Added quote-data contract metadata and source-availability readback.
+- [x] (2026-05-09T19:50Z) Updated tests for success and structured unavailable details.
+- [x] (2026-05-09T19:55Z) Synchronized docs and runtime skills.
+- [x] (2026-05-09T20:15Z) Ran validation and recorded outcomes.
 
 ## Surprises & Discoveries
 
@@ -38,6 +38,10 @@ chart-source quote behavior.
   Evidence: `crates/cli/src/ops/market/quote_data.rs` includes a
   `wait_summary` with bounded wait, WebSocket event counts, qsd message counts,
   matching counts, and `raw_frame_included: false`.
+- Observation: the success path can reuse the same observer summary at the
+  moment a matching `qsd.rtc` candidate is found.
+  Evidence: the observer retains bounded WebSocket/qsd counters while parsing
+  events, so no additional network read or raw frame exposure was needed.
 
 ## Decision Log
 
@@ -55,9 +59,44 @@ chart-source quote behavior.
   that v0.13 clarified.
   Date/Author: 2026-05-09 / Codex.
 
+- Decision: Keep the existing top-level unavailable `wait_summary` while also
+  embedding the same summary under `source_availability.wait_summary`.
+  Rationale: this preserves the v0.13 unavailable details shape while giving
+  downstream agents a consistent success/unavailable availability object.
+  Date/Author: 2026-05-09 / Codex.
+
 ## Outcomes & Retrospective
 
-In progress.
+Implemented. `tv quote <SYMBOL> --source quote-data` success payloads now
+carry `contract_version: "quote_data.v1"` and `source_availability` with
+`available: true`, `status: "available"`, `rtc_observed: true`, public-safe
+wait summary counts, and `raw_frame_included: false`.
+
+Structured unavailable details carry the same contract marker and
+`source_availability` shape with `available: false`, `status:
+"unavailable"`, and `rtc_observed: false`. The existing top-level
+`wait_summary` remains for compatibility, and no raw WebSocket frames,
+scanner-style `extended_hours`, chart main-series OHLCV, target ids, or
+account-local metadata were added.
+
+Validation passed:
+
+- `cargo test -p tradingview-cli market::quote_data -- --nocapture`
+- `cargo test -p tradingview-cli --test cli_contract quote -- --nocapture`
+- `cargo test -p tradingview-cli --test live_quote_data_source`
+- runtime skill quick validation for `market-data-interpretation`
+- runtime skill quick validation for `chart-analysis`
+- `cargo fmt --check`
+- `cargo clippy --workspace --all-targets --all-features -- -D warnings`
+- `cargo test --workspace`
+- `cargo metadata --no-deps --format-version 1`
+- `git diff --check`
+- `bash -n scripts/stage-release-package-files.sh`
+
+The tracked-doc hygiene grep reported existing safety-policy text, archived
+validation examples, and current plan safety wording only; no new secret,
+raw live payload, raw WebSocket frame, target id, account-local metadata, or
+machine-local evidence was added.
 
 ## Context and Orientation
 

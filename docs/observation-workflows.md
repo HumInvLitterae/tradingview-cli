@@ -175,9 +175,10 @@ quote-data readback is needed. It is not an implicit extension of
 `tv quote --source chart` and does not merge scanner REST `extended_hours`.
 If no matching `qsd.rtc` frame arrives during the bounded wait, treat the
 structured unavailable result as source availability rather than as a reason
-to guess a price. The v0.14 follow-up work should make this availability
-readback easier for agents to consume without adding automatic fallback or
-source mixing.
+to guess a price. Quote-data success payloads and unavailable details expose
+`contract_version: "quote_data.v1"` and `source_availability` so agents can
+distinguish an available source readback from a bounded-wait source
+unavailable result without adding automatic fallback or source mixing.
 
 ## Visual Evidence Recovery
 

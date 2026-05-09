@@ -7,6 +7,13 @@ package version omits the leading `v`.
 
 ## Unreleased
 
+### Added
+
+- Added `contract_version: "quote_data.v1"` and `source_availability`
+  readback to explicit `tv quote <SYMBOL> --source quote-data` success
+  payloads and structured unavailable details, without mixing in scanner
+  `extended_hours` or chart main-series fields.
+
 ### Documentation
 
 - Added the `v0.14.0` roadmap direction for quote-data maturity and source
