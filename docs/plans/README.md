@@ -8,20 +8,17 @@ for release and next-phase planning.
 
 Current plan:
 
-- `tradingview-cli-compare-change-evidence.md`: add additive
-  `tv compare` movement readback so downstream tools can read stable
-  regular-session percent-change evidence without parsing source-specific raw
-  quote paths.
-
-Future plan:
-
-- `tradingview-cli-quote-data-diagnostics.md`: plan a narrow quote-data
+- `tradingview-cli-quote-data-diagnostics.md`: add a narrow quote-data
   diagnostic surface that explains Desktop target selection, WebSocket, `qsd`,
   requested-symbol, and `rtc` availability without mixing scanner, chart, and
   quote-data sources.
 
 Recently completed:
 
+- `tradingview-cli-compare-change-evidence.md`: added additive
+  `tv compare` movement readback so downstream tools can read stable
+  regular-session percent-change evidence without parsing source-specific raw
+  quote paths.
 - `tradingview-cli-quote-data-live-smoke-target-hardening.md`: hardened the
   opt-in quote-data live smoke so premarket validation can target the intended
   TradingView chart in multi-target Desktop sessions.

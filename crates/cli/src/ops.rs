@@ -40,7 +40,7 @@ pub use data::{
     data_tables, data_trades, study_values,
 };
 pub use data_depth::data_depth;
-pub use diagnostics::{discover, ui_state};
+pub use diagnostics::{diagnose_quote_data, discover, ui_state};
 pub use drawing::{
     drawing_clear, drawing_get, drawing_list, drawing_position, drawing_remove, drawing_shape,
 };

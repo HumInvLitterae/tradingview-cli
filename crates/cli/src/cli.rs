@@ -105,6 +105,14 @@ pub enum Command {
     Values,
     #[command(about = "Report available TradingView internal API paths")]
     Discover,
+    #[command(
+        about = "Diagnose source availability",
+        long_about = "Diagnose explicit TradingView source availability without changing source behavior.\n\nThe first diagnostic is `tv diagnose quote-data <SYMBOL>`, which checks the Desktop-backed quote-data path used by `tv quote <SYMBOL> --source quote-data`. It does not merge scanner, chart, or quote-data prices."
+    )]
+    Diagnose {
+        #[command(subcommand)]
+        command: DiagnoseCommand,
+    },
     #[command(name = "ui-state", about = "Get current TradingView UI state")]
     UiState,
     #[command(
@@ -232,6 +240,16 @@ pub enum QuoteSource {
     Chart,
     QuoteData,
     Auto,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum DiagnoseCommand {
+    #[command(
+        name = "quote-data",
+        about = "Diagnose explicit Desktop quote-data source availability",
+        long_about = "Diagnose the explicit Desktop-backed quote-data source for one symbol.\n\nThis command reports target selection, bounded quote-data availability, public-safe WebSocket/qsd counters, and a separate scanner freshness reference. It does not synthesize scanner, chart, and quote-data prices, does not switch chart symbols, and does not add quote-data to `--source auto`."
+    )]
+    QuoteData { symbol: String },
 }
 
 #[derive(Debug, Subcommand)]
@@ -951,6 +969,7 @@ impl Command {
             Self::Quotes { .. } => "quotes",
             Self::Values => "values",
             Self::Discover => "discover",
+            Self::Diagnose { .. } => "diagnose",
             Self::UiState => "ui-state",
             Self::Ohlcv { .. } => "ohlcv",
             Self::Bars { .. } => "bars",

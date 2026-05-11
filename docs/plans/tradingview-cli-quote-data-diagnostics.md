@@ -28,10 +28,14 @@ chart-source quote, or become a broad all-purpose health-check command.
 
 - [x] (2026-05-11T12:00Z) Created the initial `v0.15.0` roadmap direction and
   this first implementation ExecPlan.
-- [ ] Implement the narrow `tv diagnose quote-data <SYMBOL>` command surface.
-- [ ] Add focused contract tests for diagnostic success and unavailable paths.
-- [ ] Update docs and runtime skills for quote-data diagnostics.
-- [ ] Run validation and commit the related changes in one local commit.
+- [x] (2026-05-11T14:05Z) Implemented the narrow
+  `tv diagnose quote-data <SYMBOL>` command surface.
+- [x] (2026-05-11T14:10Z) Added focused contract and unit tests for help,
+  validation, target-blocked summaries, unavailable wrapping, and source
+  separation.
+- [x] (2026-05-11T14:15Z) Updated roadmap, plan index, and changelog for the
+  active diagnostics slice.
+- [x] (2026-05-11T14:35Z) Ran validation; no release blocker found.
 
 ## Surprises & Discoveries
 
@@ -48,6 +52,12 @@ chart-source quote, or become a broad all-purpose health-check command.
   Evidence: The v0.14 diagnostics contract distinguishes
   `no_websocket_events`, `no_websocket_frames`, `no_qsd_messages`,
   `no_matching_symbol`, and `no_rtc`.
+
+- Observation: The existing quote-data operation already had the right
+  success and unavailable payloads for reuse.
+  Evidence: The implementation exposes the bounded quote-data read through a
+  crate-private helper, so the diagnostic command can wrap the existing
+  `quote_data.v1` source contract instead of duplicating WebSocket parsing.
 
 ## Decision Log
 
@@ -67,12 +77,30 @@ chart-source quote, or become a broad all-purpose health-check command.
   synthesize a single price.
   Date/Author: 2026-05-11 / Codex.
 
+- Decision: Return target-selection problems as successful diagnostic packets
+  with `diagnostic_status: "blocked"` instead of top-level command failures.
+  Rationale: Target ambiguity, missing targets, and CDP connection failures
+  are exactly the source-availability states the diagnostic command is meant
+  to explain. Validation errors remain top-level failures.
+  Date/Author: 2026-05-11 / Codex.
+
 ## Outcomes & Retrospective
 
-This plan starts the `v0.15.0` lane after `v0.14.0` release and post-release
-smoke hardening. No implementation has happened yet. The expected outcome is
-a narrow diagnostic command that makes quote-data source availability easier
-to understand without changing the existing quote source contracts.
+The implementation adds `tv diagnose quote-data <SYMBOL>` as a read-only
+diagnostic packet. It reports sanitized Desktop target state, reuses the
+existing `quote_data.v1` source-availability payload when a bounded read is
+attempted, and includes scanner freshness as a separate reference. Scanner,
+chart, and quote-data values are not merged, and quote-data is still not part
+of `--source auto`.
+
+Validation passed with focused quote-data and diagnose tests, CLI contract
+tests, formatting, clippy, the full workspace test suite, metadata generation,
+diff whitespace checks, release packaging script syntax checks, runtime skill
+validation, and public-doc hygiene scanning. The hygiene scan reported
+existing policy text, example paths, and historical validation commands only;
+no new raw WebSocket frame, raw live payload, target id, account-local
+metadata, credential, local absolute path, or downstream-private path was
+added by this slice.
 
 ## Context and Orientation
 

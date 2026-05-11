@@ -12,3 +12,4 @@ pub use direct::{
 pub use ohlcv::{ohlcv_bars, ohlcv_summary};
 pub use quote::quote;
 pub use quote_data::quote_data;
+pub(crate) use quote_data::{QUOTE_DATA_CONTRACT_VERSION, quote_data_bounded_read};

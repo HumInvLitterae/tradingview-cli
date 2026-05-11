@@ -122,6 +122,11 @@ check the Desktop streaming symbol for `no_matching_symbol`, and use scanner
 REST only when delayed data is acceptable for `no_rtc`. On success,
 `quote_data.session_readback` normalizes TradingView-provided session strings;
 do not infer a session that TradingView did not report.
+When quote-data availability itself is unclear, use
+`tv diagnose quote-data <SYMBOL>` to read sanitized target state,
+quote-data availability, public-safe WebSocket/qsd counters, and a separate
+scanner freshness reference. Treat it as troubleshooting metadata, not as a
+blended quote or trading signal.
 Do not use chart-source quote loops as a multi-symbol realtime batch source.
 They may contend with visible chart mutations, so prefer `tv quotes`, scanner
 reads, `tv compare`, or `tv snapshot` for broad symbol lists unless the

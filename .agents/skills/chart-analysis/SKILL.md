@@ -102,6 +102,10 @@ observation surface.
    `source_availability.unavailable_reason` only for source diagnostics, and
    use `quote_data.session_readback` only as normalized spelling of
    TradingView-provided session fields, not inferred session classification.
+   If quote-data availability is the problem, use
+   `tv diagnose quote-data <SYMBOL>` to inspect sanitized target state,
+   quote-data availability, public-safe WebSocket/qsd counters, and separate
+   scanner freshness reference without blending the sources.
 6. Read visible study values with `tv values` when indicators already exist on
    the chart.
 7. Read Pine drawing-derived levels or zones with `tv data lines`,
