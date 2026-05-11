@@ -8,12 +8,15 @@ for release and next-phase planning.
 
 Current plan:
 
-- `tradingview-cli-v0.14.0-release-readiness.md`: prepare the `v0.14.0`
-  release state, including version, changelog, release notes, README asset
-  examples, and package validation.
+- `tradingview-cli-quote-data-live-smoke-target-hardening.md`: harden the
+  opt-in quote-data live smoke so premarket validation can target the intended
+  TradingView chart in multi-target Desktop sessions.
 
 Recently completed:
 
+- `tradingview-cli-v0.14.0-release-readiness.md`: prepared the `v0.14.0`
+  release state, including version, changelog, release notes, README asset
+  examples, and package validation.
 - `tradingview-cli-v0.14-pre-release-audit.md`: audited quote-data source
   boundaries, availability diagnostics, docs, runtime skills, and deferred
   work before `v0.14.0` release readiness.

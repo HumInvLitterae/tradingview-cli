@@ -21,13 +21,19 @@ fn quote_data_live_smoke() {
     let runs = positive_env("TV_LIVE_QUOTE_DATA_RUNS").unwrap_or(1);
     let expected_phase = env_string("TV_LIVE_QUOTE_DATA_EXPECT_PHASE");
     let allow_unavailable = bool_env("TV_LIVE_QUOTE_DATA_ALLOW_UNAVAILABLE").unwrap_or(true);
+    let target_id = env_string("TV_LIVE_QUOTE_DATA_TARGET_ID");
 
     println!(
-        "quote-data live smoke: symbol={} runs={} expected_phase={} allow_unavailable={}",
+        "quote-data live smoke: symbol={} runs={} expected_phase={} allow_unavailable={} target_id={}",
         symbol,
         runs,
         expected_phase.as_deref().unwrap_or("<none>"),
         allow_unavailable,
+        if target_id.is_some() {
+            "<provided>"
+        } else {
+            "<auto>"
+        },
     );
 
     let mut success_count = 0usize;
@@ -35,10 +41,7 @@ fn quote_data_live_smoke() {
     let mut slowest: Option<Duration> = None;
     for run in 1..=runs {
         let started = Instant::now();
-        let output = Command::new(tv)
-            .args(["quote", &symbol, "--source", "quote-data"])
-            .output()
-            .expect("test-built tv binary should execute");
+        let output = run_quote_data(tv, target_id.as_deref(), &symbol);
         let elapsed = started.elapsed();
         let envelope = parse_output(&symbol, output, elapsed);
         match envelope.get("success").and_then(Value::as_bool) {
@@ -97,6 +100,17 @@ fn quote_data_live_smoke() {
         unavailable_count,
         slowest.map(|duration| duration.as_millis()).unwrap_or(0),
     );
+}
+
+fn run_quote_data(tv: &str, target_id: Option<&str>, symbol: &str) -> std::process::Output {
+    let mut command = Command::new(tv);
+    if let Some(target_id) = target_id {
+        command.args(["--target-id", target_id]);
+    }
+    command
+        .args(["quote", symbol, "--source", "quote-data"])
+        .output()
+        .expect("test-built tv binary should execute")
 }
 
 fn parse_output(symbol: &str, output: std::process::Output, elapsed: Duration) -> Value {
@@ -414,6 +428,21 @@ fn bool_field(value: &Value, key: &str) -> String {
 }
 
 #[cfg(test)]
+fn quote_data_args(target_id: Option<&str>, symbol: &str) -> Vec<String> {
+    let mut args = Vec::new();
+    if let Some(target_id) = target_id {
+        args.extend(["--target-id".to_string(), target_id.to_string()]);
+    }
+    args.extend([
+        "quote".to_string(),
+        symbol.to_string(),
+        "--source".to_string(),
+        "quote-data".to_string(),
+    ]);
+    args
+}
+
+#[cfg(test)]
 mod tests {
     use super::*;
 
@@ -422,5 +451,27 @@ mod tests {
         assert!(phase_matches_expected("postmarket", "post-market"));
         assert!(phase_matches_expected("premarket", "pre_market"));
         assert!(!phase_matches_expected("postmarket", "regular"));
+    }
+
+    #[test]
+    fn quote_data_args_include_optional_target_before_command() {
+        let without_target = quote_data_args(None, "NASDAQ:RKLB");
+        assert_eq!(
+            without_target,
+            ["quote", "NASDAQ:RKLB", "--source", "quote-data"]
+        );
+
+        let with_target = quote_data_args(Some("target-1"), "NASDAQ:RKLB");
+        assert_eq!(
+            with_target,
+            [
+                "--target-id",
+                "target-1",
+                "quote",
+                "NASDAQ:RKLB",
+                "--source",
+                "quote-data"
+            ]
+        );
     }
 }
