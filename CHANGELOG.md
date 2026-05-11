@@ -9,6 +9,9 @@ package version omits the leading `v`.
 
 ### Changed
 
+- Added additive `tv compare` movement readback so downstream tools can use a
+  stable regular-session percent-change path without parsing raw quote
+  sections.
 - Hardened the opt-in `quote-data` live smoke so it can target a specific
   TradingView chart during premarket validation without exposing raw target
   ids or raw WebSocket frames.

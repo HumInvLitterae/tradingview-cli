@@ -158,6 +158,11 @@ per-item `follow_up_hints`, `summary.field_coverage`, and
 `summary.coverage_status` as downstream readback helpers for schema guards,
 input-order joins, follow-up surfaces, and evidence gaps. `coverage_status`
 describes evidence completeness only; it is not a ranking or recommendation.
+For regular-session movement evidence, read
+`items[].movement.regular_change_percent` first; it is the stable compare-level
+readback derived from raw `items[].sections.quote.data.change`, which remains
+the source evidence. Do not infer regular absolute change from last/close in
+`compare`; `movement.regular_change_abs` may be null.
 Use `items[].missing_evidence[]` to see which section is missing evidence and
 whether a stable follow-up such as `snapshot` or `chart_quote` is the relevant
 next readback surface; confirm conclusions against raw `items[]`. Use

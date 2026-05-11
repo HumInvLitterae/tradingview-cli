@@ -65,6 +65,15 @@ missing fields, the missing reason, and a stable follow-up kind such as
 follow-up surfaces, and evidence gaps easier to consume, but they do not rank
 symbols or replace raw evidence.
 
+For regular-session movement evidence, use
+`items[].movement.regular_change_percent` as the stable compare-level readback.
+It is derived from the scanner quote section's
+`items[].sections.quote.data.change`, which remains the raw source evidence.
+`movement.regular_change_abs` is `null` until the scanner quote source exposes
+or this project defines a normalized absolute regular-change field. Do not
+derive ranking, scoring, or trade action from `movement`; it is only a
+machine-readable evidence path for downstream tools.
+
 ## Follow-up Vocabulary
 
 `compare` and `snapshot` use the same stable follow-up vocabulary. These
