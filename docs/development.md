@@ -247,6 +247,9 @@ TV_LIVE_QUOTE_DATA_SMOKE=1 cargo test -p tradingview-cli --test live_quote_data_
 
 Optional environment variables:
 
+- `TV_LIVE_QUOTE_DATA_TARGET_ID`: explicit CDP target id when multiple chart
+  targets are open. Use `tv tab list` to choose the target, but do not paste
+  live target ids into tracked docs.
 - `TV_LIVE_QUOTE_DATA_SYMBOL`: public symbol to pass to
   `tv quote <SYMBOL> --source quote-data`, defaulting to `NASDAQ:RKLB`.
 - `TV_LIVE_QUOTE_DATA_RUNS`: positive repeat count, defaulting to `1`.
@@ -261,6 +264,18 @@ The ignored test validates public contract fields only. A bounded no-frame
 result is acceptable by default when it returns structured
 `internal_api_unavailable` details with `raw_frame_included: false`. Do not
 paste raw WebSocket frames, live payloads, or target ids into tracked docs.
+
+For a multi-target premarket check, keep the target id as a local environment
+value and record only public-safe summaries:
+
+```bash
+TV_LIVE_QUOTE_DATA_SMOKE=1 \
+  TV_LIVE_QUOTE_DATA_TARGET_ID=<ID> \
+  TV_LIVE_QUOTE_DATA_EXPECT_PHASE=premarket \
+  TV_LIVE_QUOTE_DATA_SYMBOL=NASDAQ:RKLB \
+  TV_LIVE_QUOTE_DATA_ALLOW_UNAVAILABLE=1 \
+  cargo test -p tradingview-cli --test live_quote_data_source -- --ignored --nocapture
+```
 
 For chart-source quote concurrency checks, run:
 

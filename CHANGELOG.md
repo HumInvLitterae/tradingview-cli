@@ -7,6 +7,12 @@ package version omits the leading `v`.
 
 ## Unreleased
 
+### Changed
+
+- Hardened the opt-in `quote-data` live smoke so it can target a specific
+  TradingView chart during premarket validation without exposing raw target
+  ids or raw WebSocket frames.
+
 ## v0.14.0 - 2026-05-10
 
 ### Added
