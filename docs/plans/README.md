@@ -8,12 +8,15 @@ for release and next-phase planning.
 
 Current plan:
 
-- `tradingview-cli-v0.15-pre-release-audit.md`: audit completed v0.15
-  compare movement readback and quote-data diagnostics before release
-  readiness.
+- `tradingview-cli-v0.15.0-release-readiness.md`: prepare the `v0.15.0`
+  release state, including version, changelog, release notes, README asset
+  examples, and package validation.
 
 Recently completed:
 
+- `tradingview-cli-v0.15-pre-release-audit.md`: audited completed v0.15
+  compare movement readback and quote-data diagnostics before release
+  readiness.
 - `tradingview-cli-quote-data-diagnostics.md`: added a narrow quote-data
   diagnostic surface that explains Desktop target selection, WebSocket, `qsd`,
   requested-symbol, and `rtc` availability without mixing scanner, chart, and
