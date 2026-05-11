@@ -8,12 +8,16 @@ for release and next-phase planning.
 
 Current plan:
 
-- `tradingview-cli-quote-data-live-smoke-target-hardening.md`: harden the
-  opt-in quote-data live smoke so premarket validation can target the intended
-  TradingView chart in multi-target Desktop sessions.
+- `tradingview-cli-quote-data-diagnostics.md`: plan the first `v0.15.0`
+  implementation slice, a narrow quote-data diagnostic surface that explains
+  Desktop target selection, WebSocket, `qsd`, requested-symbol, and `rtc`
+  availability without mixing scanner, chart, and quote-data sources.
 
 Recently completed:
 
+- `tradingview-cli-quote-data-live-smoke-target-hardening.md`: hardened the
+  opt-in quote-data live smoke so premarket validation can target the intended
+  TradingView chart in multi-target Desktop sessions.
 - `tradingview-cli-v0.14.0-release-readiness.md`: prepared the `v0.14.0`
   release state, including version, changelog, release notes, README asset
   examples, and package validation.
@@ -196,6 +200,9 @@ Important archived plan categories:
 - v0.13 chart-source quote session-boundary metadata
 - v0.13 snapshot contract metadata alignment
 - v0.13 follow-up vocabulary alignment
+- v0.14 release readiness
+- v0.14 quote-data source availability diagnostics
+- v0.14 quote-data live smoke target hardening
 
 For command contract details, prefer the notes under `docs/notes/` before
 reading archived implementation plans.

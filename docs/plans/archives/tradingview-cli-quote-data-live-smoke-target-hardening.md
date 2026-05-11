@@ -34,7 +34,7 @@ evidence that a market price does not exist.
 - [x] (2026-05-11T11:10Z) Run opt-in premarket smoke with an explicit target id while the market
   phase is available.
 - [x] (2026-05-11T11:25Z) Run full workspace validation.
-- [ ] Commit the related changes in one local commit.
+- [x] (2026-05-11T11:30Z) Commit the related changes in one local commit.
 
 ## Surprises & Discoveries
 
@@ -87,6 +87,11 @@ The premarket evidence collected in this slice did not produce a successful
 it confirms that unavailable quote-data is distinguishable from scanner
 premarket data and chart main-series quote data. Premarket `rtc` success
 evidence remains open.
+
+The work was committed locally as `a7649f0 test(cli): Harden quote-data live
+smoke target selection`. The next durable planning step is `v0.15.0`
+roadmap work focused on quote-data source diagnostics rather than additional
+price source mixing.
 
 Validation passed with focused `live_quote_data_source`, quote-data unit tests,
 quote CLI contract tests, formatting, clippy, full workspace tests, metadata,
