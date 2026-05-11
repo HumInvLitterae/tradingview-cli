@@ -7,7 +7,9 @@ package version omits the leading `v`.
 
 ## Unreleased
 
-### Changed
+## v0.15.0 - 2026-05-12
+
+### Added
 
 - Added `tv diagnose quote-data <SYMBOL>` as a narrow source diagnostics
   packet for explicit quote-data reads, keeping scanner, chart, and
@@ -15,6 +17,9 @@ package version omits the leading `v`.
 - Added additive `tv compare` movement readback so downstream tools can use a
   stable regular-session percent-change path without parsing raw quote
   sections.
+
+### Changed
+
 - Hardened the opt-in `quote-data` live smoke so it can target a specific
   TradingView chart during premarket validation without exposing raw target
   ids or raw WebSocket frames.
