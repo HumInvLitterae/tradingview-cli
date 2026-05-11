@@ -165,6 +165,14 @@ ranking, scoring, or market-price absence signals. Success payloads also
 include `quote_data.session_readback` with normalized spellings of
 TradingView-provided session fields only.
 
+When the issue is source availability rather than the quote value itself, use
+`tv diagnose quote-data <SYMBOL>`. It is a Desktop-backed diagnostic packet,
+not another price source. It reports sanitized target-selection status,
+quote-data source availability, public-safe WebSocket/qsd counters, and a
+separate scanner freshness reference. It does not merge scanner delayed REST,
+chart main-series quote, or quote-data `rtc`, and it does not add quote-data
+to `--source auto`.
+
 ### Desktop-backed operation
 
 `requires_desktop`: yes. `may_mutate`: yes. `fallback_allowed`: only before a

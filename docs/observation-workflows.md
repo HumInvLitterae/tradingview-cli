@@ -195,6 +195,12 @@ symbol, or use scanner REST if delayed data is acceptable. Do not treat it as
 price absence or a trading signal. Success payloads include
 `quote_data.session_readback` for normalized spellings of TradingView-provided
 session fields without inferring a session that TradingView did not report.
+If an agent needs to explain why quote-data is unavailable, use
+`tv diagnose quote-data <SYMBOL>`. The diagnostic reports sanitized Desktop
+target state, quote-data availability, public-safe WebSocket/qsd counters, and
+a separate scanner freshness reference in one packet. It is troubleshooting
+metadata, not a blended price read, and it does not switch symbols or add
+quote-data to `--source auto`.
 
 ## Visual Evidence Recovery
 

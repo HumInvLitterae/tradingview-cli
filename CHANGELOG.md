@@ -9,6 +9,9 @@ package version omits the leading `v`.
 
 ### Changed
 
+- Added `tv diagnose quote-data <SYMBOL>` as a narrow source diagnostics
+  packet for explicit quote-data reads, keeping scanner, chart, and
+  quote-data evidence separate.
 - Added additive `tv compare` movement readback so downstream tools can use a
   stable regular-session percent-change path without parsing raw quote
   sections.

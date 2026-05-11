@@ -158,6 +158,11 @@ Safety boundary:
   `quote_data.session_readback`, which normalizes TradingView-provided
   `market_phase` and `current_session` spelling only; it does not infer a
   session or convert quote-data into scanner `extended_hours`.
+  `tv diagnose quote-data <SYMBOL>` wraps the same explicit source boundary
+  in a troubleshooting packet: target selection, quote-data availability,
+  public-safe WebSocket/qsd counts, and a separate scanner freshness
+  reference. It must not include raw frames or synthesize a single quote from
+  scanner and quote-data fields.
 - `ohlcv` depends on the selected chart target's main-series bars collection.
   When the chart API or bars collection is unavailable, it should fail with
   structured readiness details and a target-selection recovery hint rather than

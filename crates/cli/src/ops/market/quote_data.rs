@@ -9,9 +9,16 @@ const QUOTE_DATA_WAIT: Duration = Duration::from_millis(3_500);
 #[cfg(test)]
 const QUOTE_DATA_WAIT: Duration = Duration::from_millis(50);
 const EVENT_POLL_TIMEOUT: Duration = Duration::from_millis(250);
-const QUOTE_DATA_CONTRACT_VERSION: &str = "quote_data.v1";
+pub(crate) const QUOTE_DATA_CONTRACT_VERSION: &str = "quote_data.v1";
 
 pub async fn quote_data(runtime: &mut CdpClient, symbol: &str) -> Result<Value, AppError> {
+    quote_data_bounded_read(runtime, symbol).await
+}
+
+pub(crate) async fn quote_data_bounded_read(
+    runtime: &mut CdpClient,
+    symbol: &str,
+) -> Result<Value, AppError> {
     let requested_symbol = symbol.trim();
     if requested_symbol.is_empty() {
         return Err(AppError::new(

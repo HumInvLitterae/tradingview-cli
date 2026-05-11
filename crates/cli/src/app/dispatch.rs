@@ -6,8 +6,8 @@ use crate::{
         input::read_pine_source, runtime::connect_runtime, safety::require_unsafe_ui_eval_enabled,
     },
     cli::{
-        AlertCommand, Command, DataCommand, DrawingCommand, IndicatorCommand, LayoutCommand,
-        PaneCommand, PineCommand, QuoteSource, ReplayCommand, ScannerCommand,
+        AlertCommand, Command, DataCommand, DiagnoseCommand, DrawingCommand, IndicatorCommand,
+        LayoutCommand, PaneCommand, PineCommand, QuoteSource, ReplayCommand, ScannerCommand,
         ScreenerColumnsCommand, ScreenerCommand, ScreenerFiltersCommand, ScreenerScreensCommand,
         TabCommand, UiCommand, WatchlistCommand,
     },
@@ -472,6 +472,17 @@ pub async fn dispatch(
             let mut runtime = connect_runtime(config).await?;
             ops::discover(&mut runtime).await
         }
+        Command::Diagnose { command } => match command {
+            DiagnoseCommand::QuoteData { symbol } => {
+                if symbol.trim().is_empty() {
+                    return Err(AppError::new(
+                        ErrorKind::Validation,
+                        "diagnose quote-data symbol must not be empty",
+                    ));
+                }
+                ops::diagnose_quote_data(config, &symbol).await
+            }
+        },
         Command::UiState => {
             let mut runtime = connect_runtime(config).await?;
             ops::ui_state(&mut runtime).await
