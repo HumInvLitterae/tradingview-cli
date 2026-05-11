@@ -7,8 +7,8 @@ use crate::{
     fundamentals_symbol_typed, quote_symbol_typed, symbol_info_typed,
     types::{
         Compare, CompareFieldCoverage, CompareFollowUpHint, CompareItem, CompareItemError,
-        CompareMissingEvidence, CompareMissingSummary, SnapshotSection, SnapshotSectionError,
-        SnapshotSections,
+        CompareMissingEvidence, CompareMissingSummary, CompareMovement, CompareMovementCoverage,
+        SnapshotSection, SnapshotSectionError, SnapshotSections,
     },
 };
 
@@ -24,6 +24,10 @@ const FOLLOW_UP_SCREENSHOT: &str = "screenshot";
 const FOLLOW_UP_SNAPSHOT: &str = "snapshot";
 const MISSING_REASON_FIELDS: &str = "missing_fields";
 const MISSING_REASON_SECTION_ERROR: &str = "section_error";
+const MOVEMENT_QUOTE_SECTION_UNAVAILABLE: &str = "quote_section_unavailable";
+const MOVEMENT_REGULAR_CHANGE_PERCENT_MISSING: &str = "regular_change_percent_missing";
+const MOVEMENT_SOURCE_PATH: &str = "sections.quote.data.change";
+const MOVEMENT_SOURCE_SECTION: &str = "quote";
 
 pub async fn compare_symbols(symbols: Vec<String>) -> Result<Value, AppError> {
     serde_json::to_value(compare_symbols_typed(symbols).await?)
@@ -64,6 +68,7 @@ async fn compare_one_symbol(requested_index: usize, requested_symbol: String) ->
         .iter()
         .any(|section| section.ok);
     let missing_summary = missing_summary(&sections);
+    let movement = movement_from_quote_section(&sections.quote);
     let missing_evidence = missing_evidence(&sections, &missing_summary);
     let symbol = best_symbol(&sections);
     let observed_symbol = best_observed_symbol(&sections);
@@ -78,6 +83,7 @@ async fn compare_one_symbol(requested_index: usize, requested_symbol: String) ->
         sections,
         errors,
         missing_summary,
+        movement,
         missing_evidence,
         follow_up_hints,
     }
@@ -224,6 +230,7 @@ fn compare_summary(
         .sum();
     let field_coverage =
         field_coverage(quote_ok_count, info_ok_count, fundamentals_ok_count, items);
+    let movement_coverage = movement_coverage(items);
     let resolved_symbols = items
         .iter()
         .map(|item| crate::types::CompareResolvedSymbol {
@@ -258,7 +265,22 @@ fn compare_summary(
         fundamentals_ok_count,
         missing_total_count,
         field_coverage,
+        movement_coverage,
         resolved_symbols,
+    }
+}
+
+fn movement_coverage(items: &[CompareItem]) -> CompareMovementCoverage {
+    let regular_change_percent_available_count =
+        items.iter().filter(|item| item.movement.available).count();
+    let requested_count = items.len();
+
+    CompareMovementCoverage {
+        regular_change_percent_available_count,
+        regular_change_percent_missing_count: requested_count
+            .saturating_sub(regular_change_percent_available_count),
+        regular_change_abs_available_count: 0,
+        regular_change_abs_missing_count: requested_count,
     }
 }
 
@@ -358,6 +380,41 @@ fn follow_up_hints(symbol: &Value) -> Vec<CompareFollowUpHint> {
             reason: "visual_evidence".to_string(),
         },
     ]
+}
+
+fn movement_from_quote_section(quote: &SnapshotSection) -> CompareMovement {
+    let data = quote.data.as_ref();
+    let regular_change_percent = data
+        .and_then(|value| value.get("change"))
+        .cloned()
+        .unwrap_or(Value::Null);
+    let regular_last = data
+        .and_then(|value| value.get("last"))
+        .cloned()
+        .unwrap_or(Value::Null);
+    let regular_close = data
+        .and_then(|value| value.get("close"))
+        .cloned()
+        .unwrap_or(Value::Null);
+    let available = quote.ok && regular_change_percent.is_number();
+    let missing_reason = if available {
+        None
+    } else if !quote.ok {
+        Some(MOVEMENT_QUOTE_SECTION_UNAVAILABLE.to_string())
+    } else {
+        Some(MOVEMENT_REGULAR_CHANGE_PERCENT_MISSING.to_string())
+    };
+
+    CompareMovement {
+        regular_change_percent,
+        regular_change_abs: Value::Null,
+        regular_last,
+        regular_close,
+        source_section: MOVEMENT_SOURCE_SECTION.to_string(),
+        source_path: MOVEMENT_SOURCE_PATH.to_string(),
+        available,
+        missing_reason,
+    }
 }
 
 fn first_error_kind(compare: &Compare) -> ErrorKind {
@@ -552,7 +609,12 @@ mod tests {
             sections: SnapshotSections {
                 quote: SnapshotSection {
                     ok: true,
-                    data: Some(json!({"symbol": "NASDAQ:AAPL"})),
+                    data: Some(json!({
+                        "symbol": "NASDAQ:AAPL",
+                        "change": 1.25,
+                        "last": 101.25,
+                        "close": 101.25
+                    })),
                     error: None,
                 },
                 info: SnapshotSection {
@@ -575,6 +637,16 @@ mod tests {
                     "earnings_release_next_date".to_string(),
                 ],
                 total_count: 2,
+            },
+            movement: CompareMovement {
+                regular_change_percent: json!(1.25),
+                regular_change_abs: Value::Null,
+                regular_last: json!(101.25),
+                regular_close: json!(101.25),
+                source_section: "quote".to_string(),
+                source_path: "sections.quote.data.change".to_string(),
+                available: true,
+                missing_reason: None,
             },
             missing_evidence: vec![CompareMissingEvidence {
                 section: "fundamentals".to_string(),
@@ -623,6 +695,16 @@ mod tests {
                 fundamentals: Vec::new(),
                 total_count: 0,
             },
+            movement: CompareMovement {
+                regular_change_percent: Value::Null,
+                regular_change_abs: Value::Null,
+                regular_last: Value::Null,
+                regular_close: Value::Null,
+                source_section: "quote".to_string(),
+                source_path: "sections.quote.data.change".to_string(),
+                available: false,
+                missing_reason: Some("quote_section_unavailable".to_string()),
+            },
             missing_evidence: vec![CompareMissingEvidence {
                 section: "quote".to_string(),
                 missing_fields: Vec::new(),
@@ -651,6 +733,26 @@ mod tests {
         assert_eq!(summary.field_coverage.earnings_missing_count, 1);
         assert_eq!(summary.field_coverage.dividends_missing_count, 1);
         assert_eq!(summary.field_coverage.total_missing_count, 2);
+        assert_eq!(
+            summary
+                .movement_coverage
+                .regular_change_percent_available_count,
+            1
+        );
+        assert_eq!(
+            summary
+                .movement_coverage
+                .regular_change_percent_missing_count,
+            1
+        );
+        assert_eq!(
+            summary.movement_coverage.regular_change_abs_available_count,
+            0
+        );
+        assert_eq!(
+            summary.movement_coverage.regular_change_abs_missing_count,
+            2
+        );
         assert_eq!(summary.resolved_symbols.len(), 2);
         assert_eq!(summary.resolved_symbols[0].requested_index, 0);
         assert_eq!(summary.resolved_symbols[0].requested_symbol, "AAPL");
@@ -784,6 +886,67 @@ mod tests {
     }
 
     #[test]
+    fn movement_readback_uses_regular_quote_change_percent() {
+        let quote = SnapshotSection {
+            ok: true,
+            data: Some(json!({
+                "change": -2.5,
+                "last": 97.5,
+                "close": 97.5
+            })),
+            error: None,
+        };
+        let movement = movement_from_quote_section(&quote);
+
+        assert!(movement.available);
+        assert_eq!(movement.regular_change_percent, json!(-2.5));
+        assert_eq!(movement.regular_change_abs, Value::Null);
+        assert_eq!(movement.regular_last, json!(97.5));
+        assert_eq!(movement.regular_close, json!(97.5));
+        assert_eq!(movement.source_section, "quote");
+        assert_eq!(movement.source_path, "sections.quote.data.change");
+        assert_eq!(movement.missing_reason, None);
+    }
+
+    #[test]
+    fn movement_readback_reports_missing_quote_change() {
+        let quote = SnapshotSection {
+            ok: true,
+            data: Some(json!({
+                "last": 97.5,
+                "close": 97.5
+            })),
+            error: None,
+        };
+        let movement = movement_from_quote_section(&quote);
+
+        assert!(!movement.available);
+        assert_eq!(movement.regular_change_percent, Value::Null);
+        assert_eq!(
+            movement.missing_reason.as_deref(),
+            Some(MOVEMENT_REGULAR_CHANGE_PERCENT_MISSING)
+        );
+
+        let failed_quote = SnapshotSection {
+            ok: false,
+            data: None,
+            error: Some(SnapshotSectionError {
+                section: "quote".to_string(),
+                kind: ErrorKind::InternalApiUnavailable,
+                message: "temporary failure".to_string(),
+                details: None,
+            }),
+        };
+        let movement = movement_from_quote_section(&failed_quote);
+
+        assert!(!movement.available);
+        assert_eq!(
+            movement.missing_reason.as_deref(),
+            Some(MOVEMENT_QUOTE_SECTION_UNAVAILABLE)
+        );
+    }
+
+    #[test]
     fn follow_up_hints_are_machine_readable_without_recommendation() {
         let hints = follow_up_hints(&json!("NASDAQ:AAPL"));
         assert_eq!(hints.len(), 4);
@@ -898,6 +1061,16 @@ mod tests {
                 fundamentals: Vec::new(),
                 total_count: 0,
             },
+            movement: CompareMovement {
+                regular_change_percent: Value::Null,
+                regular_change_abs: Value::Null,
+                regular_last: Value::Null,
+                regular_close: Value::Null,
+                source_section: "quote".to_string(),
+                source_path: "sections.quote.data.change".to_string(),
+                available: false,
+                missing_reason: Some("quote_section_unavailable".to_string()),
+            },
             missing_evidence: vec![CompareMissingEvidence {
                 section: "quote".to_string(),
                 missing_fields: Vec::new(),
@@ -978,6 +1151,16 @@ mod tests {
                 info: Vec::new(),
                 fundamentals: Vec::new(),
                 total_count: 0,
+            },
+            movement: CompareMovement {
+                regular_change_percent: Value::Null,
+                regular_change_abs: Value::Null,
+                regular_last: Value::Null,
+                regular_close: Value::Null,
+                source_section: "quote".to_string(),
+                source_path: "sections.quote.data.change".to_string(),
+                available: false,
+                missing_reason: Some("quote_section_unavailable".to_string()),
             },
             missing_evidence: vec![
                 CompareMissingEvidence {

@@ -152,6 +152,7 @@ fn assert_compare_success(symbols: &[String], envelope: &Value, elapsed: Duratio
             .and_then(Value::as_u64)
             .is_none()
         || summary.get("field_coverage").is_none()
+        || summary.get("movement_coverage").is_none()
         || summary
             .get("resolved_symbols")
             .and_then(Value::as_array)
@@ -172,6 +173,7 @@ fn assert_compare_success(symbols: &[String], envelope: &Value, elapsed: Duratio
         );
     }
     assert_field_coverage(symbols, summary, envelope, elapsed);
+    assert_movement_coverage(symbols, summary, envelope, elapsed);
     assert_coverage_status(symbols, summary, envelope, elapsed);
 
     let mut ok_count = 0usize;
@@ -343,11 +345,45 @@ fn assert_field_coverage(symbols: &[String], summary: &Value, envelope: &Value, 
     }
 }
 
+fn assert_movement_coverage(
+    symbols: &[String],
+    summary: &Value,
+    envelope: &Value,
+    elapsed: Duration,
+) {
+    let coverage = summary.get("movement_coverage").unwrap_or(&Value::Null);
+    if coverage
+        .get("regular_change_percent_available_count")
+        .and_then(Value::as_u64)
+        .is_none()
+        || coverage
+            .get("regular_change_percent_missing_count")
+            .and_then(Value::as_u64)
+            .is_none()
+        || coverage
+            .get("regular_change_abs_available_count")
+            .and_then(Value::as_u64)
+            .is_none()
+        || coverage
+            .get("regular_change_abs_missing_count")
+            .and_then(Value::as_u64)
+            .is_none()
+    {
+        panic!(
+            "compare live smoke movement coverage validation failed: symbols={} elapsed_ms={} summary={}",
+            symbols.join(","),
+            elapsed.as_millis(),
+            summarize_envelope(envelope)
+        );
+    }
+}
+
 fn assert_item_shape(symbol: &str, item: &Value, envelope: &Value, elapsed: Duration) -> bool {
     let sections = item.get("sections").unwrap_or(&Value::Null);
     if item.get("ok").and_then(Value::as_bool).is_none()
         || item.get("errors").and_then(Value::as_array).is_none()
         || item.get("missing_summary").is_none()
+        || item.get("movement").map(valid_movement) != Some(true)
         || item
             .get("missing_evidence")
             .and_then(Value::as_array)
@@ -395,6 +431,30 @@ fn assert_item_shape(symbol: &str, item: &Value, envelope: &Value, elapsed: Dura
     }
 
     item_ok
+}
+
+fn valid_movement(movement: &Value) -> bool {
+    let source_section = movement.get("source_section").and_then(Value::as_str);
+    let source_path = movement.get("source_path").and_then(Value::as_str);
+    let available = movement.get("available").and_then(Value::as_bool);
+    let missing_reason = movement.get("missing_reason");
+    let has_regular_change_percent = movement.get("regular_change_percent").is_some();
+    let has_regular_change_abs = movement.get("regular_change_abs").is_some();
+    let has_regular_last = movement.get("regular_last").is_some();
+    let has_regular_close = movement.get("regular_close").is_some();
+
+    source_section == Some("quote")
+        && source_path == Some("sections.quote.data.change")
+        && available.is_some()
+        && has_regular_change_percent
+        && has_regular_change_abs
+        && has_regular_last
+        && has_regular_close
+        && match available {
+            Some(true) => missing_reason.is_some_and(Value::is_null),
+            Some(false) => missing_reason.and_then(Value::as_str).is_some(),
+            None => false,
+        }
 }
 
 fn valid_coverage_status(status: &str) -> bool {

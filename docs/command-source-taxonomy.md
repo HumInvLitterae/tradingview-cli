@@ -44,6 +44,12 @@ Desktop-free source boundary and do not imply ranking or recommendation.
 fields, not which symbol is better. Per-item `missing_evidence` entries route
 known gaps to stable follow-up kinds such as `snapshot` or `chart_quote`
 without adding reads or changing the source category.
+Per-item `movement` entries provide stable regular-session movement readback
+for downstream tools. `movement.regular_change_percent` is derived from raw
+scanner quote evidence at `sections.quote.data.change`; the raw quote section
+remains the source of evidence. `movement.regular_change_abs` is not inferred
+from price fields and remains null until a separate plan defines a source or
+derivation policy.
 
 `tv snapshot` uses the same Desktop-free boundary for one-symbol evidence.
 Its contract metadata, coverage summary, missing-evidence readback, and

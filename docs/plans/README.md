@@ -8,10 +8,17 @@ for release and next-phase planning.
 
 Current plan:
 
-- `tradingview-cli-quote-data-diagnostics.md`: plan the first `v0.15.0`
-  implementation slice, a narrow quote-data diagnostic surface that explains
-  Desktop target selection, WebSocket, `qsd`, requested-symbol, and `rtc`
-  availability without mixing scanner, chart, and quote-data sources.
+- `tradingview-cli-compare-change-evidence.md`: add additive
+  `tv compare` movement readback so downstream tools can read stable
+  regular-session percent-change evidence without parsing source-specific raw
+  quote paths.
+
+Future plan:
+
+- `tradingview-cli-quote-data-diagnostics.md`: plan a narrow quote-data
+  diagnostic surface that explains Desktop target selection, WebSocket, `qsd`,
+  requested-symbol, and `rtc` availability without mixing scanner, chart, and
+  quote-data sources.
 
 Recently completed:
 

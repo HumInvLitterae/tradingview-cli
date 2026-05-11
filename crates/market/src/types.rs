@@ -434,8 +434,23 @@ pub struct CompareSummary {
     pub missing_total_count: usize,
     /// Section and field-category coverage readback.
     pub field_coverage: CompareFieldCoverage,
+    /// Movement evidence coverage readback for downstream session posture tools.
+    pub movement_coverage: CompareMovementCoverage,
     /// Ordered symbol resolution readback for downstream tools.
     pub resolved_symbols: Vec<CompareResolvedSymbol>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize)]
+/// Regular-session movement coverage readback for a comparison packet.
+pub struct CompareMovementCoverage {
+    /// Number of items with a normalized regular-session percent change.
+    pub regular_change_percent_available_count: usize,
+    /// Number of items missing normalized regular-session percent change.
+    pub regular_change_percent_missing_count: usize,
+    /// Number of items with a normalized regular-session absolute change.
+    pub regular_change_abs_available_count: usize,
+    /// Number of items missing normalized regular-session absolute change.
+    pub regular_change_abs_missing_count: usize,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize)]
@@ -503,10 +518,33 @@ pub struct CompareItem {
     pub errors: Vec<SnapshotSectionError>,
     /// Missing-value summary for successful sections.
     pub missing_summary: CompareMissingSummary,
+    /// Regular-session movement readback derived from the quote section.
+    pub movement: CompareMovement,
     /// Machine-readable missing evidence and follow-up readback for this item.
     pub missing_evidence: Vec<CompareMissingEvidence>,
     /// Machine-readable available follow-up surfaces for this item.
     pub follow_up_hints: Vec<CompareFollowUpHint>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize)]
+/// Regular-session movement readback for one comparison item.
+pub struct CompareMovement {
+    /// Scanner quote regular-session percentage change.
+    pub regular_change_percent: Value,
+    /// Normalized regular-session absolute change when available.
+    pub regular_change_abs: Value,
+    /// Scanner quote last price.
+    pub regular_last: Value,
+    /// Scanner quote close price.
+    pub regular_close: Value,
+    /// Evidence section used to build this readback.
+    pub source_section: String,
+    /// Primary raw evidence path for regular-session percentage change.
+    pub source_path: String,
+    /// True when `regular_change_percent` is available.
+    pub available: bool,
+    /// Missing reason when `available` is false.
+    pub missing_reason: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize)]

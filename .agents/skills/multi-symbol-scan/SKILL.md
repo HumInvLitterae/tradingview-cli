@@ -53,7 +53,10 @@ construction, not on duplicating the full source taxonomy.
    missing totals, requested-to-resolved symbol mapping, field coverage, and
    requested-order indexes. `summary.coverage_status` is only evidence
    completeness (`complete`, `partial`, or `blocked`); keep raw `items[]` as
-   the evidence source for any actual comparison. Per-item `follow_up_hints`
+   the evidence source for any actual comparison. For regular-session movement,
+   use `items[].movement.regular_change_percent` as the stable first-pass
+   readback and confirm against raw `items[].sections.quote.data.change` when
+   needed; do not infer absolute change from last/close. Per-item `follow_up_hints`
    are available next evidence surfaces, not recommendations. Stable follow-up
    kinds are `snapshot`, `chart_quote`, `observe_chart`, and `screenshot`;
    keep `chart_quote` as the canonical selected-chart quote kind and do not
