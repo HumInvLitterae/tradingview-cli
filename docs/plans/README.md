@@ -8,12 +8,15 @@ for release and next-phase planning.
 
 Current plan:
 
-- `tradingview-cli-v0.15.0-release-readiness.md`: prepare the `v0.15.0`
-  release state, including version, changelog, release notes, README asset
-  examples, and package validation.
+- `tradingview-cli-quote-data-regular-session-semantics.md`: plan
+  regular-session quote-data field evidence and source semantics for the
+  `v0.16.0` roadmap without changing public payload behavior.
 
 Recently completed:
 
+- `tradingview-cli-v0.15.0-release-readiness.md`: prepared the `v0.15.0`
+  release state, including version, changelog, release notes, README asset
+  examples, and package validation.
 - `tradingview-cli-v0.15-pre-release-audit.md`: audited completed v0.15
   compare movement readback and quote-data diagnostics before release
   readiness.

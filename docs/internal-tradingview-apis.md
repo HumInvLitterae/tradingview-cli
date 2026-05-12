@@ -158,6 +158,10 @@ Safety boundary:
   `quote_data.session_readback`, which normalizes TradingView-provided
   `market_phase` and `current_session` spelling only; it does not infer a
   session or convert quote-data into scanner `extended_hours`.
+  Regular-session quote-data behavior is not yet classified as an API
+  prohibition. The next evidence slice should compare matching-symbol `lp`,
+  `regular_close`, `rtc`, session fields, and update mode during regular
+  session to decide whether additive regular-session readback is viable.
   `tv diagnose quote-data <SYMBOL>` wraps the same explicit source boundary
   in a troubleshooting packet: target selection, quote-data availability,
   public-safe WebSocket/qsd counts, and a separate scanner freshness
