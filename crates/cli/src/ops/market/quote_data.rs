@@ -62,11 +62,18 @@ struct QuoteDataCandidate {
     symbol: String,
     rtc: Value,
     rtc_time: Value,
+    lp: Value,
+    regular_close: Value,
+    lp_time: Value,
+    rt_update_time: Value,
     rch: Value,
     rchp: Value,
     current_session: Value,
     market_phase: Value,
     update_mode: Value,
+    price_readback_kind: &'static str,
+    price_readback_value: Value,
+    price_readback_source_field: &'static str,
 }
 
 #[derive(Debug)]
@@ -79,6 +86,9 @@ struct QuoteDataObserver<'a> {
     qsd_with_rtc_seen: u64,
     matching_symbol_qsd_seen: u64,
     matching_symbol_without_rtc_seen: u64,
+    matching_symbol_with_lp_seen: u64,
+    matching_symbol_with_regular_close_seen: u64,
+    matching_symbol_with_price_readback_seen: u64,
     matching_qsd_messages_seen: u64,
     quote_session_symbol_mappings_seen: u64,
 }
@@ -94,6 +104,9 @@ impl<'a> QuoteDataObserver<'a> {
             qsd_with_rtc_seen: 0,
             matching_symbol_qsd_seen: 0,
             matching_symbol_without_rtc_seen: 0,
+            matching_symbol_with_lp_seen: 0,
+            matching_symbol_with_regular_close_seen: 0,
+            matching_symbol_with_price_readback_seen: 0,
             matching_qsd_messages_seen: 0,
             quote_session_symbol_mappings_seen: 0,
         }
@@ -190,18 +203,34 @@ impl<'a> QuoteDataObserver<'a> {
                 || mapped_symbol
                     .as_deref()
                     .is_some_and(|mapped| symbol_matches(mapped, self.requested_symbol));
-            let Some(rtc) = values.get("rtc").filter(|value| !value.is_null()) else {
-                if item_matches_request {
-                    self.matching_symbol_qsd_seen += 1;
-                    self.matching_symbol_without_rtc_seen += 1;
-                }
-                continue;
-            };
-            self.qsd_with_rtc_seen += 1;
+            let rtc = values.get("rtc").filter(|value| !value.is_null());
+            let lp = values.get("lp").filter(|value| !value.is_null());
+            let regular_close = values.get("regular_close").filter(|value| !value.is_null());
+            if rtc.is_some() {
+                self.qsd_with_rtc_seen += 1;
+            }
             if !item_matches_request {
                 continue;
             }
             self.matching_symbol_qsd_seen += 1;
+            if rtc.is_none() {
+                self.matching_symbol_without_rtc_seen += 1;
+            }
+            if lp.is_some() {
+                self.matching_symbol_with_lp_seen += 1;
+            }
+            if regular_close.is_some() {
+                self.matching_symbol_with_regular_close_seen += 1;
+            }
+            let (price_readback_kind, price_readback_value, price_readback_source_field) =
+                if let Some(rtc) = rtc {
+                    ("rtc", rtc.clone(), "qsd.v.rtc")
+                } else if let Some(lp) = lp {
+                    ("regular_last", lp.clone(), "qsd.v.lp")
+                } else {
+                    continue;
+                };
+            self.matching_symbol_with_price_readback_seen += 1;
             self.matching_qsd_messages_seen += 1;
             return Some(QuoteDataCandidate {
                 symbol: if symbol_matches(symbol, self.requested_symbol) {
@@ -209,8 +238,12 @@ impl<'a> QuoteDataObserver<'a> {
                 } else {
                     mapped_symbol.unwrap_or_else(|| self.requested_symbol.to_string())
                 },
-                rtc: rtc.clone(),
+                rtc: rtc.cloned().unwrap_or(Value::Null),
                 rtc_time: values.get("rtc_time").cloned().unwrap_or(Value::Null),
+                lp: lp.cloned().unwrap_or(Value::Null),
+                regular_close: regular_close.cloned().unwrap_or(Value::Null),
+                lp_time: values.get("lp_time").cloned().unwrap_or(Value::Null),
+                rt_update_time: values.get("rt-update-time").cloned().unwrap_or(Value::Null),
                 rch: values.get("rch").cloned().unwrap_or(Value::Null),
                 rchp: values.get("rchp").cloned().unwrap_or(Value::Null),
                 current_session: values
@@ -223,6 +256,9 @@ impl<'a> QuoteDataObserver<'a> {
                     .cloned()
                     .unwrap_or(Value::Null),
                 update_mode: values.get("update_mode").cloned().unwrap_or(Value::Null),
+                price_readback_kind,
+                price_readback_value,
+                price_readback_source_field,
             });
         }
         None
@@ -261,6 +297,9 @@ impl<'a> QuoteDataObserver<'a> {
             "qsd_with_rtc_seen": self.qsd_with_rtc_seen,
             "matching_symbol_qsd_seen": self.matching_symbol_qsd_seen,
             "matching_symbol_without_rtc_seen": self.matching_symbol_without_rtc_seen,
+            "matching_symbol_with_lp_seen": self.matching_symbol_with_lp_seen,
+            "matching_symbol_with_regular_close_seen": self.matching_symbol_with_regular_close_seen,
+            "matching_symbol_with_price_readback_seen": self.matching_symbol_with_price_readback_seen,
             "matching_qsd_messages_seen": self.matching_qsd_messages_seen,
             "quote_session_symbol_mappings_seen": self.quote_session_symbol_mappings_seen,
             "raw_frame_included": false,
@@ -292,16 +331,28 @@ fn success_payload(
         "chart_main_series_included": false,
         "bounded_wait_ms": QUOTE_DATA_WAIT.as_millis(),
         "elapsed_ms": elapsed.as_millis(),
-        "source_availability": source_availability(true, true, wait_summary, None, false, None),
+        "source_availability": source_availability(true, !candidate.rtc.is_null(), true, wait_summary, None, false, None),
         "quote_data": {
             "rtc": candidate.rtc,
             "rtc_time": candidate.rtc_time,
+            "lp": candidate.lp,
+            "regular_close": candidate.regular_close,
+            "lp_time": candidate.lp_time,
+            "rt_update_time": candidate.rt_update_time,
             "rch": candidate.rch,
             "rchp": candidate.rchp,
             "current_session": candidate.current_session.clone(),
             "market_phase": candidate.market_phase.clone(),
             "update_mode": candidate.update_mode,
             "session_readback": session_readback,
+            "price_readback": {
+                "available": true,
+                "kind": candidate.price_readback_kind,
+                "value": candidate.price_readback_value,
+                "source_field": candidate.price_readback_source_field,
+                "session_source": "tradingview_quote_data_fields",
+                "session_inferred": false,
+            },
         },
         "note": "quote-data source is a Desktop-backed WebSocket readback and is not scanner extended_hours or chart main-series quote",
     })
@@ -310,6 +361,7 @@ fn success_payload(
 fn unavailable_error(requested_symbol: &str, wait_summary: Value) -> AppError {
     let unavailable_reason = unavailable_reason_from_summary(&wait_summary);
     let source_availability = source_availability(
+        false,
         false,
         false,
         wait_summary.clone(),
@@ -341,6 +393,7 @@ fn unavailable_error(requested_symbol: &str, wait_summary: Value) -> AppError {
 fn source_availability(
     available: bool,
     rtc_observed: bool,
+    price_readback_observed: bool,
     wait_summary: Value,
     unavailable_reason: Option<&str>,
     timed_out: bool,
@@ -350,6 +403,7 @@ fn source_availability(
         "available": available,
         "status": if available { "available" } else { "unavailable" },
         "rtc_observed": rtc_observed,
+        "price_readback_observed": price_readback_observed,
         "unavailable_reason": unavailable_reason,
         "timed_out": timed_out,
         "next_action": next_action,
@@ -519,7 +573,7 @@ mod tests {
     fn quote_data_observer_extracts_rtc_readback() {
         let mut observer = QuoteDataObserver::new("NASDAQ:RKLB");
         let event = qsd_event(
-            r#"{"m":"qsd","p":["qs",{"n":"NASDAQ:RKLB","s":"ok","v":{"rtc":104.55,"rtc_time":1778278370,"rch":-0.92,"rchp":-0.87,"current_session":"post_market","market-status":{"phase":"post-market"},"update_mode":"streaming"}}]}"#,
+            r#"{"m":"qsd","p":["qs",{"n":"NASDAQ:RKLB","s":"ok","v":{"rtc":104.55,"rtc_time":1778278370,"lp":105.47,"regular_close":105.47,"lp_time":1778278300,"rt-update-time":1778278310,"rch":-0.92,"rchp":-0.87,"current_session":"post_market","market-status":{"phase":"post-market"},"update_mode":"streaming"}}]}"#,
         );
 
         let candidate = observer.handle_event(&event).unwrap();
@@ -527,8 +581,15 @@ mod tests {
         assert_eq!(candidate.symbol, "NASDAQ:RKLB");
         assert_eq!(candidate.rtc, json!(104.55));
         assert_eq!(candidate.rtc_time, json!(1778278370));
+        assert_eq!(candidate.lp, json!(105.47));
+        assert_eq!(candidate.regular_close, json!(105.47));
+        assert_eq!(candidate.lp_time, json!(1778278300));
+        assert_eq!(candidate.rt_update_time, json!(1778278310));
         assert_eq!(candidate.current_session, json!("post_market"));
         assert_eq!(candidate.market_phase, json!("post-market"));
+        assert_eq!(candidate.price_readback_kind, "rtc");
+        assert_eq!(candidate.price_readback_value, json!(104.55));
+        assert_eq!(candidate.price_readback_source_field, "qsd.v.rtc");
     }
 
     #[test]
@@ -569,10 +630,35 @@ mod tests {
     }
 
     #[test]
-    fn quote_data_observer_counts_matching_qsd_without_rtc() {
+    fn quote_data_observer_accepts_matching_lp_without_rtc() {
         let mut observer = QuoteDataObserver::new("NASDAQ:RKLB");
         let event = qsd_event(
-            r#"{"m":"qsd","p":["qs",{"n":"NASDAQ:RKLB","s":"ok","v":{"current_session":"post_market"}}]}"#,
+            r#"{"m":"qsd","p":["qs",{"n":"NASDAQ:RKLB","s":"ok","v":{"lp":122.34,"regular_close":121.10,"current_session":"regular","market-status":{"phase":"regular"},"update_mode":"streaming"}}]}"#,
+        );
+
+        let candidate = observer.handle_event(&event).unwrap();
+        assert_eq!(candidate.rtc, Value::Null);
+        assert_eq!(candidate.lp, json!(122.34));
+        assert_eq!(candidate.regular_close, json!(121.10));
+        assert_eq!(candidate.price_readback_kind, "regular_last");
+        assert_eq!(candidate.price_readback_value, json!(122.34));
+        assert_eq!(candidate.price_readback_source_field, "qsd.v.lp");
+        let summary = observer.summary(Duration::ZERO);
+        assert_eq!(summary["qsd_messages_seen"], 1);
+        assert_eq!(summary["qsd_with_rtc_seen"], 0);
+        assert_eq!(summary["matching_symbol_qsd_seen"], 1);
+        assert_eq!(summary["matching_symbol_without_rtc_seen"], 1);
+        assert_eq!(summary["matching_symbol_with_lp_seen"], 1);
+        assert_eq!(summary["matching_symbol_with_regular_close_seen"], 1);
+        assert_eq!(summary["matching_symbol_with_price_readback_seen"], 1);
+        assert_eq!(summary["matching_qsd_messages_seen"], 1);
+    }
+
+    #[test]
+    fn quote_data_observer_counts_matching_qsd_without_price_readback() {
+        let mut observer = QuoteDataObserver::new("NASDAQ:RKLB");
+        let event = qsd_event(
+            r#"{"m":"qsd","p":["qs",{"n":"NASDAQ:RKLB","s":"ok","v":{"regular_close":121.10,"current_session":"regular"}}]}"#,
         );
 
         assert!(observer.handle_event(&event).is_none());
@@ -581,6 +667,9 @@ mod tests {
         assert_eq!(summary["qsd_with_rtc_seen"], 0);
         assert_eq!(summary["matching_symbol_qsd_seen"], 1);
         assert_eq!(summary["matching_symbol_without_rtc_seen"], 1);
+        assert_eq!(summary["matching_symbol_with_lp_seen"], 0);
+        assert_eq!(summary["matching_symbol_with_regular_close_seen"], 1);
+        assert_eq!(summary["matching_symbol_with_price_readback_seen"], 0);
         assert_eq!(summary["matching_qsd_messages_seen"], 0);
     }
 
@@ -626,11 +715,18 @@ mod tests {
                 symbol: "NASDAQ:RKLB".to_string(),
                 rtc: json!(104.55),
                 rtc_time: Value::Null,
+                lp: json!(105.47),
+                regular_close: json!(105.47),
+                lp_time: Value::Null,
+                rt_update_time: Value::Null,
                 rch: Value::Null,
                 rchp: Value::Null,
                 current_session: json!("post_market"),
                 market_phase: json!("post-market"),
                 update_mode: json!("streaming"),
+                price_readback_kind: "rtc",
+                price_readback_value: json!(104.55),
+                price_readback_source_field: "qsd.v.rtc",
             },
             Duration::from_millis(12),
             json!({
@@ -642,6 +738,9 @@ mod tests {
                 "qsd_with_rtc_seen": 1,
                 "matching_symbol_qsd_seen": 1,
                 "matching_symbol_without_rtc_seen": 0,
+                "matching_symbol_with_lp_seen": 1,
+                "matching_symbol_with_regular_close_seen": 1,
+                "matching_symbol_with_price_readback_seen": 1,
                 "matching_qsd_messages_seen": 1,
                 "quote_session_symbol_mappings_seen": 0,
                 "raw_frame_included": false,
@@ -651,9 +750,29 @@ mod tests {
         assert_eq!(payload["contract_version"], QUOTE_DATA_CONTRACT_VERSION);
         assert_eq!(payload["source"], "desktop_quote_data_ws");
         assert_eq!(payload["quote_data"]["rtc"], json!(104.55));
+        assert_eq!(payload["quote_data"]["lp"], json!(105.47));
+        assert_eq!(payload["quote_data"]["regular_close"], json!(105.47));
+        assert_eq!(payload["quote_data"]["price_readback"]["available"], true);
+        assert_eq!(payload["quote_data"]["price_readback"]["kind"], "rtc");
+        assert_eq!(
+            payload["quote_data"]["price_readback"]["source_field"],
+            "qsd.v.rtc"
+        );
+        assert_eq!(
+            payload["quote_data"]["price_readback"]["session_source"],
+            "tradingview_quote_data_fields"
+        );
+        assert_eq!(
+            payload["quote_data"]["price_readback"]["session_inferred"],
+            false
+        );
         assert_eq!(payload["source_availability"]["available"], true);
         assert_eq!(payload["source_availability"]["status"], "available");
         assert_eq!(payload["source_availability"]["rtc_observed"], true);
+        assert_eq!(
+            payload["source_availability"]["price_readback_observed"],
+            true
+        );
         assert_eq!(
             payload["source_availability"]["unavailable_reason"],
             Value::Null
@@ -663,6 +782,10 @@ mod tests {
         assert_eq!(payload["source_availability"]["raw_frame_included"], false);
         assert_eq!(
             payload["source_availability"]["wait_summary"]["matching_qsd_messages_seen"],
+            1
+        );
+        assert_eq!(
+            payload["source_availability"]["wait_summary"]["matching_symbol_with_price_readback_seen"],
             1
         );
         assert_eq!(
@@ -687,6 +810,72 @@ mod tests {
     }
 
     #[test]
+    fn success_payload_reports_regular_last_readback_without_rtc() {
+        let payload = success_payload(
+            "NASDAQ:RKLB",
+            QuoteDataCandidate {
+                symbol: "NASDAQ:RKLB".to_string(),
+                rtc: Value::Null,
+                rtc_time: Value::Null,
+                lp: json!(122.34),
+                regular_close: json!(121.10),
+                lp_time: json!(1778278300),
+                rt_update_time: Value::Null,
+                rch: Value::Null,
+                rchp: Value::Null,
+                current_session: json!("regular"),
+                market_phase: json!("regular"),
+                update_mode: json!("streaming"),
+                price_readback_kind: "regular_last",
+                price_readback_value: json!(122.34),
+                price_readback_source_field: "qsd.v.lp",
+            },
+            Duration::from_millis(12),
+            json!({
+                "bounded_wait_ms": 50,
+                "elapsed_ms": 12,
+                "websocket_events_seen": 1,
+                "websocket_frames_seen": 1,
+                "qsd_messages_seen": 1,
+                "qsd_with_rtc_seen": 0,
+                "matching_symbol_qsd_seen": 1,
+                "matching_symbol_without_rtc_seen": 1,
+                "matching_symbol_with_lp_seen": 1,
+                "matching_symbol_with_regular_close_seen": 1,
+                "matching_symbol_with_price_readback_seen": 1,
+                "matching_qsd_messages_seen": 1,
+                "quote_session_symbol_mappings_seen": 0,
+                "raw_frame_included": false,
+            }),
+        );
+
+        assert_eq!(payload["quote_data"]["rtc"], Value::Null);
+        assert_eq!(payload["quote_data"]["lp"], json!(122.34));
+        assert_eq!(payload["quote_data"]["regular_close"], json!(121.10));
+        assert_eq!(payload["quote_data"]["lp_time"], json!(1778278300));
+        assert_eq!(
+            payload["quote_data"]["price_readback"]["kind"],
+            "regular_last"
+        );
+        assert_eq!(
+            payload["quote_data"]["price_readback"]["value"],
+            json!(122.34)
+        );
+        assert_eq!(
+            payload["quote_data"]["price_readback"]["source_field"],
+            "qsd.v.lp"
+        );
+        assert_eq!(payload["source_availability"]["rtc_observed"], false);
+        assert_eq!(
+            payload["source_availability"]["price_readback_observed"],
+            true
+        );
+        assert!(payload.get("extended_hours").is_none());
+        assert_eq!(payload["chart_main_series_included"], false);
+        assert_eq!(payload["scanner_extended_hours_included"], false);
+    }
+
+    #[test]
     fn unavailable_error_is_public_safe() {
         let error = unavailable_error(
             "NASDAQ:RKLB",
@@ -698,6 +887,9 @@ mod tests {
                 "qsd_with_rtc_seen": 0,
                 "matching_symbol_qsd_seen": 1,
                 "matching_symbol_without_rtc_seen": 1,
+                "matching_symbol_with_lp_seen": 0,
+                "matching_symbol_with_regular_close_seen": 0,
+                "matching_symbol_with_price_readback_seen": 0,
                 "matching_qsd_messages_seen": 0,
                 "quote_session_symbol_mappings_seen": 0,
                 "raw_frame_included": false,
@@ -711,6 +903,10 @@ mod tests {
         assert_eq!(details["source_availability"]["available"], false);
         assert_eq!(details["source_availability"]["status"], "unavailable");
         assert_eq!(details["source_availability"]["rtc_observed"], false);
+        assert_eq!(
+            details["source_availability"]["price_readback_observed"],
+            false
+        );
         assert_eq!(
             details["source_availability"]["unavailable_reason"],
             "no_rtc"

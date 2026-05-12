@@ -597,6 +597,7 @@ mod tests {
                 "available": false,
                 "status": "unavailable",
                 "rtc_observed": false,
+                "price_readback_observed": false,
                 "unavailable_reason": "no_rtc",
                 "timed_out": true,
                 "next_action": "use_scanner_if_delayed_rest_ok",
@@ -606,6 +607,7 @@ mod tests {
                     "websocket_frames_seen": 1,
                     "qsd_messages_seen": 1,
                     "matching_symbol_qsd_seen": 1,
+                    "matching_symbol_with_price_readback_seen": 0,
                     "raw_frame_included": false
                 }
             },
@@ -614,6 +616,7 @@ mod tests {
                 "websocket_frames_seen": 1,
                 "qsd_messages_seen": 1,
                 "matching_symbol_qsd_seen": 1,
+                "matching_symbol_with_price_readback_seen": 0,
                 "raw_frame_included": false
             }
         });
@@ -628,6 +631,58 @@ mod tests {
             false
         );
         assert!(!wrapped.to_string().contains("payloadData"));
+    }
+
+    #[test]
+    fn diagnose_payload_wraps_quote_data_success_price_readback() {
+        let payload = json!({
+            "source": "desktop_quote_data_ws",
+            "observed_symbol": "NASDAQ:RKLB",
+            "source_availability": {
+                "available": true,
+                "status": "available",
+                "rtc_observed": false,
+                "price_readback_observed": true,
+                "unavailable_reason": null,
+                "timed_out": false,
+                "next_action": null,
+                "raw_frame_included": false,
+                "wait_summary": {
+                    "matching_symbol_with_price_readback_seen": 1,
+                    "raw_frame_included": false
+                }
+            },
+            "quote_data": {
+                "rtc": null,
+                "lp": 122.34,
+                "regular_close": 121.10,
+                "price_readback": {
+                    "available": true,
+                    "kind": "regular_last",
+                    "value": 122.34,
+                    "source_field": "qsd.v.lp",
+                    "session_source": "tradingview_quote_data_fields",
+                    "session_inferred": false
+                }
+            }
+        });
+
+        let wrapped = quote_data_success(payload);
+
+        assert_eq!(wrapped["ok"], true);
+        assert_eq!(wrapped["payload_status"], "available");
+        assert_eq!(
+            wrapped["source_availability"]["price_readback_observed"],
+            true
+        );
+        assert_eq!(
+            wrapped["readback"]["price_readback"]["kind"],
+            "regular_last"
+        );
+        assert_eq!(
+            wrapped["readback"]["price_readback"]["source_field"],
+            "qsd.v.lp"
+        );
     }
 
     #[test]

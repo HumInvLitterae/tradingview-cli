@@ -102,10 +102,10 @@ observation surface.
    `source_availability.unavailable_reason` only for source diagnostics, and
    use `quote_data.session_readback` only as normalized spelling of
    TradingView-provided session fields, not inferred session classification.
-   During regular session, `no_rtc` can mean the current quote-data contract
-   did not observe the `rtc` success field; prefer scanner freshness or chart
-   main-series quote for regular price until quote-data regular-session
-   semantics are explicitly added.
+   On success, use `quote_data.price_readback.kind` to distinguish
+   after-hours/premarket-style `rtc` readback from regular quote-data
+   `regular_last` readback based on `qsd.v.lp`. Keep scanner freshness, chart
+   main-series quote, and quote-data readback separate.
    If quote-data availability is the problem, use
    `tv diagnose quote-data <SYMBOL>` to inspect sanitized target state,
    quote-data availability, public-safe WebSocket/qsd counters, and separate

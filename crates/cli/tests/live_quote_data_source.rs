@@ -172,6 +172,10 @@ fn assert_quote_data_success(symbol: &str, envelope: &Value, elapsed: Duration) 
         || data
             .pointer("/source_availability/rtc_observed")
             .and_then(Value::as_bool)
+            .is_none()
+        || data
+            .pointer("/source_availability/price_readback_observed")
+            .and_then(Value::as_bool)
             != Some(true)
         || !data
             .pointer("/source_availability/unavailable_reason")
@@ -204,10 +208,43 @@ fn assert_quote_data_success(symbol: &str, envelope: &Value, elapsed: Duration) 
             .and_then(Value::as_u64)
             .is_none()
         || data
+            .pointer("/source_availability/wait_summary/matching_symbol_with_lp_seen")
+            .and_then(Value::as_u64)
+            .is_none()
+        || data
+            .pointer("/source_availability/wait_summary/matching_symbol_with_regular_close_seen")
+            .and_then(Value::as_u64)
+            .is_none()
+        || data
+            .pointer("/source_availability/wait_summary/matching_symbol_with_price_readback_seen")
+            .and_then(Value::as_u64)
+            .is_none()
+        || data
             .pointer("/source_availability/wait_summary/quote_session_symbol_mappings_seen")
             .and_then(Value::as_u64)
             .is_none()
         || quote_data.get("session_readback").is_none()
+        || quote_data
+            .pointer("/price_readback/available")
+            .and_then(Value::as_bool)
+            != Some(true)
+        || quote_data
+            .pointer("/price_readback/kind")
+            .and_then(Value::as_str)
+            .is_none()
+        || quote_data.pointer("/price_readback/value").is_none()
+        || quote_data
+            .pointer("/price_readback/source_field")
+            .and_then(Value::as_str)
+            .is_none()
+        || quote_data
+            .pointer("/price_readback/session_source")
+            .and_then(Value::as_str)
+            != Some("tradingview_quote_data_fields")
+        || quote_data
+            .pointer("/price_readback/session_inferred")
+            .and_then(Value::as_bool)
+            != Some(false)
         || quote_data
             .pointer("/session_readback/session_source")
             .and_then(Value::as_str)
@@ -269,6 +306,10 @@ fn assert_quote_data_unavailable(
             .and_then(Value::as_bool)
             != Some(false)
         || details
+            .pointer("/source_availability/price_readback_observed")
+            .and_then(Value::as_bool)
+            != Some(false)
+        || details
             .pointer("/source_availability/unavailable_reason")
             .and_then(Value::as_str)
             .is_none()
@@ -298,6 +339,18 @@ fn assert_quote_data_unavailable(
             .is_none()
         || details
             .pointer("/source_availability/wait_summary/matching_symbol_without_rtc_seen")
+            .and_then(Value::as_u64)
+            .is_none()
+        || details
+            .pointer("/source_availability/wait_summary/matching_symbol_with_lp_seen")
+            .and_then(Value::as_u64)
+            .is_none()
+        || details
+            .pointer("/source_availability/wait_summary/matching_symbol_with_regular_close_seen")
+            .and_then(Value::as_u64)
+            .is_none()
+        || details
+            .pointer("/source_availability/wait_summary/matching_symbol_with_price_readback_seen")
             .and_then(Value::as_u64)
             .is_none()
         || details

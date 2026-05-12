@@ -160,15 +160,16 @@ details carry command-local `contract_version: "quote_data.v1"` and
 bounded wait", not as "the symbol has no price". The same object includes
 `unavailable_reason`, `timed_out`, and `next_action` for source diagnostics.
 Those reasons distinguish missing WebSocket activity, missing qsd messages,
-symbol mismatch, and matching qsd messages without `rtc`; they are not
-ranking, scoring, or market-price absence signals. Success payloads also
-include `quote_data.session_readback` with normalized spellings of
-TradingView-provided session fields only. During regular session, quote-data
-unavailable should not be read as a Desktop API-wide limitation. The current
-success contract is centered on matching non-null `qsd.rtc`; if regular
-`qsd` frames expose fields such as `lp` or `regular_close` without `rtc`,
-that is field-semantics evidence for a later additive plan, not a reason to
-guess a price.
+symbol mismatch, and matching qsd messages without a usable quote-data price
+readback; they are not ranking, scoring, or market-price absence signals.
+Success payloads also include `quote_data.session_readback` with normalized
+spellings of TradingView-provided session fields only. `quote_data.price_readback`
+labels which quote-data field produced the read: `kind: "rtc"` for `qsd.v.rtc`
+and `kind: "regular_last"` for `qsd.v.lp`. `regular_close` is returned as
+supporting source context when present, but it is not a standalone success
+condition. During regular session, quote-data unavailable should not be read as
+a Desktop API-wide limitation; it means no matching `rtc` or usable `lp`
+arrived during the bounded wait.
 
 When the issue is source availability rather than the quote value itself, use
 `tv diagnose quote-data <SYMBOL>`. It is a Desktop-backed diagnostic packet,
