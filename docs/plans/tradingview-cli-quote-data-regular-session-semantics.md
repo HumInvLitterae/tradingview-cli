@@ -11,10 +11,9 @@ during regular session, especially when the current `quote_data.v1` success
 condition does not see a matching non-null `qsd.rtc` field inside the bounded
 wait.
 
-This slice does not implement a new quote field or source. It records the
-`v0.16.0` roadmap direction and prepares the first evidence slice so a later
-implementation can decide whether to keep quote-data `rtc`-centered, add an
-additive regular-session readback, or strengthen diagnostics only.
+This slice adds additive regular-session readback to the existing
+`quote_data.v1` payload so matching quote-data messages with usable regular
+`lp` are no longer reported as unavailable only because `rtc` is absent.
 
 ## Background
 
@@ -28,11 +27,12 @@ symbol with a non-null `rtc`. That was added because after-hours evidence
 showed `qsd.rtc` matching the visible after-hours panel more closely than
 chart main-series quote or scanner delayed REST.
 
-During regular session, however, TradingView may expose regular quote-like
+During regular session, however, TradingView can expose regular quote-like
 fields such as `lp` or `regular_close` while no matching `qsd.rtc` arrives in
-the bounded window. That should not be described as a confirmed Desktop API
-limitation. It is a field-semantics and availability boundary of the current
-contract.
+the bounded window. Reporting that as unavailable made the explicit
+`quote-data` interface hard to use, because the same source could have
+matching symbol evidence but still fail only because the after-hours-oriented
+field was absent.
 
 ## Progress
 
@@ -42,12 +42,14 @@ contract.
 - [x] Archived the completed `v0.15.0` release readiness plan.
 - [x] Updated plan index, `v0.15` roadmap, changelog, docs, and runtime skills
   to point at the `v0.16.0` direction.
-- [ ] Add or extend an opt-in ignored smoke that summarizes regular-session
-  matching-symbol `qsd` fields without raw frames.
-- [ ] Run the smoke during regular session and record only public-safe
-  summary.
-- [ ] Decide whether a later implementation should add regular-session
-  quote-data readback or keep the `rtc` success condition unchanged.
+- [x] Added `quote_data.price_readback` so success payloads distinguish
+  `rtc` readback from regular `lp` readback.
+- [x] Made matching-symbol non-null `lp` a success condition when `rtc` is
+  absent.
+- [x] Added public-safe wait-summary counters for matching-symbol `lp`,
+  `regular_close`, and price-readback observations.
+- [ ] Run focused quote-data, diagnose, and CLI contract tests.
+- [ ] Run full release-slice validation.
 
 ## Surprises & Discoveries
 
@@ -58,6 +60,9 @@ contract.
 - Prior after-hours evidence made `qsd.rtc` the strongest current candidate
   for the visible after-hours panel value, but that does not automatically
   make `rtc` the regular-session price field.
+- The least confusing compatibility path is to keep `rtc` first, but allow
+  matching-symbol `lp` to succeed as a separately labeled `regular_last`
+  readback.
 
 ## Decision Log
 
@@ -67,55 +72,53 @@ contract.
   fields into one synthetic quote.
 - Do not describe regular-session quote-data unavailable as "symbol has no
   price" or as a confirmed API-wide limitation.
-- Treat `lp`, `regular_close`, `rtc`, `rch`, `rchp`, `current_session`,
-  `market_phase`, and `update_mode` as evidence fields to compare before
-  changing the public payload.
+- Treat `qsd.v.rtc` and `qsd.v.lp` as two distinct quote-data readbacks.
+  `rtc` keeps priority when present. `lp` is returned as
+  `price_readback.kind: "regular_last"` when `rtc` is absent.
+- Return `regular_close` as additive context when TradingView provides it, but
+  do not let `regular_close` alone make a quote-data read successful.
 - Keep raw WebSocket frames, raw live payloads, target ids, account-local
   metadata, credentials, and local validation details out of tracked docs.
 
 ## Plan Of Work
 
-1. Extend or add an opt-in ignored smoke for regular-session quote-data field
-   evidence.
-   - Require an explicit environment flag.
-   - Respect existing target selection behavior, including test-only target
-     selection where applicable.
-   - Keep the normal workspace test run compile-only.
+1. Extend the quote-data observer.
+   - Continue parsing only public-safe selected fields from bounded `qsd`
+     messages.
+   - Prefer matching non-null `rtc`.
+   - If `rtc` is absent but matching non-null `lp` is present, return success
+     with `price_readback.kind: "regular_last"`.
+   - Count matching-symbol `lp`, `regular_close`, and any usable price
+     readback in `wait_summary`.
 
-2. Produce a compact public-safe summary for matching-symbol `qsd` frames.
-   - Count WebSocket events, WebSocket frames, quote-data messages,
-     matching-symbol messages, matching messages with `rtc`, and matching
-     messages without `rtc`.
-   - Summarize presence or selected values for `lp`, `regular_close`, `rtc`,
-     `rch`, `rchp`, `current_session`, `market_phase`, and `update_mode`.
+2. Extend the payload additively.
+   - Keep all existing `quote_data.v1` fields.
+   - Add `quote_data.price_readback`.
+   - Add `quote_data.lp`, `quote_data.regular_close`, `quote_data.lp_time`,
+     and `quote_data.rt_update_time` as source-labeled readback fields.
+   - Add `source_availability.price_readback_observed`.
+
+3. Keep unavailable narrowly scoped.
+   - Use `no_rtc` only when matching `qsd` exists but neither `rtc` nor usable
+     `lp` is observed.
+   - Keep unavailable as structured failure.
    - Do not output raw frames, raw payloads, raw DOM, target ids, or
      account-local identifiers.
 
-3. Compare source semantics without using source mixing.
-   - Scanner REST can be used as a separate freshness reference.
-   - Chart-source quote can be used as selected chart main-series context.
-   - Quote-data remains its own source; the smoke should not synthesize a
-     single price.
-
-4. Record the evidence outcome.
-   - If matching-symbol regular-session `qsd` fields expose a stable regular
-     readback, create a follow-up plan for additive payload support.
-   - If fields are unstable or unavailable, strengthen docs and diagnostics
-     without adding public price fields.
-   - If the smoke cannot observe enough data, improve the evidence tooling
-     before changing public contract semantics.
+4. Sync docs, runtime skills, and help.
+   - Explain that quote-data can return either `rtc` or regular `lp` readback.
+   - Keep scanner, chart, and quote-data separated.
+   - Keep `--source auto` unchanged.
 
 ## Validation
-
-Docs-only planning validation:
 
 - `git diff --check`
 - `bash -n scripts/stage-release-package-files.sh`
 - `rg -n "v0\\.16|quote-data|qsd\\.rtc|regular session|source_availability|unavailable_reason|lp|regular_close|extended_hours|auto fallback|realtime|binary split|MCP|daemon" README.md CHANGELOG.md docs .agents/skills packaging/agent/AGENTS.md`
 - `rg -n '(/Users/|C:\\|USER;|sessionid|cookie|authorization|bearer|raw live payload|raw WebSocket|account-local|target id|downstream-private)' README.md AGENTS.md CLAUDE.md CHANGELOG.md docs .agents/skills packaging scripts crates || true`
-
-If Rust test helpers are added later, also run:
-
+- `cargo test -p tradingview-cli market::quote_data -- --nocapture`
+- `cargo test -p tradingview-cli --test cli_contract quote -- --nocapture`
+- `cargo test -p tradingview-cli --test cli_contract diagnose -- --nocapture`
 - `cargo test -p tradingview-cli --test live_quote_data_source`
 - `cargo fmt --check`
 - `cargo clippy --workspace --all-targets --all-features -- -D warnings`
@@ -124,19 +127,18 @@ If Rust test helpers are added later, also run:
 
 ## Acceptance Criteria
 
-- `v0.16.0` has a durable roadmap focused on quote-data regular-session
-  semantics and source availability clarity.
-- The next implementation slice has clear evidence goals for regular-session
-  `qsd` fields.
-- Docs and runtime skills explain that regular-session quote-data unavailable
-  is a current `qsd.rtc` availability condition, not proof of price absence or
-  an API-wide impossibility.
-- No new public command, option, payload field, dependency, or version bump is
-  added in this planning slice.
+- `quote-data` success payloads include `quote_data.price_readback`.
+- Matching non-null `qsd.v.rtc` still returns `price_readback.kind: "rtc"`.
+- Matching non-null `qsd.v.lp` without `rtc` returns
+  `price_readback.kind: "regular_last"` instead of unavailable.
+- Docs and runtime skills explain that `rtc` and regular `lp` are distinct
+  source-labeled quote-data readbacks.
+- No new public command, option, dependency, source, automatic fallback, or
+  version bump is added in this slice.
 
 ## Outcomes & Retrospective
 
-Planning completed with the regular-session evidence question separated from
-quote-data public payload support. The next contributor can implement the
-ignored smoke or choose a docs-only clarification follow-up without reopening
-the scanner/chart/quote-data source boundary.
+Implementation adds regular-session `lp` readback without changing the
+scanner/chart/quote-data source boundary. `rtc` remains the preferred
+after-hours/premarket-style candidate, while regular `lp` is explicitly
+labeled as `regular_last`.

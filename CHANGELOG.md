@@ -13,6 +13,12 @@ package version omits the leading `v`.
   semantics plan, keeping the current `qsd.rtc` success condition separate
   from scanner, chart, and automatic fallback behavior.
 
+### Changed
+
+- Added additive regular-session quote-data readback planning and
+  implementation notes so matching `qsd.v.lp` can be treated separately from
+  `qsd.v.rtc` without mixing scanner or chart sources.
+
 ## v0.15.0 - 2026-05-12
 
 ### Added

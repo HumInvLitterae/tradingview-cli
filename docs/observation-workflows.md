@@ -195,12 +195,13 @@ symbol, or use scanner REST if delayed data is acceptable. Do not treat it as
 price absence or a trading signal. Success payloads include
 `quote_data.session_readback` for normalized spellings of TradingView-provided
 session fields without inferring a session that TradingView did not report.
-During regular session, this can happen because the current quote-data
-contract waits for matching non-null `qsd.rtc`, while TradingView may expose
-regular quote-like fields such as `lp` or `regular_close` instead. Treat that
-as a source and field-semantics question. Use scanner freshness metadata or
-chart main-series quote for regular-session price unless a later quote-data
-contract adds explicit regular readback.
+Success payloads also include `quote_data.price_readback`, which distinguishes
+`qsd.v.rtc` from regular quote-data `qsd.v.lp` as separate source-labeled
+readbacks. During regular session, matching non-null `lp` can succeed as
+`price_readback.kind: "regular_last"` when `rtc` is absent. `regular_close`
+is supporting quote-data context, not a standalone success condition. Keep
+scanner freshness metadata, chart main-series quote, and quote-data readback
+separate when comparing them.
 If an agent needs to explain why quote-data is unavailable, use
 `tv diagnose quote-data <SYMBOL>`. The diagnostic reports sanitized Desktop
 target state, quote-data availability, public-safe WebSocket/qsd counters, and

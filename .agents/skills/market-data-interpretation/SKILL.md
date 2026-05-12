@@ -119,14 +119,13 @@ unavailability; do not treat unavailable quote-data as evidence that the
 symbol has no market price. Use `source_availability.unavailable_reason` only
 as source diagnostics: retry quote-data for missing WebSocket/qsd activity,
 check the Desktop streaming symbol for `no_matching_symbol`, and use scanner
-REST only when delayed data is acceptable for `no_rtc`. On success,
-`quote_data.session_readback` normalizes TradingView-provided session strings;
-do not infer a session that TradingView did not report. During regular
-session, `no_rtc` can mean the current quote-data contract did not observe its
-after-hours-oriented success field; do not conclude Desktop quote-data is
-impossible or that the symbol lacks price. Prefer scanner freshness or
-selected chart main-series for regular price until quote-data regular-session
-semantics are explicitly added.
+REST only when delayed data is acceptable for source unavailability. On
+success, `quote_data.session_readback` normalizes TradingView-provided session
+strings; do not infer a session that TradingView did not report.
+`quote_data.price_readback` tells you whether the source read came from
+`qsd.v.rtc` (`kind: "rtc"`) or regular quote-data `qsd.v.lp`
+(`kind: "regular_last"`). Keep that separate from scanner freshness and chart
+main-series quote; do not synthesize a single price.
 When quote-data availability itself is unclear, use
 `tv diagnose quote-data <SYMBOL>` to read sanitized target state,
 quote-data availability, public-safe WebSocket/qsd counters, and a separate

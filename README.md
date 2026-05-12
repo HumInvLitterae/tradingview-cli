@@ -155,8 +155,9 @@ For an explicit Desktop-backed WebSocket quote-data readback, use:
 tv quote NASDAQ:RKLB --source quote-data
 ```
 
-This source reports TradingView quote-data fields such as `qsd.rtc` separately
-from chart main-series quotes and scanner `extended_hours`.
+This source reports TradingView quote-data readbacks such as `qsd.rtc` or
+regular quote-data `qsd.v.lp` separately from chart main-series quotes and
+scanner `extended_hours`.
 
 Experimental browserless historical bars are lab-gated:
 
