@@ -7,6 +7,12 @@ package version omits the leading `v`.
 
 ## Unreleased
 
+### Documentation
+
+- Added the `v0.16.0` roadmap direction and first quote-data regular-session
+  semantics plan, keeping the current `qsd.rtc` success condition separate
+  from scanner, chart, and automatic fallback behavior.
+
 ## v0.15.0 - 2026-05-12
 
 ### Added

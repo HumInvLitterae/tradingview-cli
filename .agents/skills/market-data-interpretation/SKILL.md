@@ -121,7 +121,12 @@ as source diagnostics: retry quote-data for missing WebSocket/qsd activity,
 check the Desktop streaming symbol for `no_matching_symbol`, and use scanner
 REST only when delayed data is acceptable for `no_rtc`. On success,
 `quote_data.session_readback` normalizes TradingView-provided session strings;
-do not infer a session that TradingView did not report.
+do not infer a session that TradingView did not report. During regular
+session, `no_rtc` can mean the current quote-data contract did not observe its
+after-hours-oriented success field; do not conclude Desktop quote-data is
+impossible or that the symbol lacks price. Prefer scanner freshness or
+selected chart main-series for regular price until quote-data regular-session
+semantics are explicitly added.
 When quote-data availability itself is unclear, use
 `tv diagnose quote-data <SYMBOL>` to read sanitized target state,
 quote-data availability, public-safe WebSocket/qsd counters, and a separate

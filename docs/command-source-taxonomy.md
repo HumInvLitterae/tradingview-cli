@@ -163,7 +163,12 @@ Those reasons distinguish missing WebSocket activity, missing qsd messages,
 symbol mismatch, and matching qsd messages without `rtc`; they are not
 ranking, scoring, or market-price absence signals. Success payloads also
 include `quote_data.session_readback` with normalized spellings of
-TradingView-provided session fields only.
+TradingView-provided session fields only. During regular session, quote-data
+unavailable should not be read as a Desktop API-wide limitation. The current
+success contract is centered on matching non-null `qsd.rtc`; if regular
+`qsd` frames expose fields such as `lp` or `regular_close` without `rtc`,
+that is field-semantics evidence for a later additive plan, not a reason to
+guess a price.
 
 When the issue is source availability rather than the quote value itself, use
 `tv diagnose quote-data <SYMBOL>`. It is a Desktop-backed diagnostic packet,
