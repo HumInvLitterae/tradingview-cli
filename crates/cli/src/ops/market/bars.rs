@@ -35,6 +35,17 @@ pub async fn bars(symbol: &str, timeframe: &str, count: usize) -> Result<Value, 
     let elapsed_ms = started.elapsed().as_millis() as u64;
 
     if result.bars.is_empty() {
+        let source_availability = bars_source_availability(
+            &request,
+            BarsAvailabilityState::unavailable(
+                "timeout_no_bars",
+                0,
+                result.completed,
+                !result.completed,
+            ),
+            &result.wait_summary,
+            elapsed_ms,
+        );
         return Err(AppError::new(
             ErrorKind::InternalApiUnavailable,
             "Bars request completed without returning bars",
@@ -45,6 +56,7 @@ pub async fn bars(symbol: &str, timeframe: &str, count: usize) -> Result<Value, 
                 "availability_status": "unavailable",
                 "completed": result.completed,
                 "elapsed_ms": elapsed_ms,
+                "source_availability": source_availability,
                 "next_action_hint": "The browserless historical bars source did not return bars inside the bounded request. Retry later or use `tv ohlcv` against a selected chart target when chart-backed bars are acceptable.",
             }),
         )));
@@ -71,6 +83,13 @@ fn bars_payload(request: &BarsRequest, result: BarsResult, elapsed_ms: u64) -> V
     } else {
         "partial"
     };
+    let timed_out = !result.completed;
+    let source_availability = bars_source_availability(
+        request,
+        BarsAvailabilityState::available(bar_count, result.completed, timed_out),
+        &result.wait_summary,
+        elapsed_ms,
+    );
 
     json!({
         "contract_version": BARS_CONTRACT_VERSION,
@@ -92,6 +111,7 @@ fn bars_payload(request: &BarsRequest, result: BarsResult, elapsed_ms: u64) -> V
             "requested_count_fulfilled": requested_count_fulfilled,
             "coverage_status": coverage_status,
         },
+        "source_availability": source_availability,
         "range": {
             "timeframe": request.timeframe,
             "first_time": first_time,
@@ -126,6 +146,77 @@ struct BarsRequest {
 struct BarsResult {
     bars: Vec<Bar>,
     completed: bool,
+    wait_summary: BarsWaitSummary,
+}
+
+#[derive(Debug, Clone, Default)]
+struct BarsWaitSummary {
+    timeout_ms: u64,
+    websocket_messages_seen: u64,
+    websocket_packets_seen: u64,
+    update_messages_seen: u64,
+    series_completed_seen: bool,
+    error_messages_seen: u64,
+}
+
+#[derive(Debug, Clone)]
+struct BarsAvailabilityState<'a> {
+    available: bool,
+    unavailable_reason: Option<&'a str>,
+    bar_count: usize,
+    completed: bool,
+    timed_out: bool,
+}
+
+impl BarsAvailabilityState<'_> {
+    fn available(bar_count: usize, completed: bool, timed_out: bool) -> Self {
+        Self {
+            available: true,
+            unavailable_reason: None,
+            bar_count,
+            completed,
+            timed_out,
+        }
+    }
+
+    fn unavailable(
+        unavailable_reason: &'static str,
+        bar_count: usize,
+        completed: bool,
+        timed_out: bool,
+    ) -> Self {
+        Self {
+            available: false,
+            unavailable_reason: Some(unavailable_reason),
+            bar_count,
+            completed,
+            timed_out,
+        }
+    }
+}
+
+impl BarsWaitSummary {
+    fn new(request: &BarsRequest) -> Self {
+        Self {
+            timeout_ms: request.timeout.as_millis() as u64,
+            ..Self::default()
+        }
+    }
+
+    fn to_value(&self, elapsed_ms: u64, completed: bool, bars_observed_count: usize) -> Value {
+        json!({
+            "timeout_ms": self.timeout_ms,
+            "elapsed_ms": elapsed_ms,
+            "completed": completed,
+            "websocket_messages_seen": self.websocket_messages_seen,
+            "websocket_packets_seen": self.websocket_packets_seen,
+            "update_messages_seen": self.update_messages_seen,
+            "series_completed_seen": self.series_completed_seen,
+            "error_messages_seen": self.error_messages_seen,
+            "bars_observed_count": bars_observed_count,
+            "raw_frame_included": false,
+        })
+    }
 }
 
 fn validate_bars_request(
@@ -217,6 +308,8 @@ fn is_supported_timeframe(timeframe: &str) -> bool {
 }
 
 async fn fetch_bars_ws(request: &BarsRequest) -> Result<BarsResult, AppError> {
+    let started = Instant::now();
+    let mut wait_summary = BarsWaitSummary::new(request);
     let mut ws_request = WS_ENDPOINT.into_client_request().map_err(|err| {
         AppError::new(
             ErrorKind::InternalApiUnavailable,
@@ -237,7 +330,15 @@ async fn fetch_bars_ws(request: &BarsRequest) -> Result<BarsResult, AppError> {
         )
         .with_details(bars_error_details(
             request,
-            json!({"availability_status": "unavailable"}),
+            json!({
+                "availability_status": "unavailable",
+                "source_availability": bars_source_availability(
+                    request,
+                    BarsAvailabilityState::unavailable("connection_failed", 0, false, false),
+                    &wait_summary,
+                    started.elapsed().as_millis() as u64,
+                ),
+            }),
         ))
     })?;
 
@@ -248,8 +349,37 @@ async fn fetch_bars_ws(request: &BarsRequest) -> Result<BarsResult, AppError> {
         "set_auth_token",
         json!(["unauthorized_user_token"]),
     )
-    .await?;
-    send_ws(&mut stream, "chart_create_session", json!([session_id, ""])).await?;
+    .await
+    .map_err(|err| {
+        err.with_details(bars_error_details(
+            request,
+            json!({
+                "availability_status": "unavailable",
+                "source_availability": bars_source_availability(
+                    request,
+                    BarsAvailabilityState::unavailable("connection_failed", 0, false, false),
+                    &wait_summary,
+                    started.elapsed().as_millis() as u64,
+                ),
+            }),
+        ))
+    })?;
+    send_ws(&mut stream, "chart_create_session", json!([session_id, ""]))
+        .await
+        .map_err(|err| {
+            err.with_details(bars_error_details(
+                request,
+                json!({
+                    "availability_status": "unavailable",
+                    "source_availability": bars_source_availability(
+                        request,
+                        BarsAvailabilityState::unavailable("connection_failed", 0, false, false),
+                        &wait_summary,
+                        started.elapsed().as_millis() as u64,
+                    ),
+                }),
+            ))
+        })?;
     send_ws(
         &mut stream,
         "resolve_symbol",
@@ -265,7 +395,21 @@ async fn fetch_bars_ws(request: &BarsRequest) -> Result<BarsResult, AppError> {
             )
         ]),
     )
-    .await?;
+    .await
+    .map_err(|err| {
+        err.with_details(bars_error_details(
+            request,
+            json!({
+                "availability_status": "unavailable",
+                "source_availability": bars_source_availability(
+                    request,
+                    BarsAvailabilityState::unavailable("connection_failed", 0, false, false),
+                    &wait_summary,
+                    started.elapsed().as_millis() as u64,
+                ),
+            }),
+        ))
+    })?;
     send_ws(
         &mut stream,
         "create_series",
@@ -278,13 +422,41 @@ async fn fetch_bars_ws(request: &BarsRequest) -> Result<BarsResult, AppError> {
             request.count
         ]),
     )
-    .await?;
+    .await
+    .map_err(|err| {
+        err.with_details(bars_error_details(
+            request,
+            json!({
+                "availability_status": "unavailable",
+                "source_availability": bars_source_availability(
+                    request,
+                    BarsAvailabilityState::unavailable("connection_failed", 0, false, false),
+                    &wait_summary,
+                    started.elapsed().as_millis() as u64,
+                ),
+            }),
+        ))
+    })?;
     send_ws(
         &mut stream,
         "switch_timezone",
         json!([session_id, "Etc/UTC"]),
     )
-    .await?;
+    .await
+    .map_err(|err| {
+        err.with_details(bars_error_details(
+            request,
+            json!({
+                "availability_status": "unavailable",
+                "source_availability": bars_source_availability(
+                    request,
+                    BarsAvailabilityState::unavailable("connection_failed", 0, false, false),
+                    &wait_summary,
+                    started.elapsed().as_millis() as u64,
+                ),
+            }),
+        ))
+    })?;
 
     let deadline = Instant::now() + request.timeout;
     let mut bars = Vec::new();
@@ -295,30 +467,104 @@ async fn fetch_bars_ws(request: &BarsRequest) -> Result<BarsResult, AppError> {
             break;
         }
         let remaining = deadline.saturating_duration_since(now);
-        let message = tokio::time::timeout(remaining, stream.next())
-            .await
-            .map_err(|_| {
-                AppError::new(ErrorKind::Timeout, "Bars request timed out").with_details(
-                    bars_error_details(request, json!({"availability_status": "unavailable"})),
-                )
-            })?
-            .ok_or_else(|| {
-                AppError::new(ErrorKind::Connection, "TradingView WebSocket closed").with_details(
-                    bars_error_details(request, json!({"availability_status": "unavailable"})),
-                )
-            })?
-            .map_err(|err| {
-                AppError::new(
+        let message = match tokio::time::timeout(remaining, stream.next()).await {
+            Ok(Some(Ok(message))) => {
+                wait_summary.websocket_messages_seen += 1;
+                message
+            }
+            Ok(Some(Err(err))) => {
+                return Err(AppError::new(
                     ErrorKind::Connection,
                     format!("TradingView WebSocket read failed: {err}"),
                 )
                 .with_details(bars_error_details(
                     request,
-                    json!({"availability_status": "unavailable"}),
-                ))
-            })?;
+                    json!({
+                        "availability_status": "unavailable",
+                        "source_availability": bars_source_availability(
+                            request,
+                            BarsAvailabilityState::unavailable(
+                                "websocket_read_failed",
+                                bars.len(),
+                                false,
+                                false,
+                            ),
+                            &wait_summary,
+                            started.elapsed().as_millis() as u64,
+                        ),
+                    }),
+                )));
+            }
+            Ok(None) => {
+                return Err(
+                    AppError::new(ErrorKind::Connection, "TradingView WebSocket closed")
+                        .with_details(bars_error_details(
+                            request,
+                            json!({
+                                "availability_status": "unavailable",
+                                "source_availability": bars_source_availability(
+                                    request,
+                                    BarsAvailabilityState::unavailable(
+                                        "websocket_closed",
+                                        bars.len(),
+                                        false,
+                                        false,
+                                    ),
+                                    &wait_summary,
+                                    started.elapsed().as_millis() as u64,
+                                ),
+                            }),
+                        )),
+                );
+            }
+            Err(_) => {
+                if bars.is_empty() {
+                    return Err(AppError::new(ErrorKind::Timeout, "Bars request timed out")
+                        .with_details(bars_error_details(
+                            request,
+                            json!({
+                                "availability_status": "unavailable",
+                                "source_availability": bars_source_availability(
+                                    request,
+                                    BarsAvailabilityState::unavailable(
+                                        "timeout_no_bars",
+                                        0,
+                                        false,
+                                        true,
+                                    ),
+                                    &wait_summary,
+                                    started.elapsed().as_millis() as u64,
+                                ),
+                            }),
+                        )));
+                }
+                break;
+            }
+        };
 
-        for packet in parse_packets(message)? {
+        let packets = parse_packets(message).map_err(|err| {
+            wait_summary.error_messages_seen += 1;
+            err.with_details(bars_error_details(
+                request,
+                json!({
+                    "availability_status": "unavailable",
+                    "source_availability": bars_source_availability(
+                        request,
+                        BarsAvailabilityState::unavailable(
+                            "protocol_error",
+                            bars.len(),
+                            false,
+                            false,
+                        ),
+                        &wait_summary,
+                        started.elapsed().as_millis() as u64,
+                    ),
+                }),
+            ))
+        })?;
+        wait_summary.websocket_packets_seen += packets.len() as u64;
+
+        for packet in packets {
             match packet {
                 WsPacket::Ping(value) => {
                     stream
@@ -334,15 +580,22 @@ async fn fetch_bars_ws(request: &BarsRequest) -> Result<BarsResult, AppError> {
                 WsPacket::Message(value) => {
                     let method = value.get("m").and_then(Value::as_str).unwrap_or_default();
                     if method == "timescale_update" || method == "du" {
+                        wait_summary.update_messages_seen += 1;
                         let update_bars = parse_bars_from_message(&value);
                         merge_bars(&mut bars, update_bars);
                     } else if method == "series_completed" {
                         completed = true;
+                        wait_summary.series_completed_seen = true;
                         let _ =
                             send_ws(&mut stream, "chart_delete_session", json!([session_id])).await;
                         let _ = stream.close(None).await;
-                        return Ok(BarsResult { bars, completed });
+                        return Ok(BarsResult {
+                            bars,
+                            completed,
+                            wait_summary,
+                        });
                     } else if matches!(method, "symbol_error" | "series_error" | "protocol_error") {
+                        wait_summary.error_messages_seen += 1;
                         let _ =
                             send_ws(&mut stream, "chart_delete_session", json!([session_id])).await;
                         return Err(AppError::new(
@@ -354,6 +607,17 @@ async fn fetch_bars_ws(request: &BarsRequest) -> Result<BarsResult, AppError> {
                             json!({
                                 "availability_status": "unavailable",
                                 "method": method,
+                                "source_availability": bars_source_availability(
+                                    request,
+                                    BarsAvailabilityState::unavailable(
+                                        "protocol_error",
+                                        bars.len(),
+                                        false,
+                                        false,
+                                    ),
+                                    &wait_summary,
+                                    started.elapsed().as_millis() as u64,
+                                ),
                             }),
                         )));
                     }
@@ -364,7 +628,30 @@ async fn fetch_bars_ws(request: &BarsRequest) -> Result<BarsResult, AppError> {
 
     let _ = send_ws(&mut stream, "chart_delete_session", json!([session_id])).await;
     let _ = stream.close(None).await;
-    Ok(BarsResult { bars, completed })
+    Ok(BarsResult {
+        bars,
+        completed,
+        wait_summary,
+    })
+}
+
+fn bars_source_availability(
+    request: &BarsRequest,
+    state: BarsAvailabilityState<'_>,
+    wait_summary: &BarsWaitSummary,
+    elapsed_ms: u64,
+) -> Value {
+    json!({
+        "available": state.available,
+        "status": if state.available { "available" } else { "unavailable" },
+        "unavailable_reason": state.unavailable_reason,
+        "requested_count": request.count,
+        "bar_count": state.bar_count,
+        "requested_count_fulfilled": state.bar_count == request.count,
+        "timed_out": state.timed_out,
+        "raw_frame_included": false,
+        "wait_summary": wait_summary.to_value(elapsed_ms, state.completed, state.bar_count),
+    })
 }
 
 fn bars_error_details(request: &BarsRequest, extra: Value) -> Value {
@@ -606,6 +893,15 @@ fn bar_to_value(bar: Bar) -> Value {
 mod tests {
     use super::*;
 
+    fn test_wait_summary(request: &BarsRequest) -> BarsWaitSummary {
+        let mut summary = BarsWaitSummary::new(request);
+        summary.websocket_messages_seen = 3;
+        summary.websocket_packets_seen = 4;
+        summary.update_messages_seen = 2;
+        summary.series_completed_seen = true;
+        summary
+    }
+
     #[test]
     fn parse_text_packets_handles_multiple_frames_and_ping() {
         let first = json!({"m": "timescale_update", "p": ["cs", {}]}).to_string();
@@ -705,6 +1001,7 @@ mod tests {
                     },
                 ],
                 completed: true,
+                wait_summary: test_wait_summary(&request),
             },
             42,
         );
@@ -728,6 +1025,45 @@ mod tests {
         assert_eq!(payload["range"]["first_time"], 1);
         assert_eq!(payload["range"]["last_time"], 2);
         assert_eq!(payload["range"]["bar_count"], 2);
+        assert_eq!(payload["source_availability"]["available"], true);
+        assert_eq!(payload["source_availability"]["status"], "available");
+        assert!(payload["source_availability"]["unavailable_reason"].is_null());
+        assert_eq!(payload["source_availability"]["requested_count"], 5);
+        assert_eq!(payload["source_availability"]["bar_count"], 2);
+        assert_eq!(
+            payload["source_availability"]["requested_count_fulfilled"],
+            false
+        );
+        assert_eq!(payload["source_availability"]["timed_out"], false);
+        assert_eq!(payload["source_availability"]["raw_frame_included"], false);
+        assert_eq!(
+            payload["source_availability"]["wait_summary"]["completed"],
+            true
+        );
+        assert_eq!(
+            payload["source_availability"]["wait_summary"]["websocket_messages_seen"],
+            3
+        );
+        assert_eq!(
+            payload["source_availability"]["wait_summary"]["websocket_packets_seen"],
+            4
+        );
+        assert_eq!(
+            payload["source_availability"]["wait_summary"]["update_messages_seen"],
+            2
+        );
+        assert_eq!(
+            payload["source_availability"]["wait_summary"]["series_completed_seen"],
+            true
+        );
+        assert_eq!(
+            payload["source_availability"]["wait_summary"]["bars_observed_count"],
+            2
+        );
+        assert_eq!(
+            payload["source_availability"]["wait_summary"]["raw_frame_included"],
+            false
+        );
         assert!(payload.get("experimental").is_none());
     }
 
@@ -746,6 +1082,7 @@ mod tests {
                     volume: 100.0,
                 }],
                 completed: true,
+                wait_summary: test_wait_summary(&request),
             },
             42,
         );
@@ -755,6 +1092,45 @@ mod tests {
         assert_eq!(payload["summary"]["requested_count_fulfilled"], true);
         assert_eq!(payload["summary"]["coverage_status"], "complete");
         assert_eq!(payload["data_quality"]["partial_result"], false);
+        assert_eq!(
+            payload["source_availability"]["requested_count_fulfilled"],
+            true
+        );
+    }
+
+    #[test]
+    fn bars_payload_marks_partial_timeout_when_series_does_not_complete() {
+        let request = validate_bars_request("NASDAQ:AAPL", "1d", 2).unwrap();
+        let mut wait_summary = test_wait_summary(&request);
+        wait_summary.series_completed_seen = false;
+        let payload = bars_payload(
+            &request,
+            BarsResult {
+                bars: vec![Bar {
+                    time: 1,
+                    open: 10.0,
+                    high: 12.0,
+                    low: 9.0,
+                    close: 11.0,
+                    volume: 100.0,
+                }],
+                completed: false,
+                wait_summary,
+            },
+            42,
+        );
+
+        assert_eq!(payload["summary"]["coverage_status"], "partial");
+        assert_eq!(payload["source_availability"]["available"], true);
+        assert_eq!(payload["source_availability"]["timed_out"], true);
+        assert_eq!(
+            payload["source_availability"]["wait_summary"]["completed"],
+            false
+        );
+        assert_eq!(
+            payload["source_availability"]["wait_summary"]["series_completed_seen"],
+            false
+        );
     }
 
     #[test]
@@ -777,5 +1153,35 @@ mod tests {
         assert_eq!(details["completed"], false);
         assert!(details.get("raw_frame").is_none());
         assert!(details.get("raw_payload").is_none());
+    }
+
+    #[test]
+    fn bars_source_availability_reports_no_bars_failure_without_raw_frames() {
+        let request = validate_bars_request("NASDAQ:AAPL", "1d", 5).unwrap();
+        let availability = bars_source_availability(
+            &request,
+            BarsAvailabilityState::unavailable("timeout_no_bars", 0, false, true),
+            &BarsWaitSummary::new(&request),
+            42,
+        );
+
+        assert_eq!(availability["available"], false);
+        assert_eq!(availability["status"], "unavailable");
+        assert_eq!(availability["unavailable_reason"], "timeout_no_bars");
+        assert_eq!(availability["requested_count"], 5);
+        assert_eq!(availability["bar_count"], 0);
+        assert_eq!(availability["requested_count_fulfilled"], false);
+        assert_eq!(availability["timed_out"], true);
+        assert_eq!(availability["raw_frame_included"], false);
+        assert_eq!(
+            availability["wait_summary"]["timeout_ms"],
+            DEFAULT_TIMEOUT_MS
+        );
+        assert_eq!(availability["wait_summary"]["elapsed_ms"], 42);
+        assert_eq!(availability["wait_summary"]["completed"], false);
+        assert_eq!(availability["wait_summary"]["bars_observed_count"], 0);
+        assert_eq!(availability["wait_summary"]["raw_frame_included"], false);
+        assert!(availability.get("raw_frame").is_none());
+        assert!(availability.get("raw_payload").is_none());
     }
 }

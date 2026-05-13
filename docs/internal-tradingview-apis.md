@@ -353,10 +353,15 @@ Safety boundary:
 - `tv bars` is a separate symbol-targeted command and keeps requests bounded
   by count
 - `tv bars` reports `summary` / `range` for requested-vs-returned count and
-  time coverage, plus `data_quality` with `realtime_guarantee: false`,
-  `entitlement_checked: false`, completion state, elapsed time, and partial
-  result readback. Callers should read those fields before treating raw
-  `bars[]` as operational evidence.
+  time coverage, plus `source_availability` and a public-safe `wait_summary`
+  for bounded source diagnostics. `data_quality` still reports
+  `realtime_guarantee: false`, `entitlement_checked: false`, completion state,
+  elapsed time, and partial result readback. Callers should read those fields
+  before treating raw `bars[]` as operational evidence.
+- no-bars, timeout, WebSocket close/read failure, and protocol error details
+  use public unavailable reasons such as `timeout_no_bars` or
+  `websocket_read_failed`. They do not expose raw WebSocket frames, raw
+  payloads, credentials, session ids, or account-local metadata.
 - the stable command requires exchange-qualified symbols and does not add
   extended sessions, streaming, bare-symbol resolution, or authenticated reads
 - failures, malformed protocol frames, missing series completion, and symbol

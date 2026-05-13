@@ -80,7 +80,8 @@ Do not use `TV_CDP_TARGET_ID`; explicit target handoff is `--target-id`.
 - Browserless historical bars use `tv bars <EXCHANGE:SYMBOL>` as a bounded
   Desktop-free read with `contract_version: "bars.v1"`. They do not guarantee
   realtime or entitlement status. Read `summary` / `range` for count and time
-  coverage before inspecting raw `bars[]`.
+  coverage before inspecting raw `bars[]`, and read `source_availability` /
+  `wait_summary` when bars are partial or unavailable.
 
 ## Safety Rules
 

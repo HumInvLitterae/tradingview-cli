@@ -12,6 +12,9 @@ package version omits the leading `v`.
 - Added additive `tv bars` summary and range readback so downstream tools can
   inspect requested-vs-returned count, time coverage, ordering, and partial
   historical bars coverage before parsing raw `bars[]`.
+- Added `tv bars` source availability and public-safe wait-summary readback
+  so no-bars, timeout, WebSocket, and partial completion cases are easier to
+  distinguish as bounded historical source diagnostics.
 
 ### Documentation
 

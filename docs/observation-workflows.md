@@ -236,9 +236,13 @@ It uses an undocumented TradingView WebSocket chart-session path and reports
 `contract_version: "bars.v1"`, `source: "tradingview_bars_ws"`, and
 `source_category: "desktop_free_read"`. Read `summary` / `range` for
 requested-vs-returned count and time coverage, then use raw `bars[]` for exact
-OHLCV evidence. Read `data_quality` before using the result: it does not
-guarantee realtime or entitlement status. Do not treat it as a replacement for
-chart-backed `tv ohlcv`, which reads the selected Desktop chart through CDP.
+OHLCV evidence. Read `source_availability` when the result is partial or
+unavailable; its `wait_summary` explains bounded historical-source behavior
+without raw WebSocket frames. Read `data_quality` before using the result: it
+does not guarantee realtime or entitlement status. Do not treat unavailable
+bars as proof that a symbol has no history, and do not treat `tv bars` as a
+replacement for chart-backed `tv ohlcv`, which reads the selected Desktop
+chart through CDP.
 
 ## Fundamentals And Event-Like Fields
 
