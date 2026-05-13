@@ -96,7 +96,7 @@ controls such as `--duration-ms`, `--max-events`, and `--heartbeat-ms` when a
 specific `tv stream ...` sample type is needed. Stream and observe JSONL events
 identify chart samples with `source: "desktop_chart_stream"` and
 `source_category: "desktop_backed_read"` so agents can distinguish them from
-Desktop-free scanner reads or experimental browserless bars.
+Desktop-free scanner reads or browserless historical bars.
 
 Do not treat `tv quote <SYMBOL> --source chart` as a multi-symbol realtime
 batch source. It is a correctness-first single-symbol read that may switch and
@@ -219,22 +219,24 @@ Recommended agent use: use explicit `--source scanner` or `--source chart`
 when source consistency matters. Use `--source auto` only when chart-first
 behavior is desired and the scanner fallback is acceptable before mutation.
 
-### Experimental
+### Browserless Historical Bars
 
-`requires_desktop`: command-specific. `may_mutate`: no unless explicitly
-documented. `fallback_allowed`: no implicit fallback. `freshness_boundary`:
-must be reported as experimental and not treated as stable market data.
+`requires_desktop`: false. `may_mutate`: no. `fallback_allowed`: no implicit
+fallback. `freshness_boundary`: no realtime or entitlement guarantee; read
+`data_quality`.
 
-Use this category for lab-gated commands that are intentionally not stable
-surface yet. The current example is
-`TV_EXPERIMENTAL_BARS=1 tv bars <EXCHANGE:SYMBOL>`, which uses an
-undocumented TradingView WebSocket chart-session path and does not replace
-chart-backed `tv ohlcv`.
+`tv bars <EXCHANGE:SYMBOL>` uses a bounded browserless TradingView WebSocket
+chart-session path and reports `contract_version: "bars.v1"`,
+`source: "tradingview_bars_ws"`, and
+`source_category: "desktop_free_read"`. It is symbol-targeted historical
+OHLCV evidence and does not replace chart-backed `tv ohlcv`, which reads the
+selected Desktop chart through CDP.
 
-Recommended agent use: use only when the user or workflow explicitly accepts
-experimental data. Report `source`, `experimental`, `data_quality`, and
-warnings. Do not build durable downstream assumptions on this category without
-a later stabilization plan.
+Recommended agent use: use when a workflow needs bounded historical bars for a
+specific exchange-qualified symbol without requiring TradingView Desktop.
+Report `source`, `contract_version`, `data_quality`, and warnings. Do not
+treat it as realtime streaming, scanner quote, chart quote, or quote-data
+evidence.
 
 ## Agent Guidance
 
@@ -246,7 +248,8 @@ Default to the narrowest source that answers the question:
   visible state is the source of truth;
 - use Desktop-backed operations only after the user accepts the side effect;
 - use hybrid commands only when the fallback contract is useful to the task;
-- use experimental commands only when lab data is explicitly acceptable.
+- use browserless historical bars only when bounded OHLCV evidence is useful
+  and no realtime guarantee is required.
 
 When sources disagree, do not collapse them into a single value. Report the
 source names and freshness fields, then decide whether another read changes the

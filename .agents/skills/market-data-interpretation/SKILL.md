@@ -10,7 +10,7 @@ Rust `tv` CLI rather than merely running the command.
 
 Use `docs/observation-workflows.md` when you need the current practical order
 for Desktop-free screening, Desktop-backed chart observation, screenshots,
-experimental bars, and fundamentals/event-like reads.
+browserless bars, and fundamentals/event-like reads.
 
 ## Source First
 
@@ -26,8 +26,8 @@ Always name the data source before interpreting values:
   `tv quote`, `tv ohlcv`, screenshots, and current visible values.
 - Hybrid reads: `tv quote <SYMBOL> --source auto`, which is chart-first with
   scanner fallback only before chart mutation.
-- `TV_EXPERIMENTAL_BARS=1 tv bars <EXCHANGE:SYMBOL>`: experimental
-  Desktop-free WebSocket bars.
+- `tv bars <EXCHANGE:SYMBOL>`: Desktop-free bounded historical bars from the
+  browserless TradingView WebSocket bars source.
 - `tv observe chart`: Desktop-backed JSONL workflow that emits readiness first,
   then selected-chart last-bar samples and heartbeats.
 - `tv stream ...`: Desktop-backed current-chart JSONL observation, not
@@ -136,11 +136,13 @@ They may contend with visible chart mutations, so prefer `tv quotes`, scanner
 reads, `tv compare`, or `tv snapshot` for broad symbol lists unless the
 selected chart feed for one symbol is the point of the task.
 
-`tv bars` is different from both scanner REST and `tv ohlcv`. It is a
-lab-gated browserless historical bars prototype using an undocumented
-TradingView WebSocket path. Use it only when the user or workflow explicitly
-accepts experimental data; report `source`, `experimental`, `data_quality`,
-and warnings. Do not treat it as a stable replacement for chart-sourced OHLCV.
+`tv bars` is different from both scanner REST and `tv ohlcv`. It is a bounded
+browserless historical bars read using an undocumented TradingView WebSocket
+chart-session path. Report `contract_version: "bars.v1"`,
+`source: "tradingview_bars_ws"`, `source_category: "desktop_free_read"`,
+`data_quality`, and warnings. Do not treat it as realtime streaming,
+scanner quote evidence, quote-data evidence, or a replacement for
+chart-sourced OHLCV.
 
 `tv snapshot <SYMBOL>` is the first-pass Desktop-free evidence packet for one
 symbol. It groups scanner-backed quote, symbol info, and fundamentals sections.
@@ -154,7 +156,7 @@ ranking, scoring, or recommendations. Use lower-level `tv quote`, `tv info`,
 or `tv fundamentals` when the task needs only one section, and use
 `tv compare` when the task needs a structured multi-symbol evidence packet.
 Do not treat snapshot as batch, JSONL, chart-backed, screenshot, or
-experimental bars evidence.
+browserless bars evidence.
 
 `tv compare <SYMBOL>...` is the Desktop-free comparison packet for several
 known symbols. It preserves input order and returns per-symbol quote, info, and

@@ -126,8 +126,8 @@ pub enum Command {
         count: Option<usize>,
     },
     #[command(
-        about = "Fetch experimental Desktop-free historical bars",
-        long_about = "Fetch experimental historical OHLCV bars without TradingView Desktop or CDP.\n\nThis command uses an undocumented TradingView WebSocket path and is intentionally lab-gated. Set TV_EXPERIMENTAL_BARS=1 to enable it. SYMBOL must be exchange-qualified, for example NASDAQ:AAPL or NYSE:IONQ. `tv ohlcv` remains the stable selected-chart/CDP bars command."
+        about = "Fetch Desktop-free historical bars",
+        long_about = "Fetch bounded historical OHLCV bars without TradingView Desktop or CDP.\n\nThis command uses a browserless TradingView WebSocket chart-session path. SYMBOL must be exchange-qualified, for example NASDAQ:AAPL or NYSE:IONQ. The payload is source-labeled as `tradingview_bars_ws`, has `contract_version: \"bars.v1\"`, and does not guarantee realtime or entitlement status. `tv ohlcv` remains the selected-chart/CDP bars command."
     )]
     Bars {
         symbol: String,

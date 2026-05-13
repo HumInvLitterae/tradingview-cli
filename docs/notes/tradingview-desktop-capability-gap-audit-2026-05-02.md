@@ -11,7 +11,7 @@ automation.
 - Chart state, symbol, timeframe, chart type, visible range, scroll, quote,
   OHLCV, screenshots, and selected chart data reads.
 - Desktop-free symbol metadata, quote, batch quote, scanner scan, scanner
-  hotlist, scanner metainfo, and lab-gated browserless bars.
+  hotlist, scanner metainfo, and bounded browserless historical bars.
 - Watchlist read/add/remove, alert list/create/delete, indicator lifecycle,
   drawing lifecycle, Pine source/editor/check helpers, replay controls, pane
   operations, saved layout list/switch, tab management, and generic UI
@@ -53,8 +53,9 @@ automation.
   complex saved-screen editing, remains evidence-gated.
 - Layout/preferences management beyond current saved-layout and pane surfaces
   is deferred until there is an operator workflow with safe readback.
-- Browserless historical bars are lab-gated through `tv bars`; keep them
-  experimental until protocol stability and downstream value are clearer.
+- Browserless historical bars are available through stable `tv bars`; keep
+  realtime streaming and automatic source mixing deferred until a separate
+  workflow justifies them.
 
 ## Not planned / unsafe by default
 

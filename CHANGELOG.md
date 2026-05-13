@@ -18,6 +18,9 @@ package version omits the leading `v`.
 - Added additive regular-session quote-data readback planning and
   implementation notes so matching `qsd.v.lp` can be treated separately from
   `qsd.v.rtc` without mixing scanner or chart sources.
+- Stabilized browserless `tv bars <EXCHANGE:SYMBOL>` as a Desktop-free
+  historical bars read with a `bars.v1` contract and no
+  `TV_EXPERIMENTAL_BARS` gate.
 
 ## v0.15.0 - 2026-05-12
 

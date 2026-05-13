@@ -18,8 +18,9 @@ For user-facing command source names, use
 `docs/command-source-taxonomy.md`. In this file, scanner REST and symbol-search
 HTTP reads are Desktop-free reads, chart page objects and screenshots are
 Desktop-backed reads, page-session account/storage changes are Desktop-backed
-operations, `quote --source auto` is hybrid, and lab-gated WebSocket bars are
-experimental. The project keeps a single `tv` binary for now.
+operations, `quote --source auto` is hybrid, and browserless WebSocket bars
+are a stable bounded read that still uses an undocumented TradingView protocol.
+The project keeps a single `tv` binary for now.
 
 ## Documentation boundary
 
@@ -303,9 +304,9 @@ Category: undocumented TradingView browserless WebSocket protocol.
 
 Current command family:
 
-- `bars <SYMBOL> --timeframe <TIMEFRAME> --count <N>` when
-  `TV_EXPERIMENTAL_BARS=1` is set. This is a lab-gated read, not a stable
-  replacement for `ohlcv`.
+- `bars <SYMBOL> --timeframe <TIMEFRAME> --count <N>`. This is a stable
+  bounded Desktop-free historical bars read, not a replacement for
+  selected-chart `ohlcv`.
 - Rust does not currently expose browserless streaming commands.
 
 Comparable evidence:
@@ -315,17 +316,17 @@ Comparable evidence:
 - The relevant design opens a WebSocket, sends an auth-token message, creates a
   chart session, resolves a symbol, creates a series, parses bar updates, and
   waits for completion or a bounded timeout.
-- That design is explicitly lab-gated and treats the protocol as experimental.
-  It has an anonymous-token path, but also optional session-cookie-related
-  configuration. Rust should therefore not treat it as equivalent to the
-  credential-free scanner REST reads.
+- That design started as lab-gated evidence and treats the protocol as
+  undocumented. It has an anonymous-token path, but also optional
+  session-cookie-related configuration. Rust should therefore not treat it as
+  equivalent to the credential-free scanner REST reads.
 - The Rust lab prototype has been smoke-tested with bounded daily bars for
   public exchange-qualified symbols and an hourly request for a public
   exchange-qualified symbol. This is evidence that the path can work, not a
   guarantee that the undocumented protocol is stable.
 - An opt-in ignored Rust live smoke exists to re-check the public `tv bars`
   JSON contract when needed. It should be treated as evidence tooling, not as a
-  CI guarantee or a stability promise.
+  CI guarantee.
 - Existing `tv stream ...` commands are not browserless WebSocket streams;
   they are Desktop-backed current-chart JSONL polling reads. Future
   observation work may improve their event contract or add browserless stream
@@ -339,11 +340,12 @@ Comparable evidence:
 
 Safety boundary:
 
-- classify Desktop-free historical bars as `lab_experimental`, not
-  `api_backed`
-- the feasibility pass is complete and the Rust CLI now has a bounded lab
-  prototype. This is still not a stable feature and not equivalent to
-  credential-free scanner REST.
+- classify Desktop-free historical bars as `desktop_free_read` with
+  `source: "tradingview_bars_ws"` and `contract_version: "bars.v1"`, not as
+  scanner REST or selected-chart bars
+- the feasibility pass is complete and the Rust CLI now has a bounded stable
+  command. It is still not equivalent to credential-free scanner REST because
+  it uses an undocumented WebSocket chart-session protocol.
 - do not add cookie/session import, login automation, or authenticated direct
   HTTP/WebSocket setup without a separate safety plan
 - do not replace `tv ohlcv`; it reads current chart bars through the selected
@@ -353,7 +355,7 @@ Safety boundary:
 - `tv bars` reports `data_quality` with `realtime_guarantee: false`,
   `entitlement_checked: false`, completion state, and elapsed time. Callers
   should read those fields before treating results as operational evidence.
-- the first prototype requires exchange-qualified symbols and does not add
+- the stable command requires exchange-qualified symbols and does not add
   extended sessions, streaming, bare-symbol resolution, or authenticated reads
 - failures, malformed protocol frames, missing series completion, and symbol
   errors must become structured failures rather than empty successful bar lists

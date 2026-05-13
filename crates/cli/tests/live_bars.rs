@@ -11,7 +11,7 @@ const DEFAULT_COUNT: usize = 5;
 
 #[test]
 #[ignore = "requires TradingView WebSocket availability and TV_LIVE_BARS_SMOKE=1"]
-fn experimental_bars_live_smoke() {
+fn bars_live_smoke() {
     if std::env::var("TV_LIVE_BARS_SMOKE").ok().as_deref() != Some("1") {
         panic!("live bars smoke is gated; set TV_LIVE_BARS_SMOKE=1 and run with --ignored");
     }
@@ -75,7 +75,6 @@ fn experimental_bars_live_smoke() {
 
 fn run_bars(tv: &str, symbol: &str, timeframe: &str, count: usize) -> std::process::Output {
     Command::new(tv)
-        .env("TV_EXPERIMENTAL_BARS", "1")
         .args([
             "bars",
             symbol,
@@ -140,8 +139,11 @@ fn assert_bars_success(
 
     if envelope.get("success").and_then(Value::as_bool) != Some(true)
         || envelope.get("command").and_then(Value::as_str) != Some("bars")
-        || data.get("source").and_then(Value::as_str) != Some("experimental_tradingview_ws")
-        || data.get("experimental").and_then(Value::as_bool) != Some(true)
+        || data.get("contract_version").and_then(Value::as_str) != Some("bars.v1")
+        || data.get("source").and_then(Value::as_str) != Some("tradingview_bars_ws")
+        || data.get("source_category").and_then(Value::as_str) != Some("desktop_free_read")
+        || data.get("requires_desktop").and_then(Value::as_bool) != Some(false)
+        || data.get("non_mutating").and_then(Value::as_bool) != Some(true)
         || string_field(data, "requested_symbol") != Some(symbol)
         || string_field(data, "symbol") != Some(symbol)
         || string_field(data, "timeframe") != Some(expected_timeframe)

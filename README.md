@@ -30,7 +30,7 @@ data-provider terms.
   compatibility UI automation.
 - Hybrid commands: commands with explicit source or fallback behavior, such as
   `tv quote <SYMBOL> --source auto`.
-- Experimental commands: lab-gated behavior such as browserless `tv bars`.
+- Browserless historical bars: bounded Desktop-free `tv bars`.
 
 See `docs/command-source-taxonomy.md` for the durable command classification
 and source/fallback semantics.
@@ -159,16 +159,16 @@ This source reports TradingView quote-data readbacks such as `qsd.rtc` or
 regular quote-data `qsd.v.lp` separately from chart main-series quotes and
 scanner `extended_hours`.
 
-Experimental browserless historical bars are lab-gated:
+Browserless historical bars are Desktop-free and bounded:
 
 ```bash
-TV_EXPERIMENTAL_BARS=1 tv bars NASDAQ:AAPL --timeframe 1D --count 5
+tv bars NASDAQ:AAPL --timeframe 1D --count 5
 ```
 
 Use `tv --help` for the full command list and `tv <COMMAND> --help` for command
 details. See `docs/observation-workflows.md` for practical command sequences
 that combine Desktop-free screening, Desktop-backed chart observation,
-screenshots, experimental bars, and fundamentals reads.
+screenshots, browserless bars, and fundamentals reads.
 
 ## Output Contract
 
@@ -218,7 +218,7 @@ details, see `docs/breaking-changes-from-js-cli.md`.
 - `docs/command-source-taxonomy.md`: command source categories, fallback
   boundaries, mutation expectations, and recommended agent use.
 - `docs/observation-workflows.md`: practical read sequences for screening,
-  chart observation, screenshots, experimental bars, and fundamentals.
+  chart observation, screenshots, browserless bars, and fundamentals.
 - `docs/architecture.md`: workspace architecture, crate boundaries, operation
   adapters, JSON contract, and safety model.
 - `docs/rust-api.md`: currently documented typed Rust API boundary for internal

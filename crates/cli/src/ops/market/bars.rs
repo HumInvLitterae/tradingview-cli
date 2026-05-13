@@ -4,7 +4,7 @@ use std::{
 };
 
 use futures_util::{SinkExt, StreamExt};
-use serde_json::{Value, json};
+use serde_json::{Map, Value, json};
 use tokio::time::Instant;
 use tokio_tungstenite::{
     connect_async,
@@ -12,8 +12,8 @@ use tokio_tungstenite::{
 };
 use tradingview_core::{AppError, ErrorKind};
 
-const BARS_SOURCE: &str = "experimental_tradingview_ws";
-const EXPERIMENTAL_BARS_ENV: &str = "TV_EXPERIMENTAL_BARS";
+const BARS_CONTRACT_VERSION: &str = "bars.v1";
+const BARS_SOURCE: &str = "tradingview_bars_ws";
 const DEFAULT_TIMEOUT_MS: u64 = 10_000;
 const MAX_BAR_COUNT: usize = 500;
 const WS_ENDPOINT: &str = "wss://data.tradingview.com/socket.io/websocket?type=chart";
@@ -37,23 +37,29 @@ pub async fn bars(symbol: &str, timeframe: &str, count: usize) -> Result<Value, 
     if result.bars.is_empty() {
         return Err(AppError::new(
             ErrorKind::InternalApiUnavailable,
-            "Experimental bars request completed without returning bars",
+            "Bars request completed without returning bars",
         )
-        .with_details(json!({
-            "source": BARS_SOURCE,
-            "experimental": true,
-            "requested_symbol": request.symbol,
-            "timeframe": request.timeframe,
-            "requested_count": request.count,
-            "completed": result.completed,
-            "elapsed_ms": elapsed_ms,
-            "next_action_hint": "This lab-gated WebSocket path is not a stable TradingView API. Retry later or use `tv ohlcv` against a selected chart target.",
-        })));
+        .with_details(bars_error_details(
+            &request,
+            json!({
+                "availability_status": "unavailable",
+                "completed": result.completed,
+                "elapsed_ms": elapsed_ms,
+                "next_action_hint": "The browserless historical bars source did not return bars inside the bounded request. Retry later or use `tv ohlcv` against a selected chart target when chart-backed bars are acceptable.",
+            }),
+        )));
     }
 
-    Ok(json!({
+    Ok(bars_payload(&request, result, elapsed_ms))
+}
+
+fn bars_payload(request: &BarsRequest, result: BarsResult, elapsed_ms: u64) -> Value {
+    json!({
+        "contract_version": BARS_CONTRACT_VERSION,
         "source": BARS_SOURCE,
-        "experimental": true,
+        "source_category": "desktop_free_read",
+        "requires_desktop": false,
+        "non_mutating": true,
         "requested_symbol": request.symbol,
         "symbol": request.symbol,
         "timeframe": request.timeframe,
@@ -67,11 +73,11 @@ pub async fn bars(symbol: &str, timeframe: &str, count: usize) -> Result<Value, 
             "elapsed_ms": elapsed_ms,
         },
         "warnings": [
-            "experimental undocumented TradingView WebSocket read",
+            "undocumented TradingView WebSocket read",
             "no realtime or entitlement guarantee",
             "use `tv ohlcv` for selected-chart/CDP bars"
         ],
-    }))
+    })
 }
 
 #[derive(Debug)]
@@ -93,18 +99,6 @@ fn validate_bars_request(
     timeframe: &str,
     count: usize,
 ) -> Result<BarsRequest, AppError> {
-    if !experimental_bars_enabled() {
-        return Err(AppError::new(
-            ErrorKind::Validation,
-            "Experimental bars are disabled. Set TV_EXPERIMENTAL_BARS=1 to enable.",
-        )
-        .with_details(json!({
-            "required_env": EXPERIMENTAL_BARS_ENV,
-            "experimental": true,
-            "next_action_hint": "Run with `TV_EXPERIMENTAL_BARS=1 tv bars EXCHANGE:SYMBOL --timeframe 1D --count 100` if you accept the lab boundary.",
-        })));
-    }
-
     let symbol = symbol.trim();
     if symbol.is_empty() {
         return Err(AppError::new(
@@ -142,13 +136,6 @@ fn validate_bars_request(
         count,
         timeout: Duration::from_millis(DEFAULT_TIMEOUT_MS),
     })
-}
-
-fn experimental_bars_enabled() -> bool {
-    matches!(
-        std::env::var(EXPERIMENTAL_BARS_ENV).ok().as_deref(),
-        Some("1" | "true" | "yes" | "on")
-    )
 }
 
 fn normalize_timeframe(timeframe: &str) -> Result<String, AppError> {
@@ -214,6 +201,10 @@ async fn fetch_bars_ws(request: &BarsRequest) -> Result<BarsResult, AppError> {
             ErrorKind::Connection,
             format!("TradingView WebSocket connection failed: {err}"),
         )
+        .with_details(bars_error_details(
+            request,
+            json!({"availability_status": "unavailable"}),
+        ))
     })?;
 
     let session_id = session_id("cs_");
@@ -272,13 +263,25 @@ async fn fetch_bars_ws(request: &BarsRequest) -> Result<BarsResult, AppError> {
         let remaining = deadline.saturating_duration_since(now);
         let message = tokio::time::timeout(remaining, stream.next())
             .await
-            .map_err(|_| AppError::new(ErrorKind::Timeout, "Experimental bars request timed out"))?
-            .ok_or_else(|| AppError::new(ErrorKind::Connection, "TradingView WebSocket closed"))?
+            .map_err(|_| {
+                AppError::new(ErrorKind::Timeout, "Bars request timed out").with_details(
+                    bars_error_details(request, json!({"availability_status": "unavailable"})),
+                )
+            })?
+            .ok_or_else(|| {
+                AppError::new(ErrorKind::Connection, "TradingView WebSocket closed").with_details(
+                    bars_error_details(request, json!({"availability_status": "unavailable"})),
+                )
+            })?
             .map_err(|err| {
                 AppError::new(
                     ErrorKind::Connection,
                     format!("TradingView WebSocket read failed: {err}"),
                 )
+                .with_details(bars_error_details(
+                    request,
+                    json!({"availability_status": "unavailable"}),
+                ))
             })?;
 
         for packet in parse_packets(message)? {
@@ -310,16 +313,15 @@ async fn fetch_bars_ws(request: &BarsRequest) -> Result<BarsResult, AppError> {
                             send_ws(&mut stream, "chart_delete_session", json!([session_id])).await;
                         return Err(AppError::new(
                             ErrorKind::InternalApiUnavailable,
-                            "TradingView WebSocket returned an error for experimental bars",
+                            "TradingView WebSocket returned an error for bars",
                         )
-                        .with_details(json!({
-                            "source": BARS_SOURCE,
-                            "experimental": true,
-                            "method": method,
-                            "requested_symbol": request.symbol,
-                            "timeframe": request.timeframe,
-                            "requested_count": request.count,
-                        })));
+                        .with_details(bars_error_details(
+                            request,
+                            json!({
+                                "availability_status": "unavailable",
+                                "method": method,
+                            }),
+                        )));
                     }
                 }
             }
@@ -329,6 +331,41 @@ async fn fetch_bars_ws(request: &BarsRequest) -> Result<BarsResult, AppError> {
     let _ = send_ws(&mut stream, "chart_delete_session", json!([session_id])).await;
     let _ = stream.close(None).await;
     Ok(BarsResult { bars, completed })
+}
+
+fn bars_error_details(request: &BarsRequest, extra: Value) -> Value {
+    let mut details = Map::new();
+    details.insert(
+        "contract_version".to_string(),
+        Value::String(BARS_CONTRACT_VERSION.to_string()),
+    );
+    details.insert("source".to_string(), Value::String(BARS_SOURCE.to_string()));
+    details.insert(
+        "source_category".to_string(),
+        Value::String("desktop_free_read".to_string()),
+    );
+    details.insert("requires_desktop".to_string(), Value::Bool(false));
+    details.insert("non_mutating".to_string(), Value::Bool(true));
+    details.insert(
+        "requested_symbol".to_string(),
+        Value::String(request.symbol.clone()),
+    );
+    details.insert(
+        "timeframe".to_string(),
+        Value::String(request.timeframe.clone()),
+    );
+    details.insert(
+        "requested_count".to_string(),
+        Value::Number((request.count as u64).into()),
+    );
+
+    if let Some(extra) = extra.as_object() {
+        for (key, value) in extra {
+            details.insert(key.clone(), value.clone());
+        }
+    }
+
+    Value::Object(details)
 }
 
 async fn send_ws<S>(stream: &mut S, method: &str, params: Value) -> Result<(), AppError>
@@ -533,14 +570,7 @@ fn bar_to_value(bar: Bar) -> Value {
 
 #[cfg(test)]
 mod tests {
-    use std::sync::{Mutex, OnceLock};
-
     use super::*;
-
-    fn env_lock() -> &'static Mutex<()> {
-        static LOCK: OnceLock<Mutex<()>> = OnceLock::new();
-        LOCK.get_or_init(|| Mutex::new(()))
-    }
 
     #[test]
     fn parse_text_packets_handles_multiple_frames_and_ping() {
@@ -603,41 +633,67 @@ mod tests {
     }
 
     #[test]
-    fn validate_rejects_disabled_gate_before_network() {
-        let _guard = env_lock().lock().unwrap();
-        unsafe {
-            std::env::remove_var(EXPERIMENTAL_BARS_ENV);
-        }
-        let err = validate_bars_request("NASDAQ:AAPL", "1D", 5).unwrap_err();
-        assert_eq!(err.kind, ErrorKind::Validation);
-        assert_eq!(err.details.unwrap()["required_env"], EXPERIMENTAL_BARS_ENV);
-    }
-
-    #[test]
     fn validate_rejects_bare_symbol_and_out_of_range_count() {
-        let _guard = env_lock().lock().unwrap();
-        unsafe {
-            std::env::set_var(EXPERIMENTAL_BARS_ENV, "1");
-        }
         let err = validate_bars_request("AAPL", "1D", 5).unwrap_err();
         assert_eq!(err.kind, ErrorKind::Validation);
         let err = validate_bars_request("NASDAQ:AAPL", "1D", 501).unwrap_err();
         assert_eq!(err.kind, ErrorKind::Validation);
-        unsafe {
-            std::env::remove_var(EXPERIMENTAL_BARS_ENV);
-        }
     }
 
     #[test]
     fn validate_accepts_supported_timeframe_aliases() {
-        let _guard = env_lock().lock().unwrap();
-        unsafe {
-            std::env::set_var(EXPERIMENTAL_BARS_ENV, "1");
-        }
         let request = validate_bars_request("NASDAQ:AAPL", "1d", 5).unwrap();
         assert_eq!(request.timeframe, "1D");
-        unsafe {
-            std::env::remove_var(EXPERIMENTAL_BARS_ENV);
-        }
+    }
+
+    #[test]
+    fn bars_payload_contains_stable_source_contract() {
+        let request = validate_bars_request("NASDAQ:AAPL", "1d", 5).unwrap();
+        let payload = bars_payload(
+            &request,
+            BarsResult {
+                bars: vec![Bar {
+                    time: 1,
+                    open: 10.0,
+                    high: 12.0,
+                    low: 9.0,
+                    close: 11.0,
+                    volume: 100.0,
+                }],
+                completed: true,
+            },
+            42,
+        );
+
+        assert_eq!(payload["contract_version"], BARS_CONTRACT_VERSION);
+        assert_eq!(payload["source"], BARS_SOURCE);
+        assert_eq!(payload["source_category"], "desktop_free_read");
+        assert_eq!(payload["requires_desktop"], false);
+        assert_eq!(payload["non_mutating"], true);
+        assert_eq!(payload["data_quality"]["realtime_guarantee"], false);
+        assert_eq!(payload["data_quality"]["entitlement_checked"], false);
+        assert!(payload.get("experimental").is_none());
+    }
+
+    #[test]
+    fn bars_error_details_contains_stable_source_contract() {
+        let request = validate_bars_request("NASDAQ:AAPL", "1d", 5).unwrap();
+        let details = bars_error_details(
+            &request,
+            json!({
+                "availability_status": "unavailable",
+                "completed": false,
+            }),
+        );
+
+        assert_eq!(details["contract_version"], BARS_CONTRACT_VERSION);
+        assert_eq!(details["source"], BARS_SOURCE);
+        assert_eq!(details["source_category"], "desktop_free_read");
+        assert_eq!(details["requires_desktop"], false);
+        assert_eq!(details["non_mutating"], true);
+        assert_eq!(details["availability_status"], "unavailable");
+        assert_eq!(details["completed"], false);
+        assert!(details.get("raw_frame").is_none());
+        assert!(details.get("raw_payload").is_none());
     }
 }
