@@ -37,8 +37,8 @@ payload, or endpoint can replace the visible UI path. The public-safe reference
 for these dependencies is `docs/internal-tradingview-apis.md`.
 For user and agent workflow guidance, `docs/command-source-taxonomy.md`
 classifies commands as Desktop-free reads, Desktop-backed reads,
-Desktop-backed operations, hybrid commands, or experimental commands. The
-project keeps one `tv` binary for now; it does not split Desktop-free and
+Desktop-backed operations, hybrid commands, or specialized browserless reads.
+The project keeps one `tv` binary for now; it does not split Desktop-free and
 Desktop-backed functionality into separate executables.
 `docs/operation-adapter-boundaries.md` records which remaining operation
 families intentionally stay in `ops`, which are API/storage replacement

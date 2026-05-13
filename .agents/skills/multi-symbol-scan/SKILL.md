@@ -10,7 +10,7 @@ CLI using Desktop-free comparison first.
 Default to Desktop-free reads for broad comparison. Move to Desktop-backed
 reads only for finalists that need selected-chart OHLCV, visible studies, or
 screenshots. Treat `tv quote --source auto` as hybrid source selection and
-`tv bars` as experimental lab data.
+`tv bars` as Desktop-free historical bars evidence, not realtime data.
 
 For the current observation command sequence, use
 `docs/observation-workflows.md`. This skill should stay focused on shortlist
@@ -89,9 +89,10 @@ construction, not on duplicating the full source taxonomy.
    phase-sensitive live evidence and not a stable multi-symbol screening
    source. A `post-market` phase observation does not make quote-session
    pre/post close fields equivalent to scanner `extended_hours`.
-   Use `TV_EXPERIMENTAL_BARS=1 tv bars <EXCHANGE:SYMBOL> --count <N>` only as
-   a lab-gated browserless bars check when experimental WebSocket data is
-   acceptable; keep it separate from stable `tv ohlcv` chart evidence.
+   Use `tv bars <EXCHANGE:SYMBOL> --count <N>` when bounded Desktop-free
+   historical bars are useful; read `contract_version: "bars.v1"`,
+   `source: "tradingview_bars_ws"`, and `data_quality`, and keep it separate
+   from `tv ohlcv` chart evidence.
 4. Set the timeframe once with `tv timeframe <RESOLUTION>` when the scan uses a shared timeframe.
 5. Switch the chart with `tv symbol <SYMBOL>` only when OHLCV, visible studies,
    drawings, or screenshots are needed. After switching, confirm fresh chart

@@ -224,17 +224,20 @@ Screenshots are Desktop-backed visual evidence. They do not mutate
 TradingView state, but they write a local file, so screenshot payloads report
 `writes_file: true`.
 
-## Experimental Historical Bars
+## Browserless Historical Bars
 
-`tv bars` is a lab-gated Desktop-free historical bars prototype:
+`tv bars` is a bounded Desktop-free historical bars read:
 
 ```bash
-TV_EXPERIMENTAL_BARS=1 tv bars NASDAQ:AAPL --timeframe 1D --count 5
+tv bars NASDAQ:AAPL --timeframe 1D --count 5
 ```
 
-It uses an undocumented TradingView WebSocket path and remains experimental.
-Read `experimental`, `source`, and `data_quality` before using the result, and
-do not treat it as a stable replacement for chart-backed `tv ohlcv`.
+It uses an undocumented TradingView WebSocket chart-session path and reports
+`contract_version: "bars.v1"`, `source: "tradingview_bars_ws"`, and
+`source_category: "desktop_free_read"`. Read `data_quality` before using the
+result: it does not guarantee realtime or entitlement status. Do not treat it
+as a replacement for chart-backed `tv ohlcv`, which reads the selected Desktop
+chart through CDP.
 
 ## Fundamentals And Event-Like Fields
 

@@ -8,12 +8,15 @@ for release and next-phase planning.
 
 Current plan:
 
-- `tradingview-cli-quote-data-regular-session-semantics.md`: plan
-  regular-session quote-data field evidence and source semantics for the
-  `v0.16.0` roadmap without changing public payload behavior.
+- `tradingview-cli-bars-stabilization.md`: stabilize browserless
+  `tv bars <EXCHANGE:SYMBOL>` as a Desktop-free historical bars read with a
+  `bars.v1` contract.
 
 Recently completed:
 
+- `tradingview-cli-quote-data-regular-session-semantics.md`: added
+  regular-session `lp` readback to explicit quote-data reads so matching
+  quote-data messages do not become unavailable only because `rtc` is absent.
 - `tradingview-cli-v0.15.0-release-readiness.md`: prepared the `v0.15.0`
   release state, including version, changelog, release notes, README asset
   examples, and package validation.
@@ -113,7 +116,8 @@ Important archived plan categories:
   scanner extended-hours columns, scanner metainfo, ordered batch quotes,
   explicit quote source selection, typed market/scanner Rust APIs, and the
   v0.4 market data lane review
-- lab-gated browserless historical bars prototype
+- lab-gated browserless historical bars prototype and later stable
+  browserless bars contract
 - lab bars evidence review and v0.5 data-lane boundary
 - Computer Use boundary docs and skills cleanup
 - Codex app Computer Use visual recovery skill research and deferral
@@ -181,7 +185,7 @@ Important archived plan categories:
 - v0.6.0 release readiness
 - first `tv observe chart` workflow command
 - opt-in `tv observe chart` JSONL contract live smoke
-- opt-in lab-gated `tv bars` JSON contract live smoke
+- opt-in `tv bars` JSON contract live smoke
 - public-safe fundamentals/events scanner field evidence
 - v0.7 observation workflow guide and runtime skill alignment
 - fundamentals earnings and dividends field enrichment

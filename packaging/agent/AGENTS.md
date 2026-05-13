@@ -77,8 +77,9 @@ Do not use `TV_CDP_TARGET_ID`; explicit target handoff is `--target-id`.
   Screener, layout, drawing, alert, watchlist, or UI state.
 - Hybrid commands choose between sources explicitly, such as
   `tv quote <SYMBOL> --source auto`.
-- Experimental commands are lab-gated, such as `tv bars` with
-  `TV_EXPERIMENTAL_BARS=1`.
+- Browserless historical bars use `tv bars <EXCHANGE:SYMBOL>` as a bounded
+  Desktop-free read with `contract_version: "bars.v1"`. They do not guarantee
+  realtime or entitlement status.
 
 ## Safety Rules
 

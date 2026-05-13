@@ -358,13 +358,12 @@ requested count, ordered items, section success/error shape, top-level error
 summaries, and next-action hints. Do not paste raw compare output or live
 response payloads into tracked docs.
 
-For lab-gated `tv bars` WebSocket evidence checks, run:
+For `tv bars` WebSocket contract evidence checks, run:
 
 ```bash
 TV_LIVE_BARS_SMOKE=1 cargo test -p tradingview-cli --test live_bars -- --ignored --nocapture
 ```
 
-The ignored test sets `TV_EXPERIMENTAL_BARS=1` on the child `tv bars` command.
 Optional environment variables:
 
 - `TV_LIVE_BARS_SYMBOLS`: comma-separated exchange-qualified public symbols,
@@ -374,8 +373,8 @@ Optional environment variables:
 - `TV_LIVE_BARS_COUNT`: positive bounded bar count, defaulting to `5`.
 - `TV_LIVE_BARS_RUNS`: positive repeat count, defaulting to `1`.
 
-The ignored test validates only public contract fields: source, experimental
-flag, requested symbol, timeframe, bounded count, non-empty bars, and
+The ignored test validates only public contract fields: `bars.v1` source
+metadata, requested symbol, timeframe, bounded count, non-empty bars, and
 `data_quality`. Do not paste raw WebSocket output or live response payloads
 into tracked docs.
 

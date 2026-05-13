@@ -75,9 +75,9 @@ now:
   agents can distinguish reads from chart/account operations.
 - OHLCV reads: `ohlcv` reads the active chart's main-series bars. Symbol-level
   quote and info reads are Desktop-free. Historical bars now have a separate
-  lab-gated `tv bars <SYMBOL>` prototype through an undocumented WebSocket
-  chart-session path, but `ohlcv` remains chart-dependent unless a later plan
-  proves equivalence. Raw and summary OHLCV payloads retain `source:
+  stable `tv bars <SYMBOL>` command through an undocumented WebSocket
+  chart-session path, but `ohlcv` remains chart-dependent. Raw and summary
+  OHLCV payloads retain `source:
   "direct_bars"` and report Desktop-backed read metadata.
 - Desktop-free market and scanner reads: `search`, symbol-targeted `info`,
   scanner-source `quote`, `quotes`, `fundamentals`, `scanner scan`,
@@ -134,9 +134,9 @@ retries. The current high-value candidates are:
 - Pine compile/save replacement: keep as `research_only` unless a safe endpoint
   preserves the same editor/account semantics without raw account metadata.
 - Browserless historical bars: comparable-project evidence exists through an
-  experimental TradingView WebSocket chart-session protocol. The Rust CLI now
-  has a bounded lab-gated `tv bars <SYMBOL>` prototype, but it remains
-  experimental and separate from `tv ohlcv`.
+  undocumented TradingView WebSocket chart-session protocol. The Rust CLI now
+  has a bounded stable `tv bars <SYMBOL>` command, but it remains separate
+  from `tv ohlcv` and does not guarantee realtime or entitlement status.
 
 The scanner REST watchlist-style read lane is not a current replacement
 candidate because it is already practically covered by `scanner scan`,
@@ -147,13 +147,11 @@ for a concrete workflow and clear endpoint evidence.
 These are not current crate-extraction tasks. Each needs its own evidence-gated
 ExecPlan before behavior changes.
 
-For `v0.5.0`, Desktop-backed readiness diagnostics landed first. The current
-Desktop-free data experiment is `tv bars`, kept as a CLI-owned lab adapter
-rather than a `tradingview-market` typed API until protocol stability and
-downstream value are clearer. Initial bounded smoke confirms daily and hourly
-reads can succeed, but the command remains lab-only because it depends on an
-undocumented WebSocket chart-session protocol. A broad `tv diagnose` command
-remains deferred until existing diagnostics prove insufficient. See
+For `v0.16.0`, `tv bars` is a stable CLI-owned Desktop-free historical bars
+read rather than a `tradingview-market` typed API. It still depends on an
+undocumented WebSocket chart-session protocol, so callers must keep its source
+metadata and data-quality boundary visible. A broad diagnostic command remains
+deferred until existing diagnostics prove insufficient. See
 `docs/v0.5-roadmap.md` for the current roadmap.
 
 For `v0.6.0`, source taxonomy and observation-first planning are recorded.
