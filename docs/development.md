@@ -156,6 +156,13 @@ This project uses Rust 2024.
   modules when needed.
 - Avoid unrelated cleanup while migrating commands or fixing behavior.
 
+## Integration test organization
+
+Large CLI contract suites should be split by command family. Keep shared
+integration-test helpers under `crates/cli/tests/support/`, keep root-level
+CLI contracts in `cli_contract.rs`, and add focused `cli_contract_*` test
+targets when a command family grows.
+
 ## JavaScript and TradingView safety
 
 Many operations evaluate JavaScript through CDP. Treat user-provided strings as
