@@ -7,6 +7,8 @@ package version omits the leading `v`.
 
 ## Unreleased
 
+## v0.17.0 - 2026-05-14
+
 ### Added
 
 - Added additive `tv bars` summary and range readback so downstream tools can
