@@ -352,9 +352,11 @@ Safety boundary:
   Desktop target
 - `tv bars` is a separate symbol-targeted command and keeps requests bounded
   by count
-- `tv bars` reports `data_quality` with `realtime_guarantee: false`,
-  `entitlement_checked: false`, completion state, and elapsed time. Callers
-  should read those fields before treating results as operational evidence.
+- `tv bars` reports `summary` / `range` for requested-vs-returned count and
+  time coverage, plus `data_quality` with `realtime_guarantee: false`,
+  `entitlement_checked: false`, completion state, elapsed time, and partial
+  result readback. Callers should read those fields before treating raw
+  `bars[]` as operational evidence.
 - the stable command requires exchange-qualified symbols and does not add
   extended sessions, streaming, bare-symbol resolution, or authenticated reads
 - failures, malformed protocol frames, missing series completion, and symbol

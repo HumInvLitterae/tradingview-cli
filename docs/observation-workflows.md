@@ -234,10 +234,11 @@ tv bars NASDAQ:AAPL --timeframe 1D --count 5
 
 It uses an undocumented TradingView WebSocket chart-session path and reports
 `contract_version: "bars.v1"`, `source: "tradingview_bars_ws"`, and
-`source_category: "desktop_free_read"`. Read `data_quality` before using the
-result: it does not guarantee realtime or entitlement status. Do not treat it
-as a replacement for chart-backed `tv ohlcv`, which reads the selected Desktop
-chart through CDP.
+`source_category: "desktop_free_read"`. Read `summary` / `range` for
+requested-vs-returned count and time coverage, then use raw `bars[]` for exact
+OHLCV evidence. Read `data_quality` before using the result: it does not
+guarantee realtime or entitlement status. Do not treat it as a replacement for
+chart-backed `tv ohlcv`, which reads the selected Desktop chart through CDP.
 
 ## Fundamentals And Event-Like Fields
 

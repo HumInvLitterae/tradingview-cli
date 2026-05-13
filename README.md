@@ -165,6 +165,9 @@ Browserless historical bars are Desktop-free and bounded:
 tv bars NASDAQ:AAPL --timeframe 1D --count 5
 ```
 
+Read `summary` and `range` first for requested-vs-returned count and time
+coverage, then inspect raw `bars[]` when exact OHLCV evidence is needed.
+
 Use `tv --help` for the full command list and `tv <COMMAND> --help` for command
 details. See `docs/observation-workflows.md` for practical command sequences
 that combine Desktop-free screening, Desktop-backed chart observation,

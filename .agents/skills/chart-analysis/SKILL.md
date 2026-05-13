@@ -59,6 +59,9 @@ observation surface.
    `tv quote <SYMBOL>` use Desktop-free reads by default. Preserve
    `source_category`, `requires_desktop`, and `non_mutating` when comparing
    Desktop-backed chart reads with Desktop-free scanner reads.
+   Use `tv bars <EXCHANGE:SYMBOL>` only when symbol-targeted Desktop-free
+   historical bars are desired; read its `summary` / `range` first and keep it
+   separate from selected-chart `tv ohlcv` evidence.
 5. Use `tv quote <SYMBOL> --source chart` when the selected Desktop chart feed
    matters, and `tv quote <SYMBOL> --source auto` when chart-first behavior
    with scanner fallback is acceptable. Do not add manual sleep or double-call

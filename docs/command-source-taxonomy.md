@@ -234,9 +234,12 @@ selected Desktop chart through CDP.
 
 Recommended agent use: use when a workflow needs bounded historical bars for a
 specific exchange-qualified symbol without requiring TradingView Desktop.
-Report `source`, `contract_version`, `data_quality`, and warnings. Do not
-treat it as realtime streaming, scanner quote, chart quote, or quote-data
-evidence.
+Report `source`, `contract_version`, `summary`, `range`, `data_quality`, and
+warnings. Read `summary.coverage_status` and
+`summary.requested_count_fulfilled` before raw `bars[]`; they are historical
+coverage readback, not ranking, scoring, or trading recommendations. Do not
+treat `tv bars` as realtime streaming, scanner quote, chart quote, or
+quote-data evidence.
 
 ## Agent Guidance
 

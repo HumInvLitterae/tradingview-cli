@@ -136,6 +136,20 @@ fn assert_bars_success(
             )
         });
     let bar_count = data.get("bar_count").and_then(Value::as_u64).unwrap_or(0);
+    let first_time = bars
+        .first()
+        .and_then(|bar| bar.get("time"))
+        .and_then(Value::as_i64);
+    let last_time = bars
+        .last()
+        .and_then(|bar| bar.get("time"))
+        .and_then(Value::as_i64);
+    let requested_count_fulfilled = bar_count == expected_count as u64;
+    let expected_coverage_status = if requested_count_fulfilled {
+        "complete"
+    } else {
+        "partial"
+    };
 
     if envelope.get("success").and_then(Value::as_bool) != Some(true)
         || envelope.get("command").and_then(Value::as_str) != Some("bars")
@@ -152,6 +166,26 @@ fn assert_bars_success(
         || bar_count as usize != bars.len()
         || bar_count > expected_count as u64
         || data
+            .pointer("/summary/requested_count")
+            .and_then(Value::as_u64)
+            != Some(expected_count as u64)
+        || data.pointer("/summary/bar_count").and_then(Value::as_u64) != Some(bar_count)
+        || data.pointer("/summary/first_time").and_then(Value::as_i64) != first_time
+        || data.pointer("/summary/last_time").and_then(Value::as_i64) != last_time
+        || data.pointer("/summary/time_order").and_then(Value::as_str) != Some("ascending")
+        || data
+            .pointer("/summary/requested_count_fulfilled")
+            .and_then(Value::as_bool)
+            != Some(requested_count_fulfilled)
+        || data
+            .pointer("/summary/coverage_status")
+            .and_then(Value::as_str)
+            != Some(expected_coverage_status)
+        || data.pointer("/range/timeframe").and_then(Value::as_str) != Some(expected_timeframe)
+        || data.pointer("/range/first_time").and_then(Value::as_i64) != first_time
+        || data.pointer("/range/last_time").and_then(Value::as_i64) != last_time
+        || data.pointer("/range/bar_count").and_then(Value::as_u64) != Some(bar_count)
+        || data
             .pointer("/data_quality/realtime_guarantee")
             .and_then(Value::as_bool)
             != Some(false)
@@ -167,6 +201,10 @@ fn assert_bars_success(
             .pointer("/data_quality/elapsed_ms")
             .and_then(Value::as_u64)
             .is_none()
+        || data
+            .pointer("/data_quality/partial_result")
+            .and_then(Value::as_bool)
+            != Some(!requested_count_fulfilled)
     {
         panic!(
             "bars live smoke validation failed: requested_symbol={} elapsed_ms={} summary={}",
