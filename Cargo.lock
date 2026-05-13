@@ -1975,9 +1975,12 @@ dependencies = [
 name = "tradingview-market"
 version = "0.16.0"
 dependencies = [
+ "futures-util",
  "reqwest",
  "serde",
  "serde_json",
+ "tokio",
+ "tokio-tungstenite",
  "tradingview-core",
 ]
 

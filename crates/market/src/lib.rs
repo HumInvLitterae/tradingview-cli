@@ -2,7 +2,8 @@
 //!
 //! This crate contains credential-free, read-only helpers for symbol search,
 //! symbol metadata, single-symbol fundamentals, single-symbol quotes, ordered
-//! batch quotes, and multi-symbol comparison packets. It does not connect to
+//! batch quotes, multi-symbol comparison packets, and browserless historical
+//! bars. It does not connect to
 //! TradingView Desktop, CDP, chart state, UI automation, or account mutation
 //! paths.
 //!
@@ -14,6 +15,7 @@
 //! - [`quote_symbol_typed`] for one scanner-backed quote.
 //! - [`quote_symbols_typed`] for ordered batch quotes.
 //! - [`compare_symbols_typed`] for ordered multi-symbol comparison packets.
+//! - [`bars_symbol`] for CLI-compatible browserless historical bars.
 //!
 //! The older JSON-returning functions remain public for CLI payload
 //! compatibility. New Rust integration code should usually use the typed
@@ -45,6 +47,7 @@
 //! # }
 //! ```
 
+mod bars;
 mod compare;
 mod fundamentals;
 mod info;
@@ -54,6 +57,7 @@ mod search;
 mod snapshot;
 mod types;
 
+pub use bars::bars_symbol;
 pub use compare::{compare_symbols, compare_symbols_typed};
 pub use fundamentals::{
     fundamentals_symbol, fundamentals_symbol_typed, fundamentals_symbol_with_groups,

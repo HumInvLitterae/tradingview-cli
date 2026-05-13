@@ -22,6 +22,12 @@ package version omits the leading `v`.
   focusing on historical bars evidence maturity without adding realtime feeds,
   source mixing, or trading recommendations.
 
+### Internal
+
+- Moved browserless `tv bars` implementation into the Desktop-free market
+  crate so CLI `ops` remains a thin command adapter while preserving the
+  `bars.v1` contract.
+
 ## v0.16.0 - 2026-05-13
 
 ### Added
