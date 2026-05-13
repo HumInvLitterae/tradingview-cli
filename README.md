@@ -167,6 +167,9 @@ tv bars NASDAQ:AAPL --timeframe 1D --count 5
 
 Read `summary` and `range` first for requested-vs-returned count and time
 coverage, then inspect raw `bars[]` when exact OHLCV evidence is needed.
+Read `source_availability` and its `wait_summary` when bars are partial or
+unavailable; those fields describe bounded historical-source behavior, not a
+trading recommendation or proof that a symbol has no history.
 
 Use `tv --help` for the full command list and `tv <COMMAND> --help` for command
 details. See `docs/observation-workflows.md` for practical command sequences

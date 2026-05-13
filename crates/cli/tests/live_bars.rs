@@ -150,6 +150,10 @@ fn assert_bars_success(
     } else {
         "partial"
     };
+    let completed = data
+        .pointer("/data_quality/completed")
+        .and_then(Value::as_bool);
+    let expected_timed_out = completed.map(|value| !value);
 
     if envelope.get("success").and_then(Value::as_bool) != Some(true)
         || envelope.get("command").and_then(Value::as_str) != Some("bars")
@@ -205,6 +209,77 @@ fn assert_bars_success(
             .pointer("/data_quality/partial_result")
             .and_then(Value::as_bool)
             != Some(!requested_count_fulfilled)
+        || data
+            .pointer("/source_availability/available")
+            .and_then(Value::as_bool)
+            != Some(true)
+        || data
+            .pointer("/source_availability/status")
+            .and_then(Value::as_str)
+            != Some("available")
+        || !data
+            .pointer("/source_availability/unavailable_reason")
+            .is_some_and(Value::is_null)
+        || data
+            .pointer("/source_availability/requested_count")
+            .and_then(Value::as_u64)
+            != Some(expected_count as u64)
+        || data
+            .pointer("/source_availability/bar_count")
+            .and_then(Value::as_u64)
+            != Some(bar_count)
+        || data
+            .pointer("/source_availability/requested_count_fulfilled")
+            .and_then(Value::as_bool)
+            != Some(requested_count_fulfilled)
+        || data
+            .pointer("/source_availability/timed_out")
+            .and_then(Value::as_bool)
+            != expected_timed_out
+        || data
+            .pointer("/source_availability/raw_frame_included")
+            .and_then(Value::as_bool)
+            != Some(false)
+        || data
+            .pointer("/source_availability/wait_summary/timeout_ms")
+            .and_then(Value::as_u64)
+            .is_none()
+        || data
+            .pointer("/source_availability/wait_summary/elapsed_ms")
+            .and_then(Value::as_u64)
+            .is_none()
+        || data
+            .pointer("/source_availability/wait_summary/completed")
+            .and_then(Value::as_bool)
+            != completed
+        || data
+            .pointer("/source_availability/wait_summary/websocket_messages_seen")
+            .and_then(Value::as_u64)
+            .is_none()
+        || data
+            .pointer("/source_availability/wait_summary/websocket_packets_seen")
+            .and_then(Value::as_u64)
+            .is_none()
+        || data
+            .pointer("/source_availability/wait_summary/update_messages_seen")
+            .and_then(Value::as_u64)
+            .is_none()
+        || data
+            .pointer("/source_availability/wait_summary/series_completed_seen")
+            .and_then(Value::as_bool)
+            .is_none()
+        || data
+            .pointer("/source_availability/wait_summary/error_messages_seen")
+            .and_then(Value::as_u64)
+            .is_none()
+        || data
+            .pointer("/source_availability/wait_summary/bars_observed_count")
+            .and_then(Value::as_u64)
+            != Some(bar_count)
+        || data
+            .pointer("/source_availability/wait_summary/raw_frame_included")
+            .and_then(Value::as_bool)
+            != Some(false)
     {
         panic!(
             "bars live smoke validation failed: requested_symbol={} elapsed_ms={} summary={}",
