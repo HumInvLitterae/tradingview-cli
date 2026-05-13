@@ -30,6 +30,8 @@ package version omits the leading `v`.
 - Split the market crate `tv bars` implementation into facade, validation,
   protocol, transport, payload, and shared type modules without changing the
   `bars.v1` command contract.
+- Split the CLI contract integration tests into command-family targets with
+  shared helpers, without changing command behavior or JSON contracts.
 
 ## v0.16.0 - 2026-05-13
 
