@@ -8,12 +8,15 @@ for release and next-phase planning.
 
 Current plan:
 
-- `tradingview-cli-bars-stabilization.md`: stabilize browserless
-  `tv bars <EXCHANGE:SYMBOL>` as a Desktop-free historical bars read with a
-  `bars.v1` contract.
+- `tradingview-cli-v0.16-pre-release-audit.md`: audit completed v0.16
+  quote-data regular-session readback and stable browserless bars contracts
+  before release readiness.
 
 Recently completed:
 
+- `tradingview-cli-bars-stabilization.md`: stabilized browserless
+  `tv bars <EXCHANGE:SYMBOL>` as a Desktop-free historical bars read with a
+  `bars.v1` contract.
 - `tradingview-cli-quote-data-regular-session-semantics.md`: added
   regular-session `lp` readback to explicit quote-data reads so matching
   quote-data messages do not become unavailable only because `rtc` is absent.
