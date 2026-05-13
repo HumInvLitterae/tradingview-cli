@@ -8,12 +8,15 @@ for release and next-phase planning.
 
 Current plan:
 
-- `tradingview-cli-v0.16-pre-release-audit.md`: audit completed v0.16
-  quote-data regular-session readback and stable browserless bars contracts
-  before release readiness.
+- `tradingview-cli-v0.16.0-release-readiness.md`: prepare the `v0.16.0`
+  release state, including version, changelog, release notes, README asset
+  examples, and package validation.
 
 Recently completed:
 
+- `tradingview-cli-v0.16-pre-release-audit.md`: audited completed v0.16
+  quote-data regular-session readback and stable browserless bars contracts
+  before release readiness.
 - `tradingview-cli-bars-stabilization.md`: stabilized browserless
   `tv bars <EXCHANGE:SYMBOL>` as a Desktop-free historical bars read with a
   `bars.v1` contract.

@@ -7,23 +7,28 @@ package version omits the leading `v`.
 
 ## Unreleased
 
-### Documentation
+## v0.16.0 - 2026-05-13
 
-- Added the `v0.16.0` roadmap direction and first quote-data regular-session
-  semantics plan, keeping the current `qsd.rtc` success condition separate
-  from scanner, chart, and automatic fallback behavior.
-- Recorded the `v0.16.0` pre-release audit, confirming quote-data
-  regular-session readback and stable browserless bars are ready for release
-  readiness.
+### Added
+
+- Added additive regular-session quote-data readback so matching `qsd.v.lp`
+  can return `quote_data.price_readback.kind: "regular_last"` when `qsd.v.rtc`
+  is absent, without mixing scanner or chart sources.
 
 ### Changed
 
-- Added additive regular-session quote-data readback planning and
-  implementation notes so matching `qsd.v.lp` can be treated separately from
-  `qsd.v.rtc` without mixing scanner or chart sources.
 - Stabilized browserless `tv bars <EXCHANGE:SYMBOL>` as a Desktop-free
   historical bars read with a `bars.v1` contract and no
   `TV_EXPERIMENTAL_BARS` gate.
+
+### Documentation
+
+- Added the `v0.16.0` roadmap direction and quote-data regular-session
+  semantics plan, keeping quote-data, scanner, chart, and automatic fallback
+  boundaries separate.
+- Recorded the `v0.16.0` pre-release audit, confirming quote-data
+  regular-session readback and stable browserless bars are ready for release
+  readiness.
 
 ## v0.15.0 - 2026-05-12
 
