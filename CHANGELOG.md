@@ -21,6 +21,9 @@ package version omits the leading `v`.
 - Added the `v0.17.0` roadmap direction and first bars summary readback plan,
   focusing on historical bars evidence maturity without adding realtime feeds,
   source mixing, or trading recommendations.
+- Recorded the updated `v0.17.0` pre-release audit after the bars
+  crate-boundary cleanup, bars market internal split, and CLI contract test
+  split.
 
 ### Internal
 
