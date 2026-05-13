@@ -8,12 +8,14 @@ for release and next-phase planning.
 
 Current plan:
 
-- `tradingview-cli-bars-availability-readback.md`: add
-  `source_availability` and public-safe wait summaries to browserless
-  historical bars success and failure payloads.
+- `tradingview-cli-v0.17-pre-release-audit.md`: audit completed `v0.17.0`
+  bars summary/range and availability readback before release readiness.
 
 Recently completed:
 
+- `tradingview-cli-bars-availability-readback.md`: added
+  `source_availability` and public-safe wait summaries to browserless
+  historical bars success and failure payloads.
 - `tradingview-cli-bars-summary-readback.md`: added additive `tv bars`
   summary / range / quality readback so browserless historical bars are easier
   for agents and downstream tools to consume safely.
