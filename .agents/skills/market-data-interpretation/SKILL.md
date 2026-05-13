@@ -140,9 +140,11 @@ selected chart feed for one symbol is the point of the task.
 browserless historical bars read using an undocumented TradingView WebSocket
 chart-session path. Report `contract_version: "bars.v1"`,
 `source: "tradingview_bars_ws"`, `source_category: "desktop_free_read"`,
-`data_quality`, and warnings. Do not treat it as realtime streaming,
-scanner quote evidence, quote-data evidence, or a replacement for
-chart-sourced OHLCV.
+`summary`, `range`, `data_quality`, and warnings. Read `summary` / `range`
+first for requested-vs-returned count and time coverage, then inspect raw
+`bars[]` for exact OHLCV evidence. Do not treat it as realtime streaming,
+scanner quote evidence, quote-data evidence, or a replacement for chart-sourced
+OHLCV.
 
 `tv snapshot <SYMBOL>` is the first-pass Desktop-free evidence packet for one
 symbol. It groups scanner-backed quote, symbol info, and fundamentals sections.

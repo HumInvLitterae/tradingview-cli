@@ -20,16 +20,22 @@ leaving raw bars and source boundaries intact.
 ## Progress
 
 - [x] Create this ExecPlan.
-- [ ] Add `tv bars` summary / range readback to success payloads.
-- [ ] Extend bars structured failure details only where needed for consistent
+- [x] Add `tv bars` summary / range readback to success payloads.
+- [x] Extend bars structured failure details only where needed for consistent
   source availability readback.
-- [ ] Update docs and runtime skills for first-pass summary / range use.
-- [ ] Validate focused bars tests, contract tests, baseline checks, and
+- [x] Update docs and runtime skills for first-pass summary / range use.
+- [x] Validate focused bars tests, contract tests, baseline checks, and
   public-doc hygiene.
 
 ## Surprises & Discoveries
 
-- Pending implementation.
+- The existing `merge_bars` path already keeps bars in ascending time order, so
+  `summary.time_order: "ascending"` can be computed from the normalized
+  `BarsResult` without changing WebSocket parsing.
+- Structured no-bars failure details already carried `bars.v1` source metadata,
+  requested symbol, timeframe, requested count, completion state, elapsed time,
+  and public-safe next action. No extra failure field was needed for this
+  slice.
 
 ## Decision Log
 
@@ -45,9 +51,31 @@ leaving raw bars and source boundaries intact.
   them would recreate the source-boundary confusion previous releases avoided.
   Date/Author: 2026-05-13 / Codex.
 
+- Decision: Add `data_quality.partial_result` but not a second completion enum.
+  Rationale: Existing `data_quality.completed` already reports whether the
+  browserless series completed; `partial_result` cleanly reports whether the
+  returned bar count is below the requested count.
+  Date/Author: 2026-05-13 / Codex.
+
 ## Outcomes & Retrospective
 
-Pending implementation.
+Implemented additive `summary` and `range` objects on successful `tv bars`
+payloads. `summary` exposes requested count, returned count, first/last time,
+time ordering, requested-count fulfillment, and complete/partial coverage.
+`range` repeats the timeframe and returned time span for consumers that only
+need range metadata.
+
+Raw `bars[]`, top-level `bar_count`, `data_quality`, source metadata, and
+warnings were preserved. No-bars remains a structured failure instead of an
+empty success payload.
+
+Validation passed with focused bars unit tests, CLI bars contract tests, the
+ignored live-bars compile-only test, runtime skill validators, formatting,
+clippy, full workspace tests, metadata, diff check, package script syntax, and
+public-doc hygiene grep. The hygiene grep reported existing policy language,
+examples, and archived validation-command text; no new raw WebSocket frame,
+raw live payload, target id, account-local metadata, credential, local
+absolute path, or downstream-private path was added.
 
 ## Plan of Work
 

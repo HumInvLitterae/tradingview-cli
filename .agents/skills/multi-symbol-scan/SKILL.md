@@ -91,8 +91,8 @@ construction, not on duplicating the full source taxonomy.
    pre/post close fields equivalent to scanner `extended_hours`.
    Use `tv bars <EXCHANGE:SYMBOL> --count <N>` when bounded Desktop-free
    historical bars are useful; read `contract_version: "bars.v1"`,
-   `source: "tradingview_bars_ws"`, and `data_quality`, and keep it separate
-   from `tv ohlcv` chart evidence.
+   `source: "tradingview_bars_ws"`, `summary`, `range`, and `data_quality`,
+   and keep it separate from `tv ohlcv` chart evidence.
 4. Set the timeframe once with `tv timeframe <RESOLUTION>` when the scan uses a shared timeframe.
 5. Switch the chart with `tv symbol <SYMBOL>` only when OHLCV, visible studies,
    drawings, or screenshots are needed. After switching, confirm fresh chart

@@ -54,6 +54,24 @@ pub async fn bars(symbol: &str, timeframe: &str, count: usize) -> Result<Value, 
 }
 
 fn bars_payload(request: &BarsRequest, result: BarsResult, elapsed_ms: u64) -> Value {
+    let bar_count = result.bars.len();
+    let first_time = result
+        .bars
+        .first()
+        .map(|bar| bar.time)
+        .expect("bars_payload requires at least one bar");
+    let last_time = result
+        .bars
+        .last()
+        .map(|bar| bar.time)
+        .expect("bars_payload requires at least one bar");
+    let requested_count_fulfilled = bar_count == request.count;
+    let coverage_status = if requested_count_fulfilled {
+        "complete"
+    } else {
+        "partial"
+    };
+
     json!({
         "contract_version": BARS_CONTRACT_VERSION,
         "source": BARS_SOURCE,
@@ -64,13 +82,29 @@ fn bars_payload(request: &BarsRequest, result: BarsResult, elapsed_ms: u64) -> V
         "symbol": request.symbol,
         "timeframe": request.timeframe,
         "requested_count": request.count,
-        "bar_count": result.bars.len(),
+        "bar_count": bar_count,
+        "summary": {
+            "requested_count": request.count,
+            "bar_count": bar_count,
+            "first_time": first_time,
+            "last_time": last_time,
+            "time_order": "ascending",
+            "requested_count_fulfilled": requested_count_fulfilled,
+            "coverage_status": coverage_status,
+        },
+        "range": {
+            "timeframe": request.timeframe,
+            "first_time": first_time,
+            "last_time": last_time,
+            "bar_count": bar_count,
+        },
         "bars": result.bars.into_iter().map(bar_to_value).collect::<Vec<_>>(),
         "data_quality": {
             "realtime_guarantee": false,
             "entitlement_checked": false,
             "completed": result.completed,
             "elapsed_ms": elapsed_ms,
+            "partial_result": !requested_count_fulfilled,
         },
         "warnings": [
             "undocumented TradingView WebSocket read",
@@ -652,6 +686,57 @@ mod tests {
         let payload = bars_payload(
             &request,
             BarsResult {
+                bars: vec![
+                    Bar {
+                        time: 1,
+                        open: 10.0,
+                        high: 12.0,
+                        low: 9.0,
+                        close: 11.0,
+                        volume: 100.0,
+                    },
+                    Bar {
+                        time: 2,
+                        open: 11.0,
+                        high: 13.0,
+                        low: 10.0,
+                        close: 12.0,
+                        volume: 200.0,
+                    },
+                ],
+                completed: true,
+            },
+            42,
+        );
+
+        assert_eq!(payload["contract_version"], BARS_CONTRACT_VERSION);
+        assert_eq!(payload["source"], BARS_SOURCE);
+        assert_eq!(payload["source_category"], "desktop_free_read");
+        assert_eq!(payload["requires_desktop"], false);
+        assert_eq!(payload["non_mutating"], true);
+        assert_eq!(payload["data_quality"]["realtime_guarantee"], false);
+        assert_eq!(payload["data_quality"]["entitlement_checked"], false);
+        assert_eq!(payload["data_quality"]["partial_result"], true);
+        assert_eq!(payload["summary"]["requested_count"], 5);
+        assert_eq!(payload["summary"]["bar_count"], 2);
+        assert_eq!(payload["summary"]["first_time"], 1);
+        assert_eq!(payload["summary"]["last_time"], 2);
+        assert_eq!(payload["summary"]["time_order"], "ascending");
+        assert_eq!(payload["summary"]["requested_count_fulfilled"], false);
+        assert_eq!(payload["summary"]["coverage_status"], "partial");
+        assert_eq!(payload["range"]["timeframe"], "1D");
+        assert_eq!(payload["range"]["first_time"], 1);
+        assert_eq!(payload["range"]["last_time"], 2);
+        assert_eq!(payload["range"]["bar_count"], 2);
+        assert!(payload.get("experimental").is_none());
+    }
+
+    #[test]
+    fn bars_payload_marks_full_count_coverage_complete() {
+        let request = validate_bars_request("NASDAQ:AAPL", "1d", 1).unwrap();
+        let payload = bars_payload(
+            &request,
+            BarsResult {
                 bars: vec![Bar {
                     time: 1,
                     open: 10.0,
@@ -665,14 +750,11 @@ mod tests {
             42,
         );
 
-        assert_eq!(payload["contract_version"], BARS_CONTRACT_VERSION);
-        assert_eq!(payload["source"], BARS_SOURCE);
-        assert_eq!(payload["source_category"], "desktop_free_read");
-        assert_eq!(payload["requires_desktop"], false);
-        assert_eq!(payload["non_mutating"], true);
-        assert_eq!(payload["data_quality"]["realtime_guarantee"], false);
-        assert_eq!(payload["data_quality"]["entitlement_checked"], false);
-        assert!(payload.get("experimental").is_none());
+        assert_eq!(payload["summary"]["requested_count"], 1);
+        assert_eq!(payload["summary"]["bar_count"], 1);
+        assert_eq!(payload["summary"]["requested_count_fulfilled"], true);
+        assert_eq!(payload["summary"]["coverage_status"], "complete");
+        assert_eq!(payload["data_quality"]["partial_result"], false);
     }
 
     #[test]

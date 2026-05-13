@@ -7,6 +7,12 @@ package version omits the leading `v`.
 
 ## Unreleased
 
+### Added
+
+- Added additive `tv bars` summary and range readback so downstream tools can
+  inspect requested-vs-returned count, time coverage, ordering, and partial
+  historical bars coverage before parsing raw `bars[]`.
+
 ### Documentation
 
 - Added the `v0.17.0` roadmap direction and first bars summary readback plan,

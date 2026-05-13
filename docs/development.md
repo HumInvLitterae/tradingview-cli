@@ -374,9 +374,9 @@ Optional environment variables:
 - `TV_LIVE_BARS_RUNS`: positive repeat count, defaulting to `1`.
 
 The ignored test validates only public contract fields: `bars.v1` source
-metadata, requested symbol, timeframe, bounded count, non-empty bars, and
-`data_quality`. Do not paste raw WebSocket output or live response payloads
-into tracked docs.
+metadata, requested symbol, timeframe, bounded count, non-empty bars,
+`summary`, `range`, and `data_quality`. Do not paste raw WebSocket output or
+live response payloads into tracked docs.
 
 ## Validation baseline
 
