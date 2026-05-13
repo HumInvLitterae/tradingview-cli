@@ -8,12 +8,16 @@ for release and next-phase planning.
 
 Current plan:
 
-- `tradingview-cli-bars-crate-boundary-refactor.md`: move browserless
-  historical bars implementation from CLI `ops` into the Desktop-free market
-  crate while preserving the `bars.v1` command contract.
+- `tradingview-cli-bars-market-internal-split.md`: split the market crate
+  browserless bars implementation into facade, validation, protocol,
+  transport, payload, and type modules while preserving the `bars.v1`
+  command contract.
 
 Recently completed:
 
+- `tradingview-cli-bars-crate-boundary-refactor.md`: moved browserless
+  historical bars implementation from CLI `ops` into the Desktop-free market
+  crate while preserving the `bars.v1` command contract.
 - `tradingview-cli-v0.17-pre-release-audit.md`: audited completed `v0.17.0`
   bars summary/range and availability readback before release readiness, then
   identified the bars crate-boundary refactor as the last pre-release cleanup.

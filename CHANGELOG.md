@@ -27,6 +27,9 @@ package version omits the leading `v`.
 - Moved browserless `tv bars` implementation into the Desktop-free market
   crate so CLI `ops` remains a thin command adapter while preserving the
   `bars.v1` contract.
+- Split the market crate `tv bars` implementation into facade, validation,
+  protocol, transport, payload, and shared type modules without changing the
+  `bars.v1` command contract.
 
 ## v0.16.0 - 2026-05-13
 
