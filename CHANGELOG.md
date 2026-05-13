@@ -12,6 +12,9 @@ package version omits the leading `v`.
 - Added the `v0.16.0` roadmap direction and first quote-data regular-session
   semantics plan, keeping the current `qsd.rtc` success condition separate
   from scanner, chart, and automatic fallback behavior.
+- Recorded the `v0.16.0` pre-release audit, confirming quote-data
+  regular-session readback and stable browserless bars are ready for release
+  readiness.
 
 ### Changed
 
