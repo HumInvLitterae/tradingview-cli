@@ -8,12 +8,15 @@ for release and next-phase planning.
 
 Current plan:
 
-- `tradingview-cli-cli-contract-test-split.md`: split the large CLI contract
-  integration test into command-family targets with shared test helpers while
-  preserving all existing assertions and behavior.
+- `tradingview-cli-v0.17-pre-release-audit-update.md`: refresh the final
+  `v0.17.0` pre-release audit after the bars crate-boundary cleanup, bars
+  market internal split, and CLI contract test split.
 
 Recently completed:
 
+- `tradingview-cli-cli-contract-test-split.md`: split the large CLI contract
+  integration test into command-family targets with shared test helpers while
+  preserving all existing assertions and behavior.
 - `tradingview-cli-bars-market-internal-split.md`: split the market crate
   browserless bars implementation into facade, validation, protocol,
   transport, payload, and type modules while preserving the `bars.v1`
