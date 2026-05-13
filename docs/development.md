@@ -108,6 +108,10 @@ This project uses Rust 2024.
   structs for reusable Rust APIs; keep JSON wrappers only for CLI payload
   compatibility. Document reusable typed APIs in rustdoc and
   `docs/rust-api.md`.
+  Browserless historical `tv bars` is part of this boundary: the WebSocket
+  read, request validation, payload shaping, and source-availability details
+  live in `tradingview-market`, while CLI `ops` remains a thin command
+  adapter.
 - Put credential-free, Desktop-free scanner reads in `crates/scanner/` when
   they can be exercised without TradingView Desktop. Prefer typed result
   structs for reusable Rust APIs; keep JSON wrappers only for CLI payload

@@ -10,7 +10,8 @@ for reuse by other Rust applications in the same workspace or local tooling.
 - `tradingview-model` contains I/O-free request interpretation, validation,
   selector resolution, payload shaping, and fallback policy.
 - `tradingview-market` contains credential-free, Desktop-free market reads for
-  symbol search, symbol metadata, single-symbol quotes, and batch quotes.
+  symbol search, symbol metadata, single-symbol quotes, batch quotes, and
+  browserless historical bars.
 - `tradingview-scanner` contains credential-free, Desktop-free scanner hotlist,
   scan, and field metadata reads.
 - `tradingview-pine` contains Desktop-free Pine source analysis and check
@@ -33,9 +34,10 @@ Prefer the typed functions from `tradingview-market` for Rust callers:
 - `quote_symbols_typed(symbols)`
 
 The JSON-returning functions `symbol_search`, `symbol_info`,
-`fundamentals_symbol`, `quote_symbol`, and `quote_symbols` remain public for
-CLI payload compatibility. New Rust code should not parse those JSON payloads
-unless it is specifically preserving the `tv` command contract.
+`fundamentals_symbol`, `quote_symbol`, `quote_symbols`, and `bars_symbol`
+remain public for CLI payload compatibility. New Rust code should not parse
+those JSON payloads unless it is specifically preserving the `tv` command
+contract.
 
 Example shape:
 
@@ -48,6 +50,9 @@ Use `Quote::time`, `Quote::update_mode`, and `Quote::delay_seconds` when the
 caller needs to show feed timing or delayed-streaming metadata.
 Desktop-free market typed results expose `source_category:
 "desktop_free_read"`, `requires_desktop: false`, and `non_mutating: true`.
+`bars_symbol` currently exposes the CLI-compatible `bars.v1` JSON contract for
+bounded historical OHLCV reads; typed bars structs are intentionally not a
+stable Rust API yet.
 
 ## Scanner reads
 

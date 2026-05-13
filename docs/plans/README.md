@@ -8,11 +8,15 @@ for release and next-phase planning.
 
 Current plan:
 
-- `tradingview-cli-v0.17-pre-release-audit.md`: audit completed `v0.17.0`
-  bars summary/range and availability readback before release readiness.
+- `tradingview-cli-bars-crate-boundary-refactor.md`: move browserless
+  historical bars implementation from CLI `ops` into the Desktop-free market
+  crate while preserving the `bars.v1` command contract.
 
 Recently completed:
 
+- `tradingview-cli-v0.17-pre-release-audit.md`: audited completed `v0.17.0`
+  bars summary/range and availability readback before release readiness, then
+  identified the bars crate-boundary refactor as the last pre-release cleanup.
 - `tradingview-cli-bars-availability-readback.md`: added
   `source_availability` and public-safe wait summaries to browserless
   historical bars success and failure payloads.

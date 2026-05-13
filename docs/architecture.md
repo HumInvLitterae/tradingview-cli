@@ -74,10 +74,11 @@ installed binary remains `tv`.
   depends on `tradingview-core` but does not depend on clap, CDP, HTTP clients,
   page-session execution, or UI automation.
 - `crates/market/src/lib.rs` owns Desktop-free market reads for symbol search,
-  symbol metadata, and symbol quote lookup. It exposes typed read results as
-  the reusable Rust API and keeps JSON-returning wrappers for the CLI payload
-  contract. It uses credential-free TradingView HTTP endpoints and does not
-  depend on CDP, chart state, or UI automation.
+  symbol metadata, symbol quote lookup, and browserless historical bars. It
+  exposes typed read results where those are intentionally reusable and keeps
+  JSON-returning wrappers for CLI payload contracts such as `bars.v1`. It uses
+  credential-free TradingView endpoints and does not depend on CDP, chart
+  state, or UI automation.
 - `crates/scanner/src/lib.rs` owns Desktop-free scanner reads for hotlists and
   basic scanner scans. It exposes typed read results as the reusable Rust API
   and keeps JSON-returning wrappers for the CLI payload contract. It uses
