@@ -7,6 +7,12 @@ package version omits the leading `v`.
 
 ## Unreleased
 
+### Documentation
+
+- Added the `v0.17.0` roadmap direction and first bars summary readback plan,
+  focusing on historical bars evidence maturity without adding realtime feeds,
+  source mixing, or trading recommendations.
+
 ## v0.16.0 - 2026-05-13
 
 ### Added
