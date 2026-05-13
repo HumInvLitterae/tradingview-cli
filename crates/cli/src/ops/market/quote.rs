@@ -1,8 +1,11 @@
+use std::time::{Duration, Instant};
+
+#[cfg(not(test))]
 use std::{
     fs::{self, OpenOptions},
     io::Write,
     path::PathBuf,
-    time::{Duration, Instant, SystemTime},
+    time::SystemTime,
 };
 
 use serde_json::{Value, json};
@@ -164,10 +167,15 @@ pub async fn quote(
     Ok(quote)
 }
 
+#[cfg(not(test))]
 struct QuoteSymbolLock {
     path: PathBuf,
 }
 
+#[cfg(test)]
+struct QuoteSymbolLock;
+
+#[cfg(not(test))]
 impl QuoteSymbolLock {
     async fn acquire() -> Result<Self, AppError> {
         let path = std::env::temp_dir().join("tradingview-cli-quote-symbol.lock");
@@ -203,12 +211,21 @@ impl QuoteSymbolLock {
     }
 }
 
+#[cfg(test)]
+impl QuoteSymbolLock {
+    async fn acquire() -> Result<Self, AppError> {
+        Ok(Self)
+    }
+}
+
+#[cfg(not(test))]
 impl Drop for QuoteSymbolLock {
     fn drop(&mut self) {
         let _ = fs::remove_file(&self.path);
     }
 }
 
+#[cfg(not(test))]
 fn remove_stale_quote_lock(path: &PathBuf) {
     let Ok(metadata) = fs::metadata(path) else {
         return;
