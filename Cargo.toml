@@ -18,7 +18,7 @@ license = "MIT"
 publish = false
 
 [workspace.dependencies]
-assert_cmd = "2.2.1"
+assert_cmd = "2.2.2"
 base64 = "0.22.1"
 clap = "4.6.1"
 futures-util = "0.3.32"
