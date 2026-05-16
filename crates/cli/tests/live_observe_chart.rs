@@ -134,7 +134,16 @@ fn assert_readiness_event(event: &Value, stdout_count: usize, stderr_count: usiz
     let success = event.get("success").and_then(Value::as_bool);
     let command = event.get("command").and_then(Value::as_str);
     let event_type = event.pointer("/data/_event").and_then(Value::as_str);
-    if success != Some(true) || command != Some("observe") || event_type != Some("readiness") {
+    let contract = event
+        .pointer("/data/contract_version")
+        .and_then(Value::as_str);
+    let observe = event.pointer("/data/_observe").and_then(Value::as_str);
+    if success != Some(true)
+        || command != Some("observe")
+        || event_type != Some("readiness")
+        || contract != Some("observe_chart.v1")
+        || observe != Some("chart")
+    {
         panic!(
             "observe chart live smoke first event was not readiness: stdout_events={} stderr_events={} summary={}",
             stdout_count,
@@ -147,6 +156,8 @@ fn assert_readiness_event(event: &Value, stdout_count: usize, stderr_count: usiz
 fn assert_sample_event(event: &Value, sample_count: u64, heartbeat_count: u64) {
     let data = event.get("data").unwrap_or(&Value::Null);
     if data.get("_stream").and_then(Value::as_str) != Some("bars")
+        || data.get("_observe").and_then(Value::as_str) != Some("chart")
+        || data.get("contract_version").and_then(Value::as_str) != Some("observe_chart.v1")
         || data.get("source").and_then(Value::as_str) != Some("desktop_chart_stream")
         || data.get("source_category").and_then(Value::as_str) != Some("desktop_backed_read")
         || data.get("requires_desktop").and_then(Value::as_bool) != Some(true)
@@ -165,6 +176,8 @@ fn assert_heartbeat_event(event: &Value, sample_count: u64, heartbeat_count: u64
     let data = event.get("data").unwrap_or(&Value::Null);
     let reported_samples = data.get("sample_count").and_then(Value::as_u64);
     if data.get("_stream").and_then(Value::as_str) != Some("bars")
+        || data.get("_observe").and_then(Value::as_str) != Some("chart")
+        || data.get("contract_version").and_then(Value::as_str) != Some("observe_chart.v1")
         || data.get("source").and_then(Value::as_str) != Some("desktop_chart_stream")
         || data.get("source_category").and_then(Value::as_str) != Some("desktop_backed_read")
         || data.get("requires_desktop").and_then(Value::as_bool) != Some(true)

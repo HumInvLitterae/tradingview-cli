@@ -46,6 +46,7 @@ pub async fn run_observe_command(
                     if dedupe.should_emit(&sample) {
                         sample_count += 1;
                         last_sample_ts = sample["_ts"].as_u64();
+                        let sample = ops::observe_chart_event(sample)?;
                         let envelope = SuccessEnvelope::new("observe", sample);
                         print_jsonl_stdout(&envelope);
                         last_output_at = Instant::now();
@@ -77,6 +78,7 @@ pub async fn run_observe_command(
                 sample_count,
                 last_sample_ts,
             )?;
+            let payload = ops::observe_chart_event(payload)?;
             let envelope = SuccessEnvelope::new("observe", payload);
             print_jsonl_stdout(&envelope);
             last_output_at = Instant::now();

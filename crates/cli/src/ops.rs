@@ -56,7 +56,7 @@ pub use market::{
     bars, compare_symbols, fundamentals_symbol, ohlcv_bars, ohlcv_summary, quote, quote_data,
     quote_symbol, quote_symbols, snapshot_symbol, symbol_info_direct, symbol_search,
 };
-pub use observe::observe_readiness_event;
+pub use observe::{observe_chart_event, observe_readiness_event};
 pub use pine::{
     pine_alertconditions, pine_analyze, pine_check, pine_compile, pine_console, pine_errors,
     pine_get, pine_list, pine_new, pine_open, pine_raw_compile, pine_save, pine_set,
