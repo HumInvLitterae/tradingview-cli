@@ -98,6 +98,14 @@ identify chart samples with `source: "desktop_chart_stream"` and
 `source_category: "desktop_backed_read"` so agents can distinguish them from
 Desktop-free scanner reads or browserless historical bars.
 
+For `v0.18`, treat JSONL observation maturity as contract polish on these
+existing selected-chart reads. The expected direction is additive
+command-local contract metadata on readiness, sample, and heartbeat events,
+without changing `_event`, `_stream`, source metadata, bounded controls, or
+event meaning. Do not reinterpret this as realtime multi-symbol feed support,
+watch / JSONL compare, browserless bars, scanner quote evidence, or
+quote-data readback.
+
 Do not treat `tv quote <SYMBOL> --source chart` as a multi-symbol realtime
 batch source. It is a correctness-first single-symbol read that may switch and
 restore the visible chart to prove the selected-chart feed for one requested

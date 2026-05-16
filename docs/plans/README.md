@@ -8,12 +8,15 @@ for release and next-phase planning.
 
 Current plan:
 
-- `tradingview-cli-v0.17.0-release-readiness.md`: prepare the `v0.17.0`
-  release state, including version, changelog, release notes, README asset
-  examples, and package validation.
+- `tradingview-cli-jsonl-observation-contract.md`: mature the existing
+  Desktop-backed `tv observe chart` and `tv stream ...` JSONL event contracts
+  for `v0.18.0` without adding realtime batching or source mixing.
 
 Recently completed:
 
+- `tradingview-cli-v0.17.0-release-readiness.md`: prepared the `v0.17.0`
+  release state, including version, changelog, release notes, README asset
+  examples, and package validation.
 - `tradingview-cli-v0.17-pre-release-audit-update.md`: refreshed the final
   `v0.17.0` pre-release audit after the bars crate-boundary cleanup, bars
   market internal split, and CLI contract test split.

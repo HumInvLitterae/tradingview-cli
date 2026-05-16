@@ -333,6 +333,12 @@ readiness, later events use `command: "observe"`, sample events are bar stream
 samples, heartbeat events preserve sample counts, and source metadata marks the
 events as Desktop-backed non-mutating reads.
 
+The `v0.18` JSONL observation contract work should keep these events additive
+and public-safe: readiness, sample, heartbeat, source metadata, and bounded
+controls stay intact. Do not paste raw JSONL live output, target ids, raw
+WebSocket frames, account-local metadata, or local validation paths into
+tracked docs.
+
 For `tv snapshot <SYMBOL>` live contract checks, run:
 
 ```bash
