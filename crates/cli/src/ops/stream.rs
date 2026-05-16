@@ -46,6 +46,23 @@ impl StreamKind {
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum StreamEndReason {
+    Completed,
+    DurationElapsed,
+    MaxEventsReached,
+}
+
+impl StreamEndReason {
+    pub fn label(self) -> &'static str {
+        match self {
+            Self::Completed => "completed",
+            Self::DurationElapsed => "duration_elapsed",
+            Self::MaxEventsReached => "max_events_reached",
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct StreamRequest {
     pub kind: StreamKind,
@@ -205,6 +222,37 @@ pub fn stream_heartbeat(
         "elapsed_ms": elapsed_ms,
         "sample_count": sample_count,
         "last_sample_ts": last_sample_ts,
+    }))
+}
+
+pub fn stream_summary(
+    request: &StreamRequest,
+    elapsed_ms: u64,
+    sample_count: u64,
+    heartbeat_count: u64,
+    last_sample_ts: Option<u64>,
+    end_reason: StreamEndReason,
+) -> Result<Value, AppError> {
+    let ts = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map_err(|err| AppError::new(ErrorKind::Internal, err.to_string()))?
+        .as_millis() as u64;
+    Ok(json!({
+        "_stream": request.kind.label(),
+        "_event": "summary",
+        "_ts": ts,
+        "contract_version": STREAM_CONTRACT_VERSION,
+        "source": STREAM_SOURCE,
+        "source_category": STREAM_SOURCE_CATEGORY,
+        "requires_desktop": true,
+        "non_mutating": true,
+        "elapsed_ms": elapsed_ms,
+        "sample_count": sample_count,
+        "heartbeat_count": heartbeat_count,
+        "last_sample_ts": last_sample_ts,
+        "duration_ms": request.duration_ms,
+        "max_events": request.max_events,
+        "end_reason": end_reason.label(),
     }))
 }
 
@@ -550,6 +598,63 @@ mod tests {
         assert_eq!(heartbeat["sample_count"], 3);
         assert_eq!(heartbeat["last_sample_ts"], 123);
         assert!(heartbeat["_ts"].as_u64().unwrap() > 0);
+    }
+
+    #[test]
+    fn stream_summary_returns_final_observation_metadata() {
+        let request = StreamRequest::with_controls(
+            StreamKind::Bars,
+            Some(500),
+            None,
+            Some(10_000),
+            Some(5),
+            Some(1000),
+        )
+        .unwrap();
+
+        let summary = stream_summary(
+            &request,
+            10_001,
+            5,
+            2,
+            Some(456),
+            StreamEndReason::MaxEventsReached,
+        )
+        .unwrap();
+
+        assert_eq!(summary["_stream"], "bars");
+        assert_eq!(summary["_event"], "summary");
+        assert_eq!(summary["contract_version"], "stream.v1");
+        assert_eq!(summary["source"], "desktop_chart_stream");
+        assert_eq!(summary["source_category"], "desktop_backed_read");
+        assert_eq!(summary["requires_desktop"], true);
+        assert_eq!(summary["non_mutating"], true);
+        assert_eq!(summary["elapsed_ms"], 10_001);
+        assert_eq!(summary["sample_count"], 5);
+        assert_eq!(summary["heartbeat_count"], 2);
+        assert_eq!(summary["last_sample_ts"], 456);
+        assert_eq!(summary["duration_ms"], 10_000);
+        assert_eq!(summary["max_events"], 5);
+        assert_eq!(summary["end_reason"], "max_events_reached");
+        assert!(summary["_ts"].as_u64().unwrap() > 0);
+    }
+
+    #[test]
+    fn stream_summary_reports_duration_elapsed_and_no_samples() {
+        let request =
+            StreamRequest::with_controls(StreamKind::Quote, None, None, Some(1000), None, None)
+                .unwrap();
+
+        let summary =
+            stream_summary(&request, 1000, 0, 0, None, StreamEndReason::DurationElapsed).unwrap();
+
+        assert_eq!(summary["_event"], "summary");
+        assert_eq!(summary["sample_count"], 0);
+        assert_eq!(summary["heartbeat_count"], 0);
+        assert!(summary["last_sample_ts"].is_null());
+        assert_eq!(summary["duration_ms"], 1000);
+        assert!(summary["max_events"].is_null());
+        assert_eq!(summary["end_reason"], "duration_elapsed");
     }
 
     #[tokio::test]

@@ -12,6 +12,10 @@ package version omits the leading `v`.
 - Added additive JSONL contract metadata to `tv observe chart` and
   `tv stream ...` events so downstream tools can distinguish readiness,
   sample, and heartbeat events without changing existing event semantics.
+- Added final summary JSONL events to bounded `tv observe chart` and
+  `tv stream ...` runs so downstream tools can read sample counts, heartbeat
+  counts, elapsed time, bounded controls, and end reason without aggregating
+  the whole stream themselves.
 
 ### Documentation
 
@@ -20,6 +24,9 @@ package version omits the leading `v`.
   metadata without adding realtime batching, watch loops, or source mixing.
 - Recorded the `v0.18.0` pre-release audit for JSONL observation contract
   metadata and source-boundary readiness.
+- Added a follow-up JSONL observation summary-event plan before release
+  readiness, keeping the scope on existing selected-chart observation
+  contracts rather than new realtime feeds or watch loops.
 
 ## v0.17.0 - 2026-05-14
 

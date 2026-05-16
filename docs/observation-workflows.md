@@ -27,7 +27,7 @@ tv scanner metainfo --market america --field close
 | Several symbols, quote fields only | `tv quotes <SYMBOL>...` | You need ordered scanner-backed quote rows and do not need info or fundamentals sections. Inspect `time`, `update_mode`, and `delay_seconds` when freshness matters. |
 | Several known symbols, first-pass evidence | `tv compare <SYMBOL>...` | You need quote, info, and default fundamentals side by side. Read `summary` for scanability and `items[]` for evidence. |
 | One symbol, Desktop-free detail | `tv snapshot <SYMBOL>` | You need quote, info, and fundamentals for one symbol before chart follow-up. |
-| Selected chart over a short window | `tv observe chart --duration-ms ...` | You need readiness plus selected-chart last-bar samples and heartbeats. |
+| Selected chart over a short window | `tv observe chart --duration-ms ...` | You need readiness plus selected-chart last-bar samples, heartbeats, and final bounded-window summary. |
 | Finalist chart-feed quote | `tv quote <SYMBOL> --source chart` | The selected TradingView Desktop chart feed for one symbol is the source that matters. |
 | Visible-state evidence gap | `tv screenshot --region chart|full --output <PATH>` | Structured reads do not explain the visible chart or Screener state. |
 
@@ -84,7 +84,7 @@ recommendations and they are not executed automatically.
 | --- | --- | --- |
 | `snapshot` | One-symbol Desktop-free detail or retry surface for quote, info, and fundamentals sections. | No |
 | `chart_quote` | Selected-chart single-symbol chart-feed quote follow-up. This is not scanner-style premarket or postmarket evidence. | Yes |
-| `observe_chart` | Selected-chart time-window observation with readiness, samples, and heartbeats. | Yes |
+| `observe_chart` | Selected-chart time-window observation with readiness, samples, heartbeats, and final summary. | Yes |
 | `screenshot` | Visual evidence when structured reads do not explain the visible state. | Yes |
 
 Use these same meanings in `compare.items[].follow_up_hints[]`,
@@ -116,13 +116,14 @@ tv observe chart --duration-ms 10000 --heartbeat-ms 2000
 ```
 
 `tv observe chart` emits newline-delimited JSON. The first event is readiness;
-later events are selected-chart bar samples or heartbeats. Use this when the
-workflow needs readiness plus last-bar observation in one bounded command.
-Read `contract_version`, `_event`, `_observe`, source metadata, and sample
-counts before interpreting the events. `tv observe chart` uses
-`contract_version: "observe_chart.v1"` for readiness, sample, and heartbeat
-events. This is additive metadata for existing selected-chart events, not new
-realtime batching or source mixing.
+later events are selected-chart bar samples or heartbeats, and bounded normal
+exits emit a final summary event. Use this when the workflow needs readiness
+plus last-bar observation in one bounded command. Read `contract_version`,
+`_event`, `_observe`, source metadata, sample counts, heartbeat counts, and
+summary `end_reason` before interpreting the events. `tv observe chart` uses
+`contract_version: "observe_chart.v1"` for readiness, sample, heartbeat, and
+summary events. This is additive metadata for existing selected-chart events,
+not new realtime batching or source mixing.
 
 Use lower-level stream commands only when you already know which chart sample
 type you need:
@@ -133,9 +134,11 @@ tv stream bars --max-events 5
 ```
 
 Lower-level stream events are also selected-chart Desktop-backed observations.
-They use `contract_version: "stream.v1"` on sample and heartbeat events. They
-are not browserless historical bars, scanner quote evidence, quote-data
-readback, or a multi-symbol realtime feed.
+They use `contract_version: "stream.v1"` on sample, heartbeat, and summary
+events. The final summary line reports the bounded observation window's
+counts, elapsed time, controls, and end reason; it is not itself a chart
+sample. These commands are not browserless historical bars, scanner quote
+evidence, quote-data readback, or a multi-symbol realtime feed.
 
 Do not add manual sleeps or double-call loops around chart-source quote reads.
 The CLI performs its own readiness checks and returns structured errors when

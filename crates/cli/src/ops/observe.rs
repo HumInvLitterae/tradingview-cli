@@ -91,6 +91,36 @@ mod tests {
     }
 
     #[test]
+    fn observe_chart_event_marks_summary_payload_without_losing_stream_metadata() {
+        let event = observe_chart_event(json!({
+            "contract_version": "stream.v1",
+            "_event": "summary",
+            "_stream": "bars",
+            "source": "desktop_chart_stream",
+            "source_category": "desktop_backed_read",
+            "requires_desktop": true,
+            "non_mutating": true,
+            "sample_count": 2,
+            "heartbeat_count": 1,
+            "elapsed_ms": 3000,
+            "end_reason": "duration_elapsed"
+        }))
+        .unwrap();
+
+        assert_eq!(event["contract_version"], "observe_chart.v1");
+        assert_eq!(event["_event"], "summary");
+        assert_eq!(event["_observe"], "chart");
+        assert_eq!(event["_stream"], "bars");
+        assert_eq!(event["source"], "desktop_chart_stream");
+        assert_eq!(event["source_category"], "desktop_backed_read");
+        assert_eq!(event["requires_desktop"], true);
+        assert_eq!(event["non_mutating"], true);
+        assert_eq!(event["sample_count"], 2);
+        assert_eq!(event["heartbeat_count"], 1);
+        assert_eq!(event["end_reason"], "duration_elapsed");
+    }
+
+    #[test]
     fn observe_chart_event_rejects_non_object_payload() {
         let error = observe_chart_event(json!("not an object")).unwrap_err();
 

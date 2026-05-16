@@ -7,6 +7,11 @@ current as work proceeds.
 This document follows `.agents/PLANS.md` from the repository root. It records
 the completion / refactor audit before `v0.18.0` release readiness.
 
+Note: this audit is retained as historical evidence. After the audit, the
+project chose one more bounded JSONL contract polish slice,
+`docs/plans/tradingview-cli-jsonl-observation-summary-event.md`, before
+release readiness.
+
 ## Purpose / Big Picture
 
 `v0.18.0` matures existing Desktop-backed JSONL observation contracts. The

@@ -129,11 +129,13 @@ observation surface.
    and `tv ohlcv --summary`. JSONL sample events should carry
    `contract_version`, `source_category: "desktop_backed_read"`, and
    `non_mutating: true`; use those fields, plus readiness / sample /
-   heartbeat event kind and sample counts, to keep them separate from
-   Desktop-free scanner reads, browserless `tv bars`, and quote-data readback.
+   heartbeat / summary event kind, sample counts, heartbeat counts, and final
+   `end_reason`, to keep them separate from Desktop-free scanner reads,
+   browserless `tv bars`, and quote-data readback.
    `observe_chart.v1` marks observe workflow events, while `stream.v1` marks
    lower-level stream events. Treat them as additive metadata on existing
-   observation events, not as a new realtime multi-symbol feed.
+   observation events; summary events describe the bounded observation window
+   and are not a new realtime multi-symbol feed.
 10. Capture visual evidence only when useful: `tv screenshot --region chart --output <PATH>`.
     Treat screenshot payloads as Desktop-backed visual evidence reads; they are
     `non_mutating: true` but `writes_file: true`.

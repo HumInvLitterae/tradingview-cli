@@ -330,15 +330,17 @@ Optional environment variables:
 
 The ignored test validates public-safe JSONL summaries only: the first event is
 readiness, later events use `command: "observe"`, sample events are bar stream
-samples, heartbeat events preserve sample counts, and source metadata marks the
-events as Desktop-backed non-mutating reads.
+samples, heartbeat events preserve sample counts, the final summary event
+reports counts and end reason, and source metadata marks the events as
+Desktop-backed non-mutating reads.
 
 The `v0.18` JSONL observation contract keeps these events additive and
-public-safe: `observe_chart.v1` marks observe readiness / sample / heartbeat
-events, `stream.v1` marks lower-level stream sample / heartbeat events, and
-source metadata plus bounded controls stay intact. Do not paste raw JSONL live
-output, target ids, raw WebSocket frames, account-local metadata, or local
-validation paths into tracked docs.
+public-safe: `observe_chart.v1` marks observe readiness / sample / heartbeat /
+summary events, `stream.v1` marks lower-level stream sample / heartbeat /
+summary events, and source metadata plus bounded controls stay intact. Summary
+events are observation-window readbacks, not market-data samples. Do not paste
+raw JSONL live output, target ids, raw WebSocket frames, account-local
+metadata, or local validation paths into tracked docs.
 
 For `tv snapshot <SYMBOL>` live contract checks, run:
 

@@ -783,6 +783,7 @@ fn stream_help_lists_read_subcommands() {
     tv().args(["stream", "--help"])
         .assert()
         .success()
+        .stdout(predicate::str::contains("summary event"))
         .stdout(predicate::str::contains("quote"))
         .stdout(predicate::str::contains("bars"))
         .stdout(predicate::str::contains("values"))
@@ -813,13 +814,15 @@ fn observe_help_lists_chart_workflow_and_controls() {
     tv().args(["observe", "--help"])
         .assert()
         .success()
-        .stdout(predicate::str::contains("chart"));
+        .stdout(predicate::str::contains("chart"))
+        .stdout(predicate::str::contains("summary event"));
 
     tv().args(["observe", "chart", "--help"])
         .assert()
         .success()
         .stdout(predicate::str::contains("readiness"))
         .stdout(predicate::str::contains("last-bar"))
+        .stdout(predicate::str::contains("summary event"))
         .stdout(predicate::str::contains("--interval"))
         .stdout(predicate::str::contains("--duration-ms"))
         .stdout(predicate::str::contains("--max-events"))
