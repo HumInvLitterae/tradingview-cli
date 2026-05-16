@@ -82,6 +82,11 @@ Do not use `TV_CDP_TARGET_ID`; explicit target handoff is `--target-id`.
   realtime or entitlement status. Read `summary` / `range` for count and time
   coverage before inspecting raw `bars[]`, and read `source_availability` /
   `wait_summary` when bars are partial or unavailable.
+- Selected-chart JSONL observations use `tv observe chart` and lower-level
+  `tv stream ...`. Read readiness, sample, heartbeat, and final summary events
+  by `contract_version` (`observe_chart.v1` or `stream.v1`), `_event`, and
+  source metadata. Summary events describe the bounded observation window; they
+  are not market-data samples.
 
 ## Safety Rules
 

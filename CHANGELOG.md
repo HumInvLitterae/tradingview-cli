@@ -7,6 +7,8 @@ package version omits the leading `v`.
 
 ## Unreleased
 
+## v0.18.0 - 2026-05-17
+
 ### Added
 
 - Added additive JSONL contract metadata to `tv observe chart` and
