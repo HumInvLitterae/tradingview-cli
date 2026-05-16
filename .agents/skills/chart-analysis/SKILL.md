@@ -128,7 +128,11 @@ observation surface.
    specific sample type is needed. Ordinary chart reads should use `tv quote`
    and `tv ohlcv --summary`. JSONL sample events should carry
    `source_category: "desktop_backed_read"` and `non_mutating: true`; use
-   those fields to keep them separate from Desktop-free scanner reads.
+   those fields, plus readiness / sample / heartbeat event kind and sample
+   counts, to keep them separate from Desktop-free scanner reads,
+   browserless `tv bars`, and quote-data readback. Treat v0.18 JSONL
+   contract work as additive metadata on existing observation events, not as
+   a new realtime multi-symbol feed.
 10. Capture visual evidence only when useful: `tv screenshot --region chart --output <PATH>`.
     Treat screenshot payloads as Desktop-backed visual evidence reads; they are
     `non_mutating: true` but `writes_file: true`.

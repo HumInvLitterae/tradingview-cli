@@ -7,6 +7,12 @@ package version omits the leading `v`.
 
 ## Unreleased
 
+### Documentation
+
+- Added the `v0.18.0` roadmap direction and first JSONL observation contract
+  plan, focusing on existing `tv observe chart` and `tv stream ...` event
+  metadata without adding realtime batching, watch loops, or source mixing.
+
 ## v0.17.0 - 2026-05-14
 
 ### Added
