@@ -207,14 +207,17 @@ pub enum Command {
         #[command(subcommand)]
         command: ReplayCommand,
     },
-    #[command(about = "Monitor TradingView chart data as JSONL")]
+    #[command(
+        about = "Monitor TradingView chart data as JSONL",
+        long_about = "Monitor TradingView chart data as newline-delimited JSON envelopes.\n\n`tv stream ...` is a Desktop-backed, selected-chart observation surface. Sample and heartbeat events use `contract_version: \"stream.v1\"`; bounded runs emit a final summary event with sample and heartbeat counts, elapsed time, bounded controls, and end reason. It is not a browserless bars read, watch loop, or multi-symbol realtime feed."
+    )]
     Stream {
         #[command(subcommand)]
         command: StreamCommand,
     },
     #[command(
         about = "Observe TradingView workflows as JSONL",
-        long_about = "Observe TradingView workflows as newline-delimited JSON envelopes.\n\n`tv observe chart` is a Desktop-backed, non-mutating workflow read. It emits an initial readiness event and then bounded selected-chart sample or heartbeat events. It does not switch symbols, activate tabs, capture screenshots, or change account/page state."
+        long_about = "Observe TradingView workflows as newline-delimited JSON envelopes.\n\n`tv observe chart` is a Desktop-backed, non-mutating workflow read. It emits an initial readiness event, bounded selected-chart sample or heartbeat events, and a final summary event with counts and end reason. It does not switch symbols, activate tabs, capture screenshots, or change account/page state."
     )]
     Observe {
         #[command(subcommand)]
@@ -869,7 +872,7 @@ pub enum StreamCommand {
 pub enum ObserveCommand {
     #[command(
         about = "Observe current chart readiness and last-bar updates",
-        long_about = "Observe the selected TradingView Desktop chart as newline-delimited JSON.\n\nThe first event is readiness metadata. Later events are last-bar samples and optional heartbeats. This command is Desktop-backed and non-mutating; it does not switch symbols, activate tabs, or capture screenshots."
+        long_about = "Observe the selected TradingView Desktop chart as newline-delimited JSON.\n\nThe first event is readiness metadata. Later events are last-bar samples and optional heartbeats. Bounded runs end with a summary event that reports sample count, heartbeat count, elapsed time, controls, and end reason. This command is Desktop-backed and non-mutating; it does not switch symbols, activate tabs, or capture screenshots."
     )]
     Chart {
         #[command(flatten)]

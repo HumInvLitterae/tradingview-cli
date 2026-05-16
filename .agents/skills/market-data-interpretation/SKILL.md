@@ -29,7 +29,8 @@ Always name the data source before interpreting values:
 - `tv bars <EXCHANGE:SYMBOL>`: Desktop-free bounded historical bars from the
   browserless TradingView WebSocket bars source.
 - `tv observe chart`: Desktop-backed JSONL workflow that emits readiness first,
-  then selected-chart last-bar samples and heartbeats.
+  then selected-chart last-bar samples and heartbeats, and finally a summary
+  event for bounded normal exits.
 - `tv stream ...`: Desktop-backed current-chart JSONL observation, not
   browserless WebSocket streaming. Use it when you need a specific stream
   sample type rather than the readiness-plus-chart workflow.
@@ -212,11 +213,13 @@ data; preserve `source`, `source_category`, `writes_file`, and
 
 For `tv observe chart`, interpret the first JSONL line as readiness
 (`data._event: "readiness"`), then read later `sample` and `heartbeat` events
-as selected-chart bar observations. Use bounded windows such as
-`--duration-ms`, `--max-events`, and optional `--heartbeat-ms` for agent
-workflows. `contract_version: "observe_chart.v1"` and `_observe: "chart"`
-mark these as observe workflow events; this additive readback does not change
-the selected-chart observation meaning.
+as selected-chart bar observations, then read the final `summary` event for
+sample count, heartbeat count, elapsed time, bounded controls, and
+`end_reason`. Use bounded windows such as `--duration-ms`, `--max-events`, and
+optional `--heartbeat-ms` for agent workflows. `contract_version:
+"observe_chart.v1"` and `_observe: "chart"` mark these as observe workflow
+events; this additive readback does not change the selected-chart observation
+meaning.
 
 For `tv stream ...`, interpret each JSONL line by `data._event`. A `sample`
 event means the chart/page sample changed after metadata-insensitive dedupe. A
@@ -225,10 +228,12 @@ emitted in that heartbeat window. Do not count heartbeat events as market
 updates. Stream and observe sample events should identify
 `source: "desktop_chart_stream"`,
 `source_category: "desktop_backed_read"`, `requires_desktop: true`, and
-`non_mutating: true`. Lower-level stream sample and heartbeat events carry
-`contract_version: "stream.v1"`; treat them as current Desktop chart
-observations, not Desktop-free scanner reads, browserless historical bars,
-quote-data readback, or a realtime multi-symbol feed.
+`non_mutating: true`. Lower-level stream sample, heartbeat, and summary events
+carry `contract_version: "stream.v1"`. A final `summary` event is an
+observation-window readback with counts and end reason, not a market-data
+sample. Treat stream events as current Desktop chart observations, not
+Desktop-free scanner reads, browserless historical bars, quote-data readback,
+or a realtime multi-symbol feed.
 
 If the current environment is the Codex app and Computer Use is available, it
 can help inspect or recover visible UI state after structured CLI checks. Do not

@@ -97,9 +97,10 @@ now:
   emits JSONL observation events. Bounded controls such as `--duration-ms`,
   `--max-events`, and `--heartbeat-ms` belong in the CLI stream runner because
   they manage process observation behavior rather than reusable domain logic.
-  Sample and heartbeat events carry `source: "desktop_chart_stream"`,
-  `source_category: "desktop_backed_read"`, `requires_desktop: true`, and
-  `non_mutating: true`.
+  Sample, heartbeat, and final summary events carry
+  `source: "desktop_chart_stream"`, `source_category: "desktop_backed_read"`,
+  `requires_desktop: true`, and `non_mutating: true`. Summary events describe
+  the bounded observation window rather than a market-data sample.
 - Screenshots: chart-region screenshots use DOM geometry before CDP screenshot
   capture. This is intentional visual evidence, not a TradingView data API.
   Screenshot payloads are Desktop-backed reads with `non_mutating: true`,

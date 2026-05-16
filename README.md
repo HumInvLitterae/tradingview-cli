@@ -145,9 +145,10 @@ tv stream bars --max-events 5
 ```
 
 Use `tv observe chart` when you want one Desktop-backed window that starts
-with readiness details and then follows the selected chart's last bar. Use the
-lower-level `tv stream ...` commands when you already know which specific chart
-sample type you need.
+with readiness details, follows the selected chart's last bar, and ends with a
+summary event describing counts, elapsed time, controls, and end reason. Use
+the lower-level `tv stream ...` commands when you already know which specific
+chart sample type you need; bounded stream runs also end with a summary event.
 
 For an explicit Desktop-backed WebSocket quote-data readback, use:
 
@@ -205,7 +206,10 @@ Errors use the same envelope shape on stderr:
 ```
 
 `tv stream ...` commands print newline-delimited JSON envelopes. Stream samples
-use `_event: "sample"` and optional heartbeats use `_event: "heartbeat"`.
+use `_event: "sample"`, optional heartbeats use `_event: "heartbeat"`, and
+bounded normal exits emit a final `_event: "summary"` line. `tv observe chart`
+starts with readiness, emits selected-chart sample or heartbeat events, and
+also ends bounded runs with a summary line.
 
 Exit codes are:
 

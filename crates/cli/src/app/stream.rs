@@ -27,12 +27,13 @@ pub async fn run_stream_command(
     let mut next_sample_at = started_at;
     let mut next_heartbeat_at = heartbeat.map(|heartbeat| started_at + heartbeat);
     let mut sample_count = 0_u64;
+    let mut heartbeat_count = 0_u64;
     let mut last_sample_ts = None;
 
-    loop {
+    let end_reason = loop {
         let now = Instant::now();
         if duration.is_some_and(|limit| now.duration_since(started_at) >= limit) {
-            break;
+            break ops::StreamEndReason::DurationElapsed;
         }
 
         if now >= next_sample_at {
@@ -49,7 +50,7 @@ pub async fn run_stream_command(
                             .max_events
                             .is_some_and(|max_events| sample_count >= max_events)
                         {
-                            break;
+                            break ops::StreamEndReason::MaxEventsReached;
                         }
                     }
                 }
@@ -74,6 +75,7 @@ pub async fn run_stream_command(
             )?;
             let envelope = SuccessEnvelope::new("stream", payload);
             print_jsonl_stdout(&envelope);
+            heartbeat_count += 1;
             last_output_at = Instant::now();
             next_heartbeat_at = heartbeat.map(|heartbeat| last_output_at + heartbeat);
         }
@@ -91,7 +93,17 @@ pub async fn run_stream_command(
             continue;
         }
         tokio::time::sleep(sleep_duration).await;
-    }
+    };
+    let payload = ops::stream_summary(
+        &request,
+        started_at.elapsed().as_millis() as u64,
+        sample_count,
+        heartbeat_count,
+        last_sample_ts,
+        end_reason,
+    )?;
+    let envelope = SuccessEnvelope::new("stream", payload);
+    print_jsonl_stdout(&envelope);
     Ok(())
 }
 

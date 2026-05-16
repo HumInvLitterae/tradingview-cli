@@ -79,7 +79,8 @@ state. Examples include `tv status`, `tv readiness`, `tv tab list`, `tv state`,
 current-chart `tv info`, chart-model data reads, `tv screenshot`, and
 `tv stream ...` JSONL observation commands. `tv observe chart` is also a
 Desktop-backed read: it emits readiness first, then selected-chart bar samples
-and heartbeats as a workflow-level JSONL observation. Screenshots are
+and heartbeats, then a final bounded-window summary as a workflow-level JSONL
+observation. Screenshots are
 non-mutating visual evidence reads, but they do write a local output file and
 report `writes_file: true`.
 Core Desktop-backed reads report `source_category: "desktop_backed_read"`,
@@ -99,14 +100,16 @@ identify chart samples with `source: "desktop_chart_stream"` and
 Desktop-free scanner reads or browserless historical bars.
 
 For `v0.18`, JSONL observation maturity is contract polish on these existing
-selected-chart reads. `tv stream ...` sample and heartbeat events carry
-`contract_version: "stream.v1"`. `tv observe chart` readiness, sample, and
-heartbeat events carry `contract_version: "observe_chart.v1"` and
+selected-chart reads. `tv stream ...` sample, heartbeat, and summary events
+carry `contract_version: "stream.v1"`. `tv observe chart` readiness, sample,
+heartbeat, and summary events carry `contract_version: "observe_chart.v1"` and
 `_observe: "chart"` while preserving underlying stream metadata such as
-`_stream: "bars"` for selected-chart bar samples. This does not change
-`_event`, source metadata, bounded controls, or event meaning. Do not
-reinterpret it as realtime multi-symbol feed support, watch / JSONL compare,
-browserless bars, scanner quote evidence, or quote-data readback.
+`_stream: "bars"` for selected-chart bar samples. The final summary event is
+an observation-window readback with sample counts, heartbeat counts, elapsed
+time, bounded controls, and end reason; it is not a market-data sample. This
+does not change `_event`, source metadata, bounded controls, or event meaning.
+Do not reinterpret it as realtime multi-symbol feed support, watch / JSONL
+compare, browserless bars, scanner quote evidence, or quote-data readback.
 
 Do not treat `tv quote <SYMBOL> --source chart` as a multi-symbol realtime
 batch source. It is a correctness-first single-symbol read that may switch and

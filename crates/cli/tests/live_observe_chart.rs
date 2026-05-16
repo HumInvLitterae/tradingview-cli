@@ -60,6 +60,7 @@ fn observe_chart_jsonl_live_smoke() {
 
     let mut sample_count = 0_u64;
     let mut heartbeat_count = 0_u64;
+    let mut summary_count = 0_u64;
     for event in stdout_events.iter().skip(1) {
         assert_eq!(
             event.get("command").and_then(Value::as_str),
@@ -76,6 +77,16 @@ fn observe_chart_jsonl_live_smoke() {
                 heartbeat_count += 1;
                 assert_heartbeat_event(event, sample_count, heartbeat_count);
             }
+            Some("summary") => {
+                summary_count += 1;
+                assert_eq!(
+                    summary_count,
+                    1,
+                    "observe chart live smoke emitted more than one summary event summary={}",
+                    summarize_event(event)
+                );
+                assert_summary_event(event, sample_count, heartbeat_count);
+            }
             other => panic!(
                 "observe chart live smoke emitted unexpected event_type={:?} summary={}",
                 other,
@@ -83,6 +94,19 @@ fn observe_chart_jsonl_live_smoke() {
             ),
         }
     }
+    assert_eq!(
+        summary_count, 1,
+        "observe chart live smoke did not emit a final summary event"
+    );
+    assert_eq!(
+        stdout_events
+            .last()
+            .and_then(|event| event.pointer("/data/_event"))
+            .and_then(Value::as_str),
+        Some("summary"),
+        "observe chart live smoke summary event was not last: last={}",
+        summarize_event(stdout_events.last().unwrap())
+    );
 
     if let Some(max_events) = max_events {
         assert!(
@@ -95,10 +119,11 @@ fn observe_chart_jsonl_live_smoke() {
     }
 
     println!(
-        "observe chart live smoke passed: stdout_events={} samples={} heartbeats={} stderr_events={}",
+        "observe chart live smoke passed: stdout_events={} samples={} heartbeats={} summaries={} stderr_events={}",
         stdout_events.len(),
         sample_count,
         heartbeat_count,
+        summary_count,
         stderr_events.len()
     );
 }
@@ -195,6 +220,35 @@ fn assert_heartbeat_event(event: &Value, sample_count: u64, heartbeat_count: u64
     }
 }
 
+fn assert_summary_event(event: &Value, sample_count: u64, heartbeat_count: u64) {
+    let data = event.get("data").unwrap_or(&Value::Null);
+    let reported_samples = data.get("sample_count").and_then(Value::as_u64);
+    let reported_heartbeats = data.get("heartbeat_count").and_then(Value::as_u64);
+    let end_reason = data.get("end_reason").and_then(Value::as_str);
+    if data.get("_stream").and_then(Value::as_str) != Some("bars")
+        || data.get("_observe").and_then(Value::as_str) != Some("chart")
+        || data.get("contract_version").and_then(Value::as_str) != Some("observe_chart.v1")
+        || data.get("source").and_then(Value::as_str) != Some("desktop_chart_stream")
+        || data.get("source_category").and_then(Value::as_str) != Some("desktop_backed_read")
+        || data.get("requires_desktop").and_then(Value::as_bool) != Some(true)
+        || data.get("non_mutating").and_then(Value::as_bool) != Some(true)
+        || data.get("elapsed_ms").and_then(Value::as_u64).is_none()
+        || reported_samples != Some(sample_count)
+        || reported_heartbeats != Some(heartbeat_count)
+        || !matches!(
+            end_reason,
+            Some("duration_elapsed" | "max_events_reached" | "completed")
+        )
+    {
+        panic!(
+            "observe chart live smoke summary event failed metadata validation: samples={} heartbeats={} summary={}",
+            sample_count,
+            heartbeat_count,
+            summarize_event(event)
+        );
+    }
+}
+
 fn parse_jsonl(source: &str, stream_name: &str) -> Vec<Value> {
     source
         .lines()
@@ -220,7 +274,7 @@ fn summarize_event(event: &Value) -> String {
     let data = event.get("data").unwrap_or(&Value::Null);
     let error = event.get("error").unwrap_or(&Value::Null);
     format!(
-        "success={} command={} event={} stream={} source={} category={} ready={} sample_count={} elapsed_ms={} error_kind={} error_message={}",
+        "success={} command={} event={} stream={} source={} category={} ready={} sample_count={} heartbeat_count={} elapsed_ms={} end_reason={} error_kind={} error_message={}",
         bool_summary(event.get("success")),
         string_summary(event.get("command")),
         string_summary(data.get("_event")),
@@ -229,7 +283,9 @@ fn summarize_event(event: &Value) -> String {
         string_summary(data.get("source_category")),
         bool_summary(data.get("ready")),
         number_summary(data.get("sample_count")),
+        number_summary(data.get("heartbeat_count")),
         number_summary(data.get("elapsed_ms")),
+        string_summary(data.get("end_reason")),
         string_summary(error.get("kind")),
         string_summary(error.get("message")),
     )

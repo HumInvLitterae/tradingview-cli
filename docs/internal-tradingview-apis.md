@@ -331,12 +331,14 @@ Comparable evidence:
   they are Desktop-backed current-chart JSONL polling reads. Future
   observation work may improve their event contract or add browserless stream
   candidates, but the source boundary must remain explicit. Stream sample and
-  heartbeat events currently report `source: "desktop_chart_stream"` and
-  `source_category: "desktop_backed_read"`.
+  heartbeat events, plus the final bounded-window summary event, currently
+  report `source: "desktop_chart_stream"` and
+  `source_category: "desktop_backed_read"`. Summary events describe counts,
+  elapsed time, controls, and end reason; they are not market-data samples.
 - `tv observe chart` is a workflow-level Desktop-backed observation command. It
-  combines readiness and selected-chart last-bar observation; it does not use
-  the browserless WebSocket path and does not replace `tv stream ...` for
-  specific stream sample types.
+  combines readiness, selected-chart last-bar observation, and a final summary
+  event; it does not use the browserless WebSocket path and does not replace
+  `tv stream ...` for specific stream sample types.
 
 Safety boundary:
 
