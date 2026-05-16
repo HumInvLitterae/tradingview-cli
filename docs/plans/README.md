@@ -8,12 +8,14 @@ for release and next-phase planning.
 
 Current plan:
 
-- `tradingview-cli-v0.18-pre-release-audit-update.md`: refresh the
-  `v0.18.0` pre-release audit after adding final JSONL summary events, before
-  deciding on release readiness.
+- `tradingview-cli-v0.18.0-release-readiness.md`: prepare the `v0.18.0`
+  release state, including version, changelog, release notes, README asset
+  examples, and package validation.
 
 Recently completed:
 
+- `tradingview-cli-v0.18-pre-release-audit-update.md`: refreshed the
+  `v0.18.0` pre-release audit after adding final JSONL summary events.
 - `tradingview-cli-jsonl-observation-summary-event.md`: added final summary
   events to bounded `tv observe chart` and `tv stream ...` JSONL observations.
 - `tradingview-cli-v0.18-pre-release-audit.md`: audited completed
