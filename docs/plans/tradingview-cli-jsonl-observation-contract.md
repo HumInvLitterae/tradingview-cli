@@ -25,16 +25,19 @@ source mixing, ranking, or recommendations.
 - [x] (2026-05-16T00:00Z) Create this ExecPlan and move the completed
   `v0.17.0` release-readiness plan to archives.
 - [x] (2026-05-16T00:00Z) Add the `v0.18.0` roadmap direction.
-- [ ] Add additive JSONL contract metadata to `tv observe chart` readiness,
+- [x] (2026-05-16T15:20Z) Add additive JSONL contract metadata to `tv observe chart` readiness,
   sample, and heartbeat events.
-- [ ] Add compatible additive contract metadata to lower-level
+- [x] (2026-05-16T15:20Z) Add compatible additive contract metadata to lower-level
   `tv stream ...` sample and heartbeat events.
-- [ ] Update docs, runtime skills, and contract tests.
-- [ ] Run focused tests, baseline, docs validation, and hygiene checks.
+- [x] (2026-05-16T15:25Z) Update docs, runtime skills, and contract tests.
+- [x] (2026-05-16T16:10Z) Run focused tests, baseline, docs validation, and hygiene checks.
 
 ## Surprises & Discoveries
 
-- No surprises have been recorded yet.
+- `tv observe chart` reuses the stream sample / heartbeat helpers internally.
+  The implementation wraps those stream events at the observe app boundary so
+  standalone `tv stream ...` keeps `stream.v1`, while observe JSONL events get
+  the command-local `observe_chart.v1` marker.
 
 ## Decision Log
 
@@ -52,9 +55,40 @@ source mixing, ranking, or recommendations.
   readback.
   Date/Author: 2026-05-16 / Codex.
 
+- Decision: Use `stream.v1` for lower-level stream events and
+  `observe_chart.v1` for observe workflow events.
+  Rationale: The same underlying bars sample can be emitted by either
+  command, but downstream consumers should be able to read which command-local
+  contract produced the JSONL line.
+  Date/Author: 2026-05-16 / Codex.
+
 ## Outcomes & Retrospective
 
-This section will be completed after implementation and validation.
+Implementation is complete. `tv stream ...` sample and heartbeat payloads now
+carry `contract_version: "stream.v1"`. `tv observe chart` readiness, sample,
+and heartbeat payloads now carry `contract_version: "observe_chart.v1"` and
+`_observe: "chart"` while preserving readiness / sample / heartbeat event
+meaning and selected-chart stream metadata.
+
+Validation passed:
+
+- `cargo test -p tradingview-cli stream -- --nocapture`
+- `cargo test -p tradingview-cli observe -- --nocapture`
+- `cargo test -p tradingview-cli --test cli_contract_desktop -- --nocapture`
+- `cargo test -p tradingview-cli --test live_observe_chart`
+- `cargo fmt --check`
+- `cargo clippy --workspace --all-targets --all-features -- -D warnings`
+- `cargo test --workspace`
+- `cargo metadata --no-deps --format-version 1`
+- `git diff --check`
+- `bash -n scripts/stage-release-package-files.sh`
+- runtime skill quick validators for `chart-analysis` and
+  `market-data-interpretation`
+
+Docs and hygiene greps were run. The hygiene grep produced existing policy,
+archive, and fixture references only; this slice did not add raw live output,
+raw WebSocket frames, target ids, account-local metadata, credentials, or
+local absolute paths to tracked public docs.
 
 ## Plan of Work
 

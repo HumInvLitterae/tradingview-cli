@@ -214,8 +214,9 @@ For `tv observe chart`, interpret the first JSONL line as readiness
 (`data._event: "readiness"`), then read later `sample` and `heartbeat` events
 as selected-chart bar observations. Use bounded windows such as
 `--duration-ms`, `--max-events`, and optional `--heartbeat-ms` for agent
-workflows. Treat any v0.18 contract metadata on these events as additive
-readback; it should not change the selected-chart observation meaning.
+workflows. `contract_version: "observe_chart.v1"` and `_observe: "chart"`
+mark these as observe workflow events; this additive readback does not change
+the selected-chart observation meaning.
 
 For `tv stream ...`, interpret each JSONL line by `data._event`. A `sample`
 event means the chart/page sample changed after metadata-insensitive dedupe. A
@@ -224,9 +225,10 @@ emitted in that heartbeat window. Do not count heartbeat events as market
 updates. Stream and observe sample events should identify
 `source: "desktop_chart_stream"`,
 `source_category: "desktop_backed_read"`, `requires_desktop: true`, and
-`non_mutating: true`; treat them as current Desktop chart observations, not
-Desktop-free scanner reads, browserless historical bars, quote-data readback,
-or a realtime multi-symbol feed.
+`non_mutating: true`. Lower-level stream sample and heartbeat events carry
+`contract_version: "stream.v1"`; treat them as current Desktop chart
+observations, not Desktop-free scanner reads, browserless historical bars,
+quote-data readback, or a realtime multi-symbol feed.
 
 If the current environment is the Codex app and Computer Use is available, it
 can help inspect or recover visible UI state after structured CLI checks. Do not

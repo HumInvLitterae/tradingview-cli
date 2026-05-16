@@ -8,6 +8,7 @@ use tradingview_core::{AppError, ErrorKind};
 use super::common::{CHART_API, CHART_WIDGET_COLLECTION, js_string};
 
 const MIN_STREAM_INTERVAL_MS: u64 = 100;
+const STREAM_CONTRACT_VERSION: &str = "stream.v1";
 const STREAM_SOURCE: &str = "desktop_chart_stream";
 const STREAM_SOURCE_CATEGORY: &str = "desktop_backed_read";
 
@@ -171,6 +172,10 @@ fn add_stream_metadata(sample: &mut Value, kind: StreamKind) -> Result<(), AppEr
     object.insert("_stream".to_string(), json!(kind.label()));
     object.insert("_ts".to_string(), json!(ts));
     object.insert("_event".to_string(), json!("sample"));
+    object.insert(
+        "contract_version".to_string(),
+        json!(STREAM_CONTRACT_VERSION),
+    );
     object.insert("source".to_string(), json!(STREAM_SOURCE));
     object.insert("source_category".to_string(), json!(STREAM_SOURCE_CATEGORY));
     object.insert("requires_desktop".to_string(), json!(true));
@@ -192,6 +197,7 @@ pub fn stream_heartbeat(
         "_stream": request.kind.label(),
         "_event": "heartbeat",
         "_ts": ts,
+        "contract_version": STREAM_CONTRACT_VERSION,
         "source": STREAM_SOURCE,
         "source_category": STREAM_SOURCE_CATEGORY,
         "requires_desktop": true,
@@ -516,6 +522,7 @@ mod tests {
         assert_eq!(sample["symbol"], "NASDAQ:AAPL");
         assert_eq!(sample["_stream"], "quote");
         assert_eq!(sample["_event"], "sample");
+        assert_eq!(sample["contract_version"], "stream.v1");
         assert_eq!(sample["source"], "desktop_chart_stream");
         assert_eq!(sample["source_category"], "desktop_backed_read");
         assert_eq!(sample["requires_desktop"], true);
@@ -534,6 +541,7 @@ mod tests {
 
         assert_eq!(heartbeat["_stream"], "quote");
         assert_eq!(heartbeat["_event"], "heartbeat");
+        assert_eq!(heartbeat["contract_version"], "stream.v1");
         assert_eq!(heartbeat["source"], "desktop_chart_stream");
         assert_eq!(heartbeat["source_category"], "desktop_backed_read");
         assert_eq!(heartbeat["requires_desktop"], true);

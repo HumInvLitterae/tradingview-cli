@@ -7,6 +7,12 @@ package version omits the leading `v`.
 
 ## Unreleased
 
+### Added
+
+- Added additive JSONL contract metadata to `tv observe chart` and
+  `tv stream ...` events so downstream tools can distinguish readiness,
+  sample, and heartbeat events without changing existing event semantics.
+
 ### Documentation
 
 - Added the `v0.18.0` roadmap direction and first JSONL observation contract
