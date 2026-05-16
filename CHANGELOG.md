@@ -27,6 +27,8 @@ package version omits the leading `v`.
 - Added a follow-up JSONL observation summary-event plan before release
   readiness, keeping the scope on existing selected-chart observation
   contracts rather than new realtime feeds or watch loops.
+- Refreshed the `v0.18.0` pre-release audit after adding final JSONL summary
+  events, so release readiness is based on the completed event contract.
 
 ## v0.17.0 - 2026-05-14
 
