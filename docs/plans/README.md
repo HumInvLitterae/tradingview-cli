@@ -8,12 +8,14 @@ for release and next-phase planning.
 
 Current plan:
 
-- `tradingview-cli-jsonl-observation-summary-event.md`: add final summary
-  events to bounded `tv observe chart` and `tv stream ...` JSONL observations
-  before returning to `v0.18.0` release readiness.
+- `tradingview-cli-v0.18-pre-release-audit-update.md`: refresh the
+  `v0.18.0` pre-release audit after adding final JSONL summary events, before
+  deciding on release readiness.
 
 Recently completed:
 
+- `tradingview-cli-jsonl-observation-summary-event.md`: added final summary
+  events to bounded `tv observe chart` and `tv stream ...` JSONL observations.
 - `tradingview-cli-v0.18-pre-release-audit.md`: audited completed
   `v0.18.0` JSONL observation contract metadata, then identified final
   summary events as a useful remaining contract polish before release

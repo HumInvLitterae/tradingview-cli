@@ -33,7 +33,8 @@ observation-window readback, not a market-data sample.
 - [x] (2026-05-17T02:45Z) Run focused tests, full baseline, docs validation,
   skill validation, and hygiene checks.
 - [x] (2026-05-17T02:45Z) Record final validation.
-- [ ] Commit the completed slice.
+- [x] (2026-05-17T02:50Z) Commit the completed slice as
+  `e5097e6 feat(cli): Add JSONL observation summary events`.
 
 ## Surprises & Discoveries
 
