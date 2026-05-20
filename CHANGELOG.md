@@ -7,6 +7,13 @@ package version omits the leading `v`.
 
 ## Unreleased
 
+### Documentation
+
+- Added the `v0.19.0` roadmap direction and first `tv bars` date-range
+  readback plan, focusing on reproducible Desktop-free historical bars input
+  for older source-guided examples without treating `tv range` plus
+  `tv ohlcv` as a historical export contract.
+
 ## v0.18.0 - 2026-05-17
 
 ### Added
