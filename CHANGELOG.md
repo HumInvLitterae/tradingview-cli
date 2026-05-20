@@ -7,11 +7,16 @@ package version omits the leading `v`.
 
 ## Unreleased
 
+## v0.19.0 - 2026-05-21
+
 ### Added
 
 - Added daily date-range readback to `tv bars` so older source-guided examples
   can be requested with `--from YYYY-MM-DD --to YYYY-MM-DD` while preserving
   the Desktop-free `bars.v1` source boundary.
+- Added additive date-range coverage readback to `tv bars`, including
+  `request_mode`, `requested_range`, `returned_range`, `observed_range`, and
+  `range_coverage_status`.
 
 ### Documentation
 
@@ -19,6 +24,9 @@ package version omits the leading `v`.
   readback plan, focusing on reproducible Desktop-free historical bars input
   for older source-guided examples without treating `tv range` plus
   `tv ohlcv` as a historical export contract.
+- Recorded the `v0.19.0` pre-release audit, confirming the daily date-range
+  `bars.v1` contract, source boundaries, docs, runtime skills, and tests are
+  ready for release readiness.
 
 ## v0.18.0 - 2026-05-17
 

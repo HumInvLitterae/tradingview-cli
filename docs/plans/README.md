@@ -8,11 +8,14 @@ for release and next-phase planning.
 
 Current plan:
 
-- `tradingview-cli-v0.19-pre-release-audit.md`: audit completed `v0.19.0`
-  daily bars date-range readback before release readiness.
+- `tradingview-cli-v0.19.0-release-readiness.md`: prepare the `v0.19.0`
+  release state, including version, changelog, release notes, README asset
+  examples, and package validation.
 
 Recently completed:
 
+- `tradingview-cli-v0.19-pre-release-audit.md`: audited completed `v0.19.0`
+  daily bars date-range readback before release readiness.
 - `tradingview-cli-bars-date-range-readback.md`: added the first `v0.19.0`
   implementation slice for reproducible Desktop-free historical bars by date
   range, without relying on selected-chart viewport movement.
