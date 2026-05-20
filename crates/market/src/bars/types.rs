@@ -6,6 +6,8 @@ pub(super) const BARS_CONTRACT_VERSION: &str = "bars.v1";
 pub(super) const BARS_SOURCE: &str = "tradingview_bars_ws";
 pub(super) const DEFAULT_TIMEOUT_MS: u64 = 10_000;
 pub(super) const MAX_BAR_COUNT: usize = 500;
+pub(super) const DATE_RANGE_FETCH_CHUNK: usize = MAX_BAR_COUNT;
+const SECONDS_PER_DAY: i64 = 86_400;
 
 #[derive(Debug, Clone, PartialEq)]
 pub(super) struct Bar {
@@ -23,6 +25,19 @@ pub(super) struct BarsRequest {
     pub(super) timeframe: String,
     pub(super) count: usize,
     pub(super) timeout: Duration,
+    pub(super) mode: BarsRequestMode,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub(super) enum BarsRequestMode {
+    RecentCount,
+    DateRange { from: BarsDate, to: BarsDate },
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub(super) struct BarsDate {
+    pub(super) date: String,
+    pub(super) timestamp: i64,
 }
 
 #[derive(Debug)]
@@ -30,6 +45,8 @@ pub(super) struct BarsResult {
     pub(super) bars: Vec<Bar>,
     pub(super) completed: bool,
     pub(super) wait_summary: BarsWaitSummary,
+    pub(super) observed_first_time: Option<i64>,
+    pub(super) observed_last_time: Option<i64>,
 }
 
 #[derive(Debug, Clone, Default)]
@@ -104,5 +121,49 @@ impl BarsWaitSummary {
             "bars_observed_count": bars_observed_count,
             "raw_frame_included": false,
         })
+    }
+}
+
+impl BarsRequest {
+    pub(super) fn request_mode_name(&self) -> &'static str {
+        match self.mode {
+            BarsRequestMode::RecentCount => "recent_count",
+            BarsRequestMode::DateRange { .. } => "date_range",
+        }
+    }
+
+    pub(super) fn is_date_range(&self) -> bool {
+        matches!(self.mode, BarsRequestMode::DateRange { .. })
+    }
+
+    pub(super) fn requested_range_value(&self) -> Value {
+        match &self.mode {
+            BarsRequestMode::RecentCount => Value::Null,
+            BarsRequestMode::DateRange { from, to } => json!({
+                "from": from.date,
+                "to": to.date,
+                "from_time": from.timestamp,
+                "to_time": to.timestamp,
+                "to_time_exclusive": to.timestamp + SECONDS_PER_DAY,
+                "time_basis": "utc_day_start",
+            }),
+        }
+    }
+
+    pub(super) fn date_range_bounds(&self) -> Option<(i64, i64)> {
+        match &self.mode {
+            BarsRequestMode::RecentCount => None,
+            BarsRequestMode::DateRange { from, to } => {
+                Some((from.timestamp, to.timestamp + SECONDS_PER_DAY))
+            }
+        }
+    }
+
+    pub(super) fn initial_fetch_count(&self) -> usize {
+        if self.is_date_range() {
+            DATE_RANGE_FETCH_CHUNK
+        } else {
+            self.count
+        }
     }
 }

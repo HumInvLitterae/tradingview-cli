@@ -7,6 +7,12 @@ package version omits the leading `v`.
 
 ## Unreleased
 
+### Added
+
+- Added daily date-range readback to `tv bars` so older source-guided examples
+  can be requested with `--from YYYY-MM-DD --to YYYY-MM-DD` while preserving
+  the Desktop-free `bars.v1` source boundary.
+
 ### Documentation
 
 - Added the `v0.19.0` roadmap direction and first `tv bars` date-range

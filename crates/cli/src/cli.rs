@@ -127,14 +127,18 @@ pub enum Command {
     },
     #[command(
         about = "Fetch Desktop-free historical bars",
-        long_about = "Fetch bounded historical OHLCV bars without TradingView Desktop or CDP.\n\nThis command uses a browserless TradingView WebSocket chart-session path. SYMBOL must be exchange-qualified, for example NASDAQ:AAPL or NYSE:IONQ. The payload is source-labeled as `tradingview_bars_ws`, has `contract_version: \"bars.v1\"`, and does not guarantee realtime or entitlement status. `tv ohlcv` remains the selected-chart/CDP bars command."
+        long_about = "Fetch bounded historical OHLCV bars without TradingView Desktop or CDP.\n\nThis command uses a browserless TradingView WebSocket chart-session path. SYMBOL must be exchange-qualified, for example NASDAQ:AAPL or NYSE:IONQ. By default it returns a recent count-based sample. Use `--from YYYY-MM-DD --to YYYY-MM-DD` with `--timeframe 1D` for reproducible daily date-range readback; in date-range mode `--count` is a safety cap and defaults to 500, and `--to` is an inclusive calendar date. The payload is source-labeled as `tradingview_bars_ws`, has `contract_version: \"bars.v1\"`, and does not guarantee realtime or entitlement status. `tv range` only changes the selected Desktop chart viewport, and `tv ohlcv` remains the selected-chart/CDP bars command."
     )]
     Bars {
         symbol: String,
         #[arg(long, default_value = "1D")]
         timeframe: String,
-        #[arg(long, short = 'n', default_value_t = 100)]
-        count: usize,
+        #[arg(long, short = 'n')]
+        count: Option<usize>,
+        #[arg(long)]
+        from: Option<String>,
+        #[arg(long)]
+        to: Option<String>,
     },
     #[command(
         about = "Get or set the chart symbol",

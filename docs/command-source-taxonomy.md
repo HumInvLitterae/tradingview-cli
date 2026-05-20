@@ -245,9 +245,19 @@ chart-session path and reports `contract_version: "bars.v1"`,
 OHLCV evidence and does not replace chart-backed `tv ohlcv`, which reads the
 selected Desktop chart through CDP.
 
+Use count mode for recent bounded samples, for example
+`tv bars NASDAQ:AAPL --timeframe 1D --count 5`. Use date-range mode for
+reproducible older daily samples, for example
+`tv bars NASDAQ:CRUS --timeframe 1D --from 2010-01-01 --to 2010-12-31`.
+In date-range mode, `--count` is a safety cap on returned bars and defaults to
+500. The `--to` date is an inclusive calendar date. `tv range` is only a
+selected Desktop chart viewport operation; it does not make
+`tv ohlcv --count ...` a stable historical export for that displayed period.
+
 Recommended agent use: use when a workflow needs bounded historical bars for a
 specific exchange-qualified symbol without requiring TradingView Desktop.
-Report `source`, `contract_version`, `summary`, `range`,
+Report `source`, `contract_version`, `request_mode`, `summary`, `range`,
+`requested_range`, `returned_range`, `range_coverage_status`,
 `source_availability`, `data_quality`, and warnings. Read
 `summary.coverage_status`, `summary.requested_count_fulfilled`, and
 `source_availability.wait_summary` before raw `bars[]`; they are historical
