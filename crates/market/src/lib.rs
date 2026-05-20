@@ -15,7 +15,8 @@
 //! - [`quote_symbol_typed`] for one scanner-backed quote.
 //! - [`quote_symbols_typed`] for ordered batch quotes.
 //! - [`compare_symbols_typed`] for ordered multi-symbol comparison packets.
-//! - [`bars_symbol`] for CLI-compatible browserless historical bars.
+//! - [`bars_symbol`] for CLI-compatible browserless recent historical bars.
+//! - [`bars_symbol_range`] for CLI-compatible browserless daily range bars.
 //!
 //! The older JSON-returning functions remain public for CLI payload
 //! compatibility. New Rust integration code should usually use the typed
@@ -57,7 +58,7 @@ mod search;
 mod snapshot;
 mod types;
 
-pub use bars::bars_symbol;
+pub use bars::{bars_symbol, bars_symbol_range};
 pub use compare::{compare_symbols, compare_symbols_typed};
 pub use fundamentals::{
     fundamentals_symbol, fundamentals_symbol_typed, fundamentals_symbol_with_groups,

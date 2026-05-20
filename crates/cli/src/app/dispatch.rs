@@ -499,7 +499,9 @@ pub async fn dispatch(
             symbol,
             timeframe,
             count,
-        } => ops::bars(&symbol, &timeframe, count).await,
+            from,
+            to,
+        } => ops::bars(&symbol, &timeframe, count, from.as_deref(), to.as_deref()).await,
         Command::Symbol { symbol } => {
             let mut runtime = connect_runtime(config).await?;
             match symbol {

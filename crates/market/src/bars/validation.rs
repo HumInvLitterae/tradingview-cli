@@ -3,12 +3,63 @@ use std::time::Duration;
 use serde_json::json;
 use tradingview_core::{AppError, ErrorKind};
 
-use super::types::{BarsRequest, DEFAULT_TIMEOUT_MS, MAX_BAR_COUNT};
+use super::types::{BarsDate, BarsRequest, BarsRequestMode, DEFAULT_TIMEOUT_MS, MAX_BAR_COUNT};
 
 pub(super) fn validate_bars_request(
     symbol: &str,
     timeframe: &str,
     count: usize,
+) -> Result<BarsRequest, AppError> {
+    validate_bars_request_inner(symbol, timeframe, count, BarsRequestMode::RecentCount)
+}
+
+pub(super) fn validate_bars_range_request(
+    symbol: &str,
+    timeframe: &str,
+    from: &str,
+    to: &str,
+    count_cap: usize,
+) -> Result<BarsRequest, AppError> {
+    let timeframe = normalize_timeframe(timeframe)?;
+    if timeframe != "1D" {
+        return Err(AppError::new(
+            ErrorKind::Validation,
+            "bars date-range mode currently supports only --timeframe 1D",
+        )
+        .with_details(json!({
+            "requested_timeframe": timeframe,
+            "supported_timeframes": ["1D"],
+        })));
+    }
+
+    let from = parse_bars_date(from, "from")?;
+    let to = parse_bars_date(to, "to")?;
+    if from.timestamp > to.timestamp {
+        return Err(AppError::new(
+            ErrorKind::Validation,
+            "bars --from must be earlier than or equal to --to",
+        )
+        .with_details(json!({
+            "from": from.date,
+            "to": to.date,
+            "from_time": from.timestamp,
+            "to_time": to.timestamp,
+        })));
+    }
+
+    validate_bars_request_inner(
+        symbol,
+        &timeframe,
+        count_cap,
+        BarsRequestMode::DateRange { from, to },
+    )
+}
+
+fn validate_bars_request_inner(
+    symbol: &str,
+    timeframe: &str,
+    count: usize,
+    mode: BarsRequestMode,
 ) -> Result<BarsRequest, AppError> {
     let symbol = symbol.trim();
     if symbol.is_empty() {
@@ -46,6 +97,7 @@ pub(super) fn validate_bars_request(
         timeframe,
         count,
         timeout: Duration::from_millis(DEFAULT_TIMEOUT_MS),
+        mode,
     })
 }
 
@@ -93,6 +145,75 @@ fn is_supported_timeframe(timeframe: &str) -> bool {
     )
 }
 
+fn parse_bars_date(input: &str, field: &str) -> Result<BarsDate, AppError> {
+    let trimmed = input.trim();
+    if trimmed.is_empty() {
+        return Err(invalid_bars_date(input, field));
+    }
+    let mut parts = trimmed.split('-');
+    let Some(year) = parts.next().and_then(|part| part.parse::<i32>().ok()) else {
+        return Err(invalid_bars_date(input, field));
+    };
+    let Some(month) = parts.next().and_then(|part| part.parse::<u32>().ok()) else {
+        return Err(invalid_bars_date(input, field));
+    };
+    let Some(day) = parts.next().and_then(|part| part.parse::<u32>().ok()) else {
+        return Err(invalid_bars_date(input, field));
+    };
+    if parts.next().is_some() || !valid_ymd(year, month, day) {
+        return Err(invalid_bars_date(input, field));
+    }
+    let days = days_from_civil(year, month, day);
+    Ok(BarsDate {
+        date: format!("{year:04}-{month:02}-{day:02}"),
+        timestamp: days * 86_400,
+    })
+}
+
+fn invalid_bars_date(input: &str, field: &str) -> AppError {
+    AppError::new(
+        ErrorKind::Validation,
+        format!("Invalid bars --{field} date: {input}. Use YYYY-MM-DD."),
+    )
+    .with_details(json!({
+        "field": field,
+        "requested_date": input,
+        "expected_format": "YYYY-MM-DD",
+    }))
+}
+
+fn valid_ymd(year: i32, month: u32, day: u32) -> bool {
+    if !(1..=12).contains(&month) || day == 0 {
+        return false;
+    }
+    day <= days_in_month(year, month)
+}
+
+fn days_in_month(year: i32, month: u32) -> u32 {
+    match month {
+        1 | 3 | 5 | 7 | 8 | 10 | 12 => 31,
+        4 | 6 | 9 | 11 => 30,
+        2 if is_leap_year(year) => 29,
+        2 => 28,
+        _ => 0,
+    }
+}
+
+fn is_leap_year(year: i32) -> bool {
+    (year % 4 == 0 && year % 100 != 0) || year % 400 == 0
+}
+
+fn days_from_civil(year: i32, month: u32, day: u32) -> i64 {
+    let year = year - i32::from(month <= 2);
+    let era = if year >= 0 { year } else { year - 399 } / 400;
+    let yoe = year - era * 400;
+    let month = month as i32;
+    let day = day as i32;
+    let doy = (153 * (month + if month > 2 { -3 } else { 9 }) + 2) / 5 + day - 1;
+    let doe = yoe * 365 + yoe / 4 - yoe / 100 + doy;
+    (era * 146_097 + doe - 719_468) as i64
+}
+
 #[cfg(test)]
 mod tests {
     use tradingview_core::ErrorKind;
@@ -111,5 +232,34 @@ mod tests {
     fn validate_accepts_supported_timeframe_aliases() {
         let request = validate_bars_request("NASDAQ:AAPL", "1d", 5).unwrap();
         assert_eq!(request.timeframe, "1D");
+    }
+
+    #[test]
+    fn validate_range_accepts_daily_dates_and_count_cap() {
+        let request =
+            validate_bars_range_request("NASDAQ:AAPL", "1d", "2020-01-01", "2020-03-31", 500)
+                .unwrap();
+        assert_eq!(request.timeframe, "1D");
+        assert_eq!(request.count, 500);
+        assert_eq!(request.request_mode_name(), "date_range");
+        assert_eq!(
+            request.date_range_bounds(),
+            Some((1_577_836_800, 1_585_699_200))
+        );
+    }
+
+    #[test]
+    fn validate_range_rejects_invalid_dates_and_non_daily_timeframe() {
+        let err = validate_bars_range_request("NASDAQ:AAPL", "1D", "2023-02-29", "2023-03-01", 500)
+            .unwrap_err();
+        assert_eq!(err.kind, ErrorKind::Validation);
+
+        let err = validate_bars_range_request("NASDAQ:AAPL", "1D", "2020-03-31", "2020-01-01", 500)
+            .unwrap_err();
+        assert_eq!(err.kind, ErrorKind::Validation);
+
+        let err = validate_bars_range_request("NASDAQ:AAPL", "1", "2020-01-01", "2020-03-31", 500)
+            .unwrap_err();
+        assert_eq!(err.kind, ErrorKind::Validation);
     }
 }

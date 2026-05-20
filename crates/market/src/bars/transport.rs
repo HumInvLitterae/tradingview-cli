@@ -129,7 +129,7 @@ pub(super) async fn fetch_bars_ws(request: &BarsRequest) -> Result<BarsResult, A
             "s1",
             symbol_key,
             request.timeframe,
-            request.count
+            request.initial_fetch_count()
         ]),
     )
     .await
@@ -171,7 +171,8 @@ pub(super) async fn fetch_bars_ws(request: &BarsRequest) -> Result<BarsResult, A
     let deadline = Instant::now() + request.timeout;
     let mut bars = Vec::new();
     let mut completed = false;
-    loop {
+    let mut last_more_oldest: Option<i64> = None;
+    'read_loop: loop {
         let now = Instant::now();
         if now >= deadline {
             break;
@@ -296,14 +297,44 @@ pub(super) async fn fetch_bars_ws(request: &BarsRequest) -> Result<BarsResult, A
                     } else if method == "series_completed" {
                         completed = true;
                         wait_summary.series_completed_seen = true;
+                        if should_request_more(request, &bars) {
+                            let oldest_time = bars.first().map(|bar| bar.time);
+                            if oldest_time.is_some() && oldest_time == last_more_oldest {
+                                break 'read_loop;
+                            }
+                            last_more_oldest = oldest_time;
+                            completed = false;
+                            send_ws(
+                                &mut stream,
+                                "request_more_data",
+                                json!([session_id, "s1", request.initial_fetch_count()]),
+                            )
+                            .await
+                            .map_err(|err| {
+                                err.with_details(bars_error_details(
+                                    request,
+                                    json!({
+                                        "availability_status": "unavailable",
+                                        "source_availability": bars_source_availability(
+                                            request,
+                                            BarsAvailabilityState::unavailable(
+                                                "connection_failed",
+                                                bars.len(),
+                                                false,
+                                                false,
+                                            ),
+                                            &wait_summary,
+                                            started.elapsed().as_millis() as u64,
+                                        ),
+                                    }),
+                                ))
+                            })?;
+                            continue;
+                        }
                         let _ =
                             send_ws(&mut stream, "chart_delete_session", json!([session_id])).await;
                         let _ = stream.close(None).await;
-                        return Ok(BarsResult {
-                            bars,
-                            completed,
-                            wait_summary,
-                        });
+                        return Ok(finalize_result(request, bars, completed, wait_summary));
                     } else if matches!(method, "symbol_error" | "series_error" | "protocol_error") {
                         wait_summary.error_messages_seen += 1;
                         let _ =
@@ -338,11 +369,7 @@ pub(super) async fn fetch_bars_ws(request: &BarsRequest) -> Result<BarsResult, A
 
     let _ = send_ws(&mut stream, "chart_delete_session", json!([session_id])).await;
     let _ = stream.close(None).await;
-    Ok(BarsResult {
-        bars,
-        completed,
-        wait_summary,
-    })
+    Ok(finalize_result(request, bars, completed, wait_summary))
 }
 
 async fn send_ws<S>(stream: &mut S, method: &str, params: Value) -> Result<(), AppError>
@@ -360,4 +387,37 @@ where
                 format!("TradingView WebSocket send failed: {err}"),
             )
         })
+}
+
+fn should_request_more(request: &BarsRequest, bars: &[super::types::Bar]) -> bool {
+    let Some((from_time, _)) = request.date_range_bounds() else {
+        return false;
+    };
+    let Some(oldest_time) = bars.first().map(|bar| bar.time) else {
+        return false;
+    };
+    oldest_time > from_time
+}
+
+fn finalize_result(
+    request: &BarsRequest,
+    mut bars: Vec<super::types::Bar>,
+    completed: bool,
+    wait_summary: BarsWaitSummary,
+) -> BarsResult {
+    let observed_first_time = bars.first().map(|bar| bar.time);
+    let observed_last_time = bars.last().map(|bar| bar.time);
+    if let Some((from_time, to_time_exclusive)) = request.date_range_bounds() {
+        bars.retain(|bar| bar.time >= from_time && bar.time < to_time_exclusive);
+        if bars.len() > request.count {
+            bars.truncate(request.count);
+        }
+    }
+    BarsResult {
+        bars,
+        completed,
+        wait_summary,
+        observed_first_time,
+        observed_last_time,
+    }
 }

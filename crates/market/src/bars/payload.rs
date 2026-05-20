@@ -4,8 +4,8 @@ use tradingview_core::{AppError, ErrorKind};
 use super::{
     protocol::bar_to_value,
     types::{
-        BARS_CONTRACT_VERSION, BARS_SOURCE, BarsAvailabilityState, BarsRequest, BarsResult,
-        BarsWaitSummary,
+        BARS_CONTRACT_VERSION, BARS_SOURCE, BarsAvailabilityState, BarsRequest, BarsRequestMode,
+        BarsResult, BarsWaitSummary,
     },
 };
 
@@ -27,6 +27,7 @@ pub(super) fn bars_payload(request: &BarsRequest, result: BarsResult, elapsed_ms
     } else {
         "partial"
     };
+    let range_coverage_status = range_coverage_status(request, &result);
     let timed_out = !result.completed;
     let source_availability = bars_source_availability(
         request,
@@ -41,11 +42,25 @@ pub(super) fn bars_payload(request: &BarsRequest, result: BarsResult, elapsed_ms
         "source_category": "desktop_free_read",
         "requires_desktop": false,
         "non_mutating": true,
+        "request_mode": request.request_mode_name(),
         "requested_symbol": request.symbol,
         "symbol": request.symbol,
         "timeframe": request.timeframe,
         "requested_count": request.count,
         "bar_count": bar_count,
+        "requested_range": request.requested_range_value(),
+        "returned_range": {
+            "timeframe": request.timeframe,
+            "first_time": first_time,
+            "last_time": last_time,
+            "bar_count": bar_count,
+            "time_order": "ascending",
+        },
+        "observed_range": {
+            "first_time": result.observed_first_time,
+            "last_time": result.observed_last_time,
+        },
+        "range_coverage_status": range_coverage_status,
         "summary": {
             "requested_count": request.count,
             "bar_count": bar_count,
@@ -121,6 +136,7 @@ pub(super) fn bars_source_availability(
         "available": state.available,
         "status": if state.available { "available" } else { "unavailable" },
         "unavailable_reason": state.unavailable_reason,
+        "request_mode": request.request_mode_name(),
         "requested_count": request.count,
         "bar_count": state.bar_count,
         "requested_count_fulfilled": state.bar_count == request.count,
@@ -144,6 +160,10 @@ pub(super) fn bars_error_details(request: &BarsRequest, extra: Value) -> Value {
     details.insert("requires_desktop".to_string(), Value::Bool(false));
     details.insert("non_mutating".to_string(), Value::Bool(true));
     details.insert(
+        "request_mode".to_string(),
+        Value::String(request.request_mode_name().to_string()),
+    );
+    details.insert(
         "requested_symbol".to_string(),
         Value::String(request.symbol.clone()),
     );
@@ -155,6 +175,10 @@ pub(super) fn bars_error_details(request: &BarsRequest, extra: Value) -> Value {
         "requested_count".to_string(),
         Value::Number((request.count as u64).into()),
     );
+    details.insert(
+        "requested_range".to_string(),
+        request.requested_range_value(),
+    );
 
     if let Some(extra) = extra.as_object() {
         for (key, value) in extra {
@@ -165,12 +189,41 @@ pub(super) fn bars_error_details(request: &BarsRequest, extra: Value) -> Value {
     Value::Object(details)
 }
 
+fn range_coverage_status(request: &BarsRequest, result: &BarsResult) -> &'static str {
+    let BarsRequestMode::DateRange { from, to } = &request.mode else {
+        return if result.bars.len() == request.count {
+            "complete"
+        } else {
+            "partial"
+        };
+    };
+    let Some(observed_first_time) = result.observed_first_time else {
+        return "partial";
+    };
+    let Some(observed_last_time) = result.observed_last_time else {
+        return "partial";
+    };
+    if result.bars.len() == request.count
+        && result
+            .bars
+            .last()
+            .is_some_and(|returned_last| returned_last.time < to.timestamp)
+    {
+        return "partial";
+    }
+    if observed_first_time <= from.timestamp && observed_last_time >= to.timestamp {
+        "complete"
+    } else {
+        "partial"
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::bars::{
         types::{Bar, BarsWaitSummary, DEFAULT_TIMEOUT_MS},
-        validation::validate_bars_request,
+        validation::{validate_bars_range_request, validate_bars_request},
     };
 
     fn test_wait_summary(request: &BarsRequest) -> BarsWaitSummary {
@@ -208,6 +261,8 @@ mod tests {
                 ],
                 completed: true,
                 wait_summary: test_wait_summary(&request),
+                observed_first_time: Some(1),
+                observed_last_time: Some(2),
             },
             42,
         );
@@ -217,6 +272,11 @@ mod tests {
         assert_eq!(payload["source_category"], "desktop_free_read");
         assert_eq!(payload["requires_desktop"], false);
         assert_eq!(payload["non_mutating"], true);
+        assert_eq!(payload["request_mode"], "recent_count");
+        assert!(payload["requested_range"].is_null());
+        assert_eq!(payload["returned_range"]["first_time"], 1);
+        assert_eq!(payload["returned_range"]["last_time"], 2);
+        assert_eq!(payload["range_coverage_status"], "partial");
         assert_eq!(payload["data_quality"]["realtime_guarantee"], false);
         assert_eq!(payload["data_quality"]["entitlement_checked"], false);
         assert_eq!(payload["data_quality"]["partial_result"], true);
@@ -289,6 +349,8 @@ mod tests {
                 }],
                 completed: true,
                 wait_summary: test_wait_summary(&request),
+                observed_first_time: Some(1),
+                observed_last_time: Some(1),
             },
             42,
         );
@@ -322,6 +384,8 @@ mod tests {
                 }],
                 completed: false,
                 wait_summary,
+                observed_first_time: Some(1),
+                observed_last_time: Some(1),
             },
             42,
         );
@@ -340,6 +404,59 @@ mod tests {
     }
 
     #[test]
+    fn bars_payload_reports_date_range_readback() {
+        let request =
+            validate_bars_range_request("NASDAQ:AAPL", "1D", "2020-01-01", "2020-01-31", 500)
+                .unwrap();
+        let payload = bars_payload(
+            &request,
+            BarsResult {
+                bars: vec![
+                    Bar {
+                        time: 1_577_836_800,
+                        open: 10.0,
+                        high: 12.0,
+                        low: 9.0,
+                        close: 11.0,
+                        volume: 100.0,
+                    },
+                    Bar {
+                        time: 1_580_428_800,
+                        open: 11.0,
+                        high: 13.0,
+                        low: 10.0,
+                        close: 12.0,
+                        volume: 200.0,
+                    },
+                ],
+                completed: true,
+                wait_summary: test_wait_summary(&request),
+                observed_first_time: Some(1_577_836_800),
+                observed_last_time: Some(1_580_428_800),
+            },
+            42,
+        );
+
+        assert_eq!(payload["request_mode"], "date_range");
+        assert_eq!(payload["requested_count"], 500);
+        assert_eq!(payload["requested_range"]["from"], "2020-01-01");
+        assert_eq!(payload["requested_range"]["to"], "2020-01-31");
+        assert_eq!(payload["requested_range"]["from_time"], 1_577_836_800);
+        assert_eq!(payload["requested_range"]["to_time"], 1_580_428_800);
+        assert_eq!(
+            payload["requested_range"]["to_time_exclusive"],
+            1_580_515_200
+        );
+        assert_eq!(payload["returned_range"]["first_time"], 1_577_836_800);
+        assert_eq!(payload["returned_range"]["last_time"], 1_580_428_800);
+        assert_eq!(payload["returned_range"]["bar_count"], 2);
+        assert_eq!(payload["observed_range"]["first_time"], 1_577_836_800);
+        assert_eq!(payload["observed_range"]["last_time"], 1_580_428_800);
+        assert_eq!(payload["range_coverage_status"], "complete");
+        assert_eq!(payload["source_availability"]["request_mode"], "date_range");
+    }
+
+    #[test]
     fn bars_error_details_contains_stable_source_contract() {
         let request = validate_bars_request("NASDAQ:AAPL", "1d", 5).unwrap();
         let details = bars_error_details(
@@ -355,6 +472,8 @@ mod tests {
         assert_eq!(details["source_category"], "desktop_free_read");
         assert_eq!(details["requires_desktop"], false);
         assert_eq!(details["non_mutating"], true);
+        assert_eq!(details["request_mode"], "recent_count");
+        assert!(details["requested_range"].is_null());
         assert_eq!(details["availability_status"], "unavailable");
         assert_eq!(details["completed"], false);
         assert!(details.get("raw_frame").is_none());

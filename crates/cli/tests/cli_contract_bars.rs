@@ -12,6 +12,10 @@ fn bars_help_explains_stable_desktop_free_boundary() {
         .stdout(predicate::str::contains("<SYMBOL>"))
         .stdout(predicate::str::contains("--timeframe"))
         .stdout(predicate::str::contains("--count"))
+        .stdout(predicate::str::contains("--from"))
+        .stdout(predicate::str::contains("--to"))
+        .stdout(predicate::str::contains("date-range"))
+        .stdout(predicate::str::contains("safety cap"))
         .stdout(predicate::str::contains("historical OHLCV bars"))
         .stdout(predicate::str::contains("bars.v1"))
         .stdout(predicate::str::contains("tradingview_bars_ws"))
@@ -77,4 +81,76 @@ fn bars_rejects_invalid_inputs_before_network() {
     assert_eq!(value["command"], "bars");
     assert_eq!(value["error"]["kind"], "validation");
     assert_eq!(value["error"]["details"]["maximum"], 500);
+}
+
+#[test]
+fn bars_rejects_invalid_date_range_inputs_before_network() {
+    let missing_to = tv()
+        .env("TV_CDP_PORT", "9")
+        .args(["bars", "NASDAQ:AAPL", "--from", "2020-01-01"])
+        .assert()
+        .failure()
+        .code(1);
+    let value = stderr_json(&missing_to);
+    assert_eq!(value["command"], "bars");
+    assert_eq!(value["error"]["kind"], "validation");
+    assert_eq!(value["error"]["details"]["from_provided"], true);
+    assert_eq!(value["error"]["details"]["to_provided"], false);
+
+    let invalid_date = tv()
+        .env("TV_CDP_PORT", "9")
+        .args([
+            "bars",
+            "NASDAQ:AAPL",
+            "--from",
+            "2023-02-29",
+            "--to",
+            "2023-03-01",
+        ])
+        .assert()
+        .failure()
+        .code(1);
+    let value = stderr_json(&invalid_date);
+    assert_eq!(value["command"], "bars");
+    assert_eq!(value["error"]["kind"], "validation");
+    assert_eq!(value["error"]["details"]["expected_format"], "YYYY-MM-DD");
+
+    let reversed = tv()
+        .env("TV_CDP_PORT", "9")
+        .args([
+            "bars",
+            "NASDAQ:AAPL",
+            "--from",
+            "2020-03-31",
+            "--to",
+            "2020-01-01",
+        ])
+        .assert()
+        .failure()
+        .code(1);
+    let value = stderr_json(&reversed);
+    assert_eq!(value["command"], "bars");
+    assert_eq!(value["error"]["kind"], "validation");
+    assert_eq!(value["error"]["details"]["from"], "2020-03-31");
+    assert_eq!(value["error"]["details"]["to"], "2020-01-01");
+
+    let intraday = tv()
+        .env("TV_CDP_PORT", "9")
+        .args([
+            "bars",
+            "NASDAQ:AAPL",
+            "--timeframe",
+            "1",
+            "--from",
+            "2020-01-01",
+            "--to",
+            "2020-03-31",
+        ])
+        .assert()
+        .failure()
+        .code(1);
+    let value = stderr_json(&intraday);
+    assert_eq!(value["command"], "bars");
+    assert_eq!(value["error"]["kind"], "validation");
+    assert_eq!(value["error"]["details"]["requested_timeframe"], "1");
 }

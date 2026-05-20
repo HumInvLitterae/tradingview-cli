@@ -79,9 +79,11 @@ Do not use `TV_CDP_TARGET_ID`; explicit target handoff is `--target-id`.
   `tv quote <SYMBOL> --source auto`.
 - Browserless historical bars use `tv bars <EXCHANGE:SYMBOL>` as a bounded
   Desktop-free read with `contract_version: "bars.v1"`. They do not guarantee
-  realtime or entitlement status. Read `summary` / `range` for count and time
-  coverage before inspecting raw `bars[]`, and read `source_availability` /
-  `wait_summary` when bars are partial or unavailable.
+  realtime or entitlement status. Use `--from YYYY-MM-DD --to YYYY-MM-DD`
+  with `--timeframe 1D` for reproducible older daily samples; `--to` is an
+  inclusive calendar date. Read `summary` / `range`, `requested_range` / `returned_range`, and
+  `range_coverage_status` before inspecting raw `bars[]`, and read
+  `source_availability` / `wait_summary` when bars are partial or unavailable.
 - Selected-chart JSONL observations use `tv observe chart` and lower-level
   `tv stream ...`. Read readiness, sample, heartbeat, and final summary events
   by `contract_version` (`observe_chart.v1` or `stream.v1`), `_event`, and
