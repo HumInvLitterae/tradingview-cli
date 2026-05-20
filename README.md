@@ -49,12 +49,12 @@ The default Chrome DevTools endpoint is `127.0.0.1:9222`. Override it with
 ## Installation
 
 GitHub Releases are the first supported binary distribution path. Version tags
-such as `v0.18.0` publish native archives like:
+such as `v0.19.0` publish native archives like:
 
-- `tv-v0.18.0-x86_64-unknown-linux-gnu.tar.gz`
-- `tv-v0.18.0-x86_64-apple-darwin.tar.gz`
-- `tv-v0.18.0-aarch64-apple-darwin.tar.gz`
-- `tv-v0.18.0-x86_64-pc-windows-msvc.zip`
+- `tv-v0.19.0-x86_64-unknown-linux-gnu.tar.gz`
+- `tv-v0.19.0-x86_64-apple-darwin.tar.gz`
+- `tv-v0.19.0-aarch64-apple-darwin.tar.gz`
+- `tv-v0.19.0-x86_64-pc-windows-msvc.zip`
 - `SHA256SUMS`
 
 Each archive contains the `tv` or `tv.exe` binary, `README.md`,
