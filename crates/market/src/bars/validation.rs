@@ -5,6 +5,8 @@ use tradingview_core::{AppError, ErrorKind};
 
 use super::types::{BarsDate, BarsRequest, BarsRequestMode, DEFAULT_TIMEOUT_MS, MAX_BAR_COUNT};
 
+const DATE_RANGE_TIMEFRAMES: &[&str] = &["1D", "1W", "1M"];
+
 pub(super) fn validate_bars_request(
     symbol: &str,
     timeframe: &str,
@@ -21,14 +23,14 @@ pub(super) fn validate_bars_range_request(
     count_cap: usize,
 ) -> Result<BarsRequest, AppError> {
     let timeframe = normalize_timeframe(timeframe)?;
-    if timeframe != "1D" {
+    if !DATE_RANGE_TIMEFRAMES.contains(&timeframe.as_str()) {
         return Err(AppError::new(
             ErrorKind::Validation,
-            "bars date-range mode currently supports only --timeframe 1D",
+            "bars date-range mode currently supports only daily, weekly, and monthly timeframes",
         )
         .with_details(json!({
             "requested_timeframe": timeframe,
-            "supported_timeframes": ["1D"],
+            "supported_timeframes": DATE_RANGE_TIMEFRAMES,
         })));
     }
 
@@ -235,7 +237,7 @@ mod tests {
     }
 
     #[test]
-    fn validate_range_accepts_daily_dates_and_count_cap() {
+    fn validate_range_accepts_daily_weekly_monthly_dates_and_count_cap() {
         let request =
             validate_bars_range_request("NASDAQ:AAPL", "1d", "2020-01-01", "2020-03-31", 500)
                 .unwrap();
@@ -246,10 +248,22 @@ mod tests {
             request.date_range_bounds(),
             Some((1_577_836_800, 1_585_699_200))
         );
+
+        let request =
+            validate_bars_range_request("NASDAQ:AAPL", "1w", "2020-01-01", "2020-03-31", 500)
+                .unwrap();
+        assert_eq!(request.timeframe, "1W");
+        assert_eq!(request.request_mode_name(), "date_range");
+
+        let request =
+            validate_bars_range_request("NASDAQ:AAPL", "1M", "2020-01-01", "2020-03-31", 500)
+                .unwrap();
+        assert_eq!(request.timeframe, "1M");
+        assert_eq!(request.request_mode_name(), "date_range");
     }
 
     #[test]
-    fn validate_range_rejects_invalid_dates_and_non_daily_timeframe() {
+    fn validate_range_rejects_invalid_dates_and_intraday_timeframe() {
         let err = validate_bars_range_request("NASDAQ:AAPL", "1D", "2023-02-29", "2023-03-01", 500)
             .unwrap_err();
         assert_eq!(err.kind, ErrorKind::Validation);
@@ -261,5 +275,13 @@ mod tests {
         let err = validate_bars_range_request("NASDAQ:AAPL", "1", "2020-01-01", "2020-03-31", 500)
             .unwrap_err();
         assert_eq!(err.kind, ErrorKind::Validation);
+        assert_eq!(
+            err.details
+                .as_ref()
+                .and_then(|details| details.get("supported_timeframes"))
+                .and_then(|value| value.as_array())
+                .map(Vec::len),
+            Some(3)
+        );
     }
 }

@@ -165,13 +165,16 @@ Browserless historical bars are Desktop-free and bounded:
 ```bash
 tv bars NASDAQ:AAPL --timeframe 1D --count 5
 tv bars NASDAQ:CRUS --timeframe 1D --from 2010-01-01 --to 2010-12-31
+tv bars NASDAQ:CRUS --timeframe 1W --from 2010-01-01 --to 2010-12-31
 ```
 
 Read `summary`, `range`, `requested_range`, `returned_range`, and
 `range_coverage_status` first for requested-vs-returned count and time
 coverage, then inspect raw `bars[]` when exact OHLCV evidence is needed. In
 date-range mode, `--count` is a safety cap on returned bars and defaults to
-500. The `--to` date is an inclusive calendar date. Read
+500. The `--to` date is an inclusive calendar date. For weekly and monthly
+date ranges, read `range_alignment` to see that bar timestamps are period
+anchors and filtering uses timestamps within the requested range. Read
 `source_availability` and its `wait_summary` when bars are partial or
 unavailable; those fields describe bounded historical-source behavior, not a
 trading recommendation or proof that a symbol has no history. Use

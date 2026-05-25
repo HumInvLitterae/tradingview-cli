@@ -15,6 +15,9 @@ fn bars_help_explains_stable_desktop_free_boundary() {
         .stdout(predicate::str::contains("--from"))
         .stdout(predicate::str::contains("--to"))
         .stdout(predicate::str::contains("date-range"))
+        .stdout(predicate::str::contains("1W"))
+        .stdout(predicate::str::contains("1M"))
+        .stdout(predicate::str::contains("range_alignment"))
         .stdout(predicate::str::contains("safety cap"))
         .stdout(predicate::str::contains("historical OHLCV bars"))
         .stdout(predicate::str::contains("bars.v1"))
@@ -153,4 +156,8 @@ fn bars_rejects_invalid_date_range_inputs_before_network() {
     assert_eq!(value["command"], "bars");
     assert_eq!(value["error"]["kind"], "validation");
     assert_eq!(value["error"]["details"]["requested_timeframe"], "1");
+    assert_eq!(
+        value["error"]["details"]["supported_timeframes"],
+        serde_json::json!(["1D", "1W", "1M"])
+    );
 }

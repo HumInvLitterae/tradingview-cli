@@ -49,6 +49,7 @@ pub(super) fn bars_payload(request: &BarsRequest, result: BarsResult, elapsed_ms
         "requested_count": request.count,
         "bar_count": bar_count,
         "requested_range": request.requested_range_value(),
+        "range_alignment": request.range_alignment_value(),
         "returned_range": {
             "timeframe": request.timeframe,
             "first_time": first_time,
@@ -179,6 +180,14 @@ pub(super) fn bars_error_details(request: &BarsRequest, extra: Value) -> Value {
         "requested_range".to_string(),
         request.requested_range_value(),
     );
+    details.insert(
+        "range_alignment".to_string(),
+        request.range_alignment_value(),
+    );
+    details.insert(
+        "requested_timeframe".to_string(),
+        Value::String(request.timeframe.clone()),
+    );
 
     if let Some(extra) = extra.as_object() {
         for (key, value) in extra {
@@ -274,6 +283,7 @@ mod tests {
         assert_eq!(payload["non_mutating"], true);
         assert_eq!(payload["request_mode"], "recent_count");
         assert!(payload["requested_range"].is_null());
+        assert!(payload["range_alignment"].is_null());
         assert_eq!(payload["returned_range"]["first_time"], 1);
         assert_eq!(payload["returned_range"]["last_time"], 2);
         assert_eq!(payload["range_coverage_status"], "partial");
@@ -453,7 +463,68 @@ mod tests {
         assert_eq!(payload["observed_range"]["first_time"], 1_577_836_800);
         assert_eq!(payload["observed_range"]["last_time"], 1_580_428_800);
         assert_eq!(payload["range_coverage_status"], "complete");
+        assert_eq!(payload["range_alignment"]["timeframe"], "1D");
+        assert_eq!(
+            payload["range_alignment"]["bar_timestamp_semantics"],
+            "period_start"
+        );
+        assert_eq!(
+            payload["range_alignment"]["range_filter_policy"],
+            "timestamp_within_requested_range"
+        );
+        assert_eq!(
+            payload["range_alignment"]["requested_range_interpretation"],
+            "inclusive_calendar_dates"
+        );
         assert_eq!(payload["source_availability"]["request_mode"], "date_range");
+    }
+
+    #[test]
+    fn bars_payload_reports_weekly_monthly_range_alignment() {
+        for timeframe in ["1W", "1M"] {
+            let request = validate_bars_range_request(
+                "NASDAQ:AAPL",
+                timeframe,
+                "2020-01-01",
+                "2020-03-31",
+                500,
+            )
+            .unwrap();
+            let payload = bars_payload(
+                &request,
+                BarsResult {
+                    bars: vec![Bar {
+                        time: 1_577_836_800,
+                        open: 10.0,
+                        high: 12.0,
+                        low: 9.0,
+                        close: 11.0,
+                        volume: 100.0,
+                    }],
+                    completed: true,
+                    wait_summary: test_wait_summary(&request),
+                    observed_first_time: Some(1_577_836_800),
+                    observed_last_time: Some(1_585_699_200),
+                },
+                42,
+            );
+
+            assert_eq!(payload["request_mode"], "date_range");
+            assert_eq!(payload["range_alignment"]["timeframe"], timeframe);
+            assert_eq!(
+                payload["range_alignment"]["bar_timestamp_semantics"],
+                "period_start"
+            );
+            assert_eq!(
+                payload["range_alignment"]["range_filter_policy"],
+                "timestamp_within_requested_range"
+            );
+            assert_eq!(
+                payload["range_alignment"]["requested_range_interpretation"],
+                "inclusive_calendar_dates"
+            );
+            assert_eq!(payload["range_coverage_status"], "complete");
+        }
     }
 
     #[test]
@@ -474,8 +545,45 @@ mod tests {
         assert_eq!(details["non_mutating"], true);
         assert_eq!(details["request_mode"], "recent_count");
         assert!(details["requested_range"].is_null());
+        assert!(details["range_alignment"].is_null());
+        assert_eq!(details["requested_timeframe"], "1D");
         assert_eq!(details["availability_status"], "unavailable");
         assert_eq!(details["completed"], false);
+        assert!(details.get("raw_frame").is_none());
+        assert!(details.get("raw_payload").is_none());
+    }
+
+    #[test]
+    fn bars_error_details_contains_range_alignment_for_date_range() {
+        let request =
+            validate_bars_range_request("NASDAQ:AAPL", "1W", "2020-01-01", "2020-03-31", 500)
+                .unwrap();
+        let details = bars_error_details(
+            &request,
+            json!({
+                "availability_status": "unavailable",
+                "completed": false,
+            }),
+        );
+
+        assert_eq!(details["contract_version"], BARS_CONTRACT_VERSION);
+        assert_eq!(details["requested_symbol"], "NASDAQ:AAPL");
+        assert_eq!(details["requested_timeframe"], "1W");
+        assert_eq!(details["request_mode"], "date_range");
+        assert_eq!(details["requested_range"]["from"], "2020-01-01");
+        assert_eq!(details["range_alignment"]["timeframe"], "1W");
+        assert_eq!(
+            details["range_alignment"]["bar_timestamp_semantics"],
+            "period_start"
+        );
+        assert_eq!(
+            details["range_alignment"]["range_filter_policy"],
+            "timestamp_within_requested_range"
+        );
+        assert_eq!(
+            details["range_alignment"]["requested_range_interpretation"],
+            "inclusive_calendar_dates"
+        );
         assert!(details.get("raw_frame").is_none());
         assert!(details.get("raw_payload").is_none());
     }

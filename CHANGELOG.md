@@ -7,6 +7,15 @@ package version omits the leading `v`.
 
 ## Unreleased
 
+### Added
+
+- Added weekly and monthly date-range readback to `tv bars --from --to` so
+  `1D`, `1W`, and `1M` historical ranges can share the same Desktop-free
+  `bars.v1` source boundary.
+- Added additive `range_alignment` readback to `tv bars` date-range payloads
+  and structured failure details so downstream tools can distinguish
+  period-start bar timestamps from requested calendar ranges.
+
 ### Documentation
 
 - Added the `v0.20.0` roadmap direction and first weekly/monthly `tv bars`

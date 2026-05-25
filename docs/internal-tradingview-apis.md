@@ -353,16 +353,19 @@ Safety boundary:
 - do not replace `tv ohlcv`; it reads current chart bars through the selected
   Desktop target
 - `tv bars` is a separate symbol-targeted command and keeps requests bounded
-  by count or by daily date range with a count safety cap
-- `tv bars --from YYYY-MM-DD --to YYYY-MM-DD --timeframe 1D` is the
-  reproducible historical-source preparation path for older daily samples.
-  The `--to` value is an inclusive calendar date.
+  by count or by daily, weekly, or monthly date range with a count safety cap
+- `tv bars --from YYYY-MM-DD --to YYYY-MM-DD --timeframe 1D|1W|1M` is the
+  reproducible historical-source preparation path for older daily and
+  higher-timeframe samples. The `--to` value is an inclusive calendar date.
   `tv range` only changes the selected Desktop chart viewport and must not be
   treated as a hidden input to `tv ohlcv`.
 - `tv bars` reports `summary` / `range` for requested-vs-returned count and
   time coverage, plus `requested_range` / `returned_range`,
-  `range_coverage_status`, `source_availability`, and a public-safe
-  `wait_summary` for bounded source diagnostics. `data_quality` still reports
+  `range_coverage_status`, `range_alignment`, `source_availability`, and a
+  public-safe `wait_summary` for bounded source diagnostics. `range_alignment`
+  states period-start timestamp semantics and the
+  `timestamp_within_requested_range` filter policy for date ranges.
+  `data_quality` still reports
   `realtime_guarantee: false`, `entitlement_checked: false`, completion state,
   elapsed time, and partial result readback. Callers should read those fields
   before treating raw `bars[]` as operational evidence.
