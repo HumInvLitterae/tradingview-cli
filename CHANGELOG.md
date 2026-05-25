@@ -28,6 +28,9 @@ package version omits the leading `v`.
   date-range `bars.v1` readback, range-alignment semantics, docs, runtime
   skills, tests, source boundaries, and refactor posture are ready for release
   readiness.
+- Added user-facing getting-started docs in English and Japanese, and staged
+  them in release archives so non-developer users and agents can follow the
+  download, first-check, Desktop readiness, and source-boundary workflow.
 
 ## v0.19.0 - 2026-05-21
 

@@ -25,6 +25,9 @@ esac
 cp README.md CHANGELOG.md LICENSE "$package_dir/"
 cp packaging/agent/AGENTS.md "$package_dir/AGENTS.md"
 cp packaging/agent/AGENTS.md "$package_dir/CLAUDE.md"
+mkdir -p "$package_dir/docs/ja"
+cp docs/getting-started.md "$package_dir/docs/getting-started.md"
+cp docs/ja/getting-started.md "$package_dir/docs/ja/getting-started.md"
 
 skills=(
   # Runtime user-facing skills only. Do not copy development-only skills such as

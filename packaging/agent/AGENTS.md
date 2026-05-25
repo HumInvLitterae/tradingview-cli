@@ -28,6 +28,10 @@ Run `tv --version` to confirm which binary is available. When reporting
 commands to the user, write them as `tv ...` unless the local executable path
 matters.
 
+For a user-first setup walkthrough, read `docs/getting-started.md` from the
+release archive. Japanese user guidance is available at
+`docs/ja/getting-started.md`.
+
 ## First Checks
 
 Use Desktop-free reads when they are enough:
