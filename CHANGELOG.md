@@ -24,6 +24,10 @@ package version omits the leading `v`.
 - Refined the first `v0.20.0` bars plan with downstream feedback on
   weekly/monthly timestamp semantics, range alignment readback, and structured
   date-range failure metadata.
+- Recorded the `v0.20.0` pre-release audit, confirming weekly/monthly
+  date-range `bars.v1` readback, range-alignment semantics, docs, runtime
+  skills, tests, source boundaries, and refactor posture are ready for release
+  readiness.
 
 ## v0.19.0 - 2026-05-21
 
