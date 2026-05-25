@@ -8,12 +8,16 @@ for release and next-phase planning.
 
 Current plan:
 
-- `tradingview-cli-v0.20-pre-release-audit.md`: audit completed `v0.20.0`
-  weekly/monthly bars date-range readback, range alignment, docs, skills,
-  tests, source boundaries, and refactor readiness before release readiness.
+- `tradingview-cli-user-getting-started-docs.md`: add user-facing English and
+  Japanese getting-started docs, README links, and release package staging
+  before `v0.20.0` release readiness.
 
 Recently completed:
 
+- `tradingview-cli-v0.20-pre-release-audit.md`: audited completed `v0.20.0`
+  weekly/monthly bars date-range readback, range alignment, docs, skills,
+  tests, source boundaries, and refactor readiness before the final
+  user-facing docs polish.
 - `tradingview-cli-bars-weekly-monthly-range.md`: extended `tv bars`
   date-range historical readback to weekly and monthly bars while preserving
   the Desktop-free `bars.v1` source boundary.

@@ -42,6 +42,8 @@ Each release archive includes:
 - `README.md`
 - `CHANGELOG.md`
 - `LICENSE`
+- user-facing `docs/getting-started.md`
+- user-facing `docs/ja/getting-started.md`
 - user-facing `AGENTS.md`
 - user-facing `CLAUDE.md`
 - runtime-oriented skills under `.agents/skills/`
@@ -50,6 +52,10 @@ Each release archive includes:
 The user-facing `AGENTS.md` and `CLAUDE.md` are staged from
 `packaging/agent/AGENTS.md`. They are intentionally different from the
 repository root contributor guides.
+
+Only the two getting-started docs are copied from `docs/` into release
+archives. The full repository documentation tree remains a contributor and
+project reference and is not broadly packaged.
 
 ## Runtime skill allowlist
 
@@ -90,8 +96,8 @@ find target/release-package-smoke -maxdepth 4 -print | sort
 git diff --check
 ```
 
-Confirm the archive staging directory includes runtime skills and excludes
-development-only skills.
+Confirm the archive staging directory includes runtime skills and the two
+getting-started docs, and excludes development-only skills and docs.
 
 For release workflow changes, also inspect `.github/workflows/release.yml` and
 ensure the tag-triggered asset names remain stable:

@@ -17,50 +17,26 @@ paywalls, or exchange/data-provider licensing. Market data, Pine scripts,
 alerts, layouts, and account state remain subject to TradingView and
 data-provider terms.
 
-## What `tv` Does
-
-`tv` is one binary with several source categories:
-
-- Desktop-free reads: symbol search, symbol info, scanner-backed quote reads,
-  batch quotes, fundamentals, scanner scans, hotlists, and metainfo.
-- Desktop-backed reads: chart state, OHLCV from the selected chart, screenshots,
-  readiness diagnostics, and chart-source quotes.
-- Desktop-backed operations: chart symbol/timeframe/type changes, watchlist,
-  alerts, drawings, Pine Editor, Replay, Screener, panes, layouts, tabs, and
-  compatibility UI automation.
-- Hybrid commands: commands with explicit source or fallback behavior, such as
-  `tv quote <SYMBOL> --source auto`.
-- Browserless historical bars: bounded Desktop-free `tv bars`.
-
-See `docs/command-source-taxonomy.md` for the durable command classification
-and source/fallback semantics.
-
-## Safety Boundary
-
-Some commands only read public or browser-accessible TradingView data. Other
-commands operate the user's local Desktop session or page state. Before using a
-command that may change chart, account, editor, Replay, Screener, drawing,
-alert, watchlist, or UI state, prefer read-only commands and dry-run modes where
-available.
-
-The default Chrome DevTools endpoint is `127.0.0.1:9222`. Override it with
-`TV_CDP_HOST` and `TV_CDP_PORT` only when your local setup requires it.
-
 ## Installation
 
-GitHub Releases are the first supported binary distribution path. Version tags
-such as `v0.19.0` publish native archives like:
+GitHub Releases are the first supported binary distribution path. For a
+non-developer walkthrough from download to first checks, see
+`docs/getting-started.md`. A Japanese user guide is available at
+`docs/ja/getting-started.md`.
 
-- `tv-v0.19.0-x86_64-unknown-linux-gnu.tar.gz`
-- `tv-v0.19.0-x86_64-apple-darwin.tar.gz`
-- `tv-v0.19.0-aarch64-apple-darwin.tar.gz`
-- `tv-v0.19.0-x86_64-pc-windows-msvc.zip`
+Version tags such as `v0.20.0` publish native archives like:
+
+- `tv-<tag>-x86_64-unknown-linux-gnu.tar.gz`
+- `tv-<tag>-x86_64-apple-darwin.tar.gz`
+- `tv-<tag>-aarch64-apple-darwin.tar.gz`
+- `tv-<tag>-x86_64-pc-windows-msvc.zip`
 - `SHA256SUMS`
 
 Each archive contains the `tv` or `tv.exe` binary, `README.md`,
-`CHANGELOG.md`, `LICENSE`, user-facing agent guides, and runtime-oriented
-TradingView CLI skills. Verify the archive against `SHA256SUMS`, unpack it,
-place the executable on your `PATH`, and confirm the binary:
+`CHANGELOG.md`, `LICENSE`, user-facing getting-started docs, user-facing agent
+guides, and runtime-oriented TradingView CLI skills. Verify the archive
+against `SHA256SUMS`, unpack it, place the executable on your `PATH`, and
+confirm the binary:
 
 ```bash
 tv --version
@@ -76,6 +52,18 @@ Package-manager installers, code signing, notarization, and crates.io
 publication are not part of the current release workflow.
 
 ## Quick Start
+
+For agent-assisted use, put `tv` on `PATH`, ask the agent to run
+`tv --version` first, prefer Desktop-free reads when they are enough, and run
+`tv readiness` before Desktop-backed chart reads or operations. The release
+archive includes `AGENTS.md`, `CLAUDE.md`, and runtime skills that describe the
+safe operating boundary for agents. If `tv` is not on `PATH`, have the agent
+set its current working directory to the unpacked release folder and run
+`./tv ...` on macOS/Linux or `.\tv.exe ...` on Windows.
+
+For the full first-run sequence, including agent setup and TradingView Desktop
+startup choices, read `docs/getting-started.md`. Japanese guidance is in
+`docs/ja/getting-started.md`.
 
 Desktop-free reads do not require TradingView Desktop:
 
@@ -186,6 +174,35 @@ details. See `docs/observation-workflows.md` for practical command sequences
 that combine Desktop-free screening, Desktop-backed chart observation,
 screenshots, browserless bars, and fundamentals reads.
 
+## What `tv` Does
+
+`tv` is one binary with several source categories:
+
+- Desktop-free reads: symbol search, symbol info, scanner-backed quote reads,
+  batch quotes, fundamentals, scanner scans, hotlists, and metainfo.
+- Desktop-backed reads: chart state, OHLCV from the selected chart, screenshots,
+  readiness diagnostics, and chart-source quotes.
+- Desktop-backed operations: chart symbol/timeframe/type changes, watchlist,
+  alerts, drawings, Pine Editor, Replay, Screener, panes, layouts, tabs, and
+  compatibility UI automation.
+- Hybrid commands: commands with explicit source or fallback behavior, such as
+  `tv quote <SYMBOL> --source auto`.
+- Browserless historical bars: bounded Desktop-free `tv bars`.
+
+See `docs/command-source-taxonomy.md` for the durable command classification
+and source/fallback semantics.
+
+## Safety Boundary
+
+Some commands only read public or browser-accessible TradingView data. Other
+commands operate the user's local Desktop session or page state. Before using a
+command that may change chart, account, editor, Replay, Screener, drawing,
+alert, watchlist, or UI state, prefer read-only commands and dry-run modes where
+available.
+
+The default Chrome DevTools endpoint is `127.0.0.1:9222`. Override it with
+`TV_CDP_HOST` and `TV_CDP_PORT` only when your local setup requires it.
+
 ## Output Contract
 
 Most successful commands print one JSON envelope to stdout:
@@ -247,7 +264,11 @@ details, see `docs/breaking-changes-from-js-cli.md`.
 - `docs/release-packaging.md`: release archive contents and packaging checks.
 - `docs/internal-tradingview-apis.md`: public-safe reference for non-public
   TradingView dependencies.
-- `docs/v0.8-roadmap.md`: current roadmap direction.
+- `docs/getting-started.md`: user-facing setup, first checks, and AI-agent
+  workflow.
+- `docs/ja/getting-started.md`: Japanese user-facing setup and AI-agent
+  workflow.
+- `docs/v0.20-roadmap.md`: current roadmap direction.
 
 Historical notes and completed ExecPlans live under `docs/notes/` and
 `docs/plans/archives/`. They explain how the current surface was built, but
