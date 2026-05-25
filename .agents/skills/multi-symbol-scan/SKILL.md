@@ -91,11 +91,12 @@ construction, not on duplicating the full source taxonomy.
    pre/post close fields equivalent to scanner `extended_hours`.
    Use `tv bars <EXCHANGE:SYMBOL> --count <N>` when bounded Desktop-free
    historical bars are useful; use `--from YYYY-MM-DD --to YYYY-MM-DD` with
-   `--timeframe 1D` for reproducible older daily samples. The `--to` date is
-   inclusive. Read
+   `--timeframe 1D`, `1W`, or `1M` for reproducible older daily, weekly, or
+   monthly samples. The `--to` date is inclusive. Read
    `contract_version: "bars.v1"`, `source: "tradingview_bars_ws"`,
    `summary`, `range`, `requested_range`, `returned_range`,
-   `range_coverage_status`, `source_availability`, and `data_quality`, and
+   `range_coverage_status`, `range_alignment`, `source_availability`, and
+   `data_quality`, and
    keep it separate from `tv ohlcv` chart evidence. Treat unavailable bars as
    source diagnostics, not as proof that a symbol has no history.
 4. Set the timeframe once with `tv timeframe <RESOLUTION>` when the scan uses a shared timeframe.

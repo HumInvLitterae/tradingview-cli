@@ -244,17 +244,22 @@ TradingView state, but they write a local file, so screenshot payloads report
 ```bash
 tv bars NASDAQ:AAPL --timeframe 1D --count 5
 tv bars NASDAQ:CRUS --timeframe 1D --from 2010-01-01 --to 2010-12-31
+tv bars NASDAQ:CRUS --timeframe 1W --from 2010-01-01 --to 2010-12-31
 ```
 
 It uses an undocumented TradingView WebSocket chart-session path and reports
 `contract_version: "bars.v1"`, `source: "tradingview_bars_ws"`, and
 `source_category: "desktop_free_read"`. Date-range mode is the reproducible
-source-preparation path for older daily samples; `--count` is a safety cap and
-defaults to 500 in that mode, and `--to` is an inclusive calendar date. Read
+source-preparation path for older daily, weekly, and monthly samples; `--count`
+is a safety cap and defaults to 500 in that mode, and `--to` is an inclusive
+calendar date. Read
 `summary` / `range`,
 `requested_range` / `returned_range`, and `range_coverage_status` for
 requested-vs-returned count and time coverage, then use raw `bars[]` for exact
-OHLCV evidence. Read `source_availability` when the result is partial or
+OHLCV evidence. For weekly and monthly ranges, read `range_alignment` before
+interpreting coverage; TradingView bar timestamps are period-start anchors and
+this command filters by timestamps inside the requested calendar range. Read
+`source_availability` when the result is partial or
 unavailable; its `wait_summary` explains bounded historical-source behavior
 without raw WebSocket frames. Read `data_quality` before using the result: it
 does not guarantee realtime or entitlement status. Do not treat unavailable

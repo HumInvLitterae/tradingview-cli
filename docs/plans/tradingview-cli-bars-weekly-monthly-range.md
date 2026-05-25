@@ -31,22 +31,28 @@ or source mixing.
 - [x] (2026-05-26T01:00Z) Incorporate downstream feedback by fixing the
   weekly/monthly range filter policy and acceptance criteria before
   implementation.
-- [ ] Confirm the current daily range implementation points that must be
+- [x] (2026-05-26T02:00Z) Confirm the current daily range implementation points that must be
   widened for weekly and monthly timeframes.
-- [ ] Implement weekly/monthly date-range validation and market crate request
+- [x] (2026-05-26T02:15Z) Implement weekly/monthly date-range validation and market crate request
   handling while preserving count-only behavior.
-- [ ] Add `range_alignment` readback and confirm payload coverage semantics
+- [x] (2026-05-26T02:25Z) Add `range_alignment` readback and confirm payload coverage semantics
   for daily, weekly, and monthly range reads.
-- [ ] Confirm structured failure details keep range/source readback public-safe.
-- [ ] Update public docs, runtime skills, and help text for weekly/monthly
+- [x] (2026-05-26T02:30Z) Confirm structured failure details keep range/source readback public-safe.
+- [x] (2026-05-26T02:40Z) Update public docs, runtime skills, and help text for weekly/monthly
   date-range reads.
-- [ ] Run focused tests, baseline validation, and public-safe optional live
+- [x] (2026-05-26T03:15Z) Run focused tests, baseline validation, and public-safe optional live
   smoke if useful.
-- [ ] Record outcomes and archive this plan after implementation.
+- [x] (2026-05-26T03:20Z) Record outcomes. Archive this plan in the next
+  planning slice.
 
 ## Surprises & Discoveries
 
-- None yet.
+- A CLI contract probe for weekly date-range behavior unexpectedly reached the
+  Desktop-free WebSocket path and returned a successful weekly `bars.v1`
+  payload. The raw output was not recorded in tracked docs. The test was
+  changed back to validation-only coverage so `cli_contract_bars` stays
+  network-independent, while weekly/monthly validation and payload behavior are
+  covered in market crate tests.
 
 ## Decision Log
 
@@ -78,11 +84,48 @@ or source mixing.
   safer than relying on prose alone.
   Date/Author: 2026-05-26 / Codex.
 
+- Decision: Keep CLI contract tests network-independent for weekly/monthly
+  date-range support.
+  Rationale: The weekly/monthly feature uses a Desktop-free live WebSocket
+  source after validation. Integration contract tests should continue to prove
+  help text and network-before-validation behavior, while market crate tests
+  cover request validation and payload construction deterministically.
+  Date/Author: 2026-05-26 / Codex.
+
 ## Outcomes & Retrospective
 
-No implementation has been completed yet. The expected outcome is additive
+Implementation is complete. The user-visible outcome is additive
 weekly/monthly date-range support for `tv bars` with no behavior change to
-recent-count mode and no hidden fallback to selected-chart commands.
+recent-count mode and no hidden fallback to selected-chart commands. `bars.v1`
+date-range payloads and structured failure details now include
+`range_alignment`, using
+`timestamp_within_requested_range` and `period_start` timestamp semantics as
+explicit source readback.
+
+Focused and baseline validation passed:
+
+- `cargo test -p tradingview-market bars -- --nocapture`
+- `cargo test -p tradingview-cli market::bars -- --nocapture`
+- `cargo test -p tradingview-cli --test cli_contract_bars -- --nocapture`
+- `cargo test -p tradingview-cli --test live_bars`
+- `cargo fmt --check`
+- `cargo clippy --workspace --all-targets --all-features -- -D warnings`
+- `cargo test --workspace`
+- `cargo metadata --no-deps --format-version 1`
+- `git diff --check`
+- `bash -n scripts/stage-release-package-files.sh`
+- `uvx --with pyyaml python .../quick_validate.py` for the updated
+  `market-data-interpretation`, `chart-analysis`, and `multi-symbol-scan`
+  runtime skills
+
+Optional live smoke was run with public-safe summary output only. For
+`NASDAQ:CRUS` over `2010-01-01` through `2010-12-31`, `1W` returned 52 bars
+with complete range coverage and `1M` returned 12 bars with complete range
+coverage. Both reported `range_alignment.range_filter_policy:
+"timestamp_within_requested_range"` and `bar_timestamp_semantics:
+"period_start"`. No raw bars, raw WebSocket frames, raw payloads, session ids,
+credentials, account-local metadata, target ids, or local paths were added to
+tracked docs.
 
 ## Context and Orientation
 

@@ -60,11 +60,12 @@ observation surface.
    `source_category`, `requires_desktop`, and `non_mutating` when comparing
    Desktop-backed chart reads with Desktop-free scanner reads.
    Use `tv bars <EXCHANGE:SYMBOL>` only when symbol-targeted Desktop-free
-   historical bars are desired. For old daily samples, prefer
-   `tv bars <EXCHANGE:SYMBOL> --timeframe 1D --from YYYY-MM-DD --to YYYY-MM-DD`;
+   historical bars are desired. For old daily, weekly, or monthly samples,
+   prefer
+   `tv bars <EXCHANGE:SYMBOL> --timeframe 1D|1W|1M --from YYYY-MM-DD --to YYYY-MM-DD`;
    `--count` is a safety cap in that mode and `--to` is an inclusive calendar
    date. Read its `summary` / `range`, `requested_range` / `returned_range`,
-   `range_coverage_status`, and
+   `range_coverage_status`, `range_alignment`, and
    `source_availability` for partial or unavailable source diagnostics, and
    keep it separate from selected-chart `tv ohlcv` evidence.
 5. Use `tv quote <SYMBOL> --source chart` when the selected Desktop chart feed

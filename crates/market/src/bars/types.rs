@@ -150,6 +150,18 @@ impl BarsRequest {
         }
     }
 
+    pub(super) fn range_alignment_value(&self) -> Value {
+        if !self.is_date_range() {
+            return Value::Null;
+        }
+        json!({
+            "timeframe": self.timeframe,
+            "bar_timestamp_semantics": "period_start",
+            "range_filter_policy": "timestamp_within_requested_range",
+            "requested_range_interpretation": "inclusive_calendar_dates",
+        })
+    }
+
     pub(super) fn date_range_bounds(&self) -> Option<(i64, i64)> {
         match &self.mode {
             BarsRequestMode::RecentCount => None,
