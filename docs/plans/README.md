@@ -8,12 +8,15 @@ for release and next-phase planning.
 
 Current plan:
 
-- `tradingview-cli-v0.19.0-release-readiness.md`: prepare the `v0.19.0`
-  release state, including version, changelog, release notes, README asset
-  examples, and package validation.
+- `tradingview-cli-bars-weekly-monthly-range.md`: extend `tv bars`
+  date-range historical readback planning toward weekly and monthly bars while
+  preserving the Desktop-free `bars.v1` source boundary.
 
 Recently completed:
 
+- `tradingview-cli-v0.19.0-release-readiness.md`: prepared the `v0.19.0`
+  release state, including version, changelog, release notes, README asset
+  examples, and package validation.
 - `tradingview-cli-v0.19-pre-release-audit.md`: audited completed `v0.19.0`
   daily bars date-range readback before release readiness.
 - `tradingview-cli-bars-date-range-readback.md`: added the first `v0.19.0`
