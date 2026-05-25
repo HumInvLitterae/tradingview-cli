@@ -12,6 +12,9 @@ package version omits the leading `v`.
 - Added the `v0.20.0` roadmap direction and first weekly/monthly `tv bars`
   date-range plan, focusing on historical bars range maturity without adding
   source mixing, realtime feeds, or trading recommendations.
+- Refined the first `v0.20.0` bars plan with downstream feedback on
+  weekly/monthly timestamp semantics, range alignment readback, and structured
+  date-range failure metadata.
 
 ## v0.19.0 - 2026-05-21
 
