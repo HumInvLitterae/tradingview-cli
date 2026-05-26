@@ -1076,6 +1076,7 @@ pub async fn dispatch(
         },
         Command::Stream { .. } => unreachable!("stream commands use a dedicated JSONL runner"),
         Command::Observe { .. } => unreachable!("observe commands use a dedicated JSONL runner"),
+        Command::Watch { .. } => unreachable!("watch commands use a dedicated JSONL runner"),
         Command::Ui {
             command: UiCommand::Eval { expression },
         } => {

@@ -144,6 +144,9 @@ observation surface.
    lower-level stream events. Treat them as additive metadata on existing
    observation events; summary events describe the bounded observation window
    and are not a new realtime multi-symbol feed.
+   Do not confuse this with `tv watch compare`, which is a Desktop-free
+   scanner-backed JSONL watch for several known symbols and does not read the
+   selected chart.
 10. Capture visual evidence only when useful: `tv screenshot --region chart --output <PATH>`.
     Treat screenshot payloads as Desktop-backed visual evidence reads; they are
     `non_mutating: true` but `writes_file: true`.

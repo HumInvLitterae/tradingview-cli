@@ -22,6 +22,7 @@ construction, not on duplicating the full source taxonomy.
 | --- | --- |
 | Broad scanner discovery | `tv scanner scan` or `tv scanner hotlist` |
 | Known-symbol first-pass comparison | `tv compare <SYMBOL>...` |
+| Known-symbol short-window watch | `tv watch compare <SYMBOL>...` |
 | Quote-only comparison | `tv quotes <SYMBOL>...` |
 | One-symbol finalist detail | `tv snapshot <SYMBOL>` |
 | Finalist time-window chart evidence | `tv observe chart --duration-ms ...` |
@@ -73,6 +74,12 @@ construction, not on duplicating the full source taxonomy.
    only when one section is enough. Preserve
    `source_category: "desktop_free_read"`, `requires_desktop: false`, and
    `non_mutating: true` when reporting this REST-backed evidence.
+   Use `tv watch compare <SYMBOL>... --duration-ms <MS> --interval <MS>` when
+   the same known candidate set needs a short scanner-backed JSONL watch
+   window. Read `watch_compare.v1` readiness / sample / heartbeat / summary
+   events and report sample count, poll count, error count, source marker, and
+   end reason. This is not a daemon, selected-chart feed, ranking, or trading
+   recommendation.
 3. Treat scanner-backed price reads as screening evidence rather than a
    realtime entitlement guarantee. Use `tv quote <SYMBOL> --source chart` only
    for symbols where the selected TradingView Desktop chart feed matters. Do
@@ -116,7 +123,9 @@ construction, not on duplicating the full source taxonomy.
    JSONL `source_category`, `requires_desktop`, and `non_mutating` metadata
    before comparing those observations with Desktop-free scanner or quote
    results. Apply the same source metadata check to `tv state`, `tv ohlcv`,
-   and chart-source quote payloads.
+   and chart-source quote payloads. Use `tv watch compare` instead when the
+   short-window question is about a known candidate set using Desktop-free
+   scanner-backed quote evidence.
 8. After user approval, add selected symbols with
    `tv watchlist add-bulk <SYMBOL>... --allow-partial`; it inherits the
    API-backed single-symbol add path and reports duplicates or partial

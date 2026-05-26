@@ -76,6 +76,9 @@ tv --version
 - `tv quote`、`tv quotes`、scanner、fundamentals、`tv bars` は
   TradingView Desktop を使わずに読み取ります。
 - `tv bars` は、再現可能な履歴の足を取得するための入口です。
+- `tv watch compare` は、既知の複数銘柄を短時間だけ見続けるための
+  コマンドです。TradingView Desktop を使わず、scanner 由来の価格情報を
+  1行ずつ JSON で出します。
 - `tv range` は、表示中の Desktop チャートの表示範囲を動かすだけです。
 - `tv ohlcv` は、選択中の Desktop チャートから足を読みます。
 - `tv quote --source quote-data` は、Desktop を使って quote-data という
@@ -96,6 +99,7 @@ tv --version
 tv quote AAPL
 tv info NASDAQ:AAPL
 tv bars NASDAQ:AAPL --timeframe 1D --count 5
+tv watch compare NASDAQ:AAPL NASDAQ:MSFT --duration-ms 10000 --interval 2000
 ```
 
 古いチャート例や検証用の履歴データを取得したい場合は、表示中チャートを動かす
@@ -196,6 +200,18 @@ tv stream bars --max-events 5
 これらのコマンドは、準備状態、サンプル、定期的な状態通知、最後のまとめを出します。
 選択中の Desktop チャートを観測するものであり、TradingView Desktop を使わない
 履歴の足の取得や、複数銘柄のリアルタイム配信ではありません。
+
+TradingView Desktop を使わずに、既知の複数銘柄を短時間だけ見続けたい場合は、
+次のコマンドを使います。
+
+```bash
+tv watch compare NASDAQ:AAPL NASDAQ:MSFT --duration-ms 10000 --interval 2000 --heartbeat-ms 3000
+```
+
+このコマンドは、`contract_version: "watch_compare.v1"` を持つ JSON 行を
+出します。`_event` を見て、準備状態、サンプル、定期的な状態通知、最後のまとめを
+区別してください。これは scanner 由来の価格情報であり、選択中の Desktop
+チャートを読んだものではありません。
 
 ## 7. 次に読むもの
 

@@ -65,6 +65,16 @@ do not mutate the chart by themselves, and do not imply that `chart_quote`
 contains scanner-style extended-hours values. `chart_quote` is the canonical
 value; do not treat `quote_chart` as an alias.
 
+`tv watch compare <SYMBOL>...` is also Desktop-free, but it is a bounded JSONL
+workflow rather than a single JSON packet. It polls scanner-backed quote
+evidence for a known candidate set and emits readiness, sample, heartbeat, and
+summary events with `contract_version: "watch_compare.v1"`, `_watch:
+"compare"`, `source: "scanner_scan_rest"`, and `source_category:
+"desktop_free_read"`. Treat heartbeat and summary events as observation-window
+readback, not market-data samples. The command does not connect to TradingView
+Desktop, does not use selected-chart quote, does not read browserless bars,
+and does not rank or recommend symbols.
+
 ### Desktop-backed read
 
 `requires_desktop`: yes. `may_mutate`: no intended account mutation, though
