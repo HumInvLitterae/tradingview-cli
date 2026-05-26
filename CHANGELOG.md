@@ -22,6 +22,10 @@ package version omits the leading `v`.
 
 ### Documentation
 
+- Recorded the `v0.21.0` pre-release audit, confirming range-scale readback,
+  5000-count date-range cap, narrow intraday date-range support, docs,
+  runtime skills, tests, source boundaries, and refactor posture are ready for
+  release readiness.
 - Updated the intraday `tv bars --from --to` plan for `v0.21.0` to move from
   feasibility into a narrow `5` / `15` / `30` / `60` implementation while
   keeping the remaining intraday range support deferred.

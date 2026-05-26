@@ -8,12 +8,14 @@ for release and next-phase planning.
 
 Current plan:
 
-- `tradingview-cli-bars-intraday-range-feasibility.md`: confirm the
-  feasibility and contract criteria for future intraday `tv bars --from/--to`
-  support while keeping the stable CLI behavior guarded.
+- `tradingview-cli-v0.21-pre-release-audit.md`: audit completed `v0.21.0`
+  range-scale and narrow intraday date-range support before release readiness.
 
 Recently completed:
 
+- `tradingview-cli-bars-intraday-range-feasibility.md`: expanded intraday
+  date-range `tv bars --from/--to` support to `5`, `15`, `30`, and `60`
+  while keeping the remaining intraday date ranges guarded.
 - `tradingview-cli-bars-large-range-pagination.md`: expanded date-range
   `tv bars --count` as a returned-bar safety cap up to 5000 while keeping
   recent count mode capped at 500 and intraday date-range guarded.
