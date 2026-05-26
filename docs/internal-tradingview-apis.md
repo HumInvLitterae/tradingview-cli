@@ -355,7 +355,7 @@ Safety boundary:
 - `tv bars` is a separate symbol-targeted command and keeps requests bounded
   by count or by supported intraday, daily, weekly, or monthly date range with
   a count safety cap
-- `tv bars --from YYYY-MM-DD --to YYYY-MM-DD --timeframe 15|60|1D|1W|1M` is
+- `tv bars --from YYYY-MM-DD --to YYYY-MM-DD --timeframe 5|15|30|60|1D|1W|1M` is
   the reproducible historical-source preparation path for supported intraday,
   daily, and higher-timeframe samples. The `--to` value is an inclusive
   calendar date. In date-range mode, `--count` defaults to 500 and may be

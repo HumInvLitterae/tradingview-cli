@@ -248,13 +248,14 @@ selected Desktop chart through CDP.
 Use count mode for recent bounded samples, for example
 `tv bars NASDAQ:AAPL --timeframe 1D --count 5`. Use date-range mode for
 reproducible older intraday, daily, weekly, or monthly samples, for example
-`tv bars NASDAQ:AAPL --timeframe 60 --from 2026-05-01 --to 2026-05-22` or
+`tv bars NASDAQ:AAPL --timeframe 5 --from 2026-05-20 --to 2026-05-22`,
+`tv bars NASDAQ:AAPL --timeframe 60 --from 2026-05-01 --to 2026-05-22`, or
 `tv bars NASDAQ:CRUS --timeframe 1D --from 2010-01-01 --to 2010-12-31`.
 In date-range mode, `--count` is a safety cap on returned bars and defaults to
 500. It can be raised up to 5000 in date-range mode; recent count mode stays
-capped at 500. Date-range mode currently supports `15`, `60`, `1D`, `1W`, and
-`1M`; other intraday timeframes remain guarded. The `--to` date is an
-inclusive calendar date. `tv range` is only a selected Desktop chart viewport
+capped at 500. Date-range mode currently supports `5`, `15`, `30`, `60`,
+`1D`, `1W`, and `1M`; other intraday timeframes remain guarded. The `--to`
+date is an inclusive calendar date. `tv range` is only a selected Desktop chart viewport
 operation; it does not make `tv ohlcv --count ...` a stable historical export
 for that displayed period.
 

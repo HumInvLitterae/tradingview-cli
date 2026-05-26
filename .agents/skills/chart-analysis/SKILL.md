@@ -62,7 +62,7 @@ observation surface.
    Use `tv bars <EXCHANGE:SYMBOL>` only when symbol-targeted Desktop-free
    historical bars are desired. For old intraday, daily, weekly, or monthly
    samples, prefer
-   `tv bars <EXCHANGE:SYMBOL> --timeframe 15|60|1D|1W|1M --from YYYY-MM-DD --to YYYY-MM-DD`;
+   `tv bars <EXCHANGE:SYMBOL> --timeframe 5|15|30|60|1D|1W|1M --from YYYY-MM-DD --to YYYY-MM-DD`;
    other intraday timeframes remain guarded in date-range mode. `--count` is
    a safety cap in that mode, defaults to 500, and may be raised up to 5000.
    Recent count mode remains capped at 500. `--to` is an inclusive calendar

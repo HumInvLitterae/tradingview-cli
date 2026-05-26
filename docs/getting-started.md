@@ -102,13 +102,14 @@ Desktop chart:
 tv bars NASDAQ:CRUS --timeframe 1D --from 2010-01-01 --to 2010-12-31
 tv bars NASDAQ:CRUS --timeframe 1W --from 2010-01-01 --to 2010-12-31
 tv bars NASDAQ:CRUS --timeframe 1M --from 2010-01-01 --to 2010-12-31
+tv bars NASDAQ:AAPL --timeframe 5 --from 2026-05-20 --to 2026-05-22 --count 1000
 tv bars NASDAQ:AAPL --timeframe 60 --from 2026-05-01 --to 2026-05-22 --count 1000
 ```
 
 In date-range mode, read `range_coverage_status` and `range_alignment` before
-interpreting raw `bars[]`. Date-range mode currently supports `15`, `60`,
-`1D`, `1W`, and `1M`; other intraday timeframes remain guarded. Intraday,
-weekly, and monthly bars use period-start timestamps and are filtered by
+interpreting raw `bars[]`. Date-range mode currently supports `5`, `15`,
+`30`, `60`, `1D`, `1W`, and `1M`; other intraday timeframes remain guarded.
+Intraday, weekly, and monthly bars use period-start timestamps and are filtered by
 timestamps within the requested inclusive calendar range. The `--count` option
 is the maximum number of bars to return in date-range mode; it defaults to 500
 and can be raised up to 5000. For recent count mode, the maximum stays 500.

@@ -84,7 +84,7 @@ Do not use `TV_CDP_TARGET_ID`; explicit target handoff is `--target-id`.
 - Browserless historical bars use `tv bars <EXCHANGE:SYMBOL>` as a bounded
   Desktop-free read with `contract_version: "bars.v1"`. They do not guarantee
   realtime or entitlement status. Use `--from YYYY-MM-DD --to YYYY-MM-DD`
-  with `--timeframe 15`, `60`, `1D`, `1W`, or `1M` for reproducible older
+  with `--timeframe 5`, `15`, `30`, `60`, `1D`, `1W`, or `1M` for reproducible older
   intraday, daily, weekly, or monthly samples; other intraday timeframes
   remain guarded in date-range mode. `--to` is an inclusive calendar date.
   Read `summary` / `range`, `requested_range` / `returned_range`,
