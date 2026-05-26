@@ -9,11 +9,12 @@ package version omits the leading `v`.
 
 ### Added
 
-- Added narrow intraday date-range support to `tv bars --from --to` for
-  `15` and `60` timeframes while keeping other intraday date ranges guarded.
+- Expanded narrow intraday date-range support in `tv bars --from --to` to
+  `5`, `15`, `30`, and `60` timeframes while keeping the remaining intraday
+  date ranges guarded.
 - Expanded `tv bars --from --to` date-range mode so `--count` remains a
-  returned-bar safety cap but may be raised to 5000 for daily, weekly, and
-  monthly historical ranges. Recent count mode remains capped at 500.
+  returned-bar safety cap but may be raised to 5000 for supported date-range
+  reads. Recent count mode remains capped at 500.
 - Added additive `range_fetch_summary` readback to `tv bars` date-range
   payloads and structured failure details so bounded fetch windows,
   `request_more_data` attempts, returned-count caps, and range truncation
@@ -22,8 +23,8 @@ package version omits the leading `v`.
 ### Documentation
 
 - Updated the intraday `tv bars --from --to` plan for `v0.21.0` to move from
-  feasibility into a narrow `15` / `60` implementation while keeping broader
-  intraday range support deferred.
+  feasibility into a narrow `5` / `15` / `30` / `60` implementation while
+  keeping the remaining intraday range support deferred.
 - Added the `v0.21.0` roadmap direction and first range-scale / intraday
   readiness plan, grouping large-range batching, pagination, and intraday
   date-range work under the existing Desktop-free `bars.v1` historical bars

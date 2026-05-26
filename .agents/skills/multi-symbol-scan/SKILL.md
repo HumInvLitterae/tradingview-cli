@@ -91,7 +91,7 @@ construction, not on duplicating the full source taxonomy.
    pre/post close fields equivalent to scanner `extended_hours`.
    Use `tv bars <EXCHANGE:SYMBOL> --count <N>` when bounded Desktop-free
    historical bars are useful; use `--from YYYY-MM-DD --to YYYY-MM-DD` with
-   `--timeframe 15`, `60`, `1D`, `1W`, or `1M` for reproducible older
+   `--timeframe 5`, `15`, `30`, `60`, `1D`, `1W`, or `1M` for reproducible older
    intraday, daily, weekly, or monthly samples. Other intraday timeframes
    remain guarded in date-range mode. In that mode, `--count` defaults to 500
    and may be raised up to 5000 as a returned-bar safety cap; recent count mode

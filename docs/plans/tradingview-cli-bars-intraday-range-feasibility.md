@@ -1,4 +1,4 @@
-# Implement narrow intraday date-range support for `tv bars`
+# Expand narrow intraday date-range support for `tv bars`
 
 This ExecPlan is a living document. Keep `Progress`, `Surprises &
 Discoveries`, `Decision Log`, and `Outcomes` updated while working.
@@ -7,11 +7,13 @@ Discoveries`, `Decision Log`, and `Outcomes` updated while working.
 
 `tv bars --from/--to` is now mature for daily, weekly, and monthly historical
 ranges, including `range_alignment`, `range_fetch_summary`, and a 5000-bar
-date-range safety cap. Feasibility work showed that count-only `15` and `60`
-intraday reads already behave through the existing `bars.v1` source.
+date-range safety cap. Feasibility work first showed that count-only `15` and
+`60` intraday reads behave through the existing `bars.v1` source, and the
+first intraday slice unlocked those two timeframes.
 
-This slice unlocks a narrow stable intraday date-range set: `15` and `60`.
-It does not unlock `1`, `3`, `5`, `30`, `45`, `120`, `180`, or `240`.
+This follow-up expands the narrow stable intraday date-range set to `5`,
+`15`, `30`, and `60`. It does not unlock `1`, `3`, `45`, `120`, `180`, or
+`240`.
 
 ## Progress
 
@@ -25,10 +27,17 @@ It does not unlock `1`, `3`, `5`, `30`, `45`, `120`, `180`, or `240`.
 - [x] (2026-05-26T10:05Z) Decide to proceed from feasibility to narrow
   implementation for `15` and `60` only.
 - [x] (2026-05-26T10:15Z) Expand date-range validation, help, docs, and
-  runtime skills to list supported date-range timeframes as `15`, `60`,
-  `1D`, `1W`, and `1M`.
+  runtime skills for the initial `15`, `60`, `1D`, `1W`, and `1M` supported
+  list.
 - [x] (2026-05-26T10:35Z) Run focused tests, full baseline, runtime skill
   validation, and public-safe live smoke for `15` and `60` date ranges.
+- [x] (2026-05-26T12:05Z) Decide that large-range batching / pagination is
+  sufficient for now with the 5000 date-range cap and `range_fetch_summary`.
+- [x] (2026-05-26T12:10Z) Expand the narrow intraday stable set to include
+  the high-value `5` and `30` timeframes while keeping `1`, `3`, `45`,
+  `120`, `180`, and `240` guarded.
+- [x] (2026-05-26T12:35Z) Run focused tests, runtime skill validation, and
+  public-safe live smoke for `5` and `30` date ranges.
 
 ## Surprises & Discoveries
 
@@ -44,18 +53,35 @@ It does not unlock `1`, `3`, `5`, `30`, `45`, `120`, `180`, or `240`.
 - Public-safe live smoke returned complete coverage for both `NASDAQ:AAPL`
   `60` from 2026-05-01 to 2026-05-22 and `NASDAQ:AAPL` `15` from
   2026-05-20 to 2026-05-22.
+- User feedback clarified that `5` and `30` are more useful than the less-used
+  remaining intraday timeframes for near-term date-spanning reviews. They can
+  use the same `bars.v1` range contract without changing pagination or source
+  behavior.
+- Public-safe live smoke returned complete coverage for both `NASDAQ:AAPL`
+  `5` from 2026-05-20 to 2026-05-22 and `NASDAQ:AAPL` `30` from
+  2026-05-01 to 2026-05-22.
 
 ## Decision Log
 
-- Decision: Unlock only `15` and `60` for stable intraday date-range reads in
+- Decision: Initially unlock only `15` and `60` for stable intraday date-range reads in
   this slice.
   Rationale: count-only smoke confirmed these two paths behave through
   `bars.v1`, while smaller or less-proven intraday ranges still carry higher
   retention and timeout risk.
-- Decision: Keep `1`, `3`, `5`, `30`, `45`, `120`, `180`, and `240` guarded
+- Decision: Initially keep `1`, `3`, `5`, `30`, `45`, `120`, `180`, and `240` guarded
   for date-range mode.
   Rationale: narrow support gives downstream a usable intraday range surface
   without implying all intraday history is equally available.
+- Decision: Add `5` and `30` after the initial `15` / `60` slice.
+  Rationale: these two are high-value intraday review intervals and fit the
+  same `bars.v1` date-range contract. This still avoids presenting every
+  count-only intraday timeframe as equally tested for date-range use.
+- Decision: Keep `1`, `3`, `45`, `120`, `180`, and `240` guarded for
+  date-range mode.
+  Rationale: `1` and `3` can produce large date-spanning result sets quickly,
+  while `45`, `120`, `180`, and `240` are lower-priority intervals for the
+  current workflow. They should be revisited only with a separate acceptance
+  pass.
 - Decision: Treat intraday range as the same `bars.v1` source family, not a
   new source.
   Rationale: future implementation should reuse `tradingview_bars_ws`,
@@ -72,8 +98,8 @@ It does not unlock `1`, `3`, `5`, `30`, `45`, `120`, `180`, or `240`.
 
 ## Outcomes
 
-This plan implements the first stable intraday date-range slice. The accepted
-timeframes are `15`, `60`, `1D`, `1W`, and `1M`. The still-guarded intraday
+This plan implements the first stable intraday date-range slices. The accepted
+timeframes are `5`, `15`, `30`, `60`, `1D`, `1W`, and `1M`. The still-guarded intraday
 timeframes may be revisited only if a later slice can show that:
 
 - unsupported, unavailable, partial, timeout, and count-cap cases remain
@@ -96,10 +122,10 @@ Current behavior:
 
 - `tv bars <SYMBOL> --timeframe 1|3|5|15|30|45|60|120|180|240 --count N`
   is a count-only Desktop-free read with maximum count 500.
-- `tv bars <SYMBOL> --timeframe 15|60|1D|1W|1M --from YYYY-MM-DD --to
+- `tv bars <SYMBOL> --timeframe 5|15|30|60|1D|1W|1M --from YYYY-MM-DD --to
   YYYY-MM-DD` is a date-range Desktop-free read with default cap 500 and
   maximum cap 5000.
-- Other intraday date-range requests still fail validation before network
+- `1`, `3`, `45`, `120`, `180`, and `240` date-range requests still fail validation before network
   access.
 
 Future intraday work should evaluate TradingView retention, entitlement,
@@ -109,9 +135,9 @@ account-local metadata into tracked files.
 
 ## Work Items
 
-1. Update validation so `15`, `60`, `1D`, `1W`, and `1M` are accepted in
+1. Update validation so `5`, `15`, `30`, `60`, `1D`, `1W`, and `1M` are accepted in
    date-range mode.
-2. Keep `1`, `3`, `5`, `30`, `45`, `120`, `180`, and `240` guarded in
+2. Keep `1`, `3`, `45`, `120`, `180`, and `240` guarded in
    date-range mode.
 3. Preserve the payload contract:
    - `range_alignment` remains timeframe-specific timestamp readback;
@@ -135,7 +161,8 @@ Completed validation for the feasibility portion:
   - intraday date-range `15` remained a validation error with supported
     timeframes `1D`, `1W`, and `1M`.
 
-Completed implementation validation:
+Completed implementation validation, repeated after the `5` / `30`
+expansion:
 
 - `cargo test -p tradingview-market bars -- --nocapture`
 - `cargo test -p tradingview-cli market::bars -- --nocapture` (0 matching
@@ -157,6 +184,12 @@ Public-safe live smoke:
   `range_coverage_status: "complete"`, `range_truncated: false`, and
   `range_truncation_reason: "none"`.
 - `NASDAQ:AAPL` `15` from 2026-05-20 to 2026-05-22 returned 78 bars,
+  `range_coverage_status: "complete"`, `range_truncated: false`, and
+  `range_truncation_reason: "none"`.
+- `NASDAQ:AAPL` `5` from 2026-05-20 to 2026-05-22 returned 234 bars,
+  `range_coverage_status: "complete"`, `range_truncated: false`, and
+  `range_truncation_reason: "none"`.
+- `NASDAQ:AAPL` `30` from 2026-05-01 to 2026-05-22 returned 208 bars,
   `range_coverage_status: "complete"`, `range_truncated: false`, and
   `range_truncation_reason: "none"`.
 

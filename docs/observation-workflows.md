@@ -243,6 +243,7 @@ TradingView state, but they write a local file, so screenshot payloads report
 
 ```bash
 tv bars NASDAQ:AAPL --timeframe 1D --count 5
+tv bars NASDAQ:AAPL --timeframe 5 --from 2026-05-20 --to 2026-05-22 --count 1000
 tv bars NASDAQ:AAPL --timeframe 60 --from 2026-05-01 --to 2026-05-22 --count 1000
 tv bars NASDAQ:CRUS --timeframe 1D --from 2010-01-01 --to 2010-12-31
 tv bars NASDAQ:CRUS --timeframe 1W --from 2010-01-01 --to 2010-12-31
@@ -251,19 +252,19 @@ tv bars NASDAQ:CRUS --timeframe 1W --from 2010-01-01 --to 2010-12-31
 It uses an undocumented TradingView WebSocket chart-session path and reports
 `contract_version: "bars.v1"`, `source: "tradingview_bars_ws"`, and
 `source_category: "desktop_free_read"`. Date-range mode is the reproducible
-source-preparation path for older daily, weekly, and monthly samples; `--count`
 source-preparation path for supported intraday, daily, weekly, and monthly
-samples; `--count` is a safety cap and defaults to 500 in that mode. It can be
+samples. `--count` is a safety cap and defaults to 500 in that mode. It can be
 raised up to 5000 for date ranges; recent count mode stays capped at 500.
-Date-range mode currently supports `15`, `60`, `1D`, `1W`, and `1M`; other
-intraday timeframes remain guarded. The `--to` value is an inclusive calendar
-date. Read
+Date-range mode currently supports `5`, `15`, `30`, `60`, `1D`, `1W`, and
+`1M`; other intraday timeframes remain guarded. The `--to` value is an
+inclusive calendar date. Read
 `summary` / `range`,
 `requested_range` / `returned_range`, and `range_coverage_status` for
 requested-vs-returned count and time coverage, then use raw `bars[]` for exact
-OHLCV evidence. For intraday, weekly, and monthly ranges, read `range_alignment` before
-interpreting coverage; TradingView bar timestamps are period-start anchors and
-this command filters by timestamps inside the requested calendar range. Read
+OHLCV evidence. For intraday, weekly, and monthly ranges, read
+`range_alignment` before interpreting coverage; TradingView bar timestamps are
+period-start anchors and this command filters by timestamps inside the
+requested calendar range. Read
 `range_fetch_summary` to see how many bounded fetch windows were used, how
 many `request_more_data` calls were sent, how many bars were observed,
 filtered, and returned, and whether the requested range was truncated by the

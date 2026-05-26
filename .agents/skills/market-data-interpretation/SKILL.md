@@ -144,7 +144,7 @@ chart-session path. Report `contract_version: "bars.v1"`,
 `summary`, `range`, `requested_range`, `returned_range`,
 `range_coverage_status`, `range_alignment`, `range_fetch_summary`,
 `source_availability`, `data_quality`, and warnings. Use `tv bars --timeframe
-15|60|1D|1W|1M --from YYYY-MM-DD --to YYYY-MM-DD` when old source-guided
+5|15|30|60|1D|1W|1M --from YYYY-MM-DD --to YYYY-MM-DD` when old source-guided
 intraday, daily, or higher-timeframe samples need reproducible bars input;
 other intraday timeframes remain guarded in date-range mode. `--count` is a
 safety cap in that mode and defaults to 500, with a maximum of 5000. Recent
