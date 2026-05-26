@@ -152,6 +152,7 @@ Browserless historical bars are Desktop-free and bounded:
 
 ```bash
 tv bars NASDAQ:AAPL --timeframe 1D --count 5
+tv bars NASDAQ:AAPL --timeframe 60 --from 2026-05-01 --to 2026-05-22 --count 1000
 tv bars NASDAQ:CRUS --timeframe 1D --from 2010-01-01 --to 2010-12-31
 tv bars NASDAQ:CRUS --timeframe 1W --from 2010-01-01 --to 2010-12-31
 ```
@@ -161,9 +162,11 @@ Read `summary`, `range`, `requested_range`, `returned_range`, and
 coverage, then inspect raw `bars[]` when exact OHLCV evidence is needed. In
 date-range mode, `--count` is a safety cap on returned bars and defaults to
 500. It can be raised up to 5000 in date-range mode; recent count mode stays
-capped at 500. The `--to` date is an inclusive calendar date. For weekly and
-monthly date ranges, read `range_alignment` to see that bar timestamps are
-period anchors and filtering uses timestamps within the requested range. Read
+capped at 500. Date-range mode currently supports `15`, `60`, `1D`, `1W`, and
+`1M`; other intraday timeframes remain guarded. The `--to` date is an
+inclusive calendar date. For intraday, weekly, and monthly date ranges, read
+`range_alignment` to see that bar timestamps are period anchors and filtering
+uses timestamps within the requested range. Read
 `range_fetch_summary` to see bounded fetch-window counts, added
 `request_more_data` attempts, returned-count caps, and truncation reasons.
 Read `source_availability` and its `wait_summary` when bars are partial or

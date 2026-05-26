@@ -15,6 +15,8 @@ fn bars_help_explains_stable_desktop_free_boundary() {
         .stdout(predicate::str::contains("--from"))
         .stdout(predicate::str::contains("--to"))
         .stdout(predicate::str::contains("date-range"))
+        .stdout(predicate::str::contains("15"))
+        .stdout(predicate::str::contains("60"))
         .stdout(predicate::str::contains("1W"))
         .stdout(predicate::str::contains("1M"))
         .stdout(predicate::str::contains("range_alignment"))
@@ -138,7 +140,7 @@ fn bars_rejects_invalid_date_range_inputs_before_network() {
     assert_eq!(value["error"]["details"]["from"], "2020-03-31");
     assert_eq!(value["error"]["details"]["to"], "2020-01-01");
 
-    let intraday = tv()
+    let unsupported_intraday = tv()
         .env("TV_CDP_PORT", "9")
         .args([
             "bars",
@@ -153,14 +155,40 @@ fn bars_rejects_invalid_date_range_inputs_before_network() {
         .assert()
         .failure()
         .code(1);
-    let value = stderr_json(&intraday);
+    let value = stderr_json(&unsupported_intraday);
     assert_eq!(value["command"], "bars");
     assert_eq!(value["error"]["kind"], "validation");
     assert_eq!(value["error"]["details"]["requested_timeframe"], "1");
     assert_eq!(
         value["error"]["details"]["supported_timeframes"],
-        serde_json::json!(["1D", "1W", "1M"])
+        serde_json::json!(["15", "60", "1D", "1W", "1M"])
     );
+
+    for timeframe in ["5", "30", "120"] {
+        let unsupported_intraday = tv()
+            .env("TV_CDP_PORT", "9")
+            .args([
+                "bars",
+                "NASDAQ:AAPL",
+                "--timeframe",
+                timeframe,
+                "--from",
+                "2020-01-01",
+                "--to",
+                "2020-03-31",
+            ])
+            .assert()
+            .failure()
+            .code(1);
+        let value = stderr_json(&unsupported_intraday);
+        assert_eq!(value["command"], "bars");
+        assert_eq!(value["error"]["kind"], "validation");
+        assert_eq!(value["error"]["details"]["requested_timeframe"], timeframe);
+        assert_eq!(
+            value["error"]["details"]["supported_timeframes"],
+            serde_json::json!(["15", "60", "1D", "1W", "1M"])
+        );
+    }
 
     let too_many_range = tv()
         .env("TV_CDP_PORT", "9")

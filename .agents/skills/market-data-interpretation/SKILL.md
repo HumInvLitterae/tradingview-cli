@@ -143,11 +143,13 @@ chart-session path. Report `contract_version: "bars.v1"`,
 `source: "tradingview_bars_ws"`, `source_category: "desktop_free_read"`,
 `summary`, `range`, `requested_range`, `returned_range`,
 `range_coverage_status`, `range_alignment`, `range_fetch_summary`,
-`source_availability`, `data_quality`, and warnings. Use `tv bars --timeframe 1D|1W|1M --from
-YYYY-MM-DD --to YYYY-MM-DD` when old source-guided daily or higher-timeframe
-samples need reproducible bars input; `--count` is a safety cap in that mode
-and defaults to 500, with a maximum of 5000. Recent count mode remains capped
-at 500. `--to` is an inclusive calendar date. Read `range_coverage_status` as
+`source_availability`, `data_quality`, and warnings. Use `tv bars --timeframe
+15|60|1D|1W|1M --from YYYY-MM-DD --to YYYY-MM-DD` when old source-guided
+intraday, daily, or higher-timeframe samples need reproducible bars input;
+other intraday timeframes remain guarded in date-range mode. `--count` is a
+safety cap in that mode and defaults to 500, with a maximum of 5000. Recent
+count mode remains capped at 500. `--to` is an inclusive calendar date. Read
+`range_coverage_status` as
 the primary date-range coverage field, and read `range_alignment` for
 period-start timestamp semantics and `timestamp_within_requested_range`
 filtering. Read

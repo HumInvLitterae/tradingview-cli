@@ -102,14 +102,16 @@ Desktop chart:
 tv bars NASDAQ:CRUS --timeframe 1D --from 2010-01-01 --to 2010-12-31
 tv bars NASDAQ:CRUS --timeframe 1W --from 2010-01-01 --to 2010-12-31
 tv bars NASDAQ:CRUS --timeframe 1M --from 2010-01-01 --to 2010-12-31
+tv bars NASDAQ:AAPL --timeframe 60 --from 2026-05-01 --to 2026-05-22 --count 1000
 ```
 
 In date-range mode, read `range_coverage_status` and `range_alignment` before
-interpreting raw `bars[]`. Weekly and monthly bars use period-start timestamps
-and are filtered by timestamps within the requested inclusive calendar range.
-The `--count` option is the maximum number of bars to return in date-range
-mode; it defaults to 500 and can be raised up to 5000. For recent count mode,
-the maximum stays 500.
+interpreting raw `bars[]`. Date-range mode currently supports `15`, `60`,
+`1D`, `1W`, and `1M`; other intraday timeframes remain guarded. Intraday,
+weekly, and monthly bars use period-start timestamps and are filtered by
+timestamps within the requested inclusive calendar range. The `--count` option
+is the maximum number of bars to return in date-range mode; it defaults to 500
+and can be raised up to 5000. For recent count mode, the maximum stays 500.
 Read `range_fetch_summary` when you need to know whether the command used
 additional fetch windows, reached the returned-bar safety cap, or stopped
 because the source or bounded wait could not cover the full range.

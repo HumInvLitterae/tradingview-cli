@@ -247,13 +247,16 @@ selected Desktop chart through CDP.
 
 Use count mode for recent bounded samples, for example
 `tv bars NASDAQ:AAPL --timeframe 1D --count 5`. Use date-range mode for
-reproducible older daily, weekly, or monthly samples, for example
+reproducible older intraday, daily, weekly, or monthly samples, for example
+`tv bars NASDAQ:AAPL --timeframe 60 --from 2026-05-01 --to 2026-05-22` or
 `tv bars NASDAQ:CRUS --timeframe 1D --from 2010-01-01 --to 2010-12-31`.
 In date-range mode, `--count` is a safety cap on returned bars and defaults to
 500. It can be raised up to 5000 in date-range mode; recent count mode stays
-capped at 500. The `--to` date is an inclusive calendar date. `tv range` is
-only a selected Desktop chart viewport operation; it does not make
-`tv ohlcv --count ...` a stable historical export for that displayed period.
+capped at 500. Date-range mode currently supports `15`, `60`, `1D`, `1W`, and
+`1M`; other intraday timeframes remain guarded. The `--to` date is an
+inclusive calendar date. `tv range` is only a selected Desktop chart viewport
+operation; it does not make `tv ohlcv --count ...` a stable historical export
+for that displayed period.
 
 Recommended agent use: use when a workflow needs bounded historical bars for a
 specific exchange-qualified symbol without requiring TradingView Desktop.
@@ -261,7 +264,7 @@ Report `source`, `contract_version`, `request_mode`, `summary`, `range`,
 `requested_range`, `returned_range`, `range_coverage_status`,
 `range_alignment`, `range_fetch_summary`, `source_availability`,
 `data_quality`, and warnings. Read `range_coverage_status` as the primary
-date-range coverage readback. For weekly and monthly date ranges,
+date-range coverage readback. For intraday, weekly, and monthly date ranges,
 `range_alignment` reports period-start timestamp semantics and the
 `timestamp_within_requested_range` filter policy. Read `range_fetch_summary`
 for bounded fetch-window count, `request_more_data` count, observed / filtered
