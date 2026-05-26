@@ -5,8 +5,9 @@ use serde_json::{Value, json};
 pub(super) const BARS_CONTRACT_VERSION: &str = "bars.v1";
 pub(super) const BARS_SOURCE: &str = "tradingview_bars_ws";
 pub(super) const DEFAULT_TIMEOUT_MS: u64 = 10_000;
-pub(super) const MAX_BAR_COUNT: usize = 500;
-pub(super) const DATE_RANGE_FETCH_CHUNK: usize = MAX_BAR_COUNT;
+pub(super) const MAX_RECENT_BAR_COUNT: usize = 500;
+pub(super) const MAX_DATE_RANGE_BAR_COUNT: usize = 5_000;
+pub(super) const DATE_RANGE_FETCH_CHUNK: usize = MAX_RECENT_BAR_COUNT;
 const SECONDS_PER_DAY: i64 = 86_400;
 
 #[derive(Debug, Clone, PartialEq)]

@@ -160,9 +160,10 @@ Read `summary`, `range`, `requested_range`, `returned_range`, and
 `range_coverage_status` first for requested-vs-returned count and time
 coverage, then inspect raw `bars[]` when exact OHLCV evidence is needed. In
 date-range mode, `--count` is a safety cap on returned bars and defaults to
-500. The `--to` date is an inclusive calendar date. For weekly and monthly
-date ranges, read `range_alignment` to see that bar timestamps are period
-anchors and filtering uses timestamps within the requested range. Read
+500. It can be raised up to 5000 in date-range mode; recent count mode stays
+capped at 500. The `--to` date is an inclusive calendar date. For weekly and
+monthly date ranges, read `range_alignment` to see that bar timestamps are
+period anchors and filtering uses timestamps within the requested range. Read
 `range_fetch_summary` to see bounded fetch-window counts, added
 `request_more_data` attempts, returned-count caps, and truncation reasons.
 Read `source_availability` and its `wait_summary` when bars are partial or
