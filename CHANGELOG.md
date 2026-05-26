@@ -19,6 +19,9 @@ package version omits the leading `v`.
 
 ### Documentation
 
+- Added the intraday `tv bars --from --to` feasibility plan for `v0.21.0`,
+  keeping stable CLI behavior guarded while defining the contract criteria for
+  future intraday range support.
 - Added the `v0.21.0` roadmap direction and first range-scale / intraday
   readiness plan, grouping large-range batching, pagination, and intraday
   date-range work under the existing Desktop-free `bars.v1` historical bars
