@@ -190,6 +190,42 @@ fn assert_bars_success(
         || data.pointer("/range/last_time").and_then(Value::as_i64) != last_time
         || data.pointer("/range/bar_count").and_then(Value::as_u64) != Some(bar_count)
         || data
+            .pointer("/range_fetch_summary/fetch_window_count")
+            .and_then(Value::as_u64)
+            != Some(1)
+        || data
+            .pointer("/range_fetch_summary/request_more_count")
+            .and_then(Value::as_u64)
+            != Some(0)
+        || data
+            .pointer("/range_fetch_summary/initial_fetch_count")
+            .and_then(Value::as_u64)
+            != Some(expected_count as u64)
+        || data
+            .pointer("/range_fetch_summary/requested_count_cap")
+            .and_then(Value::as_u64)
+            != Some(expected_count as u64)
+        || data
+            .pointer("/range_fetch_summary/observed_count")
+            .and_then(Value::as_u64)
+            != Some(bar_count)
+        || data
+            .pointer("/range_fetch_summary/filtered_count")
+            .and_then(Value::as_u64)
+            != Some(bar_count)
+        || data
+            .pointer("/range_fetch_summary/returned_count")
+            .and_then(Value::as_u64)
+            != Some(bar_count)
+        || data
+            .pointer("/range_fetch_summary/range_truncated")
+            .and_then(Value::as_bool)
+            != Some(false)
+        || data
+            .pointer("/range_fetch_summary/range_truncation_reason")
+            .and_then(Value::as_str)
+            != Some("none")
+        || data
             .pointer("/data_quality/realtime_guarantee")
             .and_then(Value::as_bool)
             != Some(false)

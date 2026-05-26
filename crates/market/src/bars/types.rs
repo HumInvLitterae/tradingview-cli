@@ -45,6 +45,31 @@ pub(super) struct BarsResult {
     pub(super) bars: Vec<Bar>,
     pub(super) completed: bool,
     pub(super) wait_summary: BarsWaitSummary,
+    pub(super) fetch_summary: BarsFetchSummary,
+    pub(super) observed_first_time: Option<i64>,
+    pub(super) observed_last_time: Option<i64>,
+}
+
+#[derive(Debug, Clone)]
+pub(super) struct BarsFetchSummary {
+    pub(super) fetch_window_count: usize,
+    pub(super) request_more_count: usize,
+    pub(super) initial_fetch_count: usize,
+    pub(super) requested_count_cap: usize,
+    pub(super) observed_count: usize,
+    pub(super) filtered_count: usize,
+    pub(super) returned_count: usize,
+    pub(super) range_truncated: bool,
+    pub(super) range_truncation_reason: &'static str,
+}
+
+#[derive(Debug, Clone, Copy)]
+pub(super) struct BarsFetchSummaryInput {
+    pub(super) request_more_count: usize,
+    pub(super) observed_count: usize,
+    pub(super) filtered_count: usize,
+    pub(super) returned_count: usize,
+    pub(super) completed: bool,
     pub(super) observed_first_time: Option<i64>,
     pub(super) observed_last_time: Option<i64>,
 }
@@ -121,6 +146,91 @@ impl BarsWaitSummary {
             "bars_observed_count": bars_observed_count,
             "raw_frame_included": false,
         })
+    }
+}
+
+impl BarsFetchSummary {
+    pub(super) fn new(request: &BarsRequest, input: BarsFetchSummaryInput) -> Self {
+        let (range_truncated, range_truncation_reason) = range_truncation(
+            request,
+            input.filtered_count,
+            input.returned_count,
+            input.completed,
+            input.observed_first_time,
+            input.observed_last_time,
+        );
+
+        Self {
+            fetch_window_count: 1 + input.request_more_count,
+            request_more_count: input.request_more_count,
+            initial_fetch_count: request.initial_fetch_count(),
+            requested_count_cap: request.count,
+            observed_count: input.observed_count,
+            filtered_count: input.filtered_count,
+            returned_count: input.returned_count,
+            range_truncated,
+            range_truncation_reason,
+        }
+    }
+
+    pub(super) fn empty_for_request(request: &BarsRequest) -> Self {
+        Self {
+            fetch_window_count: 1,
+            request_more_count: 0,
+            initial_fetch_count: request.initial_fetch_count(),
+            requested_count_cap: request.count,
+            observed_count: 0,
+            filtered_count: 0,
+            returned_count: 0,
+            range_truncated: false,
+            range_truncation_reason: "none",
+        }
+    }
+
+    pub(super) fn to_value(&self) -> Value {
+        json!({
+            "fetch_window_count": self.fetch_window_count,
+            "request_more_count": self.request_more_count,
+            "initial_fetch_count": self.initial_fetch_count,
+            "requested_count_cap": self.requested_count_cap,
+            "observed_count": self.observed_count,
+            "filtered_count": self.filtered_count,
+            "returned_count": self.returned_count,
+            "range_truncated": self.range_truncated,
+            "range_truncation_reason": self.range_truncation_reason,
+        })
+    }
+}
+
+fn range_truncation(
+    request: &BarsRequest,
+    filtered_count: usize,
+    returned_count: usize,
+    completed: bool,
+    observed_first_time: Option<i64>,
+    observed_last_time: Option<i64>,
+) -> (bool, &'static str) {
+    if !request.is_date_range() {
+        return (false, "none");
+    }
+
+    if filtered_count > returned_count {
+        return (true, "count_cap");
+    }
+
+    if !completed {
+        return (true, "timeout");
+    }
+
+    let BarsRequestMode::DateRange { from, to } = &request.mode else {
+        return (false, "none");
+    };
+
+    match (observed_first_time, observed_last_time) {
+        (Some(first), Some(last)) if first <= from.timestamp && last >= to.timestamp => {
+            (false, "none")
+        }
+        _ => (true, "source_exhausted"),
     }
 }
 

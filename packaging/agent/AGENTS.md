@@ -87,7 +87,9 @@ Do not use `TV_CDP_TARGET_ID`; explicit target handoff is `--target-id`.
   with `--timeframe 1D`, `1W`, or `1M` for reproducible older daily, weekly,
   or monthly samples; `--to` is an inclusive calendar date. Read `summary` /
   `range`, `requested_range` / `returned_range`, `range_coverage_status`, and
-  `range_alignment` before inspecting raw `bars[]`, and read
+  `range_alignment` before inspecting raw `bars[]`. Read
+  `range_fetch_summary` for fetch-window count, `request_more_data` count,
+  returned-count caps, and truncation reasons, and read
   `source_availability` / `wait_summary` when bars are partial or unavailable.
 - Selected-chart JSONL observations use `tv observe chart` and lower-level
   `tv stream ...`. Read readiness, sample, heartbeat, and final summary events

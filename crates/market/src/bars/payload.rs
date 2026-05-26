@@ -50,6 +50,7 @@ pub(super) fn bars_payload(request: &BarsRequest, result: BarsResult, elapsed_ms
         "bar_count": bar_count,
         "requested_range": request.requested_range_value(),
         "range_alignment": request.range_alignment_value(),
+        "range_fetch_summary": result.fetch_summary.to_value(),
         "returned_range": {
             "timeframe": request.timeframe,
             "first_time": first_time,
@@ -121,6 +122,7 @@ pub(super) fn no_bars_error(
             "availability_status": "unavailable",
             "completed": result.completed,
             "elapsed_ms": elapsed_ms,
+            "range_fetch_summary": result.fetch_summary.to_value(),
             "source_availability": source_availability,
             "next_action_hint": "The browserless historical bars source did not return bars inside the bounded request. Retry later or use `tv ohlcv` against a selected chart target when chart-backed bars are acceptable.",
         }),
@@ -185,6 +187,10 @@ pub(super) fn bars_error_details(request: &BarsRequest, extra: Value) -> Value {
         request.range_alignment_value(),
     );
     details.insert(
+        "range_fetch_summary".to_string(),
+        super::types::BarsFetchSummary::empty_for_request(request).to_value(),
+    );
+    details.insert(
         "requested_timeframe".to_string(),
         Value::String(request.timeframe.clone()),
     );
@@ -231,7 +237,9 @@ fn range_coverage_status(request: &BarsRequest, result: &BarsResult) -> &'static
 mod tests {
     use super::*;
     use crate::bars::{
-        types::{Bar, BarsWaitSummary, DEFAULT_TIMEOUT_MS},
+        types::{
+            Bar, BarsFetchSummary, BarsFetchSummaryInput, BarsWaitSummary, DEFAULT_TIMEOUT_MS,
+        },
         validation::{validate_bars_range_request, validate_bars_request},
     };
 
@@ -244,13 +252,44 @@ mod tests {
         summary
     }
 
+    fn test_result(
+        request: &BarsRequest,
+        bars: Vec<Bar>,
+        completed: bool,
+        wait_summary: BarsWaitSummary,
+        observed_first_time: Option<i64>,
+        observed_last_time: Option<i64>,
+    ) -> BarsResult {
+        let count = bars.len();
+        BarsResult {
+            bars,
+            completed,
+            wait_summary,
+            fetch_summary: BarsFetchSummary::new(
+                request,
+                BarsFetchSummaryInput {
+                    request_more_count: 0,
+                    observed_count: count,
+                    filtered_count: count,
+                    returned_count: count,
+                    completed,
+                    observed_first_time,
+                    observed_last_time,
+                },
+            ),
+            observed_first_time,
+            observed_last_time,
+        }
+    }
+
     #[test]
     fn bars_payload_contains_stable_source_contract() {
         let request = validate_bars_request("NASDAQ:AAPL", "1d", 5).unwrap();
         let payload = bars_payload(
             &request,
-            BarsResult {
-                bars: vec![
+            test_result(
+                &request,
+                vec![
                     Bar {
                         time: 1,
                         open: 10.0,
@@ -268,11 +307,11 @@ mod tests {
                         volume: 200.0,
                     },
                 ],
-                completed: true,
-                wait_summary: test_wait_summary(&request),
-                observed_first_time: Some(1),
-                observed_last_time: Some(2),
-            },
+                true,
+                test_wait_summary(&request),
+                Some(1),
+                Some(2),
+            ),
             42,
         );
 
@@ -301,6 +340,18 @@ mod tests {
         assert_eq!(payload["range"]["first_time"], 1);
         assert_eq!(payload["range"]["last_time"], 2);
         assert_eq!(payload["range"]["bar_count"], 2);
+        assert_eq!(payload["range_fetch_summary"]["fetch_window_count"], 1);
+        assert_eq!(payload["range_fetch_summary"]["request_more_count"], 0);
+        assert_eq!(payload["range_fetch_summary"]["initial_fetch_count"], 5);
+        assert_eq!(payload["range_fetch_summary"]["requested_count_cap"], 5);
+        assert_eq!(payload["range_fetch_summary"]["observed_count"], 2);
+        assert_eq!(payload["range_fetch_summary"]["filtered_count"], 2);
+        assert_eq!(payload["range_fetch_summary"]["returned_count"], 2);
+        assert_eq!(payload["range_fetch_summary"]["range_truncated"], false);
+        assert_eq!(
+            payload["range_fetch_summary"]["range_truncation_reason"],
+            "none"
+        );
         assert_eq!(payload["source_availability"]["available"], true);
         assert_eq!(payload["source_availability"]["status"], "available");
         assert!(payload["source_availability"]["unavailable_reason"].is_null());
@@ -348,8 +399,9 @@ mod tests {
         let request = validate_bars_request("NASDAQ:AAPL", "1d", 1).unwrap();
         let payload = bars_payload(
             &request,
-            BarsResult {
-                bars: vec![Bar {
+            test_result(
+                &request,
+                vec![Bar {
                     time: 1,
                     open: 10.0,
                     high: 12.0,
@@ -357,11 +409,11 @@ mod tests {
                     close: 11.0,
                     volume: 100.0,
                 }],
-                completed: true,
-                wait_summary: test_wait_summary(&request),
-                observed_first_time: Some(1),
-                observed_last_time: Some(1),
-            },
+                true,
+                test_wait_summary(&request),
+                Some(1),
+                Some(1),
+            ),
             42,
         );
 
@@ -383,8 +435,9 @@ mod tests {
         wait_summary.series_completed_seen = false;
         let payload = bars_payload(
             &request,
-            BarsResult {
-                bars: vec![Bar {
+            test_result(
+                &request,
+                vec![Bar {
                     time: 1,
                     open: 10.0,
                     high: 12.0,
@@ -392,11 +445,11 @@ mod tests {
                     close: 11.0,
                     volume: 100.0,
                 }],
-                completed: false,
+                false,
                 wait_summary,
-                observed_first_time: Some(1),
-                observed_last_time: Some(1),
-            },
+                Some(1),
+                Some(1),
+            ),
             42,
         );
 
@@ -420,8 +473,9 @@ mod tests {
                 .unwrap();
         let payload = bars_payload(
             &request,
-            BarsResult {
-                bars: vec![
+            test_result(
+                &request,
+                vec![
                     Bar {
                         time: 1_577_836_800,
                         open: 10.0,
@@ -439,11 +493,11 @@ mod tests {
                         volume: 200.0,
                     },
                 ],
-                completed: true,
-                wait_summary: test_wait_summary(&request),
-                observed_first_time: Some(1_577_836_800),
-                observed_last_time: Some(1_580_428_800),
-            },
+                true,
+                test_wait_summary(&request),
+                Some(1_577_836_800),
+                Some(1_580_428_800),
+            ),
             42,
         );
 
@@ -464,6 +518,16 @@ mod tests {
         assert_eq!(payload["observed_range"]["last_time"], 1_580_428_800);
         assert_eq!(payload["range_coverage_status"], "complete");
         assert_eq!(payload["range_alignment"]["timeframe"], "1D");
+        assert_eq!(payload["range_fetch_summary"]["initial_fetch_count"], 500);
+        assert_eq!(payload["range_fetch_summary"]["requested_count_cap"], 500);
+        assert_eq!(payload["range_fetch_summary"]["observed_count"], 2);
+        assert_eq!(payload["range_fetch_summary"]["filtered_count"], 2);
+        assert_eq!(payload["range_fetch_summary"]["returned_count"], 2);
+        assert_eq!(payload["range_fetch_summary"]["range_truncated"], false);
+        assert_eq!(
+            payload["range_fetch_summary"]["range_truncation_reason"],
+            "none"
+        );
         assert_eq!(
             payload["range_alignment"]["bar_timestamp_semantics"],
             "period_start"
@@ -492,8 +556,9 @@ mod tests {
             .unwrap();
             let payload = bars_payload(
                 &request,
-                BarsResult {
-                    bars: vec![Bar {
+                test_result(
+                    &request,
+                    vec![Bar {
                         time: 1_577_836_800,
                         open: 10.0,
                         high: 12.0,
@@ -501,11 +566,11 @@ mod tests {
                         close: 11.0,
                         volume: 100.0,
                     }],
-                    completed: true,
-                    wait_summary: test_wait_summary(&request),
-                    observed_first_time: Some(1_577_836_800),
-                    observed_last_time: Some(1_585_699_200),
-                },
+                    true,
+                    test_wait_summary(&request),
+                    Some(1_577_836_800),
+                    Some(1_585_699_200),
+                ),
                 42,
             );
 
@@ -547,6 +612,18 @@ mod tests {
         assert!(details["requested_range"].is_null());
         assert!(details["range_alignment"].is_null());
         assert_eq!(details["requested_timeframe"], "1D");
+        assert_eq!(details["range_fetch_summary"]["fetch_window_count"], 1);
+        assert_eq!(details["range_fetch_summary"]["request_more_count"], 0);
+        assert_eq!(details["range_fetch_summary"]["initial_fetch_count"], 5);
+        assert_eq!(details["range_fetch_summary"]["requested_count_cap"], 5);
+        assert_eq!(details["range_fetch_summary"]["observed_count"], 0);
+        assert_eq!(details["range_fetch_summary"]["filtered_count"], 0);
+        assert_eq!(details["range_fetch_summary"]["returned_count"], 0);
+        assert_eq!(details["range_fetch_summary"]["range_truncated"], false);
+        assert_eq!(
+            details["range_fetch_summary"]["range_truncation_reason"],
+            "none"
+        );
         assert_eq!(details["availability_status"], "unavailable");
         assert_eq!(details["completed"], false);
         assert!(details.get("raw_frame").is_none());

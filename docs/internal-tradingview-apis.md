@@ -361,10 +361,13 @@ Safety boundary:
   treated as a hidden input to `tv ohlcv`.
 - `tv bars` reports `summary` / `range` for requested-vs-returned count and
   time coverage, plus `requested_range` / `returned_range`,
-  `range_coverage_status`, `range_alignment`, `source_availability`, and a
-  public-safe `wait_summary` for bounded source diagnostics. `range_alignment`
-  states period-start timestamp semantics and the
-  `timestamp_within_requested_range` filter policy for date ranges.
+  `range_coverage_status`, `range_alignment`, `range_fetch_summary`,
+  `source_availability`, and a public-safe `wait_summary` for bounded source
+  diagnostics. `range_alignment` states period-start timestamp semantics and
+  the `timestamp_within_requested_range` filter policy for date ranges.
+  `range_fetch_summary` reports bounded fetch-window count, `request_more_data`
+  count, observed / filtered / returned counts, count-cap truncation, and
+  timeout or source-exhaustion truncation reasons.
   `data_quality` still reports
   `realtime_guarantee: false`, `entitlement_checked: false`, completion state,
   elapsed time, and partial result readback. Callers should read those fields

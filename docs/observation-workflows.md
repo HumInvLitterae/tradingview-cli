@@ -259,7 +259,10 @@ requested-vs-returned count and time coverage, then use raw `bars[]` for exact
 OHLCV evidence. For weekly and monthly ranges, read `range_alignment` before
 interpreting coverage; TradingView bar timestamps are period-start anchors and
 this command filters by timestamps inside the requested calendar range. Read
-`source_availability` when the result is partial or
+`range_fetch_summary` to see how many bounded fetch windows were used, how
+many `request_more_data` calls were sent, how many bars were observed,
+filtered, and returned, and whether the requested range was truncated by the
+count cap, source exhaustion, or timeout. Read `source_availability` when the result is partial or
 unavailable; its `wait_summary` explains bounded historical-source behavior
 without raw WebSocket frames. Read `data_quality` before using the result: it
 does not guarantee realtime or entitlement status. Do not treat unavailable
