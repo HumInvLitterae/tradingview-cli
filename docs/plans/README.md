@@ -8,12 +8,16 @@ for release and next-phase planning.
 
 Current plan:
 
-- `tradingview-cli-v0.20.0-release-readiness.md`: prepare the `v0.20.0`
-  release state, including version, changelog, release notes, README asset
-  examples, package staging, and release validation.
+- `tradingview-cli-bars-range-scale-and-intraday.md`: plan the `v0.21.0`
+  historical bars range-scale direction, connecting large-range batching /
+  pagination with intraday date-range readiness under the existing
+  Desktop-free `bars.v1` source boundary.
 
 Recently completed:
 
+- `tradingview-cli-v0.20.0-release-readiness.md`: prepared the `v0.20.0`
+  release state, including version, changelog, release notes, README asset
+  examples, package staging, and release validation.
 - `tradingview-cli-user-getting-started-docs.md`: added user-facing English
   and Japanese getting-started docs, README links, and release package staging
   before `v0.20.0` release readiness.

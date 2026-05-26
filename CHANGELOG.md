@@ -7,6 +7,13 @@ package version omits the leading `v`.
 
 ## Unreleased
 
+### Documentation
+
+- Added the `v0.21.0` roadmap direction and first range-scale / intraday
+  readiness plan, grouping large-range batching, pagination, and intraday
+  date-range work under the existing Desktop-free `bars.v1` historical bars
+  source boundary.
+
 ## v0.20.0 - 2026-05-26
 
 ### Added
