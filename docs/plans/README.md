@@ -8,12 +8,16 @@ for release and next-phase planning.
 
 Current plan:
 
-- `tradingview-cli-v0.21.0-release-readiness.md`: prepare the `v0.21.0`
-  release state, including version, changelog, release notes, README asset
-  examples, package staging, and release validation.
+- `tradingview-cli-watch-jsonl-compare-contract.md`: plan the first
+  `v0.22.0` observation / export workflow maturity slice by defining a
+  bounded watch / JSONL compare contract without adding daemon behavior,
+  automatic source mixing, or trading recommendations.
 
 Recently completed:
 
+- `tradingview-cli-v0.21.0-release-readiness.md`: prepared the `v0.21.0`
+  release state, including version, changelog, release notes, README asset
+  examples, package staging, and release validation.
 - `tradingview-cli-v0.21-pre-release-audit.md`: audited completed `v0.21.0`
   range-scale readback, 5000-count date-range cap, narrow intraday date-range
   support, docs, skills, tests, source boundaries, and refactor posture before

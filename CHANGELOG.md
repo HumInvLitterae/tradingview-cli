@@ -7,7 +7,11 @@ package version omits the leading `v`.
 
 ## Unreleased
 
-No unreleased changes yet.
+### Documentation
+
+- Added the `v0.22.0` roadmap direction and first watch / JSONL compare
+  contract plan, focusing on observation and export workflow maturity without
+  adding daemon behavior, automatic source mixing, or trading recommendations.
 
 ## v0.21.0 - 2026-05-26
 
