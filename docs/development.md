@@ -397,9 +397,9 @@ Optional environment variables:
 
 The ignored test validates only public contract fields: `bars.v1` source
 metadata, requested symbol, timeframe, bounded count, non-empty bars,
-`summary`, `range`, `source_availability`, public-safe `wait_summary`, and
-`data_quality`. Do not paste raw WebSocket output or live response payloads
-into tracked docs.
+`summary`, `range`, `range_alignment`, `range_fetch_summary`,
+`source_availability`, public-safe `wait_summary`, and `data_quality`. Do not
+paste raw WebSocket output or live response payloads into tracked docs.
 
 ## Validation baseline
 

@@ -12,7 +12,10 @@ use super::{
     protocol::{
         WsPacket, frame, merge_bars, parse_bars_from_message, parse_packets, pong_frame, session_id,
     },
-    types::{BarsAvailabilityState, BarsRequest, BarsResult, BarsWaitSummary},
+    types::{
+        Bar, BarsAvailabilityState, BarsFetchSummary, BarsFetchSummaryInput, BarsRequest,
+        BarsResult, BarsWaitSummary,
+    },
 };
 
 const WS_ENDPOINT: &str = "wss://data.tradingview.com/socket.io/websocket?type=chart";
@@ -172,6 +175,7 @@ pub(super) async fn fetch_bars_ws(request: &BarsRequest) -> Result<BarsResult, A
     let mut bars = Vec::new();
     let mut completed = false;
     let mut last_more_oldest: Option<i64> = None;
+    let mut request_more_count = 0;
     'read_loop: loop {
         let now = Instant::now();
         if now >= deadline {
@@ -203,6 +207,12 @@ pub(super) async fn fetch_bars_ws(request: &BarsRequest) -> Result<BarsResult, A
                             &wait_summary,
                             started.elapsed().as_millis() as u64,
                         ),
+                        "range_fetch_summary": range_fetch_summary_for_bars(
+                            request,
+                            &bars,
+                            request_more_count,
+                            false,
+                        ),
                     }),
                 )));
             }
@@ -223,6 +233,12 @@ pub(super) async fn fetch_bars_ws(request: &BarsRequest) -> Result<BarsResult, A
                                     ),
                                     &wait_summary,
                                     started.elapsed().as_millis() as u64,
+                                ),
+                                "range_fetch_summary": range_fetch_summary_for_bars(
+                                    request,
+                                    &bars,
+                                    request_more_count,
+                                    false,
                                 ),
                             }),
                         )),
@@ -245,6 +261,12 @@ pub(super) async fn fetch_bars_ws(request: &BarsRequest) -> Result<BarsResult, A
                                     ),
                                     &wait_summary,
                                     started.elapsed().as_millis() as u64,
+                                ),
+                                "range_fetch_summary": range_fetch_summary_for_bars(
+                                    request,
+                                    &bars,
+                                    request_more_count,
+                                    false,
                                 ),
                             }),
                         )));
@@ -269,6 +291,12 @@ pub(super) async fn fetch_bars_ws(request: &BarsRequest) -> Result<BarsResult, A
                         ),
                         &wait_summary,
                         started.elapsed().as_millis() as u64,
+                    ),
+                    "range_fetch_summary": range_fetch_summary_for_bars(
+                        request,
+                        &bars,
+                        request_more_count,
+                        false,
                     ),
                 }),
             ))
@@ -314,27 +342,40 @@ pub(super) async fn fetch_bars_ws(request: &BarsRequest) -> Result<BarsResult, A
                                 err.with_details(bars_error_details(
                                     request,
                                     json!({
-                                        "availability_status": "unavailable",
-                                        "source_availability": bars_source_availability(
-                                            request,
-                                            BarsAvailabilityState::unavailable(
-                                                "connection_failed",
-                                                bars.len(),
-                                                false,
-                                                false,
-                                            ),
+                                    "availability_status": "unavailable",
+                                    "source_availability": bars_source_availability(
+                                        request,
+                                        BarsAvailabilityState::unavailable(
+                                            "connection_failed",
+                                            bars.len(),
+                                            false,
+                                            false,
+                                        ),
                                             &wait_summary,
                                             started.elapsed().as_millis() as u64,
+                                        ),
+                                        "range_fetch_summary": range_fetch_summary_for_bars(
+                                            request,
+                                            &bars,
+                                            request_more_count,
+                                            false,
                                         ),
                                     }),
                                 ))
                             })?;
+                            request_more_count += 1;
                             continue;
                         }
                         let _ =
                             send_ws(&mut stream, "chart_delete_session", json!([session_id])).await;
                         let _ = stream.close(None).await;
-                        return Ok(finalize_result(request, bars, completed, wait_summary));
+                        return Ok(finalize_result(
+                            request,
+                            bars,
+                            completed,
+                            wait_summary,
+                            request_more_count,
+                        ));
                     } else if matches!(method, "symbol_error" | "series_error" | "protocol_error") {
                         wait_summary.error_messages_seen += 1;
                         let _ =
@@ -359,6 +400,12 @@ pub(super) async fn fetch_bars_ws(request: &BarsRequest) -> Result<BarsResult, A
                                     &wait_summary,
                                     started.elapsed().as_millis() as u64,
                                 ),
+                                "range_fetch_summary": range_fetch_summary_for_bars(
+                                    request,
+                                    &bars,
+                                    request_more_count,
+                                    false,
+                                ),
                             }),
                         )));
                     }
@@ -369,7 +416,13 @@ pub(super) async fn fetch_bars_ws(request: &BarsRequest) -> Result<BarsResult, A
 
     let _ = send_ws(&mut stream, "chart_delete_session", json!([session_id])).await;
     let _ = stream.close(None).await;
-    Ok(finalize_result(request, bars, completed, wait_summary))
+    Ok(finalize_result(
+        request,
+        bars,
+        completed,
+        wait_summary,
+        request_more_count,
+    ))
 }
 
 async fn send_ws<S>(stream: &mut S, method: &str, params: Value) -> Result<(), AppError>
@@ -404,20 +457,153 @@ fn finalize_result(
     mut bars: Vec<super::types::Bar>,
     completed: bool,
     wait_summary: BarsWaitSummary,
+    request_more_count: usize,
 ) -> BarsResult {
     let observed_first_time = bars.first().map(|bar| bar.time);
     let observed_last_time = bars.last().map(|bar| bar.time);
+    let observed_count = bars.len();
+    let mut filtered_count = observed_count;
     if let Some((from_time, to_time_exclusive)) = request.date_range_bounds() {
         bars.retain(|bar| bar.time >= from_time && bar.time < to_time_exclusive);
+        filtered_count = bars.len();
         if bars.len() > request.count {
             bars.truncate(request.count);
         }
     }
+    let returned_count = bars.len();
+    let fetch_summary = BarsFetchSummary::new(
+        request,
+        BarsFetchSummaryInput {
+            request_more_count,
+            observed_count,
+            filtered_count,
+            returned_count,
+            completed,
+            observed_first_time,
+            observed_last_time,
+        },
+    );
     BarsResult {
         bars,
         completed,
         wait_summary,
+        fetch_summary,
         observed_first_time,
         observed_last_time,
+    }
+}
+
+fn range_fetch_summary_for_bars(
+    request: &BarsRequest,
+    bars: &[Bar],
+    request_more_count: usize,
+    completed: bool,
+) -> Value {
+    let observed_first_time = bars.first().map(|bar| bar.time);
+    let observed_last_time = bars.last().map(|bar| bar.time);
+    let observed_count = bars.len();
+    let filtered_count = request
+        .date_range_bounds()
+        .map(|(from_time, to_time_exclusive)| {
+            bars.iter()
+                .filter(|bar| bar.time >= from_time && bar.time < to_time_exclusive)
+                .count()
+        })
+        .unwrap_or(observed_count);
+    let returned_count = filtered_count.min(request.count);
+
+    BarsFetchSummary::new(
+        request,
+        BarsFetchSummaryInput {
+            request_more_count,
+            observed_count,
+            filtered_count,
+            returned_count,
+            completed,
+            observed_first_time,
+            observed_last_time,
+        },
+    )
+    .to_value()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::bars::validation::{validate_bars_range_request, validate_bars_request};
+
+    fn bar(time: i64) -> Bar {
+        Bar {
+            time,
+            open: 10.0,
+            high: 11.0,
+            low: 9.0,
+            close: 10.5,
+            volume: 100.0,
+        }
+    }
+
+    #[test]
+    fn finalize_result_reports_count_cap_truncation_for_date_range() {
+        let request =
+            validate_bars_range_request("NASDAQ:AAPL", "1D", "2020-01-01", "2020-01-31", 1)
+                .unwrap();
+        let result = finalize_result(
+            &request,
+            vec![bar(1_577_836_800), bar(1_577_923_200)],
+            true,
+            BarsWaitSummary::new(&request),
+            0,
+        );
+
+        assert_eq!(result.bars.len(), 1);
+        assert_eq!(result.fetch_summary.fetch_window_count, 1);
+        assert_eq!(result.fetch_summary.request_more_count, 0);
+        assert_eq!(result.fetch_summary.initial_fetch_count, 500);
+        assert_eq!(result.fetch_summary.requested_count_cap, 1);
+        assert_eq!(result.fetch_summary.observed_count, 2);
+        assert_eq!(result.fetch_summary.filtered_count, 2);
+        assert_eq!(result.fetch_summary.returned_count, 1);
+        assert!(result.fetch_summary.range_truncated);
+        assert_eq!(result.fetch_summary.range_truncation_reason, "count_cap");
+    }
+
+    #[test]
+    fn finalize_result_reports_request_more_fetch_windows() {
+        let request =
+            validate_bars_range_request("NASDAQ:AAPL", "1W", "2020-01-01", "2020-12-31", 500)
+                .unwrap();
+        let result = finalize_result(
+            &request,
+            vec![bar(1_577_836_800), bar(1_609_372_800)],
+            true,
+            BarsWaitSummary::new(&request),
+            2,
+        );
+
+        assert_eq!(result.fetch_summary.fetch_window_count, 3);
+        assert_eq!(result.fetch_summary.request_more_count, 2);
+        assert_eq!(result.fetch_summary.observed_count, 2);
+        assert_eq!(result.fetch_summary.filtered_count, 2);
+        assert_eq!(result.fetch_summary.returned_count, 2);
+        assert!(!result.fetch_summary.range_truncated);
+        assert_eq!(result.fetch_summary.range_truncation_reason, "none");
+    }
+
+    #[test]
+    fn finalize_result_leaves_count_only_intraday_summary_untruncated() {
+        let request = validate_bars_request("NASDAQ:AAPL", "5", 2).unwrap();
+        let result = finalize_result(
+            &request,
+            vec![bar(1), bar(2)],
+            true,
+            BarsWaitSummary::new(&request),
+            0,
+        );
+
+        assert_eq!(result.fetch_summary.initial_fetch_count, 2);
+        assert_eq!(result.fetch_summary.requested_count_cap, 2);
+        assert!(!result.fetch_summary.range_truncated);
+        assert_eq!(result.fetch_summary.range_truncation_reason, "none");
     }
 }

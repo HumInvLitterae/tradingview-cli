@@ -8,10 +8,10 @@ for release and next-phase planning.
 
 Current plan:
 
-- `tradingview-cli-bars-range-scale-and-intraday.md`: plan the `v0.21.0`
-  historical bars range-scale direction, connecting large-range batching /
-  pagination with intraday date-range readiness under the existing
-  Desktop-free `bars.v1` source boundary.
+- `tradingview-cli-bars-range-scale-and-intraday.md`: implement the first
+  `v0.21.0` historical bars range-scale readback by adding
+  `range_fetch_summary` under the existing Desktop-free `bars.v1` source
+  boundary while keeping intraday date-range guarded.
 
 Recently completed:
 

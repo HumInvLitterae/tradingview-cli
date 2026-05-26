@@ -258,11 +258,14 @@ Recommended agent use: use when a workflow needs bounded historical bars for a
 specific exchange-qualified symbol without requiring TradingView Desktop.
 Report `source`, `contract_version`, `request_mode`, `summary`, `range`,
 `requested_range`, `returned_range`, `range_coverage_status`,
-`range_alignment`, `source_availability`, `data_quality`, and warnings. Read
-`range_coverage_status` as the primary date-range coverage readback. For
-weekly and monthly date ranges, `range_alignment` reports period-start
-timestamp semantics and the `timestamp_within_requested_range` filter policy.
-Read
+`range_alignment`, `range_fetch_summary`, `source_availability`,
+`data_quality`, and warnings. Read `range_coverage_status` as the primary
+date-range coverage readback. For weekly and monthly date ranges,
+`range_alignment` reports period-start timestamp semantics and the
+`timestamp_within_requested_range` filter policy. Read `range_fetch_summary`
+for bounded fetch-window count, `request_more_data` count, observed / filtered
+/ returned counts, returned-count cap truncation, and source / timeout
+truncation reasons. Read
 `summary.coverage_status`, `summary.requested_count_fulfilled`, and
 `source_availability.wait_summary` before raw `bars[]`; they are historical
 coverage and bounded-source diagnostics, not ranking, scoring, or trading

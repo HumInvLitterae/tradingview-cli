@@ -163,7 +163,9 @@ date-range mode, `--count` is a safety cap on returned bars and defaults to
 500. The `--to` date is an inclusive calendar date. For weekly and monthly
 date ranges, read `range_alignment` to see that bar timestamps are period
 anchors and filtering uses timestamps within the requested range. Read
-`source_availability` and its `wait_summary` when bars are partial or
+`range_fetch_summary` to see bounded fetch-window counts, added
+`request_more_data` attempts, returned-count caps, and truncation reasons.
+Read `source_availability` and its `wait_summary` when bars are partial or
 unavailable; those fields describe bounded historical-source behavior, not a
 trading recommendation or proof that a symbol has no history. Use
 `tv range` only for selected Desktop chart viewport movement; it is not a

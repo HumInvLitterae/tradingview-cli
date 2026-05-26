@@ -7,6 +7,13 @@ package version omits the leading `v`.
 
 ## Unreleased
 
+### Added
+
+- Added additive `range_fetch_summary` readback to `tv bars` date-range
+  payloads and structured failure details so bounded fetch windows,
+  `request_more_data` attempts, returned-count caps, and range truncation
+  reasons are machine-readable before intraday date-range support is widened.
+
 ### Documentation
 
 - Added the `v0.21.0` roadmap direction and first range-scale / intraday

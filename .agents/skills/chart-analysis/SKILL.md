@@ -66,6 +66,7 @@ observation surface.
    `--count` is a safety cap in that mode and `--to` is an inclusive calendar
    date. Read its `summary` / `range`, `requested_range` / `returned_range`,
    `range_coverage_status`, `range_alignment`, and
+   `range_fetch_summary` for coverage and truncation readback. Read
    `source_availability` for partial or unavailable source diagnostics, and
    keep it separate from selected-chart `tv ohlcv` evidence.
 5. Use `tv quote <SYMBOL> --source chart` when the selected Desktop chart feed

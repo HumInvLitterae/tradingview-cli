@@ -107,6 +107,9 @@ tv bars NASDAQ:CRUS --timeframe 1M --from 2010-01-01 --to 2010-12-31
 In date-range mode, read `range_coverage_status` and `range_alignment` before
 interpreting raw `bars[]`. Weekly and monthly bars use period-start timestamps
 and are filtered by timestamps within the requested inclusive calendar range.
+Read `range_fetch_summary` when you need to know whether the command used
+additional fetch windows, reached the returned-bar safety cap, or stopped
+because the source or bounded wait could not cover the full range.
 
 ## 5. Start TradingView Desktop for chart workflows
 

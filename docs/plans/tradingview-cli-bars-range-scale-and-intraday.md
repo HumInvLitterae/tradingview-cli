@@ -20,9 +20,11 @@ features. Both need the same foundations: bounded fetch windows, coverage
 readback, truncation reporting, source availability diagnostics, and source
 boundaries that do not fall back to selected-chart state.
 
-This planning slice adds the v0.21 roadmap and records the first
-implementation candidate. It does not change CLI behavior, JSON payloads,
-Rust APIs, or version numbers.
+This implementation slice keeps intraday date-range guarded and adds
+machine-readable range-scale diagnostics to the existing daily / weekly /
+monthly `tv bars --from/--to` surface. It changes only additive `bars.v1`
+readback and related docs / tests. It does not add a new command, source,
+dependency, or version number.
 
 ## Progress
 
@@ -33,6 +35,16 @@ Rust APIs, or version numbers.
 - [x] (2026-05-26T00:10Z) Update the current plan index, previous roadmap, and
   changelog.
 - [x] (2026-05-26T00:15Z) Run docs validation and public hygiene checks.
+- [x] (2026-05-26T00:30Z) Fix the first implementation slice as
+  range-scale readback rather than intraday date-range rollout.
+- [x] (2026-05-26T00:40Z) Add `range_fetch_summary` to `bars.v1` success
+  payloads and structured failure details.
+- [x] (2026-05-26T00:50Z) Add focused unit coverage for count-cap truncation,
+  added fetch windows, and count-only intraday preservation.
+- [x] (2026-05-26T01:10Z) Sync README, source docs, runtime skills, packaged
+  runtime guide, and live smoke contract assertions.
+- [x] (2026-05-26T01:25Z) Run focused tests, full Rust baseline, skill
+  validation, docs validation, and optional public-safe live smoke summaries.
 
 ## Surprises & Discoveries
 
@@ -46,6 +58,13 @@ Rust APIs, or version numbers.
   and monthly timeframes, while count-only mode accepts intraday timeframes.
   Evidence: `crates/market/src/bars/validation.rs` has
   `DATE_RANGE_TIMEFRAMES` as `["1D", "1W", "1M"]`.
+
+- Observation: Range-scale behavior already needed a clearer distinction
+  between observed bars, bars retained by the requested date range, and final
+  bars returned after the `--count` safety cap.
+  Evidence: `crates/market/src/bars/transport.rs` now builds
+  `BarsFetchSummary` from observed, filtered, and returned counts during
+  `finalize_result`.
 
 ## Decision Log
 
@@ -70,12 +89,28 @@ Rust APIs, or version numbers.
   and source attribution harder for downstream users.
   Date/Author: 2026-05-26 / Codex.
 
+- Decision: Add `range_fetch_summary` before unlocking intraday date-range.
+  Rationale: daily / weekly / monthly date-range reads already exercise the
+  same fetch-loop and count-cap mechanics that intraday support will need.
+  Making those mechanics explicit first lets future intraday work explain
+  unsupported, unavailable, partial, and truncated outcomes without changing
+  source boundaries.
+  Date/Author: 2026-05-26 / Codex.
+
+- Decision: Keep the `range_truncation_reason` vocabulary small:
+  `count_cap`, `source_exhausted`, `timeout`, and `none`.
+  Rationale: These are enough to separate returned-count cap, source
+  exhaustion, bounded wait timeout, and untruncated success without exposing
+  raw WebSocket frames or adding source-specific error strings.
+  Date/Author: 2026-05-26 / Codex.
+
 ## Outcomes & Retrospective
 
-Planning is complete. `docs/v0.21-roadmap.md` now treats large-range
-batching / pagination and intraday date-range as one historical range maturity
-theme. This plan is the current ExecPlan, and the completed `v0.20.0`
-release-readiness plan is archived.
+Implementation is complete. `docs/v0.21-roadmap.md` now treats large-range
+batching / pagination and intraday date-range as one historical range
+maturity theme. The first implementation slice adds `range_fetch_summary` as
+additive `bars.v1` readback while leaving intraday date-range validation
+guarded.
 
 Validation passed:
 
@@ -86,7 +121,33 @@ Validation passed:
 - public hygiene grep, with existing policy / archive / test-example matches
   and no newly introduced private data in the changed v0.21 docs
 
-No Rust code, CLI behavior, JSON payload, Rust API, or version number changed.
+Rust code adds additive JSON readback only. CLI options, source boundary, Rust
+public API, intraday date-range guard, and version number are unchanged.
+
+Validation passed:
+
+- `cargo test -p tradingview-market bars -- --nocapture`
+- `cargo test -p tradingview-cli market::bars -- --nocapture`
+- `cargo test -p tradingview-cli --test cli_contract_bars -- --nocapture`
+- `cargo test -p tradingview-cli --test live_bars`
+- `cargo fmt --check`
+- `cargo clippy --workspace --all-targets --all-features -- -D warnings`
+- `cargo test --workspace`
+- `cargo metadata --no-deps --format-version 1`
+- `git diff --check`
+- `bash -n scripts/stage-release-package-files.sh`
+- `uvx --with pyyaml python ... quick_validate.py` for
+  `.agents/skills/market-data-interpretation`, `.agents/skills/chart-analysis`,
+  and `.agents/skills/multi-symbol-scan`
+
+Optional public-safe live smoke summaries:
+
+- `NASDAQ:AAPL`, `1D`, 2010-01-01 to 2020-12-31: returned 500 bars,
+  `range_coverage_status: "partial"`, `fetch_window_count: 9`,
+  `request_more_count: 8`, `range_truncation_reason: "count_cap"`.
+- `NASDAQ:CRUS`, `1W`, 2009-01-01 to 2015-12-31: returned 365 bars,
+  `range_coverage_status: "complete"`, `fetch_window_count: 2`,
+  `request_more_count: 1`, `range_truncation_reason: "none"`.
 
 ## Context and Orientation
 
@@ -99,27 +160,29 @@ No Rust code, CLI behavior, JSON payload, Rust API, or version number changed.
   `range_coverage_status`, `range_alignment`, `source_availability`, and
   `wait_summary`.
 
-The next implementation candidate should keep those fields stable and add only
-additive diagnostics where range-scale behavior needs clearer readback.
+The next implementation keeps those fields stable and adds
+`range_fetch_summary` where range-scale behavior needs clearer readback.
 
 ## Plan of Work
 
-Create `docs/v0.21-roadmap.md` with lanes for range scale foundation,
-intraday date-range feasibility and contract, unified range coverage
-semantics, sample preparation workflow, and deferred work.
+Extend the market crate `tv bars` range result with a private
+`BarsFetchSummary` type. Populate it from the existing transport fetch loop,
+tracking initial fetch count, `request_more_data` count, bounded fetch window
+count, observed bar count, date-range-filtered count, final returned count,
+and truncation reason.
 
-Make this plan the current ExecPlan. Move
-`docs/plans/tradingview-cli-v0.20.0-release-readiness.md` into
-`docs/plans/archives/`, update `docs/plans/README.md`, and update
-`docs/v0.20-roadmap.md` so it records the transition to v0.21.
+Expose that summary as `range_fetch_summary` in success payloads and
+structured failure details. Keep existing `request_mode`, `requested_range`,
+`returned_range`, `observed_range`, `range_coverage_status`,
+`range_alignment`, `summary`, `source_availability`, `wait_summary`, and
+`bars[]` fields unchanged.
 
-Record the first implementation candidate as range-scale / intraday readiness,
-not a full intraday rollout. The candidate should plan additive readback such
-as `range_fetch_summary`, `fetch_window_count`, `requested_count_cap`,
-`returned_count`, `range_truncated`, and `range_truncation_reason` if later
-implementation proves those fields useful.
+Keep intraday date-range validation unchanged: `--from/--to` supports only
+`1D`, `1W`, and `1M` in this slice. Count-only intraday `tv bars` remains
+unchanged.
 
-Update `CHANGELOG.md` under `Unreleased` as a roadmap/docs update.
+Update README, source taxonomy, observation workflows, internal API docs,
+runtime skills, roadmap, and changelog to explain `range_fetch_summary`.
 
 ## Concrete Steps
 
@@ -130,36 +193,50 @@ From the repository root:
     rg -n "v0\\.21|range scale|large-range|batching|pagination|intraday|date-range|bars\\.v1|range_alignment|range_coverage_status|source_availability|historical bars|Replay|watch|JSONL compare|chart-backed compare|source mixing|MCP|daemon|ranking|recommendation" README.md CHANGELOG.md docs .agents/skills packaging/agent/AGENTS.md
     rg -n '(/Users/|C:\\|USER;|sessionid|cookie|authorization|bearer|raw live payload|raw WebSocket|raw JSONL|raw bars|account-local|target id|downstream-private)' README.md AGENTS.md CLAUDE.md CHANGELOG.md docs .agents/skills packaging scripts crates || true
 
-This slice is docs-only. Do not run Rust baseline unless Rust code or
-packaging behavior changes.
+Run focused tests and baseline after code changes:
+
+    cargo test -p tradingview-market bars -- --nocapture
+    cargo test -p tradingview-cli market::bars -- --nocapture
+    cargo test -p tradingview-cli --test cli_contract_bars -- --nocapture
+    cargo test -p tradingview-cli --test live_bars
+    cargo fmt --check
+    cargo clippy --workspace --all-targets --all-features -- -D warnings
+    cargo test --workspace
+    cargo metadata --no-deps --format-version 1
+    git diff --check
+    bash -n scripts/stage-release-package-files.sh
 
 ## Validation and Acceptance
 
 Acceptance is met when:
 
-- `docs/v0.21-roadmap.md` exists and treats large-range batching / pagination
-  and intraday date-range as one historical range maturity theme.
-- The first ExecPlan is
-  `docs/plans/tradingview-cli-bars-range-scale-and-intraday.md`.
-- `docs/plans/README.md` and `docs/v0.20-roadmap.md` point to the v0.21
-  transition.
-- `CHANGELOG.md` records the roadmap/docs update under `Unreleased`.
-- Deferred work is explained by function, without promising source mixing,
-  automatic exports, ranking, recommendations, MCP server work, or daemon
-  behavior.
+- Date-range success payloads include `range_fetch_summary`.
+- Full range success reports `range_truncated: false` and
+  `range_truncation_reason: "none"`.
+- Returned-count-cap truncation reports `range_truncated: true` and
+  `range_truncation_reason: "count_cap"`.
+- Added `request_more_data` fetch windows are reflected by
+  `request_more_count` and `fetch_window_count`.
+- Timeout / no-bars / protocol error details retain public-safe
+  `range_fetch_summary`, `source_availability`, `wait_summary`, and
+  `range_alignment` where available.
+- Intraday date-range remains a validation error; count-only intraday remains
+  supported.
+- `tv range`, `tv ohlcv`, scanner quote, chart quote, quote-data, observe,
+  and stream contracts are unchanged.
 - No raw live output, raw bars, raw WebSocket frames, raw JSONL output, target
   ids, account-local identifiers, credentials, or local absolute paths are
   added to tracked docs.
 
 ## Idempotence and Recovery
 
-This slice only edits docs. It is safe to rerun validation commands. If the
-roadmap direction changes, edit `docs/v0.21-roadmap.md` and this plan together
-so the current plan and roadmap remain consistent.
+This slice is additive. It is safe to rerun validation commands. If the
+range-scale vocabulary changes, edit `docs/v0.21-roadmap.md`, this plan,
+payload tests, and runtime skills together so the contract remains coherent.
 
-If this slice needs to be reverted, move the archived v0.20 release-readiness
-plan back to `docs/plans/`, remove `docs/v0.21-roadmap.md`, remove this plan,
-and restore the previous current-plan entry.
+If this slice needs to be reverted, remove `range_fetch_summary` from the
+market crate types / payload / tests and revert the docs updates that mention
+it. Do not change the already released v0.20 docs or archive state.
 
 ## Artifacts and Notes
 

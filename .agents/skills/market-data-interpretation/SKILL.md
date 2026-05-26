@@ -142,13 +142,15 @@ browserless historical bars read using an undocumented TradingView WebSocket
 chart-session path. Report `contract_version: "bars.v1"`,
 `source: "tradingview_bars_ws"`, `source_category: "desktop_free_read"`,
 `summary`, `range`, `requested_range`, `returned_range`,
-`range_coverage_status`, `range_alignment`, `source_availability`,
-`data_quality`, and warnings. Use `tv bars --timeframe 1D|1W|1M --from
+`range_coverage_status`, `range_alignment`, `range_fetch_summary`,
+`source_availability`, `data_quality`, and warnings. Use `tv bars --timeframe 1D|1W|1M --from
 YYYY-MM-DD --to YYYY-MM-DD` when old source-guided daily or higher-timeframe
 samples need reproducible bars input; `--count` is a safety cap in that mode
 and `--to` is an inclusive calendar date. Read `range_coverage_status` as the
 primary date-range coverage field, and read `range_alignment` for period-start
-timestamp semantics and `timestamp_within_requested_range` filtering. Then
+timestamp semantics and `timestamp_within_requested_range` filtering. Read
+`range_fetch_summary` for fetch-window count, `request_more_data` count,
+observed / filtered / returned counts, and truncation reason. Then
 inspect raw `bars[]` for exact OHLCV evidence. If bars are partial or unavailable, read
 `source_availability.unavailable_reason` and
 `source_availability.wait_summary` as bounded historical-source diagnostics,
