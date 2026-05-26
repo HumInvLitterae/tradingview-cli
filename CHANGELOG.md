@@ -7,6 +7,10 @@ package version omits the leading `v`.
 
 ## Unreleased
 
+No unreleased changes yet.
+
+## v0.21.0 - 2026-05-26
+
 ### Added
 
 - Expanded narrow intraday date-range support in `tv bars --from --to` to
