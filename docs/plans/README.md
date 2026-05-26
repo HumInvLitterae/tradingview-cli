@@ -8,12 +8,15 @@ for release and next-phase planning.
 
 Current plan:
 
-- `tradingview-cli-user-getting-started-docs.md`: add user-facing English and
-  Japanese getting-started docs, README links, and release package staging
-  before `v0.20.0` release readiness.
+- `tradingview-cli-v0.20.0-release-readiness.md`: prepare the `v0.20.0`
+  release state, including version, changelog, release notes, README asset
+  examples, package staging, and release validation.
 
 Recently completed:
 
+- `tradingview-cli-user-getting-started-docs.md`: added user-facing English
+  and Japanese getting-started docs, README links, and release package staging
+  before `v0.20.0` release readiness.
 - `tradingview-cli-v0.20-pre-release-audit.md`: audited completed `v0.20.0`
   weekly/monthly bars date-range readback, range alignment, docs, skills,
   tests, source boundaries, and refactor readiness before the final

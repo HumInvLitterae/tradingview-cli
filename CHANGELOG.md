@@ -7,6 +7,8 @@ package version omits the leading `v`.
 
 ## Unreleased
 
+## v0.20.0 - 2026-05-26
+
 ### Added
 
 - Added weekly and monthly date-range readback to `tv bars --from --to` so
