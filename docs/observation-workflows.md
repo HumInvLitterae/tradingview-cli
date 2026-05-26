@@ -251,8 +251,9 @@ It uses an undocumented TradingView WebSocket chart-session path and reports
 `contract_version: "bars.v1"`, `source: "tradingview_bars_ws"`, and
 `source_category: "desktop_free_read"`. Date-range mode is the reproducible
 source-preparation path for older daily, weekly, and monthly samples; `--count`
-is a safety cap and defaults to 500 in that mode, and `--to` is an inclusive
-calendar date. Read
+is a safety cap and defaults to 500 in that mode. It can be raised up to 5000
+for date ranges; recent count mode stays capped at 500. The `--to` value is an
+inclusive calendar date. Read
 `summary` / `range`,
 `requested_range` / `returned_range`, and `range_coverage_status` for
 requested-vs-returned count and time coverage, then use raw `bars[]` for exact

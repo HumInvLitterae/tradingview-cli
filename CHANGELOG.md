@@ -9,6 +9,9 @@ package version omits the leading `v`.
 
 ### Added
 
+- Expanded `tv bars --from --to` date-range mode so `--count` remains a
+  returned-bar safety cap but may be raised to 5000 for daily, weekly, and
+  monthly historical ranges. Recent count mode remains capped at 500.
 - Added additive `range_fetch_summary` readback to `tv bars` date-range
   payloads and structured failure details so bounded fetch windows,
   `request_more_data` attempts, returned-count caps, and range truncation

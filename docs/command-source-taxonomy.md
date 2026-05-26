@@ -250,8 +250,9 @@ Use count mode for recent bounded samples, for example
 reproducible older daily, weekly, or monthly samples, for example
 `tv bars NASDAQ:CRUS --timeframe 1D --from 2010-01-01 --to 2010-12-31`.
 In date-range mode, `--count` is a safety cap on returned bars and defaults to
-500. The `--to` date is an inclusive calendar date. `tv range` is only a
-selected Desktop chart viewport operation; it does not make
+500. It can be raised up to 5000 in date-range mode; recent count mode stays
+capped at 500. The `--to` date is an inclusive calendar date. `tv range` is
+only a selected Desktop chart viewport operation; it does not make
 `tv ohlcv --count ...` a stable historical export for that displayed period.
 
 Recommended agent use: use when a workflow needs bounded historical bars for a

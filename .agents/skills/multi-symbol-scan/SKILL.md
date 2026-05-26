@@ -92,7 +92,9 @@ construction, not on duplicating the full source taxonomy.
    Use `tv bars <EXCHANGE:SYMBOL> --count <N>` when bounded Desktop-free
    historical bars are useful; use `--from YYYY-MM-DD --to YYYY-MM-DD` with
    `--timeframe 1D`, `1W`, or `1M` for reproducible older daily, weekly, or
-   monthly samples. The `--to` date is inclusive. Read
+   monthly samples. In that mode, `--count` defaults to 500 and may be raised
+   up to 5000 as a returned-bar safety cap; recent count mode remains capped
+   at 500. The `--to` date is inclusive. Read
    `contract_version: "bars.v1"`, `source: "tradingview_bars_ws"`,
    `summary`, `range`, `requested_range`, `returned_range`,
    `range_coverage_status`, `range_alignment`, `range_fetch_summary`,

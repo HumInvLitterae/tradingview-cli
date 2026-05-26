@@ -357,6 +357,8 @@ Safety boundary:
 - `tv bars --from YYYY-MM-DD --to YYYY-MM-DD --timeframe 1D|1W|1M` is the
   reproducible historical-source preparation path for older daily and
   higher-timeframe samples. The `--to` value is an inclusive calendar date.
+  In date-range mode, `--count` defaults to 500 and may be raised up to 5000
+  as a returned-bar safety cap. Recent count mode remains capped at 500.
   `tv range` only changes the selected Desktop chart viewport and must not be
   treated as a hidden input to `tv ohlcv`.
 - `tv bars` reports `summary` / `range` for requested-vs-returned count and

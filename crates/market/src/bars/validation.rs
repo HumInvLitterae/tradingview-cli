@@ -3,7 +3,10 @@ use std::time::Duration;
 use serde_json::json;
 use tradingview_core::{AppError, ErrorKind};
 
-use super::types::{BarsDate, BarsRequest, BarsRequestMode, DEFAULT_TIMEOUT_MS, MAX_BAR_COUNT};
+use super::types::{
+    BarsDate, BarsRequest, BarsRequestMode, DEFAULT_TIMEOUT_MS, MAX_DATE_RANGE_BAR_COUNT,
+    MAX_RECENT_BAR_COUNT,
+};
 
 const DATE_RANGE_TIMEFRAMES: &[&str] = &["1D", "1W", "1M"];
 
@@ -12,7 +15,13 @@ pub(super) fn validate_bars_request(
     timeframe: &str,
     count: usize,
 ) -> Result<BarsRequest, AppError> {
-    validate_bars_request_inner(symbol, timeframe, count, BarsRequestMode::RecentCount)
+    validate_bars_request_inner(
+        symbol,
+        timeframe,
+        count,
+        MAX_RECENT_BAR_COUNT,
+        BarsRequestMode::RecentCount,
+    )
 }
 
 pub(super) fn validate_bars_range_request(
@@ -53,6 +62,7 @@ pub(super) fn validate_bars_range_request(
         symbol,
         &timeframe,
         count_cap,
+        MAX_DATE_RANGE_BAR_COUNT,
         BarsRequestMode::DateRange { from, to },
     )
 }
@@ -61,6 +71,7 @@ fn validate_bars_request_inner(
     symbol: &str,
     timeframe: &str,
     count: usize,
+    max_count: usize,
     mode: BarsRequestMode,
 ) -> Result<BarsRequest, AppError> {
     let symbol = symbol.trim();
@@ -82,14 +93,14 @@ fn validate_bars_request_inner(
     }
 
     let timeframe = normalize_timeframe(timeframe)?;
-    if count == 0 || count > MAX_BAR_COUNT {
+    if count == 0 || count > max_count {
         return Err(AppError::new(
             ErrorKind::Validation,
-            format!("bars count must be between 1 and {MAX_BAR_COUNT}"),
+            format!("bars count must be between 1 and {max_count}"),
         )
         .with_details(json!({
             "minimum": 1,
-            "maximum": MAX_BAR_COUNT,
+            "maximum": max_count,
             "requested_count": count,
         })));
     }
@@ -239,10 +250,10 @@ mod tests {
     #[test]
     fn validate_range_accepts_daily_weekly_monthly_dates_and_count_cap() {
         let request =
-            validate_bars_range_request("NASDAQ:AAPL", "1d", "2020-01-01", "2020-03-31", 500)
+            validate_bars_range_request("NASDAQ:AAPL", "1d", "2020-01-01", "2020-03-31", 5000)
                 .unwrap();
         assert_eq!(request.timeframe, "1D");
-        assert_eq!(request.count, 500);
+        assert_eq!(request.count, 5000);
         assert_eq!(request.request_mode_name(), "date_range");
         assert_eq!(
             request.date_range_bounds(),
@@ -250,9 +261,10 @@ mod tests {
         );
 
         let request =
-            validate_bars_range_request("NASDAQ:AAPL", "1w", "2020-01-01", "2020-03-31", 500)
+            validate_bars_range_request("NASDAQ:AAPL", "1w", "2020-01-01", "2020-03-31", 501)
                 .unwrap();
         assert_eq!(request.timeframe, "1W");
+        assert_eq!(request.count, 501);
         assert_eq!(request.request_mode_name(), "date_range");
 
         let request =
@@ -260,6 +272,18 @@ mod tests {
                 .unwrap();
         assert_eq!(request.timeframe, "1M");
         assert_eq!(request.request_mode_name(), "date_range");
+
+        let err =
+            validate_bars_range_request("NASDAQ:AAPL", "1D", "2020-01-01", "2020-03-31", 5001)
+                .unwrap_err();
+        assert_eq!(err.kind, ErrorKind::Validation);
+        assert_eq!(
+            err.details
+                .as_ref()
+                .and_then(|details| details.get("maximum"))
+                .and_then(|value| value.as_u64()),
+            Some(5000)
+        );
     }
 
     #[test]

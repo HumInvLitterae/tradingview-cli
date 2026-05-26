@@ -8,13 +8,16 @@ for release and next-phase planning.
 
 Current plan:
 
-- `tradingview-cli-bars-range-scale-and-intraday.md`: implement the first
-  `v0.21.0` historical bars range-scale readback by adding
-  `range_fetch_summary` under the existing Desktop-free `bars.v1` source
-  boundary while keeping intraday date-range guarded.
+- `tradingview-cli-bars-large-range-pagination.md`: expand date-range
+  `tv bars --count` as a returned-bar safety cap up to 5000 while keeping
+  recent count mode capped at 500 and intraday date-range guarded.
 
 Recently completed:
 
+- `tradingview-cli-bars-range-scale-and-intraday.md`: added
+  `range_fetch_summary` to date-range `tv bars` success payloads and
+  structured failure details so fetch windows, `request_more_data`, observed /
+  filtered / returned counts, and truncation reasons are machine-readable.
 - `tradingview-cli-v0.20.0-release-readiness.md`: prepared the `v0.20.0`
   release state, including version, changelog, release notes, README asset
   examples, package staging, and release validation.

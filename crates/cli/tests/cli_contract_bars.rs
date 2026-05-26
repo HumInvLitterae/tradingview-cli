@@ -19,6 +19,7 @@ fn bars_help_explains_stable_desktop_free_boundary() {
         .stdout(predicate::str::contains("1M"))
         .stdout(predicate::str::contains("range_alignment"))
         .stdout(predicate::str::contains("safety cap"))
+        .stdout(predicate::str::contains("5000"))
         .stdout(predicate::str::contains("historical OHLCV bars"))
         .stdout(predicate::str::contains("bars.v1"))
         .stdout(predicate::str::contains("tradingview_bars_ws"))
@@ -160,4 +161,26 @@ fn bars_rejects_invalid_date_range_inputs_before_network() {
         value["error"]["details"]["supported_timeframes"],
         serde_json::json!(["1D", "1W", "1M"])
     );
+
+    let too_many_range = tv()
+        .env("TV_CDP_PORT", "9")
+        .args([
+            "bars",
+            "NASDAQ:AAPL",
+            "--timeframe",
+            "1D",
+            "--from",
+            "2020-01-01",
+            "--to",
+            "2020-03-31",
+            "--count",
+            "5001",
+        ])
+        .assert()
+        .failure()
+        .code(1);
+    let value = stderr_json(&too_many_range);
+    assert_eq!(value["command"], "bars");
+    assert_eq!(value["error"]["kind"], "validation");
+    assert_eq!(value["error"]["details"]["maximum"], 5000);
 }
