@@ -26,6 +26,7 @@ tv scanner metainfo --market america --field close
 | --- | --- | --- |
 | Several symbols, quote fields only | `tv quotes <SYMBOL>...` | You need ordered scanner-backed quote rows and do not need info or fundamentals sections. Inspect `time`, `update_mode`, and `delay_seconds` when freshness matters. |
 | Several known symbols, first-pass evidence | `tv compare <SYMBOL>...` | You need quote, info, and default fundamentals side by side. Read `summary` for scanability and `items[]` for evidence. |
+| Several known symbols over a short window | `tv watch compare <SYMBOL>...` | You need bounded scanner-backed quote polling as JSONL. Read readiness, sample, heartbeat, and summary events; do not treat it as ranking or a Desktop chart feed. |
 | One symbol, Desktop-free detail | `tv snapshot <SYMBOL>` | You need quote, info, and fundamentals for one symbol before chart follow-up. |
 | Selected chart over a short window | `tv observe chart --duration-ms ...` | You need readiness plus selected-chart last-bar samples, heartbeats, and final bounded-window summary. |
 | Finalist chart-feed quote | `tv quote <SYMBOL> --source chart` | The selected TradingView Desktop chart feed for one symbol is the source that matters. |
@@ -73,6 +74,21 @@ It is derived from the scanner quote section's
 or this project defines a normalized absolute regular-change field. Do not
 derive ranking, scoring, or trade action from `movement`; it is only a
 machine-readable evidence path for downstream tools.
+
+Use `tv watch compare <SYMBOL>...` when the same known candidate set needs a
+short bounded scanner-backed watch window:
+
+```bash
+tv watch compare NASDAQ:AAPL NASDAQ:MSFT --duration-ms 10000 --interval 2000 --heartbeat-ms 3000
+```
+
+It emits JSONL events with `contract_version: "watch_compare.v1"` and `_watch:
+"compare"`. The readiness event describes validated symbols and controls,
+sample events contain ordered scanner-backed quote batch evidence, heartbeat
+events report counters when no changed sample is emitted, and the final summary
+reports sample, heartbeat, poll, error, control, and end-reason readback. This
+is still Desktop-free scanner evidence; it is not selected-chart observation,
+not `tv compare` replacement, not a daemon, and not a recommendation engine.
 
 ## Follow-up Vocabulary
 

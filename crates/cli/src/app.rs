@@ -6,6 +6,7 @@ mod runner;
 mod runtime;
 mod safety;
 mod stream;
+mod watch;
 
 pub use output::startup_error;
 pub use runner::run_cli;

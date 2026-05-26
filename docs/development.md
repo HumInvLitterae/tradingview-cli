@@ -342,6 +342,19 @@ events are observation-window readbacks, not market-data samples. Do not paste
 raw JSONL live output, target ids, raw WebSocket frames, account-local
 metadata, or local validation paths into tracked docs.
 
+For bounded Desktop-free watch compare contract checks, run:
+
+```bash
+cargo test -p tradingview-cli watch -- --nocapture
+cargo test -p tradingview-cli --test cli_contract_quote watch -- --nocapture
+```
+
+`tv watch compare <SYMBOL>...` emits JSONL readiness, sample, heartbeat, and
+summary events with `contract_version: "watch_compare.v1"` and scanner-backed
+source metadata. If live smoke is attempted, record only public-safe summary
+counts such as symbols, sample count, heartbeat count, poll count, end reason,
+and source marker. Do not paste raw JSONL output into tracked docs.
+
 For `tv snapshot <SYMBOL>` live contract checks, run:
 
 ```bash

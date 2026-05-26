@@ -17,7 +17,7 @@ browserless bars, and fundamentals/event-like reads.
 Always name the data source before interpreting values:
 
 - Desktop-free reads: `tv snapshot <SYMBOL>`, `tv compare <SYMBOL>...`,
-  `tv quote <SYMBOL>`, `tv quotes <SYMBOL>...`,
+  `tv watch compare <SYMBOL>...`, `tv quote <SYMBOL>`, `tv quotes <SYMBOL>...`,
   `tv fundamentals <SYMBOL>`, `tv scanner scan`, and `tv scanner metainfo`.
   Stable Desktop-free payloads should report
   `source_category: "desktop_free_read"`, `requires_desktop: false`, and
@@ -44,6 +44,7 @@ they were the same source.
 | --- | --- |
 | Several symbols, quote fields only | `tv quotes <SYMBOL>...` |
 | Several known symbols with quote, info, and fundamentals | `tv compare <SYMBOL>...` |
+| Several known symbols over a short scanner-backed window | `tv watch compare <SYMBOL>...` |
 | One symbol with Desktop-free detail | `tv snapshot <SYMBOL>` |
 | Selected chart over a short window | `tv observe chart --duration-ms ...` |
 | One finalist's selected-chart quote | `tv quote <SYMBOL> --source chart` |
@@ -55,6 +56,17 @@ values literally: `snapshot`, `chart_quote`, `observe_chart`, and
 quote; it is not scanner-style premarket or postmarket evidence. Do not rename
 it to `quote_chart`. These hints are available evidence surfaces, not
 recommendations, rankings, or automatic reads.
+
+For `tv watch compare <SYMBOL>...`, interpret each JSONL line by
+`data._event`. Read the initial `readiness` event for symbols and bounded
+controls, `sample` events for ordered scanner-backed quote evidence,
+`heartbeat` events for observation counters, and the final `summary` event for
+sample count, heartbeat count, poll count, error count, elapsed time, controls,
+and `end_reason`. Watch compare events carry `contract_version:
+"watch_compare.v1"`, `_watch: "compare"`, `source: "scanner_scan_rest"`,
+`source_category: "desktop_free_read"`, `requires_desktop: false`, and
+`non_mutating: true`. Treat them as Desktop-free scanner evidence, not
+selected-chart observation, quote-data, ranking, scoring, or trading advice.
 
 ## Freshness And Session Boundaries
 

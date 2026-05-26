@@ -9,6 +9,7 @@ use crate::{
         observe::run_observe_command,
         output::{print_json_stderr, print_json_stdout, startup_error},
         stream::run_stream_command,
+        watch::run_watch_command,
     },
     cli::{Cli, Command},
 };
@@ -74,6 +75,15 @@ async fn async_main() -> ExitCode {
             Err(err) => {
                 let code = err.exit_code();
                 let envelope = ErrorEnvelope::new("observe", ErrorBody::from(err));
+                print_json_stderr(&envelope);
+                ExitCode::from(code)
+            }
+        },
+        Command::Watch { command } => match run_watch_command(command).await {
+            Ok(()) => ExitCode::SUCCESS,
+            Err(err) => {
+                let code = err.exit_code();
+                let envelope = ErrorEnvelope::new("watch", ErrorBody::from(err));
                 print_json_stderr(&envelope);
                 ExitCode::from(code)
             }

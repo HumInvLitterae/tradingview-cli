@@ -74,6 +74,7 @@ tv quote AAPL
 tv snapshot NASDAQ:AAPL
 tv compare NASDAQ:AAPL NYSE:IONQ
 tv quotes AAPL MSFT NYSE:IONQ
+tv watch compare NASDAQ:AAPL NASDAQ:MSFT --duration-ms 10000 --interval 2000
 tv fundamentals NYSE:IONQ --group earnings
 tv fundamentals AAPL --group dividends
 tv scanner scan --type stock --columns name,close,volume --limit 10
@@ -85,6 +86,12 @@ for resolution, section success, and missing-value counts. It does not rank,
 score, or recommend symbols. See `docs/observation-workflows.md` for the
 practical choice between `quotes`, `compare`, `snapshot`, and chart follow-up
 commands.
+
+`tv watch compare` is a bounded JSONL workflow for a known candidate set. It
+polls the same Desktop-free scanner-backed quote source used by `tv quotes`,
+emits readiness / sample / heartbeat / summary events with
+`contract_version: "watch_compare.v1"`, and does not rank, recommend, or use
+TradingView Desktop.
 
 Scanner-backed `tv quote <SYMBOL>` and `tv quotes <SYMBOL>...` are
 Desktop-free, but they are not a realtime guarantee. Inspect `time`,
@@ -244,6 +251,11 @@ use `_event: "sample"`, optional heartbeats use `_event: "heartbeat"`, and
 bounded normal exits emit a final `_event: "summary"` line. `tv observe chart`
 starts with readiness, emits selected-chart sample or heartbeat events, and
 also ends bounded runs with a summary line.
+
+`tv watch compare ...` also prints newline-delimited JSON, but it is
+Desktop-free and scanner-backed. Its events use `_watch: "compare"` and
+`contract_version: "watch_compare.v1"` so agents can keep it separate from
+selected-chart `observe` / `stream` events.
 
 Exit codes are:
 

@@ -247,6 +247,94 @@ fn compare_rejects_invalid_inputs_before_connecting() {
 }
 
 #[test]
+fn watch_compare_help_explains_bounded_scanner_jsonl() {
+    tv().args(["watch", "compare", "--help"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("SYMBOLS"))
+        .stdout(predicate::str::contains("scanner"))
+        .stdout(predicate::str::contains("JSON"))
+        .stdout(predicate::str::contains("readiness"))
+        .stdout(predicate::str::contains("heartbeat"))
+        .stdout(predicate::str::contains("summary"))
+        .stdout(predicate::str::contains("--interval"))
+        .stdout(predicate::str::contains("--duration-ms"))
+        .stdout(predicate::str::contains("--max-events"))
+        .stdout(predicate::str::contains("--heartbeat-ms"))
+        .stdout(predicate::str::contains("buy/sell").not());
+}
+
+#[test]
+fn watch_compare_rejects_invalid_inputs_before_connecting() {
+    let one_symbol = tv()
+        .env("TV_CDP_PORT", "9")
+        .args(["watch", "compare", "AAPL"])
+        .assert()
+        .failure()
+        .code(1);
+    let value = stderr_json(&one_symbol);
+    assert_eq!(value["success"], false);
+    assert_eq!(value["command"], "watch");
+    assert_eq!(value["error"]["kind"], "validation");
+
+    let blank_symbol = tv()
+        .env("TV_CDP_PORT", "9")
+        .args(["watch", "compare", "AAPL", " "])
+        .assert()
+        .failure()
+        .code(1);
+    let value = stderr_json(&blank_symbol);
+    assert_eq!(value["success"], false);
+    assert_eq!(value["command"], "watch");
+    assert_eq!(value["error"]["kind"], "validation");
+
+    let too_many_symbols: Vec<String> = std::iter::once("watch".to_string())
+        .chain(std::iter::once("compare".to_string()))
+        .chain((0..26).map(|idx| format!("NASDAQ:T{idx}")))
+        .collect();
+    let too_many = tv()
+        .env("TV_CDP_PORT", "9")
+        .args(too_many_symbols)
+        .assert()
+        .failure()
+        .code(1);
+    let value = stderr_json(&too_many);
+    assert_eq!(value["success"], false);
+    assert_eq!(value["command"], "watch");
+    assert_eq!(value["error"]["kind"], "validation");
+    assert_eq!(value["error"]["details"]["maximum"], 25);
+}
+
+#[test]
+fn watch_compare_rejects_invalid_controls_before_connecting() {
+    for args in [
+        vec!["watch", "compare", "AAPL", "MSFT", "--interval", "999"],
+        vec!["watch", "compare", "AAPL", "MSFT", "--duration-ms", "0"],
+        vec![
+            "watch",
+            "compare",
+            "AAPL",
+            "MSFT",
+            "--duration-ms",
+            "300001",
+        ],
+        vec!["watch", "compare", "AAPL", "MSFT", "--max-events", "0"],
+        vec!["watch", "compare", "AAPL", "MSFT", "--heartbeat-ms", "999"],
+    ] {
+        let assert = tv()
+            .env("TV_CDP_PORT", "9")
+            .args(args)
+            .assert()
+            .failure()
+            .code(1);
+        let value = stderr_json(&assert);
+        assert_eq!(value["success"], false);
+        assert_eq!(value["command"], "watch");
+        assert_eq!(value["error"]["kind"], "validation");
+    }
+}
+
+#[test]
 fn scanner_help_lists_hotlist_subcommand() {
     tv().args(["scanner", "--help"])
         .assert()

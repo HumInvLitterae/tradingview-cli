@@ -73,6 +73,8 @@ Useful starting points:
 - `tv quote`, `tv quotes`, scanner, fundamentals, and `tv bars` read without
   TradingView Desktop.
 - `tv bars` is the reproducible historical bars entry point.
+- `tv watch compare` watches a known candidate set for a short time using
+  Desktop-free scanner-backed quote reads and one JSON object per line.
 - `tv range` only moves the visible Desktop chart range.
 - `tv ohlcv` reads bars from the selected Desktop chart.
 - `tv quote --source quote-data` is an explicit Desktop-backed quote-data
@@ -93,6 +95,7 @@ Commands that do not need TradingView Desktop are the safest first check:
 tv quote AAPL
 tv info NASDAQ:AAPL
 tv bars NASDAQ:AAPL --timeframe 1D --count 5
+tv watch compare NASDAQ:AAPL NASDAQ:MSFT --duration-ms 10000 --interval 2000
 ```
 
 For historical sample preparation, use `tv bars` rather than moving a visible
@@ -190,6 +193,17 @@ tv stream bars --max-events 5
 These commands print readiness, sample, heartbeat, and final summary events.
 They observe the selected Desktop chart. They are not Desktop-free historical
 bars and they are not a multi-symbol realtime feed.
+
+If you need to watch several known symbols briefly without using TradingView
+Desktop, use:
+
+```bash
+tv watch compare NASDAQ:AAPL NASDAQ:MSFT --duration-ms 10000 --interval 2000 --heartbeat-ms 3000
+```
+
+This prints JSON-lines events with `contract_version: "watch_compare.v1"`.
+Read the readiness, sample, heartbeat, and summary events by `_event`. It uses
+scanner-backed quote reads, not the selected Desktop chart.
 
 ## 7. Next references
 

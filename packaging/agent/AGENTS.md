@@ -95,6 +95,11 @@ Do not use `TV_CDP_TARGET_ID`; explicit target handoff is `--target-id`.
   `range_fetch_summary` for fetch-window count, `request_more_data` count,
   returned-count caps, and truncation reasons, and read
   `source_availability` / `wait_summary` when bars are partial or unavailable.
+- Bounded watch compare uses `tv watch compare <SYMBOL>...`. It is a
+  Desktop-free scanner-backed JSONL workflow with `contract_version:
+  "watch_compare.v1"`, not a daemon, selected-chart feed, ranking, or trading
+  recommendation. Read readiness, sample, heartbeat, and summary events by
+  `_event` and preserve `source: "scanner_scan_rest"` when reporting it.
 - Selected-chart JSONL observations use `tv observe chart` and lower-level
   `tv stream ...`. Read readiness, sample, heartbeat, and final summary events
   by `contract_version` (`observe_chart.v1` or `stream.v1`), `_event`, and

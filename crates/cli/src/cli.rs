@@ -73,6 +73,14 @@ pub enum Command {
         long_about = "Compare Desktop-free evidence for multiple symbols without connecting to TradingView Desktop.\n\nThe comparison packet preserves input order and includes scanner quote, symbol info, and default scanner-backed fundamentals sections for each symbol. It is intended for screening and evidence comparison, not realtime chart-feed batching or buy/sell recommendations. Use `tv snapshot <SYMBOL>` for one-symbol detail, and `tv observe chart` or `tv quote <SYMBOL> --source chart` for selected-chart follow-up after narrowing candidates."
     )]
     Compare { symbols: Vec<String> },
+    #[command(
+        about = "Run bounded Desktop-free watch workflows as JSONL",
+        long_about = "Run bounded watch workflows as newline-delimited JSON envelopes.\n\n`tv watch compare <SYMBOL>...` polls Desktop-free scanner-backed quote evidence for a known candidate set and emits readiness, sample, heartbeat, and final summary events with `contract_version: \"watch_compare.v1\"`. It is a short-window observation workflow, not a daemon, realtime feed, source-mixing fallback, ranking, or buy/sell recommendation."
+    )]
+    Watch {
+        #[command(subcommand)]
+        command: WatchCommand,
+    },
     #[command(about = "Read TradingView scanner preset data")]
     Scanner {
         #[command(subcommand)]
@@ -884,6 +892,31 @@ pub enum ObserveCommand {
     },
 }
 
+#[derive(Debug, Subcommand)]
+pub enum WatchCommand {
+    #[command(
+        about = "Watch scanner-backed comparison quotes as bounded JSONL",
+        long_about = "Watch scanner-backed comparison quotes as bounded newline-delimited JSON.\n\nThis command polls Desktop-free scanner quote evidence for the requested symbols, preserves input order, and emits readiness, sample, heartbeat, and summary events. It does not connect to TradingView Desktop, switch charts, read browserless bars, use quote-data, or rank symbols."
+    )]
+    Compare {
+        symbols: Vec<String>,
+        #[command(flatten)]
+        options: WatchCompareOptions,
+    },
+}
+
+#[derive(Debug, Clone, Copy, Args)]
+pub struct WatchCompareOptions {
+    #[arg(long, default_value_t = 5000)]
+    pub interval: u64,
+    #[arg(long, default_value_t = 30000)]
+    pub duration_ms: u64,
+    #[arg(long)]
+    pub max_events: Option<u64>,
+    #[arg(long, default_value_t = 10000)]
+    pub heartbeat_ms: u64,
+}
+
 #[derive(Debug, Clone, Copy, Args)]
 pub struct StreamOptions {
     #[arg(long, short)]
@@ -970,6 +1003,7 @@ impl Command {
             Self::Fundamentals { .. } => "fundamentals",
             Self::Snapshot { .. } => "snapshot",
             Self::Compare { .. } => "compare",
+            Self::Watch { .. } => "watch",
             Self::Scanner { .. } => "scanner",
             Self::Screener { .. } => "screener",
             Self::Quote { .. } => "quote",
