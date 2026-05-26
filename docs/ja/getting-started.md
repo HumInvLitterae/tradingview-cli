@@ -105,10 +105,13 @@ tv bars NASDAQ:AAPL --timeframe 1D --count 5
 tv bars NASDAQ:CRUS --timeframe 1D --from 2010-01-01 --to 2010-12-31
 tv bars NASDAQ:CRUS --timeframe 1W --from 2010-01-01 --to 2010-12-31
 tv bars NASDAQ:CRUS --timeframe 1M --from 2010-01-01 --to 2010-12-31
+tv bars NASDAQ:AAPL --timeframe 60 --from 2026-05-01 --to 2026-05-22 --count 1000
 ```
 
 日付範囲を指定した場合は、まず `range_coverage_status` と
-`range_alignment` を確認してください。週足と月足では、足の時刻はその期間の
+`range_alignment` を確認してください。日付範囲指定で使える時間軸は、現時点
+では 15 分足、60 分足、日足、週足、月足です。そのほかの分足は、日付範囲指定
+ではまだ使えません。分足、週足、月足では、足の時刻はその期間の開始時刻や
 開始日を表します。指定した開始日から終了日までの範囲に、その時刻が入っている
 足だけが返ります。日付範囲を指定した場合の `--count` は返す足の最大本数で、
 指定しなければ 500 本、最大で 5000 本です。直近本数を取る通常の使い方では、
