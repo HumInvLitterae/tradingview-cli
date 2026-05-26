@@ -8,11 +8,16 @@ for release and next-phase planning.
 
 Current plan:
 
-- `tradingview-cli-v0.21-pre-release-audit.md`: audit completed `v0.21.0`
-  range-scale and narrow intraday date-range support before release readiness.
+- `tradingview-cli-v0.21.0-release-readiness.md`: prepare the `v0.21.0`
+  release state, including version, changelog, release notes, README asset
+  examples, package staging, and release validation.
 
 Recently completed:
 
+- `tradingview-cli-v0.21-pre-release-audit.md`: audited completed `v0.21.0`
+  range-scale readback, 5000-count date-range cap, narrow intraday date-range
+  support, docs, skills, tests, source boundaries, and refactor posture before
+  release readiness.
 - `tradingview-cli-bars-intraday-range-feasibility.md`: expanded intraday
   date-range `tv bars --from/--to` support to `5`, `15`, `30`, and `60`
   while keeping the remaining intraday date ranges guarded.
