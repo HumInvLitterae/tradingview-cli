@@ -322,6 +322,35 @@ Treat `selected_chart_range_match: "overlaps_visible_range"` as evidence that
 the returned bars and observed visible range intersect. It is not a guarantee
 that a reproducible historical export was produced.
 
+## Replay Extraction Feasibility
+
+Replay-based extraction is still feasibility work, not a stable export
+workflow. Use `tv bars --from/--to` when the task needs reproducible
+historical OHLCV input. Use Replay only when the selected TradingView Desktop
+chart and Replay mode itself are the evidence under review.
+
+Replay commands are stateful. `tv replay status` is a Desktop-backed read and
+reports `replay_context` plus selected-chart `chart_context` when available.
+`tv replay start`, `tv replay step`, `tv replay stop`, `tv replay autoplay`,
+and `tv replay trade` are Desktop-backed operations. They report `operation`,
+`source_category: "desktop_backed_operation"`, `non_mutating: false`, and a
+post-operation `replay_context`.
+
+For feasibility checks, keep the sequence explicit:
+
+- inspect `tv readiness` and `tv state`;
+- read `tv replay status`;
+- start Replay only after the user agrees to mutate chart state;
+- use `tv replay step` to observe `previous_date`, `current_date`,
+  `replay_context`, and selected-chart context;
+- use `tv ohlcv --summary` or a screenshot only as separate selected-chart
+  evidence;
+- stop Replay when the practice or feasibility check is complete.
+
+Do not treat Replay output as a replacement for `tv bars`, and do not write
+raw DOM, raw payloads, target ids, or account-local metadata into tracked
+notes.
+
 ## Fundamentals And Event-Like Fields
 
 Use `tv fundamentals` for scanner-backed fundamentals and event-like fields:

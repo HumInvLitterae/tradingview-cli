@@ -79,6 +79,11 @@ observation surface.
    `returned_bars_range`, and `selected_chart_range_match`; overlap is a
    diagnostic, not a guarantee that an export-ready historical range was
    produced.
+   Replay-based extraction is also not a stable export replacement. Use
+   `tv replay status` to read `replay_context`; use `tv replay start` /
+   `step` / `stop` only after the user accepts that Replay state will change.
+   Report Replay `operation`, current date, and chart context separately from
+   `tv ohlcv`, screenshots, and Desktop-free `tv bars` evidence.
 5. Use `tv quote <SYMBOL> --source chart` when the selected Desktop chart feed
    matters, and `tv quote <SYMBOL> --source auto` when chart-first behavior
    with scanner fallback is acceptable. Do not add manual sleep or double-call

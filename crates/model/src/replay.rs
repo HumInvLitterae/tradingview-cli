@@ -102,16 +102,22 @@ fn days_from_civil(year: i32, month: u32, day: u32) -> i64 {
 }
 
 pub fn normalize_replay_action(data: Value) -> Result<Value, AppError> {
+    normalize_replay_operation(data, "replay_operation")
+}
+
+pub fn normalize_replay_operation(data: Value, default_operation: &str) -> Result<Value, AppError> {
     if data.get("ok").and_then(Value::as_bool) == Some(false) {
         let message = data
             .get("message")
             .and_then(Value::as_str)
-            .unwrap_or("TradingView replay operation failed");
+            .unwrap_or("TradingView replay operation failed")
+            .to_string();
         let kind = match data.get("error_kind").and_then(Value::as_str) {
             Some("validation") => ErrorKind::Validation,
             _ => ErrorKind::InternalApiUnavailable,
         };
-        return Err(AppError::new(kind, message).with_details(data));
+        let details = enrich_replay_action_payload(data, default_operation);
+        return Err(AppError::new(kind, message).with_details(details));
     }
 
     if data.get("action").is_none() {
@@ -126,7 +132,7 @@ pub fn normalize_replay_action(data: Value) -> Result<Value, AppError> {
     if let Some(object) = payload.as_object_mut() {
         object.remove("ok");
     }
-    Ok(payload)
+    Ok(enrich_replay_action_payload(payload, default_operation))
 }
 
 pub fn normalize_replay_status(data: Value) -> Result<Value, AppError> {
@@ -146,7 +152,7 @@ pub fn normalize_replay_status(data: Value) -> Result<Value, AppError> {
         .with_details(data));
     }
 
-    Ok(json!({
+    let mut payload = json!({
         "is_replay_available": data.get("is_replay_available").cloned().unwrap_or(Value::Null),
         "is_replay_started": data.get("is_replay_started").cloned().unwrap_or(Value::Null),
         "is_autoplay_started": data.get("is_autoplay_started").cloned().unwrap_or(Value::Null),
@@ -156,7 +162,89 @@ pub fn normalize_replay_status(data: Value) -> Result<Value, AppError> {
         "position": data.get("position").cloned().unwrap_or(Value::Null),
         "realized_pnl": data.get("realized_pnl").cloned().unwrap_or(Value::Null),
         "source": data.get("source").cloned().unwrap_or_else(|| json!("internal_api")),
-    }))
+        "source_category": "desktop_backed_read",
+        "requires_desktop": true,
+        "non_mutating": true,
+        "replay_context": replay_context_from(&data),
+    });
+    if let Some(chart_context) = data.get("chart_context") {
+        payload["chart_context"] = chart_context.clone();
+    }
+    Ok(payload)
+}
+
+fn enrich_replay_action_payload(mut payload: Value, default_operation: &str) -> Value {
+    let operation = payload
+        .get("operation")
+        .and_then(Value::as_str)
+        .map(str::to_owned)
+        .unwrap_or_else(|| {
+            payload
+                .get("action")
+                .and_then(Value::as_str)
+                .map(|action| replay_operation_from_action(Some(action)))
+                .unwrap_or_else(|| default_operation.to_string())
+        });
+    let replay_context = replay_context_from(&payload);
+
+    if let Some(object) = payload.as_object_mut() {
+        object
+            .entry("source".to_string())
+            .or_insert_with(|| json!("internal_api"));
+        object
+            .entry("source_category".to_string())
+            .or_insert_with(|| json!("desktop_backed_operation"));
+        object
+            .entry("requires_desktop".to_string())
+            .or_insert_with(|| json!(true));
+        object
+            .entry("non_mutating".to_string())
+            .or_insert_with(|| json!(false));
+        object
+            .entry("operation".to_string())
+            .or_insert_with(|| json!(operation));
+        object
+            .entry("replay_context".to_string())
+            .or_insert(replay_context);
+    }
+    payload
+}
+
+fn replay_operation_from_action(action: Option<&str>) -> String {
+    match action {
+        Some("started") => "replay_start",
+        Some("step") => "replay_step",
+        Some("replay_stopped" | "already_stopped") => "replay_stop",
+        Some("autoplay") => "replay_autoplay",
+        Some("buy" | "sell" | "close") => "replay_trade",
+        _ => "replay_operation",
+    }
+    .to_string()
+}
+
+fn replay_context_from(data: &Value) -> Value {
+    json!({
+        "is_replay_available": data.get("is_replay_available").cloned().unwrap_or(Value::Null),
+        "is_replay_started": data
+            .get("is_replay_started")
+            .or_else(|| data.get("replay_started"))
+            .cloned()
+            .unwrap_or(Value::Null),
+        "is_autoplay_started": data
+            .get("is_autoplay_started")
+            .or_else(|| data.get("autoplay_active"))
+            .cloned()
+            .unwrap_or(Value::Null),
+        "replay_mode": data.get("replay_mode").cloned().unwrap_or(Value::Null),
+        "current_date": data.get("current_date").cloned().unwrap_or(Value::Null),
+        "autoplay_delay": data
+            .get("autoplay_delay")
+            .or_else(|| data.get("delay_ms"))
+            .cloned()
+            .unwrap_or(Value::Null),
+        "position": data.get("position").cloned().unwrap_or(Value::Null),
+        "realized_pnl": data.get("realized_pnl").cloned().unwrap_or(Value::Null),
+    })
 }
 
 #[cfg(test)]
@@ -212,24 +300,37 @@ mod tests {
         let payload = normalize_replay_action(json!({
             "ok": true,
             "action": "step",
+            "current_date": 1767225600000_i64,
             "source": "internal_api"
         }))
         .unwrap();
 
         assert_eq!(payload["action"], "step");
+        assert_eq!(payload["operation"], "replay_step");
+        assert_eq!(payload["source_category"], "desktop_backed_operation");
+        assert_eq!(payload["requires_desktop"], true);
+        assert_eq!(payload["non_mutating"], false);
+        assert_eq!(payload["replay_context"]["current_date"], 1767225600000_i64);
         assert!(payload.get("ok").is_none());
     }
 
     #[test]
     fn replay_action_normalization_maps_errors() {
-        let error = normalize_replay_action(json!({
-            "ok": false,
-            "error_kind": "validation",
-            "message": "Replay is not started. Use replay start first."
-        }))
+        let error = normalize_replay_operation(
+            json!({
+                "ok": false,
+                "error_kind": "validation",
+                "message": "Replay is not started. Use replay start first."
+            }),
+            "replay_step",
+        )
         .unwrap_err();
 
         assert_eq!(error.kind, ErrorKind::Validation);
+        let details = error.details.unwrap();
+        assert_eq!(details["operation"], "replay_step");
+        assert_eq!(details["source_category"], "desktop_backed_operation");
+        assert_eq!(details["non_mutating"], false);
     }
 
     #[test]
@@ -248,6 +349,10 @@ mod tests {
 
         assert_eq!(payload["is_replay_available"], true);
         assert_eq!(payload["source"], "internal_api");
+        assert_eq!(payload["source_category"], "desktop_backed_read");
+        assert_eq!(payload["requires_desktop"], true);
+        assert_eq!(payload["non_mutating"], true);
+        assert_eq!(payload["replay_context"]["current_date"], 1767225600000_i64);
         assert_eq!(payload["position"]["side"], "long");
     }
 

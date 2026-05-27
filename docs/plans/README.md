@@ -8,14 +8,17 @@ for release and next-phase planning.
 
 Current plan:
 
-- `tradingview-cli-selected-chart-historical-export-feasibility.md`: plan the
-  next `v0.22.0` observation / export workflow maturity slice by checking
-  whether selected-chart range movement plus CDP bars can support an explicit
-  historical export contract without becoming a hidden fallback for
-  Desktop-free `tv bars`.
+- `tradingview-cli-replay-extraction-feasibility.md`: add public-safe Replay
+  state and operation readback to existing `tv replay ...` commands so
+  Replay-based extraction can be evaluated without adding a stable export
+  command or hidden fallback.
 
 Recently completed:
 
+- `tradingview-cli-selected-chart-historical-export-feasibility.md`: added
+  selected-chart export evidence readback to `tv ohlcv` and `tv range`
+  without creating a stable export command or fallback for Desktop-free
+  `tv bars`.
 - `tradingview-cli-watch-jsonl-compare-contract.md`: added bounded
   `tv watch compare <SYMBOL>...` with scanner-backed `watch_compare.v1`
   readiness, sample, heartbeat, and summary JSONL events.
