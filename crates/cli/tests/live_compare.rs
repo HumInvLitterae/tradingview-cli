@@ -469,6 +469,17 @@ fn valid_follow_up_hints(hints: &[Value]) -> bool {
                 hint.get("kind").and_then(Value::as_str) == Some(*kind)
                     && hint.get("command").and_then(Value::as_str).is_some()
                     && hint.get("reason").and_then(Value::as_str).is_some()
+                    && hint
+                        .get("requires_desktop")
+                        .and_then(Value::as_bool)
+                        .is_some()
+                    && hint
+                        .get("source_category")
+                        .and_then(Value::as_str)
+                        .is_some()
+                    && hint.get("non_mutating").and_then(Value::as_bool) == Some(true)
+                    && hint.get("evidence_role").and_then(Value::as_str).is_some()
+                    && hint.get("auto_execute").and_then(Value::as_bool) == Some(false)
             })
         })
 }

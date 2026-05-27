@@ -18,6 +18,9 @@ package version omits the leading `v`.
 - Added `tv watch compare <SYMBOL>...`, a bounded Desktop-free JSONL workflow
   that polls scanner-backed quote evidence for a known candidate set and emits
   `watch_compare.v1` readiness, sample, heartbeat, and summary events.
+- Added advisory source metadata to `snapshot.v1` and `compare.v1`
+  `follow_up_hints[]` so possible next evidence checks are easier to route
+  without automatic execution, source mixing, ranking, or recommendations.
 
 ### Documentation
 

@@ -23,6 +23,7 @@ const FOLLOW_UP_SCREENSHOT: &str = "screenshot";
 const FOLLOW_UP_SNAPSHOT: &str = "snapshot";
 const MISSING_REASON_FIELDS: &str = "missing_fields";
 const MISSING_REASON_SECTION_ERROR: &str = "section_error";
+const DESKTOP_BACKED_READ_CATEGORY: &str = "desktop_backed_read";
 
 pub async fn snapshot_symbol(
     symbol: &str,
@@ -265,18 +266,30 @@ fn follow_up_hints(symbol: &Value) -> Vec<SnapshotFollowUpHint> {
             command: format!("tv quote {command_symbol} --source chart"),
             reason: "single_symbol_chart_quote".to_string(),
             requires_desktop: true,
+            source_category: DESKTOP_BACKED_READ_CATEGORY.to_string(),
+            non_mutating: true,
+            evidence_role: "single_symbol_chart_quote".to_string(),
+            auto_execute: false,
         },
         SnapshotFollowUpHint {
             kind: FOLLOW_UP_OBSERVE_CHART.to_string(),
             command: "tv observe chart --duration-ms <MS>".to_string(),
             reason: "selected_chart_observation".to_string(),
             requires_desktop: true,
+            source_category: DESKTOP_BACKED_READ_CATEGORY.to_string(),
+            non_mutating: true,
+            evidence_role: "selected_chart_observation".to_string(),
+            auto_execute: false,
         },
         SnapshotFollowUpHint {
             kind: FOLLOW_UP_SCREENSHOT.to_string(),
             command: "tv screenshot --region chart --output <PATH>".to_string(),
             reason: "visual_evidence".to_string(),
             requires_desktop: true,
+            source_category: DESKTOP_BACKED_READ_CATEGORY.to_string(),
+            non_mutating: true,
+            evidence_role: "visual_evidence".to_string(),
+            auto_execute: false,
         },
     ]
 }
@@ -524,6 +537,15 @@ mod tests {
         assert_eq!(hints[0].command, "tv quote NASDAQ:AAPL --source chart");
         assert_eq!(hints[0].reason, "single_symbol_chart_quote");
         assert!(hints[0].requires_desktop);
+        assert_eq!(hints[0].source_category, DESKTOP_BACKED_READ_CATEGORY);
+        assert!(hints[0].non_mutating);
+        assert_eq!(hints[0].evidence_role, "single_symbol_chart_quote");
+        assert!(!hints[0].auto_execute);
+        assert!(
+            hints
+                .iter()
+                .all(|hint| hint.non_mutating && !hint.auto_execute)
+        );
         let kinds = hints
             .iter()
             .map(|hint| hint.kind.as_str())

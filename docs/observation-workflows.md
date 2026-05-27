@@ -109,6 +109,13 @@ Use these same meanings in `compare.items[].follow_up_hints[]`,
 `snapshot.missing_evidence[].suggested_follow_up`. The canonical chart-feed
 quote kind is `chart_quote`; do not introduce or infer a `quote_chart` alias.
 
+For `follow_up_hints[]`, also read `requires_desktop`, `source_category`,
+`non_mutating`, `evidence_role`, and `auto_execute`. These fields make the
+candidate follow-up explicit enough for an agent to report what it would check
+next before running a separate command. `auto_execute` is always false in this
+contract. `next_action_hints[]` are human-facing guidance strings; use them for
+explanation, not for automatic command dispatch.
+
 Treat scanner-backed price reads as screening evidence, not as a realtime
 entitlement guarantee. Preserve `source_category`, `requires_desktop`,
 `non_mutating`, and freshness fields such as `time`, `update_mode`, or

@@ -100,6 +100,10 @@ Do not use `TV_CDP_TARGET_ID`; explicit target handoff is `--target-id`.
   "watch_compare.v1"`, not a daemon, selected-chart feed, ranking, or trading
   recommendation. Read readiness, sample, heartbeat, and summary events by
   `_event` and preserve `source: "scanner_scan_rest"` when reporting it.
+- `tv snapshot` and `tv compare` may return `follow_up_hints[]`. These are
+  advisory evidence checks, not automatic actions. Read `kind`, `command`,
+  `requires_desktop`, `source_category`, `non_mutating`, `evidence_role`, and
+  `auto_execute: false` before deciding whether to run a separate follow-up.
 - Selected-chart historical export is not a stable fallback for `tv bars`.
   `tv range` moves the visible Desktop chart, and `tv ohlcv` reads selected
   chart bars. Use that path only when selected chart state is the evidence

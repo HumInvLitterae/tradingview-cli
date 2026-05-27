@@ -55,7 +55,10 @@ values literally: `snapshot`, `chart_quote`, `observe_chart`, and
 `screenshot`. `chart_quote` means selected-chart single-symbol chart-feed
 quote; it is not scanner-style premarket or postmarket evidence. Do not rename
 it to `quote_chart`. These hints are available evidence surfaces, not
-recommendations, rankings, or automatic reads.
+recommendations, rankings, or automatic reads. Before running a follow-up,
+read and report `requires_desktop`, `source_category`, `non_mutating`,
+`evidence_role`, and `auto_execute`; `auto_execute: false` means the CLI will
+not run that command or mix sources on its own.
 
 For `tv watch compare <SYMBOL>...`, interpret each JSONL line by
 `data._event`. Read the initial `readiness` event for symbols and bounded
@@ -204,8 +207,11 @@ Treat `contract_version`, `summary.coverage_status`,
 `summary.field_coverage`, `missing_evidence[]`, and `follow_up_hints[]` as
 one-symbol readback helpers for coverage and follow-up routing. They do not
 replace raw `sections`, do not call the follow-up commands, and are not
-ranking, scoring, or recommendations. Use lower-level `tv quote`, `tv info`,
-or `tv fundamentals` when the task needs only one section, and use
+ranking, scoring, or recommendations. In `follow_up_hints[]`, read
+`source_category`, `requires_desktop`, `non_mutating`, `evidence_role`, and
+`auto_execute: false` before deciding whether a separate command is
+appropriate. Use lower-level `tv quote`, `tv info`, or `tv fundamentals` when
+the task needs only one section, and use
 `tv compare` when the task needs a structured multi-symbol evidence packet.
 Do not treat snapshot as batch, JSONL, chart-backed, screenshot, or
 browserless bars evidence.
@@ -221,6 +227,9 @@ per-item `follow_up_hints`, `summary.field_coverage`, and
 `summary.coverage_status` as downstream readback helpers for schema guards,
 input-order joins, follow-up surfaces, and evidence gaps. `coverage_status`
 describes evidence completeness only; it is not a ranking or recommendation.
+`follow_up_hints[]` entries include advisory source metadata and
+`auto_execute: false`; do not treat them as instructions to run chart reads,
+screenshots, or observations automatically.
 For regular-session movement evidence, read
 `items[].movement.regular_change_percent` first; it is the stable compare-level
 readback derived from raw `items[].sections.quote.data.change`, which remains

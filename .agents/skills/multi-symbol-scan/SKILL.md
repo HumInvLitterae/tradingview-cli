@@ -60,6 +60,9 @@ construction, not on duplicating the full source taxonomy.
    needed; do not infer absolute change from last/close. Per-item `follow_up_hints`
    are available next evidence surfaces, not recommendations. Stable follow-up
    kinds are `snapshot`, `chart_quote`, `observe_chart`, and `screenshot`;
+   read `requires_desktop`, `source_category`, `non_mutating`,
+   `evidence_role`, and `auto_execute: false` before deciding whether a
+   separate follow-up command is appropriate;
    keep `chart_quote` as the canonical selected-chart quote kind and do not
    rename it to `quote_chart`. Use `items[].missing_evidence[]` to route
    section gaps to stable follow-up kinds such as `snapshot` or `chart_quote`;

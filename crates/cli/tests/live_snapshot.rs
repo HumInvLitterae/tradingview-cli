@@ -165,13 +165,13 @@ fn assert_snapshot_success(symbol: &str, envelope: &Value, elapsed: Duration) {
     let follow_up_hints = follow_up_hints.unwrap();
     if !follow_up_hints
         .iter()
-        .any(|hint| hint.get("kind").and_then(Value::as_str) == Some("chart_quote"))
+        .any(|hint| valid_follow_up_hint(hint, "chart_quote"))
         || !follow_up_hints
             .iter()
-            .any(|hint| hint.get("kind").and_then(Value::as_str) == Some("observe_chart"))
+            .any(|hint| valid_follow_up_hint(hint, "observe_chart"))
         || !follow_up_hints
             .iter()
-            .any(|hint| hint.get("kind").and_then(Value::as_str) == Some("screenshot"))
+            .any(|hint| valid_follow_up_hint(hint, "screenshot"))
     {
         panic!(
             "snapshot live smoke missing follow-up hints: requested_symbol={} elapsed_ms={} summary={}",
@@ -254,6 +254,17 @@ fn assert_section_shape(
             );
         }
     }
+}
+
+fn valid_follow_up_hint(hint: &Value, kind: &str) -> bool {
+    hint.get("kind").and_then(Value::as_str) == Some(kind)
+        && hint.get("command").and_then(Value::as_str).is_some()
+        && hint.get("reason").and_then(Value::as_str).is_some()
+        && hint.get("requires_desktop").and_then(Value::as_bool) == Some(true)
+        && hint.get("source_category").and_then(Value::as_str) == Some("desktop_backed_read")
+        && hint.get("non_mutating").and_then(Value::as_bool) == Some(true)
+        && hint.get("evidence_role").and_then(Value::as_str).is_some()
+        && hint.get("auto_execute").and_then(Value::as_bool) == Some(false)
 }
 
 fn summarize_envelope(envelope: &Value) -> String {

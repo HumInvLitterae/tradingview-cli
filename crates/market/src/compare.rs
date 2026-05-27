@@ -24,6 +24,7 @@ const FOLLOW_UP_SCREENSHOT: &str = "screenshot";
 const FOLLOW_UP_SNAPSHOT: &str = "snapshot";
 const MISSING_REASON_FIELDS: &str = "missing_fields";
 const MISSING_REASON_SECTION_ERROR: &str = "section_error";
+const DESKTOP_BACKED_READ_CATEGORY: &str = "desktop_backed_read";
 const MOVEMENT_QUOTE_SECTION_UNAVAILABLE: &str = "quote_section_unavailable";
 const MOVEMENT_REGULAR_CHANGE_PERCENT_MISSING: &str = "regular_change_percent_missing";
 const MOVEMENT_SOURCE_PATH: &str = "sections.quote.data.change";
@@ -363,21 +364,41 @@ fn follow_up_hints(symbol: &Value) -> Vec<CompareFollowUpHint> {
             kind: FOLLOW_UP_SNAPSHOT.to_string(),
             command: format!("tv snapshot {command_symbol}"),
             reason: "one_symbol_detail".to_string(),
+            requires_desktop: false,
+            source_category: DESKTOP_FREE_READ_CATEGORY.to_string(),
+            non_mutating: true,
+            evidence_role: "one_symbol_detail".to_string(),
+            auto_execute: false,
         },
         CompareFollowUpHint {
             kind: FOLLOW_UP_OBSERVE_CHART.to_string(),
             command: "tv observe chart --duration-ms <MS>".to_string(),
             reason: "selected_chart_observation".to_string(),
+            requires_desktop: true,
+            source_category: DESKTOP_BACKED_READ_CATEGORY.to_string(),
+            non_mutating: true,
+            evidence_role: "selected_chart_observation".to_string(),
+            auto_execute: false,
         },
         CompareFollowUpHint {
             kind: FOLLOW_UP_CHART_QUOTE.to_string(),
             command: format!("tv quote {command_symbol} --source chart"),
             reason: "single_symbol_chart_quote".to_string(),
+            requires_desktop: true,
+            source_category: DESKTOP_BACKED_READ_CATEGORY.to_string(),
+            non_mutating: true,
+            evidence_role: "single_symbol_chart_quote".to_string(),
+            auto_execute: false,
         },
         CompareFollowUpHint {
             kind: FOLLOW_UP_SCREENSHOT.to_string(),
             command: "tv screenshot --region chart --output <PATH>".to_string(),
             reason: "visual_evidence".to_string(),
+            requires_desktop: true,
+            source_category: DESKTOP_BACKED_READ_CATEGORY.to_string(),
+            non_mutating: true,
+            evidence_role: "visual_evidence".to_string(),
+            auto_execute: false,
         },
     ]
 }
@@ -953,6 +974,23 @@ mod tests {
         assert_eq!(hints[0].kind, FOLLOW_UP_SNAPSHOT);
         assert_eq!(hints[0].command, "tv snapshot NASDAQ:AAPL");
         assert_eq!(hints[0].reason, "one_symbol_detail");
+        assert!(!hints[0].requires_desktop);
+        assert_eq!(hints[0].source_category, DESKTOP_FREE_READ_CATEGORY);
+        assert!(hints[0].non_mutating);
+        assert_eq!(hints[0].evidence_role, "one_symbol_detail");
+        assert!(!hints[0].auto_execute);
+        assert!(
+            hints
+                .iter()
+                .all(|hint| hint.non_mutating && !hint.auto_execute)
+        );
+        assert!(
+            hints
+                .iter()
+                .filter(|hint| hint.kind != FOLLOW_UP_SNAPSHOT)
+                .all(|hint| hint.requires_desktop
+                    && hint.source_category == DESKTOP_BACKED_READ_CATEGORY)
+        );
         let kinds = hints
             .iter()
             .map(|hint| hint.kind.as_str())
