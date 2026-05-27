@@ -8,13 +8,16 @@ for release and next-phase planning.
 
 Current plan:
 
-- `tradingview-cli-evidence-follow-up-workflow.md`: clarify
-  `snapshot.v1` / `compare.v1` follow-up hints with source and advisory
-  metadata so agents can route next evidence checks without automatic source
-  mixing or recommendations.
+- `tradingview-cli-v0.22-pre-release-audit.md`: audit completed `v0.22.0`
+  observation / export workflow maturity, including contracts, docs, tests,
+  source boundaries, and architecture posture before release readiness.
 
 Recently completed:
 
+- `tradingview-cli-evidence-follow-up-workflow.md`: clarified
+  `snapshot.v1` / `compare.v1` follow-up hints with source and advisory
+  metadata so agents can route next evidence checks without automatic source
+  mixing or recommendations.
 - `tradingview-cli-replay-extraction-feasibility.md`: added public-safe
   Replay state and operation readback to existing `tv replay ...` commands so
   Replay-based extraction can be evaluated without adding a stable export
