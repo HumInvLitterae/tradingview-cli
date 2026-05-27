@@ -188,6 +188,14 @@ source being studied. For that feasibility check, read `tv state`,
 `overlaps_visible_range` means only that selected-chart bars overlap the
 observed visible range, not that a stable export artifact was produced.
 
+Replay-based extraction is also a Desktop-backed selected-chart feasibility
+topic, not a stable historical bars source. `tv replay status` is a
+Desktop-backed read with `replay_context`; `tv replay start`, `step`, `stop`,
+`autoplay`, and `trade` are Desktop-backed operations with `operation` and
+post-operation `replay_context`. Use Replay only when the selected chart's
+Replay state is the evidence under review. Keep it separate from `tv bars`,
+scanner evidence, quote-data, and selected-chart OHLCV.
+
 `tv snapshot <SYMBOL>` is the first-pass Desktop-free evidence packet for one
 symbol. It groups scanner-backed quote, symbol info, and fundamentals sections.
 Read each section's `ok`, `data`, or `error` independently, and preserve the

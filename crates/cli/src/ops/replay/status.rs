@@ -15,6 +15,20 @@ pub async fn replay_status(runtime: &mut impl RuntimeEvaluator) -> Result<Value,
                         ? value.value()
                         : value;
                 }
+                function chartContext() {
+                    try {
+                        var chart = window.TradingViewApi && window.TradingViewApi._activeChartWidgetWV && window.TradingViewApi._activeChartWidgetWV.value();
+                        if (!chart) return null;
+                        var resolution = typeof chart.resolution === 'function' ? unwrap(chart.resolution()) : null;
+                        return {
+                            symbol: typeof chart.symbol === 'function' ? unwrap(chart.symbol()) : null,
+                            timeframe: resolution,
+                            resolution: resolution
+                        };
+                    } catch (ignored) {
+                        return null;
+                    }
+                }
 
                 try {
                     var replay = window.TradingViewApi && window.TradingViewApi._replayApi;
@@ -57,6 +71,7 @@ pub async fn replay_status(runtime: &mut impl RuntimeEvaluator) -> Result<Value,
                         autoplay_delay: unwrap(replay.autoplayDelay()),
                         position: unwrap(replay.position()),
                         realized_pnl: unwrap(replay.realizedPL()),
+                        chart_context: chartContext(),
                         source: 'internal_api'
                     };
                 } catch (error) {
@@ -96,6 +111,7 @@ mod tests {
             "autoplay_delay": 1000,
             "position": 0,
             "realized_pnl": 12.5,
+            "chart_context": {"symbol": "NASDAQ:AAPL", "timeframe": "D", "resolution": "D"},
             "source": "internal_api"
         })]);
 
@@ -106,6 +122,11 @@ mod tests {
         assert_eq!(result["is_autoplay_started"], false);
         assert_eq!(result["current_date"], 1775001600000i64);
         assert_eq!(result["realized_pnl"], 12.5);
+        assert_eq!(result["source_category"], "desktop_backed_read");
+        assert_eq!(result["non_mutating"], true);
+        assert_eq!(result["replay_context"]["current_date"], 1775001600000i64);
+        assert_eq!(result["chart_context"]["symbol"], "NASDAQ:AAPL");
+        assert!(runtime.evaluated[0].0.contains("chartContext"));
     }
 
     #[tokio::test]

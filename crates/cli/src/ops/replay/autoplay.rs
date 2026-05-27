@@ -3,7 +3,7 @@ use serde_json::Value;
 use tradingview_cdp::RuntimeEvaluator;
 use tradingview_core::AppError;
 
-use super::payload::normalize_replay_action;
+use super::payload::normalize_replay_operation;
 use super::validation::validate_replay_autoplay_speed;
 
 pub async fn replay_autoplay(
@@ -50,6 +50,20 @@ pub async fn replay_autoplay(
                         ? value.value()
                         : value;
                 }}
+                function chartContext() {{
+                    try {{
+                        var chart = window.TradingViewApi && window.TradingViewApi._activeChartWidgetWV && window.TradingViewApi._activeChartWidgetWV.value();
+                        if (!chart) return null;
+                        var resolution = typeof chart.resolution === 'function' ? unwrap(chart.resolution()) : null;
+                        return {{
+                            symbol: typeof chart.symbol === 'function' ? unwrap(chart.symbol()) : null,
+                            timeframe: resolution,
+                            resolution: resolution
+                        }};
+                    }} catch (ignored) {{
+                        return null;
+                    }}
+                }}
 
                 try {{
                     var replay = window.TradingViewApi && window.TradingViewApi._replayApi;
@@ -88,9 +102,11 @@ pub async fn replay_autoplay(
                     return {{
                         ok: true,
                         action: 'autoplay',
+                        operation: 'replay_autoplay',
                         autoplay_active: !!unwrap(replay.isAutoplayStarted()),
                         delay_ms: unwrap(replay.autoplayDelay()),
                         requested_delay_ms: requestedDelay,
+                        chart_context: chartContext(),
                         source: 'internal_api'
                     }};
                 }} catch (error) {{
@@ -107,7 +123,7 @@ pub async fn replay_autoplay(
         )
         .await?;
 
-    normalize_replay_action(data)
+    normalize_replay_operation(data, "replay_autoplay")
 }
 
 #[cfg(test)]
@@ -153,6 +169,9 @@ mod tests {
             ]);
             let result = replay_autoplay(&mut runtime, speed).await.unwrap();
             assert_eq!(result["action"], "autoplay");
+            assert_eq!(result["operation"], "replay_autoplay");
+            assert_eq!(result["source_category"], "desktop_backed_operation");
+            assert_eq!(result["non_mutating"], false);
             assert!(runtime.evaluated[0].0.contains("requestedDelay = null"));
             assert!(
                 !runtime.evaluated[0]
@@ -169,10 +188,12 @@ mod tests {
         ]);
         let result = replay_autoplay(&mut runtime, Some(2000)).await.unwrap();
         assert_eq!(result["requested_delay_ms"], 2000);
+        assert_eq!(result["replay_context"]["autoplay_delay"], 2000);
         assert!(
             runtime.evaluated[0]
                 .0
                 .contains("changeAutoplayDelay(requestedDelay)")
         );
+        assert!(runtime.evaluated[0].0.contains("chartContext"));
     }
 }

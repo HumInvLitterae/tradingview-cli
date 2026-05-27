@@ -107,6 +107,12 @@ Do not use `TV_CDP_TARGET_ID`; explicit target handoff is `--target-id`.
   bars-read evidence separately. `tv ohlcv` selected-chart readback includes
   `chart_context`, `returned_bars_range`, and `selected_chart_range_match` as
   diagnostics, not export guarantees.
+- Replay-based extraction is not a stable historical export. `tv replay
+  status` is a Desktop-backed read with `replay_context`; `tv replay start`,
+  `step`, `stop`, `autoplay`, and `trade` are Desktop-backed operations that
+  change Replay state or Replay trade state. Use them only when Replay state is
+  the evidence under review, and keep that evidence separate from `tv bars` and
+  selected-chart OHLCV.
 - Selected-chart JSONL observations use `tv observe chart` and lower-level
   `tv stream ...`. Read readiness, sample, heartbeat, and final summary events
   by `contract_version` (`observe_chart.v1` or `stream.v1`), `_event`, and

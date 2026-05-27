@@ -234,6 +234,15 @@ Recommended agent use: explain the expected side effect, use `--dry-run` when
 available, get user approval before normal mutation, and report whether
 readback or post-check confirmed the requested after-state.
 
+Replay has a split boundary. `tv replay status` is a Desktop-backed read and
+should report `source_category: "desktop_backed_read"`,
+`requires_desktop: true`, `non_mutating: true`, and `replay_context`.
+`tv replay start`, `step`, `stop`, `autoplay`, and `trade` are
+Desktop-backed operations and should report
+`source_category: "desktop_backed_operation"`, `non_mutating: false`,
+`operation`, and `replay_context`. Replay is selected-chart state and is not a
+fallback for Desktop-free `tv bars --from/--to`.
+
 ### Hybrid
 
 `requires_desktop`: depends on selected source. `may_mutate`: can mutate chart

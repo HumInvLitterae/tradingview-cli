@@ -3,7 +3,7 @@ use serde_json::{Value, json};
 use tradingview_cdp::RuntimeEvaluator;
 use tradingview_core::AppError;
 
-use super::payload::normalize_replay_action;
+use super::payload::normalize_replay_operation;
 use super::validation::parse_replay_date_ms;
 
 pub async fn replay_start(
@@ -29,6 +29,20 @@ pub async fn replay_start(
                 }}
                 function sleep(ms) {{
                     return new Promise(function(resolve) {{ setTimeout(resolve, ms); }});
+                }}
+                function chartContext() {{
+                    try {{
+                        var chart = window.TradingViewApi && window.TradingViewApi._activeChartWidgetWV && window.TradingViewApi._activeChartWidgetWV.value();
+                        if (!chart) return null;
+                        var resolution = typeof chart.resolution === 'function' ? unwrap(chart.resolution()) : null;
+                        return {{
+                            symbol: typeof chart.symbol === 'function' ? unwrap(chart.symbol()) : null,
+                            timeframe: resolution,
+                            resolution: resolution
+                        }};
+                    }} catch (ignored) {{
+                        return null;
+                    }}
                 }}
 
                 try {{
@@ -96,9 +110,11 @@ pub async fn replay_start(
                     return {{
                         ok: true,
                         action: 'started',
+                        operation: 'replay_start',
                         replay_started: true,
                         date: {date_payload},
                         current_date: currentDate,
+                        chart_context: chartContext(),
                         source: 'internal_api'
                     }};
                 }} catch (error) {{
@@ -115,7 +131,7 @@ pub async fn replay_start(
         )
         .await?;
 
-    normalize_replay_action(data)
+    normalize_replay_operation(data, "replay_start")
 }
 
 pub async fn replay_step(runtime: &mut impl RuntimeEvaluator) -> Result<Value, AppError> {
@@ -130,6 +146,20 @@ pub async fn replay_step(runtime: &mut impl RuntimeEvaluator) -> Result<Value, A
                 }
                 function sleep(ms) {
                     return new Promise(function(resolve) { setTimeout(resolve, ms); });
+                }
+                function chartContext() {
+                    try {
+                        var chart = window.TradingViewApi && window.TradingViewApi._activeChartWidgetWV && window.TradingViewApi._activeChartWidgetWV.value();
+                        if (!chart) return null;
+                        var resolution = typeof chart.resolution === 'function' ? unwrap(chart.resolution()) : null;
+                        return {
+                            symbol: typeof chart.symbol === 'function' ? unwrap(chart.symbol()) : null,
+                            timeframe: resolution,
+                            resolution: resolution
+                        };
+                    } catch (ignored) {
+                        return null;
+                    }
                 }
 
                 try {
@@ -174,8 +204,10 @@ pub async fn replay_step(runtime: &mut impl RuntimeEvaluator) -> Result<Value, A
                     return {
                         ok: true,
                         action: 'step',
+                        operation: 'replay_step',
                         previous_date: previousDate,
                         current_date: currentDate,
+                        chart_context: chartContext(),
                         source: 'internal_api'
                     };
                 } catch (error) {
@@ -191,7 +223,7 @@ pub async fn replay_step(runtime: &mut impl RuntimeEvaluator) -> Result<Value, A
         )
         .await?;
 
-    normalize_replay_action(data)
+    normalize_replay_operation(data, "replay_step")
 }
 
 pub async fn replay_stop(runtime: &mut impl RuntimeEvaluator) -> Result<Value, AppError> {
@@ -203,6 +235,20 @@ pub async fn replay_stop(runtime: &mut impl RuntimeEvaluator) -> Result<Value, A
                     return value && typeof value === 'object' && typeof value.value === 'function'
                         ? value.value()
                         : value;
+                }
+                function chartContext() {
+                    try {
+                        var chart = window.TradingViewApi && window.TradingViewApi._activeChartWidgetWV && window.TradingViewApi._activeChartWidgetWV.value();
+                        if (!chart) return null;
+                        var resolution = typeof chart.resolution === 'function' ? unwrap(chart.resolution()) : null;
+                        return {
+                            symbol: typeof chart.symbol === 'function' ? unwrap(chart.symbol()) : null,
+                            timeframe: resolution,
+                            resolution: resolution
+                        };
+                    } catch (ignored) {
+                        return null;
+                    }
                 }
 
                 try {
@@ -227,7 +273,9 @@ pub async fn replay_stop(runtime: &mut impl RuntimeEvaluator) -> Result<Value, A
                         return {
                             ok: true,
                             action: 'already_stopped',
+                            operation: 'replay_stop',
                             replay_started: false,
+                            chart_context: chartContext(),
                             source: 'internal_api'
                         };
                     }
@@ -236,7 +284,9 @@ pub async fn replay_stop(runtime: &mut impl RuntimeEvaluator) -> Result<Value, A
                     return {
                         ok: true,
                         action: 'replay_stopped',
+                        operation: 'replay_stop',
                         replay_started: false,
+                        chart_context: chartContext(),
                         source: 'internal_api'
                     };
                 } catch (error) {
@@ -252,7 +302,7 @@ pub async fn replay_stop(runtime: &mut impl RuntimeEvaluator) -> Result<Value, A
         )
         .await?;
 
-    normalize_replay_action(data)
+    normalize_replay_operation(data, "replay_stop")
 }
 
 #[cfg(test)]
@@ -273,9 +323,14 @@ mod tests {
             .await
             .unwrap();
         assert_eq!(result["action"], "started");
+        assert_eq!(result["operation"], "replay_start");
+        assert_eq!(result["source_category"], "desktop_backed_operation");
+        assert_eq!(result["non_mutating"], false);
         assert_eq!(result["replay_started"], true);
         assert_eq!(result["date"], "2026-04-01");
+        assert_eq!(result["replay_context"]["current_date"], 1775001600000i64);
         assert!(runtime.evaluated[0].0.contains("1775001600000"));
+        assert!(runtime.evaluated[0].0.contains("chartContext"));
         assert!(runtime.evaluated[0].1);
     }
 
@@ -314,8 +369,12 @@ mod tests {
         ]);
         let result = replay_step(&mut runtime).await.unwrap();
         assert_eq!(result["action"], "step");
+        assert_eq!(result["operation"], "replay_step");
+        assert_eq!(result["source_category"], "desktop_backed_operation");
         assert_eq!(result["previous_date"], 1775001600000i64);
         assert_eq!(result["current_date"], 1775088000000i64);
+        assert_eq!(result["replay_context"]["current_date"], 1775088000000i64);
+        assert!(runtime.evaluated[0].0.contains("chartContext"));
         assert!(runtime.evaluated[0].1);
     }
 
@@ -326,6 +385,8 @@ mod tests {
         ]);
         let result = replay_stop(&mut runtime).await.unwrap();
         assert_eq!(result["action"], "already_stopped");
+        assert_eq!(result["operation"], "replay_stop");
+        assert_eq!(result["non_mutating"], false);
     }
 
     #[tokio::test]
@@ -335,5 +396,6 @@ mod tests {
         ]);
         let result = replay_stop(&mut runtime).await.unwrap();
         assert_eq!(result["action"], "replay_stopped");
+        assert_eq!(result["operation"], "replay_stop");
     }
 }

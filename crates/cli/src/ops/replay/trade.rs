@@ -3,7 +3,7 @@ use serde_json::{Value, json};
 use tradingview_cdp::RuntimeEvaluator;
 use tradingview_core::AppError;
 
-use super::payload::normalize_replay_action;
+use super::payload::normalize_replay_operation;
 use super::validation::validate_replay_trade_action;
 
 pub async fn replay_trade(
@@ -29,6 +29,20 @@ pub async fn replay_trade(
                     return value && typeof value === 'object' && typeof value.value === 'function'
                         ? value.value()
                         : value;
+                }}
+                function chartContext() {{
+                    try {{
+                        var chart = window.TradingViewApi && window.TradingViewApi._activeChartWidgetWV && window.TradingViewApi._activeChartWidgetWV.value();
+                        if (!chart) return null;
+                        var resolution = typeof chart.resolution === 'function' ? unwrap(chart.resolution()) : null;
+                        return {{
+                            symbol: typeof chart.symbol === 'function' ? unwrap(chart.symbol()) : null,
+                            timeframe: resolution,
+                            resolution: resolution
+                        }};
+                    }} catch (ignored) {{
+                        return null;
+                    }}
                 }}
 
                 try {{
@@ -66,8 +80,10 @@ pub async fn replay_trade(
                     return {{
                         ok: true,
                         action: {action_literal},
+                        operation: 'replay_trade',
                         position: unwrap(replay.position()),
                         realized_pnl: unwrap(replay.realizedPL()),
+                        chart_context: chartContext(),
                         source: 'internal_api'
                     }};
                 }} catch (error) {{
@@ -84,7 +100,7 @@ pub async fn replay_trade(
         )
         .await?;
 
-    normalize_replay_action(data)
+    normalize_replay_operation(data, "replay_trade")
 }
 
 #[cfg(test)]
@@ -130,7 +146,12 @@ mod tests {
             ]);
             let result = replay_trade(&mut runtime, action).await.unwrap();
             assert_eq!(result["action"], action);
+            assert_eq!(result["operation"], "replay_trade");
+            assert_eq!(result["source_category"], "desktop_backed_operation");
+            assert_eq!(result["non_mutating"], false);
+            assert_eq!(result["replay_context"]["position"], 1);
             assert!(runtime.evaluated[0].0.contains(method));
+            assert!(runtime.evaluated[0].0.contains("chartContext"));
         }
     }
 }

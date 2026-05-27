@@ -362,6 +362,15 @@ source metadata. If live smoke is attempted, record only public-safe summary
 counts such as symbols, sample count, heartbeat count, poll count, end reason,
 and source marker. Do not paste raw JSONL output into tracked docs.
 
+For Replay extraction feasibility checks, treat `tv replay status` as a
+Desktop-backed read and Replay controls as Desktop-backed operations. Payloads
+should expose `replay_context`, selected-chart `chart_context` when available,
+source metadata, and operation metadata without creating a stable export
+command. If live smoke is attempted, record only public-safe fields such as
+Replay started state, current date, operation, and whether Replay was stopped.
+Do not paste raw DOM, raw payloads, target ids, account-local metadata, or
+local absolute paths into tracked docs.
+
 For `tv snapshot <SYMBOL>` live contract checks, run:
 
 ```bash
