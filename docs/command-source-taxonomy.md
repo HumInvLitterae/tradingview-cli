@@ -121,6 +121,16 @@ does not change `_event`, source metadata, bounded controls, or event meaning.
 Do not reinterpret it as realtime multi-symbol feed support, watch / JSONL
 compare, browserless bars, scanner quote evidence, or quote-data readback.
 
+Selected-chart historical export is a separate feasibility lane. `tv range`
+can move the visible range of the selected Desktop chart, and `tv ohlcv` can
+read bars from that selected chart, but the project does not yet treat
+`tv range` followed by `tv ohlcv --count ...` as a proven historical export
+contract. A future explicit export workflow must report Desktop-backed source
+metadata, target readiness, observed chart state, visible-range evidence, and
+range / bars mismatches before claiming that it exported a requested
+selected-chart period. It must not be a hidden fallback for Desktop-free
+`tv bars --from/--to`.
+
 Do not treat `tv quote <SYMBOL> --source chart` as a multi-symbol realtime
 batch source. It is a correctness-first single-symbol read that may switch and
 restore the visible chart to prove the selected-chart feed for one requested

@@ -100,6 +100,11 @@ Do not use `TV_CDP_TARGET_ID`; explicit target handoff is `--target-id`.
   "watch_compare.v1"`, not a daemon, selected-chart feed, ranking, or trading
   recommendation. Read readiness, sample, heartbeat, and summary events by
   `_event` and preserve `source: "scanner_scan_rest"` when reporting it.
+- Selected-chart historical export is not a stable fallback for `tv bars`.
+  `tv range` moves the visible Desktop chart, and `tv ohlcv` reads selected
+  chart bars. Use that path only when selected chart state is the evidence
+  under review, and report readiness, symbol, timeframe, visible range, and
+  bars-read evidence separately.
 - Selected-chart JSONL observations use `tv observe chart` and lower-level
   `tv stream ...`. Read readiness, sample, heartbeat, and final summary events
   by `contract_version` (`observe_chart.v1` or `stream.v1`), `_event`, and

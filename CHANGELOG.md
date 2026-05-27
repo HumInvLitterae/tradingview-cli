@@ -15,6 +15,9 @@ package version omits the leading `v`.
 
 ### Documentation
 
+- Added a selected-chart historical export feasibility plan for `v0.22.0`,
+  keeping `tv range` / `tv ohlcv` as Desktop-backed selected-chart operations
+  rather than hidden fallbacks for Desktop-free `tv bars`.
 - Added the `v0.22.0` roadmap direction and first watch / JSONL compare
   contract plan, focusing on observation and export workflow maturity without
   adding daemon behavior, automatic source mixing, or trading recommendations.
