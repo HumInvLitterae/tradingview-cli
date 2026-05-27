@@ -7,6 +7,8 @@ package version omits the leading `v`.
 
 ## Unreleased
 
+## v0.22.0 - 2026-05-27
+
 ### Added
 
 - Added selected-chart export evidence readback to `tv ohlcv` and `tv range`
