@@ -20,9 +20,9 @@ data-provider terms.
 ## Installation
 
 GitHub Releases are the first supported binary distribution path. For a
-non-developer walkthrough from download to first checks, see
-`docs/getting-started.md`. A Japanese user guide is available at
-`docs/ja/getting-started.md`.
+non-developer walkthrough from download to first checks, read the
+[getting-started guide](docs/getting-started.md) or the
+[Japanese getting-started guide](docs/ja/getting-started.md).
 
 Version tags such as `v0.21.0` publish native archives like:
 
@@ -32,11 +32,10 @@ Version tags such as `v0.21.0` publish native archives like:
 - `tv-<tag>-x86_64-pc-windows-msvc.zip`
 - `SHA256SUMS`
 
-Each archive contains the `tv` or `tv.exe` binary, `README.md`,
-`CHANGELOG.md`, `LICENSE`, user-facing getting-started docs, user-facing agent
-guides, and runtime-oriented TradingView CLI skills. Verify the archive
-against `SHA256SUMS`, unpack it, place the executable on your `PATH`, and
-confirm the binary:
+Each archive contains the binary, README, changelog, license, getting-started
+docs, user-facing agent guides, and runtime-oriented TradingView CLI skills.
+Verify the archive against `SHA256SUMS`, unpack it, place the executable on
+your `PATH`, and confirm the binary:
 
 ```bash
 tv --version
@@ -53,17 +52,17 @@ publication are not part of the current release workflow.
 
 ## Quick Start
 
+For the full first-run sequence, including agent setup and TradingView Desktop
+startup choices, read the [getting-started guide](docs/getting-started.md) or
+the [Japanese getting-started guide](docs/ja/getting-started.md).
+
 For agent-assisted use, put `tv` on `PATH`, ask the agent to run
 `tv --version` first, prefer Desktop-free reads when they are enough, and run
 `tv readiness` before Desktop-backed chart reads or operations. The release
-archive includes `AGENTS.md`, `CLAUDE.md`, and runtime skills that describe the
-safe operating boundary for agents. If `tv` is not on `PATH`, have the agent
-set its current working directory to the unpacked release folder and run
-`./tv ...` on macOS/Linux or `.\tv.exe ...` on Windows.
-
-For the full first-run sequence, including agent setup and TradingView Desktop
-startup choices, read `docs/getting-started.md`. Japanese guidance is in
-`docs/ja/getting-started.md`.
+archive includes `AGENTS.md`, `CLAUDE.md`, and runtime skills for agent use. If
+`tv` is not on `PATH`, have the agent set its current working directory to the
+unpacked release folder and run `./tv ...` on macOS/Linux or `.\tv.exe ...` on
+Windows.
 
 Desktop-free reads do not require TradingView Desktop:
 
@@ -277,24 +276,32 @@ details, see `docs/breaking-changes-from-js-cli.md`.
 
 ## Documentation
 
-- `docs/command-source-taxonomy.md`: command source categories, fallback
+- [docs/command-source-taxonomy.md](docs/command-source-taxonomy.md): command
+  source categories, fallback
   boundaries, mutation expectations, and recommended agent use.
-- `docs/observation-workflows.md`: practical read sequences for screening,
+- [docs/observation-workflows.md](docs/observation-workflows.md): practical
+  read sequences for screening,
   chart observation, screenshots, browserless bars, and fundamentals.
-- `docs/architecture.md`: workspace architecture, crate boundaries, operation
+- [docs/architecture.md](docs/architecture.md): workspace architecture, crate
+  boundaries, operation
   adapters, JSON contract, and safety model.
-- `docs/rust-api.md`: currently documented typed Rust API boundary for internal
+- [docs/rust-api.md](docs/rust-api.md): currently documented typed Rust API
+  boundary for internal
   reusable read crates.
-- `docs/development.md`: coding style, validation, tests, and contribution
+- [docs/development.md](docs/development.md): coding style, validation, tests,
+  and contribution
   workflow.
-- `docs/release-packaging.md`: release archive contents and packaging checks.
-- `docs/internal-tradingview-apis.md`: public-safe reference for non-public
+- [docs/release-packaging.md](docs/release-packaging.md): release archive contents and packaging checks.
+- [docs/internal-tradingview-apis.md](docs/internal-tradingview-apis.md):
+  public-safe reference for non-public
   TradingView dependencies.
-- `docs/getting-started.md`: user-facing setup, first checks, and AI-agent
+- [docs/getting-started.md](docs/getting-started.md): user-facing setup, first
+  checks, and AI-agent
   workflow.
-- `docs/ja/getting-started.md`: Japanese user-facing setup and AI-agent
+- [docs/ja/getting-started.md](docs/ja/getting-started.md): Japanese
+  user-facing setup and AI-agent
   workflow.
-- `docs/v0.20-roadmap.md`: current roadmap direction.
+- [docs/v0.22-roadmap.md](docs/v0.22-roadmap.md): latest completed roadmap direction.
 
 Historical notes and completed ExecPlans live under `docs/notes/` and
 `docs/plans/archives/`. They explain how the current surface was built, but
