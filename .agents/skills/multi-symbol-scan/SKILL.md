@@ -128,7 +128,10 @@ construction, not on duplicating the full source taxonomy.
    scanner-backed quote evidence.
    Do not treat `tv range` plus `tv ohlcv` as a historical export fallback for
    multi-symbol sample preparation; selected-chart export is still feasibility
-   work and depends on visible Desktop chart state.
+   work and depends on visible Desktop chart state. If you must inspect it,
+   read `tv state`, `tv range`, and `tv ohlcv` together and report
+   `chart_context`, `returned_bars_range`, and `selected_chart_range_match`
+   as diagnostics rather than export guarantees.
 8. After user approval, add selected symbols with
    `tv watchlist add-bulk <SYMBOL>... --allow-partial`; it inherits the
    API-backed single-symbol add path and reports duplicates or partial

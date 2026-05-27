@@ -182,7 +182,11 @@ and `tv ohlcv` are Desktop-backed selected-chart operations and must be
 validated against observed chart state before treating them as an export. Use
 `tv bars --from/--to` first for reproducible historical bars input, and use
 selected-chart export only when the selected Desktop chart itself is the
-source being studied.
+source being studied. For that feasibility check, read `tv state`,
+`tv range`, and `tv ohlcv` together. `tv ohlcv` reports `chart_context`,
+`returned_bars_range`, and `selected_chart_range_match`; even
+`overlaps_visible_range` means only that selected-chart bars overlap the
+observed visible range, not that a stable export artifact was produced.
 
 `tv snapshot <SYMBOL>` is the first-pass Desktop-free evidence packet for one
 symbol. It groups scanner-backed quote, symbol info, and fundamentals sections.

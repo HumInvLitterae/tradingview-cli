@@ -309,6 +309,19 @@ historical bars export. Do not use selected-chart export as a fallback for
 `tv bars`, and do not use raw target ids or raw chart payloads in tracked
 notes.
 
+For the current feasibility readback, inspect:
+
+- `tv state` for selected chart symbol, timeframe, visible range, and chart
+  readiness;
+- `tv range` for `operation: "visible_range"` plus requested and actual
+  viewport values;
+- `tv ohlcv` for `chart_context`, `returned_bars_range`, and
+  `selected_chart_range_match`.
+
+Treat `selected_chart_range_match: "overlaps_visible_range"` as evidence that
+the returned bars and observed visible range intersect. It is not a guarantee
+that a reproducible historical export was produced.
+
 ## Fundamentals And Event-Like Fields
 
 Use `tv fundamentals` for scanner-backed fundamentals and event-like fields:

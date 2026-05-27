@@ -9,6 +9,9 @@ package version omits the leading `v`.
 
 ### Added
 
+- Added selected-chart export evidence readback to `tv ohlcv` and `tv range`
+  so selected-chart context, returned bar ranges, and visible-range diagnostics
+  can be inspected without adding a stable export command.
 - Added `tv watch compare <SYMBOL>...`, a bounded Desktop-free JSONL workflow
   that polls scanner-backed quote evidence for a known candidate set and emits
   `watch_compare.v1` readiness, sample, heartbeat, and summary events.

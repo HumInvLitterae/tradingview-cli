@@ -129,7 +129,11 @@ contract. A future explicit export workflow must report Desktop-backed source
 metadata, target readiness, observed chart state, visible-range evidence, and
 range / bars mismatches before claiming that it exported a requested
 selected-chart period. It must not be a hidden fallback for Desktop-free
-`tv bars --from/--to`.
+`tv bars --from/--to`. As of `v0.22`, `tv ohlcv` includes `chart_context`,
+`returned_bars_range`, and `selected_chart_range_match` as conservative
+diagnostics for this feasibility work. `tv range` reports
+`operation: "visible_range"` so agents can distinguish viewport movement from
+historical bars export.
 
 Do not treat `tv quote <SYMBOL> --source chart` as a multi-symbol realtime
 batch source. It is a correctness-first single-symbol read that may switch and
