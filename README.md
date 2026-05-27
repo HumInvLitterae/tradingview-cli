@@ -87,6 +87,12 @@ score, or recommend symbols. See `docs/observation-workflows.md` for the
 practical choice between `quotes`, `compare`, `snapshot`, and chart follow-up
 commands.
 
+`tv snapshot` and `tv compare` may include `follow_up_hints[]`. These are
+machine-readable descriptions of possible next evidence checks, including
+whether the follow-up requires TradingView Desktop and the source category it
+would read. They are not automatic actions, ranking, source mixing, or trading
+recommendations.
+
 `tv watch compare` is a bounded JSONL workflow for a known candidate set. It
 polls the same Desktop-free scanner-backed quote source used by `tv quotes`,
 emits readiness / sample / heartbeat / summary events with

@@ -65,6 +65,13 @@ do not mutate the chart by themselves, and do not imply that `chart_quote`
 contains scanner-style extended-hours values. `chart_quote` is the canonical
 value; do not treat `quote_chart` as an alias.
 
+Each `follow_up_hints[]` item is advisory metadata. Read `requires_desktop`,
+`source_category`, `non_mutating`, `evidence_role`, and `auto_execute` before
+running anything. `auto_execute: false` means the CLI will not run that
+follow-up, switch charts, observe the chart, or take a screenshot on its own.
+`next_action_hints[]` are human-facing wording for the same general direction;
+they are not a machine contract and are not an instruction to blend sources.
+
 `tv watch compare <SYMBOL>...` is also Desktop-free, but it is a bounded JSONL
 workflow rather than a single JSON packet. It polls scanner-backed quote
 evidence for a known candidate set and emits readiness, sample, heartbeat, and

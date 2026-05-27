@@ -367,6 +367,14 @@ pub struct SnapshotFollowUpHint {
     pub reason: String,
     /// True when the follow-up requires TradingView Desktop.
     pub requires_desktop: bool,
+    /// Source category the follow-up command reads from.
+    pub source_category: String,
+    /// True when the follow-up command does not mutate chart state.
+    pub non_mutating: bool,
+    /// Stable role describing the evidence this follow-up can add.
+    pub evidence_role: String,
+    /// False because hints are advisory and never auto-run by the CLI.
+    pub auto_execute: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize)]
@@ -556,6 +564,16 @@ pub struct CompareFollowUpHint {
     pub command: String,
     /// Stable reason explaining what the command can add.
     pub reason: String,
+    /// True when the follow-up requires TradingView Desktop.
+    pub requires_desktop: bool,
+    /// Source category the follow-up command reads from.
+    pub source_category: String,
+    /// True when the follow-up command does not mutate chart state.
+    pub non_mutating: bool,
+    /// Stable role describing the evidence this follow-up can add.
+    pub evidence_role: String,
+    /// False because hints are advisory and never auto-run by the CLI.
+    pub auto_execute: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize)]

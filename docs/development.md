@@ -388,9 +388,9 @@ Optional environment variables:
 - `TV_LIVE_SNAPSHOT_RUNS`: positive repeat count, defaulting to `1`.
 
 The ignored test validates only public contract fields: source metadata,
-requested symbol, section success/error shape, top-level error summaries, and
-next-action hints. Do not paste raw snapshot output or live response payloads
-into tracked docs.
+requested symbol, section success/error shape, top-level error summaries,
+follow-up hint metadata, and next-action hints. Do not paste raw snapshot
+output or live response payloads into tracked docs.
 
 For `tv compare <SYMBOL>...` live contract checks, run:
 
@@ -406,8 +406,8 @@ Optional environment variables:
 
 The ignored test validates only public contract fields: source metadata,
 requested count, ordered items, section success/error shape, top-level error
-summaries, and next-action hints. Do not paste raw compare output or live
-response payloads into tracked docs.
+summaries, follow-up hint metadata, and next-action hints. Do not paste raw
+compare output or live response payloads into tracked docs.
 
 For `tv bars` WebSocket contract evidence checks, run:
 

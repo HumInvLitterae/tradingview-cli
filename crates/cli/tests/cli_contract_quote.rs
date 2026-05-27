@@ -146,6 +146,8 @@ fn snapshot_help_explains_desktop_free_evidence_packet() {
         .stdout(predicate::str::contains("Desktop-free"))
         .stdout(predicate::str::contains("quote"))
         .stdout(predicate::str::contains("fundamentals"))
+        .stdout(predicate::str::contains("Follow-up hints"))
+        .stdout(predicate::str::contains("not auto-run"))
         .stdout(predicate::str::contains("observe chart"));
 }
 
@@ -206,6 +208,8 @@ fn compare_help_explains_desktop_free_comparison() {
         .stdout(predicate::str::contains("Desktop-free"))
         .stdout(predicate::str::contains("scanner quote"))
         .stdout(predicate::str::contains("fundamentals"))
+        .stdout(predicate::str::contains("Follow-up hints"))
+        .stdout(predicate::str::contains("not auto-run"))
         .stdout(predicate::str::contains("snapshot"))
         .stdout(predicate::str::contains("observe chart"));
 }

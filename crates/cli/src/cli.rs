@@ -59,7 +59,7 @@ pub enum Command {
     },
     #[command(
         about = "Get Desktop-free symbol evidence snapshot",
-        long_about = "Get a Desktop-free evidence packet for one symbol without connecting to TradingView Desktop.\n\nThe snapshot combines scanner quote, symbol info, and scanner-backed fundamentals sections into one JSON response. Repeated `--group <GROUP>` and `--field <FIELD>` options use the same fundamentals groups and supported fields as `tv fundamentals`; they affect only the fundamentals section. Use `tv observe chart` when selected-chart time-window evidence is needed."
+        long_about = "Get a Desktop-free evidence packet for one symbol without connecting to TradingView Desktop.\n\nThe snapshot combines scanner quote, symbol info, and scanner-backed fundamentals sections into one JSON response. Repeated `--group <GROUP>` and `--field <FIELD>` options use the same fundamentals groups and supported fields as `tv fundamentals`; they affect only the fundamentals section. Follow-up hints are advisory metadata for possible next evidence checks; they are not auto-run, ranking, or buy/sell recommendations. Use `tv observe chart` when selected-chart time-window evidence is needed."
     )]
     Snapshot {
         symbol: String,
@@ -70,7 +70,7 @@ pub enum Command {
     },
     #[command(
         about = "Compare Desktop-free evidence for multiple symbols",
-        long_about = "Compare Desktop-free evidence for multiple symbols without connecting to TradingView Desktop.\n\nThe comparison packet preserves input order and includes scanner quote, symbol info, and default scanner-backed fundamentals sections for each symbol. It is intended for screening and evidence comparison, not realtime chart-feed batching or buy/sell recommendations. Use `tv snapshot <SYMBOL>` for one-symbol detail, and `tv observe chart` or `tv quote <SYMBOL> --source chart` for selected-chart follow-up after narrowing candidates."
+        long_about = "Compare Desktop-free evidence for multiple symbols without connecting to TradingView Desktop.\n\nThe comparison packet preserves input order and includes scanner quote, symbol info, and default scanner-backed fundamentals sections for each symbol. It is intended for screening and evidence comparison, not realtime chart-feed batching or buy/sell recommendations. Follow-up hints are advisory metadata for possible next evidence checks; they are not auto-run, ranking, or source mixing. Use `tv snapshot <SYMBOL>` for one-symbol detail, and `tv observe chart` or `tv quote <SYMBOL> --source chart` for selected-chart follow-up after narrowing candidates."
     )]
     Compare { symbols: Vec<String> },
     #[command(

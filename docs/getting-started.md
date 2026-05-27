@@ -82,6 +82,11 @@ Useful starting points:
 - `tv observe chart` and `tv stream ...` observe the selected Desktop chart for
   a bounded time and print one JSON object per line.
 
+When `tv snapshot` or `tv compare` returns `follow_up_hints[]`, treat those
+entries as possible next checks. They include the command, source category,
+whether TradingView Desktop is required, and `auto_execute: false`. Ask the
+agent to report those fields before it runs a separate follow-up command.
+
 Ask the agent to say which command it used and what kind of source it read
 from. That prevents accidental comparisons between a historical data command,
 a selected-chart command, and a quote command. `tv` does not turn market data
