@@ -8,12 +8,15 @@ for release and next-phase planning.
 
 Current plan:
 
-- `tradingview-cli-v0.22-pre-release-audit.md`: audit completed `v0.22.0`
-  observation / export workflow maturity, including contracts, docs, tests,
-  source boundaries, and architecture posture before release readiness.
+- `tradingview-cli-v0.22.0-release-readiness.md`: prepare the `v0.22.0`
+  release state, including version, changelog, release notes, README asset
+  examples, package staging, and release validation.
 
 Recently completed:
 
+- `tradingview-cli-v0.22-pre-release-audit.md`: audited completed `v0.22.0`
+  observation / export workflow maturity, including contracts, docs, tests,
+  source boundaries, and architecture posture before release readiness.
 - `tradingview-cli-evidence-follow-up-workflow.md`: clarified
   `snapshot.v1` / `compare.v1` follow-up hints with source and advisory
   metadata so agents can route next evidence checks without automatic source
