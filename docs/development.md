@@ -82,6 +82,10 @@ This project uses Rust 2024.
   Market now use same-named implementation directories under
   `crates/cli/src/ops/`. Do not gather new Drawing/Replay/Market operation
   bodies back into the facade files.
+- Treat selected-chart historical export as Desktop-backed feasibility work
+  until a contract proves the requested visible range and returned chart bars
+  line up. Do not implement it as a fallback inside Desktop-free `tv bars`, and
+  do not assume `tv range` changes the range returned by `tv ohlcv --count`.
 - Once an adapter split exposes CDP-free request interpretation or validation,
   move that logic into `crates/model/` if it is reusable and not tied
   to clap or live page state. Drawing is the request-boundary example:

@@ -8,13 +8,17 @@ for release and next-phase planning.
 
 Current plan:
 
-- `tradingview-cli-watch-jsonl-compare-contract.md`: plan the first
-  `v0.22.0` observation / export workflow maturity slice by defining a
-  bounded watch / JSONL compare contract without adding daemon behavior,
-  automatic source mixing, or trading recommendations.
+- `tradingview-cli-selected-chart-historical-export-feasibility.md`: plan the
+  next `v0.22.0` observation / export workflow maturity slice by checking
+  whether selected-chart range movement plus CDP bars can support an explicit
+  historical export contract without becoming a hidden fallback for
+  Desktop-free `tv bars`.
 
 Recently completed:
 
+- `tradingview-cli-watch-jsonl-compare-contract.md`: added bounded
+  `tv watch compare <SYMBOL>...` with scanner-backed `watch_compare.v1`
+  readiness, sample, heartbeat, and summary JSONL events.
 - `tradingview-cli-v0.21.0-release-readiness.md`: prepared the `v0.21.0`
   release state, including version, changelog, release notes, README asset
   examples, package staging, and release validation.

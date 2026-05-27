@@ -176,6 +176,14 @@ evidence, or a replacement for chart-sourced OHLCV. `tv range` moves the
 selected Desktop chart viewport; it is not a historical export contract for
 `tv ohlcv`.
 
+Selected-chart historical export is not stable yet. If a user asks whether
+visible-range movement can be used as export input, explain that `tv range`
+and `tv ohlcv` are Desktop-backed selected-chart operations and must be
+validated against observed chart state before treating them as an export. Use
+`tv bars --from/--to` first for reproducible historical bars input, and use
+selected-chart export only when the selected Desktop chart itself is the
+source being studied.
+
 `tv snapshot <SYMBOL>` is the first-pass Desktop-free evidence packet for one
 symbol. It groups scanner-backed quote, symbol info, and fundamentals sections.
 Read each section's `ok`, `data`, or `error` independently, and preserve the

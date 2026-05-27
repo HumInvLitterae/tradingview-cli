@@ -71,6 +71,11 @@ observation surface.
    `range_fetch_summary` for coverage and truncation readback. Read
    `source_availability` for partial or unavailable source diagnostics, and
    keep it separate from selected-chart `tv ohlcv` evidence.
+   Selected-chart historical export is not a stable replacement for this:
+   `tv range` moves the visible Desktop chart, while `tv ohlcv` reads from the
+   selected chart. Use that path only when the selected chart state itself is
+   being checked, and report observed symbol, timeframe, visible range, and
+   bars-read evidence separately.
 5. Use `tv quote <SYMBOL> --source chart` when the selected Desktop chart feed
    matters, and `tv quote <SYMBOL> --source auto` when chart-first behavior
    with scanner fallback is acceptable. Do not add manual sleep or double-call

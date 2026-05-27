@@ -126,6 +126,9 @@ construction, not on duplicating the full source taxonomy.
    and chart-source quote payloads. Use `tv watch compare` instead when the
    short-window question is about a known candidate set using Desktop-free
    scanner-backed quote evidence.
+   Do not treat `tv range` plus `tv ohlcv` as a historical export fallback for
+   multi-symbol sample preparation; selected-chart export is still feasibility
+   work and depends on visible Desktop chart state.
 8. After user approval, add selected symbols with
    `tv watchlist add-bulk <SYMBOL>... --allow-partial`; it inherits the
    API-backed single-symbol add path and reports duplicates or partial

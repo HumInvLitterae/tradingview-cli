@@ -293,6 +293,22 @@ replacement for chart-backed `tv ohlcv`, which reads the selected Desktop
 chart through CDP. `tv range` moves the selected Desktop chart viewport only;
 it is not a historical export contract.
 
+## Selected-Chart Historical Export Feasibility
+
+Selected-chart historical export is still a feasibility / contract topic. Use
+`tv bars --from/--to` when the task needs reproducible historical OHLCV input.
+Use `tv range`, `tv state`, `tv readiness`, and `tv ohlcv` only when the
+selected TradingView Desktop chart itself is the source under review.
+
+A future export workflow must prove more than "the viewport was moved". It
+must report the requested range, observed chart symbol and timeframe, observed
+visible range, target readiness, returned bar count, and whether returned bars
+can be matched to the observed selected-chart range. If those facts do not
+line up, treat the result as a Desktop-backed source diagnostic, not as a
+historical bars export. Do not use selected-chart export as a fallback for
+`tv bars`, and do not use raw target ids or raw chart payloads in tracked
+notes.
+
 ## Fundamentals And Event-Like Fields
 
 Use `tv fundamentals` for scanner-backed fundamentals and event-like fields:
