@@ -10,9 +10,11 @@ workflow. The next roadmap lane is selected-chart historical export, but it
 should not be exposed as a stable export command until its source boundary is
 clear.
 
-This plan checks whether a workflow based on `tv range` plus selected-chart
-reads can safely prove that it read the requested visible chart range. It keeps
-this source separate from Desktop-free `tv bars --from/--to`.
+This plan adds selected-chart export evidence readback to existing
+selected-chart commands so users can check whether a workflow based on
+`tv range` plus selected-chart reads can safely prove that it read the
+requested visible chart range. It keeps this source separate from Desktop-free
+`tv bars --from/--to`.
 
 ## Progress
 
@@ -24,6 +26,13 @@ this source separate from Desktop-free `tv bars --from/--to`.
   a stable command implementation.
 - [x] Sync source-boundary guidance in docs and runtime skills.
 - [x] Run docs validation, hygiene checks, and runtime skill validation.
+- [x] Decide that the first implementation is additive `tv ohlcv` /
+  `tv range` readback, not a stable export command.
+- [x] Add selected-chart context, returned-bars range, and conservative range
+  match readback to `tv ohlcv`.
+- [x] Add selected-chart viewport operation metadata to `tv range`.
+- [x] Run focused tests, baseline validation, docs validation, and runtime
+  skill validation.
 
 ## Work Items
 
@@ -34,7 +43,8 @@ this source separate from Desktop-free `tv bars --from/--to`.
      contract.
    - `tv bars --from/--to` remains the Desktop-free historical bars entry
      point.
-2. Identify feasibility evidence needed for a future explicit export workflow.
+2. Implement feasibility evidence needed for a future explicit export
+   workflow.
    - Read selected-chart symbol, timeframe, visible range, target readiness,
      and bars availability in a public-safe shape.
    - Check whether the chart reports the requested visible range after
@@ -67,18 +77,28 @@ this source separate from Desktop-free `tv bars --from/--to`.
   returns.
   Rationale: downstream already reported that moving the visible period does
   not prove `tv ohlcv` will return bars from that period.
+- Decision: Add readback to existing selected-chart commands instead of adding
+  `tv export`.
+  Rationale: `tv ohlcv` and `tv range` already own the selected-chart source.
+  Adding context and range diagnostics there makes the feasibility visible
+  without prematurely creating an export workflow.
+- Decision: Use `selected_chart_range_match` as conservative diagnostic
+  vocabulary.
+  Rationale: overlap can show whether returned bars and visible range intersect,
+  but it is not a guarantee that a backtest-ready export was produced.
 
 ## Outcomes
 
-This slice should leave the repository with a clear selected-chart export
-feasibility plan and synchronized guidance. It should not add a command, new
-option, payload semantics, or source fallback.
+This slice adds public-safe selected-chart export evidence readback without a
+new command, new option, or source fallback. `tv ohlcv` success payloads now
+report chart context, returned bars range, and conservative selected-chart
+range-match diagnostics. `tv range` reports that it is a selected-chart
+visible-range operation.
 
-Docs validation, hygiene scans, and runtime skill validation passed. The
-hygiene scan reported existing safety-policy and archive references, plus this
-plan's public-safe validation command; no raw target id, raw DOM, raw payload,
-credential, account-local metadata, or local absolute path was added by this
-slice.
+Focused tests, full Rust baseline, docs validation, hygiene scans, and runtime
+skill validation passed. The hygiene scan reported existing safety-policy and
+archive references; no raw target id, raw DOM, raw payload, credential,
+account-local metadata, or local absolute path was added by this slice.
 
 ## Validation
 
@@ -94,9 +114,19 @@ Hygiene:
 
 Runtime skill validation:
 
-- [x] `uvx --with pyyaml python "${CODEX_HOME:-$HOME/.codex}/skills/.system/skill-creator/scripts/quick_validate.py" .agents/skills/market-data-interpretation`
-- [x] `uvx --with pyyaml python "${CODEX_HOME:-$HOME/.codex}/skills/.system/skill-creator/scripts/quick_validate.py" .agents/skills/multi-symbol-scan`
-- [x] `uvx --with pyyaml python "${CODEX_HOME:-$HOME/.codex}/skills/.system/skill-creator/scripts/quick_validate.py" .agents/skills/chart-analysis`
+- [x] `uvx --with pyyaml python <skill-validator>/quick_validate.py .agents/skills/market-data-interpretation`
+- [x] `uvx --with pyyaml python <skill-validator>/quick_validate.py .agents/skills/multi-symbol-scan`
+- [x] `uvx --with pyyaml python <skill-validator>/quick_validate.py .agents/skills/chart-analysis`
 
-Rust tests are not required for this docs / feasibility slice unless Rust code
-is changed.
+Focused tests:
+
+- [x] `cargo test -p tradingview-cli ops::market::ohlcv -- --nocapture`
+- [x] `cargo test -p tradingview-cli ops::chart -- --nocapture`
+- [x] `cargo test -p tradingview-cli --test cli_contract_desktop -- --nocapture`
+
+Rust baseline:
+
+- [x] `cargo fmt --check`
+- [x] `cargo clippy --workspace --all-targets --all-features -- -D warnings`
+- [x] `cargo test --workspace`
+- [x] `cargo metadata --no-deps --format-version 1`

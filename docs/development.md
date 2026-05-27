@@ -86,6 +86,9 @@ This project uses Rust 2024.
   until a contract proves the requested visible range and returned chart bars
   line up. Do not implement it as a fallback inside Desktop-free `tv bars`, and
   do not assume `tv range` changes the range returned by `tv ohlcv --count`.
+  `tv ohlcv` selected-chart feasibility readback should stay additive and
+  public-safe: `chart_context`, `returned_bars_range`, and
+  `selected_chart_range_match` are diagnostics, not export guarantees.
 - Once an adapter split exposes CDP-free request interpretation or validation,
   move that logic into `crates/model/` if it is reusable and not tied
   to clap or live page state. Drawing is the request-boundary example:

@@ -75,7 +75,10 @@ observation surface.
    `tv range` moves the visible Desktop chart, while `tv ohlcv` reads from the
    selected chart. Use that path only when the selected chart state itself is
    being checked, and report observed symbol, timeframe, visible range, and
-   bars-read evidence separately.
+   bars-read evidence separately. For `tv ohlcv`, read `chart_context`,
+   `returned_bars_range`, and `selected_chart_range_match`; overlap is a
+   diagnostic, not a guarantee that an export-ready historical range was
+   produced.
 5. Use `tv quote <SYMBOL> --source chart` when the selected Desktop chart feed
    matters, and `tv quote <SYMBOL> --source auto` when chart-first behavior
    with scanner fallback is acceptable. Do not add manual sleep or double-call

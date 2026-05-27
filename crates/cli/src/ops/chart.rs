@@ -265,6 +265,11 @@ pub async fn visible_range(runtime: &mut impl RuntimeEvaluator) -> Result<Value,
                 (function() {{
                     var chart = {CHART_API};
                     return {{
+                        operation: "visible_range",
+                        source: "chart_api",
+                        source_category: "desktop_backed_read",
+                        requires_desktop: true,
+                        non_mutating: true,
                         visible_range: chart.getVisibleRange(),
                         bars_range: chart.getVisibleBarsRange()
                     }};
@@ -306,6 +311,11 @@ pub async fn set_visible_range(
                             var actual = null;
                             try {{ actual = chart.getVisibleRange(); }} catch(e) {{}}
                             resolve({{
+                                operation: "visible_range",
+                                source: "chart_api",
+                                source_category: "desktop_backed_read",
+                                requires_desktop: true,
+                                non_mutating: true,
                                 requested: {{ from: {from}, to: {to} }},
                                 actual: actual || {{ from: 0, to: 0 }}
                             }});
@@ -537,5 +547,48 @@ mod tests {
             .expect_err("NaN should be rejected");
 
         assert_eq!(err.kind, ErrorKind::Validation);
+    }
+
+    #[tokio::test]
+    async fn visible_range_reports_viewport_operation_metadata() {
+        let payload = json!({
+            "operation": "visible_range",
+            "source": "chart_api",
+            "source_category": "desktop_backed_read",
+            "requires_desktop": true,
+            "non_mutating": true,
+            "visible_range": {"from": 1, "to": 2},
+            "bars_range": {"from": 10, "to": 20}
+        });
+        let mut runtime = FakeRuntime::new([payload.clone()]);
+
+        let result = visible_range(&mut runtime).await.unwrap();
+
+        assert_eq!(result, payload);
+        assert_eq!(result["operation"], "visible_range");
+        assert_eq!(result["source_category"], "desktop_backed_read");
+        assert!(runtime.evaluated[0].0.contains("operation"));
+        assert!(runtime.evaluated[0].0.contains("getVisibleRange"));
+    }
+
+    #[tokio::test]
+    async fn set_visible_range_reports_viewport_operation_metadata() {
+        let payload = json!({
+            "operation": "visible_range",
+            "source": "chart_api",
+            "source_category": "desktop_backed_read",
+            "requires_desktop": true,
+            "non_mutating": true,
+            "requested": {"from": 1, "to": 2},
+            "actual": {"from": 1, "to": 2}
+        });
+        let mut runtime = FakeRuntime::new([payload.clone()]);
+
+        let result = set_visible_range(&mut runtime, 1.0, 2.0).await.unwrap();
+
+        assert_eq!(result, payload);
+        assert_eq!(result["operation"], "visible_range");
+        assert_eq!(result["source_category"], "desktop_backed_read");
+        assert!(runtime.evaluated[0].0.contains("zoomToBarsRange"));
     }
 }

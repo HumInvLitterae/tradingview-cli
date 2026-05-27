@@ -21,6 +21,46 @@ pub async fn ohlcv_bars(
                     function safeCall(fn) {{
                         try {{ return fn(); }} catch (e) {{ return null; }}
                     }}
+                    function chartContext(chart) {{
+                        if (!chart) return null;
+                        var visibleRange = safeCall(function() {{ return chart.getVisibleRange(); }});
+                        var barsRange = safeCall(function() {{ return chart.getVisibleBarsRange(); }});
+                        return {{
+                            symbol: safeCall(function() {{ return chart.symbol(); }}),
+                            timeframe: safeCall(function() {{ return chart.resolution(); }}),
+                            resolution: safeCall(function() {{ return chart.resolution(); }}),
+                            visible_range: visibleRange,
+                            bars_range: barsRange,
+                            source: "direct_bars",
+                            source_category: "desktop_backed_read",
+                            requires_desktop: true,
+                            non_mutating: true
+                        }};
+                    }}
+                    function returnedBarsRange(result) {{
+                        if (!result || result.length === 0) {{
+                            return {{
+                                first_time: null,
+                                last_time: null,
+                                bar_count: 0
+                            }};
+                        }}
+                        return {{
+                            first_time: result[0].time,
+                            last_time: result[result.length - 1].time,
+                            bar_count: result.length
+                        }};
+                    }}
+                    function rangeMatch(visibleRange, returnedRange) {{
+                        if (!visibleRange || !returnedRange) return "unknown";
+                        var visibleFrom = Number(visibleRange.from);
+                        var visibleTo = Number(visibleRange.to);
+                        var firstTime = Number(returnedRange.first_time);
+                        var lastTime = Number(returnedRange.last_time);
+                        if (!isFinite(visibleFrom) || !isFinite(visibleTo) || !isFinite(firstTime) || !isFinite(lastTime)) return "unknown";
+                        if (lastTime >= visibleFrom && firstTime <= visibleTo) return "overlaps_visible_range";
+                        return "outside_visible_range";
+                    }}
                     function readinessFailure(reason, chart, bars, extra) {{
                         var firstIndex = null;
                         var lastIndex = null;
@@ -42,6 +82,8 @@ pub async fn ohlcv_bars(
                             bars_available: !!bars,
                             chart_symbol: chart ? safeCall(function() {{ return chart.symbol(); }}) : null,
                             resolution: chart ? safeCall(function() {{ return chart.resolution(); }}) : null,
+                            visible_range: chart ? safeCall(function() {{ return chart.getVisibleRange(); }}) : null,
+                            bars_range: chart ? safeCall(function() {{ return chart.getVisibleBarsRange(); }}) : null,
                             bar_index_state: {{
                                 has_first_index: hasFirstIndex,
                                 has_last_index: hasLastIndex,
@@ -91,6 +133,8 @@ pub async fn ohlcv_bars(
                             }}
                         }});
                     }}
+                    var chartContextValue = chartContext(chart);
+                    var returnedRange = returnedBarsRange(result);
                     return {{
                         symbol: chart.symbol(),
                         resolution: chart.resolution(),
@@ -101,6 +145,9 @@ pub async fn ohlcv_bars(
                         source_category: "desktop_backed_read",
                         requires_desktop: true,
                         non_mutating: true,
+                        chart_context: chartContextValue,
+                        returned_bars_range: returnedRange,
+                        selected_chart_range_match: rangeMatch(chartContextValue && chartContextValue.visible_range, returnedRange),
                         bars: result
                     }};
                 }})()
@@ -215,7 +262,14 @@ fn summarize_ohlcv(data: Value) -> Result<Value, AppError> {
         "volume": volume,
         "last_5_bars": last_5_bars,
     });
-    for field in ["symbol", "resolution", "timeframe"] {
+    for field in [
+        "symbol",
+        "resolution",
+        "timeframe",
+        "chart_context",
+        "returned_bars_range",
+        "selected_chart_range_match",
+    ] {
         if let Some(value) = data.get(field) {
             summary[field] = value.clone();
         }
@@ -298,6 +352,15 @@ mod tests {
             "source_category": "desktop_backed_read",
             "requires_desktop": true,
             "non_mutating": true,
+            "chart_context": {
+                "symbol": "NASDAQ:AAPL",
+                "timeframe": "D",
+                "visible_range": {"from": 1, "to": 2},
+                "bars_range": {"from": 1, "to": 2},
+                "source_category": "desktop_backed_read"
+            },
+            "returned_bars_range": {"first_time": 1, "last_time": 2, "bar_count": 2},
+            "selected_chart_range_match": "overlaps_visible_range",
             "bars": [
                 {"time": 1, "open": 100.0, "high": 110.0, "low": 95.0, "close": 105.0, "volume": 10.0},
                 {"time": 2, "open": 105.0, "high": 120.0, "low": 101.0, "close": 115.0, "volume": 20.0}
@@ -309,7 +372,19 @@ mod tests {
         assert_eq!(result["source_category"], "desktop_backed_read");
         assert_eq!(result["requires_desktop"], true);
         assert_eq!(result["non_mutating"], true);
+        assert_eq!(result["chart_context"]["symbol"], "NASDAQ:AAPL");
+        assert_eq!(result["returned_bars_range"]["bar_count"], 2);
+        assert_eq!(
+            result["selected_chart_range_match"],
+            "overlaps_visible_range"
+        );
         assert!(runtime.evaluated[0].0.contains("bar_count"));
+        assert!(runtime.evaluated[0].0.contains("chart_context"));
+        assert!(
+            runtime.evaluated[0]
+                .0
+                .contains("selected_chart_range_match")
+        );
     }
 
     #[test]
@@ -318,6 +393,15 @@ mod tests {
             "symbol": "NASDAQ:AAPL",
             "resolution": "D",
             "timeframe": "D",
+            "chart_context": {
+                "symbol": "NASDAQ:AAPL",
+                "timeframe": "D",
+                "visible_range": {"from": 1, "to": 2},
+                "bars_range": {"from": 1, "to": 2},
+                "source_category": "desktop_backed_read"
+            },
+            "returned_bars_range": {"first_time": 1, "last_time": 2, "bar_count": 2},
+            "selected_chart_range_match": "overlaps_visible_range",
             "bars": [
                 {"time": 1, "open": 100.0, "high": 110.0, "low": 95.0, "close": 105.0, "volume": 10.0},
                 {"time": 2, "open": 105.0, "high": 120.0, "low": 101.0, "close": 115.0, "volume": 30.0}
@@ -338,6 +422,12 @@ mod tests {
         assert_eq!(summary["source_category"], "desktop_backed_read");
         assert_eq!(summary["requires_desktop"], true);
         assert_eq!(summary["non_mutating"], true);
+        assert_eq!(summary["chart_context"]["symbol"], "NASDAQ:AAPL");
+        assert_eq!(summary["returned_bars_range"]["bar_count"], 2);
+        assert_eq!(
+            summary["selected_chart_range_match"],
+            "overlaps_visible_range"
+        );
         assert!(summary["last_5_bars"].as_array().unwrap().len() == 2);
     }
 

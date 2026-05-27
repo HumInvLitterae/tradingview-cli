@@ -104,7 +104,9 @@ Do not use `TV_CDP_TARGET_ID`; explicit target handoff is `--target-id`.
   `tv range` moves the visible Desktop chart, and `tv ohlcv` reads selected
   chart bars. Use that path only when selected chart state is the evidence
   under review, and report readiness, symbol, timeframe, visible range, and
-  bars-read evidence separately.
+  bars-read evidence separately. `tv ohlcv` selected-chart readback includes
+  `chart_context`, `returned_bars_range`, and `selected_chart_range_match` as
+  diagnostics, not export guarantees.
 - Selected-chart JSONL observations use `tv observe chart` and lower-level
   `tv stream ...`. Read readiness, sample, heartbeat, and final summary events
   by `contract_version` (`observe_chart.v1` or `stream.v1`), `_event`, and
