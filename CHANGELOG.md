@@ -24,6 +24,9 @@ package version omits the leading `v`.
 
 ### Documentation
 
+- Recorded the `v0.22.0` pre-release architecture audit, confirming the
+  observation / export workflow contracts, source boundaries, docs, runtime
+  skills, tests, and refactor posture before release readiness.
 - Added a selected-chart historical export feasibility plan for `v0.22.0`,
   keeping `tv range` / `tv ohlcv` as Desktop-backed selected-chart operations
   rather than hidden fallbacks for Desktop-free `tv bars`.
