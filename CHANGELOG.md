@@ -19,6 +19,9 @@ package version omits the leading `v`.
 
 ### Documentation
 
+- Added standalone `tv events` feasibility planning for `v0.23.0`, keeping
+  existing earnings and dividends reads as scanner-backed fundamentals fields
+  while defining any future event command as a separate source surface.
 - Added chart-backed compare contract planning for `v0.23.0`, keeping
   Desktop-free `tv compare` separate from selected-chart evidence workflows
   before any stable Desktop-backed compare command is added.

@@ -104,6 +104,10 @@ Do not use `TV_CDP_TARGET_ID`; explicit target handoff is `--target-id`.
   advisory evidence checks, not automatic actions. Read `kind`, `command`,
   `requires_desktop`, `source_category`, `non_mutating`, `evidence_role`, and
   `auto_execute: false` before deciding whether to run a separate follow-up.
+- Earnings and dividends values from `tv fundamentals --group
+  earnings|dividends` are scanner-backed field evidence, not a complete event
+  calendar. There is no stable standalone `tv events` command yet. Do not use
+  event-like fields as ranking, recommendation, or hidden fallback evidence.
 - Chart-backed compare is not a stable command. Use `tv compare` and
   `tv watch compare` for Desktop-free multi-symbol comparison, then use
   selected-chart reads such as `tv quote --source chart`, `tv ohlcv`,

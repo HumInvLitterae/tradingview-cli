@@ -290,6 +290,11 @@ Safety boundary:
   and the confirmed subset is now included in the `earnings` and `dividends`
   groups. They are still scanner fields, not a complete TradingView event
   calendar. Public notes record field names and types only.
+- standalone `tv events` remains feasibility work. Scanner fundamentals may
+  inform its field inventory, but a future event command must have a separate
+  source contract with event type, date/time wording, source availability, and
+  missing/unavailable reasons instead of becoming a fallback for fundamentals
+  or quotes.
 - symbol no-row, exchange mismatch, ambiguity, or returned-symbol mismatch are
   validation errors with candidate symbols when possible; they do not fall
   back to chart state

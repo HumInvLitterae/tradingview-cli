@@ -8,12 +8,15 @@ for release and next-phase planning.
 
 Current plan:
 
-- `tradingview-cli-chart-backed-compare-contract.md`: plan the next
-  `v0.23.0` slice by fixing chart-backed compare source boundaries before
-  adding any stable Desktop-backed compare command.
+- `tradingview-cli-events-feasibility.md`: plan standalone `tv events`
+  feasibility and source boundaries while keeping current earnings and
+  dividends reads as scanner-backed fundamentals fields.
 
 Recently completed:
 
+- `tradingview-cli-chart-backed-compare-contract.md`: planned chart-backed
+  compare source boundaries before adding any stable Desktop-backed compare
+  command.
 - `tradingview-cli-replay-step-log-contract.md`: added bounded
   `tv replay log --steps <N>` JSONL workflow evidence without adding stable
   Replay export.

@@ -395,6 +395,12 @@ fields. Treat `field_values` as the source of truth and avoid inferring
 timezone, before/after-market meaning, publication-code meaning, or investment
 significance unless another source supplies that interpretation.
 
+`tv events` is only feasibility work today. Do not describe scanner-backed
+fundamentals fields as an events command. If a standalone event surface is
+added later, the first likely scope is symbol-scoped earnings and dividends
+with explicit event type, date/time wording, source metadata, source
+availability, and missing/unavailable reasons.
+
 ## Deferred Surfaces
 
 The following are not normal observation workflow steps today:
