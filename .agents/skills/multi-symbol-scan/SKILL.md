@@ -97,6 +97,10 @@ construction, not on duplicating the full source taxonomy.
    `tv snapshot`, or `tv compare` when extended-hours evidence matters.
    Chart-backed compare is not a stable command yet; do not present selected
    chart reads as if they were scanner-style multi-symbol compare.
+   Earnings and dividends groups are scanner-backed field bundles, not a
+   standalone event calendar. There is no stable `tv events` command yet; use
+   event-like fields only as screening context, not as ranking,
+   recommendation, or a hidden fallback to another source.
    Desktop quote-session probes can expose pre/post field names, but they are
    phase-sensitive live evidence and not a stable multi-symbol screening
    source. A `post-market` phase observation does not make quote-session

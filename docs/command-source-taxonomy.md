@@ -72,6 +72,14 @@ follow-up, switch charts, observe the chart, or take a screenshot on its own.
 `next_action_hints[]` are human-facing wording for the same general direction;
 they are not a machine contract and are not an instruction to blend sources.
 
+`tv fundamentals <SYMBOL> --group earnings|dividends` and matching scanner
+columns can provide event-like values such as earnings and dividend dates.
+Treat those values as scanner-backed field evidence, not as a standalone
+event calendar. A future `tv events` surface would need separate source
+metadata, event-type readback, source availability, and missing/unavailable
+reasons; it must not become a hidden fallback for fundamentals, quotes,
+compare, bars, or chart reads.
+
 `tv watch compare <SYMBOL>...` is also Desktop-free, but it is a bounded JSONL
 workflow rather than a single JSON packet. It polls scanner-backed quote
 evidence for a known candidate set and emits readiness, sample, heartbeat, and

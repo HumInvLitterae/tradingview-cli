@@ -254,7 +254,11 @@ source of truth. Do not infer timezone, before/after-market meaning,
 publication-code meaning, financial analysis, or investment recommendations
 from these fields unless another source explicitly supplies that
 interpretation. The current event-like evidence is still scanner field
-metadata, not a complete event calendar.
+metadata, not a complete event calendar. There is no stable standalone
+`tv events` command yet. If event work appears later, treat it as a separate
+source surface with its own source availability and missing/unavailable
+reasons, not as a fallback for fundamentals, quotes, compare, bars, or chart
+reads.
 
 For Desktop-backed reads, inspect `tv readiness` before escalating to visual
 checks. It summarizes endpoint, target selection, chart readiness, bars

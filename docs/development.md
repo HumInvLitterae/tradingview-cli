@@ -387,6 +387,14 @@ context, target ambiguity status, and failure kind. Do not paste raw target
 ids, raw DOM, raw payloads, account-local metadata, or local absolute paths
 into tracked docs.
 
+Standalone `tv events` planning should keep current event-like evidence under
+the scanner fundamentals boundary. `tv fundamentals --group earnings|dividends`
+and scanner columns are field reads, not a complete event calendar. If event
+feasibility checks are attempted later, record public-safe field names, event
+type candidates, source categories, availability states, and missing /
+unavailable reasons only. Do not paste raw event payloads, account-local
+metadata, credentials, session ids, or local absolute paths into tracked docs.
+
 For selected-chart export checks, use `tv export chart-bars --from
 <UNIX_SECONDS> --to <UNIX_SECONDS> [--count 500] [--summary]`. The command is a
 Desktop-backed operation because it moves the visible chart range before

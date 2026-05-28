@@ -47,7 +47,10 @@ observation surface.
    narrower read is enough. Scanner-backed
    quotes expose `time`, `update_mode`, `delay_seconds`, and extended-hours
    fields when TradingView returns them, but they are not a realtime entitlement
-   guarantee.
+   guarantee. Earnings and dividends values from `tv fundamentals` are
+   scanner-backed field evidence, not selected-chart evidence and not a
+   complete event calendar. Do not treat future `tv events` work as a chart
+   read unless its source metadata says so.
 2. Set the requested chart context with `tv symbol <SYMBOL>`,
    `tv timeframe <RESOLUTION>`, and `tv type <CHART_TYPE>` only when OHLCV,
    visible studies, drawings, screenshots, or current-chart metadata are
