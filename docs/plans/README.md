@@ -8,13 +8,16 @@ for release and next-phase planning.
 
 Current plan:
 
-- `tradingview-cli-v0.23-pre-release-audit.md`: audit completed `v0.23.0`
-  export / Replay / compare / events workflow maturity, including contracts,
-  docs, tests, source boundaries, and architecture posture before release
-  readiness.
+- `tradingview-cli-v0.23.0-release-readiness.md`: prepare the `v0.23.0`
+  release state, including version, changelog, release notes, README asset
+  examples, package staging, and release validation.
 
 Recently completed:
 
+- `tradingview-cli-v0.23-pre-release-audit.md`: audited completed `v0.23.0`
+  export / Replay / compare / events workflow maturity, including contracts,
+  docs, tests, source boundaries, and architecture posture before release
+  readiness.
 - `tradingview-cli-events-feasibility.md`: planned standalone `tv events`
   feasibility and source boundaries while keeping current earnings and
   dividends reads as scanner-backed fundamentals fields.

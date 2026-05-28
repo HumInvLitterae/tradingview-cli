@@ -7,6 +7,8 @@ package version omits the leading `v`.
 
 ## Unreleased
 
+## v0.23.0 - 2026-05-28
+
 ### Added
 
 - Added `tv export chart-bars --from <UNIX_SECONDS> --to <UNIX_SECONDS>`, an
