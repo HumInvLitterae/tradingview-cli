@@ -8,9 +8,9 @@ for release and next-phase planning.
 
 Current plan:
 
-- `tradingview-cli-replay-step-log-contract.md`: plan the next `v0.23.0`
-  slice by fixing the Replay step-log contract before adding any stable
-  Replay extraction command.
+- `tradingview-cli-replay-step-log-contract.md`: implement the next
+  `v0.23.0` slice by adding bounded `tv replay log --steps <N>` JSONL
+  workflow evidence without adding stable Replay export.
 
 Recently completed:
 

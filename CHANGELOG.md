@@ -13,12 +13,15 @@ package version omits the leading `v`.
   explicit Desktop-backed selected-chart bars export workflow with
   `export_chart_bars.v1` diagnostics for requested visible range, range
   operation, chart context, returned bars range, and range-match status.
+- Added `tv replay log --steps <N>`, a bounded Desktop-backed Replay JSONL
+  workflow that records readiness, per-step state, and final summary with
+  `replay_step_log.v1` metadata.
 
 ### Documentation
 
-- Added Replay step-log contract planning for `v0.23.0`, keeping Replay
-  extraction as bounded Desktop-backed workflow evidence before any stable
-  Replay export command is added.
+- Added Replay step-log implementation guidance for `v0.23.0`, keeping Replay
+  logs as bounded Desktop-backed workflow evidence rather than stable
+  historical bars export.
 - Added the `v0.23.0` roadmap direction and first selected-chart historical
   export plan, focusing on explicit Desktop-backed export workflow maturity
   without making it a hidden fallback for Desktop-free `tv bars`.

@@ -841,6 +841,14 @@ pub enum ReplayCommand {
     },
     #[command(about = "Execute a TradingView replay trade action")]
     Trade { action: String },
+    #[command(
+        about = "Record a bounded Replay step log as JSONL",
+        long_about = "Record a bounded Replay step log as newline-delimited JSON.\n\nThis command requires an already-started TradingView Replay session, advances the selected chart by the requested number of steps, and emits readiness, step, and summary events with `contract_version: \"replay_step_log.v1\"`. It does not start or stop Replay, export bars, capture screenshots, or use Desktop-free `tv bars` as a fallback."
+    )]
+    Log {
+        #[arg(long)]
+        steps: u64,
+    },
 }
 
 #[derive(Debug, Subcommand)]

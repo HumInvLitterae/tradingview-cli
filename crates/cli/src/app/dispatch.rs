@@ -1085,6 +1085,9 @@ pub async fn dispatch(
                 let mut runtime = connect_runtime(config).await?;
                 ops::replay_trade(&mut runtime, &action).await
             }
+            ReplayCommand::Log { .. } => {
+                unreachable!("replay log commands use a dedicated JSONL runner")
+            }
         },
         Command::Stream { .. } => unreachable!("stream commands use a dedicated JSONL runner"),
         Command::Observe { .. } => unreachable!("observe commands use a dedicated JSONL runner"),

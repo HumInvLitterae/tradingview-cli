@@ -2,6 +2,7 @@ mod dispatch;
 mod input;
 mod observe;
 mod output;
+mod replay_log;
 mod runner;
 mod runtime;
 mod safety;

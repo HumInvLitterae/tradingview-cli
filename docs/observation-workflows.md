@@ -358,11 +358,13 @@ For feasibility checks, keep the sequence explicit:
   evidence;
 - stop Replay when the practice or feasibility check is complete.
 
-The planned Replay step log is the next bounded workflow contract, not a
-stable export command. A later command should record initial Replay state,
+Use `tv replay log --steps <N>` when the task needs a bounded record of Replay
+steps. It emits JSONL readiness, step, and summary events with
+`contract_version: "replay_step_log.v1"`. It records initial Replay state,
 per-step `previous_date` / `current_date`, `replay_context`, selected-chart
-context, and a final end reason. If OHLCV summaries or screenshots are ever
-attached, they should be explicit options with their own source metadata rather
+context, and a final end reason. It does not start or stop Replay
+automatically. If OHLCV summaries or screenshots are ever attached in a later
+version, they should be explicit options with their own source metadata rather
 than automatic source mixing.
 
 Do not treat Replay output as a replacement for `tv bars`, and do not write

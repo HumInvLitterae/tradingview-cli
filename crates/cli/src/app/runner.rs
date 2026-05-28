@@ -8,10 +8,11 @@ use crate::{
         dispatch::dispatch,
         observe::run_observe_command,
         output::{print_json_stderr, print_json_stdout, startup_error},
+        replay_log::run_replay_log_command,
         stream::run_stream_command,
         watch::run_watch_command,
     },
-    cli::{Cli, Command},
+    cli::{Cli, Command, ReplayCommand},
 };
 use tradingview_cdp::TransportConfig;
 
@@ -84,6 +85,17 @@ async fn async_main() -> ExitCode {
             Err(err) => {
                 let code = err.exit_code();
                 let envelope = ErrorEnvelope::new("watch", ErrorBody::from(err));
+                print_json_stderr(&envelope);
+                ExitCode::from(code)
+            }
+        },
+        Command::Replay {
+            command: ReplayCommand::Log { steps },
+        } => match run_replay_log_command(steps, &config).await {
+            Ok(()) => ExitCode::SUCCESS,
+            Err(err) => {
+                let code = err.exit_code();
+                let envelope = ErrorEnvelope::new("replay", ErrorBody::from(err));
                 print_json_stderr(&envelope);
                 ExitCode::from(code)
             }
