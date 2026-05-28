@@ -19,6 +19,9 @@ package version omits the leading `v`.
 
 ### Documentation
 
+- Added chart-backed compare contract planning for `v0.23.0`, keeping
+  Desktop-free `tv compare` separate from selected-chart evidence workflows
+  before any stable Desktop-backed compare command is added.
 - Added Replay step-log implementation guidance for `v0.23.0`, keeping Replay
   logs as bounded Desktop-backed workflow evidence rather than stable
   historical bars export.

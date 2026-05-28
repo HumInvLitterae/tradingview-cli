@@ -104,6 +104,10 @@ Do not use `TV_CDP_TARGET_ID`; explicit target handoff is `--target-id`.
   advisory evidence checks, not automatic actions. Read `kind`, `command`,
   `requires_desktop`, `source_category`, `non_mutating`, `evidence_role`, and
   `auto_execute: false` before deciding whether to run a separate follow-up.
+- Chart-backed compare is not a stable command. Use `tv compare` and
+  `tv watch compare` for Desktop-free multi-symbol comparison, then use
+  selected-chart reads such as `tv quote --source chart`, `tv ohlcv`,
+  screenshot, or `tv export chart-bars` only as explicit finalist follow-up.
 - Selected-chart historical export is explicit: use `tv export chart-bars
   --from <UNIX_SECONDS> --to <UNIX_SECONDS>` only when the selected TradingView
   Desktop chart itself is the intended source. It moves the visible Desktop

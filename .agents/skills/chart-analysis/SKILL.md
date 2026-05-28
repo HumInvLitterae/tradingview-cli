@@ -134,6 +134,10 @@ observation surface.
    after-hours/premarket-style `rtc` readback from regular quote-data
    `regular_last` readback based on `qsd.v.lp`. Keep scanner freshness, chart
    main-series quote, and quote-data readback separate.
+   Chart-backed compare is not a stable command yet. Use Desktop-free
+   `tv compare` or `tv watch compare` for broad comparison, then chart-source
+   quote, selected-chart OHLCV, screenshot, or export only as explicit
+   finalist follow-up.
    If quote-data availability is the problem, use
    `tv diagnose quote-data <SYMBOL>` to inspect sanitized target state,
    quote-data availability, public-safe WebSocket/qsd counters, and separate
