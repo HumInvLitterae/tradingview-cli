@@ -7,6 +7,13 @@ package version omits the leading `v`.
 
 ## Unreleased
 
+### Added
+
+- Added `tv export chart-bars --from <UNIX_SECONDS> --to <UNIX_SECONDS>`, an
+  explicit Desktop-backed selected-chart bars export workflow with
+  `export_chart_bars.v1` diagnostics for requested visible range, range
+  operation, chart context, returned bars range, and range-match status.
+
 ### Documentation
 
 - Added the `v0.23.0` roadmap direction and first selected-chart historical

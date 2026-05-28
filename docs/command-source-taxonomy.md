@@ -128,19 +128,16 @@ does not change `_event`, source metadata, bounded controls, or event meaning.
 Do not reinterpret it as realtime multi-symbol feed support, watch / JSONL
 compare, browserless bars, scanner quote evidence, or quote-data readback.
 
-Selected-chart historical export is a separate feasibility lane. `tv range`
-can move the visible range of the selected Desktop chart, and `tv ohlcv` can
-read bars from that selected chart, but the project does not yet treat
-`tv range` followed by `tv ohlcv --count ...` as a proven historical export
-contract. A future explicit export workflow must report Desktop-backed source
-metadata, target readiness, observed chart state, visible-range evidence, and
-range / bars mismatches before claiming that it exported a requested
-selected-chart period. It must not be a hidden fallback for Desktop-free
-`tv bars --from/--to`. As of `v0.22`, `tv ohlcv` includes `chart_context`,
-`returned_bars_range`, and `selected_chart_range_match` as conservative
-diagnostics for this feasibility work. `tv range` reports
+Selected-chart historical export is now an explicit Desktop-backed operation:
+`tv export chart-bars --from <UNIX_SECONDS> --to <UNIX_SECONDS>`. It moves the
+visible range of the selected Desktop chart, reads selected-chart OHLCV bars,
+and returns `contract_version: "export_chart_bars.v1"` with
+`requested_visible_range`, `range_operation`, `chart_context`,
+`returned_bars_range`, and `selected_chart_range_match`. It must not be a
+hidden fallback for Desktop-free `tv bars --from/--to`. Use it only when the
+selected Desktop chart itself is the intended source. `tv range` still reports
 `operation: "visible_range"` so agents can distinguish viewport movement from
-historical bars export.
+the combined selected-chart export workflow.
 
 Do not treat `tv quote <SYMBOL> --source chart` as a multi-symbol realtime
 batch source. It is a correctness-first single-symbol read that may switch and
@@ -233,9 +230,9 @@ state.
 Use this category when the command can change chart, account, editor, Replay,
 Screener, layout, drawing, alert, watchlist, or generic UI state. Examples
 include `tv symbol <SYMBOL>`, `tv watchlist add`, `tv watchlist remove`,
-`tv alert create`, `tv screener ...` mutation commands, `tv pine save`,
-`tv draw position`, Replay controls, layout switching, and generic `tv ui`
-automation.
+`tv alert create`, `tv export chart-bars`, `tv screener ...` mutation commands,
+`tv pine save`, `tv draw position`, Replay controls, layout switching, and
+generic `tv ui` automation.
 
 Recommended agent use: explain the expected side effect, use `--dry-run` when
 available, get user approval before normal mutation, and report whether

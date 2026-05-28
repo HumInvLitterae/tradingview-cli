@@ -552,6 +552,72 @@ fn ohlcv_accepts_count_argument() {
 }
 
 #[test]
+fn export_chart_bars_help_explains_selected_chart_contract() {
+    tv().args(["export", "chart-bars", "--help"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("--from"))
+        .stdout(predicate::str::contains("--to"))
+        .stdout(predicate::str::contains("--count"))
+        .stdout(predicate::str::contains("--summary"))
+        .stdout(predicate::str::contains(
+            "selected TradingView Desktop chart",
+        ))
+        .stdout(predicate::str::contains(
+            "Desktop-free `tv bars --from/--to`",
+        ));
+}
+
+#[test]
+fn export_chart_bars_rejects_invalid_range_before_connecting() {
+    let assert = tv()
+        .env("TV_CDP_PORT", "9")
+        .args([
+            "export",
+            "chart-bars",
+            "--from",
+            "2",
+            "--to",
+            "2",
+            "--count",
+            "100",
+        ])
+        .assert()
+        .failure()
+        .code(1);
+    let value = stderr_json(&assert);
+    assert_eq!(value["success"], false);
+    assert_eq!(value["command"], "export");
+    assert_eq!(value["error"]["kind"], "validation");
+    assert_eq!(value["error"]["details"]["from"], 2.0);
+    assert_eq!(value["error"]["details"]["to"], 2.0);
+}
+
+#[test]
+fn export_chart_bars_rejects_invalid_count_before_connecting() {
+    let assert = tv()
+        .env("TV_CDP_PORT", "9")
+        .args([
+            "export",
+            "chart-bars",
+            "--from",
+            "1",
+            "--to",
+            "2",
+            "--count",
+            "501",
+        ])
+        .assert()
+        .failure()
+        .code(1);
+    let value = stderr_json(&assert);
+    assert_eq!(value["success"], false);
+    assert_eq!(value["command"], "export");
+    assert_eq!(value["error"]["kind"], "validation");
+    assert_eq!(value["error"]["details"]["max"], 500);
+}
+
+#[test]
 fn timeframe_help_explains_interval_is_not_command() {
     tv().args(["timeframe", "--help"])
         .assert()
@@ -1335,6 +1401,16 @@ fn read_utilities_attempt_connection_when_cdp_is_unavailable() {
         vec!["tab", "switch", "0"],
         vec!["tab", "new"],
         vec!["tab", "close", "0"],
+        vec![
+            "export",
+            "chart-bars",
+            "--from",
+            "1",
+            "--to",
+            "2",
+            "--count",
+            "100",
+        ],
         vec!["replay", "start"],
         vec!["replay", "step"],
         vec!["replay", "stop"],

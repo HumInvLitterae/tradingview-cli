@@ -73,14 +73,13 @@ observation surface.
    `range_fetch_summary` for coverage and truncation readback. Read
    `source_availability` for partial or unavailable source diagnostics, and
    keep it separate from selected-chart `tv ohlcv` evidence.
-   Selected-chart historical export is not a stable replacement for this:
-   `tv range` moves the visible Desktop chart, while `tv ohlcv` reads from the
-   selected chart. Use that path only when the selected chart state itself is
-   being checked, and report observed symbol, timeframe, visible range, and
-   bars-read evidence separately. For `tv ohlcv`, read `chart_context`,
-   `returned_bars_range`, and `selected_chart_range_match`; overlap is a
-   diagnostic, not a guarantee that an export-ready historical range was
-   produced.
+   Selected-chart historical export is an explicit Desktop-backed operation,
+   not a replacement for this. Use `tv export chart-bars --from <UNIX_SECONDS>
+   --to <UNIX_SECONDS>` only when the selected chart state itself is being
+   checked. Report `export_chart_bars.v1`, observed symbol, timeframe,
+   requested visible range, range operation, returned bars range, and
+   `selected_chart_range_match` separately from Desktop-free `tv bars`
+   evidence.
    Replay-based extraction is also not a stable export replacement. Use
    `tv replay status` to read `replay_context`; use `tv replay start` /
    `step` / `stop` only after the user accepts that Replay state will change.

@@ -112,6 +112,7 @@ tv readiness
 tv tab list
 tv state
 tv ohlcv --summary --count 100
+tv export chart-bars --from 1704067200 --to 1706745600 --summary
 tv screenshot --region chart --output target/tv-chart.png
 ```
 
@@ -189,10 +190,16 @@ trading recommendation or proof that a symbol has no history. Use
 `tv range` only for selected Desktop chart viewport movement; it is not a
 historical export contract for `tv ohlcv`.
 
+Use `tv export chart-bars --from <UNIX_SECONDS> --to <UNIX_SECONDS>` only when
+you intentionally want the selected TradingView Desktop chart as the source. It
+moves the visible range, reads selected-chart bars, and returns
+`export_chart_bars.v1` diagnostics. For reproducible symbol-targeted
+historical bars, prefer Desktop-free `tv bars --from/--to`.
+
 Use `tv --help` for the full command list and `tv <COMMAND> --help` for command
 details. See `docs/observation-workflows.md` for practical command sequences
 that combine Desktop-free screening, Desktop-backed chart observation,
-screenshots, browserless bars, and fundamentals reads.
+selected-chart export, screenshots, browserless bars, and fundamentals reads.
 
 ## What `tv` Does
 
@@ -202,9 +209,9 @@ screenshots, browserless bars, and fundamentals reads.
   batch quotes, fundamentals, scanner scans, hotlists, and metainfo.
 - Desktop-backed reads: chart state, OHLCV from the selected chart, screenshots,
   readiness diagnostics, and chart-source quotes.
-- Desktop-backed operations: chart symbol/timeframe/type changes, watchlist,
-  alerts, drawings, Pine Editor, Replay, Screener, panes, layouts, tabs, and
-  compatibility UI automation.
+- Desktop-backed operations: chart symbol/timeframe/type changes,
+  selected-chart export, watchlist, alerts, drawings, Pine Editor, Replay,
+  Screener, panes, layouts, tabs, and compatibility UI automation.
 - Hybrid commands: commands with explicit source or fallback behavior, such as
   `tv quote <SYMBOL> --source auto`.
 - Browserless historical bars: bounded Desktop-free `tv bars`.

@@ -129,12 +129,12 @@ construction, not on duplicating the full source taxonomy.
    and chart-source quote payloads. Use `tv watch compare` instead when the
    short-window question is about a known candidate set using Desktop-free
    scanner-backed quote evidence.
-   Do not treat `tv range` plus `tv ohlcv` as a historical export fallback for
-   multi-symbol sample preparation; selected-chart export is still feasibility
-   work and depends on visible Desktop chart state. If you must inspect it,
-   read `tv state`, `tv range`, and `tv ohlcv` together and report
+   Do not treat selected-chart export as a historical export fallback for
+   multi-symbol sample preparation. Use `tv export chart-bars --from
+   <UNIX_SECONDS> --to <UNIX_SECONDS>` only when the selected Desktop chart
+   itself is the source under review, and report `export_chart_bars.v1`,
    `chart_context`, `returned_bars_range`, and `selected_chart_range_match`
-   as diagnostics rather than export guarantees.
+   as selected-chart diagnostics.
 8. After user approval, add selected symbols with
    `tv watchlist add-bulk <SYMBOL>... --allow-partial`; it inherits the
    API-backed single-symbol add path and reports duplicates or partial
