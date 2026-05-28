@@ -8,13 +8,17 @@ for release and next-phase planning.
 
 Current plan:
 
-- `tradingview-cli-selected-chart-export-command.md`: plan the first
-  `v0.23.0` implementation slice, turning selected-chart `tv range` /
-  `tv ohlcv` evidence readback into an explicit Desktop-backed export
-  workflow without making it a hidden fallback for `tv bars`.
+- `tradingview-cli-replay-step-log-contract.md`: plan the next `v0.23.0`
+  slice by fixing the Replay step-log contract before adding any stable
+  Replay extraction command.
 
 Recently completed:
 
+- `tradingview-cli-selected-chart-export-command.md`: added
+  `tv export chart-bars`, a narrow Desktop-backed selected-chart export
+  workflow that keeps requested visible range, range operation, chart context,
+  returned bars range, and range-match diagnostics separate from Desktop-free
+  `tv bars`.
 - `tradingview-cli-v0.22.0-release-readiness.md`: prepared the `v0.22.0`
   release state, including version, changelog, release notes, README asset
   examples, package staging, and release validation.

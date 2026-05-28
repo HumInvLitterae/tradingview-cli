@@ -247,6 +247,12 @@ Desktop-backed operations and should report
 `operation`, and `replay_context`. Replay is selected-chart state and is not a
 fallback for Desktop-free `tv bars --from/--to`.
 
+Replay step-log work is planned as bounded workflow evidence before any stable
+Replay export command. A future step log should record start state, per-step
+Replay dates, `replay_context`, selected-chart context, final end reason, and
+public-safe failures. It must not attach `tv bars`, `tv export chart-bars`,
+`tv ohlcv`, screenshots, scanner reads, or quote-data as hidden fallbacks.
+
 ### Hybrid
 
 `requires_desktop`: depends on selected source. `may_mutate`: can mutate chart

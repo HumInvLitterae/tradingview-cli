@@ -16,6 +16,9 @@ package version omits the leading `v`.
 
 ### Documentation
 
+- Added Replay step-log contract planning for `v0.23.0`, keeping Replay
+  extraction as bounded Desktop-backed workflow evidence before any stable
+  Replay export command is added.
 - Added the `v0.23.0` roadmap direction and first selected-chart historical
   export plan, focusing on explicit Desktop-backed export workflow maturity
   without making it a hidden fallback for Desktop-free `tv bars`.
