@@ -8,12 +8,16 @@ for release and next-phase planning.
 
 Current plan:
 
-- `tradingview-cli-v0.22.0-release-readiness.md`: prepare the `v0.22.0`
-  release state, including version, changelog, release notes, README asset
-  examples, package staging, and release validation.
+- `tradingview-cli-selected-chart-export-command.md`: plan the first
+  `v0.23.0` implementation slice, turning selected-chart `tv range` /
+  `tv ohlcv` evidence readback into an explicit Desktop-backed export
+  workflow without making it a hidden fallback for `tv bars`.
 
 Recently completed:
 
+- `tradingview-cli-v0.22.0-release-readiness.md`: prepared the `v0.22.0`
+  release state, including version, changelog, release notes, README asset
+  examples, package staging, and release validation.
 - `tradingview-cli-v0.22-pre-release-audit.md`: audited completed `v0.22.0`
   observation / export workflow maturity, including contracts, docs, tests,
   source boundaries, and architecture posture before release readiness.
