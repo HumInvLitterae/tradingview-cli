@@ -358,6 +358,13 @@ For feasibility checks, keep the sequence explicit:
   evidence;
 - stop Replay when the practice or feasibility check is complete.
 
+The planned Replay step log is the next bounded workflow contract, not a
+stable export command. A later command should record initial Replay state,
+per-step `previous_date` / `current_date`, `replay_context`, selected-chart
+context, and a final end reason. If OHLCV summaries or screenshots are ever
+attached, they should be explicit options with their own source metadata rather
+than automatic source mixing.
+
 Do not treat Replay output as a replacement for `tv bars`, and do not write
 raw DOM, raw payloads, target ids, or account-local metadata into tracked
 notes.

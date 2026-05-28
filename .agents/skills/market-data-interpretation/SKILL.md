@@ -193,8 +193,10 @@ topic, not a stable historical bars source. `tv replay status` is a
 Desktop-backed read with `replay_context`; `tv replay start`, `step`, `stop`,
 `autoplay`, and `trade` are Desktop-backed operations with `operation` and
 post-operation `replay_context`. Use Replay only when the selected chart's
-Replay state is the evidence under review. Keep it separate from `tv bars`,
-scanner evidence, quote-data, and selected-chart OHLCV.
+Replay state is the evidence under review. If a Replay step log is available,
+read it as bounded workflow evidence with its own Replay state and end reason,
+not as OHLCV source preparation. Keep it separate from `tv bars`, scanner
+evidence, quote-data, and selected-chart OHLCV.
 
 `tv snapshot <SYMBOL>` is the first-pass Desktop-free evidence packet for one
 symbol. It groups scanner-backed quote, symbol info, and fundamentals sections.
