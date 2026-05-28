@@ -831,7 +831,8 @@ fn replay_help_lists_basic_lifecycle_subcommands() {
         .stdout(predicate::str::contains("step"))
         .stdout(predicate::str::contains("stop"))
         .stdout(predicate::str::contains("autoplay"))
-        .stdout(predicate::str::contains("trade"));
+        .stdout(predicate::str::contains("trade"))
+        .stdout(predicate::str::contains("log"));
 
     tv().args(["replay", "autoplay", "--help"])
         .assert()
@@ -842,6 +843,13 @@ fn replay_help_lists_basic_lifecycle_subcommands() {
         .assert()
         .success()
         .stdout(predicate::str::contains("<ACTION>"));
+
+    tv().args(["replay", "log", "--help"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("--steps"))
+        .stdout(predicate::str::contains("bounded Replay step log"))
+        .stdout(predicate::str::contains("replay_step_log.v1"));
 }
 
 #[test]
@@ -1562,6 +1570,24 @@ fn replay_start_rejects_invalid_date_before_connecting() {
     assert_eq!(value["success"], false);
     assert_eq!(value["command"], "replay");
     assert_eq!(value["error"]["kind"], "validation");
+}
+
+#[test]
+fn replay_log_rejects_invalid_steps_before_connecting() {
+    for steps in ["0", "101"] {
+        let assert = tv()
+            .env("TV_CDP_PORT", "9")
+            .args(["replay", "log", "--steps", steps])
+            .assert()
+            .failure()
+            .code(1);
+        let value = stderr_json(&assert);
+        assert_eq!(value["success"], false);
+        assert_eq!(value["command"], "replay");
+        assert_eq!(value["error"]["kind"], "validation");
+        assert_eq!(value["error"]["details"]["field"], "steps");
+        assert_eq!(value["error"]["details"]["maximum"], 100);
+    }
 }
 
 #[test]

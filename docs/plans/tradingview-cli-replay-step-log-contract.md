@@ -15,8 +15,8 @@ bounded Replay step workflow and receive evidence that says what Replay did,
 where it started and ended, and why it stopped, without confusing that output
 with Desktop-free historical bars from `tv bars --from/--to`.
 
-This plan does not implement a new command. It records the source boundary,
-candidate interface, and acceptance criteria for the next implementation slice.
+This plan implements the first bounded Replay step-log command. It records the
+source boundary, interface, and acceptance criteria for the implementation.
 
 ## Progress
 
@@ -24,7 +24,9 @@ candidate interface, and acceptance criteria for the next implementation slice.
 - [x] (2026-05-28) Archive the completed selected-chart export command plan.
 - [x] (2026-05-28) Update the v0.23 roadmap, plan index, changelog, docs, and
   runtime skills for Replay step-log planning.
-- [ ] Implement the bounded Replay step-log workflow in a later slice.
+- [x] (2026-05-28) Implement the bounded `tv replay log --steps <N>` JSONL
+  workflow.
+- [ ] Run the full validation baseline and commit the implementation.
 
 ## Surprises & Discoveries
 
@@ -33,6 +35,12 @@ candidate interface, and acceptance criteria for the next implementation slice.
   Evidence: `tv replay status` normalizes `replay_context` and optional
   `chart_context`; `tv replay step` preserves `previous_date` and
   `current_date`.
+
+- Observation: `tv replay log` can share the JSONL runner pattern used by
+  `stream`, `observe`, and `watch` while keeping normal Replay commands on the
+  existing JSON envelope path.
+  Evidence: `ReplayCommand::Log` is routed in `app::runner`; other
+  `ReplayCommand` variants still go through `dispatch`.
 
 ## Decision Log
 
@@ -56,12 +64,23 @@ candidate interface, and acceptance criteria for the next implementation slice.
   source metadata and separate failure details.
   Date/Author: 2026-05-28 / Codex.
 
+- Decision: Use JSONL for the first stable step-log surface.
+  Rationale: readiness, per-step events, and final summary map naturally to a
+  bounded event stream and make partial runs easier to consume.
+  Date/Author: 2026-05-28 / Codex.
+
+- Decision: Require `--steps <N>` and cap the first slice at 100 steps.
+  Rationale: Replay mutates selected-chart state. A required small bound keeps
+  the first implementation explicit and avoids accidental long-running chart
+  mutation.
+  Date/Author: 2026-05-28 / Codex.
+
 ## Outcomes & Retrospective
 
-This plan establishes the next `v0.23.0` slice after `tv export chart-bars`.
-No runtime behavior has changed yet. The next implementation should add a
-bounded Replay step-log workflow only after preserving the boundaries recorded
-here.
+This slice adds `tv replay log --steps <N>` as a bounded JSONL Replay workflow.
+It emits readiness, step, and summary events with
+`contract_version: "replay_step_log.v1"`, does not auto-start or auto-stop
+Replay, and does not attach OHLCV or screenshot evidence.
 
 ## Context and Orientation
 
@@ -86,19 +105,16 @@ remains the Desktop-free historical bars source.
 
 ## Plan of Work
 
-The next implementation should add one narrow Replay step-log surface. The
-preferred command name is `tv replay log`; `tv replay extract-log` remains the
-fallback name only if `log` conflicts with clap structure or existing help
-wording. The command should require an explicit bounded control such as
-`--steps <N>`, with a small default only if the implementation also makes the
-default visible in readiness output.
+This implementation adds one narrow Replay step-log surface:
+`tv replay log --steps <N>`. `--steps` is required and accepts `1..=100`.
+The command does not start or stop Replay automatically.
 
-The output should be a machine-readable log of Replay state transitions. The
-minimum useful fields are `contract_version`, `step_index`, `operation`,
-`previous_date`, `current_date`, `replay_context`, `chart_context`,
-`end_reason`, and `failure_details` when a step fails. The command should
-record initial `tv replay status`-style state before the first step and a final
-summary after the bounded run.
+The output is a machine-readable JSONL log of Replay state transitions. Events
+use `contract_version: "replay_step_log.v1"`, `_replay: "log"`, `_event`,
+`_ts`, `source: "internal_api"`, `source_category:
+"desktop_backed_operation"`, `requires_desktop: true`, and `non_mutating:
+false`. The command records initial `tv replay status`-style state before the
+first step, per-step events, and a final summary after the bounded run.
 
 The command must use only Replay APIs and selected-chart state already used by
 the existing Replay commands. It must not call `tv bars`, `tv export
@@ -120,37 +136,39 @@ First inspect current Replay behavior:
     rg -n "ReplayCommand|replay_status|replay_step|replay_context" crates/cli/src crates/model/src
     cargo test -p tradingview-cli ops::replay -- --nocapture
 
-Then implement the future slice by adding the command surface, validation,
-operation loop, event or payload shaping, and tests. Keep the implementation in
-the CLI layer because it orchestrates selected-chart state. Reuse existing
-Replay normalization helpers from `crates/model/src/replay.rs` where possible.
+Then implement this slice by adding the command surface, validation, operation
+loop, event shaping, and tests. Keep the implementation in the CLI layer
+because it orchestrates selected-chart state. Reuse existing Replay
+normalization helpers from `crates/model/src/replay.rs` where possible.
 
-For this planning slice, validate documentation only:
+Validate the implementation with:
 
     git diff --check
     bash -n scripts/stage-release-package-files.sh
+    cargo test -p tradingview-cli ops::replay -- --nocapture
+    cargo test -p tradingview-cli replay -- --nocapture
+    cargo test -p tradingview-cli --test cli_contract_desktop replay -- --nocapture
+    cargo fmt --check
+    cargo clippy --workspace --all-targets --all-features -- -D warnings
+    cargo test --workspace
+    cargo metadata --no-deps --format-version 1
     rg -n "v0\\.23|Replay|step log|replay_context|tv replay|selected-chart export|tv export chart-bars|tv bars|source mixing|ranking|recommendation" README.md CHANGELOG.md docs .agents/skills packaging/agent/AGENTS.md
     rg -n '(/Users/|C:\\|USER;|sessionid|cookie|authorization|bearer|raw live payload|raw WebSocket|raw JSONL|raw bars|account-local|target id|downstream-private)' README.md AGENTS.md CLAUDE.md CHANGELOG.md docs .agents/skills packaging scripts crates || true
 
 ## Validation and Acceptance
 
-This planning slice is accepted when the active plan index points to this file,
-the v0.23 roadmap identifies Replay step-log contract as the current slice, and
-the user-facing docs and runtime skills describe Replay step logging as a
-future bounded Desktop-backed workflow rather than a stable historical bars
-source.
-
-The later implementation slice is accepted when a user can run a bounded Replay
-step workflow, observe initial state, per-step state, and final summary, and
-see that the output records why the run stopped. A normal run should stop
-because the step bound was reached. A failure run should stop with a structured
+This slice is accepted when a user can run `tv replay log --steps <N>`, observe
+initial state, per-step state, and final summary, and see why the run stopped.
+A normal run stops with `end_reason: "step_limit_reached"`. If Replay is not
+started, the command emits readiness and a zero-step summary with
+`end_reason: "replay_not_started"`. A step failure stops with a structured
 source diagnostic rather than raw TradingView payloads.
 
 ## Idempotence and Recovery
 
-This planning slice is docs-only and safe to repeat. If the plan index or
-roadmap already mentions this plan, update the wording rather than adding a
-duplicate entry.
+This implementation is safe to rerun in the repo. If the plan index or roadmap
+already mentions this plan, update the wording rather than adding a duplicate
+entry.
 
 The future implementation is stateful because Replay operations change the
 selected chart. A failed run should leave enough readback for the user or agent
@@ -166,15 +184,15 @@ contract marker.
 
 ## Interfaces and Dependencies
 
-No new dependency is planned. The future implementation should use the
-existing Replay modules in `crates/cli/src/ops/replay/` and the normalization
-helpers in `crates/model/src/replay.rs`.
+No new dependency is added. The implementation uses the existing Replay modules
+in `crates/cli/src/ops/replay/` and validation / normalization helpers in
+`crates/model/src/replay.rs`.
 
-The preferred future command-local contract marker is:
+The command-local contract marker is:
 
     contract_version: "replay_step_log.v1"
 
-The minimum future step entry should include:
+The minimum step entry includes:
 
     step_index
     operation
@@ -183,7 +201,7 @@ The minimum future step entry should include:
     replay_context
     chart_context
 
-The minimum final summary should include:
+The minimum final summary includes:
 
     step_count
     end_reason
@@ -196,9 +214,7 @@ The initial end-reason vocabulary should be small: `step_limit_reached`,
 
 ## Open Questions
 
-None for this planning slice. The future implementation may choose JSONL or a
-single JSON payload, but it must make that choice explicitly in the
-implementation ExecPlan before code changes begin.
+None for this slice. JSONL is selected for the first implementation.
 
 ## Change Note
 

@@ -371,8 +371,8 @@ Replay started state, current date, operation, and whether Replay was stopped.
 Do not paste raw DOM, raw payloads, target ids, account-local metadata, or
 local absolute paths into tracked docs.
 
-Replay step-log planning should stay bounded and public-safe. A future
-implementation should make the step limit, initial state, per-step
+Replay step-log checks should stay bounded and public-safe. `tv replay log
+--steps <N>` should make the step limit, initial state, per-step
 `previous_date` / `current_date`, `replay_context`, `chart_context`, final end
 reason, and failure details testable before any stable Replay export command is
 considered. Do not attach OHLCV summaries or screenshots implicitly; those

@@ -3,6 +3,7 @@ use serde_json::{Value, json};
 use tradingview_core::{AppError, ErrorKind};
 
 const VALID_AUTOPLAY_DELAYS: [u64; 9] = [100, 143, 200, 300, 1000, 2000, 3000, 5000, 10000];
+pub const MAX_REPLAY_LOG_STEPS: u64 = 100;
 
 pub fn validate_replay_date(date: &str) -> Result<(), AppError> {
     parse_replay_date_ms(date).map(|_| ())
@@ -42,6 +43,23 @@ pub fn validate_replay_trade_action(action: &str) -> Result<(), AppError> {
             "supported": ["buy", "sell", "close"],
         }))),
     }
+}
+
+pub fn validate_replay_log_steps(steps: u64) -> Result<(), AppError> {
+    if (1..=MAX_REPLAY_LOG_STEPS).contains(&steps) {
+        return Ok(());
+    }
+
+    Err(AppError::new(
+        ErrorKind::Validation,
+        format!("replay log steps must be between 1 and {MAX_REPLAY_LOG_STEPS}"),
+    )
+    .with_details(json!({
+        "field": "steps",
+        "value": steps,
+        "minimum": 1,
+        "maximum": MAX_REPLAY_LOG_STEPS,
+    })))
 }
 
 pub fn parse_replay_date_ms(date: &str) -> Result<i64, AppError> {
