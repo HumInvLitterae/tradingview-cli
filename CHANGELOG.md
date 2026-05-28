@@ -19,6 +19,8 @@ package version omits the leading `v`.
 
 ### Documentation
 
+- Recorded the `v0.23.0` pre-release architecture audit, confirming export,
+  Replay, compare, and events workflow boundaries before release readiness.
 - Added standalone `tv events` feasibility planning for `v0.23.0`, keeping
   existing earnings and dividends reads as scanner-backed fundamentals fields
   while defining any future event command as a separate source surface.
