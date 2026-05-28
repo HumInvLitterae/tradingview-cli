@@ -7,6 +7,12 @@ package version omits the leading `v`.
 
 ## Unreleased
 
+### Documentation
+
+- Added the `v0.23.0` roadmap direction and first selected-chart historical
+  export plan, focusing on explicit Desktop-backed export workflow maturity
+  without making it a hidden fallback for Desktop-free `tv bars`.
+
 ## v0.22.0 - 2026-05-27
 
 ### Added
