@@ -8,12 +8,16 @@ for release and next-phase planning.
 
 Current plan:
 
-- `tradingview-cli-events-feasibility.md`: plan standalone `tv events`
-  feasibility and source boundaries while keeping current earnings and
-  dividends reads as scanner-backed fundamentals fields.
+- `tradingview-cli-v0.23-pre-release-audit.md`: audit completed `v0.23.0`
+  export / Replay / compare / events workflow maturity, including contracts,
+  docs, tests, source boundaries, and architecture posture before release
+  readiness.
 
 Recently completed:
 
+- `tradingview-cli-events-feasibility.md`: planned standalone `tv events`
+  feasibility and source boundaries while keeping current earnings and
+  dividends reads as scanner-backed fundamentals fields.
 - `tradingview-cli-chart-backed-compare-contract.md`: planned chart-backed
   compare source boundaries before adding any stable Desktop-backed compare
   command.
