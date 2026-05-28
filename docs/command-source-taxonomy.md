@@ -82,6 +82,15 @@ readback, not market-data samples. The command does not connect to TradingView
 Desktop, does not use selected-chart quote, does not read browserless bars,
 and does not rank or recommend symbols.
 
+Chart-backed compare is not currently a stable command. Keep
+`tv compare <SYMBOL>...` Desktop-free and scanner-backed. Treat
+`tv quote <SYMBOL> --source chart` as selected-chart single-symbol evidence,
+not as scanner-style multi-symbol compare. If a future chart-backed compare is
+added, it should use a separated command surface and report Desktop target
+state, selected-chart context, mutation requirements, source metadata, and
+public-safe failure details instead of becoming a hidden fallback for
+`tv compare`.
+
 ### Desktop-backed read
 
 `requires_desktop`: yes. `may_mutate`: no intended account mutation, though

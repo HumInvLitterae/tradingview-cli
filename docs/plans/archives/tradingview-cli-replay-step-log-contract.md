@@ -26,7 +26,8 @@ source boundary, interface, and acceptance criteria for the implementation.
   runtime skills for Replay step-log planning.
 - [x] (2026-05-28) Implement the bounded `tv replay log --steps <N>` JSONL
   workflow.
-- [ ] Run the full validation baseline and commit the implementation.
+- [x] (2026-05-28) Run the full validation baseline and commit the
+  implementation.
 
 ## Surprises & Discoveries
 
@@ -81,6 +82,11 @@ This slice adds `tv replay log --steps <N>` as a bounded JSONL Replay workflow.
 It emits readiness, step, and summary events with
 `contract_version: "replay_step_log.v1"`, does not auto-start or auto-stop
 Replay, and does not attach OHLCV or screenshot evidence.
+
+Validation passed with focused Replay tests, the workspace baseline, metadata
+generation, packaging script syntax check, diff hygiene, docs hygiene, and
+runtime skill validation. The implementation was committed as
+`142d18c feat(cli): Add Replay step log`.
 
 ## Context and Orientation
 

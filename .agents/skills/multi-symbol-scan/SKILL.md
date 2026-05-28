@@ -95,6 +95,8 @@ construction, not on duplicating the full source taxonomy.
    the selected Desktop feed. Do not use chart-source quote for premarket or
    postmarket fields; use scanner-backed `tv quote`, `tv quotes`,
    `tv snapshot`, or `tv compare` when extended-hours evidence matters.
+   Chart-backed compare is not a stable command yet; do not present selected
+   chart reads as if they were scanner-style multi-symbol compare.
    Desktop quote-session probes can expose pre/post field names, but they are
    phase-sensitive live evidence and not a stable multi-symbol screening
    source. A `post-market` phase observation does not make quote-session

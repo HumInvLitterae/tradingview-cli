@@ -90,6 +90,14 @@ reports sample, heartbeat, poll, error, control, and end-reason readback. This
 is still Desktop-free scanner evidence; it is not selected-chart observation,
 not `tv compare` replacement, not a daemon, and not a recommendation engine.
 
+Chart-backed compare is not a stable command yet. Use `tv compare` or
+`tv watch compare` for broad multi-symbol Desktop-free evidence. Use selected
+chart reads such as `tv quote <SYMBOL> --source chart`, `tv ohlcv`, screenshot,
+or `tv export chart-bars` only as explicit finalist follow-up when the
+selected TradingView Desktop chart itself is the source under review. Do not
+treat chart-source quote as a multi-symbol scanner compare, and do not fold it
+back into `tv compare`.
+
 ## Follow-up Vocabulary
 
 `compare` and `snapshot` use the same stable follow-up vocabulary. These

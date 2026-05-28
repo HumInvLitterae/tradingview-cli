@@ -378,6 +378,15 @@ reason, and failure details testable before any stable Replay export command is
 considered. Do not attach OHLCV summaries or screenshots implicitly; those
 would be separate evidence surfaces and must be explicit if added later.
 
+Chart-backed compare planning should preserve source boundaries before any
+stable command is added. Keep `tv compare` Desktop-free and scanner-backed.
+Treat chart-source quote as selected-chart single-symbol evidence, not as
+multi-symbol compare. If live feasibility checks are attempted later, record
+only public-safe fields such as command, source category, symbol, chart
+context, target ambiguity status, and failure kind. Do not paste raw target
+ids, raw DOM, raw payloads, account-local metadata, or local absolute paths
+into tracked docs.
+
 For selected-chart export checks, use `tv export chart-bars --from
 <UNIX_SECONDS> --to <UNIX_SECONDS> [--count 500] [--summary]`. The command is a
 Desktop-backed operation because it moves the visible chart range before

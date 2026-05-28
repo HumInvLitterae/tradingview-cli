@@ -228,7 +228,11 @@ input-order joins, follow-up surfaces, and evidence gaps. `coverage_status`
 describes evidence completeness only; it is not a ranking or recommendation.
 `follow_up_hints[]` entries include advisory source metadata and
 `auto_execute: false`; do not treat them as instructions to run chart reads,
-screenshots, or observations automatically.
+screenshots, or observations automatically. Do not treat chart-source quote as
+a chart-backed multi-symbol compare. There is no stable chart-backed compare
+command yet; use selected-chart reads only as explicit finalist follow-up when
+their source metadata is reported, and keep them separate from Desktop-free
+compare evidence.
 For regular-session movement evidence, read
 `items[].movement.regular_change_percent` first; it is the stable compare-level
 readback derived from raw `items[].sections.quote.data.change`, which remains
