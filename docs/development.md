@@ -82,13 +82,13 @@ This project uses Rust 2024.
   Market now use same-named implementation directories under
   `crates/cli/src/ops/`. Do not gather new Drawing/Replay/Market operation
   bodies back into the facade files.
-- Treat selected-chart historical export as Desktop-backed feasibility work
-  until a contract proves the requested visible range and returned chart bars
-  line up. Do not implement it as a fallback inside Desktop-free `tv bars`, and
-  do not assume `tv range` changes the range returned by `tv ohlcv --count`.
-  `tv ohlcv` selected-chart feasibility readback should stay additive and
-  public-safe: `chart_context`, `returned_bars_range`, and
-  `selected_chart_range_match` are diagnostics, not export guarantees.
+- Treat selected-chart historical export as an explicit Desktop-backed
+  operation. `tv export chart-bars` may orchestrate `tv range` and selected
+  chart OHLCV readback, but it must not become a fallback inside Desktop-free
+  `tv bars`. Keep the payload public-safe and source-labeled:
+  `export_chart_bars.v1`, `requested_visible_range`, `range_operation`,
+  `chart_context`, `returned_bars_range`, and
+  `selected_chart_range_match` are diagnostics, not trading judgments.
 - Once an adapter split exposes CDP-free request interpretation or validation,
   move that logic into `crates/model/` if it is reusable and not tied
   to clap or live page state. Drawing is the request-boundary example:
@@ -370,6 +370,15 @@ command. If live smoke is attempted, record only public-safe fields such as
 Replay started state, current date, operation, and whether Replay was stopped.
 Do not paste raw DOM, raw payloads, target ids, account-local metadata, or
 local absolute paths into tracked docs.
+
+For selected-chart export checks, use `tv export chart-bars --from
+<UNIX_SECONDS> --to <UNIX_SECONDS> [--count 500] [--summary]`. The command is a
+Desktop-backed operation because it moves the visible chart range before
+reading bars. If live smoke is attempted, record only public-safe fields such
+as command, symbol, timeframe, requested visible range, returned bars range,
+range-match status, and contract marker. Do not paste raw bars, raw target ids,
+raw chart payloads, account-local metadata, or local absolute paths into
+tracked docs.
 
 For `tv snapshot <SYMBOL>` live contract checks, run:
 

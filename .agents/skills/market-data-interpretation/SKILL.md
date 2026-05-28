@@ -179,17 +179,14 @@ evidence, or a replacement for chart-sourced OHLCV. `tv range` moves the
 selected Desktop chart viewport; it is not a historical export contract for
 `tv ohlcv`.
 
-Selected-chart historical export is not stable yet. If a user asks whether
-visible-range movement can be used as export input, explain that `tv range`
-and `tv ohlcv` are Desktop-backed selected-chart operations and must be
-validated against observed chart state before treating them as an export. Use
-`tv bars --from/--to` first for reproducible historical bars input, and use
-selected-chart export only when the selected Desktop chart itself is the
-source being studied. For that feasibility check, read `tv state`,
-`tv range`, and `tv ohlcv` together. `tv ohlcv` reports `chart_context`,
-`returned_bars_range`, and `selected_chart_range_match`; even
-`overlaps_visible_range` means only that selected-chart bars overlap the
-observed visible range, not that a stable export artifact was produced.
+Selected-chart historical export is explicit and Desktop-backed. Use
+`tv export chart-bars --from <UNIX_SECONDS> --to <UNIX_SECONDS>` only when the
+selected Desktop chart itself is the source being studied. It moves the visible
+range, reads selected-chart bars, and reports `export_chart_bars.v1`,
+`requested_visible_range`, `range_operation`, `chart_context`,
+`returned_bars_range`, and `selected_chart_range_match`. Use
+`tv bars --from/--to` first for reproducible symbol-targeted historical bars
+input; selected-chart export is not a fallback for that source.
 
 Replay-based extraction is also a Desktop-backed selected-chart feasibility
 topic, not a stable historical bars source. `tv replay status` is a

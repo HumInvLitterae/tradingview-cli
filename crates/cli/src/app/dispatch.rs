@@ -6,10 +6,10 @@ use crate::{
         input::read_pine_source, runtime::connect_runtime, safety::require_unsafe_ui_eval_enabled,
     },
     cli::{
-        AlertCommand, Command, DataCommand, DiagnoseCommand, DrawingCommand, IndicatorCommand,
-        LayoutCommand, PaneCommand, PineCommand, QuoteSource, ReplayCommand, ScannerCommand,
-        ScreenerColumnsCommand, ScreenerCommand, ScreenerFiltersCommand, ScreenerScreensCommand,
-        TabCommand, UiCommand, WatchlistCommand,
+        AlertCommand, Command, DataCommand, DiagnoseCommand, DrawingCommand, ExportCommand,
+        IndicatorCommand, LayoutCommand, PaneCommand, PineCommand, QuoteSource, ReplayCommand,
+        ScannerCommand, ScreenerColumnsCommand, ScreenerCommand, ScreenerFiltersCommand,
+        ScreenerScreensCommand, TabCommand, UiCommand, WatchlistCommand,
     },
     ops,
 };
@@ -495,6 +495,18 @@ pub async fn dispatch(
                 ops::ohlcv_bars(&mut runtime, count).await
             }
         }
+        Command::Export { command } => match command {
+            ExportCommand::ChartBars {
+                from,
+                to,
+                count,
+                summary,
+            } => {
+                ops::validate_export_chart_bars_request(from, to, count)?;
+                let mut runtime = connect_runtime(config).await?;
+                ops::export_chart_bars(&mut runtime, from, to, count, summary).await
+            }
+        },
         Command::Bars {
             symbol,
             timeframe,

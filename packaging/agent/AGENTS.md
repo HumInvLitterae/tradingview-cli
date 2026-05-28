@@ -104,13 +104,12 @@ Do not use `TV_CDP_TARGET_ID`; explicit target handoff is `--target-id`.
   advisory evidence checks, not automatic actions. Read `kind`, `command`,
   `requires_desktop`, `source_category`, `non_mutating`, `evidence_role`, and
   `auto_execute: false` before deciding whether to run a separate follow-up.
-- Selected-chart historical export is not a stable fallback for `tv bars`.
-  `tv range` moves the visible Desktop chart, and `tv ohlcv` reads selected
-  chart bars. Use that path only when selected chart state is the evidence
-  under review, and report readiness, symbol, timeframe, visible range, and
-  bars-read evidence separately. `tv ohlcv` selected-chart readback includes
-  `chart_context`, `returned_bars_range`, and `selected_chart_range_match` as
-  diagnostics, not export guarantees.
+- Selected-chart historical export is explicit: use `tv export chart-bars
+  --from <UNIX_SECONDS> --to <UNIX_SECONDS>` only when the selected TradingView
+  Desktop chart itself is the intended source. It moves the visible Desktop
+  chart range, reads selected-chart bars, and returns
+  `export_chart_bars.v1` diagnostics. It is not a fallback for Desktop-free
+  `tv bars --from/--to`.
 - Replay-based extraction is not a stable historical export. `tv replay
   status` is a Desktop-backed read with `replay_context`; `tv replay start`,
   `step`, `stop`, `autoplay`, and `trade` are Desktop-backed operations that

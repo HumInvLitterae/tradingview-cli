@@ -26,14 +26,17 @@ chart. It must not replace Desktop-free `tv bars --from/--to`.
   the new roadmap state.
 - [x] (2026-05-28) Decide the public command surface and help wording:
   `tv export chart-bars --from <UNIX_SECONDS> --to <UNIX_SECONDS>`.
-- [ ] Implement the narrow selected-chart export workflow.
-- [ ] Update docs and runtime skills.
-- [ ] Run focused tests, baseline validation, docs validation, and runtime
-  skill validation.
+- [x] (2026-05-28) Implement the narrow selected-chart export workflow.
+- [x] (2026-05-28) Update docs and runtime skills.
+- [x] (2026-05-28) Run focused tests, baseline validation, docs validation,
+  and runtime skill validation.
 
 ## Surprises & Discoveries
 
-- None yet.
+- Existing `tv ohlcv` readback already exposed the selected-chart context,
+  returned bars range, and conservative range-match diagnostic needed by the
+  export command, so the implementation could stay as a thin orchestration
+  layer rather than duplicating chart-bar JavaScript probes.
 
 ## Decision Log
 
@@ -67,10 +70,21 @@ chart. It must not replace Desktop-free `tv bars --from/--to`.
   file writing can be added later after the contract is proven.
   Date/Author: 2026-05-28 / Codex.
 
+- Decision: Reuse `tv range` and selected-chart `tv ohlcv` helpers inside the
+  CLI layer.
+  Rationale: the new command is an explicit workflow over existing
+  Desktop-backed operations; reusing the helpers keeps source diagnostics and
+  chart context consistent with the underlying commands.
+  Date/Author: 2026-05-28 / Codex.
+
 ## Outcomes & Retrospective
 
-No implementation outcome yet. This plan currently establishes the first
-`v0.23.0` slice and the source boundary that the implementation must preserve.
+Implemented `tv export chart-bars --from <UNIX_SECONDS> --to <UNIX_SECONDS>`
+with optional `--count` and `--summary`. The payload uses
+`contract_version: "export_chart_bars.v1"` and reports the requested visible
+range, range operation, selected-chart context, returned bars range, and
+range-match diagnostic. The command remains a Desktop-backed selected-chart
+operation and is not a fallback for Desktop-free `tv bars --from/--to`.
 
 ## Context and Orientation
 

@@ -3,10 +3,15 @@ use serde_json::{Value, json};
 use tradingview_cdp::RuntimeEvaluator;
 use tradingview_core::{AppError, ErrorKind};
 
+use super::super::chart::set_visible_range;
 use super::super::common::{
     BARS_PATH, CHART_API, DEFAULT_OHLCV_COUNT, MAX_OHLCV_COUNT, desktop_backed_read_metadata,
-    merge_object, round2,
+    merge_object, require_finite, round2,
 };
+
+const EXPORT_CHART_BARS_CONTRACT_VERSION: &str = "export_chart_bars.v1";
+const EXPORT_CHART_BARS_SOURCE: &str = "selected_chart_cdp";
+const DESKTOP_BACKED_OPERATION_CATEGORY: &str = "desktop_backed_operation";
 
 pub async fn ohlcv_bars(
     runtime: &mut impl RuntimeEvaluator,
@@ -190,10 +195,170 @@ pub async fn ohlcv_summary(
     let data = ohlcv_bars(runtime, count).await?;
     summarize_ohlcv(data)
 }
+
+pub fn validate_export_chart_bars_request(
+    from: f64,
+    to: f64,
+    count: Option<usize>,
+) -> Result<(), AppError> {
+    require_finite(from, "from")?;
+    require_finite(to, "to")?;
+    if from >= to {
+        return Err(AppError::new(
+            ErrorKind::Validation,
+            "export chart-bars requires --from to be less than --to",
+        )
+        .with_details(json!({
+            "from": from,
+            "to": to,
+        })));
+    }
+    if let Some(count) = count
+        && (count == 0 || count > MAX_OHLCV_COUNT)
+    {
+        return Err(AppError::new(
+            ErrorKind::Validation,
+            format!("export chart-bars --count must be between 1 and {MAX_OHLCV_COUNT}"),
+        )
+        .with_details(json!({
+            "min": 1,
+            "max": MAX_OHLCV_COUNT,
+            "count": count,
+        })));
+    }
+    Ok(())
+}
+
+pub async fn export_chart_bars(
+    runtime: &mut impl RuntimeEvaluator,
+    from: f64,
+    to: f64,
+    count: Option<usize>,
+    summary: bool,
+) -> Result<Value, AppError> {
+    validate_export_chart_bars_request(from, to, count)?;
+    let requested_visible_range = json!({
+        "from": from,
+        "to": to,
+    });
+    let range_operation = set_visible_range(runtime, from, to)
+        .await
+        .map_err(|err| export_chart_bars_error(err, requested_visible_range.clone(), "range"))?;
+    let bars_data = ohlcv_bars(runtime, Some(count.unwrap_or(MAX_OHLCV_COUNT)))
+        .await
+        .map_err(|err| {
+            export_chart_bars_error(err, requested_visible_range.clone(), "ohlcv_bars_read")
+        })?;
+    let mut payload = if summary {
+        let mut summary_payload = summarize_ohlcv(bars_data)?;
+        if let Some(object) = summary_payload.as_object_mut() {
+            object.remove("last_5_bars");
+        }
+        summary_payload
+    } else {
+        bars_data
+    };
+    add_export_chart_bars_metadata(
+        &mut payload,
+        requested_visible_range,
+        range_operation,
+        summary,
+    )?;
+    Ok(payload)
+}
+
 fn normalized_count(count: Option<usize>) -> usize {
     count
         .unwrap_or(DEFAULT_OHLCV_COUNT)
         .clamp(1, MAX_OHLCV_COUNT)
+}
+
+fn add_export_chart_bars_metadata(
+    payload: &mut Value,
+    requested_visible_range: Value,
+    range_operation: Value,
+    summary: bool,
+) -> Result<(), AppError> {
+    let Some(object) = payload.as_object_mut() else {
+        return Err(AppError::new(
+            ErrorKind::InternalApiUnavailable,
+            "Selected-chart export payload was not an object",
+        ));
+    };
+    object.insert(
+        "contract_version".to_string(),
+        Value::String(EXPORT_CHART_BARS_CONTRACT_VERSION.to_string()),
+    );
+    object.insert(
+        "operation".to_string(),
+        Value::String("chart_bars_export".to_string()),
+    );
+    object.insert(
+        "source".to_string(),
+        Value::String(EXPORT_CHART_BARS_SOURCE.to_string()),
+    );
+    object.insert(
+        "source_category".to_string(),
+        Value::String(DESKTOP_BACKED_OPERATION_CATEGORY.to_string()),
+    );
+    object.insert("requires_desktop".to_string(), Value::Bool(true));
+    object.insert("non_mutating".to_string(), Value::Bool(false));
+    object.insert(
+        "output_mode".to_string(),
+        Value::String(if summary { "summary" } else { "bars" }.to_string()),
+    );
+    object.insert(
+        "requested_visible_range".to_string(),
+        requested_visible_range,
+    );
+    object.insert("range_operation".to_string(), range_operation);
+    Ok(())
+}
+
+fn export_chart_bars_error(
+    mut err: AppError,
+    requested_visible_range: Value,
+    phase: &str,
+) -> AppError {
+    let mut details = err.details.take().unwrap_or_else(|| json!({}));
+    if !details.is_object() {
+        details = json!({
+            "upstream_details": details,
+        });
+    }
+    if let Some(object) = details.as_object_mut() {
+        object.insert(
+            "contract_version".to_string(),
+            Value::String(EXPORT_CHART_BARS_CONTRACT_VERSION.to_string()),
+        );
+        object.insert(
+            "operation".to_string(),
+            Value::String("chart_bars_export".to_string()),
+        );
+        object.insert("phase".to_string(), Value::String(phase.to_string()));
+        object.insert(
+            "requested_visible_range".to_string(),
+            requested_visible_range,
+        );
+        object.insert(
+            "source".to_string(),
+            Value::String(EXPORT_CHART_BARS_SOURCE.to_string()),
+        );
+        object.insert(
+            "source_category".to_string(),
+            Value::String(DESKTOP_BACKED_OPERATION_CATEGORY.to_string()),
+        );
+        object.insert("requires_desktop".to_string(), Value::Bool(true));
+        object.insert("non_mutating".to_string(), Value::Bool(false));
+        object.insert(
+            "next_action_hint".to_string(),
+            Value::String(
+                "Run `tv readiness`, `tv state`, and `tv range` to confirm the selected TradingView Desktop chart before retrying export chart-bars.".to_string(),
+            ),
+        );
+    }
+    err.details = Some(details);
+    err
 }
 
 fn summarize_ohlcv(data: Value) -> Result<Value, AppError> {
@@ -429,6 +594,99 @@ mod tests {
             "overlaps_visible_range"
         );
         assert!(summary["last_5_bars"].as_array().unwrap().len() == 2);
+    }
+
+    #[tokio::test]
+    async fn export_chart_bars_adds_operation_contract_metadata() {
+        let range_operation = json!({
+            "operation": "visible_range",
+            "requested": {"from": 1.0, "to": 2.0},
+            "actual": {"from": 1.0, "to": 2.0}
+        });
+        let bars_payload = json!({
+            "symbol": "NASDAQ:AAPL",
+            "resolution": "D",
+            "timeframe": "D",
+            "bar_count": 2,
+            "source": "direct_bars",
+            "source_category": "desktop_backed_read",
+            "requires_desktop": true,
+            "non_mutating": true,
+            "chart_context": {
+                "symbol": "NASDAQ:AAPL",
+                "timeframe": "D",
+                "visible_range": {"from": 1.0, "to": 2.0},
+                "bars_range": {"from": 1.0, "to": 2.0}
+            },
+            "returned_bars_range": {"first_time": 1.0, "last_time": 2.0, "bar_count": 2},
+            "selected_chart_range_match": "overlaps_visible_range",
+            "bars": [
+                {"time": 1.0, "open": 100.0, "high": 110.0, "low": 95.0, "close": 105.0, "volume": 10.0},
+                {"time": 2.0, "open": 105.0, "high": 120.0, "low": 101.0, "close": 115.0, "volume": 20.0}
+            ]
+        });
+        let mut runtime = FakeRuntime::new([range_operation.clone(), bars_payload]);
+
+        let result = export_chart_bars(&mut runtime, 1.0, 2.0, Some(2), false)
+            .await
+            .unwrap();
+
+        assert_eq!(result["contract_version"], "export_chart_bars.v1");
+        assert_eq!(result["operation"], "chart_bars_export");
+        assert_eq!(result["source"], "selected_chart_cdp");
+        assert_eq!(result["source_category"], "desktop_backed_operation");
+        assert_eq!(result["requires_desktop"], true);
+        assert_eq!(result["non_mutating"], false);
+        assert_eq!(result["output_mode"], "bars");
+        assert_eq!(result["requested_visible_range"]["from"], 1.0);
+        assert_eq!(result["range_operation"], range_operation);
+        assert_eq!(result["chart_context"]["symbol"], "NASDAQ:AAPL");
+        assert_eq!(result["returned_bars_range"]["bar_count"], 2);
+        assert!(result["bars"].is_array());
+        assert_eq!(runtime.evaluated.len(), 2);
+    }
+
+    #[tokio::test]
+    async fn export_chart_bars_summary_omits_raw_bars() {
+        let mut runtime = FakeRuntime::new([
+            json!({
+                "operation": "visible_range",
+                "requested": {"from": 1.0, "to": 2.0},
+                "actual": {"from": 1.0, "to": 2.0}
+            }),
+            json!({
+                "symbol": "NASDAQ:AAPL",
+                "resolution": "D",
+                "timeframe": "D",
+                "chart_context": {"symbol": "NASDAQ:AAPL"},
+                "returned_bars_range": {"first_time": 1.0, "last_time": 2.0, "bar_count": 2},
+                "selected_chart_range_match": "overlaps_visible_range",
+                "bars": [
+                    {"time": 1.0, "open": 100.0, "high": 110.0, "low": 95.0, "close": 105.0, "volume": 10.0},
+                    {"time": 2.0, "open": 105.0, "high": 120.0, "low": 101.0, "close": 115.0, "volume": 20.0}
+                ]
+            }),
+        ]);
+
+        let result = export_chart_bars(&mut runtime, 1.0, 2.0, None, true)
+            .await
+            .unwrap();
+
+        assert_eq!(result["contract_version"], "export_chart_bars.v1");
+        assert_eq!(result["output_mode"], "summary");
+        assert_eq!(result["bar_count"], 2);
+        assert!(result.get("bars").is_none());
+        assert!(result.get("last_5_bars").is_none());
+        assert_eq!(result["chart_context"]["symbol"], "NASDAQ:AAPL");
+    }
+
+    #[test]
+    fn export_chart_bars_validation_rejects_bad_ranges_and_counts() {
+        assert!(validate_export_chart_bars_request(f64::NAN, 2.0, Some(1)).is_err());
+        assert!(validate_export_chart_bars_request(2.0, 2.0, Some(1)).is_err());
+        assert!(validate_export_chart_bars_request(1.0, 2.0, Some(0)).is_err());
+        assert!(validate_export_chart_bars_request(1.0, 2.0, Some(501)).is_err());
+        assert!(validate_export_chart_bars_request(1.0, 2.0, Some(500)).is_ok());
     }
 
     #[test]

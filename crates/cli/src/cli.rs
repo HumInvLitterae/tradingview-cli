@@ -81,6 +81,14 @@ pub enum Command {
         #[command(subcommand)]
         command: WatchCommand,
     },
+    #[command(
+        about = "Run explicit selected-chart export workflows",
+        long_about = "Run explicit export workflows for the selected TradingView Desktop chart.\n\n`tv export chart-bars --from <UNIX_SECONDS> --to <UNIX_SECONDS>` moves the selected chart's visible range, reads selected-chart bars, and reports requested range, observed chart context, returned bars range, and range-match diagnostics with `contract_version: \"export_chart_bars.v1\"`. It is Desktop-backed and state dependent. It is not a hidden fallback for Desktop-free `tv bars --from/--to`, scanner reads, quote-data, Replay, or ranking/recommendation workflows."
+    )]
+    Export {
+        #[command(subcommand)]
+        command: ExportCommand,
+    },
     #[command(about = "Read TradingView scanner preset data")]
     Scanner {
         #[command(subcommand)]
@@ -905,6 +913,25 @@ pub enum WatchCommand {
     },
 }
 
+#[derive(Debug, Subcommand)]
+pub enum ExportCommand {
+    #[command(
+        name = "chart-bars",
+        about = "Export selected-chart bars for an explicit visible range",
+        long_about = "Export bars from the selected TradingView Desktop chart for an explicit visible range.\n\nThis command first moves the selected chart's visible range, then reads selected-chart OHLCV bars and returns selected-chart export diagnostics. It prints a normal JSON success envelope to stdout and does not write files. Use Desktop-free `tv bars --from/--to` for reproducible symbol-targeted historical bars."
+    )]
+    ChartBars {
+        #[arg(long)]
+        from: f64,
+        #[arg(long)]
+        to: f64,
+        #[arg(long, short)]
+        count: Option<usize>,
+        #[arg(long, short)]
+        summary: bool,
+    },
+}
+
 #[derive(Debug, Clone, Copy, Args)]
 pub struct WatchCompareOptions {
     #[arg(long, default_value_t = 5000)]
@@ -1004,6 +1031,7 @@ impl Command {
             Self::Snapshot { .. } => "snapshot",
             Self::Compare { .. } => "compare",
             Self::Watch { .. } => "watch",
+            Self::Export { .. } => "export",
             Self::Scanner { .. } => "scanner",
             Self::Screener { .. } => "screener",
             Self::Quote { .. } => "quote",

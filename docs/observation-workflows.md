@@ -300,23 +300,27 @@ replacement for chart-backed `tv ohlcv`, which reads the selected Desktop
 chart through CDP. `tv range` moves the selected Desktop chart viewport only;
 it is not a historical export contract.
 
-## Selected-Chart Historical Export Feasibility
+## Selected-Chart Historical Export
 
-Selected-chart historical export is still a feasibility / contract topic. Use
-`tv bars --from/--to` when the task needs reproducible historical OHLCV input.
-Use `tv range`, `tv state`, `tv readiness`, and `tv ohlcv` only when the
+Use `tv bars --from/--to` when the task needs reproducible historical OHLCV
+input for a symbol and date range. Use selected-chart export only when the
 selected TradingView Desktop chart itself is the source under review.
 
-A future export workflow must prove more than "the viewport was moved". It
-must report the requested range, observed chart symbol and timeframe, observed
-visible range, target readiness, returned bar count, and whether returned bars
-can be matched to the observed selected-chart range. If those facts do not
-line up, treat the result as a Desktop-backed source diagnostic, not as a
-historical bars export. Do not use selected-chart export as a fallback for
-`tv bars`, and do not use raw target ids or raw chart payloads in tracked
-notes.
+```bash
+tv export chart-bars --from 1704067200 --to 1706745600 --count 500
+tv export chart-bars --from 1704067200 --to 1706745600 --summary
+```
 
-For the current feasibility readback, inspect:
+`tv export chart-bars` first moves the selected chart's visible range, then
+reads selected-chart bars. The success payload uses
+`contract_version: "export_chart_bars.v1"` and reports
+`requested_visible_range`, `range_operation`, `chart_context`,
+`returned_bars_range`, and `selected_chart_range_match`. If those facts do not
+line up, treat the result as a Desktop-backed source diagnostic. Do not use
+selected-chart export as a fallback for `tv bars`, and do not use raw target ids
+or raw chart payloads in tracked notes.
+
+When debugging the selected chart before export, inspect:
 
 - `tv state` for selected chart symbol, timeframe, visible range, and chart
   readiness;
