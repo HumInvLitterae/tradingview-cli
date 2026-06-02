@@ -22,11 +22,22 @@ pub(super) struct Bar {
 
 #[derive(Debug)]
 pub(super) struct BarsRequest {
+    pub(super) requested_symbol: String,
     pub(super) symbol: String,
+    pub(super) symbol_resolution: BarsSymbolResolution,
     pub(super) timeframe: String,
     pub(super) count: usize,
     pub(super) timeout: Duration,
     pub(super) mode: BarsRequestMode,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub(super) struct BarsSymbolResolution {
+    pub(super) input_symbol: String,
+    pub(super) resolved_symbol: String,
+    pub(super) resolution_source: &'static str,
+    pub(super) resolution_status: &'static str,
+    pub(super) candidate_count: usize,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -288,5 +299,41 @@ impl BarsRequest {
         } else {
             self.count
         }
+    }
+}
+
+impl BarsSymbolResolution {
+    pub(super) fn input_exchange_qualified(symbol: &str) -> Self {
+        Self {
+            input_symbol: symbol.to_string(),
+            resolved_symbol: symbol.to_string(),
+            resolution_source: "input_exchange_qualified",
+            resolution_status: "input_exchange_qualified",
+            candidate_count: 0,
+        }
+    }
+
+    pub(super) fn symbol_search(
+        input_symbol: &str,
+        resolved_symbol: &str,
+        candidate_count: usize,
+    ) -> Self {
+        Self {
+            input_symbol: input_symbol.to_string(),
+            resolved_symbol: resolved_symbol.to_string(),
+            resolution_source: "symbol_search_rest",
+            resolution_status: "resolved",
+            candidate_count,
+        }
+    }
+
+    pub(super) fn to_value(&self) -> Value {
+        json!({
+            "input_symbol": self.input_symbol,
+            "resolved_symbol": self.resolved_symbol,
+            "resolution_source": self.resolution_source,
+            "resolution_status": self.resolution_status,
+            "candidate_count": self.candidate_count,
+        })
     }
 }

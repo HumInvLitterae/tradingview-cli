@@ -8,12 +8,16 @@ for release and next-phase planning.
 
 Current plan:
 
-- `tradingview-cli-launch-process-handling.md`: investigate and harden
-  `tv launch` process handling so agent-driven launches do not accidentally
-  terminate TradingView Desktop, while keeping `--kill-existing` explicit.
+- `tradingview-cli-bars-symbol-resolution.md`: resolve bare `tv bars`
+  symbols through Desktop-free TradingView symbol search when possible, while
+  reporting both requested and resolved symbols and keeping `EXCHANGE:SYMBOL`
+  as the explicit override.
 
 Recently completed:
 
+- `tradingview-cli-launch-process-handling.md`: hardened `tv launch` process
+  handling so agent-driven launches do not accidentally terminate TradingView
+  Desktop, while keeping `--kill-existing` explicit.
 - `tradingview-cli-v0.23.0-release-readiness.md`: prepared the `v0.23.0`
   release state, including version, changelog, release notes, README asset
   examples, package staging, and release validation.

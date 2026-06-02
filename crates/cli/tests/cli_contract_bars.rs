@@ -22,6 +22,10 @@ fn bars_help_explains_stable_desktop_free_boundary() {
         .stdout(predicate::str::contains("1W"))
         .stdout(predicate::str::contains("1M"))
         .stdout(predicate::str::contains("range_alignment"))
+        .stdout(predicate::str::contains("bare symbol"))
+        .stdout(predicate::str::contains("EXCHANGE:SYMBOL"))
+        .stdout(predicate::str::contains("requested_symbol"))
+        .stdout(predicate::str::contains("resolved_symbol"))
         .stdout(predicate::str::contains("safety cap"))
         .stdout(predicate::str::contains("5000"))
         .stdout(predicate::str::contains("historical OHLCV bars"))
@@ -38,7 +42,7 @@ fn bars_env_gate_is_not_required_before_validation() {
     let assert = tv()
         .env_remove("TV_EXPERIMENTAL_BARS")
         .env("TV_CDP_PORT", "9")
-        .args(["bars", "AAPL", "--count", "5"])
+        .args(["bars", "NASDAQ:AAPL", "--count", "0"])
         .assert()
         .failure()
         .code(1);
@@ -46,27 +50,20 @@ fn bars_env_gate_is_not_required_before_validation() {
     assert_eq!(value["success"], false);
     assert_eq!(value["command"], "bars");
     assert_eq!(value["error"]["kind"], "validation");
-    assert_eq!(
-        value["error"]["details"]["expected_format"],
-        "EXCHANGE:SYMBOL"
-    );
+    assert_eq!(value["error"]["details"]["maximum"], 500);
 }
 
 #[test]
 fn bars_rejects_invalid_inputs_before_network() {
-    let bare_symbol = tv()
+    let empty_symbol = tv()
         .env("TV_CDP_PORT", "9")
-        .args(["bars", "AAPL", "--count", "5"])
+        .args(["bars", "", "--count", "5"])
         .assert()
         .failure()
         .code(1);
-    let value = stderr_json(&bare_symbol);
+    let value = stderr_json(&empty_symbol);
     assert_eq!(value["command"], "bars");
     assert_eq!(value["error"]["kind"], "validation");
-    assert_eq!(
-        value["error"]["details"]["expected_format"],
-        "EXCHANGE:SYMBOL"
-    );
 
     let zero_count = tv()
         .env("TV_CDP_PORT", "9")

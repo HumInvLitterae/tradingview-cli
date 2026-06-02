@@ -26,7 +26,7 @@ Always name the data source before interpreting values:
   `tv quote`, `tv ohlcv`, screenshots, and current visible values.
 - Hybrid reads: `tv quote <SYMBOL> --source auto`, which is chart-first with
   scanner fallback only before chart mutation.
-- `tv bars <EXCHANGE:SYMBOL>`: Desktop-free bounded historical bars from the
+- `tv bars <SYMBOL>`: Desktop-free bounded historical bars from the
   browserless TradingView WebSocket bars source.
 - `tv observe chart`: Desktop-backed JSONL workflow that emits readiness first,
   then selected-chart last-bar samples and heartbeats, and finally a summary
@@ -156,7 +156,8 @@ selected chart feed for one symbol is the point of the task.
 browserless historical bars read using an undocumented TradingView WebSocket
 chart-session path. Report `contract_version: "bars.v1"`,
 `source: "tradingview_bars_ws"`, `source_category: "desktop_free_read"`,
-`summary`, `range`, `requested_range`, `returned_range`,
+`requested_symbol`, `resolved_symbol`, `symbol_resolution`, `summary`,
+`range`, `requested_range`, `returned_range`,
 `range_coverage_status`, `range_alignment`, `range_fetch_summary`,
 `source_availability`, `data_quality`, and warnings. Use `tv bars --timeframe
 5|15|30|60|1D|1W|1M --from YYYY-MM-DD --to YYYY-MM-DD` when old source-guided
@@ -174,6 +175,9 @@ inspect raw `bars[]` for exact OHLCV evidence. If bars are partial or unavailabl
 `source_availability.unavailable_reason` and
 `source_availability.wait_summary` as bounded historical-source diagnostics,
 not as proof that the symbol lacks price/history and not as a trading signal.
+Bare symbols such as `AAPL` may resolve through Desktop-free symbol search; if
+the exchange matters, retry with `EXCHANGE:SYMBOL` and report the requested
+and resolved symbols.
 Do not treat it as realtime streaming, scanner quote evidence, quote-data
 evidence, or a replacement for chart-sourced OHLCV. `tv range` moves the
 selected Desktop chart viewport; it is not a historical export contract for

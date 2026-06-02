@@ -299,15 +299,22 @@ behavior is desired and the scanner fallback is acceptable before mutation.
 fallback. `freshness_boundary`: no realtime or entitlement guarantee; read
 `data_quality`.
 
-`tv bars <EXCHANGE:SYMBOL>` uses a bounded browserless TradingView WebSocket
+`tv bars <SYMBOL>` uses a bounded browserless TradingView WebSocket
 chart-session path and reports `contract_version: "bars.v1"`,
 `source: "tradingview_bars_ws"`, and
 `source_category: "desktop_free_read"`. It is symbol-targeted historical
 OHLCV evidence and does not replace chart-backed `tv ohlcv`, which reads the
 selected Desktop chart through CDP.
 
+Bare symbols such as `AAPL` are resolved through Desktop-free
+`symbol_search_rest` before the bars read. The payload reports
+`requested_symbol`, `resolved_symbol`, `symbol`, and `symbol_resolution` so
+agents can see what the user typed and which `EXCHANGE:SYMBOL` was actually
+used. Use an explicit exchange-qualified symbol, such as `NASDAQ:AAPL`, when
+the exchange must be fixed.
+
 Use count mode for recent bounded samples, for example
-`tv bars NASDAQ:AAPL --timeframe 1D --count 5`. Use date-range mode for
+`tv bars AAPL --timeframe 1D --count 5`. Use date-range mode for
 reproducible older intraday, daily, weekly, or monthly samples, for example
 `tv bars NASDAQ:AAPL --timeframe 5 --from 2026-05-20 --to 2026-05-22`,
 `tv bars NASDAQ:AAPL --timeframe 60 --from 2026-05-01 --to 2026-05-22`, or

@@ -103,6 +103,7 @@ Desktop が必要かどうか、そして `auto_execute: false` が含まれま�
 ```bash
 tv quote AAPL
 tv info NASDAQ:AAPL
+tv bars AAPL --timeframe 1D --count 5
 tv bars NASDAQ:AAPL --timeframe 1D --count 5
 tv watch compare NASDAQ:AAPL NASDAQ:MSFT --duration-ms 10000 --interval 2000
 ```
@@ -117,6 +118,12 @@ tv bars NASDAQ:CRUS --timeframe 1M --from 2010-01-01 --to 2010-12-31
 tv bars NASDAQ:AAPL --timeframe 5 --from 2026-05-20 --to 2026-05-22 --count 1000
 tv bars NASDAQ:AAPL --timeframe 60 --from 2026-05-01 --to 2026-05-22 --count 1000
 ```
+
+`tv bars` では、`AAPL` のように取引所名を付けない銘柄も検索で解決を試みます。
+ただし、どの取引所を使うかを確実に指定したい場合は、`NASDAQ:AAPL` のように
+`取引所:銘柄` の形で書いてください。エージェントに依頼するときは、
+`requested_symbol`、`resolved_symbol`、`symbol_resolution` を確認し、入力した
+銘柄と実際に使われた銘柄を報告させると、取引所の取り違えを避けやすくなります。
 
 日付範囲を指定した場合は、まず `range_coverage_status` と
 `range_alignment` を確認してください。日付範囲指定で使える時間軸は、現時点

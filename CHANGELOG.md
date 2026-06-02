@@ -7,6 +7,12 @@ package version omits the leading `v`.
 
 ## Unreleased
 
+### Added
+
+- Added Desktop-free bare symbol resolution for `tv bars`, so input such as
+  `AAPL` can resolve through TradingView symbol search while the `bars.v1`
+  payload reports both the requested and resolved exchange-qualified symbol.
+
 ### Fixed
 
 - Hardened `tv launch` on macOS by using the system app launcher for the
@@ -18,6 +24,8 @@ package version omits the leading `v`.
 - Added the `v0.24.0` roadmap direction and first launch process-handling
   plan, focusing on operational robustness, `tv bars` symbol usability, and
   high-priority workflow candidates after the `v0.23.0` release.
+- Added the `tv bars` symbol resolution plan for `v0.24.0`, keeping
+  Desktop-free symbol search separate from selected-chart and quote sources.
 
 ## v0.23.0 - 2026-05-28
 
