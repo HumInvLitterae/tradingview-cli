@@ -25,6 +25,9 @@ package version omits the leading `v`.
 
 ### Documentation
 
+- Reduced runtime skill context load by splitting market data interpretation,
+  chart analysis, and multi-symbol scan into short workflow-oriented
+  `SKILL.md` files plus detailed source-boundary reference notes.
 - Recorded the `v0.24.0` pre-release architecture audit, checking launch
   handling, bars symbol resolution, events readback, docs, skills, source
   boundaries, and module posture before release readiness.

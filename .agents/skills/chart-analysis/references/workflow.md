@@ -1,35 +1,70 @@
 # Chart Analysis Workflow Reference
 
-## Original MCP Intent
-
-The original chart-analysis skill reviewed a TradingView chart by setting symbol/timeframe, adding indicators, navigating ranges, drawing annotations, taking screenshots, reading quote/OHLCV data, and cleaning temporary chart objects.
+This reference holds details that are useful for chart work but should not be
+loaded every time the skill triggers.
 
 ## Current Rust CLI Mapping
 
-| Original MCP capability | Rust CLI status |
+| Need | Rust CLI |
 | --- | --- |
-| `chart_get_state` | `tv state` |
-| `chart_set_symbol` | `tv symbol <SYMBOL>` |
-| `chart_set_timeframe` | `tv timeframe <RESOLUTION>` |
-| Chart type read/set | `tv type [CHART_TYPE]` |
-| `chart_scroll_to_date` | `tv scroll <DATE>` |
-| `chart_set_visible_range` | `tv range --from <UNIX_SECONDS> --to <UNIX_SECONDS>` |
-| `chart_get_visible_range` | `tv range` |
-| `quote_get` | `tv quote` |
-| `symbol_info` | `tv info` |
-| `data_get_ohlcv` | `tv ohlcv --summary` or `tv ohlcv --count <N>` |
-| `data_get_study_values` | `tv values` |
-| Pine line levels | `tv data lines [--filter <TEXT>] [--verbose]` |
-| Pine labels | `tv data labels [--filter <TEXT>] [--max <N>] [--verbose]` |
-| Pine tables | `tv data tables [--filter <TEXT>]` |
-| Pine boxes | `tv data boxes [--filter <TEXT>] [--verbose]` |
+| Read selected chart state | `tv state` |
+| Set selected chart symbol | `tv symbol <SYMBOL>` |
+| Set selected chart timeframe | `tv timeframe <RESOLUTION>` |
+| Read or set chart type | `tv type [CHART_TYPE]` |
+| Scroll to a date | `tv scroll <DATE>` |
+| Read visible range | `tv range` |
+| Set visible range | `tv range --from <UNIX_SECONDS> --to <UNIX_SECONDS>` |
+| Desktop-free quote | `tv quote <SYMBOL>` |
+| Selected-chart quote | `tv quote <SYMBOL> --source chart` |
+| Explicit quote-data readback | `tv quote <SYMBOL> --source quote-data` |
+| Symbol metadata | `tv info <SYMBOL>` |
+| Current-chart metadata | `tv info` |
+| Selected-chart bars | `tv ohlcv --summary` or `tv ohlcv --count <N>` |
+| Desktop-free historical bars | `tv bars <SYMBOL> --from ... --to ...` |
+| Selected-chart export | `tv export chart-bars --from ... --to ...` |
+| Study values | `tv values` |
+| Pine drawing data | `tv data lines`, `tv data labels`, `tv data tables`, `tv data boxes` |
 | Indicator lifecycle | `tv indicator add/remove/toggle/set` |
 | Drawing lifecycle | `tv draw shape/list/get/remove/clear` |
 | Replay controls | `tv replay status/start/step/autoplay/trade/stop` |
-| `capture_screenshot` | `tv screenshot --region full|chart --output <PATH>` |
+| Replay step log | `tv replay log --steps <N>` |
+| Screenshot | `tv screenshot --region full|chart --output <PATH>` |
+
+## Source Notes
+
+- `tv snapshot <SYMBOL>` is a good one-symbol Desktop-free context read before
+  chart mutation. Its follow-up hints are advisory; they are not ranking or
+  automatic follow-up execution.
+- Scanner-backed quote fields can include `time`, `update_mode`,
+  `delay_seconds`, and extended-hours fields when TradingView returns them.
+  They are not a realtime entitlement guarantee.
+- `tv bars` is the reproducible historical bars entry point. Date-range mode
+  supports `5`, `15`, `30`, `60`, `1D`, `1W`, and `1M`; other intraday
+  date-range timeframes remain guarded. Date-range `--count` defaults to 500
+  and may be raised to 5000 as a safety cap. Recent count mode remains capped
+  at 500. Use `range_coverage_status`, `range_alignment`, and
+  `range_fetch_summary` for coverage and truncation diagnostics.
+- `tv ohlcv` reads the selected chart. `chart_context`,
+  `returned_bars_range`, and `selected_chart_range_match` are diagnostics;
+  they do not prove a reproducible historical export by themselves.
+- `tv export chart-bars` is an explicit Desktop-backed selected-chart export
+  workflow. Keep it separate from `tv bars`.
+- Replay commands depend on and mutate selected-chart Replay state, except
+  status reads. `tv replay log` records bounded Replay step evidence; it is not
+  historical bars input.
+- `tv quote <SYMBOL> --source quote-data` is explicit Desktop-backed
+  quote-data readback such as `qsd.rtc`. If unavailable, report
+  `source_availability`; do not treat unavailability as proof that a symbol has
+  no price.
+- `tv diagnose quote-data <SYMBOL>` can inspect sanitized target state,
+  quote-data availability, public-safe WebSocket/qsd counters, and scanner
+  freshness reference without blending sources.
 
 ## Remaining Gaps
 
-Strategy tester panel screenshots and arbitrary historical indicator-series computation are not implemented in the Rust CLI. Prefer implemented high-level commands before generic UI automation.
+Strategy tester panel screenshots and arbitrary historical indicator-series
+computation are not implemented in the Rust CLI. Chart-backed compare is
+planned only as a contract topic, not a stable command. Prefer implemented
+high-level commands before generic UI automation.
 
 The MCP server itself is not planned.

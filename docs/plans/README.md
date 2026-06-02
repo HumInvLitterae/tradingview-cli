@@ -8,13 +8,17 @@ for release and next-phase planning.
 
 Current plan:
 
-- `tradingview-cli-v0.24-pre-release-audit.md`: audit completed `v0.24.0`
-  launch hardening, `tv bars` symbol resolution, and narrow `tv events`
-  readback before release readiness, including docs, skills, tests, source
-  boundaries, and architecture posture.
+- `tradingview-cli-runtime-skill-context-cleanup.md`: reduce runtime skill
+  context load by keeping common workflows in `SKILL.md` and moving detailed
+  source-boundary notes into skill references before `v0.24.0` release
+  readiness.
 
 Recently completed:
 
+- `tradingview-cli-v0.24-pre-release-audit.md`: audited completed `v0.24.0`
+  launch hardening, `tv bars` symbol resolution, and narrow `tv events`
+  readback before release readiness, including docs, skills, tests, source
+  boundaries, and architecture posture.
 - `tradingview-cli-events-symbol-scoped-readback.md`: added narrow
   `tv events <SYMBOL>` readback for scanner-backed earnings and dividends
   fields, shaped as `events.v1` without adding a full event calendar source.
