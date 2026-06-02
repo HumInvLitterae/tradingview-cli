@@ -65,10 +65,13 @@ observation surface.
    `tv quote <SYMBOL>` use Desktop-free reads by default. Preserve
    `source_category`, `requires_desktop`, and `non_mutating` when comparing
    Desktop-backed chart reads with Desktop-free scanner reads.
-   Use `tv bars <EXCHANGE:SYMBOL>` only when symbol-targeted Desktop-free
-   historical bars are desired. For old intraday, daily, weekly, or monthly
-   samples, prefer
-   `tv bars <EXCHANGE:SYMBOL> --timeframe 5|15|30|60|1D|1W|1M --from YYYY-MM-DD --to YYYY-MM-DD`;
+   Use `tv bars <SYMBOL>` only when symbol-targeted Desktop-free historical
+   bars are desired. Bare symbols may resolve through Desktop-free symbol
+   search; report `requested_symbol`, `resolved_symbol`, and
+   `symbol_resolution`, and retry with `EXCHANGE:SYMBOL` if the exchange is
+   not the intended one. For old intraday, daily, weekly, or monthly samples,
+   prefer
+   `tv bars <SYMBOL> --timeframe 5|15|30|60|1D|1W|1M --from YYYY-MM-DD --to YYYY-MM-DD`;
    other intraday timeframes remain guarded in date-range mode. `--count` is
    a safety cap in that mode, defaults to 500, and may be raised up to 5000.
    Recent count mode remains capped at 500. `--to` is an inclusive calendar

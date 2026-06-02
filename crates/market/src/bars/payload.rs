@@ -43,8 +43,10 @@ pub(super) fn bars_payload(request: &BarsRequest, result: BarsResult, elapsed_ms
         "requires_desktop": false,
         "non_mutating": true,
         "request_mode": request.request_mode_name(),
-        "requested_symbol": request.symbol,
+        "requested_symbol": request.requested_symbol,
+        "resolved_symbol": request.symbol,
         "symbol": request.symbol,
+        "symbol_resolution": request.symbol_resolution.to_value(),
         "timeframe": request.timeframe,
         "requested_count": request.count,
         "bar_count": bar_count,
@@ -168,7 +170,16 @@ pub(super) fn bars_error_details(request: &BarsRequest, extra: Value) -> Value {
     );
     details.insert(
         "requested_symbol".to_string(),
+        Value::String(request.requested_symbol.clone()),
+    );
+    details.insert(
+        "resolved_symbol".to_string(),
         Value::String(request.symbol.clone()),
+    );
+    details.insert("symbol".to_string(), Value::String(request.symbol.clone()));
+    details.insert(
+        "symbol_resolution".to_string(),
+        request.symbol_resolution.to_value(),
     );
     details.insert(
         "timeframe".to_string(),
@@ -238,9 +249,13 @@ mod tests {
     use super::*;
     use crate::bars::{
         types::{
-            Bar, BarsFetchSummary, BarsFetchSummaryInput, BarsWaitSummary, DEFAULT_TIMEOUT_MS,
+            Bar, BarsFetchSummary, BarsFetchSummaryInput, BarsSymbolResolution, BarsWaitSummary,
+            DEFAULT_TIMEOUT_MS,
         },
-        validation::{validate_bars_range_request, validate_bars_request},
+        validation::{
+            validate_bars_range_request, validate_bars_range_request_with_resolution,
+            validate_bars_request,
+        },
     };
 
     fn test_wait_summary(request: &BarsRequest) -> BarsWaitSummary {
@@ -321,6 +336,17 @@ mod tests {
         assert_eq!(payload["requires_desktop"], false);
         assert_eq!(payload["non_mutating"], true);
         assert_eq!(payload["request_mode"], "recent_count");
+        assert_eq!(payload["requested_symbol"], "NASDAQ:AAPL");
+        assert_eq!(payload["resolved_symbol"], "NASDAQ:AAPL");
+        assert_eq!(payload["symbol"], "NASDAQ:AAPL");
+        assert_eq!(
+            payload["symbol_resolution"]["resolution_source"],
+            "input_exchange_qualified"
+        );
+        assert_eq!(
+            payload["symbol_resolution"]["resolution_status"],
+            "input_exchange_qualified"
+        );
         assert!(payload["requested_range"].is_null());
         assert!(payload["range_alignment"].is_null());
         assert_eq!(payload["returned_range"]["first_time"], 1);
@@ -392,6 +418,59 @@ mod tests {
             false
         );
         assert!(payload.get("experimental").is_none());
+    }
+
+    #[test]
+    fn bars_payload_preserves_requested_and_resolved_symbol() {
+        let request = validate_bars_range_request_with_resolution(
+            "AAPL",
+            "NASDAQ:AAPL",
+            BarsSymbolResolution::symbol_search("AAPL", "NASDAQ:AAPL", 3),
+            "1D",
+            "2020-01-01",
+            "2020-01-31",
+            500,
+        )
+        .unwrap();
+        let payload = bars_payload(
+            &request,
+            test_result(
+                &request,
+                vec![Bar {
+                    time: 1_577_836_800,
+                    open: 10.0,
+                    high: 12.0,
+                    low: 9.0,
+                    close: 11.0,
+                    volume: 100.0,
+                }],
+                true,
+                test_wait_summary(&request),
+                Some(1_577_836_800),
+                Some(1_580_428_800),
+            ),
+            42,
+        );
+
+        assert_eq!(payload["requested_symbol"], "AAPL");
+        assert_eq!(payload["resolved_symbol"], "NASDAQ:AAPL");
+        assert_eq!(payload["symbol"], "NASDAQ:AAPL");
+        assert_eq!(payload["symbol_resolution"]["input_symbol"], "AAPL");
+        assert_eq!(
+            payload["symbol_resolution"]["resolved_symbol"],
+            "NASDAQ:AAPL"
+        );
+        assert_eq!(
+            payload["symbol_resolution"]["resolution_source"],
+            "symbol_search_rest"
+        );
+        assert_eq!(
+            payload["symbol_resolution"]["resolution_status"],
+            "resolved"
+        );
+        assert_eq!(payload["symbol_resolution"]["candidate_count"], 3);
+        assert_eq!(payload["range_alignment"]["timeframe"], "1D");
+        assert_eq!(payload["range_fetch_summary"]["requested_count_cap"], 500);
     }
 
     #[test]
@@ -609,6 +688,13 @@ mod tests {
         assert_eq!(details["requires_desktop"], false);
         assert_eq!(details["non_mutating"], true);
         assert_eq!(details["request_mode"], "recent_count");
+        assert_eq!(details["requested_symbol"], "NASDAQ:AAPL");
+        assert_eq!(details["resolved_symbol"], "NASDAQ:AAPL");
+        assert_eq!(details["symbol"], "NASDAQ:AAPL");
+        assert_eq!(
+            details["symbol_resolution"]["resolution_source"],
+            "input_exchange_qualified"
+        );
         assert!(details["requested_range"].is_null());
         assert!(details["range_alignment"].is_null());
         assert_eq!(details["requested_timeframe"], "1D");
@@ -645,6 +731,8 @@ mod tests {
 
         assert_eq!(details["contract_version"], BARS_CONTRACT_VERSION);
         assert_eq!(details["requested_symbol"], "NASDAQ:AAPL");
+        assert_eq!(details["resolved_symbol"], "NASDAQ:AAPL");
+        assert_eq!(details["symbol"], "NASDAQ:AAPL");
         assert_eq!(details["requested_timeframe"], "1W");
         assert_eq!(details["request_mode"], "date_range");
         assert_eq!(details["requested_range"]["from"], "2020-01-01");

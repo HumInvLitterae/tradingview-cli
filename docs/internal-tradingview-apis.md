@@ -360,6 +360,10 @@ Safety boundary:
 - `tv bars` is a separate symbol-targeted command and keeps requests bounded
   by count or by supported intraday, daily, weekly, or monthly date range with
   a count safety cap
+- bare `tv bars` symbols are resolved by Desktop-free `symbol_search_rest`
+  before the bars WebSocket request. Exchange-qualified input is used as-is.
+  Payloads report `requested_symbol`, `resolved_symbol`, `symbol`, and
+  `symbol_resolution` so callers can detect which TradingView symbol was used.
 - `tv bars --from YYYY-MM-DD --to YYYY-MM-DD --timeframe 5|15|30|60|1D|1W|1M` is
   the reproducible historical-source preparation path for supported intraday,
   daily, and higher-timeframe samples. The `--to` value is an inclusive
@@ -385,8 +389,8 @@ Safety boundary:
   use public unavailable reasons such as `timeout_no_bars` or
   `websocket_read_failed`. They do not expose raw WebSocket frames, raw
   payloads, credentials, session ids, or account-local metadata.
-- the stable command requires exchange-qualified symbols and does not add
-  extended sessions, streaming, bare-symbol resolution, or authenticated reads
+- the stable command accepts resolved bare symbols but still does not add
+  extended sessions, streaming, selected-chart fallback, or authenticated reads
 - failures, malformed protocol frames, missing series completion, and symbol
   errors must become structured failures rather than empty successful bar lists
 - keep evidence summaries high level. Do not write raw WebSocket frames,

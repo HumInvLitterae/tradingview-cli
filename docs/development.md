@@ -450,16 +450,18 @@ TV_LIVE_BARS_SMOKE=1 cargo test -p tradingview-cli --test live_bars -- --ignored
 
 Optional environment variables:
 
-- `TV_LIVE_BARS_SYMBOLS`: comma-separated exchange-qualified public symbols,
-  defaulting to `NASDAQ:AAPL,NYSE:IONQ`.
+- `TV_LIVE_BARS_SYMBOLS`: comma-separated public symbols, defaulting to
+  `NASDAQ:AAPL,NYSE:IONQ`. Exchange-qualified symbols keep the requested
+  exchange explicit; bare symbols may resolve through symbol search.
 - `TV_LIVE_BARS_TIMEFRAME`: timeframe passed to `tv bars`, defaulting to
   `1D`.
 - `TV_LIVE_BARS_COUNT`: positive bounded bar count, defaulting to `5`.
 - `TV_LIVE_BARS_RUNS`: positive repeat count, defaulting to `1`.
 
 The ignored test validates only public contract fields: `bars.v1` source
-metadata, requested symbol, timeframe, bounded count, non-empty bars,
-`summary`, `range`, `range_alignment`, `range_fetch_summary`,
+metadata, requested symbol, resolved symbol, timeframe, bounded count,
+non-empty bars, `summary`, `range`, `symbol_resolution`,
+`range_alignment`, `range_fetch_summary`,
 `source_availability`, public-safe `wait_summary`, and `data_quality`. Do not
 paste raw WebSocket output or live response payloads into tracked docs.
 

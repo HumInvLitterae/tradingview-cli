@@ -273,6 +273,7 @@ TradingView state, but they write a local file, so screenshot payloads report
 `tv bars` is a bounded Desktop-free historical bars read:
 
 ```bash
+tv bars AAPL --timeframe 1D --count 5
 tv bars NASDAQ:AAPL --timeframe 1D --count 5
 tv bars NASDAQ:AAPL --timeframe 5 --from 2026-05-20 --to 2026-05-22 --count 1000
 tv bars NASDAQ:AAPL --timeframe 60 --from 2026-05-01 --to 2026-05-22 --count 1000
@@ -284,7 +285,11 @@ It uses an undocumented TradingView WebSocket chart-session path and reports
 `contract_version: "bars.v1"`, `source: "tradingview_bars_ws"`, and
 `source_category: "desktop_free_read"`. Date-range mode is the reproducible
 source-preparation path for supported intraday, daily, weekly, and monthly
-samples. `--count` is a safety cap and defaults to 500 in that mode. It can be
+samples. Bare symbols such as `AAPL` are resolved through Desktop-free
+symbol search, while explicit `EXCHANGE:SYMBOL` input is used as-is. Report
+`requested_symbol`, `resolved_symbol`, and `symbol_resolution` before treating
+the returned bars as evidence so an exchange mismatch is visible. `--count` is
+a safety cap and defaults to 500 in that mode. It can be
 raised up to 5000 for date ranges; recent count mode stays capped at 500.
 Date-range mode currently supports `5`, `15`, `30`, `60`, `1D`, `1W`, and
 `1M`; other intraday timeframes remain guarded. The `--to` value is an

@@ -99,6 +99,7 @@ Commands that do not need TradingView Desktop are the safest first check:
 ```bash
 tv quote AAPL
 tv info NASDAQ:AAPL
+tv bars AAPL --timeframe 1D --count 5
 tv bars NASDAQ:AAPL --timeframe 1D --count 5
 tv watch compare NASDAQ:AAPL NASDAQ:MSFT --duration-ms 10000 --interval 2000
 ```
@@ -113,6 +114,12 @@ tv bars NASDAQ:CRUS --timeframe 1M --from 2010-01-01 --to 2010-12-31
 tv bars NASDAQ:AAPL --timeframe 5 --from 2026-05-20 --to 2026-05-22 --count 1000
 tv bars NASDAQ:AAPL --timeframe 60 --from 2026-05-01 --to 2026-05-22 --count 1000
 ```
+
+`tv bars` can resolve a bare symbol such as `AAPL` through Desktop-free
+TradingView symbol search. If the exchange matters, use `EXCHANGE:SYMBOL`,
+such as `NASDAQ:AAPL`. Ask your agent to report `requested_symbol`,
+`resolved_symbol`, and `symbol_resolution` before using the returned bars, so
+you can see whether the command used the intended exchange.
 
 In date-range mode, read `range_coverage_status` and `range_alignment` before
 interpreting raw `bars[]`. Date-range mode currently supports `5`, `15`,

@@ -86,9 +86,13 @@ Do not use `TV_CDP_TARGET_ID`; explicit target handoff is `--target-id`.
   Screener, layout, drawing, alert, watchlist, or UI state.
 - Hybrid commands choose between sources explicitly, such as
   `tv quote <SYMBOL> --source auto`.
-- Browserless historical bars use `tv bars <EXCHANGE:SYMBOL>` as a bounded
+- Browserless historical bars use `tv bars <SYMBOL>` as a bounded
   Desktop-free read with `contract_version: "bars.v1"`. They do not guarantee
-  realtime or entitlement status. Use `--from YYYY-MM-DD --to YYYY-MM-DD`
+  realtime or entitlement status. Bare symbols such as `AAPL` are resolved
+  through Desktop-free symbol search; use `NASDAQ:AAPL` or another
+  `EXCHANGE:SYMBOL` form when the exchange must be fixed. Report
+  `requested_symbol`, `resolved_symbol`, and `symbol_resolution` before using
+  returned bars. Use `--from YYYY-MM-DD --to YYYY-MM-DD`
   with `--timeframe 5`, `15`, `30`, `60`, `1D`, `1W`, or `1M` for reproducible older
   intraday, daily, weekly, or monthly samples; other intraday timeframes
   remain guarded in date-range mode. `--to` is an inclusive calendar date.

@@ -4,19 +4,39 @@ use serde_json::json;
 use tradingview_core::{AppError, ErrorKind};
 
 use super::types::{
-    BarsDate, BarsRequest, BarsRequestMode, DEFAULT_TIMEOUT_MS, MAX_DATE_RANGE_BAR_COUNT,
-    MAX_RECENT_BAR_COUNT,
+    BarsDate, BarsRequest, BarsRequestMode, BarsSymbolResolution, DEFAULT_TIMEOUT_MS,
+    MAX_DATE_RANGE_BAR_COUNT, MAX_RECENT_BAR_COUNT,
 };
 
 const DATE_RANGE_TIMEFRAMES: &[&str] = &["5", "15", "30", "60", "1D", "1W", "1M"];
 
+#[cfg(test)]
 pub(super) fn validate_bars_request(
     symbol: &str,
     timeframe: &str,
     count: usize,
 ) -> Result<BarsRequest, AppError> {
-    validate_bars_request_inner(
+    let symbol = symbol.trim();
+    validate_bars_request_with_resolution(
         symbol,
+        symbol,
+        BarsSymbolResolution::input_exchange_qualified(symbol),
+        timeframe,
+        count,
+    )
+}
+
+pub(super) fn validate_bars_request_with_resolution(
+    requested_symbol: &str,
+    resolved_symbol: &str,
+    symbol_resolution: BarsSymbolResolution,
+    timeframe: &str,
+    count: usize,
+) -> Result<BarsRequest, AppError> {
+    validate_bars_request_inner(
+        requested_symbol,
+        resolved_symbol,
+        symbol_resolution,
         timeframe,
         count,
         MAX_RECENT_BAR_COUNT,
@@ -24,8 +44,30 @@ pub(super) fn validate_bars_request(
     )
 }
 
+#[cfg(test)]
 pub(super) fn validate_bars_range_request(
     symbol: &str,
+    timeframe: &str,
+    from: &str,
+    to: &str,
+    count_cap: usize,
+) -> Result<BarsRequest, AppError> {
+    let symbol = symbol.trim();
+    validate_bars_range_request_with_resolution(
+        symbol,
+        symbol,
+        BarsSymbolResolution::input_exchange_qualified(symbol),
+        timeframe,
+        from,
+        to,
+        count_cap,
+    )
+}
+
+pub(super) fn validate_bars_range_request_with_resolution(
+    requested_symbol: &str,
+    resolved_symbol: &str,
+    symbol_resolution: BarsSymbolResolution,
     timeframe: &str,
     from: &str,
     to: &str,
@@ -59,7 +101,9 @@ pub(super) fn validate_bars_range_request(
     }
 
     validate_bars_request_inner(
-        symbol,
+        requested_symbol,
+        resolved_symbol,
+        symbol_resolution,
         &timeframe,
         count_cap,
         MAX_DATE_RANGE_BAR_COUNT,
@@ -68,26 +112,36 @@ pub(super) fn validate_bars_range_request(
 }
 
 fn validate_bars_request_inner(
-    symbol: &str,
+    requested_symbol: &str,
+    resolved_symbol: &str,
+    symbol_resolution: BarsSymbolResolution,
     timeframe: &str,
     count: usize,
     max_count: usize,
     mode: BarsRequestMode,
 ) -> Result<BarsRequest, AppError> {
-    let symbol = symbol.trim();
-    if symbol.is_empty() {
+    let requested_symbol = requested_symbol.trim();
+    if requested_symbol.is_empty() {
         return Err(AppError::new(
             ErrorKind::Validation,
             "bars symbol must not be empty",
         ));
     }
-    if !symbol.contains(':') {
+    let resolved_symbol = resolved_symbol.trim();
+    if resolved_symbol.is_empty() {
+        return Err(AppError::new(
+            ErrorKind::Validation,
+            "bars resolved symbol must not be empty",
+        ));
+    }
+    if !resolved_symbol.contains(':') {
         return Err(AppError::new(
             ErrorKind::Validation,
             "bars symbol must be exchange-qualified, for example NASDAQ:AAPL",
         )
         .with_details(json!({
-            "requested_symbol": symbol,
+            "requested_symbol": requested_symbol,
+            "resolved_symbol": resolved_symbol,
             "expected_format": "EXCHANGE:SYMBOL",
         })));
     }
@@ -106,7 +160,9 @@ fn validate_bars_request_inner(
     }
 
     Ok(BarsRequest {
-        symbol: symbol.to_string(),
+        requested_symbol: requested_symbol.to_string(),
+        symbol: resolved_symbol.to_string(),
+        symbol_resolution,
         timeframe,
         count,
         timeout: Duration::from_millis(DEFAULT_TIMEOUT_MS),
