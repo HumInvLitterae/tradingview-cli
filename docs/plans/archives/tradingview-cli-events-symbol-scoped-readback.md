@@ -18,7 +18,7 @@ The observable outcome is that `tv events NASDAQ:AAPL` returns earnings and divi
 - [x] (2026-06-03 16:45Z) Added focused market tests and CLI contract tests for event readback and help.
 - [x] (2026-06-03 16:55Z) Updated public docs, packaged agent guide, and runtime skills.
 - [x] (2026-06-03 17:20Z) Ran focused tests, baseline validation, runtime skill validation, and optional live smoke.
-- [ ] Commit the related implementation and documentation changes.
+- [x] (2026-06-03 17:25Z) Committed the related implementation and documentation changes as `feat(market): Add symbol events readback`.
 
 ## Surprises & Discoveries
 
