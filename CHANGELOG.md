@@ -7,6 +7,12 @@ package version omits the leading `v`.
 
 ## Unreleased
 
+### Documentation
+
+- Added the `v0.24.0` roadmap direction and first launch process-handling
+  plan, focusing on operational robustness, `tv bars` symbol usability, and
+  high-priority workflow candidates after the `v0.23.0` release.
+
 ## v0.23.0 - 2026-05-28
 
 ### Added
