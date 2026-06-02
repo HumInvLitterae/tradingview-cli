@@ -8,13 +8,16 @@ for release and next-phase planning.
 
 Current plan:
 
-- `tradingview-cli-runtime-skill-context-cleanup.md`: reduce runtime skill
-  context load by keeping common workflows in `SKILL.md` and moving detailed
-  source-boundary notes into skill references before `v0.24.0` release
-  readiness.
+- `tradingview-cli-v0.24.0-release-readiness.md`: prepare the `v0.24.0`
+  release state, including version, changelog, release notes, README asset
+  examples, package staging, runtime-skill packaging, and release validation.
 
 Recently completed:
 
+- `tradingview-cli-runtime-skill-context-cleanup.md`: reduced runtime skill
+  context load by keeping common workflows in `SKILL.md` and moving detailed
+  source-boundary notes into skill references before `v0.24.0` release
+  readiness.
 - `tradingview-cli-v0.24-pre-release-audit.md`: audited completed `v0.24.0`
   launch hardening, `tv bars` symbol resolution, and narrow `tv events`
   readback before release readiness, including docs, skills, tests, source
