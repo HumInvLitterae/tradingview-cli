@@ -153,6 +153,12 @@ tv state
 します。その後、`tv readiness` でチャートを読める状態かを確認し、`tv tab list`
 で接続先の一覧を見て、`tv state` で選択中チャートを読めることを確認します。
 
+macOS では、通常の `tv launch` はシステムのアプリ起動機能を使います。これに
+より、TradingView Desktop が `tv` コマンドの子プロセスとして扱われ続けることを
+避けます。`tv launch --path <TRADINGVIEW_DESKTOP_PATH>` は、特定の実行ファイルを
+明示して起動したい場合だけ使ってください。`--kill-existing` は、既に開いている
+TradingView Desktop を終了して起動し直してよい場合だけ使います。
+
 `tv launch` が TradingView Desktop を見つけられない場合は、実行ファイルの
 場所を指定します。
 

@@ -28,7 +28,10 @@ pub enum Command {
         long_about = "Check whether TradingView Desktop, CDP target selection, chart API state, and one recent chart bar are ready for chart-dependent read commands.\n\nThis is a Desktop-backed, non-mutating read. It does not switch symbols, activate tabs, capture screenshots, or change account/page state. When CDP is reachable but the chart target or bars are not ready, it returns a successful envelope with data.ready=false and next-action hints."
     )]
     Readiness,
-    #[command(about = "Launch TradingView Desktop with CDP enabled")]
+    #[command(
+        about = "Launch TradingView Desktop with CDP enabled",
+        long_about = "Launch or reuse TradingView Desktop with CDP enabled.\n\nIf a CDP endpoint is already responding, this command reuses it and does not start another app process. On macOS, the normal no-path launch uses the system app launcher (`open -a TradingView --args ...`) so the app is not tied to the CLI child-process lifetime. Use `--path <PATH>` only when you intentionally want to launch an explicit executable path. `--kill-existing` is opt-in and may terminate an existing TradingView Desktop session before relaunch."
+    )]
     Launch {
         #[arg(long, short)]
         port: Option<u16>,

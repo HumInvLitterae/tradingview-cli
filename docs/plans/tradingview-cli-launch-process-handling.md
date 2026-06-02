@@ -19,12 +19,16 @@ behavior, automatic restart, or implicit process killing.
 ## Progress
 
 - [x] (2026-06-03) Create this ExecPlan.
-- [ ] Inspect current `tv launch` direct-spawn, macOS `open`, existing-CDP,
+- [x] (2026-06-03) Inspect current `tv launch` direct-spawn, macOS `open`, existing-CDP,
   and `--kill-existing` behavior.
-- [ ] Decide whether macOS should prefer `open -a TradingView --args ...`
+- [x] (2026-06-03) Confirm live direct-spawn behavior from a stopped TradingView
+  Desktop session.
+- [x] (2026-06-03) Decide whether macOS should prefer `open -a TradingView --args ...`
   before direct app-binary spawn.
-- [ ] Improve additive launch readback, warnings, and docs.
-- [ ] Validate focused launch tests, docs, and release package script syntax.
+- [x] (2026-06-03) Improve additive launch behavior, help, and docs.
+- [x] (2026-06-03) Smoke test the new macOS app-launch path.
+- [x] (2026-06-03) Validate focused launch tests, docs, release package script
+  syntax, runtime skill, and Rust baseline.
 
 ## Surprises & Discoveries
 
@@ -33,6 +37,17 @@ behavior, automatic restart, or implicit process killing.
   handle after `try_wait` with the expectation that the app keeps running.
   This may be the wrong process-lifetime model for some agent or sandboxed
   execution contexts.
+
+- Observation: live smoke from a stopped TradingView Desktop session showed
+  `tv launch` returning `cdp_ready: true` with `launch_method: "direct_spawn"`,
+  but a follow-up `tv readiness` after a short wait could no longer reach the
+  CDP endpoint. This supports treating direct spawn as unsafe for the normal
+  macOS no-path launch path.
+
+- Observation: after changing the normal macOS launch path, live smoke returned
+  `launch_method: "macos_open"` with CDP ready. A follow-up readiness check
+  after a short wait still reached CDP; it reported multiple chart targets,
+  which is separate from process lifetime.
 
 ## Decision Log
 
@@ -47,9 +62,19 @@ behavior, automatic restart, or implicit process killing.
   TradingView Desktop session.
   Date/Author: 2026-06-03 / Codex.
 
+- Decision: On macOS, use `open -a TradingView --args ...` as the primary
+  no-path launch method.
+  Rationale: it is closer to normal manual app launch and avoids tying
+  TradingView Desktop to the CLI child-process lifetime. Explicit `--path`
+  remains direct spawn because the user intentionally selected a binary.
+  Date/Author: 2026-06-03 / Codex.
+
 ## Outcomes & Retrospective
 
-Pending.
+Implemented. The normal macOS no-path `tv launch` path now uses the system app
+launcher and reports `launch_method: "macos_open"` without inventing a
+TradingView process id or binary path. Explicit `--path` remains direct spawn,
+existing CDP reuse remains unchanged, and `--kill-existing` remains opt-in.
 
 ## Context and Orientation
 

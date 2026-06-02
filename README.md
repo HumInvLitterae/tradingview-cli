@@ -116,6 +116,11 @@ tv export chart-bars --from 1704067200 --to 1706745600 --summary
 tv screenshot --region chart --output target/tv-chart.png
 ```
 
+On macOS, `tv launch` uses the system app launcher for the normal no-path case
+and then checks CDP readiness. Use `--path <PATH>` only when you intentionally
+want to start a specific executable. `--kill-existing` is opt-in because it can
+terminate an existing TradingView Desktop session.
+
 If multiple TradingView targets are open, use `target_cli_args` returned by
 `tv tab list` or `tv readiness`:
 

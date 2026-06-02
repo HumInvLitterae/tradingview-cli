@@ -56,6 +56,11 @@ If TradingView Desktop is not connected, run:
 tv launch
 ```
 
+On macOS, normal `tv launch` uses the system app launcher and then checks CDP
+readiness. Use `tv launch --path <PATH>` only when the user intentionally wants
+to start a specific executable. Use `--kill-existing` only with explicit user
+approval because it can terminate an existing TradingView Desktop session.
+
 If `tv launch` cannot find TradingView Desktop, ask the user for the executable
 path and use `tv launch --path <PATH>`.
 
