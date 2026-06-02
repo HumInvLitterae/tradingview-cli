@@ -76,6 +76,8 @@ tv quotes AAPL MSFT NYSE:IONQ
 tv watch compare NASDAQ:AAPL NASDAQ:MSFT --duration-ms 10000 --interval 2000
 tv fundamentals NYSE:IONQ --group earnings
 tv fundamentals AAPL --group dividends
+tv events NASDAQ:AAPL --event-type earnings
+tv events NASDAQ:AAPL --event-type dividends
 tv scanner scan --type stock --columns name,close,volume --limit 10
 tv scanner metainfo --market america --field close --field premarket_close
 ```
@@ -97,6 +99,12 @@ polls the same Desktop-free scanner-backed quote source used by `tv quotes`,
 emits readiness / sample / heartbeat / summary events with
 `contract_version: "watch_compare.v1"`, and does not rank, recommend, or use
 TradingView Desktop.
+
+`tv events <SYMBOL>` is a Desktop-free `events.v1` readback for scanner-backed
+earnings and dividend fields. It is event-shaped evidence, not a full event
+calendar. It does not infer timezone, before/after-market, ranking,
+recommendation, or buy/sell meaning beyond the scanner values TradingView
+returns.
 
 Scanner-backed `tv quote <SYMBOL>` and `tv quotes <SYMBOL>...` are
 Desktop-free, but they are not a realtime guarantee. Inspect `time`,

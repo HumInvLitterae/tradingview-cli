@@ -136,6 +136,36 @@ fn fundamentals_rejects_invalid_inputs_before_connecting() {
 }
 
 #[test]
+fn events_help_explains_scanner_backed_event_readback() {
+    tv().args(["events", "--help"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("<SYMBOL>"))
+        .stdout(predicate::str::contains("--event-type"))
+        .stdout(predicate::str::contains("scanner"))
+        .stdout(predicate::str::contains("Desktop"))
+        .stdout(predicate::str::contains("events.v1"))
+        .stdout(predicate::str::contains("earnings"))
+        .stdout(predicate::str::contains("dividend"))
+        .stdout(predicate::str::contains("event calendar"))
+        .stdout(predicate::str::contains("buy/sell").not());
+}
+
+#[test]
+fn events_rejects_blank_symbol_before_connecting() {
+    let blank_symbol = tv()
+        .env("TV_CDP_PORT", "9")
+        .args(["events", " "])
+        .assert()
+        .failure()
+        .code(1);
+    let value = stderr_json(&blank_symbol);
+    assert_eq!(value["success"], false);
+    assert_eq!(value["command"], "events");
+    assert_eq!(value["error"]["kind"], "validation");
+}
+
+#[test]
 fn snapshot_help_explains_desktop_free_evidence_packet() {
     tv().args(["snapshot", "--help"])
         .assert()

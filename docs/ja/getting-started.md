@@ -73,7 +73,7 @@ tv --version
 
 最初に覚えるとよい使い分けは次のとおりです。
 
-- `tv quote`、`tv quotes`、scanner、fundamentals、`tv bars` は
+- `tv quote`、`tv quotes`、scanner、fundamentals、`tv events`、`tv bars` は
   TradingView Desktop を使わずに読み取ります。
 - `tv bars` は、再現可能な履歴の足を取得するための入口です。
 - `tv watch compare` は、既知の複数銘柄を短時間だけ見続けるための
@@ -105,8 +105,14 @@ tv quote AAPL
 tv info NASDAQ:AAPL
 tv bars AAPL --timeframe 1D --count 5
 tv bars NASDAQ:AAPL --timeframe 1D --count 5
+tv events NASDAQ:AAPL --event-type earnings
+tv events NASDAQ:AAPL --event-type dividends
 tv watch compare NASDAQ:AAPL NASDAQ:MSFT --duration-ms 10000 --interval 2000
 ```
+
+`tv events` は、scanner 由来の決算・配当の項目を、イベントとして読みやすい形に
+まとめます。完全なイベントカレンダーではありません。また、ランキング、推奨、
+売買判断を出すものでもありません。
 
 古いチャート例や検証用の履歴データを取得したい場合は、表示中チャートを動かす
 のではなく `tv bars` を使います。

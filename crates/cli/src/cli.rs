@@ -61,6 +61,15 @@ pub enum Command {
         fields: Vec<String>,
     },
     #[command(
+        about = "Get Desktop-free symbol events",
+        long_about = "Get scanner-backed earnings and dividend event readback for one symbol without connecting to TradingView Desktop.\n\nThis command shapes existing scanner fundamentals fields into `events.v1`. It is not a full TradingView event calendar and does not infer timezone, before/after-market, confirmed/estimated, ranking, or trading-recommendation meaning beyond the scanner values TradingView returns. Use `--event-type earnings` or `--event-type dividends` to narrow the readback."
+    )]
+    Events {
+        symbol: String,
+        #[arg(long = "event-type", value_enum, default_value_t = EventType::All)]
+        event_type: EventType,
+    },
+    #[command(
         about = "Get Desktop-free symbol evidence snapshot",
         long_about = "Get a Desktop-free evidence packet for one symbol without connecting to TradingView Desktop.\n\nThe snapshot combines scanner quote, symbol info, and scanner-backed fundamentals sections into one JSON response. Repeated `--group <GROUP>` and `--field <FIELD>` options use the same fundamentals groups and supported fields as `tv fundamentals`; they affect only the fundamentals section. Follow-up hints are advisory metadata for possible next evidence checks; they are not auto-run, ranking, or buy/sell recommendations. Use `tv observe chart` when selected-chart time-window evidence is needed."
     )]
@@ -266,6 +275,23 @@ pub enum QuoteSource {
     Chart,
     QuoteData,
     Auto,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, ValueEnum)]
+pub enum EventType {
+    All,
+    Earnings,
+    Dividends,
+}
+
+impl EventType {
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::All => "all",
+            Self::Earnings => "earnings",
+            Self::Dividends => "dividends",
+        }
+    }
 }
 
 #[derive(Debug, Subcommand)]
@@ -1039,6 +1065,7 @@ impl Command {
             Self::Info { .. } => "info",
             Self::Search { .. } => "search",
             Self::Fundamentals { .. } => "fundamentals",
+            Self::Events { .. } => "events",
             Self::Snapshot { .. } => "snapshot",
             Self::Compare { .. } => "compare",
             Self::Watch { .. } => "watch",

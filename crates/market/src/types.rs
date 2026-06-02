@@ -102,6 +102,109 @@ pub struct Fundamentals {
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize)]
+/// Event-shaped scanner fundamentals readback for one symbol.
+pub struct Events {
+    /// Command-local contract marker.
+    pub contract_version: String,
+    /// Public source marker.
+    pub source: String,
+    /// Command source category used by the CLI source taxonomy.
+    pub source_category: String,
+    /// False because scanner fundamentals reads do not require TradingView Desktop.
+    pub requires_desktop: bool,
+    /// True because this read does not mutate a chart.
+    pub non_mutating: bool,
+    /// Symbol text supplied by the caller.
+    pub requested_symbol: String,
+    /// Exchange-qualified resolved symbol.
+    pub symbol: String,
+    /// Symbol observed in the scanner response.
+    pub observed_symbol: String,
+    /// Scanner market used for the read.
+    pub market: String,
+    /// Requested event type filter.
+    pub requested_event_type: String,
+    /// Event types included in this read.
+    pub event_types: Vec<String>,
+    /// Number of normalized event entries.
+    pub event_count: usize,
+    /// Normalized public-safe event entries.
+    pub events: Vec<EventEntry>,
+    /// Scanner fundamentals field readback used to build events.
+    pub field_readback: EventFieldReadback,
+    /// Source availability summary.
+    pub source_availability: EventSourceAvailability,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize)]
+/// One normalized event-like scanner fundamentals entry.
+pub struct EventEntry {
+    /// Event family, such as `earnings` or `dividends`.
+    pub event_type: String,
+    /// Role within the event family, such as `next`, `latest`, `upcoming`, or `recent`.
+    pub event_status: String,
+    /// TradingView scanner date value when present.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub date: Option<Value>,
+    /// TradingView scanner calendar date value when present.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub calendar_date: Option<Value>,
+    /// TradingView scanner trading date value when present.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub trading_date: Option<Value>,
+    /// TradingView scanner release time value when present.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub time: Option<Value>,
+    /// TradingView scanner publication type value when present.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub publication_type: Option<Value>,
+    /// TradingView scanner dividend ex-date value when present.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub ex_date: Option<Value>,
+    /// TradingView scanner dividend payment date value when present.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub payment_date: Option<Value>,
+    /// TradingView scanner dividend amount value when present.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub amount: Option<Value>,
+    /// TradingView scanner dividend frequency value when present.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub frequency: Option<Value>,
+    /// TradingView scanner dividend yield value when present.
+    #[serde(rename = "yield", skip_serializing_if = "Option::is_none")]
+    pub dividend_yield: Option<Value>,
+    /// TradingView scanner expected annual dividends value when present.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub expected_annual_dividends: Option<Value>,
+    /// Scanner fields that supplied non-null values for this entry.
+    pub source_fields: Vec<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize)]
+/// Scanner fundamentals field readback behind `events.v1`.
+pub struct EventFieldReadback {
+    /// Requested scanner fundamentals groups.
+    pub requested_groups: Vec<String>,
+    /// Requested scanner fundamentals fields.
+    pub requested_fields: Vec<String>,
+    /// Fields whose value slot was missing from the scanner row.
+    pub missing_fields: Vec<String>,
+    /// Fields present in the scanner row with null values.
+    pub unavailable_fields: Vec<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize)]
+/// Source availability summary for `events.v1`.
+pub struct EventSourceAvailability {
+    /// Availability status for the scanner-backed event readback.
+    pub status: String,
+    /// Number of normalized event entries.
+    pub event_count: usize,
+    /// Number of missing or unavailable event fields.
+    pub unavailable_field_count: usize,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize)]
 /// Scanner-backed quote for one resolved symbol.
 pub struct Quote {
     /// Exchange-qualified resolved symbol.

@@ -70,8 +70,8 @@ evidence.
 
 Useful starting points:
 
-- `tv quote`, `tv quotes`, scanner, fundamentals, and `tv bars` read without
-  TradingView Desktop.
+- `tv quote`, `tv quotes`, scanner, fundamentals, `tv events`, and `tv bars`
+  read without TradingView Desktop.
 - `tv bars` is the reproducible historical bars entry point.
 - `tv watch compare` watches a known candidate set for a short time using
   Desktop-free scanner-backed quote reads and one JSON object per line.
@@ -101,8 +101,14 @@ tv quote AAPL
 tv info NASDAQ:AAPL
 tv bars AAPL --timeframe 1D --count 5
 tv bars NASDAQ:AAPL --timeframe 1D --count 5
+tv events NASDAQ:AAPL --event-type earnings
+tv events NASDAQ:AAPL --event-type dividends
 tv watch compare NASDAQ:AAPL NASDAQ:MSFT --duration-ms 10000 --interval 2000
 ```
+
+Use `tv events` when you want an event-shaped view of scanner-backed earnings
+and dividend fields. It is not a full event calendar, and it does not turn
+those fields into rankings, recommendations, or trading advice.
 
 For historical sample preparation, use `tv bars` rather than moving a visible
 Desktop chart:

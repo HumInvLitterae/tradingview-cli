@@ -25,7 +25,7 @@ Use this category when the command can run without TradingView Desktop, CDP, or
 visible chart state. Examples include `tv info <SYMBOL>`,
 `tv fundamentals <SYMBOL>`, `tv quote <SYMBOL>` with the default scanner
 source, `tv quotes <SYMBOL>...`, `tv compare <SYMBOL>...`,
-`tv search <QUERY>`, `tv scanner scan`, `tv scanner hotlist`, and
+`tv events <SYMBOL>`, `tv search <QUERY>`, `tv scanner scan`, `tv scanner hotlist`, and
 `tv scanner metainfo`. Stable Desktop-free read payloads report
 `source_category: "desktop_free_read"`,
 `requires_desktop: false`, and `non_mutating: true`.
@@ -72,13 +72,15 @@ follow-up, switch charts, observe the chart, or take a screenshot on its own.
 `next_action_hints[]` are human-facing wording for the same general direction;
 they are not a machine contract and are not an instruction to blend sources.
 
-`tv fundamentals <SYMBOL> --group earnings|dividends` and matching scanner
-columns can provide event-like values such as earnings and dividend dates.
-Treat those values as scanner-backed field evidence, not as a standalone
-event calendar. A future `tv events` surface would need separate source
-metadata, event-type readback, source availability, and missing/unavailable
-reasons; it must not become a hidden fallback for fundamentals, quotes,
-compare, bars, or chart reads.
+`tv events <SYMBOL>` shapes scanner-backed fundamentals fields into
+`contract_version: "events.v1"` for symbol-scoped earnings and dividend
+readback. It reports `source: "scanner_fundamentals_rest"`,
+`source_category: "desktop_free_read"`, requested / resolved symbol readback,
+event type filters, event counts, and field availability. Treat it as
+event-shaped scanner field evidence, not as a full event calendar. It must not
+become a hidden fallback for fundamentals, quotes, compare, bars, or chart
+reads, and it must not infer timezone, before/after-market, ranking,
+recommendation, or trading judgment beyond the values TradingView returns.
 
 `tv watch compare <SYMBOL>...` is also Desktop-free, but it is a bounded JSONL
 workflow rather than a single JSON packet. It polls scanner-backed quote

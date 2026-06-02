@@ -12,6 +12,7 @@
 //! - [`search_symbols_typed`] for symbol search candidates.
 //! - [`symbol_info_typed`] for Desktop-free symbol metadata.
 //! - [`fundamentals_symbol_typed`] for scanner-backed fundamental fields.
+//! - [`events_symbol_typed`] for event-shaped earnings/dividends readback.
 //! - [`quote_symbol_typed`] for one scanner-backed quote.
 //! - [`quote_symbols_typed`] for ordered batch quotes.
 //! - [`compare_symbols_typed`] for ordered multi-symbol comparison packets.
@@ -50,6 +51,7 @@
 
 mod bars;
 mod compare;
+mod events;
 mod fundamentals;
 mod info;
 mod normalize;
@@ -60,6 +62,7 @@ mod types;
 
 pub use bars::{bars_symbol, bars_symbol_range};
 pub use compare::{compare_symbols, compare_symbols_typed};
+pub use events::{events_symbol, events_symbol_typed};
 pub use fundamentals::{
     fundamentals_symbol, fundamentals_symbol_typed, fundamentals_symbol_with_groups,
     fundamentals_symbol_with_groups_typed, validate_fundamentals_selection,
@@ -71,7 +74,8 @@ pub use snapshot::{snapshot_symbol, snapshot_symbol_typed};
 pub use types::{
     BatchQuoteItem, BatchQuotes, Compare, CompareFieldCoverage, CompareFollowUpHint, CompareItem,
     CompareItemError, CompareMissingEvidence, CompareMissingSummary, CompareResolvedSymbol,
-    CompareSummary, ExtendedHoursQuote, FreshnessCheck, Fundamentals, Quote, QuoteError,
-    SessionQuote, Snapshot, SnapshotSection, SnapshotSectionError, SnapshotSections, SymbolInfo,
-    SymbolSearchResponse, SymbolSearchResult,
+    CompareSummary, EventEntry, EventFieldReadback, EventSourceAvailability, Events,
+    ExtendedHoursQuote, FreshnessCheck, Fundamentals, Quote, QuoteError, SessionQuote, Snapshot,
+    SnapshotSection, SnapshotSectionError, SnapshotSections, SymbolInfo, SymbolSearchResponse,
+    SymbolSearchResult,
 };

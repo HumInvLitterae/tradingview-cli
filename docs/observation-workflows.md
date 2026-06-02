@@ -391,6 +391,8 @@ Use `tv fundamentals` for scanner-backed fundamentals and event-like fields:
 ```bash
 tv fundamentals NYSE:IONQ --group earnings
 tv fundamentals AAPL --group dividends
+tv events NASDAQ:AAPL --event-type earnings
+tv events NASDAQ:AAPL --event-type dividends
 ```
 
 The earnings and dividend groups are scanner field bundles, not a complete
@@ -400,18 +402,17 @@ fields. Treat `field_values` as the source of truth and avoid inferring
 timezone, before/after-market meaning, publication-code meaning, or investment
 significance unless another source supplies that interpretation.
 
-`tv events` is only feasibility work today. Do not describe scanner-backed
-fundamentals fields as an events command. If a standalone event surface is
-added later, the first likely scope is symbol-scoped earnings and dividends
-with explicit event type, date/time wording, source metadata, source
-availability, and missing/unavailable reasons.
+Use `tv events <SYMBOL>` when a symbol-scoped event-shaped readback is easier
+to consume than raw fundamentals fields. It returns `events.v1` from the same
+scanner fundamentals source, with event type, source metadata, event count,
+field availability, and missing/unavailable field readback. It is not a full
+event calendar and does not infer timezone, before/after-market, ranking,
+recommendation, or buy/sell meaning.
 
 ## Deferred Surfaces
 
 The following are not normal observation workflow steps today:
 
-- standalone `tv events`;
-- stable browserless historical bars;
 - browserless streaming;
 - binary split such as separate Desktop-free and Desktop-backed executables;
 - MCP server, daemon, dashboard, or trading-bot behavior;
