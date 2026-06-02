@@ -148,6 +148,13 @@ needs. After that, `tv readiness` confirms that a chart target is available,
 `tv tab list` shows available targets, and `tv state` confirms that the
 selected chart can be read.
 
+On macOS, the normal `tv launch` path uses the system app launcher so
+TradingView Desktop is not tied to the command's child-process lifetime. Use
+`tv launch --path <TRADINGVIEW_DESKTOP_PATH>` only when you intentionally want
+to start a specific executable. Use `--kill-existing` only when you are ready
+to terminate an existing TradingView Desktop session and start it again with
+the local connection option.
+
 If `tv launch` cannot find TradingView Desktop, use:
 
 ```bash

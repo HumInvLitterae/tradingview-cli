@@ -21,9 +21,10 @@ observation surface.
 2. Inspect `ready`, `target_selection`, `selected_target.target_cli_args`,
    `chart_readiness`, `bars_readiness`, and `next_action_hint` before using
    visual fallback. If there is no connection,
-   run `tv launch` once. If it still cannot connect, explain that the user must
-   launch TradingView with a remote debugging port or provide
-   `tv launch --path <PATH>`.
+   run `tv launch` once. On macOS, normal `tv launch` uses the system app
+   launcher; use `tv launch --path <PATH>` only when the user intentionally
+   wants a specific executable. If it still cannot connect, explain that the
+   user may need to start TradingView manually or provide the executable path.
 3. If multiple chart targets are open or the connected chart is unclear, run
    `tv tab list` and use the desired target's `target_cli_args`, for example
    `tv --target-id <ID> quote`, for follow-up chart commands. Do not use

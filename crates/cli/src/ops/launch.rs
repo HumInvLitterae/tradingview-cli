@@ -141,12 +141,37 @@ pub async fn launch(request: LaunchRequest) -> Result<Value, AppError> {
         ));
     }
 
-    let target = resolve_launch_target(request.binary_path.as_deref())?;
     if request.kill_existing {
         kill_existing_tradingview();
         tokio::time::sleep(Duration::from_millis(1500)).await;
     }
 
+    if should_use_macos_open_primary(env::consts::OS, request.binary_path.as_deref()) {
+        launch_with_macos_open(&request)?;
+        let last_version = wait_for_cdp_version(&request).await?;
+        let ready = last_version.is_some();
+        let warning = launch_warning(ready, false, request.kill_existing);
+
+        return Ok(launch_payload(
+            &request,
+            LaunchPayloadInput {
+                binary: None,
+                pid: None,
+                used_existing: false,
+                cdp_ready: ready,
+                launch_method: LaunchMethod::MacosOpen,
+                resolved_by: None,
+                fallback_used: false,
+                version: last_version.unwrap_or(CdpVersion {
+                    browser: None,
+                    user_agent: None,
+                }),
+                warning,
+            },
+        ));
+    }
+
+    let target = resolve_launch_target(request.binary_path.as_deref())?;
     let launch_method = if target.resolved_by == ResolvedBy::WindowsAppx {
         LaunchMethod::WindowsAppxDirect
     } else {
@@ -505,6 +530,10 @@ fn should_attempt_macos_open(os: &str) -> bool {
     os == "macos"
 }
 
+fn should_use_macos_open_primary(os: &str, explicit_path: Option<&Path>) -> bool {
+    should_attempt_macos_open(os) && explicit_path.is_none()
+}
+
 fn launch_with_macos_open(request: &LaunchRequest) -> Result<(), AppError> {
     if !should_attempt_macos_open(env::consts::OS) {
         return Err(AppError::new(
@@ -668,6 +697,19 @@ mod tests {
         assert!(should_attempt_macos_open("macos"));
         assert!(!should_attempt_macos_open("windows"));
         assert!(!should_attempt_macos_open("linux"));
+    }
+
+    #[test]
+    fn macos_open_primary_is_used_only_without_explicit_path() {
+        let path = PathBuf::from("/tmp/TradingView");
+
+        assert!(should_use_macos_open_primary("macos", None));
+        assert!(!should_use_macos_open_primary(
+            "macos",
+            Some(path.as_path())
+        ));
+        assert!(!should_use_macos_open_primary("windows", None));
+        assert!(!should_use_macos_open_primary("linux", None));
     }
 
     #[test]

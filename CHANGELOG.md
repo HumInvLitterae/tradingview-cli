@@ -7,6 +7,12 @@ package version omits the leading `v`.
 
 ## Unreleased
 
+### Fixed
+
+- Hardened `tv launch` on macOS by using the system app launcher for the
+  normal no-path launch path, avoiding direct binary spawn as the default while
+  keeping explicit `--path` and `--kill-existing` behavior opt-in.
+
 ### Documentation
 
 - Added the `v0.24.0` roadmap direction and first launch process-handling
