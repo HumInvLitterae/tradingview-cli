@@ -5,192 +5,81 @@ description: Scan or compare a small set of TradingView symbols with the Rust `t
 
 # Multi-Symbol Scan
 
-Use this skill to compare several TradingView symbols through the Rust `tv`
-CLI using Desktop-free comparison first.
+Use this skill to compare several TradingView symbols with the Rust `tv` CLI.
 Default to Desktop-free reads for broad comparison. Move to Desktop-backed
-reads only for finalists that need selected-chart OHLCV, visible studies, or
-screenshots. Treat `tv quote --source auto` as hybrid source selection and
-`tv bars` as Desktop-free historical bars evidence, not realtime data.
+selected-chart reads only for finalists that need chart bars, visible studies,
+Replay context, or screenshots.
 
-For the current observation command sequence, use
-`docs/observation-workflows.md`. This skill should stay focused on shortlist
-construction, not on duplicating the full source taxonomy.
+Use this `SKILL.md` for routine scans. Read `references/workflow.md` only when
+you need the detailed command map, source notes, or unsupported-feature
+reminders. If command choice is unclear, check
+`docs/observation-workflows.md`.
 
 ## Read Selection
 
 | Need | Prefer |
 | --- | --- |
-| Broad scanner discovery | `tv scanner scan` or `tv scanner hotlist` |
-| Known-symbol first-pass comparison | `tv compare <SYMBOL>...` |
-| Known-symbol short-window watch | `tv watch compare <SYMBOL>...` |
+| Broad discovery | `tv scanner scan` or `tv scanner hotlist` |
+| Known-symbol comparison | `tv compare <SYMBOL>...` |
+| Short bounded watch of known symbols | `tv watch compare <SYMBOL>...` |
 | Quote-only comparison | `tv quotes <SYMBOL>...` |
-| One-symbol finalist detail | `tv snapshot <SYMBOL>` |
-| Finalist time-window chart evidence | `tv observe chart --duration-ms ...` |
-| Finalist chart-feed quote | `tv quote <SYMBOL> --source chart` |
-| Visual ambiguity | `tv screenshot --region chart --output <PATH>` |
+| One-symbol detail | `tv snapshot <SYMBOL>` |
+| Earnings or dividend context | `tv events <SYMBOL>` |
+| Historical bars | `tv bars <SYMBOL> --from ... --to ...` |
+| Finalist chart evidence | `tv quote --source chart`, `tv ohlcv`, `tv values`, `tv screenshot` |
 
-## Start With Scope
+## Core Workflow
 
-1. Confirm the symbol list, timeframe, and screening criteria from the user request.
-2. Run `tv readiness`; if needed, run `tv watchlist get` to inspect the current TradingView watchlist.
-3. Inspect `ready`, `target_selection`, `chart_readiness`, `bars_readiness`,
-   and `next_action_hint` before assuming the Desktop session is usable. If
-   more than one chart target is
-   open, run `tv tab list` and use `target_cli_args`, for example
-   `tv --target-id <ID> ...`, for any chart-specific follow-up. Do not use
-   `TV_CDP_TARGET_ID`.
-4. For broad discovery, prefer `tv scanner hotlist` or `tv scanner scan` before mutating the chart across many symbols.
-5. Keep chart-by-chart inspection small and serial. The Rust CLI does not implement the old MCP `batch_run` helper.
+1. Clarify the symbol list, timeframe, and screening criteria from the user
+   request. Do not invent a ranking method unless the user gave one.
+2. For broad discovery, use `tv scanner hotlist` or `tv scanner scan`. Use
+   `tv scanner metainfo --field <FIELD>` when field availability is unclear.
+3. For a known list, use `tv compare <SYMBOL>...` first. Read `summary` for
+   coverage and `items[]` for the actual evidence. Treat `follow_up_hints[]`
+   as advisory next evidence surfaces, not recommendations.
+4. Use `tv watch compare <SYMBOL>... --duration-ms <MS> --interval <MS>` only
+   when the same candidate set needs a short scanner-backed watch window.
+   Report `watch_compare.v1` event counts, source marker, and end reason.
+5. Use `tv bars` for reproducible historical bars. When a bare symbol resolves
+   automatically, report `requested_symbol`, `resolved_symbol`, and
+   `symbol_resolution`; retry with `EXCHANGE:SYMBOL` if the exchange matters.
+6. Use `tv events <SYMBOL>` for scanner-backed earnings and dividend evidence.
+   Treat it as event context, not a complete calendar or recommendation.
+7. Escalate to TradingView Desktop only for finalists. Run `tv readiness`; if
+   multiple targets are open, run `tv tab list` and use `target_cli_args`.
+8. For finalist chart checks, set `tv symbol` and `tv timeframe`, confirm with
+   `tv ohlcv --count 1` or `tv ohlcv --summary`, then read selected-chart
+   evidence with `tv quote --source chart`, `tv values`, drawing reads, or
+   screenshots.
+9. Add watchlist entries only after user approval with
+   `tv watchlist add-bulk <SYMBOL>... --allow-partial`.
 
-## Scan Workflow
+## Source Boundaries
 
-1. Use `tv scanner hotlist <SLUG> --limit <N>` or `tv scanner scan ...` for
-   broad read-only discovery when the criteria can be expressed as scanner
-   filters. Use `tv scanner metainfo --field <FIELD>` when you need to confirm
-   scanner field availability.
-2. For several known symbols, use `tv compare <SYMBOL>...` for an ordered
-   Desktop-free comparison packet with quote, info, and fundamentals sections.
-   Read `summary` for requested/resolved/error counts, section success counts,
-   missing totals, requested-to-resolved symbol mapping, field coverage, and
-   requested-order indexes. `summary.coverage_status` is only evidence
-   completeness (`complete`, `partial`, or `blocked`); keep raw `items[]` as
-   the evidence source for any actual comparison. For regular-session movement,
-   use `items[].movement.regular_change_percent` as the stable first-pass
-   readback and confirm against raw `items[].sections.quote.data.change` when
-   needed; do not infer absolute change from last/close. Per-item `follow_up_hints`
-   are available next evidence surfaces, not recommendations. Stable follow-up
-   kinds are `snapshot`, `chart_quote`, `observe_chart`, and `screenshot`;
-   read `requires_desktop`, `source_category`, `non_mutating`,
-   `evidence_role`, and `auto_execute: false` before deciding whether a
-   separate follow-up command is appropriate;
-   keep `chart_quote` as the canonical selected-chart quote kind and do not
-   rename it to `quote_chart`. Use `items[].missing_evidence[]` to route
-   section gaps to stable follow-up kinds such as `snapshot` or `chart_quote`;
-   do not treat those hints as symbol ranking.
-   Use `tv quotes <SYMBOL>...` only when ordered quote fields are enough. Use
-   `tv snapshot <SYMBOL>` for one-symbol first-pass evidence before mutating
-   the chart; it combines quote, symbol info, and fundamentals sections.
-   Snapshot `summary` and `missing_evidence[]` provide one-symbol coverage and
-   follow-up routing readback, while raw `sections` remain the evidence. Use
-   lower-level `tv quote`, `tv info`, or
-   `tv fundamentals <SYMBOL> --group earnings|valuation|dividends|financials`
-   only when one section is enough. Use `tv events <SYMBOL>` when a finalist
-   needs event-shaped earnings/dividend readback from the same scanner
-   fundamentals source. Preserve
-   `source_category: "desktop_free_read"`, `requires_desktop: false`, and
-   `non_mutating: true` when reporting this REST-backed evidence.
-   Use `tv watch compare <SYMBOL>... --duration-ms <MS> --interval <MS>` when
-   the same known candidate set needs a short scanner-backed JSONL watch
-   window. Read `watch_compare.v1` readiness / sample / heartbeat / summary
-   events and report sample count, poll count, error count, source marker, and
-   end reason. This is not a daemon, selected-chart feed, ranking, or trading
-   recommendation.
-3. Treat scanner-backed price reads as screening evidence rather than a
-   realtime entitlement guarantee. Use `tv quote <SYMBOL> --source chart` only
-   for symbols where the selected TradingView Desktop chart feed matters. Do
-   not implement manual sleep or double-call workarounds; chart-source quote
-   readiness is handled by the CLI with consecutive stable samples and will
-   fail if stale chart bars remain. Do not build multi-symbol realtime loops
-   on chart-source quote; concurrent or nearby chart mutations can still
-   contend with the visible chart. Prefer Desktop-free reads for broad
-   comparison, then use chart-source quote only for finalist symbols that need
-   the selected Desktop feed. Do not use chart-source quote for premarket or
-   postmarket fields; use scanner-backed `tv quote`, `tv quotes`,
-   `tv snapshot`, or `tv compare` when extended-hours evidence matters.
-   Chart-backed compare is not a stable command yet; do not present selected
-   chart reads as if they were scanner-style multi-symbol compare.
-   `tv events <SYMBOL>` is scanner-backed `events.v1` evidence for symbol
-   earnings and dividends. It is not a complete event calendar; use it as
-   screening context, not as ranking, recommendation, trading judgment, or a
-   hidden fallback to another source.
-   Desktop quote-session probes can expose pre/post field names, but they are
-   phase-sensitive live evidence and not a stable multi-symbol screening
-   source. A `post-market` phase observation does not make quote-session
-   pre/post close fields equivalent to scanner `extended_hours`.
-   Use `tv bars <SYMBOL> --count <N>` when bounded Desktop-free historical
-   bars are useful. Bare symbols may resolve through Desktop-free symbol
-   search; report `requested_symbol`, `resolved_symbol`, and
-   `symbol_resolution`, and retry with `EXCHANGE:SYMBOL` if the exchange is
-   not the intended one. Use `--from YYYY-MM-DD --to YYYY-MM-DD` with
-   `--timeframe 5`, `15`, `30`, `60`, `1D`, `1W`, or `1M` for reproducible older
-   intraday, daily, weekly, or monthly samples. Other intraday timeframes
-   remain guarded in date-range mode. In that mode, `--count` defaults to 500
-   and may be raised up to 5000 as a returned-bar safety cap; recent count mode
-   remains capped at 500. The `--to` date is inclusive. Read
-   `contract_version: "bars.v1"`, `source: "tradingview_bars_ws"`,
-   `requested_symbol`, `resolved_symbol`, `symbol_resolution`, `summary`,
-   `range`, `requested_range`, `returned_range`,
-   `range_coverage_status`, `range_alignment`, `range_fetch_summary`,
-   `source_availability`, and `data_quality`, and
-   keep it separate from `tv ohlcv` chart evidence. Treat unavailable bars as
-   source diagnostics, not as proof that a symbol has no history.
-4. Set the timeframe once with `tv timeframe <RESOLUTION>` when the scan uses a shared timeframe.
-5. Switch the chart with `tv symbol <SYMBOL>` only when OHLCV, visible studies,
-   drawings, or screenshots are needed. After switching, confirm fresh chart
-   data with `tv ohlcv --count 1` or `tv ohlcv --summary`.
-6. Gather `tv ohlcv --summary`, `tv values`, and drawing-derived reads such as
-   `tv data lines`, `tv data labels`, or `tv data boxes` only for symbols that
-   need chart context.
-7. Use `tv observe chart --duration-ms <MS> --heartbeat-ms <MS>` for a bounded
-   readiness-plus-last-bar observation window after the scan identifies symbols
-   worth watching. Use lower-level `tv stream quote`, `tv stream bars`, or
-   `tv stream all` only when a specific stream sample type is needed. Read
-   JSONL `source_category`, `requires_desktop`, and `non_mutating` metadata
-   before comparing those observations with Desktop-free scanner or quote
-   results. Apply the same source metadata check to `tv state`, `tv ohlcv`,
-   and chart-source quote payloads. Use `tv watch compare` instead when the
-   short-window question is about a known candidate set using Desktop-free
-   scanner-backed quote evidence.
-   Do not treat selected-chart export as a historical export fallback for
-   multi-symbol sample preparation. Use `tv export chart-bars --from
-   <UNIX_SECONDS> --to <UNIX_SECONDS>` only when the selected Desktop chart
-   itself is the source under review, and report `export_chart_bars.v1`,
-   `chart_context`, `returned_bars_range`, and `selected_chart_range_match`
-   as selected-chart diagnostics.
-8. After user approval, add selected symbols with
-   `tv watchlist add-bulk <SYMBOL>... --allow-partial`; it inherits the
-   API-backed single-symbol add path and reports duplicates or partial
-   failures.
-9. Capture screenshots selectively for finalists or ambiguous cases with
-   `tv screenshot --region chart --output <PATH>`. Treat screenshot output as
-   Desktop-backed visual evidence with `writes_file: true`, not as a market
-   data source.
-10. Present a shortlist or candidate comparison and explain which observations
-    came from scanner REST data, chart reads, or visual interpretation. Do not
-    imply that `tv compare` itself ranked or recommended the symbols.
+- Keep scanner REST data, `tv bars`, selected-chart reads, chart export,
+  Replay, screenshots, and event readback as separate evidence sources.
+- `tv compare` and `tv watch compare` are Desktop-free scanner-backed
+  workflows. Chart-backed compare is not a stable command.
+- `tv export chart-bars` is selected-chart export evidence, not a fallback for
+  multi-symbol historical sample preparation.
+- `tv replay log` is bounded Replay workflow evidence, not historical bars
+  input.
+- Do not present scanner results, event fields, or follow-up hints as
+  ranking, recommendation, scoring, buy/sell advice, or automatic source
+  mixing.
 
-Use `market-data-interpretation` when quote freshness, source differences,
-extended-hours fields, fundamentals, earnings date/time fields, or missing
-values matter. Use `screener-result-analysis` when explaining why scanner or
-Screener rows matched a screen.
+## Recovery
 
-## OHLCV Recovery
+If finalist selected-chart OHLCV fails while symbol or quote reads work, keep
+the full JSON error envelope. Inspect `error.details.phase`,
+`bar_index_state`, and `next_action_hint`; rerun `tv readiness`, choose a
+target with `tv tab list` if needed, and retry with that `--target-id`.
 
-If a finalist chart read returns an `ohlcv` failure while symbol or quote reads
-still work, do not keep retrying the same target. Preserve the full JSON error
-envelope, inspect `error.details.phase`, `bar_index_state`, and
-`next_action_hint`, rerun `tv readiness`, choose the active chart target's
-`target_cli_args`, run `tv --target-id <ID> state`, and retry
-`tv --target-id <ID> ohlcv --count 1`. If structured target and chart
-readiness fields do not explain the visible state, capture
-`tv screenshot --region chart --output <PATH>` or ask the user to inspect the
-chart.
+## Reporting
 
-If the current environment is the Codex app and Computer Use is available, it
-can be used as an optional visual inspection aid after the CLI checks. Do not
-assume it is available for Codex CLI, packaged agents, or other CLI-only
-runtimes.
-
-Use `tv timeframe <RESOLUTION>` for shared timeframe setup. `tv interval` is
-not a command. Use `tv compare <SYMBOL>...` for multi-symbol Desktop-free
-evidence, `tv snapshot <SYMBOL>` for one-symbol Desktop-free quote, info, and
-fundamentals context, including coverage and missing-evidence readback, and
-`tv info <SYMBOL>` or `tv fundamentals <SYMBOL>` with `--group` or `--field`
-only when that narrower section is all you need. Use `tv info` without a
-symbol only for current-chart metadata.
-
-## Boundaries
-
-The Rust CLI can inspect and mutate the current watchlist, read scanner REST data, read chart-model data, and stream read-only chart samples as JSONL. Watchlist add/remove prefer API-backed mutation with readback checks, but still require user approval because they change account state. The CLI does not compute arbitrary historical indicator series, run strategy batches, or provide a generic batch-run helper.
-
-Read `references/workflow.md` when the task needs the original MCP scan shape translated into the current CLI surface.
+Present any shortlist as evidence grouped by the user's criteria, with the
+evidence source for each point. Name missing fields and freshness limitations.
+Use `market-data-interpretation` when the main issue is quote freshness, source
+differences, fundamentals, events, extended-hours fields, or missing values.
+Use `screener-result-analysis` when explaining why scanner or Screener rows
+matched a screen.
