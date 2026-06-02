@@ -9,6 +9,10 @@ package version omits the leading `v`.
 
 ### Added
 
+- Added `tv events <SYMBOL>` as a narrow Desktop-free `events.v1` readback
+  for scanner-backed earnings and dividends fields, with `--event-type
+  <all|earnings|dividends>` and source metadata that keeps it separate from a
+  full event calendar, chart reads, ranking, or recommendations.
 - Added Desktop-free bare symbol resolution for `tv bars`, so input such as
   `AAPL` can resolve through TradingView symbol search while the `bars.v1`
   payload reports both the requested and resolved exchange-qualified symbol.
@@ -24,6 +28,9 @@ package version omits the leading `v`.
 - Added the `v0.24.0` roadmap direction and first launch process-handling
   plan, focusing on operational robustness, `tv bars` symbol usability, and
   high-priority workflow candidates after the `v0.23.0` release.
+- Added the `tv events` symbol-scoped readback plan for `v0.24.0`, shaping
+  existing scanner fundamentals earnings and dividends fields into a narrow
+  event evidence surface.
 - Added the `tv bars` symbol resolution plan for `v0.24.0`, keeping
   Desktop-free symbol search separate from selected-chart and quote sources.
 

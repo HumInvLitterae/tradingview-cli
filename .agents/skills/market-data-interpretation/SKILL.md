@@ -18,7 +18,8 @@ Always name the data source before interpreting values:
 
 - Desktop-free reads: `tv snapshot <SYMBOL>`, `tv compare <SYMBOL>...`,
   `tv watch compare <SYMBOL>...`, `tv quote <SYMBOL>`, `tv quotes <SYMBOL>...`,
-  `tv fundamentals <SYMBOL>`, `tv scanner scan`, and `tv scanner metainfo`.
+  `tv fundamentals <SYMBOL>`, `tv events <SYMBOL>`, `tv scanner scan`, and
+  `tv scanner metainfo`.
   Stable Desktop-free payloads should report
   `source_category: "desktop_free_read"`, `requires_desktop: false`, and
   `non_mutating: true`.
@@ -46,6 +47,7 @@ they were the same source.
 | Several known symbols with quote, info, and fundamentals | `tv compare <SYMBOL>...` |
 | Several known symbols over a short scanner-backed window | `tv watch compare <SYMBOL>...` |
 | One symbol with Desktop-free detail | `tv snapshot <SYMBOL>` |
+| One symbol's earnings/dividend event fields | `tv events <SYMBOL>` |
 | Selected chart over a short window | `tv observe chart --duration-ms ...` |
 | One finalist's selected-chart quote | `tv quote <SYMBOL> --source chart` |
 | Visual evidence after structured reads | `tv screenshot --region chart|full --output <PATH>` |
@@ -257,12 +259,15 @@ bundle; use `--field` for exact scanner fields. Treat `field_values` as the
 source of truth. Do not infer timezone, before/after-market meaning,
 publication-code meaning, financial analysis, or investment recommendations
 from these fields unless another source explicitly supplies that
-interpretation. The current event-like evidence is still scanner field
-metadata, not a complete event calendar. There is no stable standalone
-`tv events` command yet. If event work appears later, treat it as a separate
-source surface with its own source availability and missing/unavailable
-reasons, not as a fallback for fundamentals, quotes, compare, bars, or chart
-reads.
+interpretation.
+
+`tv events <SYMBOL>` is a Desktop-free `events.v1` readback over scanner
+fundamentals earnings and dividend fields. Use it when an event-shaped payload
+is easier to consume than raw `field_values`. It is not a complete event
+calendar, chart read, ranking, recommendation, or trading judgment. Report
+`source`, `source_category`, `requested_symbol`, `symbol`, `event_count`,
+`events[]`, and `field_readback`; if fields are missing or null, describe them
+as unavailable rather than as proof that no event exists.
 
 For Desktop-backed reads, inspect `tv readiness` before escalating to visual
 checks. It summarizes endpoint, target selection, chart readiness, bars

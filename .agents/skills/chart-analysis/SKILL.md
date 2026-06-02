@@ -50,8 +50,9 @@ observation surface.
    fields when TradingView returns them, but they are not a realtime entitlement
    guarantee. Earnings and dividends values from `tv fundamentals` are
    scanner-backed field evidence, not selected-chart evidence and not a
-   complete event calendar. Do not treat future `tv events` work as a chart
-   read unless its source metadata says so.
+   complete event calendar. `tv events <SYMBOL>` is scanner-backed
+   `events.v1` earnings/dividend readback, not a selected-chart read; use it
+   for context only when its source metadata is relevant to the question.
 2. Set the requested chart context with `tv symbol <SYMBOL>`,
    `tv timeframe <RESOLUTION>`, and `tv type <CHART_TYPE>` only when OHLCV,
    visible studies, drawings, screenshots, or current-chart metadata are

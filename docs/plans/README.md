@@ -8,13 +8,16 @@ for release and next-phase planning.
 
 Current plan:
 
-- `tradingview-cli-bars-symbol-resolution.md`: resolve bare `tv bars`
-  symbols through Desktop-free TradingView symbol search when possible, while
-  reporting both requested and resolved symbols and keeping `EXCHANGE:SYMBOL`
-  as the explicit override.
+- `tradingview-cli-events-symbol-scoped-readback.md`: add narrow
+  `tv events <SYMBOL>` readback for scanner-backed earnings and dividends
+  fields, shaped as `events.v1` without adding a full event calendar source.
 
 Recently completed:
 
+- `tradingview-cli-bars-symbol-resolution.md`: resolved bare `tv bars`
+  symbols through Desktop-free TradingView symbol search when possible, while
+  reporting both requested and resolved symbols and keeping `EXCHANGE:SYMBOL`
+  as the explicit override.
 - `tradingview-cli-launch-process-handling.md`: hardened `tv launch` process
   handling so agent-driven launches do not accidentally terminate TradingView
   Desktop, while keeping `--kill-existing` explicit.

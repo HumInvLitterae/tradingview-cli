@@ -85,6 +85,15 @@ pub async fn dispatch(
             }
             ops::fundamentals_symbol(&symbol, groups, fields).await
         }
+        Command::Events { symbol, event_type } => {
+            if symbol.trim().is_empty() {
+                return Err(AppError::new(
+                    ErrorKind::Validation,
+                    "events symbol must not be empty",
+                ));
+            }
+            ops::events_symbol(&symbol, event_type.as_str()).await
+        }
         Command::Snapshot {
             symbol,
             groups,

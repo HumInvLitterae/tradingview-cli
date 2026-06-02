@@ -74,7 +74,9 @@ construction, not on duplicating the full source taxonomy.
    follow-up routing readback, while raw `sections` remain the evidence. Use
    lower-level `tv quote`, `tv info`, or
    `tv fundamentals <SYMBOL> --group earnings|valuation|dividends|financials`
-   only when one section is enough. Preserve
+   only when one section is enough. Use `tv events <SYMBOL>` when a finalist
+   needs event-shaped earnings/dividend readback from the same scanner
+   fundamentals source. Preserve
    `source_category: "desktop_free_read"`, `requires_desktop: false`, and
    `non_mutating: true` when reporting this REST-backed evidence.
    Use `tv watch compare <SYMBOL>... --duration-ms <MS> --interval <MS>` when
@@ -97,10 +99,10 @@ construction, not on duplicating the full source taxonomy.
    `tv snapshot`, or `tv compare` when extended-hours evidence matters.
    Chart-backed compare is not a stable command yet; do not present selected
    chart reads as if they were scanner-style multi-symbol compare.
-   Earnings and dividends groups are scanner-backed field bundles, not a
-   standalone event calendar. There is no stable `tv events` command yet; use
-   event-like fields only as screening context, not as ranking,
-   recommendation, or a hidden fallback to another source.
+   `tv events <SYMBOL>` is scanner-backed `events.v1` evidence for symbol
+   earnings and dividends. It is not a complete event calendar; use it as
+   screening context, not as ranking, recommendation, trading judgment, or a
+   hidden fallback to another source.
    Desktop quote-session probes can expose pre/post field names, but they are
    phase-sensitive live evidence and not a stable multi-symbol screening
    source. A `post-market` phase observation does not make quote-session

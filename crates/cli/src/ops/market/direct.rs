@@ -18,6 +18,10 @@ pub async fn fundamentals_symbol(
     tradingview_market::fundamentals_symbol_with_groups(symbol, groups, fields).await
 }
 
+pub async fn events_symbol(symbol: &str, event_type: &str) -> Result<Value, AppError> {
+    tradingview_market::events_symbol(symbol, event_type).await
+}
+
 pub async fn snapshot_symbol(
     symbol: &str,
     groups: Vec<String>,
