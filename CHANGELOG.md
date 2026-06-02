@@ -7,6 +7,8 @@ package version omits the leading `v`.
 
 ## Unreleased
 
+## v0.24.0 - 2026-06-03
+
 ### Added
 
 - Added `tv events <SYMBOL>` as a narrow Desktop-free `events.v1` readback
