@@ -8,12 +8,16 @@ for release and next-phase planning.
 
 Current plan:
 
-- `tradingview-cli-events-symbol-scoped-readback.md`: add narrow
-  `tv events <SYMBOL>` readback for scanner-backed earnings and dividends
-  fields, shaped as `events.v1` without adding a full event calendar source.
+- `tradingview-cli-v0.24-pre-release-audit.md`: audit completed `v0.24.0`
+  launch hardening, `tv bars` symbol resolution, and narrow `tv events`
+  readback before release readiness, including docs, skills, tests, source
+  boundaries, and architecture posture.
 
 Recently completed:
 
+- `tradingview-cli-events-symbol-scoped-readback.md`: added narrow
+  `tv events <SYMBOL>` readback for scanner-backed earnings and dividends
+  fields, shaped as `events.v1` without adding a full event calendar source.
 - `tradingview-cli-bars-symbol-resolution.md`: resolved bare `tv bars`
   symbols through Desktop-free TradingView symbol search when possible, while
   reporting both requested and resolved symbols and keeping `EXCHANGE:SYMBOL`

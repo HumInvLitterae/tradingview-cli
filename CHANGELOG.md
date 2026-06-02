@@ -25,6 +25,9 @@ package version omits the leading `v`.
 
 ### Documentation
 
+- Recorded the `v0.24.0` pre-release architecture audit, checking launch
+  handling, bars symbol resolution, events readback, docs, skills, source
+  boundaries, and module posture before release readiness.
 - Added the `v0.24.0` roadmap direction and first launch process-handling
   plan, focusing on operational robustness, `tv bars` symbol usability, and
   high-priority workflow candidates after the `v0.23.0` release.
