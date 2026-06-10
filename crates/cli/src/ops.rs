@@ -81,7 +81,7 @@ pub use screener::{
     screener_screens_rename, screener_screens_save, screener_screens_save_as,
     screener_screens_switch, screener_status,
 };
-pub use screenshot::{screenshot_chart, screenshot_full};
+pub use screenshot::{screenshot_chart, screenshot_full, screenshot_strategy};
 pub use status::status;
 pub use stream::{
     StreamDedupe, StreamEndReason, StreamKind, StreamRequest, stream_heartbeat, stream_sample,

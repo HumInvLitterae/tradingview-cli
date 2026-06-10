@@ -8,13 +8,16 @@ for release and next-phase planning.
 
 Current plan:
 
-- `tradingview-cli-replay-log-ohlcv-attachment.md`: add opt-in
-  selected-chart OHLCV summary attachment to bounded `tv replay log --steps
-  <N>` JSONL events while keeping Replay logs separate from export,
-  screenshots, and Desktop-free `tv bars`.
+- `tradingview-cli-strategy-tester-screenshot.md`: add
+  `tv screenshot --region strategy --output <PATH>` as non-mutating visual
+  evidence for the visible TradingView Strategy Tester panel.
 
 Recently completed:
 
+- `tradingview-cli-replay-log-ohlcv-attachment.md`: added opt-in
+  selected-chart OHLCV summary attachment to bounded `tv replay log --steps
+  <N>` JSONL events while keeping Replay logs separate from export,
+  screenshots, and Desktop-free `tv bars`.
 - `tradingview-cli-events-compare-readback.md`: added `tv events compare
   <SYMBOL>...` as ordered multi-symbol scanner-backed earnings / dividends
   readback while preserving the single-symbol `events.v1` contract.

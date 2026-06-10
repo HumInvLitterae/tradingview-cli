@@ -89,6 +89,11 @@ This project uses Rust 2024.
   `export_chart_bars.v1`, `requested_visible_range`, `range_operation`,
   `chart_context`, `returned_bars_range`, and
   `selected_chart_range_match` are diagnostics, not trading judgments.
+- Treat Strategy Tester panel screenshots as visual evidence, not structured
+  strategy data. `tv screenshot --region strategy` may locate and capture the
+  visible Strategy Tester panel, but it must not open the panel, run a
+  strategy, infer metrics, or replace `tv data strategy`, `tv data trades`, or
+  `tv data equity`.
 - Once an adapter split exposes CDP-free request interpretation or validation,
   move that logic into `crates/model/` if it is reusable and not tied
   to clap or live page state. Drawing is the request-boundary example:

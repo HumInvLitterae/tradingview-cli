@@ -28,14 +28,110 @@ pub async fn screenshot_chart(
     runtime: &mut impl RuntimeEvaluator,
     output_path: &str,
 ) -> Result<Value, AppError> {
-    let bounds = runtime
-        .evaluate(
-            r#"
-            (function() {
-                var el = document.querySelector('[data-name="pane-canvas"]')
-                    || document.querySelector('[class*="chart-container"]')
-                    || document.querySelector('canvas');
-                if (!el) return null;
+    screenshot_clipped(
+        runtime,
+        output_path,
+        "chart",
+        chart_bounds_expression(),
+        None,
+    )
+    .await
+}
+
+pub async fn screenshot_strategy(
+    runtime: &mut impl RuntimeEvaluator,
+    output_path: &str,
+) -> Result<Value, AppError> {
+    screenshot_clipped(
+        runtime,
+        output_path,
+        "strategy",
+        strategy_tester_bounds_expression(),
+        Some(("evidence_role", json!("strategy_tester_panel"))),
+    )
+    .await
+}
+
+async fn screenshot_clipped(
+    runtime: &mut impl RuntimeEvaluator,
+    output_path: &str,
+    region: &str,
+    bounds_expression: &'static str,
+    extra_metadata: Option<(&str, Value)>,
+) -> Result<Value, AppError> {
+    let bounds = runtime.evaluate(bounds_expression, false).await?;
+    let bounds = screenshot_bounds_from_value(&bounds, region)?;
+    let (bytes, capture_mode) = match runtime.capture_screenshot_clip(bounds.clip).await {
+        Ok(bytes) => (bytes, "cdp_clip"),
+        Err(_) => {
+            let full_bytes = runtime.capture_screenshot().await?;
+            (
+                crop_screenshot_to_bounds(&full_bytes, &bounds, region)?,
+                "full_page_crop",
+            )
+        }
+    };
+    write_screenshot(output_path, &bytes, region)?;
+    let mut payload = with_screenshot_metadata(json!({
+        "capture_mode": capture_mode,
+        "output_path": output_path,
+        "file_path": output_path,
+        "method": "cdp",
+        "region": region,
+        "size_bytes": bytes.len(),
+        "clip": bounds.clip,
+    }));
+    if let Some((key, value)) = extra_metadata
+        && let Some(object) = payload.as_object_mut()
+    {
+        object.insert(key.to_string(), value);
+    }
+    Ok(payload)
+}
+
+fn chart_bounds_expression() -> &'static str {
+    r#"
+    (function() {
+        var el = document.querySelector('[data-name="pane-canvas"]')
+            || document.querySelector('[class*="chart-container"]')
+            || document.querySelector('canvas');
+        if (!el) return null;
+        var rect = el.getBoundingClientRect();
+        var viewport = window.visualViewport || {};
+        return {
+            x: rect.x,
+            y: rect.y,
+            width: rect.width,
+            height: rect.height,
+            viewport_width: viewport.width || window.innerWidth,
+            viewport_height: viewport.height || window.innerHeight
+        };
+    })()
+    "#
+}
+
+fn strategy_tester_bounds_expression() -> &'static str {
+    r#"
+    (function() {
+        function visible(el) {
+            if (!el) return false;
+            var rect = el.getBoundingClientRect();
+            var style = window.getComputedStyle ? window.getComputedStyle(el) : null;
+            return rect.width > 0 && rect.height > 0 && (!style || (style.visibility !== 'hidden' && style.display !== 'none'));
+        }
+        var selectors = [
+            '[data-name="backtesting"]',
+            '[class*="strategyReport"]',
+            '[class*="backtesting"]',
+            '[data-name*="strategy" i]',
+            '[aria-label*="Strategy Tester" i]',
+            '[aria-label*="Backtesting" i]'
+        ];
+        for (var i = 0; i < selectors.length; i++) {
+            var matches = Array.from(document.querySelectorAll(selectors[i]));
+            for (var j = 0; j < matches.length; j++) {
+                var el = matches[j];
+                if (!visible(el)) continue;
                 var rect = el.getBoundingClientRect();
                 var viewport = window.visualViewport || {};
                 return {
@@ -44,34 +140,14 @@ pub async fn screenshot_chart(
                     width: rect.width,
                     height: rect.height,
                     viewport_width: viewport.width || window.innerWidth,
-                    viewport_height: viewport.height || window.innerHeight
+                    viewport_height: viewport.height || window.innerHeight,
+                    selector: selectors[i]
                 };
-            })()
-            "#,
-            false,
-        )
-        .await?;
-    let bounds = screenshot_bounds_from_value(&bounds)?;
-    let (bytes, capture_mode) = match runtime.capture_screenshot_clip(bounds.clip).await {
-        Ok(bytes) => (bytes, "cdp_clip"),
-        Err(_) => {
-            let full_bytes = runtime.capture_screenshot().await?;
-            (
-                crop_screenshot_to_bounds(&full_bytes, &bounds)?,
-                "full_page_crop",
-            )
+            }
         }
-    };
-    write_screenshot(output_path, &bytes, "chart")?;
-    Ok(with_screenshot_metadata(json!({
-        "capture_mode": capture_mode,
-        "output_path": output_path,
-        "file_path": output_path,
-        "method": "cdp",
-        "region": "chart",
-        "size_bytes": bytes.len(),
-        "clip": bounds.clip,
-    })))
+        return null;
+    })()
+    "#
 }
 
 fn with_screenshot_metadata(mut payload: Value) -> Value {
@@ -90,6 +166,11 @@ fn with_screenshot_metadata(mut payload: Value) -> Value {
 }
 
 fn screenshot_error_details(phase: &str, region: &str) -> Value {
+    let next_action_hint = if region == "strategy" {
+        "Open the Strategy Tester panel for the active chart, confirm a strategy is applied with `tv data strategy`, then retry `tv screenshot --region strategy --output <PATH>` against the intended target_cli_args."
+    } else {
+        "Run `tv readiness` to inspect Desktop target and chart readiness. If the chart is visually present, retry `tv screenshot --region chart --output <PATH>` against the intended target_cli_args."
+    };
     json!({
         "phase": phase,
         "region": region,
@@ -99,7 +180,7 @@ fn screenshot_error_details(phase: &str, region: &str) -> Value {
         "non_mutating": true,
         "writes_file": false,
         "visual_evidence": false,
-        "next_action_hint": "Run `tv readiness` to inspect Desktop target and chart readiness. If the chart is visually present, retry `tv screenshot --region chart --output <PATH>` against the intended target_cli_args.",
+        "next_action_hint": next_action_hint,
     })
 }
 
@@ -132,21 +213,30 @@ struct ScreenshotBounds {
     viewport_height: f64,
 }
 
-fn screenshot_bounds_from_value(bounds: &Value) -> Result<ScreenshotBounds, AppError> {
+fn screenshot_bounds_from_value(
+    bounds: &Value,
+    region: &str,
+) -> Result<ScreenshotBounds, AppError> {
     let Some(object) = bounds.as_object() else {
         return Err(AppError::new(
             ErrorKind::InternalApiUnavailable,
-            "Could not find TradingView chart bounds for screenshot",
+            format!("Could not find TradingView {region} bounds for screenshot"),
         )
-        .with_details(screenshot_error_details("chart_bounds_missing", "chart")));
+        .with_details(screenshot_error_details(
+            &format!("{region}_bounds_missing"),
+            region,
+        )));
     };
     let number = |key: &str| -> Result<f64, AppError> {
         object.get(key).and_then(Value::as_f64).ok_or_else(|| {
             AppError::new(
                 ErrorKind::InternalApiUnavailable,
-                format!("TradingView chart bounds did not include numeric {key}"),
+                format!("TradingView {region} bounds did not include numeric {key}"),
             )
-            .with_details(screenshot_error_details("chart_bounds_invalid", "chart"))
+            .with_details(screenshot_error_details(
+                &format!("{region}_bounds_invalid"),
+                region,
+            ))
         })
     };
     let clip = ScreenshotClip {
@@ -171,9 +261,12 @@ fn screenshot_bounds_from_value(bounds: &Value) -> Result<ScreenshotBounds, AppE
     {
         return Err(AppError::new(
             ErrorKind::InternalApiUnavailable,
-            "TradingView chart bounds were invalid for screenshot",
+            format!("TradingView {region} bounds were invalid for screenshot"),
         )
-        .with_details(screenshot_error_details("chart_bounds_invalid", "chart")));
+        .with_details(screenshot_error_details(
+            &format!("{region}_bounds_invalid"),
+            region,
+        )));
     }
     Ok(ScreenshotBounds {
         clip,
@@ -185,13 +278,14 @@ fn screenshot_bounds_from_value(bounds: &Value) -> Result<ScreenshotBounds, AppE
 fn crop_screenshot_to_bounds(
     screenshot: &[u8],
     bounds: &ScreenshotBounds,
+    region: &str,
 ) -> Result<Vec<u8>, AppError> {
     let image = image::load_from_memory(screenshot).map_err(|err| {
         AppError::new(
             ErrorKind::InternalApiUnavailable,
-            format!("Could not decode screenshot PNG for chart crop: {err}"),
+            format!("Could not decode screenshot PNG for {region} crop: {err}"),
         )
-        .with_details(screenshot_error_details("decode_full_screenshot", "chart"))
+        .with_details(screenshot_error_details("decode_full_screenshot", region))
     })?;
     let image_width = image.width();
     let image_height = image.height();
@@ -200,7 +294,7 @@ fn crop_screenshot_to_bounds(
             ErrorKind::InternalApiUnavailable,
             "Screenshot PNG was empty",
         )
-        .with_details(screenshot_error_details("decode_full_screenshot", "chart")));
+        .with_details(screenshot_error_details("decode_full_screenshot", region)));
     }
 
     let scale_x = image_width as f64 / bounds.viewport_width;
@@ -224,9 +318,12 @@ fn crop_screenshot_to_bounds(
     if width == 0 || height == 0 {
         return Err(AppError::new(
             ErrorKind::InternalApiUnavailable,
-            "TradingView chart bounds were outside the screenshot",
+            format!("TradingView {region} bounds were outside the screenshot"),
         )
-        .with_details(screenshot_error_details("crop_chart_screenshot", "chart")));
+        .with_details(screenshot_error_details(
+            &format!("crop_{region}_screenshot"),
+            region,
+        )));
     }
 
     let cropped = image.crop_imm(x, y, width, height);
@@ -236,9 +333,12 @@ fn crop_screenshot_to_bounds(
         .map_err(|err| {
             AppError::new(
                 ErrorKind::Internal,
-                format!("Could not encode cropped chart screenshot: {err}"),
+                format!("Could not encode cropped {region} screenshot: {err}"),
             )
-            .with_details(screenshot_error_details("encode_chart_crop", "chart"))
+            .with_details(screenshot_error_details(
+                &format!("encode_{region}_crop"),
+                region,
+            ))
         })?;
     Ok(cursor.into_inner())
 }
@@ -383,6 +483,51 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn screenshot_strategy_writes_clipped_png_bytes() {
+        let dir = tempdir().unwrap();
+        let output = dir.path().join("strategy.png");
+        let clipped_png = png_fixture(700, 260);
+        let mut runtime = FakeRuntime::new([json!({
+            "x": 30.0,
+            "y": 420.0,
+            "width": 700.0,
+            "height": 260.0,
+            "viewport_width": 1000.0,
+            "viewport_height": 720.0,
+            "selector": "[data-name=\"backtesting\"]"
+        })])
+        .with_clipped_screenshot(clipped_png);
+
+        let data = screenshot_strategy(&mut runtime, output.to_str().unwrap())
+            .await
+            .unwrap();
+
+        assert_eq!(data["region"], "strategy");
+        assert_eq!(data["evidence_role"], "strategy_tester_panel");
+        assert_eq!(data["capture_mode"], "cdp_clip");
+        assert_eq!(data["source"], "desktop_screenshot");
+        assert_eq!(data["source_category"], "desktop_backed_read");
+        assert_eq!(data["requires_desktop"], true);
+        assert_eq!(data["non_mutating"], true);
+        assert_eq!(data["writes_file"], true);
+        assert_eq!(data["visual_evidence"], true);
+        assert_eq!(data["clip"]["x"], 30.0);
+        assert_eq!(data["clip"]["height"], 260.0);
+        assert!(
+            runtime.evaluated[0]
+                .0
+                .contains("[data-name=\"backtesting\"]")
+        );
+        assert!(runtime.evaluated[0].0.contains("strategyReport"));
+        assert_eq!(runtime.clipped_screenshot_count, 1);
+        assert_eq!(runtime.screenshot_count, 0);
+
+        let cropped = image::load_from_memory(&fs::read(output).unwrap()).unwrap();
+        assert_eq!(cropped.width(), 700);
+        assert_eq!(cropped.height(), 260);
+    }
+
+    #[tokio::test]
     async fn screenshot_chart_rejects_missing_or_invalid_bounds() {
         let dir = tempdir().unwrap();
         let output = dir.path().join("chart.png");
@@ -411,6 +556,34 @@ mod tests {
                 .as_str()
                 .unwrap()
                 .contains("tv readiness")
+        );
+        assert_eq!(runtime.screenshot_count, 0);
+        assert_eq!(runtime.clipped_screenshot_count, 0);
+    }
+
+    #[tokio::test]
+    async fn screenshot_strategy_rejects_missing_bounds_with_panel_hint() {
+        let dir = tempdir().unwrap();
+        let output = dir.path().join("strategy.png");
+        let mut runtime = FakeRuntime::new([Value::Null]);
+
+        let err = screenshot_strategy(&mut runtime, output.to_str().unwrap())
+            .await
+            .expect_err("missing Strategy Tester bounds should be rejected");
+
+        assert_eq!(err.kind, ErrorKind::InternalApiUnavailable);
+        let details = err.details.unwrap();
+        assert_eq!(details["phase"], "strategy_bounds_missing");
+        assert_eq!(details["region"], "strategy");
+        assert_eq!(details["source"], "desktop_screenshot");
+        assert_eq!(details["source_category"], "desktop_backed_read");
+        assert_eq!(details["requires_desktop"], true);
+        assert_eq!(details["non_mutating"], true);
+        assert!(
+            details["next_action_hint"]
+                .as_str()
+                .unwrap()
+                .contains("Strategy Tester")
         );
         assert_eq!(runtime.screenshot_count, 0);
         assert_eq!(runtime.clipped_screenshot_count, 0);

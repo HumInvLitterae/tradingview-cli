@@ -129,6 +129,7 @@ tv ohlcv --summary --count 100
 tv chart compare NASDAQ:AAPL NASDAQ:MSFT
 tv export chart-bars --from 1704067200 --to 1706745600 --summary
 tv screenshot --region chart --output target/tv-chart.png
+tv screenshot --region strategy --output target/tv-strategy.png
 ```
 
 On macOS, `tv launch` uses the system app launcher for the normal no-path case
@@ -235,6 +236,11 @@ bars, capture screenshots, or replace `tv bars --from/--to`. Add
 `--attach-ohlcv-summary [--ohlcv-count <N>]` only when each Replay step should
 also carry explicit selected-chart OHLCV summary evidence; that attachment has
 its own `replay_log_ohlcv_summary_attachment.v1` source metadata.
+
+Use `tv screenshot --region strategy --output <PATH>` when a report needs
+visual evidence of the visible Strategy Tester panel. It is screenshot
+evidence only; use `tv data strategy`, `tv data trades`, and `tv data equity`
+for structured strategy fields when TradingView exposes them.
 
 Use `tv --help` for the full command list and `tv <COMMAND> --help` for command
 details. See `docs/observation-workflows.md` for practical command sequences

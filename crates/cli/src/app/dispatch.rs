@@ -1198,10 +1198,10 @@ pub async fn dispatch(
             }
         }
         Command::Screenshot { region, output } => {
-            if !matches!(region.as_str(), "full" | "chart") {
+            if !matches!(region.as_str(), "full" | "chart" | "strategy") {
                 return Err(AppError::new(
                     ErrorKind::Validation,
-                    "Only --region full and --region chart are supported",
+                    "Only --region full, --region chart, and --region strategy are supported",
                 )
                 .with_details(json!({ "region": region })));
             }
@@ -1215,6 +1215,7 @@ pub async fn dispatch(
             match region.as_str() {
                 "full" => ops::screenshot_full(&mut runtime, &output).await,
                 "chart" => ops::screenshot_chart(&mut runtime, &output).await,
+                "strategy" => ops::screenshot_strategy(&mut runtime, &output).await,
                 _ => unreachable!("screenshot region should be validated"),
             }
         }

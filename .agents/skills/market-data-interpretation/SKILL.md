@@ -42,7 +42,7 @@ the task needs them. If command choice is unclear, check
 | Selected-chart quote or bars | `tv quote --source chart`, `tv ohlcv`, or `tv state` |
 | Explicit visible-chart export | `tv export chart-bars --from ... --to ...` |
 | Replay step context with bars summary | `tv replay log --steps <N> --attach-ohlcv-summary` |
-| Visual evidence | `tv screenshot --region chart|full --output <PATH>` |
+| Visual evidence | `tv screenshot --region chart|full|strategy --output <PATH>` |
 
 ## Source Rules
 

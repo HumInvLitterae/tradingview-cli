@@ -765,11 +765,13 @@ changes the boundary:
   source is known.
 - `screenshot --region chart`: uses DOM only to compute the visible chart
   rectangle before CDP screenshot capture.
+- `screenshot --region strategy`: uses DOM only to compute the visible
+  Strategy Tester / backtesting panel rectangle before CDP screenshot capture.
 - Screenshot payloads report `source: "desktop_screenshot"`,
   `source_category: "desktop_backed_read"`, `requires_desktop: true`,
   `non_mutating: true`, `writes_file: true`, and `visual_evidence: true`.
-  Chart bounds, crop, and file-write failures should return public-safe phase
-  details and a `tv readiness` recovery hint rather than raw DOM payloads.
+  Bounds, crop, and file-write failures should return public-safe phase details
+  and a recovery hint rather than raw DOM payloads.
 - strategy DOM fallbacks: read currently rendered Strategy Tester rows only
   when chart-model report data is unavailable.
 - generic `ui` commands: compatibility automation by definition; prefer
