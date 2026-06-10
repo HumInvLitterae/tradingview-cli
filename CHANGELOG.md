@@ -7,6 +7,13 @@ package version omits the leading `v`.
 
 ## Unreleased
 
+### Documentation
+
+- Added the `v0.25.0` roadmap direction and first chart-backed compare
+  command plan, keeping future Desktop-backed selected-chart compare separate
+  from scanner-backed `tv compare` / `tv watch compare` while carrying
+  `tv events` expansion and Replay evidence attachment as adjacent lanes.
+
 ## v0.24.0 - 2026-06-03
 
 ### Added

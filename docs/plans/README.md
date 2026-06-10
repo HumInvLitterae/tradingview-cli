@@ -8,12 +8,16 @@ for release and next-phase planning.
 
 Current plan:
 
-- `tradingview-cli-v0.24.0-release-readiness.md`: prepare the `v0.24.0`
-  release state, including version, changelog, release notes, README asset
-  examples, package staging, runtime-skill packaging, and release validation.
+- `tradingview-cli-chart-backed-compare-command.md`: plan the first
+  `v0.25.0` chart-backed compare implementation candidate, keeping existing
+  scanner-backed `tv compare` separate from future Desktop-backed selected
+  chart evidence.
 
 Recently completed:
 
+- `tradingview-cli-v0.24.0-release-readiness.md`: prepared the `v0.24.0`
+  release state, including version, changelog, release notes, README asset
+  examples, package staging, runtime-skill packaging, and release validation.
 - `tradingview-cli-runtime-skill-context-cleanup.md`: reduced runtime skill
   context load by keeping common workflows in `SKILL.md` and moving detailed
   source-boundary notes into skill references before `v0.24.0` release
