@@ -38,8 +38,9 @@ details, or unsupported-feature reminders. If command choice is unclear, check
    `tv ohlcv --count 1` or `tv ohlcv --summary`.
 4. Read selected-chart evidence with `tv state`, `tv quote --source chart`,
    `tv ohlcv --summary`, `tv values`, and `tv data lines|labels|tables|boxes`.
-5. Use `tv screenshot --region chart --output <PATH>` when visual evidence
-   would materially help.
+5. Use `tv screenshot --region chart --output <PATH>` when chart visual
+   evidence would materially help. Use `--region strategy` only when the
+   visible Strategy Tester panel itself is the evidence.
 6. Use `tv observe chart --duration-ms ...` only for a short selected-chart
    observation window. Use `tv stream ...` only when a lower-level sample type
    is specifically needed.

@@ -129,14 +129,18 @@ from scanner REST reads and account/page operations.
 Recommended agent use: run `tv readiness` first when chart target, chart API,
 or bars readiness is uncertain. Preserve structured readiness fields, then use
 `tv screenshot --region chart|full --output <PATH>` only when structured fields
-do not explain the visible state. For short monitoring windows, prefer bounded
-`tv observe chart --duration-ms ... --heartbeat-ms ...` when readiness plus
-last-bar observation is the workflow you need. Use lower-level bounded stream
-controls such as `--duration-ms`, `--max-events`, and `--heartbeat-ms` when a
-specific `tv stream ...` sample type is needed. Stream and observe JSONL events
-identify chart samples with `source: "desktop_chart_stream"` and
-`source_category: "desktop_backed_read"` so agents can distinguish them from
-Desktop-free scanner reads or browserless historical bars.
+do not explain the visible state. Use
+`tv screenshot --region strategy --output <PATH>` only when the visible
+Strategy Tester panel itself is needed as visual evidence; use `tv data
+strategy`, `tv data trades`, and `tv data equity` for structured strategy
+fields. For short monitoring windows, prefer bounded `tv observe chart
+--duration-ms ... --heartbeat-ms ...` when readiness plus last-bar observation
+is the workflow you need. Use lower-level bounded stream controls such as
+`--duration-ms`, `--max-events`, and `--heartbeat-ms` when a specific
+`tv stream ...` sample type is needed. Stream and observe JSONL events identify
+chart samples with `source: "desktop_chart_stream"` and `source_category:
+"desktop_backed_read"` so agents can distinguish them from Desktop-free
+scanner reads or browserless historical bars.
 
 For `v0.18`, JSONL observation maturity is contract polish on these existing
 selected-chart reads. `tv stream ...` sample, heartbeat, and summary events

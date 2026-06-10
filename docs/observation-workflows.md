@@ -32,6 +32,7 @@ tv scanner metainfo --market america --field close
 | Selected chart over a short window | `tv observe chart --duration-ms ...` | You need readiness plus selected-chart last-bar samples, heartbeats, and final bounded-window summary. |
 | Finalist chart-feed quote | `tv quote <SYMBOL> --source chart` | The selected TradingView Desktop chart feed for one symbol is the source that matters. |
 | Visible-state evidence gap | `tv screenshot --region chart|full --output <PATH>` | Structured reads do not explain the visible chart or Screener state. |
+| Strategy Tester panel image | `tv screenshot --region strategy --output <PATH>` | A strategy report needs visual evidence of the visible Strategy Tester panel. |
 
 Use `tv snapshot <SYMBOL>` for a first-pass packet on one symbol. It combines
 scanner quote, symbol info, and scanner-backed fundamentals without connecting
@@ -257,17 +258,20 @@ quote-data to `--source auto`.
 ## Visual Evidence Recovery
 
 Structured fields should come first. Use screenshots only when readiness,
-state, OHLCV, stream, or observe output does not explain the visible chart or
-Screener state:
+state, OHLCV, stream, observe output, or Strategy Tester structured data does
+not explain the visible chart, panel, or Screener state:
 
 ```bash
 tv screenshot --region chart --output target/tv-chart.png
+tv screenshot --region strategy --output target/tv-strategy.png
 tv screenshot --region full --output target/tv-full.png
 ```
 
 Screenshots are Desktop-backed visual evidence. They do not mutate
 TradingView state, but they write a local file, so screenshot payloads report
-`writes_file: true`.
+`writes_file: true`. `--region strategy` is Strategy Tester panel visual
+evidence only; it does not replace `tv data strategy`, `tv data trades`, or
+`tv data equity`.
 
 ## Browserless Historical Bars
 

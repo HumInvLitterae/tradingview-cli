@@ -28,7 +28,7 @@ loaded every time the skill triggers.
 | Drawing lifecycle | `tv draw shape/list/get/remove/clear` |
 | Replay controls | `tv replay status/start/step/autoplay/trade/stop` |
 | Replay step log | `tv replay log --steps <N>` |
-| Screenshot | `tv screenshot --region full|chart --output <PATH>` |
+| Screenshot | `tv screenshot --region full|chart|strategy --output <PATH>` |
 
 ## Source Notes
 
@@ -62,10 +62,10 @@ loaded every time the skill triggers.
 
 ## Remaining Gaps
 
-Strategy tester panel screenshots and arbitrary historical indicator-series
-computation are not implemented in the Rust CLI. For a small finalist set that
-needs selected-chart evidence, use `tv chart compare <SYMBOL>...`; for broad
-first-pass comparison, prefer Desktop-free `tv compare` or `tv watch compare`.
-Prefer implemented high-level commands before generic UI automation.
+Arbitrary historical indicator-series computation is not implemented in the
+Rust CLI. For a small finalist set that needs selected-chart evidence, use
+`tv chart compare <SYMBOL>...`; for broad first-pass comparison, prefer
+Desktop-free `tv compare` or `tv watch compare`. Prefer implemented high-level
+commands before generic UI automation.
 
 The MCP server itself is not planned.

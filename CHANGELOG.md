@@ -19,6 +19,9 @@ package version omits the leading `v`.
   `--ohlcv-count <N>` so bounded Replay step logs can explicitly attach
   selected-chart OHLCV summary evidence with
   `replay_log_ohlcv_summary_attachment.v1` metadata.
+- Added `tv screenshot --region strategy --output <PATH>` as
+  non-mutating Strategy Tester panel visual evidence with
+  `evidence_role: "strategy_tester_panel"`.
 
 ### Documentation
 
@@ -32,6 +35,9 @@ package version omits the leading `v`.
 - Recorded the Replay log OHLCV summary attachment slice for `v0.25.0`,
   keeping attachments opt-in and separate from screenshots, Replay export,
   Desktop-free `tv bars`, ranking, and recommendation semantics.
+- Recorded the Strategy Tester screenshot evidence slice for `v0.25.0`,
+  keeping panel visual evidence separate from structured strategy metrics,
+  export, ranking, and recommendation semantics.
 
 ## v0.24.0 - 2026-06-03
 

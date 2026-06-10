@@ -1606,6 +1606,18 @@ fn screenshot_requires_output_before_connecting() {
 }
 
 #[test]
+fn screenshot_help_lists_supported_regions() {
+    tv().args(["screenshot", "--help"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("full"))
+        .stdout(predicate::str::contains("chart"))
+        .stdout(predicate::str::contains("strategy"))
+        .stdout(predicate::str::contains("Strategy Tester"))
+        .stdout(predicate::str::contains("non-mutating"));
+}
+
+#[test]
 fn replay_trade_rejects_invalid_action_before_connecting() {
     let assert = tv()
         .env("TV_CDP_PORT", "9")
@@ -2141,6 +2153,26 @@ fn screenshot_chart_region_attempts_connection() {
 }
 
 #[test]
+fn screenshot_strategy_region_attempts_connection() {
+    let assert = tv()
+        .env("TV_CDP_PORT", "9")
+        .args([
+            "screenshot",
+            "--region",
+            "strategy",
+            "--output",
+            "target/test.png",
+        ])
+        .assert()
+        .failure()
+        .code(2);
+    let value = stderr_json(&assert);
+    assert_eq!(value["success"], false);
+    assert_eq!(value["command"], "screenshot");
+    assert_eq!(value["error"]["kind"], "connection");
+}
+
+#[test]
 fn screenshot_rejects_unsupported_region() {
     let assert = tv()
         .args([
@@ -2157,6 +2189,12 @@ fn screenshot_rejects_unsupported_region() {
     assert_eq!(value["success"], false);
     assert_eq!(value["command"], "screenshot");
     assert_eq!(value["error"]["kind"], "validation");
+    assert!(
+        value["error"]["message"]
+            .as_str()
+            .unwrap()
+            .contains("--region strategy")
+    );
 }
 
 #[test]

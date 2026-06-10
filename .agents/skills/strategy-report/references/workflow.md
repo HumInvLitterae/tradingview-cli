@@ -17,10 +17,10 @@ The original strategy-report skill collected strategy tester results, trade list
 | `data_get_strategy_results` | `tv data strategy` |
 | `data_get_trades` | `tv data trades --max <N>` |
 | `data_get_equity` | `tv data equity` |
-| Strategy tester screenshot | Not implemented |
+| Strategy tester screenshot | `tv screenshot --region strategy --output <PATH>` |
 
 ## Working Pattern Today
 
 Use the CLI for chart, market, and strategy context. If the strategy commands return empty metrics or an `error`, report that as an observation rather than filling the gap with guesses.
 
-Strategy tester panel screenshots remain migration backlog. The MCP server itself is not planned.
+Strategy Tester panel screenshots are visual evidence only. Use `tv data strategy`, `tv data trades`, and `tv data equity` for structured fields when available. The MCP server itself is not planned.

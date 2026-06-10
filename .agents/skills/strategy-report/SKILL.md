@@ -9,7 +9,7 @@ Use this skill for TradingView strategy-report work that combines Rust CLI chart
 
 ## Current Reality
 
-The Rust `tv` CLI can now read strategy metrics, trades, and equity-style data through `tv data strategy`, `tv data trades`, and `tv data equity`. It still does not capture the strategy tester panel screenshot or guarantee full equity-curve availability when TradingView only exposes summary metrics.
+The Rust `tv` CLI can read strategy metrics, trades, equity-style data, and Strategy Tester panel screenshots when TradingView exposes them. It still cannot guarantee full equity-curve availability when TradingView only exposes summary metrics.
 
 ## Useful CLI Evidence
 
@@ -18,6 +18,7 @@ The Rust `tv` CLI can now read strategy metrics, trades, and equity-style data t
 3. Read strategy evidence with `tv data strategy`, `tv data trades --max <N>`, and `tv data equity`.
 4. Use `tv values` when visible strategy-related studies expose useful values on the chart.
 5. Capture chart context with `tv screenshot --region chart --output <PATH>`.
+6. Capture Strategy Tester panel context with `tv screenshot --region strategy --output <PATH>` when the visible panel image matters.
 
 ## Reporting
 

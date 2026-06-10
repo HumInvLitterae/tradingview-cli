@@ -152,8 +152,9 @@ Do not use `TV_CDP_TARGET_ID`; explicit target handoff is `--target-id`.
   `info`, `fundamentals`, `quote`, `quotes`, `ohlcv`, `values`,
   `scanner scan`, `scanner metainfo`, `watchlist get`, `pane list`,
   `layout list`, `alert list`, `pine get`, and `screenshot`.
-- Use `tv screenshot --region chart|full --output <PATH>` when visual evidence
-  is needed. Screenshots do not mutate TradingView state but do write the
+- Use `tv screenshot --region chart|full|strategy --output <PATH>` when visual
+  evidence is needed. `strategy` captures the visible Strategy Tester panel
+  when detectable. Screenshots do not mutate TradingView state but do write the
   requested local file.
 - Before mutating chart, account, Pine, Replay, layout, tab, drawing, alert,
   watchlist, Screener, or generic UI state, explain the expected effect and get
