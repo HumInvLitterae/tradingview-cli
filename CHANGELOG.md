@@ -7,6 +7,8 @@ package version omits the leading `v`.
 
 ## Unreleased
 
+## v0.25.0 - 2026-06-11
+
 ### Added
 
 - Added `tv chart compare <SYMBOL>...` as a narrow Desktop-backed
