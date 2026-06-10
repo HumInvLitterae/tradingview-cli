@@ -8,12 +8,16 @@ for release and next-phase planning.
 
 Current plan:
 
-- `tradingview-cli-events-compare-readback.md`: add `tv events compare
-  <SYMBOL>...` as ordered multi-symbol scanner-backed earnings / dividends
-  readback while preserving the single-symbol `events.v1` contract.
+- `tradingview-cli-replay-log-ohlcv-attachment.md`: add opt-in
+  selected-chart OHLCV summary attachment to bounded `tv replay log --steps
+  <N>` JSONL events while keeping Replay logs separate from export,
+  screenshots, and Desktop-free `tv bars`.
 
 Recently completed:
 
+- `tradingview-cli-events-compare-readback.md`: added `tv events compare
+  <SYMBOL>...` as ordered multi-symbol scanner-backed earnings / dividends
+  readback while preserving the single-symbol `events.v1` contract.
 - `tradingview-cli-chart-backed-compare-command.md`: added `tv chart compare
   <SYMBOL>...` as a separated Desktop-backed selected-chart evidence workflow
   while keeping `tv compare` and `tv watch compare` scanner-backed.

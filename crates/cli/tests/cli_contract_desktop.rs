@@ -920,7 +920,10 @@ fn replay_help_lists_basic_lifecycle_subcommands() {
         .assert()
         .success()
         .stdout(predicate::str::contains("--steps"))
+        .stdout(predicate::str::contains("--attach-ohlcv-summary"))
+        .stdout(predicate::str::contains("--ohlcv-count"))
         .stdout(predicate::str::contains("bounded Replay step log"))
+        .stdout(predicate::str::contains("OHLCV summary"))
         .stdout(predicate::str::contains("replay_step_log.v1"));
 }
 
@@ -1659,6 +1662,43 @@ fn replay_log_rejects_invalid_steps_before_connecting() {
         assert_eq!(value["error"]["kind"], "validation");
         assert_eq!(value["error"]["details"]["field"], "steps");
         assert_eq!(value["error"]["details"]["maximum"], 100);
+    }
+}
+
+#[test]
+fn replay_log_rejects_invalid_ohlcv_attachment_controls_before_connecting() {
+    for args in [
+        vec!["replay", "log", "--steps", "1", "--ohlcv-count", "100"],
+        vec![
+            "replay",
+            "log",
+            "--steps",
+            "1",
+            "--attach-ohlcv-summary",
+            "--ohlcv-count",
+            "0",
+        ],
+        vec![
+            "replay",
+            "log",
+            "--steps",
+            "1",
+            "--attach-ohlcv-summary",
+            "--ohlcv-count",
+            "501",
+        ],
+    ] {
+        let assert = tv()
+            .env("TV_CDP_PORT", "9")
+            .args(args)
+            .assert()
+            .failure()
+            .code(1);
+        let value = stderr_json(&assert);
+        assert_eq!(value["success"], false);
+        assert_eq!(value["command"], "replay");
+        assert_eq!(value["error"]["kind"], "validation");
+        assert_eq!(value["error"]["details"]["field"], "ohlcv_count");
     }
 }
 

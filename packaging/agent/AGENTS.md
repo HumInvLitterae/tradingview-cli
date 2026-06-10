@@ -137,7 +137,9 @@ Do not use `TV_CDP_TARGET_ID`; explicit target handoff is `--target-id`.
   change Replay state or Replay trade state. Use them only when Replay state is
   the evidence under review. Use `tv replay log --steps <N>` as a bounded
   JSONL record of Replay state transitions, not as source-prepared OHLCV. Keep
-  that evidence separate from `tv bars` and selected-chart OHLCV.
+  that evidence separate from `tv bars`. Use
+  `--attach-ohlcv-summary [--ohlcv-count <N>]` only when selected-chart OHLCV
+  summary evidence should be explicitly attached to each Replay step.
 - Selected-chart JSONL observations use `tv observe chart` and lower-level
   `tv stream ...`. Read readiness, sample, heartbeat, and final summary events
   by `contract_version` (`observe_chart.v1` or `stream.v1`), `_event`, and

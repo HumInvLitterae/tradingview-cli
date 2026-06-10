@@ -231,7 +231,10 @@ historical bars, prefer Desktop-free `tv bars --from/--to`.
 Use `tv replay log --steps <N>` only when you intentionally want a bounded
 record of the selected chart's Replay state transitions. It emits
 `replay_step_log.v1` JSONL events and does not start or stop Replay, export
-bars, capture screenshots, or replace `tv bars --from/--to`.
+bars, capture screenshots, or replace `tv bars --from/--to`. Add
+`--attach-ohlcv-summary [--ohlcv-count <N>]` only when each Replay step should
+also carry explicit selected-chart OHLCV summary evidence; that attachment has
+its own `replay_log_ohlcv_summary_attachment.v1` source metadata.
 
 Use `tv --help` for the full command list and `tv <COMMAND> --help` for command
 details. See `docs/observation-workflows.md` for practical command sequences

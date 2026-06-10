@@ -15,6 +15,10 @@ package version omits the leading `v`.
 - Added `tv events compare <SYMBOL>...` as a Desktop-free
   `events_compare.v1` workflow for checking scanner-backed earnings and
   dividend event readback across a small candidate set.
+- Added `tv replay log --attach-ohlcv-summary` with optional
+  `--ohlcv-count <N>` so bounded Replay step logs can explicitly attach
+  selected-chart OHLCV summary evidence with
+  `replay_log_ohlcv_summary_attachment.v1` metadata.
 
 ### Documentation
 
@@ -25,6 +29,9 @@ package version omits the leading `v`.
 - Recorded the `tv events compare` implementation slice for `v0.25.0`,
   keeping it separate from full calendar, ranking, and recommendation
   semantics.
+- Recorded the Replay log OHLCV summary attachment slice for `v0.25.0`,
+  keeping attachments opt-in and separate from screenshots, Replay export,
+  Desktop-free `tv bars`, ranking, and recommendation semantics.
 
 ## v0.24.0 - 2026-06-03
 
