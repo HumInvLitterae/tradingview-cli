@@ -8,12 +8,15 @@ for release and next-phase planning.
 
 Current plan:
 
-- `tradingview-cli-strategy-tester-screenshot.md`: add
-  `tv screenshot --region strategy --output <PATH>` as non-mutating visual
-  evidence for the visible TradingView Strategy Tester panel.
+- `tradingview-cli-v0.25-pre-release-audit.md`: audit completed `v0.25.0`
+  chart-backed workflow maturity before release readiness, including source
+  boundaries, docs, runtime skills, tests, and architecture posture.
 
 Recently completed:
 
+- `tradingview-cli-strategy-tester-screenshot.md`: added
+  `tv screenshot --region strategy --output <PATH>` as non-mutating visual
+  evidence for the visible TradingView Strategy Tester panel.
 - `tradingview-cli-replay-log-ohlcv-attachment.md`: added opt-in
   selected-chart OHLCV summary attachment to bounded `tv replay log --steps
   <N>` JSONL events while keeping Replay logs separate from export,

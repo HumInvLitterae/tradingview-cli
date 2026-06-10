@@ -38,6 +38,10 @@ package version omits the leading `v`.
 - Recorded the Strategy Tester screenshot evidence slice for `v0.25.0`,
   keeping panel visual evidence separate from structured strategy metrics,
   export, ranking, and recommendation semantics.
+- Recorded the `v0.25.0` pre-release architecture audit, confirming
+  chart-backed compare, events compare, Replay OHLCV attachment, Strategy
+  Tester screenshot evidence, source boundaries, docs, runtime skills, tests,
+  and module posture before release readiness.
 
 ## v0.24.0 - 2026-06-03
 
