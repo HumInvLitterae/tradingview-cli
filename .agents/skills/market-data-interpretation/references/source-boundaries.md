@@ -118,6 +118,8 @@ Desktop-backed export evidence. It is not a fallback for `tv bars`.
 
 Replay commands are Desktop-backed selected-chart operations. `tv replay log
 --steps <N>` is bounded workflow evidence, not historical bars input.
+`--attach-ohlcv-summary` explicitly attaches selected-chart OHLCV summary
+evidence to each successful Replay step; it is not automatic source mixing.
 
 ## Quote-Data And Extended Hours
 

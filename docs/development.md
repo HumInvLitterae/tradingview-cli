@@ -375,8 +375,11 @@ Replay step-log checks should stay bounded and public-safe. `tv replay log
 --steps <N>` should make the step limit, initial state, per-step
 `previous_date` / `current_date`, `replay_context`, `chart_context`, final end
 reason, and failure details testable before any stable Replay export command is
-considered. Do not attach OHLCV summaries or screenshots implicitly; those
-would be separate evidence surfaces and must be explicit if added later.
+considered. `--attach-ohlcv-summary [--ohlcv-count <N>]` is the explicit
+selected-chart OHLCV summary attachment path and must report
+`replay_log_ohlcv_summary_attachment.v1` metadata plus attachment counters.
+Do not attach screenshots implicitly; screenshot evidence needs its own file
+and artifact contract.
 
 Chart-backed compare uses `tv chart compare <SYMBOL>...`. Keep `tv compare`
 and `tv watch compare` Desktop-free and scanner-backed. `tv chart compare`

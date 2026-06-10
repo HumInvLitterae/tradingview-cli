@@ -14,6 +14,67 @@ const REPLAY_STEP_LOG_CONTRACT_VERSION: &str = "replay_step_log.v1";
 const REPLAY_STEP_LOG_SOURCE: &str = "internal_api";
 const REPLAY_STEP_LOG_SOURCE_CATEGORY: &str = "desktop_backed_operation";
 const REPLAY_STEP_LOG_LABEL: &str = "log";
+const REPLAY_LOG_OHLCV_ATTACHMENT_CONTRACT_VERSION: &str = "replay_log_ohlcv_summary_attachment.v1";
+const REPLAY_LOG_OHLCV_ATTACHMENT_SOURCE: &str = "selected_chart_cdp";
+const DEFAULT_REPLAY_LOG_OHLCV_COUNT: usize = 100;
+const MAX_REPLAY_LOG_OHLCV_COUNT: usize = 500;
+
+#[derive(Debug, Clone, Copy)]
+struct ReplayLogAttachmentControls {
+    attach_ohlcv_summary: bool,
+    ohlcv_count: usize,
+}
+
+impl ReplayLogAttachmentControls {
+    fn new(attach_ohlcv_summary: bool, ohlcv_count: Option<usize>) -> Result<Self, AppError> {
+        if !attach_ohlcv_summary && ohlcv_count.is_some() {
+            return Err(AppError::new(
+                ErrorKind::Validation,
+                "replay log --ohlcv-count requires --attach-ohlcv-summary",
+            )
+            .with_details(json!({
+                "field": "ohlcv_count",
+                "requires": "attach_ohlcv_summary",
+                "source_category": REPLAY_STEP_LOG_SOURCE_CATEGORY,
+                "requires_desktop": true,
+                "non_mutating": false
+            })));
+        }
+        let ohlcv_count = ohlcv_count.unwrap_or(DEFAULT_REPLAY_LOG_OHLCV_COUNT);
+        if ohlcv_count == 0 || ohlcv_count > MAX_REPLAY_LOG_OHLCV_COUNT {
+            return Err(AppError::new(
+                ErrorKind::Validation,
+                format!(
+                    "replay log --ohlcv-count must be between 1 and {MAX_REPLAY_LOG_OHLCV_COUNT}"
+                ),
+            )
+            .with_details(json!({
+                "field": "ohlcv_count",
+                "minimum": 1,
+                "maximum": MAX_REPLAY_LOG_OHLCV_COUNT,
+                "value": ohlcv_count,
+                "source_category": REPLAY_STEP_LOG_SOURCE_CATEGORY,
+                "requires_desktop": true,
+                "non_mutating": false
+            })));
+        }
+        Ok(Self {
+            attach_ohlcv_summary,
+            ohlcv_count,
+        })
+    }
+
+    fn attachments_requested(self) -> bool {
+        self.attach_ohlcv_summary
+    }
+}
+
+#[derive(Debug, Default, Clone, Copy)]
+struct ReplayLogAttachmentCounters {
+    requested: u64,
+    ok: u64,
+    error: u64,
+}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum ReplayLogEndReason {
@@ -36,13 +97,19 @@ impl ReplayLogEndReason {
     }
 }
 
-pub async fn run_replay_log_command(steps: u64, config: &TransportConfig) -> Result<(), AppError> {
+pub async fn run_replay_log_command(
+    steps: u64,
+    attach_ohlcv_summary: bool,
+    ohlcv_count: Option<usize>,
+    config: &TransportConfig,
+) -> Result<(), AppError> {
     validate_replay_log_steps(steps)?;
+    let attachment_controls = ReplayLogAttachmentControls::new(attach_ohlcv_summary, ohlcv_count)?;
     let started_at = Instant::now();
     let mut runtime = connect_runtime(config).await?;
 
     let initial_status = ops::replay_status(&mut runtime).await?;
-    let readiness = replay_log_readiness(steps, &initial_status)?;
+    let readiness = replay_log_readiness(steps, attachment_controls, &initial_status)?;
     let envelope = SuccessEnvelope::new("replay", readiness);
     print_jsonl_stdout(&envelope);
 
@@ -55,6 +122,7 @@ pub async fn run_replay_log_command(steps: u64, config: &TransportConfig) -> Res
     let mut step_count = 0_u64;
     let mut failure_count = 0_u64;
     let mut failure_details = None;
+    let mut attachment_counters = ReplayLogAttachmentCounters::default();
 
     let end_reason = if !replay_available(&initial_status) {
         ReplayLogEndReason::ReplayUnavailable
@@ -68,7 +136,29 @@ pub async fn run_replay_log_command(steps: u64, config: &TransportConfig) -> Res
                     step_count += 1;
                     ended_at_replay_date = replay_current_date(&step);
                     last_context = step.get("replay_context").cloned().unwrap_or(Value::Null);
-                    let payload = replay_log_step(step_index, step)?;
+                    let attachment = if attachment_controls.attach_ohlcv_summary {
+                        attachment_counters.requested += 1;
+                        Some(
+                            match replay_log_ohlcv_summary_attachment(
+                                &mut runtime,
+                                attachment_controls.ohlcv_count,
+                            )
+                            .await
+                            {
+                                Ok(attachment) => {
+                                    attachment_counters.ok += 1;
+                                    attachment
+                                }
+                                Err(err) => {
+                                    attachment_counters.error += 1;
+                                    replay_log_ohlcv_summary_attachment_error(&err)?
+                                }
+                            },
+                        )
+                    } else {
+                        None
+                    };
+                    let payload = replay_log_step(step_index, step, attachment)?;
                     let envelope = SuccessEnvelope::new("replay", payload);
                     print_jsonl_stdout(&envelope);
                 }
@@ -95,6 +185,7 @@ pub async fn run_replay_log_command(steps: u64, config: &TransportConfig) -> Res
         ended_at_replay_date,
         last_context,
         failure_details,
+        attachment_counters,
         started_at.elapsed().as_millis() as u64,
         end_reason,
     )?;
@@ -103,10 +194,17 @@ pub async fn run_replay_log_command(steps: u64, config: &TransportConfig) -> Res
     Ok(())
 }
 
-fn replay_log_readiness(steps: u64, status: &Value) -> Result<Value, AppError> {
+fn replay_log_readiness(
+    steps: u64,
+    attachment_controls: ReplayLogAttachmentControls,
+    status: &Value,
+) -> Result<Value, AppError> {
     let mut payload = json!({
         "requested_steps": steps,
         "max_steps": MAX_REPLAY_LOG_STEPS,
+        "attachments_requested": attachment_controls.attachments_requested(),
+        "attach_ohlcv_summary": attachment_controls.attach_ohlcv_summary,
+        "ohlcv_count": attachment_controls.ohlcv_count,
         "is_replay_available": status.get("is_replay_available").cloned().unwrap_or(Value::Null),
         "is_replay_started": status.get("is_replay_started").cloned().unwrap_or(Value::Null),
         "replay_context": status.get("replay_context").cloned().unwrap_or(Value::Null),
@@ -122,7 +220,11 @@ fn replay_log_readiness(steps: u64, status: &Value) -> Result<Value, AppError> {
     Ok(payload)
 }
 
-fn replay_log_step(step_index: u64, step: Value) -> Result<Value, AppError> {
+fn replay_log_step(
+    step_index: u64,
+    step: Value,
+    ohlcv_attachment: Option<Value>,
+) -> Result<Value, AppError> {
     let mut payload = json!({
         "step_index": step_index,
         "operation": step.get("operation").cloned().unwrap_or_else(|| json!("replay_step")),
@@ -131,6 +233,11 @@ fn replay_log_step(step_index: u64, step: Value) -> Result<Value, AppError> {
         "replay_context": step.get("replay_context").cloned().unwrap_or(Value::Null),
         "chart_context": step.get("chart_context").cloned().unwrap_or(Value::Null),
     });
+    if let Some(attachment) = ohlcv_attachment {
+        payload["attachments"] = json!({
+            "ohlcv_summary": attachment
+        });
+    }
     let Some(object) = payload.as_object_mut() else {
         return Err(AppError::new(
             ErrorKind::Internal,
@@ -150,6 +257,7 @@ fn replay_log_summary(
     ended_at_replay_date: Value,
     replay_context: Value,
     failure_details: Option<Value>,
+    attachment_counters: ReplayLogAttachmentCounters,
     elapsed_ms: u64,
     end_reason: ReplayLogEndReason,
 ) -> Result<Value, AppError> {
@@ -162,6 +270,9 @@ fn replay_log_summary(
         "elapsed_ms": elapsed_ms,
         "replay_left_running": replay_context_started(&replay_context),
         "replay_context": replay_context,
+        "attachment_requested_count": attachment_counters.requested,
+        "attachment_ok_count": attachment_counters.ok,
+        "attachment_error_count": attachment_counters.error,
         "end_reason": end_reason.label(),
     });
     if let Some(failure_details) = failure_details {
@@ -242,12 +353,97 @@ fn replay_context_started(context: &Value) -> bool {
         .unwrap_or(false)
 }
 
+async fn replay_log_ohlcv_summary_attachment(
+    runtime: &mut impl tradingview_cdp::RuntimeEvaluator,
+    count: usize,
+) -> Result<Value, AppError> {
+    let summary = ops::ohlcv_summary(runtime, Some(count)).await?;
+    replay_log_ohlcv_summary_attachment_ok(summary)
+}
+
+fn replay_log_ohlcv_summary_attachment_ok(summary: Value) -> Result<Value, AppError> {
+    let mut payload = json!({
+        "contract_version": REPLAY_LOG_OHLCV_ATTACHMENT_CONTRACT_VERSION,
+        "source": REPLAY_LOG_OHLCV_ATTACHMENT_SOURCE,
+        "source_category": "desktop_backed_read",
+        "requires_desktop": true,
+        "non_mutating": true,
+        "status": "ok",
+        "ohlcv_summary": summary
+    });
+    let Some(object) = payload.as_object_mut() else {
+        return Err(AppError::new(
+            ErrorKind::Internal,
+            "Replay log OHLCV attachment payload was not an object",
+        ));
+    };
+    sanitize_value_object(object);
+    Ok(payload)
+}
+
+fn replay_log_ohlcv_summary_attachment_error(error: &AppError) -> Result<Value, AppError> {
+    let mut payload = json!({
+        "contract_version": REPLAY_LOG_OHLCV_ATTACHMENT_CONTRACT_VERSION,
+        "source": REPLAY_LOG_OHLCV_ATTACHMENT_SOURCE,
+        "source_category": "desktop_backed_read",
+        "requires_desktop": true,
+        "non_mutating": true,
+        "status": "error",
+        "failure_details": replay_failure_details(error)
+    });
+    let Some(object) = payload.as_object_mut() else {
+        return Err(AppError::new(
+            ErrorKind::Internal,
+            "Replay log OHLCV attachment error payload was not an object",
+        ));
+    };
+    sanitize_value_object(object);
+    Ok(payload)
+}
+
 fn replay_failure_details(error: &AppError) -> Value {
-    json!({
+    let mut payload = json!({
         "kind": error.kind,
         "message": error.message,
         "details": error.details,
-    })
+    });
+    sanitize_value(&mut payload);
+    payload
+}
+
+fn sanitize_value(value: &mut Value) {
+    match value {
+        Value::Object(object) => sanitize_value_object(object),
+        Value::Array(items) => {
+            for item in items {
+                sanitize_value(item);
+            }
+        }
+        _ => {}
+    }
+}
+
+fn sanitize_value_object(object: &mut serde_json::Map<String, Value>) {
+    for key in [
+        "raw",
+        "raw_dom",
+        "raw_payload",
+        "raw_response",
+        "target_id",
+        "session_id",
+        "cookie",
+        "authorization",
+        "credential",
+        "credentials",
+        "account_local_metadata",
+        "local_path",
+        "absolute_path",
+    ] {
+        object.remove(key);
+    }
+    for value in object.values_mut() {
+        sanitize_value(value);
+    }
 }
 
 #[cfg(test)]
@@ -275,12 +471,16 @@ mod tests {
 
     #[test]
     fn readiness_uses_replay_step_log_contract_metadata() {
-        let readiness = replay_log_readiness(3, &started_status()).unwrap();
+        let controls = ReplayLogAttachmentControls::new(false, None).unwrap();
+        let readiness = replay_log_readiness(3, controls, &started_status()).unwrap();
         assert_eq!(readiness["contract_version"], "replay_step_log.v1");
         assert_eq!(readiness["_replay"], "log");
         assert_eq!(readiness["_event"], "readiness");
         assert_eq!(readiness["requested_steps"], 3);
         assert_eq!(readiness["max_steps"], 100);
+        assert_eq!(readiness["attachments_requested"], false);
+        assert_eq!(readiness["attach_ohlcv_summary"], false);
+        assert_eq!(readiness["ohlcv_count"], 100);
         assert_eq!(readiness["source"], "internal_api");
         assert_eq!(readiness["source_category"], "desktop_backed_operation");
         assert_eq!(readiness["requires_desktop"], true);
@@ -308,6 +508,7 @@ mod tests {
                     "symbol": "NASDAQ:AAPL"
                 }
             }),
+            None,
         )
         .unwrap();
 
@@ -330,6 +531,7 @@ mod tests {
             json!(1775260800000_i64),
             json!({"is_replay_started": true, "current_date": 1775260800000_i64}),
             None,
+            ReplayLogAttachmentCounters::default(),
             1250,
             ReplayLogEndReason::StepLimitReached,
         )
@@ -341,6 +543,9 @@ mod tests {
         assert_eq!(summary["step_count"], 3);
         assert_eq!(summary["failure_count"], 0);
         assert_eq!(summary["replay_left_running"], true);
+        assert_eq!(summary["attachment_requested_count"], 0);
+        assert_eq!(summary["attachment_ok_count"], 0);
+        assert_eq!(summary["attachment_error_count"], 0);
         assert_eq!(summary["end_reason"], "step_limit_reached");
         assert!(summary.get("failure_details").is_none());
     }
@@ -357,6 +562,7 @@ mod tests {
             json!(1775088000000_i64),
             json!({"is_replay_started": true}),
             Some(replay_failure_details(&error)),
+            ReplayLogAttachmentCounters::default(),
             500,
             ReplayLogEndReason::StepFailed,
         )
@@ -372,6 +578,126 @@ mod tests {
             summary["failure_details"]["details"]["operation"],
             "replay_step"
         );
+    }
+
+    #[test]
+    fn attachment_controls_validate_ohlcv_count_usage() {
+        let missing_flag = ReplayLogAttachmentControls::new(false, Some(100)).unwrap_err();
+        assert_eq!(missing_flag.kind, ErrorKind::Validation);
+        let missing_flag_details = missing_flag.details.unwrap();
+        assert_eq!(
+            missing_flag_details["requires"],
+            json!("attach_ohlcv_summary")
+        );
+
+        for count in [0, 501] {
+            let err = ReplayLogAttachmentControls::new(true, Some(count)).unwrap_err();
+            assert_eq!(err.kind, ErrorKind::Validation);
+            let details = err.details.unwrap();
+            assert_eq!(details["field"], "ohlcv_count");
+            assert_eq!(details["maximum"], 500);
+        }
+    }
+
+    #[test]
+    fn readiness_reports_attachment_controls() {
+        let controls = ReplayLogAttachmentControls::new(true, Some(42)).unwrap();
+        let readiness = replay_log_readiness(3, controls, &started_status()).unwrap();
+        assert_eq!(readiness["attachments_requested"], true);
+        assert_eq!(readiness["attach_ohlcv_summary"], true);
+        assert_eq!(readiness["ohlcv_count"], 42);
+    }
+
+    #[test]
+    fn step_event_can_include_ohlcv_summary_attachment() {
+        let attachment = replay_log_ohlcv_summary_attachment_ok(json!({
+            "symbol": "NASDAQ:AAPL",
+            "bar_count": 42,
+            "source_category": "desktop_backed_read"
+        }))
+        .unwrap();
+        let step = replay_log_step(
+            1,
+            json!({
+                "operation": "replay_step",
+                "previous_date": 1775001600000_i64,
+                "current_date": 1775088000000_i64,
+                "replay_context": {
+                    "is_replay_started": true,
+                    "current_date": 1775088000000_i64
+                }
+            }),
+            Some(attachment),
+        )
+        .unwrap();
+
+        let ohlcv = &step["attachments"]["ohlcv_summary"];
+        assert_eq!(
+            ohlcv["contract_version"],
+            "replay_log_ohlcv_summary_attachment.v1"
+        );
+        assert_eq!(ohlcv["source"], "selected_chart_cdp");
+        assert_eq!(ohlcv["source_category"], "desktop_backed_read");
+        assert_eq!(ohlcv["requires_desktop"], true);
+        assert_eq!(ohlcv["non_mutating"], true);
+        assert_eq!(ohlcv["status"], "ok");
+        assert_eq!(ohlcv["ohlcv_summary"]["bar_count"], 42);
+    }
+
+    #[test]
+    fn attachment_failure_details_are_sanitized() {
+        let error = AppError::new(ErrorKind::InternalApiUnavailable, "OHLCV unavailable")
+            .with_details(json!({
+                "phase": "ohlcv_bars_read",
+                "raw_payload": {"secret": true},
+                "target_id": "target-123",
+                "local_path": "/tmp/private",
+                "public": "kept"
+            }));
+        let attachment = replay_log_ohlcv_summary_attachment_error(&error).unwrap();
+        assert_eq!(attachment["status"], "error");
+        assert_eq!(attachment["failure_details"]["details"]["public"], "kept");
+        assert!(
+            attachment["failure_details"]["details"]
+                .get("raw_payload")
+                .is_none()
+        );
+        assert!(
+            attachment["failure_details"]["details"]
+                .get("target_id")
+                .is_none()
+        );
+        assert!(
+            attachment["failure_details"]["details"]
+                .get("local_path")
+                .is_none()
+        );
+    }
+
+    #[test]
+    fn summary_reports_attachment_counters() {
+        let summary = replay_log_summary(
+            3,
+            3,
+            0,
+            json!(1775001600000_i64),
+            json!(1775260800000_i64),
+            json!({"is_replay_started": true}),
+            None,
+            ReplayLogAttachmentCounters {
+                requested: 3,
+                ok: 2,
+                error: 1,
+            },
+            1250,
+            ReplayLogEndReason::StepLimitReached,
+        )
+        .unwrap();
+
+        assert_eq!(summary["attachment_requested_count"], 3);
+        assert_eq!(summary["attachment_ok_count"], 2);
+        assert_eq!(summary["attachment_error_count"], 1);
+        assert_eq!(summary["end_reason"], "step_limit_reached");
     }
 
     #[test]

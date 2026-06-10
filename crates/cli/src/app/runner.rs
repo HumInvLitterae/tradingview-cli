@@ -90,16 +90,23 @@ async fn async_main() -> ExitCode {
             }
         },
         Command::Replay {
-            command: ReplayCommand::Log { steps },
-        } => match run_replay_log_command(steps, &config).await {
-            Ok(()) => ExitCode::SUCCESS,
-            Err(err) => {
-                let code = err.exit_code();
-                let envelope = ErrorEnvelope::new("replay", ErrorBody::from(err));
-                print_json_stderr(&envelope);
-                ExitCode::from(code)
+            command:
+                ReplayCommand::Log {
+                    steps,
+                    attach_ohlcv_summary,
+                    ohlcv_count,
+                },
+        } => {
+            match run_replay_log_command(steps, attach_ohlcv_summary, ohlcv_count, &config).await {
+                Ok(()) => ExitCode::SUCCESS,
+                Err(err) => {
+                    let code = err.exit_code();
+                    let envelope = ErrorEnvelope::new("replay", ErrorBody::from(err));
+                    print_json_stderr(&envelope);
+                    ExitCode::from(code)
+                }
             }
-        },
+        }
         command => {
             let command_name = command.name();
             match dispatch(command, &config).await {

@@ -41,6 +41,7 @@ the task needs them. If command choice is unclear, check
 | Reproducible historical bars | `tv bars <SYMBOL> --from ... --to ...` |
 | Selected-chart quote or bars | `tv quote --source chart`, `tv ohlcv`, or `tv state` |
 | Explicit visible-chart export | `tv export chart-bars --from ... --to ...` |
+| Replay step context with bars summary | `tv replay log --steps <N> --attach-ohlcv-summary` |
 | Visual evidence | `tv screenshot --region chart|full --output <PATH>` |
 
 ## Source Rules

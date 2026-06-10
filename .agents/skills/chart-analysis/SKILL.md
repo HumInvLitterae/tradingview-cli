@@ -55,7 +55,9 @@ details, or unsupported-feature reminders. If command choice is unclear, check
   visible range, returned bars range, and range-match status.
 - Use `tv replay status` or `tv replay log --steps <N>` only as
   Desktop-backed Replay workflow evidence. Replay operations mutate chart
-  state; they are not a replacement for `tv bars`.
+  state; they are not a replacement for `tv bars`. Add
+  `--attach-ohlcv-summary` only when step-level selected-chart OHLCV summary
+  evidence is explicitly needed.
 
 ## Source Boundaries
 

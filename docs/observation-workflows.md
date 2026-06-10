@@ -368,8 +368,9 @@ For feasibility checks, keep the sequence explicit:
 - start Replay only after the user agrees to mutate chart state;
 - use `tv replay step` to observe `previous_date`, `current_date`,
   `replay_context`, and selected-chart context;
-- use `tv ohlcv --summary` or a screenshot only as separate selected-chart
-  evidence;
+- use `tv replay log --attach-ohlcv-summary` when each step should carry
+  explicit selected-chart OHLCV summary evidence;
+- use a screenshot only as separate visual evidence;
 - stop Replay when the practice or feasibility check is complete.
 
 Use `tv replay log --steps <N>` when the task needs a bounded record of Replay
@@ -377,9 +378,10 @@ steps. It emits JSONL readiness, step, and summary events with
 `contract_version: "replay_step_log.v1"`. It records initial Replay state,
 per-step `previous_date` / `current_date`, `replay_context`, selected-chart
 context, and a final end reason. It does not start or stop Replay
-automatically. If OHLCV summaries or screenshots are ever attached in a later
-version, they should be explicit options with their own source metadata rather
-than automatic source mixing.
+automatically. `--attach-ohlcv-summary [--ohlcv-count <N>]` explicitly adds
+selected-chart OHLCV summary attachment evidence to step events with
+`contract_version: "replay_log_ohlcv_summary_attachment.v1"`. Screenshot
+evidence remains a separate command and is not attached automatically.
 
 Do not treat Replay output as a replacement for `tv bars`, and do not write
 raw DOM, raw payloads, target ids, or account-local metadata into tracked

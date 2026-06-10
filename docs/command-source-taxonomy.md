@@ -281,9 +281,14 @@ fallback for Desktop-free `tv bars --from/--to`.
 `tv replay log --steps <N>` is bounded workflow evidence before any stable
 Replay export command. It records start state, per-step Replay dates,
 `replay_context`, selected-chart context, final end reason, and public-safe
-failures as JSONL with `contract_version: "replay_step_log.v1"`. It must not
-attach `tv bars`, `tv export chart-bars`, `tv ohlcv`, screenshots, scanner
-reads, or quote-data as hidden fallbacks.
+failures as JSONL with `contract_version: "replay_step_log.v1"`.
+`--attach-ohlcv-summary` is an explicit selected-chart OHLCV summary
+attachment with `contract_version:
+"replay_log_ohlcv_summary_attachment.v1"`, `source: "selected_chart_cdp"`,
+and `source_category: "desktop_backed_read"`. Attachment failures are not
+Replay step failures. Replay log must not attach `tv bars`,
+`tv export chart-bars`, screenshots, scanner reads, or quote-data as hidden
+fallbacks.
 
 ### Hybrid
 
