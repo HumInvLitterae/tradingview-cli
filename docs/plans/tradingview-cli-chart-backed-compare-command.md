@@ -8,24 +8,24 @@ This document follows `.agents/PLANS.md`. It is self-contained so a future contr
 
 The user should be able to compare a small set of symbols using explicit TradingView Desktop chart evidence without confusing that workflow with the existing Desktop-free scanner compare. Today, `tv compare <SYMBOL>...` and `tv watch compare <SYMBOL>...` use scanner-backed data. A chart-backed compare needs different behavior because it depends on the selected TradingView Desktop chart, may need to switch the chart symbol, and must report whether chart state changed.
 
-The intended future command shape is `tv chart compare <SYMBOL>...`. This first plan does not implement the command. It fixes the implementation boundary so the next slice can add the command without source mixing, hidden fallbacks, or ambiguous output.
+The implemented command shape is `tv chart compare <SYMBOL>...`. It adds the command without source mixing, hidden fallbacks, or ambiguous output.
 
 ## Progress
 
 - [x] (2026-06-11) Create this ExecPlan as the first `v0.25.0` implementation candidate.
 - [x] (2026-06-11) Record `v0.25.0` roadmap direction with chart-backed compare as Lane 1.
-- [ ] Inspect the current CLI command tree and choose exact module placement for `tv chart compare`.
-- [ ] Design the first narrow payload contract for chart-backed compare.
-- [ ] Implement the command, tests, docs, and runtime skill updates in a later slice.
+- [x] (2026-06-11) Inspect the current CLI command tree and choose `Command::Chart { command }` with `ChartCommand::Compare` as the command placement.
+- [x] (2026-06-11) Design the first narrow payload contract as `chart_compare.v1`.
+- [x] (2026-06-11) Implement the command, tests, docs, and runtime skill updates.
 
 ## Surprises & Discoveries
 
-- Observation: The repository already has a completed chart-backed compare feasibility plan, but no stable chart-backed compare command.
+- Observation: The repository already had a completed chart-backed compare feasibility plan, but no stable chart-backed compare command before this slice.
   Evidence: `docs/plans/archives/tradingview-cli-chart-backed-compare-contract.md` records that `tv compare` must remain Desktop-free and that a separated command is preferable if implementation proceeds.
 
 ## Decision Log
 
-- Decision: Use `tv chart compare <SYMBOL>...` as the preferred future command shape.
+- Decision: Use `tv chart compare <SYMBOL>...` as the stable command shape for the first chart-backed compare implementation.
   Rationale: It keeps Desktop-backed selected-chart workflows visibly separate from `tv compare <SYMBOL>...`, which is already Desktop-free and scanner-backed. It also avoids making `--source chart` look like a simple source toggle on a command with different operating risks.
   Date/Author: 2026-06-11 / Codex
 
@@ -39,7 +39,7 @@ The intended future command shape is `tv chart compare <SYMBOL>...`. This first 
 
 ## Outcomes & Retrospective
 
-The roadmap and initial implementation plan now point `v0.25.0` toward chart-backed workflow maturity. No command has been implemented yet. The next contributor should start by inspecting the CLI command layout and then implement the smallest source-separated `tv chart compare` surface that can be validated.
+Implementation completed the first narrow command. Users can run `tv chart compare <SYMBOL>...` for 2 to 10 symbols. The command returns a normal JSON success envelope with `command: "chart"` and `data.contract_version: "chart_compare.v1"`, ordered item status, before/after chart context, and restore readback.
 
 ## Context and Orientation
 
@@ -61,7 +61,7 @@ In this plan, "Desktop-free" means the command does not require TradingView Desk
 
 ## Plan of Work
 
-First, inspect the current CLI command tree under `crates/cli` and confirm where a `chart` command group should live. The preferred user-facing shape is `tv chart compare <SYMBOL>...`, but the implementation should follow the existing command organization and help-test conventions.
+First, inspect the current CLI command tree under `crates/cli` and confirm where a `chart` command group should live. The implementation places a `ChartCommand` group under the existing top-level command enum, with `tv chart compare <SYMBOL>...` as the first subcommand.
 
 Second, define the first narrow chart-backed compare contract. The payload should include a command-local contract marker, requested symbols, resolved symbols where available, per-symbol read status, selected chart context, source metadata, whether TradingView Desktop is required, whether the operation is mutating, and restore status if chart switching is attempted. Failure details must be public-safe and must not include raw target ids, raw DOM, raw payloads, credentials, account-local metadata, or local paths.
 
@@ -110,8 +110,8 @@ Do not paste raw live output, raw chart payloads, raw target ids, account-local 
 
 ## Interfaces and Dependencies
 
-This plan adds no dependency and no version bump. The future command should reuse existing TradingView Desktop target resolution and chart operation helpers. It should not introduce a new data source; it should make selected-chart evidence explicit.
+This plan adds no dependency and no version bump. The command reuses existing TradingView Desktop target resolution and chart quote operation helpers. It does not introduce a new data source; it makes selected-chart evidence explicit.
 
 ## Open Questions
 
-No blocker remains for roadmap planning. The implementation slice must still confirm exact CLI module placement and the smallest safe chart-switching behavior from the current code before editing Rust sources.
+No blocker remains for this slice. Follow-up work can revisit whether broader chart-backed workflows need a separate helper layer, but this implementation is intentionally narrow.

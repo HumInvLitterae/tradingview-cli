@@ -33,6 +33,7 @@ the task needs them. If command choice is unclear, check
 | Several symbols, quote fields only | `tv quotes <SYMBOL>...` |
 | Several known symbols with quote, info, and fundamentals | `tv compare <SYMBOL>...` |
 | Several known symbols over a short scanner-backed window | `tv watch compare <SYMBOL>...` |
+| Finalist set with selected-chart quote evidence | `tv chart compare <SYMBOL>...` |
 | One symbol with Desktop-free detail | `tv snapshot <SYMBOL>` |
 | One symbol's fundamentals | `tv fundamentals <SYMBOL> --group ...` |
 | One symbol's earnings/dividend events | `tv events <SYMBOL>` |
@@ -49,6 +50,9 @@ the task needs them. If command choice is unclear, check
 - Chart-backed reads depend on the selected TradingView Desktop chart. Run
   `tv readiness` and use `tv tab list` / `--target-id` when the active chart is
   ambiguous.
+- `tv chart compare` is Desktop-backed `chart_compare.v1` for a small finalist
+  set. It may temporarily switch the selected chart. Do not describe it as
+  scanner-backed compare or as ranking.
 - `tv quote --source auto` is chart-first with scanner fallback only before
   chart mutation. Do not describe it as a blended source.
 - `tv bars` is Desktop-free historical bars evidence. Bare symbols may resolve

@@ -68,9 +68,10 @@ details, or unsupported-feature reminders. If command choice is unclear, check
   evidence surfaces. `auto_execute: false` means the CLI did not run them.
 - `tv events` is scanner-backed earnings/dividend evidence, not a full event
   calendar and not selected-chart evidence.
-- Chart-backed compare is not a stable command. Use Desktop-free `tv compare`
-  or `tv watch compare` for broad comparison, then selected-chart evidence for
-  finalists.
+- Use `tv chart compare <SYMBOL>...` only for a small finalist set where
+  selected-chart quote evidence matters. It may temporarily switch the chart;
+  report `chart_compare.v1`, item status, and restore readback. Use
+  Desktop-free `tv compare` or `tv watch compare` for broad comparison.
 
 ## Recovery
 

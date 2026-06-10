@@ -86,6 +86,14 @@ pub enum Command {
     )]
     Compare { symbols: Vec<String> },
     #[command(
+        about = "Run selected-chart evidence workflows",
+        long_about = "Run workflows that use the selected TradingView Desktop chart as their evidence source.\n\n`tv chart compare <SYMBOL>...` compares a small candidate set by switching the selected chart to each symbol, reading chart quote evidence, and restoring the original chart symbol after each read. This is Desktop-backed and may temporarily mutate chart state. It is separate from Desktop-free `tv compare` and `tv watch compare`, and it does not use `tv bars`, scanner compare, Replay, chart export, quote-data, ranking, or recommendations as hidden fallbacks."
+    )]
+    Chart {
+        #[command(subcommand)]
+        command: ChartCommand,
+    },
+    #[command(
         about = "Run bounded Desktop-free watch workflows as JSONL",
         long_about = "Run bounded watch workflows as newline-delimited JSON envelopes.\n\n`tv watch compare <SYMBOL>...` polls Desktop-free scanner-backed quote evidence for a known candidate set and emits readiness, sample, heartbeat, and final summary events with `contract_version: \"watch_compare.v1\"`. It is a short-window observation workflow, not a daemon, realtime feed, source-mixing fallback, ranking, or buy/sell recommendation."
     )]
@@ -951,6 +959,15 @@ pub enum WatchCommand {
 }
 
 #[derive(Debug, Subcommand)]
+pub enum ChartCommand {
+    #[command(
+        about = "Compare symbols using selected-chart quote evidence",
+        long_about = "Compare symbols using the selected TradingView Desktop chart as an explicit evidence source.\n\nThis command accepts 2 to 10 symbols, switches the selected chart to each symbol, reads chart quote evidence, and attempts to restore the original chart symbol after each read. It returns `contract_version: \"chart_compare.v1\"` with per-symbol status, chart context, and restore readback. It is Desktop-backed and may temporarily mutate chart state. Use Desktop-free `tv compare` or `tv watch compare` for scanner-backed first-pass comparison."
+    )]
+    Compare { symbols: Vec<String> },
+}
+
+#[derive(Debug, Subcommand)]
 pub enum ExportCommand {
     #[command(
         name = "chart-bars",
@@ -1068,6 +1085,7 @@ impl Command {
             Self::Events { .. } => "events",
             Self::Snapshot { .. } => "snapshot",
             Self::Compare { .. } => "compare",
+            Self::Chart { .. } => "chart",
             Self::Watch { .. } => "watch",
             Self::Export { .. } => "export",
             Self::Scanner { .. } => "scanner",

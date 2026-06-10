@@ -378,14 +378,15 @@ reason, and failure details testable before any stable Replay export command is
 considered. Do not attach OHLCV summaries or screenshots implicitly; those
 would be separate evidence surfaces and must be explicit if added later.
 
-Chart-backed compare planning should preserve source boundaries before any
-stable command is added. Keep `tv compare` Desktop-free and scanner-backed.
-Treat chart-source quote as selected-chart single-symbol evidence, not as
-multi-symbol compare. If live feasibility checks are attempted later, record
-only public-safe fields such as command, source category, symbol, chart
-context, target ambiguity status, and failure kind. Do not paste raw target
-ids, raw DOM, raw payloads, account-local metadata, or local absolute paths
-into tracked docs.
+Chart-backed compare uses `tv chart compare <SYMBOL>...`. Keep `tv compare`
+and `tv watch compare` Desktop-free and scanner-backed. `tv chart compare`
+uses selected-chart quote evidence, may temporarily switch the visible chart,
+and returns `chart_compare.v1` with ordered item status, before/after chart
+context, and restore readback. If live checks are attempted, record only
+public-safe fields such as command, contract marker, source category, symbol
+count, ok/error count, and restore status. Do not paste raw target ids, raw
+DOM, raw payloads, account-local metadata, or local absolute paths into
+tracked docs.
 
 `tv events` keeps event-shaped evidence under the scanner fundamentals
 boundary. `tv events <SYMBOL>` returns `events.v1` from earnings and dividends

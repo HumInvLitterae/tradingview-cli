@@ -7,6 +7,12 @@ package version omits the leading `v`.
 
 ## Unreleased
 
+### Added
+
+- Added `tv chart compare <SYMBOL>...` as a narrow Desktop-backed
+  `chart_compare.v1` workflow for checking a small finalist set with
+  selected-chart quote evidence, ordered item status, and restore readback.
+
 ### Documentation
 
 - Added the `v0.25.0` roadmap direction and first chart-backed compare
