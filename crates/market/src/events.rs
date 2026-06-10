@@ -1,18 +1,31 @@
-use serde_json::{Value, json};
+use serde_json::{Map, Value, json};
 use tradingview_core::{AppError, ErrorKind};
 
 use crate::{
     fundamentals_symbol_with_groups_typed,
-    types::{EventEntry, EventFieldReadback, EventSourceAvailability, Events, Fundamentals},
+    types::{
+        EventEntry, EventFieldReadback, EventSourceAvailability, Events, EventsCompare,
+        EventsCompareItem, EventsCompareSummary, Fundamentals,
+    },
 };
 
 const EVENTS_CONTRACT_VERSION: &str = "events.v1";
+const EVENTS_COMPARE_CONTRACT_VERSION: &str = "events_compare.v1";
 const EARNINGS: &str = "earnings";
 const DIVIDENDS: &str = "dividends";
 const ALL: &str = "all";
+const MAX_EVENTS_COMPARE_SYMBOLS: usize = 25;
 
 pub async fn events_symbol(symbol: &str, event_type: &str) -> Result<Value, AppError> {
     serde_json::to_value(events_symbol_typed(symbol, event_type).await?)
+        .map_err(|err| AppError::new(ErrorKind::Internal, err.to_string()))
+}
+
+pub async fn events_compare_symbols(
+    symbols: Vec<String>,
+    event_type: &str,
+) -> Result<Value, AppError> {
+    serde_json::to_value(events_compare_symbols_typed(symbols, event_type).await?)
         .map_err(|err| AppError::new(ErrorKind::Internal, err.to_string()))
 }
 
@@ -38,6 +51,112 @@ pub async fn events_symbol_typed(symbol: &str, event_type: &str) -> Result<Event
             .map_err(|err| add_event_error_details(err, requested_symbol, requested_event_type))?;
 
     Ok(events_from_fundamentals(fundamentals, requested_event_type))
+}
+
+/// Reads scanner-backed event-like fundamentals fields for several symbols.
+///
+/// This is a bounded, ordered view over `events.v1` payloads. It does not read
+/// a standalone event calendar source and does not rank or recommend symbols.
+pub async fn events_compare_symbols_typed(
+    symbols: Vec<String>,
+    event_type: &str,
+) -> Result<EventsCompare, AppError> {
+    let requested_event_type = normalize_event_type(event_type)?;
+    let requested_symbols = normalize_compare_symbols(symbols)?;
+
+    let mut items = Vec::with_capacity(requested_symbols.len());
+    for (requested_index, requested_symbol) in requested_symbols.iter().enumerate() {
+        match events_symbol_typed(requested_symbol, requested_event_type).await {
+            Ok(events) => items.push(EventsCompareItem {
+                requested_index,
+                requested_symbol: requested_symbol.clone(),
+                status: "ok".to_string(),
+                events: Some(events),
+                failure_details: None,
+            }),
+            Err(err) => items.push(EventsCompareItem {
+                requested_index,
+                requested_symbol: requested_symbol.clone(),
+                status: "error".to_string(),
+                events: None,
+                failure_details: Some(sanitized_error_details(&err)),
+            }),
+        }
+    }
+
+    Ok(events_compare_from_items(
+        requested_symbols,
+        requested_event_type,
+        items,
+    ))
+}
+
+fn normalize_compare_symbols(symbols: Vec<String>) -> Result<Vec<String>, AppError> {
+    if symbols.len() < 2 {
+        return Err(events_compare_validation_error(
+            "events compare requires at least two symbols",
+        ));
+    }
+    if symbols.len() > MAX_EVENTS_COMPARE_SYMBOLS {
+        return Err(events_compare_validation_error(format!(
+            "events compare accepts at most {MAX_EVENTS_COMPARE_SYMBOLS} symbols"
+        )));
+    }
+
+    let requested_symbols = symbols
+        .into_iter()
+        .map(|symbol| symbol.trim().to_string())
+        .collect::<Vec<_>>();
+    if requested_symbols.iter().any(String::is_empty) {
+        return Err(events_compare_validation_error(
+            "events compare symbol must not be empty",
+        ));
+    }
+    Ok(requested_symbols)
+}
+
+fn events_compare_from_items(
+    requested_symbols: Vec<String>,
+    requested_event_type: &str,
+    items: Vec<EventsCompareItem>,
+) -> EventsCompare {
+    let ok_count = items.iter().filter(|item| item.status == "ok").count();
+    let error_count = items.iter().filter(|item| item.status == "error").count();
+    let total_event_count = items
+        .iter()
+        .filter_map(|item| item.events.as_ref())
+        .map(|events| events.event_count)
+        .sum::<usize>();
+    let symbols_with_events_count = items
+        .iter()
+        .filter_map(|item| item.events.as_ref())
+        .filter(|events| events.event_count > 0)
+        .count();
+    let symbols_without_events_count = items
+        .iter()
+        .filter_map(|item| item.events.as_ref())
+        .filter(|events| events.event_count == 0)
+        .count();
+
+    EventsCompare {
+        contract_version: EVENTS_COMPARE_CONTRACT_VERSION.to_string(),
+        source: "scanner_fundamentals_rest".to_string(),
+        source_category: "desktop_free_read".to_string(),
+        requires_desktop: false,
+        non_mutating: true,
+        requested_symbols,
+        requested_event_type: requested_event_type.to_string(),
+        event_types: event_groups(requested_event_type),
+        items,
+        summary: EventsCompareSummary {
+            requested_count: ok_count + error_count,
+            ok_count,
+            error_count,
+            total_event_count,
+            symbols_with_events_count,
+            symbols_without_events_count,
+        },
+    }
 }
 
 fn normalize_event_type(event_type: &str) -> Result<&'static str, AppError> {
@@ -270,6 +389,18 @@ fn events_validation_error(message: &str, requested_symbol: &str, event_type: &s
     }))
 }
 
+fn events_compare_validation_error(message: impl Into<String>) -> AppError {
+    AppError::new(ErrorKind::Validation, message.into()).with_details(json!({
+        "minimum": 2,
+        "maximum": MAX_EVENTS_COMPARE_SYMBOLS,
+        "source": "scanner_fundamentals_rest",
+        "source_category": "desktop_free_read",
+        "requires_desktop": false,
+        "non_mutating": true,
+        "next_action_hint": "Pass 2 to 25 symbols, such as `tv events compare NASDAQ:AAPL NASDAQ:MSFT`.",
+    }))
+}
+
 fn add_event_error_details(
     mut error: AppError,
     requested_symbol: &str,
@@ -303,6 +434,64 @@ fn add_event_error_details(
         json!("Use an exchange-qualified symbol such as NASDAQ:AAPL, or verify the symbol with `tv search <SYMBOL>` before retrying `tv events`.")
     });
     error
+}
+
+fn sanitized_error_details(err: &AppError) -> Value {
+    let mut details = match err.details.as_ref() {
+        Some(Value::Object(map)) => sanitize_map(map),
+        Some(_) | None => Map::new(),
+    };
+    details.insert("kind".to_string(), json!(err.kind));
+    details.insert("message".to_string(), json!(err.message));
+    details
+        .entry("source".to_string())
+        .or_insert_with(|| json!("scanner_fundamentals_rest"));
+    details
+        .entry("source_category".to_string())
+        .or_insert_with(|| json!("desktop_free_read"));
+    details
+        .entry("requires_desktop".to_string())
+        .or_insert_with(|| json!(false));
+    details.entry("non_mutating").or_insert_with(|| json!(true));
+    Value::Object(details)
+}
+
+fn sanitize_map(map: &Map<String, Value>) -> Map<String, Value> {
+    map.iter()
+        .filter_map(|(key, value)| {
+            if is_private_detail_key(key) {
+                return None;
+            }
+            Some((key.clone(), sanitize_value(value)))
+        })
+        .collect()
+}
+
+fn sanitize_value(value: &Value) -> Value {
+    match value {
+        Value::Object(map) => Value::Object(sanitize_map(map)),
+        Value::Array(values) => Value::Array(values.iter().map(sanitize_value).collect()),
+        _ => value.clone(),
+    }
+}
+
+fn is_private_detail_key(key: &str) -> bool {
+    matches!(
+        key,
+        "raw"
+            | "raw_payload"
+            | "raw_payloads"
+            | "raw_response"
+            | "target_id"
+            | "session_id"
+            | "cookie"
+            | "authorization"
+            | "credential"
+            | "credentials"
+            | "local_path"
+            | "absolute_path"
+            | "account_local_metadata"
+    )
 }
 
 #[cfg(test)]
@@ -439,6 +628,102 @@ mod tests {
                 .missing_fields
                 .contains(&"earnings_release_next_time".to_string())
         );
+    }
+
+    #[test]
+    fn events_compare_from_items_summarizes_ordered_results() {
+        let events_with_entries = events_from_fundamentals(
+            fundamentals(
+                json!({
+                    "earnings_release_next_date": 1777852800,
+                    "dividend_ex_date_upcoming": "2026-02-07"
+                }),
+                vec![],
+            ),
+            ALL,
+        );
+        let events_without_entries = events_from_fundamentals(
+            fundamentals(
+                json!({
+                    "earnings_release_next_date": null,
+                    "dividend_ex_date_upcoming": null
+                }),
+                vec![],
+            ),
+            ALL,
+        );
+        let items = vec![
+            EventsCompareItem {
+                requested_index: 0,
+                requested_symbol: "NASDAQ:AAPL".to_string(),
+                status: "ok".to_string(),
+                events: Some(events_with_entries),
+                failure_details: None,
+            },
+            EventsCompareItem {
+                requested_index: 1,
+                requested_symbol: "NASDAQ:MSFT".to_string(),
+                status: "ok".to_string(),
+                events: Some(events_without_entries),
+                failure_details: None,
+            },
+        ];
+
+        let compare = events_compare_from_items(
+            vec!["NASDAQ:AAPL".to_string(), "NASDAQ:MSFT".to_string()],
+            ALL,
+            items,
+        );
+
+        assert_eq!(compare.contract_version, "events_compare.v1");
+        assert_eq!(compare.source, "scanner_fundamentals_rest");
+        assert_eq!(compare.source_category, "desktop_free_read");
+        assert_eq!(
+            compare.requested_symbols,
+            vec!["NASDAQ:AAPL", "NASDAQ:MSFT"]
+        );
+        assert_eq!(compare.summary.requested_count, 2);
+        assert_eq!(compare.summary.ok_count, 2);
+        assert_eq!(compare.summary.error_count, 0);
+        assert_eq!(compare.summary.total_event_count, 2);
+        assert_eq!(compare.summary.symbols_with_events_count, 1);
+        assert_eq!(compare.summary.symbols_without_events_count, 1);
+        assert_eq!(compare.items[0].requested_index, 0);
+        assert_eq!(compare.items[1].requested_index, 1);
+    }
+
+    #[test]
+    fn events_compare_validation_is_public_safe() {
+        let too_many = normalize_compare_symbols((0..26).map(|idx| format!("SYM{idx}")).collect())
+            .unwrap_err();
+        assert_eq!(too_many.kind, ErrorKind::Validation);
+        let details = too_many.details.unwrap();
+        assert_eq!(details["maximum"], 25);
+        assert_eq!(details["source"], "scanner_fundamentals_rest");
+        assert_eq!(details["requires_desktop"], false);
+        assert_eq!(details["non_mutating"], true);
+
+        let blank = normalize_compare_symbols(vec!["NASDAQ:AAPL".to_string(), " ".to_string()])
+            .unwrap_err();
+        assert_eq!(blank.kind, ErrorKind::Validation);
+    }
+
+    #[test]
+    fn events_compare_failure_details_are_sanitized() {
+        let err = AppError::new(ErrorKind::InternalApiUnavailable, "failed").with_details(json!({
+            "raw": {"hidden": true},
+            "raw_response": "secret",
+            "nested": {"session_id": "abc", "safe": true},
+        }));
+
+        let details = sanitized_error_details(&err);
+
+        assert!(details.get("raw").is_none());
+        assert!(details.get("raw_response").is_none());
+        assert!(details["nested"].get("session_id").is_none());
+        assert_eq!(details["nested"]["safe"], true);
+        assert_eq!(details["source"], "scanner_fundamentals_rest");
+        assert_eq!(details["source_category"], "desktop_free_read");
     }
 
     #[test]

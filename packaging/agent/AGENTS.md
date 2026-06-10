@@ -115,9 +115,11 @@ Do not use `TV_CDP_TARGET_ID`; explicit target handoff is `--target-id`.
   `requires_desktop`, `source_category`, `non_mutating`, `evidence_role`, and
   `auto_execute: false` before deciding whether to run a separate follow-up.
 - `tv events <SYMBOL>` returns scanner-backed earnings and dividends readback
-  with `contract_version: "events.v1"`. It is event-shaped field evidence,
-  not a complete event calendar. Do not use event-like fields as ranking,
-  recommendation, trading judgment, or hidden fallback evidence.
+  with `contract_version: "events.v1"`. `tv events compare <SYMBOL>...`
+  returns ordered multi-symbol `events_compare.v1` readback from the same
+  source. These are event-shaped field evidence, not complete event calendars.
+  Do not use event-like fields as ranking, recommendation, trading judgment,
+  or hidden fallback evidence.
 - Use `tv chart compare <SYMBOL>...` only for a small finalist set where the
   selected TradingView Desktop chart feed itself is the source under review.
   It is Desktop-backed, may temporarily switch the selected chart, and returns

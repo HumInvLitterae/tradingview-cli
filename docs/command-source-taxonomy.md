@@ -82,6 +82,12 @@ become a hidden fallback for fundamentals, quotes, compare, bars, or chart
 reads, and it must not infer timezone, before/after-market, ranking,
 recommendation, or trading judgment beyond the values TradingView returns.
 
+`tv events compare <SYMBOL>...` uses the same scanner fundamentals source for
+2 to 25 symbols and returns `contract_version: "events_compare.v1"` with
+ordered item status, per-item `events.v1` payloads when available, public-safe
+item errors, and summary counts. It is not a replacement for `tv compare`,
+not a full event calendar, and not a ranking or recommendation surface.
+
 `tv watch compare <SYMBOL>...` is also Desktop-free, but it is a bounded JSONL
 workflow rather than a single JSON packet. It polls scanner-backed quote
 evidence for a known candidate set and emits readiness, sample, heartbeat, and

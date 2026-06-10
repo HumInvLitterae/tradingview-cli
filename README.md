@@ -78,6 +78,7 @@ tv fundamentals NYSE:IONQ --group earnings
 tv fundamentals AAPL --group dividends
 tv events NASDAQ:AAPL --event-type earnings
 tv events NASDAQ:AAPL --event-type dividends
+tv events compare NASDAQ:AAPL NASDAQ:MSFT --event-type earnings
 tv scanner scan --type stock --columns name,close,volume --limit 10
 tv scanner metainfo --market america --field close --field premarket_close
 ```
@@ -105,6 +106,11 @@ earnings and dividend fields. It is event-shaped evidence, not a full event
 calendar. It does not infer timezone, before/after-market, ranking,
 recommendation, or buy/sell meaning beyond the scanner values TradingView
 returns.
+
+`tv events compare <SYMBOL>...` extends the same scanner-backed event readback
+to a small ordered candidate set with `contract_version:
+"events_compare.v1"`. It is not a full event calendar and does not rank or
+recommend symbols.
 
 Scanner-backed `tv quote <SYMBOL>` and `tv quotes <SYMBOL>...` are
 Desktop-free, but they are not a realtime guarantee. Inspect `time`,

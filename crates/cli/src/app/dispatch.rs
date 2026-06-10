@@ -7,8 +7,8 @@ use crate::{
     },
     cli::{
         AlertCommand, ChartCommand, Command, DataCommand, DiagnoseCommand, DrawingCommand,
-        ExportCommand, IndicatorCommand, LayoutCommand, PaneCommand, PineCommand, QuoteSource,
-        ReplayCommand, ScannerCommand, ScreenerColumnsCommand, ScreenerCommand,
+        EventsCommand, ExportCommand, IndicatorCommand, LayoutCommand, PaneCommand, PineCommand,
+        QuoteSource, ReplayCommand, ScannerCommand, ScreenerColumnsCommand, ScreenerCommand,
         ScreenerFiltersCommand, ScreenerScreensCommand, TabCommand, UiCommand, WatchlistCommand,
     },
     ops,
@@ -85,15 +85,34 @@ pub async fn dispatch(
             }
             ops::fundamentals_symbol(&symbol, groups, fields).await
         }
-        Command::Events { symbol, event_type } => {
-            if symbol.trim().is_empty() {
-                return Err(AppError::new(
-                    ErrorKind::Validation,
-                    "events symbol must not be empty",
-                ));
+        Command::Events {
+            symbol,
+            event_type,
+            command,
+        } => match command {
+            Some(EventsCommand::Compare {
+                symbols,
+                event_type,
+            }) => {
+                validate_events_compare_symbols(&symbols)?;
+                ops::events_compare_symbols(symbols, event_type.as_str()).await
             }
-            ops::events_symbol(&symbol, event_type.as_str()).await
-        }
+            None => {
+                let symbol = symbol.ok_or_else(|| {
+                    AppError::new(
+                        ErrorKind::Validation,
+                        "events requires a symbol or compare subcommand",
+                    )
+                })?;
+                if symbol.trim().is_empty() {
+                    return Err(AppError::new(
+                        ErrorKind::Validation,
+                        "events symbol must not be empty",
+                    ));
+                }
+                ops::events_symbol(&symbol, event_type.as_str()).await
+            }
+        },
         Command::Snapshot {
             symbol,
             groups,
@@ -1203,6 +1222,53 @@ pub async fn dispatch(
 }
 
 const MAX_CHART_COMPARE_SYMBOLS: usize = 10;
+const MAX_EVENTS_COMPARE_SYMBOLS: usize = 25;
+
+fn validate_events_compare_symbols(symbols: &[String]) -> Result<(), AppError> {
+    if symbols.len() < 2 {
+        return Err(AppError::new(
+            ErrorKind::Validation,
+            "events compare requires at least two symbols",
+        )
+        .with_details(json!({
+            "minimum": 2,
+            "maximum": MAX_EVENTS_COMPARE_SYMBOLS,
+            "source": "scanner_fundamentals_rest",
+            "source_category": "desktop_free_read",
+            "requires_desktop": false,
+            "non_mutating": true,
+        })));
+    }
+    if symbols.len() > MAX_EVENTS_COMPARE_SYMBOLS {
+        return Err(AppError::new(
+            ErrorKind::Validation,
+            format!("events compare accepts at most {MAX_EVENTS_COMPARE_SYMBOLS} symbols"),
+        )
+        .with_details(json!({
+            "minimum": 2,
+            "maximum": MAX_EVENTS_COMPARE_SYMBOLS,
+            "source": "scanner_fundamentals_rest",
+            "source_category": "desktop_free_read",
+            "requires_desktop": false,
+            "non_mutating": true,
+        })));
+    }
+    if symbols.iter().any(|symbol| symbol.trim().is_empty()) {
+        return Err(AppError::new(
+            ErrorKind::Validation,
+            "events compare symbol must not be empty",
+        )
+        .with_details(json!({
+            "minimum": 2,
+            "maximum": MAX_EVENTS_COMPARE_SYMBOLS,
+            "source": "scanner_fundamentals_rest",
+            "source_category": "desktop_free_read",
+            "requires_desktop": false,
+            "non_mutating": true,
+        })));
+    }
+    Ok(())
+}
 
 fn validate_chart_compare_symbols(symbols: &[String]) -> Result<(), AppError> {
     if symbols.len() < 2 {

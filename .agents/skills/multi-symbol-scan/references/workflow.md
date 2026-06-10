@@ -14,6 +14,7 @@ This reference keeps detailed source and command notes out of the core skill.
 | Quote-only batch | `tv quotes <SYMBOL>...` |
 | One-symbol packet | `tv snapshot <SYMBOL>` |
 | Event-shaped earnings/dividends | `tv events <SYMBOL>` |
+| Candidate-set event readback | `tv events compare <SYMBOL>...` |
 | Desktop-free historical bars | `tv bars <SYMBOL> --from ... --to ...` |
 | Selected chart symbol | `tv symbol <SYMBOL>` |
 | Selected chart timeframe | `tv timeframe <RESOLUTION>` |
@@ -56,9 +57,10 @@ This reference keeps detailed source and command notes out of the core skill.
   `symbol_resolution`, `range_coverage_status`, `range_alignment`,
   `range_fetch_summary`, `source_availability`, and `data_quality` before
   summarizing coverage.
-- `tv events` is `events.v1` from `scanner_fundamentals_rest`. It is a
-  symbol-scoped earnings/dividend readback, not a full event calendar, ranking,
-  or trading signal.
+- `tv events` is `events.v1` from `scanner_fundamentals_rest`. Use
+  `tv events compare <SYMBOL>...` for ordered candidate-set readback with
+  `events_compare.v1`. Both are earnings/dividend evidence, not full event
+  calendars, ranking, or trading signals.
 
 ## Desktop Escalation Notes
 

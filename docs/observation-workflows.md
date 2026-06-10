@@ -394,6 +394,7 @@ tv fundamentals NYSE:IONQ --group earnings
 tv fundamentals AAPL --group dividends
 tv events NASDAQ:AAPL --event-type earnings
 tv events NASDAQ:AAPL --event-type dividends
+tv events compare NASDAQ:AAPL NASDAQ:MSFT --event-type earnings
 ```
 
 The earnings and dividend groups are scanner field bundles, not a complete
@@ -409,6 +410,12 @@ scanner fundamentals source, with event type, source metadata, event count,
 field availability, and missing/unavailable field readback. It is not a full
 event calendar and does not infer timezone, before/after-market, ranking,
 recommendation, or buy/sell meaning.
+
+Use `tv events compare <SYMBOL>...` when several known candidates need the
+same earnings / dividends readback side by side. It returns
+`events_compare.v1`, preserves input order, and keeps per-symbol failures as
+item-level diagnostics. It is still scanner fundamentals evidence, not a full
+calendar or ranking workflow.
 
 ## Deferred Surfaces
 

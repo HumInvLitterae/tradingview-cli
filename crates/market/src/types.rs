@@ -205,6 +205,65 @@ pub struct EventSourceAvailability {
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize)]
+/// Scanner-backed event readback for several requested symbols.
+pub struct EventsCompare {
+    /// Command-local contract marker.
+    pub contract_version: String,
+    /// TradingView source used for all event reads.
+    pub source: String,
+    /// Command source category used by the CLI source taxonomy.
+    pub source_category: String,
+    /// False because scanner fundamentals reads do not require TradingView Desktop.
+    pub requires_desktop: bool,
+    /// True because this read does not mutate a chart.
+    pub non_mutating: bool,
+    /// Symbol text supplied by the caller, preserving input order.
+    pub requested_symbols: Vec<String>,
+    /// Requested event type filter.
+    pub requested_event_type: String,
+    /// Event types included in this read.
+    pub event_types: Vec<String>,
+    /// Ordered per-symbol event readback.
+    pub items: Vec<EventsCompareItem>,
+    /// Compact counts for downstream consumers.
+    pub summary: EventsCompareSummary,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize)]
+/// One ordered item in `events_compare.v1`.
+pub struct EventsCompareItem {
+    /// Zero-based index from the user input.
+    pub requested_index: usize,
+    /// Symbol text supplied by the caller.
+    pub requested_symbol: String,
+    /// `ok` when event readback succeeded, `error` otherwise.
+    pub status: String,
+    /// Single-symbol `events.v1` payload when available.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub events: Option<Events>,
+    /// Public-safe error details when readback failed.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub failure_details: Option<Value>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize)]
+/// Summary counts for `events_compare.v1`.
+pub struct EventsCompareSummary {
+    /// Number of requested symbols.
+    pub requested_count: usize,
+    /// Number of symbols whose event readback succeeded.
+    pub ok_count: usize,
+    /// Number of symbols whose event readback failed.
+    pub error_count: usize,
+    /// Sum of all event entries across successful items.
+    pub total_event_count: usize,
+    /// Successful symbols with at least one event entry.
+    pub symbols_with_events_count: usize,
+    /// Successful symbols with zero event entries.
+    pub symbols_without_events_count: usize,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize)]
 /// Scanner-backed quote for one resolved symbol.
 pub struct Quote {
     /// Exchange-qualified resolved symbol.

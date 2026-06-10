@@ -12,6 +12,9 @@ package version omits the leading `v`.
 - Added `tv chart compare <SYMBOL>...` as a narrow Desktop-backed
   `chart_compare.v1` workflow for checking a small finalist set with
   selected-chart quote evidence, ordered item status, and restore readback.
+- Added `tv events compare <SYMBOL>...` as a Desktop-free
+  `events_compare.v1` workflow for checking scanner-backed earnings and
+  dividend event readback across a small candidate set.
 
 ### Documentation
 
@@ -19,6 +22,9 @@ package version omits the leading `v`.
   command plan, keeping future Desktop-backed selected-chart compare separate
   from scanner-backed `tv compare` / `tv watch compare` while carrying
   `tv events` expansion and Replay evidence attachment as adjacent lanes.
+- Recorded the `tv events compare` implementation slice for `v0.25.0`,
+  keeping it separate from full calendar, ranking, and recommendation
+  semantics.
 
 ## v0.24.0 - 2026-06-03
 

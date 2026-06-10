@@ -62,12 +62,14 @@ pub enum Command {
     },
     #[command(
         about = "Get Desktop-free symbol events",
-        long_about = "Get scanner-backed earnings and dividend event readback for one symbol without connecting to TradingView Desktop.\n\nThis command shapes existing scanner fundamentals fields into `events.v1`. It is not a full TradingView event calendar and does not infer timezone, before/after-market, confirmed/estimated, ranking, or trading-recommendation meaning beyond the scanner values TradingView returns. Use `--event-type earnings` or `--event-type dividends` to narrow the readback."
+        long_about = "Get scanner-backed earnings and dividend event readback without connecting to TradingView Desktop.\n\nUse `tv events <SYMBOL>` for one symbol and `tv events compare <SYMBOL>...` for a bounded ordered multi-symbol readback. These commands shape existing scanner fundamentals fields into `events.v1` or `events_compare.v1`. They are not a full TradingView event calendar and do not infer timezone, before/after-market, confirmed/estimated, ranking, or trading-recommendation meaning beyond the scanner values TradingView returns."
     )]
     Events {
-        symbol: String,
+        symbol: Option<String>,
         #[arg(long = "event-type", value_enum, default_value_t = EventType::All)]
         event_type: EventType,
+        #[command(subcommand)]
+        command: Option<EventsCommand>,
     },
     #[command(
         about = "Get Desktop-free symbol evidence snapshot",
@@ -942,6 +944,19 @@ pub enum ObserveCommand {
     Chart {
         #[command(flatten)]
         options: StreamOptions,
+    },
+}
+
+#[derive(Debug, Subcommand)]
+pub enum EventsCommand {
+    #[command(
+        about = "Compare scanner-backed event readback for several symbols",
+        long_about = "Compare scanner-backed earnings and dividend event readback for several symbols without connecting to TradingView Desktop.\n\nThis command accepts 2 to 25 symbols, preserves input order, and returns `contract_version: \"events_compare.v1\"` with per-symbol `events.v1` readback or public-safe item errors. It is not a full event calendar, ranking, recommendation, or trading judgment."
+    )]
+    Compare {
+        symbols: Vec<String>,
+        #[arg(long = "event-type", value_enum, default_value_t = EventType::All)]
+        event_type: EventType,
     },
 }
 

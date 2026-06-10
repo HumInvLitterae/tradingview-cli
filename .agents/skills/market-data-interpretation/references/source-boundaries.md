@@ -53,12 +53,14 @@ fetch windows, observed / filtered / returned counts, and truncation reason.
 
 `tv events <SYMBOL>` is a scanner fundamentals read shaped as `events.v1`. It
 reports scanner-backed earnings and dividend fields as event entries.
+`tv events compare <SYMBOL>...` uses the same source for several symbols and
+returns `events_compare.v1` with ordered item status and summary counts.
 
-Use it when an event-shaped payload is easier than raw `field_values`. It is
-not a full event calendar, chart read, ranking, recommendation, or trading
-judgment. Do not infer timezone, before/after-market, confirmed/estimated
-status, or publication meaning unless TradingView explicitly returns that
-value.
+Use these commands when an event-shaped payload is easier than raw
+`field_values`. They are not a full event calendar, chart read, ranking,
+recommendation, or trading judgment. Do not infer timezone,
+before/after-market, confirmed/estimated status, or publication meaning unless
+TradingView explicitly returns that value.
 
 When event fields are missing or null, describe them as unavailable or unknown,
 not as proof that no event exists.
