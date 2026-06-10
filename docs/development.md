@@ -390,11 +390,12 @@ tracked docs.
 
 `tv events` keeps event-shaped evidence under the scanner fundamentals
 boundary. `tv events <SYMBOL>` returns `events.v1` from earnings and dividends
-fields; it is not a complete event calendar. If live checks are attempted,
-record public-safe symbol, event type, event count, source category,
-availability state, and missing / unavailable reasons only. Do not paste raw
-event payloads, account-local metadata, credentials, session ids, or local
-absolute paths into tracked docs.
+fields, while `tv events compare <SYMBOL>...` returns `events_compare.v1` for
+2 to 25 symbols. Neither command is a complete event calendar. If live checks
+are attempted, record public-safe symbol count, event type, event count,
+source category, availability state, and missing / unavailable reasons only.
+Do not paste raw event payloads, account-local metadata, credentials, session
+ids, or local absolute paths into tracked docs.
 
 For selected-chart export checks, use `tv export chart-bars --from
 <UNIX_SECONDS> --to <UNIX_SECONDS> [--count 500] [--summary]`. The command is a

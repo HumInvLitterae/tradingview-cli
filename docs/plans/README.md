@@ -8,13 +8,15 @@ for release and next-phase planning.
 
 Current plan:
 
-- `tradingview-cli-chart-backed-compare-command.md`: plan the first
-  `v0.25.0` chart-backed compare implementation candidate, keeping existing
-  scanner-backed `tv compare` separate from future Desktop-backed selected
-  chart evidence.
+- `tradingview-cli-events-compare-readback.md`: add `tv events compare
+  <SYMBOL>...` as ordered multi-symbol scanner-backed earnings / dividends
+  readback while preserving the single-symbol `events.v1` contract.
 
 Recently completed:
 
+- `tradingview-cli-chart-backed-compare-command.md`: added `tv chart compare
+  <SYMBOL>...` as a separated Desktop-backed selected-chart evidence workflow
+  while keeping `tv compare` and `tv watch compare` scanner-backed.
 - `tradingview-cli-v0.24.0-release-readiness.md`: prepared the `v0.24.0`
   release state, including version, changelog, release notes, README asset
   examples, package staging, runtime-skill packaging, and release validation.

@@ -37,6 +37,7 @@ the task needs them. If command choice is unclear, check
 | One symbol with Desktop-free detail | `tv snapshot <SYMBOL>` |
 | One symbol's fundamentals | `tv fundamentals <SYMBOL> --group ...` |
 | One symbol's earnings/dividend events | `tv events <SYMBOL>` |
+| Several symbols' earnings/dividend events | `tv events compare <SYMBOL>...` |
 | Reproducible historical bars | `tv bars <SYMBOL> --from ... --to ...` |
 | Selected-chart quote or bars | `tv quote --source chart`, `tv ohlcv`, or `tv state` |
 | Explicit visible-chart export | `tv export chart-bars --from ... --to ...` |
@@ -58,9 +59,10 @@ the task needs them. If command choice is unclear, check
 - `tv bars` is Desktop-free historical bars evidence. Bare symbols may resolve
   through symbol search; report `requested_symbol`, `resolved_symbol`, and
   `symbol_resolution`.
-- `tv events` is scanner-backed `events.v1` for earnings and dividends. It is
-  not a complete event calendar and does not infer timezone, confirmed status,
-  ranking, recommendation, or trading meaning.
+- `tv events` is scanner-backed event evidence for earnings and dividends.
+  Use `events.v1` for one symbol and `events_compare.v1` for an ordered
+  candidate set. It is not a complete event calendar and does not infer
+  timezone, confirmed status, ranking, recommendation, or trading meaning.
 - `tv observe chart`, `tv stream ...`, and `tv watch compare` are JSONL
   workflows. Read readiness / sample / heartbeat / summary event types before
   interpreting samples.

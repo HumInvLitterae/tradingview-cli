@@ -141,13 +141,26 @@ fn events_help_explains_scanner_backed_event_readback() {
         .assert()
         .success()
         .stdout(predicate::str::contains("<SYMBOL>"))
+        .stdout(predicate::str::contains("compare"))
         .stdout(predicate::str::contains("--event-type"))
         .stdout(predicate::str::contains("scanner"))
         .stdout(predicate::str::contains("Desktop"))
         .stdout(predicate::str::contains("events.v1"))
+        .stdout(predicate::str::contains("events_compare.v1"))
         .stdout(predicate::str::contains("earnings"))
         .stdout(predicate::str::contains("dividend"))
         .stdout(predicate::str::contains("event calendar"))
+        .stdout(predicate::str::contains("buy/sell").not());
+
+    tv().args(["events", "compare", "--help"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("2 to 25 symbols"))
+        .stdout(predicate::str::contains("--event-type"))
+        .stdout(predicate::str::contains("events_compare.v1"))
+        .stdout(predicate::str::contains("scanner"))
+        .stdout(predicate::str::contains("event calendar"))
+        .stdout(predicate::str::contains("recommendation"))
         .stdout(predicate::str::contains("buy/sell").not());
 }
 
@@ -163,6 +176,55 @@ fn events_rejects_blank_symbol_before_connecting() {
     assert_eq!(value["success"], false);
     assert_eq!(value["command"], "events");
     assert_eq!(value["error"]["kind"], "validation");
+}
+
+#[test]
+fn events_compare_rejects_invalid_inputs_before_connecting() {
+    let one_symbol = tv()
+        .env("TV_CDP_PORT", "9")
+        .args(["events", "compare", "NASDAQ:AAPL"])
+        .assert()
+        .failure()
+        .code(1);
+    let value = stderr_json(&one_symbol);
+    assert_eq!(value["success"], false);
+    assert_eq!(value["command"], "events");
+    assert_eq!(value["error"]["kind"], "validation");
+    assert_eq!(value["error"]["details"]["minimum"], 2);
+    assert_eq!(value["error"]["details"]["maximum"], 25);
+    assert_eq!(
+        value["error"]["details"]["source"],
+        "scanner_fundamentals_rest"
+    );
+    assert_eq!(value["error"]["details"]["requires_desktop"], false);
+    assert_eq!(value["error"]["details"]["non_mutating"], true);
+
+    let blank_symbol = tv()
+        .env("TV_CDP_PORT", "9")
+        .args(["events", "compare", "NASDAQ:AAPL", " "])
+        .assert()
+        .failure()
+        .code(1);
+    let value = stderr_json(&blank_symbol);
+    assert_eq!(value["success"], false);
+    assert_eq!(value["command"], "events");
+    assert_eq!(value["error"]["kind"], "validation");
+
+    let too_many_symbols: Vec<String> = std::iter::once("events".to_string())
+        .chain(std::iter::once("compare".to_string()))
+        .chain((0..26).map(|idx| format!("NASDAQ:T{idx}")))
+        .collect();
+    let too_many = tv()
+        .env("TV_CDP_PORT", "9")
+        .args(too_many_symbols)
+        .assert()
+        .failure()
+        .code(1);
+    let value = stderr_json(&too_many);
+    assert_eq!(value["success"], false);
+    assert_eq!(value["command"], "events");
+    assert_eq!(value["error"]["kind"], "validation");
+    assert_eq!(value["error"]["details"]["maximum"], 25);
 }
 
 #[test]

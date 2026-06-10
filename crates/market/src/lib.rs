@@ -62,7 +62,9 @@ mod types;
 
 pub use bars::{bars_symbol, bars_symbol_range};
 pub use compare::{compare_symbols, compare_symbols_typed};
-pub use events::{events_symbol, events_symbol_typed};
+pub use events::{
+    events_compare_symbols, events_compare_symbols_typed, events_symbol, events_symbol_typed,
+};
 pub use fundamentals::{
     fundamentals_symbol, fundamentals_symbol_typed, fundamentals_symbol_with_groups,
     fundamentals_symbol_with_groups_typed, validate_fundamentals_selection,

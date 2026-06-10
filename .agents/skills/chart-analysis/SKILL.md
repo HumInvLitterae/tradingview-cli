@@ -66,8 +66,8 @@ details, or unsupported-feature reminders. If command choice is unclear, check
   combined feed.
 - `follow_up_hints[]` from `snapshot.v1` or `compare.v1` are advisory
   evidence surfaces. `auto_execute: false` means the CLI did not run them.
-- `tv events` is scanner-backed earnings/dividend evidence, not a full event
-  calendar and not selected-chart evidence.
+- `tv events` and `tv events compare` are scanner-backed earnings/dividend
+  evidence, not full event calendars and not selected-chart evidence.
 - Use `tv chart compare <SYMBOL>...` only for a small finalist set where
   selected-chart quote evidence matters. It may temporarily switch the chart;
   report `chart_compare.v1`, item status, and restore readback. Use

@@ -25,6 +25,7 @@ reminders. If command choice is unclear, check
 | Quote-only comparison | `tv quotes <SYMBOL>...` |
 | One-symbol detail | `tv snapshot <SYMBOL>` |
 | Earnings or dividend context | `tv events <SYMBOL>` |
+| Candidate-set event context | `tv events compare <SYMBOL>...` |
 | Historical bars | `tv bars <SYMBOL> --from ... --to ...` |
 | Finalist selected-chart compare | `tv chart compare <SYMBOL>...` |
 | Finalist chart evidence | `tv quote --source chart`, `tv ohlcv`, `tv values`, `tv screenshot` |
@@ -44,8 +45,10 @@ reminders. If command choice is unclear, check
 5. Use `tv bars` for reproducible historical bars. When a bare symbol resolves
    automatically, report `requested_symbol`, `resolved_symbol`, and
    `symbol_resolution`; retry with `EXCHANGE:SYMBOL` if the exchange matters.
-6. Use `tv events <SYMBOL>` for scanner-backed earnings and dividend evidence.
-   Treat it as event context, not a complete calendar or recommendation.
+6. Use `tv events <SYMBOL>` for one-symbol earnings/dividend evidence, or
+   `tv events compare <SYMBOL>...` for the same readback across a candidate
+   set. Treat both as event context, not a complete calendar or
+   recommendation.
 7. Escalate to TradingView Desktop only for finalists. Run `tv readiness`; if
    multiple targets are open, run `tv tab list` and use `target_cli_args`.
 8. For a small finalist set where selected-chart quote evidence matters, use
