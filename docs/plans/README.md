@@ -8,12 +8,15 @@ for release and next-phase planning.
 
 Current plan:
 
-- `tradingview-cli-v0.25-pre-release-audit.md`: audit completed `v0.25.0`
-  chart-backed workflow maturity before release readiness, including source
-  boundaries, docs, runtime skills, tests, and architecture posture.
+- `tradingview-cli-v0.25.0-release-readiness.md`: prepare the `v0.25.0`
+  release state, including version, changelog, release notes, README asset
+  examples, package staging, and release validation.
 
 Recently completed:
 
+- `tradingview-cli-v0.25-pre-release-audit.md`: audited completed `v0.25.0`
+  chart-backed workflow maturity before release readiness, including source
+  boundaries, docs, runtime skills, tests, and architecture posture.
 - `tradingview-cli-strategy-tester-screenshot.md`: added
   `tv screenshot --region strategy --output <PATH>` as non-mutating visual
   evidence for the visible TradingView Strategy Tester panel.
