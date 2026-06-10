@@ -92,14 +92,11 @@ readback, not market-data samples. The command does not connect to TradingView
 Desktop, does not use selected-chart quote, does not read browserless bars,
 and does not rank or recommend symbols.
 
-Chart-backed compare is not currently a stable command. Keep
-`tv compare <SYMBOL>...` Desktop-free and scanner-backed. Treat
-`tv quote <SYMBOL> --source chart` as selected-chart single-symbol evidence,
-not as scanner-style multi-symbol compare. If a future chart-backed compare is
-added, it should use a separated command surface and report Desktop target
-state, selected-chart context, mutation requirements, source metadata, and
-public-safe failure details instead of becoming a hidden fallback for
-`tv compare`.
+`tv chart compare <SYMBOL>...` is the separated chart-backed compare surface.
+It is not in this Desktop-free category. Keep `tv compare <SYMBOL>...` and
+`tv watch compare <SYMBOL>...` scanner-backed. Use `tv chart compare` only
+when the selected TradingView Desktop chart feed itself is the source under
+review.
 
 ### Desktop-backed read
 
@@ -167,6 +164,15 @@ is specifically required. Concurrent or external chart mutations can still
 invalidate chart-source assumptions; downstream workflows should preserve
 structured freshness and restore fields rather than adding manual sleep or
 double-call loops.
+
+For a small finalist set where selected-chart evidence is specifically needed,
+use `tv chart compare <SYMBOL>...`. It serially reads chart-source quote
+evidence for 2 to 10 symbols, reports `contract_version:
+"chart_compare.v1"`, keeps ordered per-symbol status, and records before/after
+chart context plus restore readback. It is a Desktop-backed operation because
+it may temporarily switch the selected chart. It must not be used as a hidden
+fallback for `tv compare`, `tv watch compare`, `tv bars`, Replay, chart
+export, quote-data, or scanner reads.
 
 Do not treat chart-source quote as scanner-style extended-hours evidence.
 Chart-source quote reads the selected chart main-series last bar and reports a

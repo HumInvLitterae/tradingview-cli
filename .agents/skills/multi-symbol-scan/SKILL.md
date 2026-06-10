@@ -26,6 +26,7 @@ reminders. If command choice is unclear, check
 | One-symbol detail | `tv snapshot <SYMBOL>` |
 | Earnings or dividend context | `tv events <SYMBOL>` |
 | Historical bars | `tv bars <SYMBOL> --from ... --to ...` |
+| Finalist selected-chart compare | `tv chart compare <SYMBOL>...` |
 | Finalist chart evidence | `tv quote --source chart`, `tv ohlcv`, `tv values`, `tv screenshot` |
 
 ## Core Workflow
@@ -47,11 +48,14 @@ reminders. If command choice is unclear, check
    Treat it as event context, not a complete calendar or recommendation.
 7. Escalate to TradingView Desktop only for finalists. Run `tv readiness`; if
    multiple targets are open, run `tv tab list` and use `target_cli_args`.
-8. For finalist chart checks, set `tv symbol` and `tv timeframe`, confirm with
+8. For a small finalist set where selected-chart quote evidence matters, use
+   `tv chart compare <SYMBOL>...` and report `chart_compare.v1`, item status,
+   and restore readback.
+9. For deeper finalist chart checks, set `tv symbol` and `tv timeframe`, confirm with
    `tv ohlcv --count 1` or `tv ohlcv --summary`, then read selected-chart
    evidence with `tv quote --source chart`, `tv values`, drawing reads, or
    screenshots.
-9. Add watchlist entries only after user approval with
+10. Add watchlist entries only after user approval with
    `tv watchlist add-bulk <SYMBOL>... --allow-partial`.
 
 ## Source Boundaries
@@ -59,7 +63,8 @@ reminders. If command choice is unclear, check
 - Keep scanner REST data, `tv bars`, selected-chart reads, chart export,
   Replay, screenshots, and event readback as separate evidence sources.
 - `tv compare` and `tv watch compare` are Desktop-free scanner-backed
-  workflows. Chart-backed compare is not a stable command.
+  workflows. `tv chart compare` is Desktop-backed selected-chart evidence for
+  a small finalist set and may temporarily switch chart state.
 - `tv export chart-bars` is selected-chart export evidence, not a fallback for
   multi-symbol historical sample preparation.
 - `tv replay log` is bounded Replay workflow evidence, not historical bars

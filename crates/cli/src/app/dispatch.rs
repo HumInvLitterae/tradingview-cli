@@ -6,10 +6,10 @@ use crate::{
         input::read_pine_source, runtime::connect_runtime, safety::require_unsafe_ui_eval_enabled,
     },
     cli::{
-        AlertCommand, Command, DataCommand, DiagnoseCommand, DrawingCommand, ExportCommand,
-        IndicatorCommand, LayoutCommand, PaneCommand, PineCommand, QuoteSource, ReplayCommand,
-        ScannerCommand, ScreenerColumnsCommand, ScreenerCommand, ScreenerFiltersCommand,
-        ScreenerScreensCommand, TabCommand, UiCommand, WatchlistCommand,
+        AlertCommand, ChartCommand, Command, DataCommand, DiagnoseCommand, DrawingCommand,
+        ExportCommand, IndicatorCommand, LayoutCommand, PaneCommand, PineCommand, QuoteSource,
+        ReplayCommand, ScannerCommand, ScreenerColumnsCommand, ScreenerCommand,
+        ScreenerFiltersCommand, ScreenerScreensCommand, TabCommand, UiCommand, WatchlistCommand,
     },
     ops,
 };
@@ -122,6 +122,13 @@ pub async fn dispatch(
             }
             ops::compare_symbols(symbols).await
         }
+        Command::Chart { command } => match command {
+            ChartCommand::Compare { symbols } => {
+                validate_chart_compare_symbols(&symbols)?;
+                let mut runtime = connect_runtime(config).await?;
+                ops::chart_compare(&mut runtime, symbols).await
+            }
+        },
         Command::Scanner { command } => match command {
             ScannerCommand::Hotlist { slug, limit } => ops::scanner_hotlist(&slug, limit).await,
             ScannerCommand::Metainfo { market, fields } => {
@@ -1193,6 +1200,54 @@ pub async fn dispatch(
             }
         }
     }
+}
+
+const MAX_CHART_COMPARE_SYMBOLS: usize = 10;
+
+fn validate_chart_compare_symbols(symbols: &[String]) -> Result<(), AppError> {
+    if symbols.len() < 2 {
+        return Err(AppError::new(
+            ErrorKind::Validation,
+            "chart compare requires at least two symbols",
+        )
+        .with_details(json!({
+            "minimum": 2,
+            "maximum": MAX_CHART_COMPARE_SYMBOLS,
+            "source": "chart_api",
+            "source_category": "desktop_backed_operation",
+            "requires_desktop": true,
+            "non_mutating": false,
+        })));
+    }
+    if symbols.len() > MAX_CHART_COMPARE_SYMBOLS {
+        return Err(AppError::new(
+            ErrorKind::Validation,
+            format!("chart compare accepts at most {MAX_CHART_COMPARE_SYMBOLS} symbols"),
+        )
+        .with_details(json!({
+            "minimum": 2,
+            "maximum": MAX_CHART_COMPARE_SYMBOLS,
+            "source": "chart_api",
+            "source_category": "desktop_backed_operation",
+            "requires_desktop": true,
+            "non_mutating": false,
+        })));
+    }
+    if symbols.iter().any(|symbol| symbol.trim().is_empty()) {
+        return Err(AppError::new(
+            ErrorKind::Validation,
+            "chart compare symbol must not be empty",
+        )
+        .with_details(json!({
+            "minimum": 2,
+            "maximum": MAX_CHART_COMPARE_SYMBOLS,
+            "source": "chart_api",
+            "source_category": "desktop_backed_operation",
+            "requires_desktop": true,
+            "non_mutating": false,
+        })));
+    }
+    Ok(())
 }
 
 async fn dispatch_quote(

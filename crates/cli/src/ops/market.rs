@@ -1,10 +1,12 @@
 mod bars;
+mod chart_compare;
 mod direct;
 mod ohlcv;
 mod quote;
 mod quote_data;
 
 pub use bars::bars;
+pub use chart_compare::chart_compare;
 pub use direct::{
     compare_symbols, events_symbol, fundamentals_symbol, quote_symbol, quote_symbols,
     snapshot_symbol, symbol_info_direct, symbol_search,

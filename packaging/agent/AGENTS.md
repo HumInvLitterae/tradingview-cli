@@ -118,10 +118,11 @@ Do not use `TV_CDP_TARGET_ID`; explicit target handoff is `--target-id`.
   with `contract_version: "events.v1"`. It is event-shaped field evidence,
   not a complete event calendar. Do not use event-like fields as ranking,
   recommendation, trading judgment, or hidden fallback evidence.
-- Chart-backed compare is not a stable command. Use `tv compare` and
-  `tv watch compare` for Desktop-free multi-symbol comparison, then use
-  selected-chart reads such as `tv quote --source chart`, `tv ohlcv`,
-  screenshot, or `tv export chart-bars` only as explicit finalist follow-up.
+- Use `tv chart compare <SYMBOL>...` only for a small finalist set where the
+  selected TradingView Desktop chart feed itself is the source under review.
+  It is Desktop-backed, may temporarily switch the selected chart, and returns
+  `chart_compare.v1` with ordered item status and restore readback. Use
+  `tv compare` and `tv watch compare` for Desktop-free first-pass comparison.
 - Selected-chart historical export is explicit: use `tv export chart-bars
   --from <UNIX_SECONDS> --to <UNIX_SECONDS>` only when the selected TradingView
   Desktop chart itself is the intended source. It moves the visible Desktop

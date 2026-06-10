@@ -63,8 +63,9 @@ loaded every time the skill triggers.
 ## Remaining Gaps
 
 Strategy tester panel screenshots and arbitrary historical indicator-series
-computation are not implemented in the Rust CLI. Chart-backed compare is
-planned only as a contract topic, not a stable command. Prefer implemented
-high-level commands before generic UI automation.
+computation are not implemented in the Rust CLI. For a small finalist set that
+needs selected-chart evidence, use `tv chart compare <SYMBOL>...`; for broad
+first-pass comparison, prefer Desktop-free `tv compare` or `tv watch compare`.
+Prefer implemented high-level commands before generic UI automation.
 
 The MCP server itself is not planned.

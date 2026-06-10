@@ -120,6 +120,7 @@ tv readiness
 tv tab list
 tv state
 tv ohlcv --summary --count 100
+tv chart compare NASDAQ:AAPL NASDAQ:MSFT
 tv export chart-bars --from 1704067200 --to 1706745600 --summary
 tv screenshot --region chart --output target/tv-chart.png
 ```
@@ -128,6 +129,12 @@ On macOS, `tv launch` uses the system app launcher for the normal no-path case
 and then checks CDP readiness. Use `--path <PATH>` only when you intentionally
 want to start a specific executable. `--kill-existing` is opt-in because it can
 terminate an existing TradingView Desktop session.
+
+`tv chart compare <SYMBOL>...` is a Desktop-backed comparison for a small
+finalist set. It temporarily switches the selected chart to each symbol, reads
+chart quote evidence, and reports `chart_compare.v1` item status and restore
+readback. Use Desktop-free `tv compare` or `tv watch compare` for broad
+scanner-backed comparison.
 
 If multiple TradingView targets are open, use `target_cli_args` returned by
 `tv tab list` or `tv readiness`:

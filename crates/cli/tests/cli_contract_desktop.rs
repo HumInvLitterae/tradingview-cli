@@ -195,6 +195,78 @@ fn screener_get_rejects_zero_limit_before_connecting() {
 }
 
 #[test]
+fn chart_compare_help_explains_selected_chart_contract() {
+    tv().args(["chart", "--help"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains(
+            "selected TradingView Desktop chart",
+        ))
+        .stdout(predicate::str::contains("chart compare"))
+        .stdout(predicate::str::contains("Desktop-free `tv compare`"));
+
+    tv().args(["chart", "compare", "--help"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("SYMBOLS"))
+        .stdout(predicate::str::contains("2 to 10 symbols"))
+        .stdout(predicate::str::contains(
+            "selected TradingView Desktop chart",
+        ))
+        .stdout(predicate::str::contains("chart_compare.v1"))
+        .stdout(predicate::str::contains("temporarily mutate chart state"))
+        .stdout(predicate::str::contains("Desktop-free `tv compare`"))
+        .stdout(predicate::str::contains("buy/sell").not());
+}
+
+#[test]
+fn chart_compare_rejects_invalid_inputs_before_connecting() {
+    let one_symbol = tv()
+        .env("TV_CDP_PORT", "9")
+        .args(["chart", "compare", "AAPL"])
+        .assert()
+        .failure()
+        .code(1);
+    let value = stderr_json(&one_symbol);
+    assert_eq!(value["success"], false);
+    assert_eq!(value["command"], "chart");
+    assert_eq!(value["error"]["kind"], "validation");
+    assert_eq!(value["error"]["details"]["minimum"], 2);
+    assert_eq!(value["error"]["details"]["maximum"], 10);
+    assert_eq!(
+        value["error"]["details"]["source_category"],
+        "desktop_backed_operation"
+    );
+
+    let blank_symbol = tv()
+        .env("TV_CDP_PORT", "9")
+        .args(["chart", "compare", "AAPL", " "])
+        .assert()
+        .failure()
+        .code(1);
+    let value = stderr_json(&blank_symbol);
+    assert_eq!(value["success"], false);
+    assert_eq!(value["command"], "chart");
+    assert_eq!(value["error"]["kind"], "validation");
+
+    let too_many_symbols: Vec<String> = std::iter::once("chart".to_string())
+        .chain(std::iter::once("compare".to_string()))
+        .chain((0..11).map(|idx| format!("NASDAQ:T{idx}")))
+        .collect();
+    let too_many = tv()
+        .env("TV_CDP_PORT", "9")
+        .args(too_many_symbols)
+        .assert()
+        .failure()
+        .code(1);
+    let value = stderr_json(&too_many);
+    assert_eq!(value["success"], false);
+    assert_eq!(value["command"], "chart");
+    assert_eq!(value["error"]["kind"], "validation");
+    assert_eq!(value["error"]["details"]["maximum"], 10);
+}
+
+#[test]
 fn screener_filter_mutations_reject_invalid_inputs_before_connecting() {
     let missing_target = tv()
         .env("TV_CDP_PORT", "9")

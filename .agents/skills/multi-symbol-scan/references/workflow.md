@@ -10,6 +10,7 @@ This reference keeps detailed source and command notes out of the core skill.
 | Scanner field availability | `tv scanner metainfo --field <FIELD>` |
 | Known-symbol comparison | `tv compare <SYMBOL>...` |
 | Bounded known-symbol watch | `tv watch compare <SYMBOL>...` |
+| Finalist selected-chart compare | `tv chart compare <SYMBOL>...` |
 | Quote-only batch | `tv quotes <SYMBOL>...` |
 | One-symbol packet | `tv snapshot <SYMBOL>` |
 | Event-shaped earnings/dividends | `tv events <SYMBOL>` |
@@ -40,6 +41,10 @@ This reference keeps detailed source and command notes out of the core skill.
 - `tv watch compare` emits `watch_compare.v1` readiness / sample / heartbeat /
   summary events. It is bounded scanner-backed JSONL, not a daemon or selected
   chart feed.
+- `tv chart compare` emits `chart_compare.v1` for a small finalist set. It is
+  Desktop-backed selected-chart evidence, may temporarily switch chart state,
+  and reports restore readback. It is not a scanner-backed first-pass compare
+  or ranking.
 
 ## Bars And Events Notes
 
@@ -70,6 +75,6 @@ This reference keeps detailed source and command notes out of the core skill.
 
 ## Remaining Gaps
 
-`batch_run`, arbitrary historical indicator-series computation, stable
-chart-backed compare, stable Replay export, and a complete event calendar are
-not implemented. The MCP server itself is not planned.
+`batch_run`, arbitrary historical indicator-series computation, stable Replay
+export, and a complete event calendar are not implemented. The MCP server
+itself is not planned.

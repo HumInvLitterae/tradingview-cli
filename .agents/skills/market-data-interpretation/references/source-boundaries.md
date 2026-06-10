@@ -72,6 +72,12 @@ scanner-backed quote, symbol info, and fundamentals sections.
 packet. It preserves input order and returns per-symbol quote, info, and
 fundamentals sections.
 
+`tv chart compare <SYMBOL>...` is different: it is Desktop-backed selected
+chart evidence for a small finalist set. It returns `chart_compare.v1`, may
+temporarily switch the selected chart, and reports item status plus restore
+readback. Do not treat it as scanner-backed compare, ranking, or automatic
+source mixing.
+
 For both commands, read `summary`, section errors, `missing_evidence[]`, and
 `follow_up_hints[]`. Follow-up hints are advisory surfaces only; they do not
 execute commands automatically and are not rankings or recommendations.
