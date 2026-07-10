@@ -1,7 +1,10 @@
 use serde_json::{Value, json};
-use tradingview_core::{AppError, ErrorKind};
+use tradingview_core::AppError;
 
-use crate::{http::map_http_error, normalize::split_exchange_symbol};
+use crate::{
+    http::{map_http_error, remote_status_error},
+    normalize::split_exchange_symbol,
+};
 
 const FUNDAMENTALS_SCAN_URL: &str = "https://scanner.tradingview.com/america/scan";
 
@@ -34,23 +37,18 @@ pub(super) async fn fundamentals_symbol_via_scanner(
         .json(&body)
         .send()
         .await
-        .map_err(|err| {
-            map_http_error(err, ErrorKind::Connection, "Scanner fundamentals request")
-        })?;
+        .map_err(|err| map_http_error(err, "Scanner fundamentals request"))?;
 
     let status = response.status();
     if !status.is_success() {
-        return Err(AppError::new(
-            ErrorKind::InternalApiUnavailable,
-            format!("TradingView scanner fundamentals API returned {status}"),
+        return Err(remote_status_error(
+            "TradingView scanner fundamentals API",
+            status,
         ));
     }
 
-    response.json::<Value>().await.map_err(|err| {
-        map_http_error(
-            err,
-            ErrorKind::InternalApiUnavailable,
-            "Scanner fundamentals response",
-        )
-    })
+    response
+        .json::<Value>()
+        .await
+        .map_err(|err| map_http_error(err, "Scanner fundamentals response"))
 }

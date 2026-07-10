@@ -2,7 +2,7 @@ use serde_json::{Map, Value, json};
 
 use tradingview_core::{AppError, ErrorKind};
 
-use super::http::{configured_client, map_http_error};
+use super::http::{configured_client, map_http_error, remote_status_error};
 use super::types::{ScannerFieldInfo, ScannerMetainfoResult};
 
 const METAINFO_BASE_URL: &str = "https://scanner.tradingview.com";
@@ -46,23 +46,20 @@ pub async fn scanner_metainfo_typed(
     let response = builder
         .send()
         .await
-        .map_err(|err| map_http_error(err, ErrorKind::Connection, "Scanner metainfo request"))?;
+        .map_err(|err| map_http_error(err, "Scanner metainfo request"))?;
 
     let status = response.status();
     if !status.is_success() {
-        return Err(AppError::new(
-            ErrorKind::Connection,
-            format!("TradingView scanner metainfo API returned {status}"),
+        return Err(remote_status_error(
+            "TradingView scanner metainfo API",
+            status,
         ));
     }
 
-    let value = response.json::<Value>().await.map_err(|err| {
-        map_http_error(
-            err,
-            ErrorKind::InternalApiUnavailable,
-            "Scanner metainfo response",
-        )
-    })?;
+    let value = response
+        .json::<Value>()
+        .await
+        .map_err(|err| map_http_error(err, "Scanner metainfo response"))?;
 
     normalize_metainfo_response_typed(&normalized, &value)
 }

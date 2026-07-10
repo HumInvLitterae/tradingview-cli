@@ -2,7 +2,7 @@ use serde_json::{Value, json};
 use tradingview_core::{AppError, ErrorKind};
 
 use crate::{
-    http::{configured_client, map_http_error},
+    http::{configured_client, map_http_error, remote_status_error},
     info::preferred_symbol_candidates,
     normalize::{bare_symbol, split_exchange_symbol},
     search::symbol_search_with_client,
@@ -252,23 +252,17 @@ async fn quote_symbol_via_scanner(
         .json(&body)
         .send()
         .await
-        .map_err(|err| map_http_error(err, ErrorKind::Connection, "Scanner quote request"))?;
+        .map_err(|err| map_http_error(err, "Scanner quote request"))?;
 
     let status = response.status();
     if !status.is_success() {
-        return Err(AppError::new(
-            ErrorKind::InternalApiUnavailable,
-            format!("TradingView scanner quote API returned {status}"),
-        ));
+        return Err(remote_status_error("TradingView scanner quote API", status));
     }
 
-    response.json::<Value>().await.map_err(|err| {
-        map_http_error(
-            err,
-            ErrorKind::InternalApiUnavailable,
-            "Scanner quote response",
-        )
-    })
+    response
+        .json::<Value>()
+        .await
+        .map_err(|err| map_http_error(err, "Scanner quote response"))
 }
 
 #[cfg(test)]

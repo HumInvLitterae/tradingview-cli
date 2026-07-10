@@ -44,3 +44,22 @@ impl AppError {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn error_kinds_keep_stable_exit_codes() {
+        for (kind, expected) in [
+            (ErrorKind::Validation, 1),
+            (ErrorKind::Connection, 2),
+            (ErrorKind::InternalApiUnavailable, 3),
+            (ErrorKind::Timeout, 4),
+            (ErrorKind::TargetAmbiguous, 1),
+            (ErrorKind::Internal, 1),
+        ] {
+            assert_eq!(AppError::new(kind, "test").exit_code(), expected);
+        }
+    }
+}

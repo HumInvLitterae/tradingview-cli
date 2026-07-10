@@ -45,9 +45,14 @@ TradingView HTTP reads use a five-second connection timeout and a fifteen-second
 total request deadline. Local CDP HTTP sessions use one- and three-second
 deadlines; CDP WebSocket handshakes use five seconds; and browserless bars
 WebSocket connection, setup, read-side sends, and cleanup are bounded by the
-existing ten-second bars request deadline. Only an actual transport timeout is
-classified as `Timeout`; non-timeout HTTP mappings remain owned by their source
-crates.
+existing ten-second bars request deadline. HTTP-owning crates use the same
+error taxonomy while keeping reqwest-specific code local: input rejected
+before I/O is `Validation`; DNS, TCP, TLS, socket, and body-transport failure
+is `Connection`; deadline expiry is `Timeout`; received non-success status,
+malformed JSON, or missing required remote shape is
+`InternalApiUnavailable`; and client construction or internal serialization
+failure is `Internal`. Public diagnostics use stable operation and failure
+class values rather than raw URLs, response bodies, or reqwest error strings.
 
 Before adding more DOM retries, check whether a page-session API, storage
 payload, or endpoint can replace the visible UI path. The public-safe reference

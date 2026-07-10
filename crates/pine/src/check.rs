@@ -2,7 +2,7 @@ use serde_json::{Value, json};
 
 use tradingview_core::{AppError, ErrorKind};
 
-use crate::http::{configured_client, map_http_error};
+use crate::http::{configured_client, map_http_error, remote_status_error};
 
 const PINE_CHECK_URL: &str = "https://pine-facade.tradingview.com/pine-facade/translate_light?user_name=Guest&pine_id=00000000-0000-0000-0000-000000000000";
 
@@ -22,23 +22,17 @@ pub async fn pine_check(source: &str, input_source: &str) -> Result<Value, AppEr
         .body(body)
         .send()
         .await
-        .map_err(|err| map_http_error(err, ErrorKind::Connection, "Pine check request"))?;
+        .map_err(|err| map_http_error(err, "Pine check request"))?;
 
     let status = response.status();
     if !status.is_success() {
-        return Err(AppError::new(
-            ErrorKind::Connection,
-            format!("Pine check API returned {status}"),
-        ));
+        return Err(remote_status_error("Pine check API", status));
     }
 
-    let value = response.json::<Value>().await.map_err(|err| {
-        map_http_error(
-            err,
-            ErrorKind::InternalApiUnavailable,
-            "Pine check response",
-        )
-    })?;
+    let value = response
+        .json::<Value>()
+        .await
+        .map_err(|err| map_http_error(err, "Pine check response"))?;
     normalize_check_response(value, input_source)
 }
 
@@ -62,7 +56,10 @@ fn normalize_check_response(value: Value, input_source: &str) -> Result<Value, A
             ErrorKind::InternalApiUnavailable,
             "Pine check payload did not include result or error",
         )
-        .with_details(value));
+        .with_details(json!({
+            "operation": "Pine check response",
+            "http_failure_class": "payload_shape",
+        })));
     }
 
     let compiled = errors.is_empty();
