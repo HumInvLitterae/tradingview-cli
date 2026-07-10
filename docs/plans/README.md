@@ -8,12 +8,22 @@ for release and next-phase planning.
 
 Current plan:
 
-- `tradingview-cli-v0.25.0-release-readiness.md`: prepare the `v0.25.0`
-  release state, including version, changelog, release notes, README asset
-  examples, package staging, and release validation.
+- `tradingview-cli-output-broken-pipe.md`: make one-shot JSON and JSONL output
+  stop cleanly when a downstream consumer closes its pipe, without panic,
+  duplicate error output, or continued polling.
+
+The ordered `v0.26.0` implementation inventory is maintained in
+`docs/v0.26-work-items.md`. CDP event buffering, transport deadlines and HTTP
+client reuse, bars heartbeat verification, HTTP error taxonomy, and measured
+multi-symbol concurrency are promoted into separate ExecPlans only when the
+previous item is complete and green.
 
 Recently completed:
 
+- `tradingview-cli-v0.25.0-release-readiness.md`: prepared and validated the
+  released `v0.25.0` package, changelog, release notes, README asset examples,
+  and explicit archive contents. The completed plan now lives under
+  `docs/plans/archives/`.
 - `tradingview-cli-v0.25-pre-release-audit.md`: audited completed `v0.25.0`
   chart-backed workflow maturity before release readiness, including source
   boundaries, docs, runtime skills, tests, and architecture posture.

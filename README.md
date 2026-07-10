@@ -354,8 +354,6 @@ details, see `docs/breaking-changes-from-js-cli.md`.
 - [docs/ja/getting-started.md](docs/ja/getting-started.md): Japanese
   user-facing setup and AI-agent
   workflow.
-- [docs/v0.22-roadmap.md](docs/v0.22-roadmap.md): latest completed roadmap direction.
-
 Historical notes and completed ExecPlans live under `docs/notes/` and
 `docs/plans/archives/`. They explain how the current surface was built, but
 they are not the best starting point for normal use.

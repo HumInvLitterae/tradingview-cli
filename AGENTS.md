@@ -18,19 +18,20 @@ durable project decision explicitly excludes them.
 
 Read current sources before historical notes:
 
-1. `CONTINUITY.md`
-2. `README.md`
-3. `docs/v0.6-roadmap.md`
-4. `docs/command-source-taxonomy.md`
-5. `docs/architecture.md`
-6. `docs/development.md`
-7. `docs/rust-api.md`
-8. `docs/release-packaging.md`
-9. `docs/breaking-changes-from-js-cli.md`
-10. `docs/internal-tradingview-apis.md`
-11. `docs/plans/README.md`
+1. `README.md`
+2. `docs/v0.26-roadmap.md`
+3. `docs/v0.26-work-items.md`
+4. `docs/plans/README.md`
+5. `docs/command-source-taxonomy.md`
+6. `docs/architecture.md`
+7. `docs/development.md`
+8. `docs/rust-api.md`
+9. `docs/release-packaging.md`
+10. `docs/breaking-changes-from-js-cli.md`
+11. `docs/internal-tradingview-apis.md`
 12. `.agents/PLANS.md`
-13. `.agents/skills/continuity/SKILL.md` when the continuity skill is active
+13. `CONTINUITY.md` when present as the local, untracked in-progress ledger
+14. `.agents/skills/continuity/SKILL.md` when the continuity skill is active
 
 Older roadmap files, migration inventories, upstream PR triage notes, handoff
 prompts, and archived ExecPlans are historical context. Read them only when a
