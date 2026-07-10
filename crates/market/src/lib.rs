@@ -53,6 +53,7 @@ mod bars;
 mod compare;
 mod events;
 mod fundamentals;
+mod http;
 mod info;
 mod normalize;
 mod quote;

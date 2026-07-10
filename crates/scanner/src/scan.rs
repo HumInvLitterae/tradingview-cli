@@ -3,6 +3,7 @@ use serde_json::{Value, json};
 use tradingview_core::{AppError, ErrorKind};
 
 use super::common::field_values_object;
+use super::http::{configured_client, map_http_error};
 use super::types::{ScannerRow, ScannerScanResult, ScannerSort};
 
 const SCAN_BASE_URL: &str = "https://scanner.tradingview.com";
@@ -125,12 +126,13 @@ pub async fn scanner_scan_typed(
 ) -> Result<ScannerScanResult, AppError> {
     let normalized = normalize_scan_request(request)?;
     let url = scan_url(&normalized.market)?;
-    let response = reqwest::Client::new()
+    let client = configured_client()?;
+    let response = client
         .post(url)
         .json(&normalized.body)
         .send()
         .await
-        .map_err(|err| AppError::new(ErrorKind::Connection, err.to_string()))?;
+        .map_err(|err| map_http_error(err, ErrorKind::Connection, "Scanner scan request"))?;
 
     let status = response.status();
     if !status.is_success() {
@@ -140,10 +142,13 @@ pub async fn scanner_scan_typed(
         ));
     }
 
-    let value = response
-        .json::<Value>()
-        .await
-        .map_err(|err| AppError::new(ErrorKind::InternalApiUnavailable, err.to_string()))?;
+    let value = response.json::<Value>().await.map_err(|err| {
+        map_http_error(
+            err,
+            ErrorKind::InternalApiUnavailable,
+            "Scanner scan response",
+        )
+    })?;
 
     normalize_scan_response_typed(&normalized, &value)
 }

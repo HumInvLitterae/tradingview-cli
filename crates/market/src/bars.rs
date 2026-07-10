@@ -17,10 +17,13 @@ use self::{
         validate_bars_range_request_with_resolution, validate_bars_request_with_resolution,
     },
 };
-use crate::{search::search_symbols_typed, types::SymbolSearchResponse};
+use crate::{
+    http::configured_client, search::search_symbols_typed_with_client, types::SymbolSearchResponse,
+};
 
 pub async fn bars_symbol(symbol: &str, timeframe: &str, count: usize) -> Result<Value, AppError> {
-    let symbol_resolution = resolve_bars_symbol(symbol).await?;
+    let client = configured_client()?;
+    let symbol_resolution = resolve_bars_symbol(&client, symbol).await?;
     let resolved_symbol = symbol_resolution.resolved_symbol.clone();
     let request = validate_bars_request_with_resolution(
         symbol,
@@ -39,7 +42,8 @@ pub async fn bars_symbol_range(
     to: &str,
     count_cap: usize,
 ) -> Result<Value, AppError> {
-    let symbol_resolution = resolve_bars_symbol(symbol).await?;
+    let client = configured_client()?;
+    let symbol_resolution = resolve_bars_symbol(&client, symbol).await?;
     let resolved_symbol = symbol_resolution.resolved_symbol.clone();
     let request = validate_bars_range_request_with_resolution(
         symbol,
@@ -65,7 +69,10 @@ async fn bars_for_request(request: self::types::BarsRequest) -> Result<Value, Ap
     Ok(bars_payload(&request, result, elapsed_ms))
 }
 
-async fn resolve_bars_symbol(input_symbol: &str) -> Result<BarsSymbolResolution, AppError> {
+async fn resolve_bars_symbol(
+    client: &reqwest::Client,
+    input_symbol: &str,
+) -> Result<BarsSymbolResolution, AppError> {
     let input_symbol = input_symbol.trim();
     if input_symbol.is_empty() {
         return Err(AppError::new(
@@ -78,7 +85,7 @@ async fn resolve_bars_symbol(input_symbol: &str) -> Result<BarsSymbolResolution,
         return Ok(BarsSymbolResolution::input_exchange_qualified(input_symbol));
     }
 
-    let search = search_symbols_typed(input_symbol).await?;
+    let search = search_symbols_typed_with_client(client, input_symbol).await?;
     resolve_bars_symbol_from_search(input_symbol, &search)
 }
 

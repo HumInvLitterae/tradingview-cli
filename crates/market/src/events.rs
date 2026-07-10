@@ -2,7 +2,8 @@ use serde_json::{Map, Value, json};
 use tradingview_core::{AppError, ErrorKind};
 
 use crate::{
-    fundamentals_symbol_with_groups_typed,
+    fundamentals::fundamentals_symbol_with_groups_typed_with_client,
+    http::configured_client,
     types::{
         EventEntry, EventFieldReadback, EventSourceAvailability, Events, EventsCompare,
         EventsCompareItem, EventsCompareSummary, Fundamentals,
@@ -35,6 +36,15 @@ pub async fn events_compare_symbols(
 /// infer timezone/session semantics and does not read a standalone event
 /// calendar source.
 pub async fn events_symbol_typed(symbol: &str, event_type: &str) -> Result<Events, AppError> {
+    let client = configured_client()?;
+    events_symbol_typed_with_client(&client, symbol, event_type).await
+}
+
+async fn events_symbol_typed_with_client(
+    client: &reqwest::Client,
+    symbol: &str,
+    event_type: &str,
+) -> Result<Events, AppError> {
     let requested_symbol = symbol.trim();
     if requested_symbol.is_empty() {
         return Err(events_validation_error(
@@ -45,10 +55,14 @@ pub async fn events_symbol_typed(symbol: &str, event_type: &str) -> Result<Event
     }
     let requested_event_type = normalize_event_type(event_type)?;
     let groups = event_groups(requested_event_type);
-    let fundamentals =
-        fundamentals_symbol_with_groups_typed(requested_symbol, groups.clone(), Vec::new())
-            .await
-            .map_err(|err| add_event_error_details(err, requested_symbol, requested_event_type))?;
+    let fundamentals = fundamentals_symbol_with_groups_typed_with_client(
+        client,
+        requested_symbol,
+        groups.clone(),
+        Vec::new(),
+    )
+    .await
+    .map_err(|err| add_event_error_details(err, requested_symbol, requested_event_type))?;
 
     Ok(events_from_fundamentals(fundamentals, requested_event_type))
 }
@@ -61,12 +75,14 @@ pub async fn events_compare_symbols_typed(
     symbols: Vec<String>,
     event_type: &str,
 ) -> Result<EventsCompare, AppError> {
+    let client = configured_client()?;
     let requested_event_type = normalize_event_type(event_type)?;
     let requested_symbols = normalize_compare_symbols(symbols)?;
 
     let mut items = Vec::with_capacity(requested_symbols.len());
     for (requested_index, requested_symbol) in requested_symbols.iter().enumerate() {
-        match events_symbol_typed(requested_symbol, requested_event_type).await {
+        match events_symbol_typed_with_client(&client, requested_symbol, requested_event_type).await
+        {
             Ok(events) => items.push(EventsCompareItem {
                 requested_index,
                 requested_symbol: requested_symbol.clone(),

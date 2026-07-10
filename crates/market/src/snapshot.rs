@@ -3,7 +3,10 @@ use serde_json::Value;
 use tradingview_core::{AppError, ErrorKind};
 
 use crate::{
-    fundamentals_symbol_with_groups_typed, quote_symbol_typed, symbol_info_typed,
+    fundamentals::fundamentals_symbol_with_groups_typed_with_client,
+    http::configured_client,
+    info::symbol_info_typed_with_client,
+    quote::quote_symbol_typed_with_client,
     types::{
         Snapshot, SnapshotFieldCoverage, SnapshotFollowUpHint, SnapshotMissingEvidence,
         SnapshotSection, SnapshotSectionError, SnapshotSections, SnapshotSummary,
@@ -43,6 +46,16 @@ pub async fn snapshot_symbol_typed(
     groups: Vec<String>,
     fields: Vec<String>,
 ) -> Result<Snapshot, AppError> {
+    let client = configured_client()?;
+    snapshot_symbol_typed_with_client(&client, symbol, groups, fields).await
+}
+
+async fn snapshot_symbol_typed_with_client(
+    client: &reqwest::Client,
+    symbol: &str,
+    groups: Vec<String>,
+    fields: Vec<String>,
+) -> Result<Snapshot, AppError> {
     let requested_symbol = symbol.trim();
     if requested_symbol.is_empty() {
         return Err(AppError::new(
@@ -52,11 +65,18 @@ pub async fn snapshot_symbol_typed(
     }
     validate_fundamentals_selection(groups.clone(), fields.clone())?;
 
-    let quote = section_from_result("quote", quote_symbol_typed(requested_symbol).await);
-    let info = section_from_result("info", symbol_info_typed(requested_symbol).await);
+    let quote = section_from_result(
+        "quote",
+        quote_symbol_typed_with_client(client, requested_symbol).await,
+    );
+    let info = section_from_result(
+        "info",
+        symbol_info_typed_with_client(client, requested_symbol).await,
+    );
     let fundamentals = section_from_result(
         "fundamentals",
-        fundamentals_symbol_with_groups_typed(requested_symbol, groups, fields).await,
+        fundamentals_symbol_with_groups_typed_with_client(client, requested_symbol, groups, fields)
+            .await,
     );
 
     let sections = SnapshotSections {

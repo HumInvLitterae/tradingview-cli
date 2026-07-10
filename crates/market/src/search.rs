@@ -2,6 +2,7 @@ use serde_json::Value;
 use tradingview_core::{AppError, ErrorKind};
 
 use crate::{
+    http::{configured_client, map_http_error},
     normalize::strip_em,
     types::{SymbolSearchResponse, SymbolSearchResult},
 };
@@ -19,6 +20,22 @@ pub async fn symbol_search(query: &str) -> Result<Value, AppError> {
 /// This is the typed Rust API. Use [`symbol_search`] only when preserving the
 /// CLI-compatible JSON payload shape is required.
 pub async fn search_symbols_typed(query: &str) -> Result<SymbolSearchResponse, AppError> {
+    let client = configured_client()?;
+    search_symbols_typed_with_client(&client, query).await
+}
+
+pub(crate) async fn symbol_search_with_client(
+    client: &reqwest::Client,
+    query: &str,
+) -> Result<Value, AppError> {
+    serde_json::to_value(search_symbols_typed_with_client(client, query).await?)
+        .map_err(|err| AppError::new(ErrorKind::Internal, err.to_string()))
+}
+
+pub(crate) async fn search_symbols_typed_with_client(
+    client: &reqwest::Client,
+    query: &str,
+) -> Result<SymbolSearchResponse, AppError> {
     let url = reqwest::Url::parse_with_params(
         SYMBOL_SEARCH_URL,
         &[
@@ -31,13 +48,13 @@ pub async fn search_symbols_typed(query: &str) -> Result<SymbolSearchResponse, A
         ],
     )
     .map_err(|err| AppError::new(ErrorKind::Internal, err.to_string()))?;
-    let response = reqwest::Client::new()
+    let response = client
         .get(url)
         .header("Origin", "https://www.tradingview.com")
         .header("Referer", "https://www.tradingview.com/")
         .send()
         .await
-        .map_err(|err| AppError::new(ErrorKind::Connection, err.to_string()))?;
+        .map_err(|err| map_http_error(err, ErrorKind::Connection, "Symbol search request"))?;
 
     let status = response.status();
     if !status.is_success() {
@@ -47,10 +64,13 @@ pub async fn search_symbols_typed(query: &str) -> Result<SymbolSearchResponse, A
         ));
     }
 
-    let value = response
-        .json::<Value>()
-        .await
-        .map_err(|err| AppError::new(ErrorKind::InternalApiUnavailable, err.to_string()))?;
+    let value = response.json::<Value>().await.map_err(|err| {
+        map_http_error(
+            err,
+            ErrorKind::InternalApiUnavailable,
+            "Symbol search response",
+        )
+    })?;
     Ok(normalize_symbol_search_response_typed(query, &value))
 }
 

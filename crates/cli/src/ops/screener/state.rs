@@ -1,7 +1,7 @@
 use serde_json::{Map, Value, json};
 use tokio::time::{Duration, sleep};
 
-use tradingview_cdp::{CdpClient, RuntimeEvaluator, Target, TransportConfig};
+use tradingview_cdp::{CdpClient, CdpHttpSession, RuntimeEvaluator, Target, TransportConfig};
 use tradingview_core::{AppError, ErrorKind};
 
 use super::{
@@ -35,9 +35,10 @@ pub async fn screener_open(runtime: &mut impl RuntimeEvaluator) -> Result<Value,
 }
 
 pub async fn screener_open_full_page(config: &TransportConfig) -> Result<Value, AppError> {
-    let targets = tradingview_cdp::fetch_targets(config).await?;
+    let session = CdpHttpSession::new(config)?;
+    let targets = session.fetch_targets().await?;
     if let Some(target) = first_screener_target(&targets) {
-        activate_screener_target(config, target).await?;
+        activate_screener_target(&session, target).await?;
         return Ok(full_page_open_payload(
             target,
             false,
@@ -46,20 +47,19 @@ pub async fn screener_open_full_page(config: &TransportConfig) -> Result<Value, 
         ));
     }
 
-    let created_target = match tradingview_cdp::new_target_url(config, FULL_PAGE_SCREENER_URL).await
-    {
+    let created_target = match session.new_target_url(FULL_PAGE_SCREENER_URL).await {
         Ok(target) => target,
         Err(creation_error) => {
-            return match open_screener_from_new_tab(config).await {
+            return match open_screener_from_new_tab(&session).await {
                 Ok(target) => {
-                    activate_screener_target(config, &target).await?;
+                    activate_screener_target(&session, &target).await?;
                     Ok(full_page_open_payload(&target, true, false, "new_tab_tile"))
                 }
                 Err(fallback_error) => {
                     if let Ok(target) =
-                        wait_for_screener_target(config, None, "new_tab_tile_postcheck").await
+                        wait_for_screener_target(&session, None, "new_tab_tile_postcheck").await
                     {
-                        activate_screener_target(config, &target).await?;
+                        activate_screener_target(&session, &target).await?;
                         return Ok(full_page_open_payload(&target, true, false, "new_tab_tile"));
                     }
                     Err(full_page_creation_error(
@@ -71,8 +71,8 @@ pub async fn screener_open_full_page(config: &TransportConfig) -> Result<Value, 
         }
     };
     let target =
-        wait_for_screener_target(config, Some(&created_target.id), "cdp_new_target").await?;
-    activate_screener_target(config, &target).await?;
+        wait_for_screener_target(&session, Some(&created_target.id), "cdp_new_target").await?;
+    activate_screener_target(&session, &target).await?;
     Ok(full_page_open_payload(
         &target,
         true,
@@ -156,12 +156,12 @@ fn first_screener_target(targets: &[Target]) -> Option<&Target> {
 }
 
 async fn wait_for_screener_target(
-    config: &TransportConfig,
+    session: &CdpHttpSession,
     preferred_target_id: Option<&str>,
     creation_method: &str,
 ) -> Result<Target, AppError> {
     for _ in 0..FULL_PAGE_TARGET_WAIT_ATTEMPTS {
-        let targets = tradingview_cdp::fetch_targets(config).await?;
+        let targets = session.fetch_targets().await?;
         if let Some(target_id) = preferred_target_id
             && let Some(target) = targets
                 .iter()
@@ -193,11 +193,11 @@ async fn wait_for_screener_target(
     })))
 }
 
-async fn open_screener_from_new_tab(config: &TransportConfig) -> Result<Target, AppError> {
-    if current_new_tab_target(config).await?.is_none() {
-        create_new_app_tab(config).await?;
+async fn open_screener_from_new_tab(session: &CdpHttpSession) -> Result<Target, AppError> {
+    if current_new_tab_target(session).await?.is_none() {
+        create_new_app_tab(session).await?;
         wait_for_new_tab_target(
-            config,
+            session,
             NEW_TAB_TARGET_WAIT_ATTEMPTS,
             NEW_TAB_TARGET_WAIT_MS,
             json!({
@@ -212,13 +212,11 @@ async fn open_screener_from_new_tab(config: &TransportConfig) -> Result<Target, 
 
     let mut last_result = Value::Null;
     for _ in 0..NEW_TAB_TARGET_WAIT_ATTEMPTS {
-        if let Some(target) =
-            first_screener_target(&tradingview_cdp::fetch_targets(config).await?).cloned()
-        {
+        if let Some(target) = first_screener_target(&session.fetch_targets().await?).cloned() {
             return Ok(target);
         }
 
-        let Some(new_tab) = current_new_tab_target(config).await? else {
+        let Some(new_tab) = current_new_tab_target(session).await? else {
             sleep(Duration::from_millis(NEW_TAB_TARGET_WAIT_MS)).await;
             continue;
         };
@@ -241,14 +239,14 @@ async fn open_screener_from_new_tab(config: &TransportConfig) -> Result<Target, 
             .await
         {
             Ok(result) if value_bool(&result, "clicked") => {
-                return wait_for_screener_target(config, None, "new_tab_tile").await;
+                return wait_for_screener_target(session, None, "new_tab_tile").await;
             }
             Ok(result) => {
                 last_result = result;
             }
             Err(error) => {
                 if let Ok(target) =
-                    wait_for_screener_target(config, None, "new_tab_tile_postcheck").await
+                    wait_for_screener_target(session, None, "new_tab_tile_postcheck").await
                 {
                     return Ok(target);
                 }
@@ -270,7 +268,7 @@ async fn open_screener_from_new_tab(config: &TransportConfig) -> Result<Target, 
         )
         .with_details(last_result));
     }
-    wait_for_screener_target(config, None, "new_tab_tile").await
+    wait_for_screener_target(session, None, "new_tab_tile").await
 }
 
 fn full_page_creation_error(
@@ -302,23 +300,15 @@ fn full_page_creation_error(
 }
 
 async fn activate_screener_target(
-    config: &TransportConfig,
+    session: &CdpHttpSession,
     target: &Target,
 ) -> Result<(), AppError> {
-    let response = reqwest::get(config.activate_url(&target.id))
-        .await
-        .map_err(|err| AppError::new(ErrorKind::Connection, err.to_string()))?;
-    if !response.status().is_success() {
-        return Err(AppError::new(
-            ErrorKind::Connection,
-            format!("CDP target activation returned HTTP {}", response.status()),
-        )
-        .with_details(json!({
+    session.activate_target(&target.id).await.map_err(|err| {
+        err.with_details(json!({
             "target_id": target.id,
             "url": target.url,
-        })));
-    }
-    Ok(())
+        }))
+    })
 }
 
 fn full_page_open_payload(

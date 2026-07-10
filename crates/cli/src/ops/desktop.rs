@@ -2,7 +2,7 @@ use serde::Serialize;
 use serde_json::Value;
 use tokio::time::{Duration, sleep};
 
-use tradingview_cdp::{self as transport, CdpClient, RuntimeEvaluator, Target, TransportConfig};
+use tradingview_cdp::{self as transport, CdpClient, CdpHttpSession, RuntimeEvaluator, Target};
 use tradingview_core::{AppError, ErrorKind};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
@@ -115,8 +115,8 @@ fn app_tabs_from_value(value: &Value) -> Result<Vec<AppTab>, AppError> {
         .collect()
 }
 
-pub(crate) async fn create_new_app_tab(config: &TransportConfig) -> Result<(), AppError> {
-    let targets = transport::fetch_targets(config).await?;
+pub(crate) async fn create_new_app_tab(session: &CdpHttpSession) -> Result<(), AppError> {
+    let targets = session.fetch_targets().await?;
     let app_target = app_window_target(&targets)?;
     let mut runtime = CdpClient::connect(app_target).await?;
     click_create_new_app_tab(&mut runtime).await
@@ -200,9 +200,9 @@ pub(crate) fn new_app_tabs(before: &[AppTab], after: &[AppTab]) -> Vec<AppTab> {
 }
 
 pub(crate) async fn current_new_tab_target(
-    config: &TransportConfig,
+    session: &CdpHttpSession,
 ) -> Result<Option<Target>, AppError> {
-    let targets = transport::fetch_targets(config).await?;
+    let targets = session.fetch_targets().await?;
     Ok(first_new_tab_target(&targets).cloned())
 }
 
@@ -213,13 +213,13 @@ fn first_new_tab_target(targets: &[Target]) -> Option<&Target> {
 }
 
 pub(crate) async fn wait_for_new_tab_target(
-    config: &TransportConfig,
+    session: &CdpHttpSession,
     wait_attempts: usize,
     wait_ms: u64,
     mut failure_details: Value,
 ) -> Result<Target, AppError> {
     for _ in 0..wait_attempts {
-        if let Some(target) = current_new_tab_target(config).await? {
+        if let Some(target) = current_new_tab_target(session).await? {
             return Ok(target);
         }
         sleep(Duration::from_millis(wait_ms)).await;

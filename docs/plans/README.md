@@ -8,8 +8,8 @@ for release and next-phase planning.
 
 Current plan:
 
-No implementation ExecPlan is active. Gate 3, transport deadlines and HTTP
-client reuse, is eligible for a fresh plan.
+- None. Gate 3 is complete. The next step is to create the Gate 4 bars
+  heartbeat verification ExecPlan from the ordered work inventory.
 
 The ordered `v0.26.0` implementation inventory is maintained in
 `docs/v0.26-work-items.md`. CDP event buffering, transport deadlines and HTTP
@@ -19,6 +19,11 @@ previous item is complete and green.
 
 Recently completed:
 
+- `tradingview-cli-transport-deadlines-http-reuse.md`: bounded public HTTP,
+  CDP HTTP/WebSocket, and bars WebSocket transport operations while reusing
+  configured HTTP clients in sequential multi-read workflows. Review
+  corrections and focused re-review are complete; the plan now lives under
+  `docs/plans/archives/`.
 - `tradingview-cli-cdp-event-buffering-deadlines.md`: preserved CDP events that
   arrive during method-response waits, added a FIFO bounded to 1024 events and
   8 MiB of encoded event text, and enforced absolute response/event deadlines.

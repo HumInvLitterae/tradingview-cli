@@ -3,8 +3,12 @@ use serde_json::Value;
 use tradingview_core::{AppError, ErrorKind};
 
 use crate::{
-    fundamentals::is_fundamental_field_in_group,
-    fundamentals_symbol_typed, quote_symbol_typed, symbol_info_typed,
+    fundamentals::{
+        fundamentals_symbol_with_groups_typed_with_client, is_fundamental_field_in_group,
+    },
+    http::configured_client,
+    info::symbol_info_typed_with_client,
+    quote::quote_symbol_typed_with_client,
     types::{
         Compare, CompareFieldCoverage, CompareFollowUpHint, CompareItem, CompareItemError,
         CompareMissingEvidence, CompareMissingSummary, CompareMovement, CompareMovementCoverage,
@@ -40,23 +44,40 @@ pub async fn compare_symbols(symbols: Vec<String>) -> Result<Value, AppError> {
 /// This is the typed Rust API. Use [`compare_symbols`] only when preserving the
 /// CLI-compatible JSON payload shape is required.
 pub async fn compare_symbols_typed(symbols: Vec<String>) -> Result<Compare, AppError> {
+    let client = configured_client()?;
     let requested_symbols = normalize_compare_symbols(symbols)?;
     let requested_count = requested_symbols.len();
     let mut items = Vec::with_capacity(requested_count);
 
     for (requested_index, requested_symbol) in requested_symbols.into_iter().enumerate() {
-        items.push(compare_one_symbol(requested_index, requested_symbol).await);
+        items.push(compare_one_symbol(&client, requested_index, requested_symbol).await);
     }
 
     finalize_compare_items(requested_count, items)
 }
 
-async fn compare_one_symbol(requested_index: usize, requested_symbol: String) -> CompareItem {
-    let quote = section_from_result("quote", quote_symbol_typed(&requested_symbol).await);
-    let info = section_from_result("info", symbol_info_typed(&requested_symbol).await);
+async fn compare_one_symbol(
+    client: &reqwest::Client,
+    requested_index: usize,
+    requested_symbol: String,
+) -> CompareItem {
+    let quote = section_from_result(
+        "quote",
+        quote_symbol_typed_with_client(client, &requested_symbol).await,
+    );
+    let info = section_from_result(
+        "info",
+        symbol_info_typed_with_client(client, &requested_symbol).await,
+    );
     let fundamentals = section_from_result(
         "fundamentals",
-        fundamentals_symbol_typed(&requested_symbol, Vec::new()).await,
+        fundamentals_symbol_with_groups_typed_with_client(
+            client,
+            &requested_symbol,
+            Vec::new(),
+            Vec::new(),
+        )
+        .await,
     );
 
     let sections = SnapshotSections {

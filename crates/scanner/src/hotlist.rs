@@ -3,6 +3,7 @@ use serde_json::{Value, json};
 use tradingview_core::{AppError, ErrorKind};
 
 use super::common::field_values_object;
+use super::http::{configured_client, map_http_error};
 use super::types::{ScannerHotlistResult, ScannerRow};
 
 const HOTLIST_BASE_URL: &str = "https://scanner.tradingview.com/presets";
@@ -39,11 +40,12 @@ pub async fn scanner_hotlist_typed(
     let slug = validate_hotlist_slug(slug)?;
     let limit = normalize_hotlist_limit(limit)?;
     let url = hotlist_url(slug)?;
-    let response = reqwest::Client::new()
+    let client = configured_client()?;
+    let response = client
         .get(url)
         .send()
         .await
-        .map_err(|err| AppError::new(ErrorKind::Connection, err.to_string()))?;
+        .map_err(|err| map_http_error(err, ErrorKind::Connection, "Scanner hotlist request"))?;
 
     let status = response.status();
     if !status.is_success() {
@@ -53,10 +55,13 @@ pub async fn scanner_hotlist_typed(
         ));
     }
 
-    let value = response
-        .json::<Value>()
-        .await
-        .map_err(|err| AppError::new(ErrorKind::InternalApiUnavailable, err.to_string()))?;
+    let value = response.json::<Value>().await.map_err(|err| {
+        map_http_error(
+            err,
+            ErrorKind::InternalApiUnavailable,
+            "Scanner hotlist response",
+        )
+    })?;
 
     normalize_hotlist_response_typed(slug, limit, &value)
 }

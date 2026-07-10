@@ -3,7 +3,7 @@ use std::collections::HashSet;
 use serde::Serialize;
 use serde_json::{Value, json};
 
-use tradingview_cdp::{self as transport, CdpClient, Target, TransportConfig};
+use tradingview_cdp::{self as transport, CdpClient, CdpHttpSession, Target, TransportConfig};
 use tradingview_core::{AppError, ErrorKind};
 
 use super::common::{desktop_backed_read_metadata, merge_object};
@@ -83,7 +83,8 @@ fn tab_list_payload(
 }
 
 pub async fn tab_switch(config: &TransportConfig, index: usize) -> Result<Value, AppError> {
-    let targets = transport::fetch_targets(config).await?;
+    let session = CdpHttpSession::new(config)?;
+    let targets = session.fetch_targets().await?;
     let tabs = chart_tabs_from_targets(&targets);
     let tab = tabs.get(index).ok_or_else(|| {
         AppError::new(
@@ -96,19 +97,12 @@ pub async fn tab_switch(config: &TransportConfig, index: usize) -> Result<Value,
         }))
     })?;
 
-    let response = reqwest::get(config.activate_url(&tab.id))
-        .await
-        .map_err(|err| AppError::new(ErrorKind::Connection, err.to_string()))?;
-    if !response.status().is_success() {
-        return Err(AppError::new(
-            ErrorKind::Connection,
-            format!("CDP target activation returned HTTP {}", response.status()),
-        )
-        .with_details(json!({
+    session.activate_target(&tab.id).await.map_err(|err| {
+        err.with_details(json!({
             "tab_id": tab.id,
             "index": index,
-        })));
-    }
+        }))
+    })?;
 
     Ok(tab_switch_payload(tab))
 }
@@ -128,14 +122,15 @@ fn tab_switch_payload(tab: &ChartTab) -> Value {
 }
 
 pub async fn tab_new(config: &TransportConfig, from: Option<usize>) -> Result<Value, AppError> {
-    let targets = transport::fetch_targets(config).await?;
+    let session = CdpHttpSession::new(config)?;
+    let targets = session.fetch_targets().await?;
     let tabs_before = chart_tabs_from_targets(&targets);
     let source = resolve_source_tab(&tabs_before, from)?.clone();
     let app_target = app_window_target(&targets)?;
     let mut app_runtime = CdpClient::connect(app_target).await?;
     let app_tabs_before = read_app_tabs(&mut app_runtime).await?;
 
-    activate_tab(config, &source).await?;
+    activate_tab(&session, &source).await?;
     click_create_new_app_tab(&mut app_runtime).await?;
     wait_for_app_tab_update(TAB_NEW_WAIT_MS).await;
 
@@ -153,7 +148,7 @@ pub async fn tab_new(config: &TransportConfig, from: Option<usize>) -> Result<Va
         })));
     }
 
-    let targets_after = transport::fetch_targets(config).await?;
+    let targets_after = session.fetch_targets().await?;
     let tabs_after = chart_tabs_from_targets(&targets_after);
     let new_app_tabs = new_app_tabs(&app_tabs_before, &app_tabs_after);
 
@@ -175,7 +170,8 @@ pub async fn tab_new(config: &TransportConfig, from: Option<usize>) -> Result<Va
 }
 
 pub async fn tab_close(config: &TransportConfig, index: usize) -> Result<Value, AppError> {
-    let targets = transport::fetch_targets(config).await?;
+    let session = CdpHttpSession::new(config)?;
+    let targets = session.fetch_targets().await?;
     let chart_tabs_before = chart_tabs_from_targets(&targets);
     let app_target = app_window_target(&targets)?;
     let mut app_runtime = CdpClient::connect(app_target).await?;
@@ -198,7 +194,7 @@ pub async fn tab_close(config: &TransportConfig, index: usize) -> Result<Value, 
         })));
     }
 
-    let targets_after = transport::fetch_targets(config).await?;
+    let targets_after = session.fetch_targets().await?;
     let chart_tabs_after = chart_tabs_from_targets(&targets_after);
 
     Ok(json!({
@@ -246,21 +242,13 @@ fn screener_targets_from_targets(targets: &[Target]) -> Vec<ScreenerTarget> {
         .collect()
 }
 
-async fn activate_tab(config: &TransportConfig, tab: &ChartTab) -> Result<(), AppError> {
-    let response = reqwest::get(config.activate_url(&tab.id))
-        .await
-        .map_err(|err| AppError::new(ErrorKind::Connection, err.to_string()))?;
-    if !response.status().is_success() {
-        return Err(AppError::new(
-            ErrorKind::Connection,
-            format!("CDP target activation returned HTTP {}", response.status()),
-        )
-        .with_details(json!({
+async fn activate_tab(session: &CdpHttpSession, tab: &ChartTab) -> Result<(), AppError> {
+    session.activate_target(&tab.id).await.map_err(|err| {
+        err.with_details(json!({
             "tab_id": tab.id,
             "index": tab.index,
-        })));
-    }
-    Ok(())
+        }))
+    })
 }
 
 fn resolve_source_tab(tabs: &[ChartTab], from: Option<usize>) -> Result<&ChartTab, AppError> {

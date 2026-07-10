@@ -1,8 +1,13 @@
-use reqwest::Url;
+use std::time::Duration;
+
+use reqwest::{Client, Url};
 use serde::{Deserialize, Serialize};
-use serde_json::json;
+use serde_json::{Value, json};
 
 use tradingview_core::{AppError, ErrorKind};
+
+const CDP_HTTP_CONNECT_TIMEOUT: Duration = Duration::from_secs(1);
+const CDP_HTTP_TOTAL_TIMEOUT: Duration = Duration::from_secs(3);
 
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
 pub struct Target {
@@ -73,6 +78,10 @@ impl TransportConfig {
         format!("http://{}:{}/json/list", self.host, self.port)
     }
 
+    pub fn version_url(&self) -> String {
+        format!("http://{}:{}/json/version", self.host, self.port)
+    }
+
     pub fn activate_url(&self, target_id: &str) -> String {
         format!(
             "http://{}:{}/json/activate/{}",
@@ -88,81 +97,195 @@ impl TransportConfig {
     }
 }
 
-pub async fn fetch_targets(config: &TransportConfig) -> Result<Vec<Target>, AppError> {
-    let response = reqwest::get(config.list_url())
-        .await
-        .map_err(|err| {
-            AppError::new(ErrorKind::Connection, err.to_string()).with_details(json!({
-                "cdp_host": config.host,
-                "cdp_port": config.port,
-                "endpoint": config.list_url(),
-                "next_action_hint": "Run `tv status` to confirm the CDP endpoint, or run `tv launch` to start TradingView Desktop with remote debugging enabled.",
-            }))
-        })?;
+/// Reuses one configured CDP HTTP client for a top-level Desktop workflow.
+///
+/// The type is intentionally opaque so callers do not need to own or expose a
+/// `reqwest` client. Existing free functions remain available for one-off use.
+#[derive(Clone)]
+pub struct CdpHttpSession {
+    config: TransportConfig,
+    client: Client,
+}
 
-    if !response.status().is_success() {
-        return Err(AppError::new(
-            ErrorKind::Connection,
-            format!("CDP target list returned HTTP {}", response.status()),
-        )
-        .with_details(json!({
-            "cdp_host": config.host,
-            "cdp_port": config.port,
-            "endpoint": config.list_url(),
-            "status": response.status().as_u16(),
-            "next_action_hint": "Run `tv status` to confirm the CDP endpoint, or run `tv launch` to restart TradingView Desktop with remote debugging enabled.",
-        })));
+impl CdpHttpSession {
+    pub fn new(config: &TransportConfig) -> Result<Self, AppError> {
+        Self::with_timeouts(config, CDP_HTTP_CONNECT_TIMEOUT, CDP_HTTP_TOTAL_TIMEOUT)
     }
 
-    response
-        .json::<Vec<Target>>()
-        .await
-        .map_err(|err| AppError::new(ErrorKind::Connection, err.to_string()))
+    fn with_timeouts(
+        config: &TransportConfig,
+        connect_timeout: Duration,
+        total_timeout: Duration,
+    ) -> Result<Self, AppError> {
+        let client = Client::builder()
+            .connect_timeout(connect_timeout)
+            .timeout(total_timeout)
+            .build()
+            .map_err(|err| AppError::new(ErrorKind::Internal, err.to_string()))?;
+        Ok(Self {
+            config: config.clone(),
+            client,
+        })
+    }
+
+    pub async fn fetch_targets(&self) -> Result<Vec<Target>, AppError> {
+        let response = self
+            .client
+            .get(self.config.list_url())
+            .send()
+            .await
+            .map_err(|err| self.target_list_request_error(err))?;
+
+        if !response.status().is_success() {
+            return Err(AppError::new(
+                ErrorKind::Connection,
+                format!("CDP target list returned HTTP {}", response.status()),
+            )
+            .with_details(json!({
+                "cdp_host": self.config.host,
+                "cdp_port": self.config.port,
+                "endpoint": self.config.list_url(),
+                "status": response.status().as_u16(),
+                "next_action_hint": "Run `tv status` to confirm the CDP endpoint, or run `tv launch` to restart TradingView Desktop with remote debugging enabled.",
+            })));
+        }
+
+        response.json::<Vec<Target>>().await.map_err(|err| {
+            map_cdp_http_error(err, ErrorKind::Connection, "CDP target list response")
+        })
+    }
+
+    pub async fn new_target_url(&self, url: &str) -> Result<Target, AppError> {
+        if url.trim().is_empty() {
+            return Err(AppError::new(
+                ErrorKind::Validation,
+                "CDP target URL must not be empty",
+            ));
+        }
+
+        let response = self
+            .client
+            .put(self.config.new_target_url(url))
+            .send()
+            .await
+            .map_err(|err| map_cdp_http_error(err, ErrorKind::Connection, "CDP target creation"))?;
+
+        let status = response.status();
+        if !status.is_success() {
+            let text = response.text().await.unwrap_or_default();
+            return Err(AppError::new(
+                ErrorKind::Connection,
+                format!("CDP target creation returned HTTP {status}"),
+            )
+            .with_details(json!({
+                "url": url,
+                "status": status.as_u16(),
+                "body": text,
+            })));
+        }
+
+        let target = response.json::<Target>().await.map_err(|err| {
+            map_cdp_http_error(err, ErrorKind::Connection, "CDP target creation response")
+        })?;
+        if target.id.trim().is_empty() || target.kind != "page" {
+            return Err(AppError::new(
+                ErrorKind::InternalApiUnavailable,
+                "CDP target creation returned an unusable target",
+            )
+            .with_details(json!({
+                "url": url,
+                "target": target,
+            })));
+        }
+        Ok(target)
+    }
+
+    pub async fn activate_target(&self, target_id: &str) -> Result<(), AppError> {
+        let response = self
+            .client
+            .get(self.config.activate_url(target_id))
+            .send()
+            .await
+            .map_err(|err| {
+                map_cdp_http_error(err, ErrorKind::Connection, "CDP target activation")
+            })?;
+        if !response.status().is_success() {
+            return Err(AppError::new(
+                ErrorKind::Connection,
+                format!("CDP target activation returned HTTP {}", response.status()),
+            ));
+        }
+        Ok(())
+    }
+
+    pub async fn version_json(&self) -> Result<Option<Value>, AppError> {
+        self.version_json_with_timeout(CDP_HTTP_TOTAL_TIMEOUT).await
+    }
+
+    pub async fn version_json_with_timeout(
+        &self,
+        timeout: Duration,
+    ) -> Result<Option<Value>, AppError> {
+        let response = match self
+            .client
+            .get(self.config.version_url())
+            .timeout(timeout)
+            .send()
+            .await
+        {
+            Ok(response) => response,
+            Err(error) if error.is_timeout() => {
+                return Err(map_cdp_http_error(
+                    error,
+                    ErrorKind::Connection,
+                    "CDP version probe",
+                ));
+            }
+            Err(_) => return Ok(None),
+        };
+        if !response.status().is_success() {
+            return Ok(None);
+        }
+        response
+            .json::<Value>()
+            .await
+            .map(Some)
+            .map_err(|err| map_cdp_http_error(err, ErrorKind::Connection, "CDP version response"))
+    }
+
+    pub async fn discover_target(&self) -> Result<Target, AppError> {
+        discover_target_from_targets(&self.config, self.fetch_targets().await?)
+    }
+
+    fn target_list_request_error(&self, error: reqwest::Error) -> AppError {
+        let error = map_cdp_http_error(error, ErrorKind::Connection, "CDP target list request");
+        error.with_details(json!({
+            "cdp_host": self.config.host,
+            "cdp_port": self.config.port,
+            "endpoint": self.config.list_url(),
+            "next_action_hint": "Run `tv status` to confirm the CDP endpoint, or run `tv launch` to start TradingView Desktop with remote debugging enabled.",
+        }))
+    }
+}
+
+fn map_cdp_http_error(
+    error: reqwest::Error,
+    fallback_kind: ErrorKind,
+    operation: &str,
+) -> AppError {
+    if error.is_timeout() {
+        AppError::new(ErrorKind::Timeout, format!("{operation} timed out"))
+    } else {
+        AppError::new(fallback_kind, error.to_string())
+    }
+}
+
+pub async fn fetch_targets(config: &TransportConfig) -> Result<Vec<Target>, AppError> {
+    CdpHttpSession::new(config)?.fetch_targets().await
 }
 
 pub async fn new_target_url(config: &TransportConfig, url: &str) -> Result<Target, AppError> {
-    if url.trim().is_empty() {
-        return Err(AppError::new(
-            ErrorKind::Validation,
-            "CDP target URL must not be empty",
-        ));
-    }
-
-    let response = reqwest::Client::new()
-        .put(config.new_target_url(url))
-        .send()
-        .await
-        .map_err(|err| AppError::new(ErrorKind::Connection, err.to_string()))?;
-
-    let status = response.status();
-    if !status.is_success() {
-        let text = response.text().await.unwrap_or_default();
-        return Err(AppError::new(
-            ErrorKind::Connection,
-            format!("CDP target creation returned HTTP {status}"),
-        )
-        .with_details(json!({
-            "url": url,
-            "status": status.as_u16(),
-            "body": text,
-        })));
-    }
-
-    let target = response
-        .json::<Target>()
-        .await
-        .map_err(|err| AppError::new(ErrorKind::Connection, err.to_string()))?;
-    if target.id.trim().is_empty() || target.kind != "page" {
-        return Err(AppError::new(
-            ErrorKind::InternalApiUnavailable,
-            "CDP target creation returned an unusable target",
-        )
-        .with_details(json!({
-            "url": url,
-            "target": target,
-        })));
-    }
-    Ok(target)
+    CdpHttpSession::new(config)?.new_target_url(url).await
 }
 
 pub fn select_target(targets: &[Target]) -> TargetSelection {
@@ -192,7 +315,13 @@ pub fn select_target(targets: &[Target]) -> TargetSelection {
 }
 
 pub async fn discover_target(config: &TransportConfig) -> Result<Target, AppError> {
-    let targets = fetch_targets(config).await?;
+    CdpHttpSession::new(config)?.discover_target().await
+}
+
+fn discover_target_from_targets(
+    config: &TransportConfig,
+    targets: Vec<Target>,
+) -> Result<Target, AppError> {
     if let Some(target_id) = config.target_id.as_deref() {
         return targets
             .iter()
@@ -306,6 +435,11 @@ fn targets_with_handoff(targets: &[Target]) -> Vec<serde_json::Value> {
 mod tests {
     use super::*;
     use std::sync::{Mutex, OnceLock};
+    use tokio::{
+        io::{AsyncReadExt, AsyncWriteExt},
+        net::TcpListener,
+        time::{Duration, sleep, timeout},
+    };
 
     fn env_lock() -> std::sync::MutexGuard<'static, ()> {
         static LOCK: OnceLock<Mutex<()>> = OnceLock::new();
@@ -465,5 +599,83 @@ mod tests {
             "window",
             "file:///TradingView.app/Contents/Resources/app.asar/app/window/index.html"
         )));
+    }
+
+    #[tokio::test]
+    async fn stalled_target_list_maps_to_timeout() {
+        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let address = listener.local_addr().unwrap();
+        let server = tokio::spawn(async move {
+            let (mut stream, _) = listener.accept().await.unwrap();
+            let mut request = [0u8; 512];
+            let _ = stream.read(&mut request).await;
+            sleep(Duration::from_millis(200)).await;
+        });
+        let config = TransportConfig {
+            host: address.ip().to_string(),
+            port: address.port(),
+            target_id: None,
+        };
+        let session = CdpHttpSession::with_timeouts(
+            &config,
+            Duration::from_millis(25),
+            Duration::from_millis(50),
+        )
+        .unwrap();
+
+        let error = session.fetch_targets().await.unwrap_err();
+        assert_eq!(error.kind, ErrorKind::Timeout);
+        server.await.unwrap();
+    }
+
+    #[tokio::test]
+    async fn session_reuses_connection_for_repeated_target_reads() {
+        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let address = listener.local_addr().unwrap();
+        let server = tokio::spawn(async move {
+            let (mut stream, _) = listener.accept().await.unwrap();
+            for _ in 0..2 {
+                read_http_request(&mut stream).await;
+                stream
+                    .write_all(
+                        b"HTTP/1.1 200 OK\r\nContent-Length: 2\r\nConnection: keep-alive\r\n\r\n[]",
+                    )
+                    .await
+                    .unwrap();
+            }
+            assert!(
+                timeout(Duration::from_millis(100), listener.accept())
+                    .await
+                    .is_err()
+            );
+        });
+        let config = TransportConfig {
+            host: address.ip().to_string(),
+            port: address.port(),
+            target_id: None,
+        };
+        let session = CdpHttpSession::with_timeouts(
+            &config,
+            Duration::from_millis(25),
+            Duration::from_millis(250),
+        )
+        .unwrap();
+
+        assert!(session.fetch_targets().await.unwrap().is_empty());
+        assert!(session.fetch_targets().await.unwrap().is_empty());
+        server.await.unwrap();
+    }
+
+    async fn read_http_request(stream: &mut tokio::net::TcpStream) {
+        let mut request = Vec::new();
+        let mut buffer = [0u8; 256];
+        loop {
+            let count = stream.read(&mut buffer).await.unwrap();
+            assert!(count > 0, "client closed before a complete request");
+            request.extend_from_slice(&buffer[..count]);
+            if request.windows(4).any(|window| window == b"\r\n\r\n") {
+                return;
+            }
+        }
     }
 }

@@ -16,6 +16,10 @@ package version omits the leading `v`.
 - Preserved CDP events that arrive while a method response is pending and made
   response/event receive loops use absolute deadlines, preventing event loss
   and timeout extension under unrelated traffic.
+- Added finite public HTTP, local CDP HTTP, CDP WebSocket, and browserless-bars
+  WebSocket deadlines, and reused configured HTTP clients within sequential
+  operations so stalled transport now reports the existing timeout error
+  instead of waiting indefinitely.
 
 ### Documentation
 
