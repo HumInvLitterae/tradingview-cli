@@ -2,6 +2,7 @@ use serde_json::{Map, Value, json};
 
 use tradingview_core::{AppError, ErrorKind};
 
+use super::http::{configured_client, map_http_error};
 use super::types::{ScannerFieldInfo, ScannerMetainfoResult};
 
 const METAINFO_BASE_URL: &str = "https://scanner.tradingview.com";
@@ -36,7 +37,7 @@ pub async fn scanner_metainfo_typed(
 ) -> Result<ScannerMetainfoResult, AppError> {
     let normalized = normalize_metainfo_request(request)?;
     let url = metainfo_url(&normalized.market)?;
-    let client = reqwest::Client::new();
+    let client = configured_client()?;
     let mut builder = client.post(url);
     if !normalized.fields.is_empty() {
         builder = builder.json(&json!({ "fields": normalized.fields }));
@@ -45,7 +46,7 @@ pub async fn scanner_metainfo_typed(
     let response = builder
         .send()
         .await
-        .map_err(|err| AppError::new(ErrorKind::Connection, err.to_string()))?;
+        .map_err(|err| map_http_error(err, ErrorKind::Connection, "Scanner metainfo request"))?;
 
     let status = response.status();
     if !status.is_success() {
@@ -55,10 +56,13 @@ pub async fn scanner_metainfo_typed(
         ));
     }
 
-    let value = response
-        .json::<Value>()
-        .await
-        .map_err(|err| AppError::new(ErrorKind::InternalApiUnavailable, err.to_string()))?;
+    let value = response.json::<Value>().await.map_err(|err| {
+        map_http_error(
+            err,
+            ErrorKind::InternalApiUnavailable,
+            "Scanner metainfo response",
+        )
+    })?;
 
     normalize_metainfo_response_typed(&normalized, &value)
 }

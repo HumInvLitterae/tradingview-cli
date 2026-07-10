@@ -2,8 +2,9 @@ use serde_json::{Value, json};
 use tradingview_core::{AppError, ErrorKind};
 
 use crate::{
+    http::configured_client,
     normalize::{bare_symbol, split_exchange_symbol},
-    search::symbol_search,
+    search::symbol_search_with_client,
     types::SymbolInfo,
 };
 
@@ -19,6 +20,14 @@ pub async fn symbol_info(symbol: &str) -> Result<Value, AppError> {
 /// This is the typed Rust API. Use [`symbol_info`] only when preserving the
 /// CLI-compatible JSON payload shape is required.
 pub async fn symbol_info_typed(symbol: &str) -> Result<SymbolInfo, AppError> {
+    let client = configured_client()?;
+    symbol_info_typed_with_client(&client, symbol).await
+}
+
+pub(crate) async fn symbol_info_typed_with_client(
+    client: &reqwest::Client,
+    symbol: &str,
+) -> Result<SymbolInfo, AppError> {
     let requested_symbol = symbol.trim();
     if requested_symbol.is_empty() {
         return Err(AppError::new(
@@ -27,7 +36,7 @@ pub async fn symbol_info_typed(symbol: &str) -> Result<SymbolInfo, AppError> {
         ));
     }
     let (_, requested_name) = split_exchange_symbol(requested_symbol);
-    let search = symbol_search(&requested_name).await?;
+    let search = symbol_search_with_client(client, &requested_name).await?;
     let target = resolve_symbol_search_match(requested_symbol, &search)?;
     Ok(symbol_info_from_search_result_typed(
         requested_symbol,

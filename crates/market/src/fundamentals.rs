@@ -1,7 +1,10 @@
 use serde_json::{Value, json};
 use tradingview_core::{AppError, ErrorKind};
 
-use crate::{info::preferred_symbol_candidates, search::symbol_search, types::Fundamentals};
+use crate::{
+    http::configured_client, info::preferred_symbol_candidates, search::symbol_search_with_client,
+    types::Fundamentals,
+};
 
 mod client;
 mod fields;
@@ -45,6 +48,16 @@ pub async fn fundamentals_symbol_with_groups_typed(
     groups: Vec<String>,
     fields: Vec<String>,
 ) -> Result<Fundamentals, AppError> {
+    let client = configured_client()?;
+    fundamentals_symbol_with_groups_typed_with_client(&client, symbol, groups, fields).await
+}
+
+pub(crate) async fn fundamentals_symbol_with_groups_typed_with_client(
+    client: &reqwest::Client,
+    symbol: &str,
+    groups: Vec<String>,
+    fields: Vec<String>,
+) -> Result<Fundamentals, AppError> {
     let requested_symbol = symbol.trim();
     if requested_symbol.is_empty() {
         return Err(AppError::new(
@@ -53,7 +66,8 @@ pub async fn fundamentals_symbol_with_groups_typed(
         ));
     }
     let selection = normalize_fundamental_selection(groups, fields)?;
-    let value = fundamentals_symbol_via_scanner(requested_symbol, &selection.fields).await?;
+    let value =
+        fundamentals_symbol_via_scanner(client, requested_symbol, &selection.fields).await?;
     match normalize_fundamentals_response_typed(
         requested_symbol,
         &selection.fields,
@@ -62,7 +76,7 @@ pub async fn fundamentals_symbol_with_groups_typed(
     ) {
         Ok(payload) => Ok(payload),
         Err(err) if err.kind == ErrorKind::Validation => {
-            Err(add_symbol_search_candidates(err, requested_symbol).await)
+            Err(add_symbol_search_candidates(client, err, requested_symbol).await)
         }
         Err(err) => Err(err),
     }
@@ -80,8 +94,12 @@ pub(crate) fn is_fundamental_field_in_group(field: &str, group: &str) -> bool {
     fundamental_field_in_group(field, group)
 }
 
-async fn add_symbol_search_candidates(mut error: AppError, requested_symbol: &str) -> AppError {
-    let Ok(search) = symbol_search(requested_symbol).await else {
+async fn add_symbol_search_candidates(
+    client: &reqwest::Client,
+    mut error: AppError,
+    requested_symbol: &str,
+) -> AppError {
+    let Ok(search) = symbol_search_with_client(client, requested_symbol).await else {
         return error;
     };
     let candidates = preferred_symbol_candidates(requested_symbol, &search);

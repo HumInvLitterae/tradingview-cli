@@ -38,6 +38,17 @@ event read, and response/event waits use one absolute deadline per operation.
 Connection establishment deadlines are handled separately from this message
 routing boundary.
 
+Each crate that owns HTTP creates a configured `reqwest::Client` for the
+top-level operation and passes it through sequential internal reads, allowing
+connection-pool reuse without a global client or cross-source cache. Public
+TradingView HTTP reads use a five-second connection timeout and a fifteen-second
+total request deadline. Local CDP HTTP sessions use one- and three-second
+deadlines; CDP WebSocket handshakes use five seconds; and browserless bars
+WebSocket connection, setup, read-side sends, and cleanup are bounded by the
+existing ten-second bars request deadline. Only an actual transport timeout is
+classified as `Timeout`; non-timeout HTTP mappings remain owned by their source
+crates.
+
 Before adding more DOM retries, check whether a page-session API, storage
 payload, or endpoint can replace the visible UI path. The public-safe reference
 for these dependencies is `docs/internal-tradingview-apis.md`.

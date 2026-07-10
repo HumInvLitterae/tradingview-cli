@@ -2,9 +2,10 @@ use serde_json::{Value, json};
 use tradingview_core::{AppError, ErrorKind};
 
 use crate::{
+    http::{configured_client, map_http_error},
     info::preferred_symbol_candidates,
     normalize::{bare_symbol, split_exchange_symbol},
-    search::symbol_search,
+    search::symbol_search_with_client,
     types::{
         BatchQuoteItem, BatchQuotes, ExtendedHoursQuote, FreshnessCheck, Quote, QuoteError,
         SessionQuote,
@@ -54,6 +55,22 @@ pub async fn quote_symbol(symbol: &str) -> Result<Value, AppError> {
 /// This is the typed Rust API. Use [`quote_symbol`] only when preserving the
 /// CLI-compatible JSON payload shape is required.
 pub async fn quote_symbol_typed(symbol: &str) -> Result<Quote, AppError> {
+    let client = configured_client()?;
+    quote_symbol_typed_with_client(&client, symbol).await
+}
+
+pub(crate) async fn quote_symbol_typed_with_client(
+    client: &reqwest::Client,
+    symbol: &str,
+) -> Result<Quote, AppError> {
+    quote_symbol_typed_with_client_and_url(client, symbol, QUOTE_SCAN_URL).await
+}
+
+async fn quote_symbol_typed_with_client_and_url(
+    client: &reqwest::Client,
+    symbol: &str,
+    scan_url: &str,
+) -> Result<Quote, AppError> {
     let requested_symbol = symbol.trim();
     if requested_symbol.is_empty() {
         return Err(AppError::new(
@@ -61,11 +78,11 @@ pub async fn quote_symbol_typed(symbol: &str) -> Result<Quote, AppError> {
             "quote symbol must not be empty",
         ));
     }
-    let value = quote_symbol_via_scanner(requested_symbol).await?;
+    let value = quote_symbol_via_scanner(client, requested_symbol, scan_url).await?;
     match normalize_scanner_quote_response_typed(requested_symbol, &value) {
         Ok(quote) => Ok(quote),
         Err(err) if err.kind == ErrorKind::Validation => {
-            Err(add_symbol_search_candidates(err, requested_symbol).await)
+            Err(add_symbol_search_candidates(client, err, requested_symbol).await)
         }
         Err(err) => Err(err),
     }
@@ -85,6 +102,22 @@ pub async fn quote_symbols(symbols: Vec<String>) -> Result<Value, AppError> {
 /// This is the typed Rust API. Use [`quote_symbols`] only when preserving the
 /// CLI-compatible JSON payload shape is required.
 pub async fn quote_symbols_typed(symbols: Vec<String>) -> Result<BatchQuotes, AppError> {
+    let client = configured_client()?;
+    quote_symbols_typed_with_client(&client, symbols).await
+}
+
+pub(crate) async fn quote_symbols_typed_with_client(
+    client: &reqwest::Client,
+    symbols: Vec<String>,
+) -> Result<BatchQuotes, AppError> {
+    quote_symbols_typed_with_client_and_url(client, symbols, QUOTE_SCAN_URL).await
+}
+
+async fn quote_symbols_typed_with_client_and_url(
+    client: &reqwest::Client,
+    symbols: Vec<String>,
+    scan_url: &str,
+) -> Result<BatchQuotes, AppError> {
     let requested_symbols = normalize_quote_symbols(symbols)?;
     let requested_count = requested_symbols.len();
     let mut items = Vec::with_capacity(requested_count);
@@ -92,7 +125,7 @@ pub async fn quote_symbols_typed(symbols: Vec<String>) -> Result<BatchQuotes, Ap
     let mut first_error: Option<AppError> = None;
 
     for requested_symbol in requested_symbols {
-        match quote_symbol_typed(&requested_symbol).await {
+        match quote_symbol_typed_with_client_and_url(client, &requested_symbol, scan_url).await {
             Ok(quote) => {
                 resolved_count += 1;
                 items.push(BatchQuoteItem {
@@ -191,7 +224,11 @@ fn error_payload(error: AppError) -> QuoteError {
     }
 }
 
-async fn quote_symbol_via_scanner(symbol: &str) -> Result<Value, AppError> {
+async fn quote_symbol_via_scanner(
+    client: &reqwest::Client,
+    symbol: &str,
+    scan_url: &str,
+) -> Result<Value, AppError> {
     let (exchange, name) = split_exchange_symbol(symbol);
     let mut filters = vec![json!({
         "left": "name",
@@ -210,12 +247,12 @@ async fn quote_symbol_via_scanner(symbol: &str) -> Result<Value, AppError> {
         "filter": filters,
         "range": [0, 2],
     });
-    let response = reqwest::Client::new()
-        .post(QUOTE_SCAN_URL)
+    let response = client
+        .post(scan_url)
         .json(&body)
         .send()
         .await
-        .map_err(|err| AppError::new(ErrorKind::Connection, err.to_string()))?;
+        .map_err(|err| map_http_error(err, ErrorKind::Connection, "Scanner quote request"))?;
 
     let status = response.status();
     if !status.is_success() {
@@ -225,10 +262,13 @@ async fn quote_symbol_via_scanner(symbol: &str) -> Result<Value, AppError> {
         ));
     }
 
-    response
-        .json::<Value>()
-        .await
-        .map_err(|err| AppError::new(ErrorKind::InternalApiUnavailable, err.to_string()))
+    response.json::<Value>().await.map_err(|err| {
+        map_http_error(
+            err,
+            ErrorKind::InternalApiUnavailable,
+            "Scanner quote response",
+        )
+    })
 }
 
 #[cfg(test)]
@@ -384,8 +424,12 @@ fn parse_update_delay_seconds(update_mode: &Value) -> Value {
         .unwrap_or(Value::Null)
 }
 
-async fn add_symbol_search_candidates(mut error: AppError, requested_symbol: &str) -> AppError {
-    let Ok(search) = symbol_search(requested_symbol).await else {
+async fn add_symbol_search_candidates(
+    client: &reqwest::Client,
+    mut error: AppError,
+    requested_symbol: &str,
+) -> AppError {
+    let Ok(search) = symbol_search_with_client(client, requested_symbol).await else {
         return error;
     };
     let candidates = preferred_symbol_candidates(requested_symbol, &search);
@@ -417,8 +461,102 @@ fn scanner_quote_candidates(rows: &[Value]) -> Vec<Value> {
 #[cfg(test)]
 mod tests {
     use serde_json::json;
+    use tokio::{
+        io::{AsyncReadExt, AsyncWriteExt},
+        net::TcpListener,
+        time::Duration,
+    };
 
     use super::*;
+
+    #[tokio::test]
+    async fn multi_symbol_quote_reuses_one_keep_alive_connection_and_preserves_order() {
+        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let address = listener.local_addr().unwrap();
+        let server = tokio::spawn(async move {
+            let (mut stream, _) = listener.accept().await.unwrap();
+            let mut requests = Vec::new();
+            for (symbol, description, last) in
+                [("AAPL", "Apple Inc.", 100.0), ("MSFT", "Microsoft", 200.0)]
+            {
+                let request = read_http_request(&mut stream).await;
+                assert!(request.contains(&format!(r#""right":"{symbol}""#)));
+                requests.push(request);
+                let payload = json!({
+                    "data": [{
+                        "s": format!("NASDAQ:{symbol}"),
+                        "d": [
+                            symbol, description, last, last, last, last,
+                            1000, 0.0, "NASDAQ", "stock", "common"
+                        ]
+                    }]
+                })
+                .to_string();
+                let response = format!(
+                    "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: keep-alive\r\n\r\n{}",
+                    payload.len(),
+                    payload
+                );
+                stream.write_all(response.as_bytes()).await.unwrap();
+            }
+            assert!(
+                tokio::time::timeout(Duration::from_millis(100), listener.accept())
+                    .await
+                    .is_err()
+            );
+            requests
+        });
+
+        let client = crate::http::configured_client().unwrap();
+        let result = quote_symbols_typed_with_client_and_url(
+            &client,
+            vec!["NASDAQ:AAPL".to_string(), "NASDAQ:MSFT".to_string()],
+            &format!("http://{address}/scan"),
+        )
+        .await
+        .unwrap();
+
+        assert_eq!(result.resolved_count, 2);
+        assert_eq!(result.items[0].requested_symbol, "NASDAQ:AAPL");
+        assert_eq!(
+            result.items[0].quote.as_ref().unwrap().symbol,
+            "NASDAQ:AAPL"
+        );
+        assert_eq!(result.items[1].requested_symbol, "NASDAQ:MSFT");
+        assert_eq!(
+            result.items[1].quote.as_ref().unwrap().symbol,
+            "NASDAQ:MSFT"
+        );
+        assert_eq!(server.await.unwrap().len(), 2);
+    }
+
+    async fn read_http_request(stream: &mut tokio::net::TcpStream) -> String {
+        let mut request = Vec::new();
+        let mut buffer = [0u8; 512];
+        let (header_end, content_length) = loop {
+            let count = stream.read(&mut buffer).await.unwrap();
+            assert!(count > 0, "client closed before a complete request");
+            request.extend_from_slice(&buffer[..count]);
+            if let Some(header_end) = request.windows(4).position(|part| part == b"\r\n\r\n") {
+                let headers = String::from_utf8_lossy(&request[..header_end]);
+                let content_length = headers
+                    .lines()
+                    .find_map(|line| {
+                        let (name, value) = line.split_once(':')?;
+                        name.eq_ignore_ascii_case("content-length")
+                            .then(|| value.trim().parse::<usize>().unwrap())
+                    })
+                    .unwrap_or(0);
+                break (header_end + 4, content_length);
+            }
+        };
+        while request.len() < header_end + content_length {
+            let count = stream.read(&mut buffer).await.unwrap();
+            assert!(count > 0, "client closed before the request body completed");
+            request.extend_from_slice(&buffer[..count]);
+        }
+        String::from_utf8(request).unwrap()
+    }
 
     #[test]
     fn normalize_scanner_quote_response_returns_non_mutating_quote_payload() {

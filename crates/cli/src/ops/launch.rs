@@ -7,11 +7,12 @@ use std::{
 
 use serde_json::{Value, json};
 
-use tradingview_cdp::TransportConfig;
+use tradingview_cdp::{CdpHttpSession, TransportConfig};
 use tradingview_core::{AppError, ErrorKind};
 
 const LAUNCH_READY_ATTEMPTS: usize = 15;
 const LAUNCH_READY_DELAY: Duration = Duration::from_secs(1);
+const LAUNCH_PROBE_TIMEOUT: Duration = Duration::from_secs(1);
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum LaunchMethod {
@@ -124,7 +125,8 @@ pub struct CdpVersion {
 }
 
 pub async fn launch(request: LaunchRequest) -> Result<Value, AppError> {
-    if let Some(version) = cdp_version(&request.transport_config()).await? {
+    let existing_session = CdpHttpSession::new(&request.transport_config())?;
+    if let Some(version) = cdp_version(&existing_session, LAUNCH_PROBE_TIMEOUT).await? {
         return Ok(launch_payload(
             &request,
             LaunchPayloadInput {
@@ -369,26 +371,28 @@ fn validate_binary_path(path: &Path) -> Result<(), AppError> {
     Ok(())
 }
 
-async fn cdp_version(config: &TransportConfig) -> Result<Option<CdpVersion>, AppError> {
-    let url = format!("http://{}:{}/json/version", config.host, config.port);
-    let response = match reqwest::get(url).await {
-        Ok(response) => response,
-        Err(_) => return Ok(None),
-    };
-    if !response.status().is_success() {
-        return Ok(None);
+async fn cdp_version(
+    session: &CdpHttpSession,
+    timeout: Duration,
+) -> Result<Option<CdpVersion>, AppError> {
+    match session.version_json_with_timeout(timeout).await {
+        Ok(value) => Ok(value.map(|value| cdp_version_from_value(&value))),
+        Err(error) if error.kind == ErrorKind::Timeout => Ok(None),
+        Err(error) => Err(error),
     }
-    let value = response
-        .json::<Value>()
-        .await
-        .map_err(|err| AppError::new(ErrorKind::Connection, err.to_string()))?;
-    Ok(Some(cdp_version_from_value(&value)))
 }
 
 async fn wait_for_cdp_version(request: &LaunchRequest) -> Result<Option<CdpVersion>, AppError> {
+    let session = CdpHttpSession::new(&request.transport_config())?;
+    let deadline = tokio::time::Instant::now()
+        + LAUNCH_READY_DELAY.saturating_mul(LAUNCH_READY_ATTEMPTS as u32);
     for _ in 0..LAUNCH_READY_ATTEMPTS {
         tokio::time::sleep(LAUNCH_READY_DELAY).await;
-        if let Some(version) = cdp_version(&request.transport_config()).await? {
+        let remaining = deadline.saturating_duration_since(tokio::time::Instant::now());
+        if remaining.is_zero() {
+            break;
+        }
+        if let Some(version) = cdp_version(&session, remaining.min(LAUNCH_PROBE_TIMEOUT)).await? {
             return Ok(Some(version));
         }
     }

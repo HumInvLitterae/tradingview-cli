@@ -2,7 +2,7 @@ use futures_util::{SinkExt, StreamExt};
 use serde_json::{Value, json};
 use tokio::time::Instant;
 use tokio_tungstenite::{
-    connect_async,
+    MaybeTlsStream, WebSocketStream, connect_async,
     tungstenite::{Message, client::IntoClientRequest},
 };
 use tradingview_core::{AppError, ErrorKind};
@@ -36,65 +36,81 @@ pub(super) async fn fetch_bars_ws(request: &BarsRequest) -> Result<BarsResult, A
             .expect("valid origin header"),
     );
 
-    let (mut stream, _) = connect_async(ws_request).await.map_err(|err| {
-        AppError::new(
-            ErrorKind::Connection,
-            format!("TradingView WebSocket connection failed: {err}"),
-        )
-        .with_details(bars_error_details(
-            request,
-            json!({
-                "availability_status": "unavailable",
-                "source_availability": bars_source_availability(
-                    request,
-                    BarsAvailabilityState::unavailable("connection_failed", 0, false, false),
-                    &wait_summary,
-                    started.elapsed().as_millis() as u64,
-                ),
-            }),
-        ))
-    })?;
-
-    let session_id = session_id("cs_");
-    let symbol_key = "symbol_1";
-    send_ws(
-        &mut stream,
-        "set_auth_token",
-        json!(["unauthorized_user_token"]),
-    )
-    .await
-    .map_err(|err| {
-        err.with_details(bars_error_details(
-            request,
-            json!({
-                "availability_status": "unavailable",
-                "source_availability": bars_source_availability(
-                    request,
-                    BarsAvailabilityState::unavailable("connection_failed", 0, false, false),
-                    &wait_summary,
-                    started.elapsed().as_millis() as u64,
-                ),
-            }),
-        ))
-    })?;
-    send_ws(&mut stream, "chart_create_session", json!([session_id, ""]))
+    let mut stream = connect_ws(ws_request, request.timeout)
         .await
         .map_err(|err| {
+            let unavailable_reason = if err.kind == ErrorKind::Timeout {
+                "connection_timeout"
+            } else {
+                "connection_failed"
+            };
+            let timed_out = err.kind == ErrorKind::Timeout;
             err.with_details(bars_error_details(
                 request,
                 json!({
                     "availability_status": "unavailable",
                     "source_availability": bars_source_availability(
                         request,
-                        BarsAvailabilityState::unavailable("connection_failed", 0, false, false),
+                        BarsAvailabilityState::unavailable(unavailable_reason, 0, false, timed_out),
                         &wait_summary,
                         started.elapsed().as_millis() as u64,
                     ),
                 }),
             ))
         })?;
+
+    let session_id = session_id("cs_");
+    let symbol_key = "symbol_1";
+    let setup_deadline = Instant::now() + request.timeout;
     send_ws(
         &mut stream,
+        setup_deadline,
+        "set_auth_token",
+        json!(["unauthorized_user_token"]),
+    )
+    .await
+    .map_err(|err| {
+        let unavailable_reason = send_unavailable_reason(&err);
+        let timed_out = err.kind == ErrorKind::Timeout;
+        err.with_details(bars_error_details(
+            request,
+            json!({
+                "availability_status": "unavailable",
+                "source_availability": bars_source_availability(
+                    request,
+                    BarsAvailabilityState::unavailable(unavailable_reason, 0, false, timed_out),
+                    &wait_summary,
+                    started.elapsed().as_millis() as u64,
+                ),
+            }),
+        ))
+    })?;
+    send_ws(
+        &mut stream,
+        setup_deadline,
+        "chart_create_session",
+        json!([session_id, ""]),
+    )
+    .await
+    .map_err(|err| {
+        let unavailable_reason = send_unavailable_reason(&err);
+        let timed_out = err.kind == ErrorKind::Timeout;
+        err.with_details(bars_error_details(
+            request,
+            json!({
+                "availability_status": "unavailable",
+                "source_availability": bars_source_availability(
+                    request,
+                    BarsAvailabilityState::unavailable(unavailable_reason, 0, false, timed_out),
+                    &wait_summary,
+                    started.elapsed().as_millis() as u64,
+                ),
+            }),
+        ))
+    })?;
+    send_ws(
+        &mut stream,
+        setup_deadline,
         "resolve_symbol",
         json!([
             session_id,
@@ -110,13 +126,15 @@ pub(super) async fn fetch_bars_ws(request: &BarsRequest) -> Result<BarsResult, A
     )
     .await
     .map_err(|err| {
+        let unavailable_reason = send_unavailable_reason(&err);
+        let timed_out = err.kind == ErrorKind::Timeout;
         err.with_details(bars_error_details(
             request,
             json!({
                 "availability_status": "unavailable",
                 "source_availability": bars_source_availability(
                     request,
-                    BarsAvailabilityState::unavailable("connection_failed", 0, false, false),
+                    BarsAvailabilityState::unavailable(unavailable_reason, 0, false, timed_out),
                     &wait_summary,
                     started.elapsed().as_millis() as u64,
                 ),
@@ -125,6 +143,7 @@ pub(super) async fn fetch_bars_ws(request: &BarsRequest) -> Result<BarsResult, A
     })?;
     send_ws(
         &mut stream,
+        setup_deadline,
         "create_series",
         json!([
             session_id,
@@ -137,13 +156,15 @@ pub(super) async fn fetch_bars_ws(request: &BarsRequest) -> Result<BarsResult, A
     )
     .await
     .map_err(|err| {
+        let unavailable_reason = send_unavailable_reason(&err);
+        let timed_out = err.kind == ErrorKind::Timeout;
         err.with_details(bars_error_details(
             request,
             json!({
                 "availability_status": "unavailable",
                 "source_availability": bars_source_availability(
                     request,
-                    BarsAvailabilityState::unavailable("connection_failed", 0, false, false),
+                    BarsAvailabilityState::unavailable(unavailable_reason, 0, false, timed_out),
                     &wait_summary,
                     started.elapsed().as_millis() as u64,
                 ),
@@ -152,18 +173,21 @@ pub(super) async fn fetch_bars_ws(request: &BarsRequest) -> Result<BarsResult, A
     })?;
     send_ws(
         &mut stream,
+        setup_deadline,
         "switch_timezone",
         json!([session_id, "Etc/UTC"]),
     )
     .await
     .map_err(|err| {
+        let unavailable_reason = send_unavailable_reason(&err);
+        let timed_out = err.kind == ErrorKind::Timeout;
         err.with_details(bars_error_details(
             request,
             json!({
                 "availability_status": "unavailable",
                 "source_availability": bars_source_availability(
                     request,
-                    BarsAvailabilityState::unavailable("connection_failed", 0, false, false),
+                    BarsAvailabilityState::unavailable(unavailable_reason, 0, false, timed_out),
                     &wait_summary,
                     started.elapsed().as_millis() as u64,
                 ),
@@ -306,15 +330,19 @@ pub(super) async fn fetch_bars_ws(request: &BarsRequest) -> Result<BarsResult, A
         for packet in packets {
             match packet {
                 WsPacket::Ping(value) => {
-                    stream
-                        .send(Message::Text(pong_frame(value).into()))
-                        .await
-                        .map_err(|err| {
-                            AppError::new(
-                                ErrorKind::Connection,
-                                format!("TradingView WebSocket pong failed: {err}"),
-                            )
-                        })?;
+                    send_heartbeat_pong(
+                        &mut stream,
+                        deadline,
+                        value,
+                        HeartbeatDiagnostics {
+                            request,
+                            bars: &bars,
+                            request_more_count,
+                            wait_summary: &wait_summary,
+                            elapsed_ms: started.elapsed().as_millis() as u64,
+                        },
+                    )
+                    .await?;
                 }
                 WsPacket::Message(value) => {
                     let method = value.get("m").and_then(Value::as_str).unwrap_or_default();
@@ -334,11 +362,14 @@ pub(super) async fn fetch_bars_ws(request: &BarsRequest) -> Result<BarsResult, A
                             completed = false;
                             send_ws(
                                 &mut stream,
+                                deadline,
                                 "request_more_data",
                                 json!([session_id, "s1", request.initial_fetch_count()]),
                             )
                             .await
                             .map_err(|err| {
+                                let unavailable_reason = send_unavailable_reason(&err);
+                                let timed_out = err.kind == ErrorKind::Timeout;
                                 err.with_details(bars_error_details(
                                     request,
                                     json!({
@@ -346,10 +377,10 @@ pub(super) async fn fetch_bars_ws(request: &BarsRequest) -> Result<BarsResult, A
                                     "source_availability": bars_source_availability(
                                         request,
                                         BarsAvailabilityState::unavailable(
-                                            "connection_failed",
+                                            unavailable_reason,
                                             bars.len(),
                                             false,
-                                            false,
+                                            timed_out,
                                         ),
                                             &wait_summary,
                                             started.elapsed().as_millis() as u64,
@@ -366,9 +397,7 @@ pub(super) async fn fetch_bars_ws(request: &BarsRequest) -> Result<BarsResult, A
                             request_more_count += 1;
                             continue;
                         }
-                        let _ =
-                            send_ws(&mut stream, "chart_delete_session", json!([session_id])).await;
-                        let _ = stream.close(None).await;
+                        cleanup_ws(&mut stream, &session_id, request.timeout).await;
                         return Ok(finalize_result(
                             request,
                             bars,
@@ -378,8 +407,7 @@ pub(super) async fn fetch_bars_ws(request: &BarsRequest) -> Result<BarsResult, A
                         ));
                     } else if matches!(method, "symbol_error" | "series_error" | "protocol_error") {
                         wait_summary.error_messages_seen += 1;
-                        let _ =
-                            send_ws(&mut stream, "chart_delete_session", json!([session_id])).await;
+                        cleanup_ws(&mut stream, &session_id, request.timeout).await;
                         return Err(AppError::new(
                             ErrorKind::InternalApiUnavailable,
                             "TradingView WebSocket returned an error for bars",
@@ -414,8 +442,7 @@ pub(super) async fn fetch_bars_ws(request: &BarsRequest) -> Result<BarsResult, A
         }
     }
 
-    let _ = send_ws(&mut stream, "chart_delete_session", json!([session_id])).await;
-    let _ = stream.close(None).await;
+    cleanup_ws(&mut stream, &session_id, request.timeout).await;
     Ok(finalize_result(
         request,
         bars,
@@ -425,21 +452,149 @@ pub(super) async fn fetch_bars_ws(request: &BarsRequest) -> Result<BarsResult, A
     ))
 }
 
-async fn send_ws<S>(stream: &mut S, method: &str, params: Value) -> Result<(), AppError>
+async fn send_ws<S>(
+    stream: &mut S,
+    deadline: Instant,
+    method: &str,
+    params: Value,
+) -> Result<(), AppError>
 where
     S: futures_util::Sink<Message> + Unpin,
     S::Error: std::fmt::Display,
 {
     let payload = json!({ "m": method, "p": params }).to_string();
-    stream
-        .send(Message::Text(frame(&payload).into()))
+    send_message(
+        stream,
+        deadline,
+        Message::Text(frame(&payload).into()),
+        "TradingView WebSocket send",
+    )
+    .await
+}
+
+async fn connect_ws<R>(
+    request: R,
+    timeout: std::time::Duration,
+) -> Result<WebSocketStream<MaybeTlsStream<tokio::net::TcpStream>>, AppError>
+where
+    R: IntoClientRequest + Unpin,
+{
+    tokio::time::timeout(timeout, connect_async(request))
         .await
+        .map_err(|_| {
+            AppError::new(
+                ErrorKind::Timeout,
+                "TradingView WebSocket connection timed out",
+            )
+        })?
+        .map(|(stream, _)| stream)
         .map_err(|err| {
             AppError::new(
                 ErrorKind::Connection,
-                format!("TradingView WebSocket send failed: {err}"),
+                format!("TradingView WebSocket connection failed: {err}"),
             )
         })
+}
+
+async fn send_message<S>(
+    stream: &mut S,
+    deadline: Instant,
+    message: Message,
+    operation: &str,
+) -> Result<(), AppError>
+where
+    S: futures_util::Sink<Message> + Unpin,
+    S::Error: std::fmt::Display,
+{
+    tokio::time::timeout_at(deadline, stream.send(message))
+        .await
+        .map_err(|_| AppError::new(ErrorKind::Timeout, format!("{operation} timed out")))?
+        .map_err(|err| AppError::new(ErrorKind::Connection, format!("{operation} failed: {err}")))
+}
+
+struct HeartbeatDiagnostics<'a> {
+    request: &'a BarsRequest,
+    bars: &'a [Bar],
+    request_more_count: usize,
+    wait_summary: &'a BarsWaitSummary,
+    elapsed_ms: u64,
+}
+
+async fn send_heartbeat_pong<S>(
+    stream: &mut S,
+    deadline: Instant,
+    value: i64,
+    diagnostics: HeartbeatDiagnostics<'_>,
+) -> Result<(), AppError>
+where
+    S: futures_util::Sink<Message> + Unpin,
+    S::Error: std::fmt::Display,
+{
+    send_message(
+        stream,
+        deadline,
+        Message::Text(pong_frame(value).into()),
+        "TradingView WebSocket pong",
+    )
+    .await
+    .map_err(|err| {
+        let HeartbeatDiagnostics {
+            request,
+            bars,
+            request_more_count,
+            wait_summary,
+            elapsed_ms,
+        } = diagnostics;
+        let unavailable_reason = send_unavailable_reason(&err);
+        let timed_out = err.kind == ErrorKind::Timeout;
+        err.with_details(bars_error_details(
+            request,
+            json!({
+                "availability_status": "unavailable",
+                "source_availability": bars_source_availability(
+                    request,
+                    BarsAvailabilityState::unavailable(
+                        unavailable_reason,
+                        bars.len(),
+                        false,
+                        timed_out,
+                    ),
+                    wait_summary,
+                    elapsed_ms,
+                ),
+                "range_fetch_summary": range_fetch_summary_for_bars(
+                    request,
+                    bars,
+                    request_more_count,
+                    false,
+                ),
+            }),
+        ))
+    })
+}
+
+async fn cleanup_ws<S>(stream: &mut S, session_id: &str, timeout: std::time::Duration)
+where
+    S: futures_util::Sink<Message> + Unpin,
+    S::Error: std::fmt::Display,
+{
+    let deadline = Instant::now() + timeout;
+    let _ = send_ws(
+        stream,
+        deadline,
+        "chart_delete_session",
+        json!([session_id]),
+    )
+    .await;
+    let _ = tokio::time::timeout_at(deadline, stream.close()).await;
+}
+
+fn send_unavailable_reason(error: &AppError) -> &'static str {
+    if error.kind == ErrorKind::Timeout {
+        "websocket_send_timeout"
+    } else {
+        "connection_failed"
+    }
 }
 
 fn should_request_more(request: &BarsRequest, bars: &[super::types::Bar]) -> bool {
@@ -529,8 +684,47 @@ fn range_fetch_summary_for_bars(
 
 #[cfg(test)]
 mod tests {
+    use futures_util::Sink;
+    use std::{
+        convert::Infallible,
+        pin::Pin,
+        task::{Context, Poll},
+    };
+    use tokio::{net::TcpListener, time::Duration};
+
     use super::*;
     use crate::bars::validation::{validate_bars_range_request, validate_bars_request};
+
+    struct NeverReadySink;
+
+    impl Sink<Message> for NeverReadySink {
+        type Error = Infallible;
+
+        fn poll_ready(
+            self: Pin<&mut Self>,
+            _context: &mut Context<'_>,
+        ) -> Poll<Result<(), Self::Error>> {
+            Poll::Pending
+        }
+
+        fn start_send(self: Pin<&mut Self>, _item: Message) -> Result<(), Self::Error> {
+            unreachable!("pending sink must never accept an item")
+        }
+
+        fn poll_flush(
+            self: Pin<&mut Self>,
+            _context: &mut Context<'_>,
+        ) -> Poll<Result<(), Self::Error>> {
+            Poll::Pending
+        }
+
+        fn poll_close(
+            self: Pin<&mut Self>,
+            _context: &mut Context<'_>,
+        ) -> Poll<Result<(), Self::Error>> {
+            Poll::Pending
+        }
+    }
 
     fn bar(time: i64) -> Bar {
         Bar {
@@ -605,5 +799,74 @@ mod tests {
         assert_eq!(result.fetch_summary.requested_count_cap, 2);
         assert!(!result.fetch_summary.range_truncated);
         assert_eq!(result.fetch_summary.range_truncation_reason, "none");
+    }
+
+    #[tokio::test]
+    async fn stalled_websocket_handshake_maps_to_timeout() {
+        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let address = listener.local_addr().unwrap();
+        let server = tokio::spawn(async move {
+            let (_stream, _) = listener.accept().await.unwrap();
+            tokio::time::sleep(Duration::from_millis(200)).await;
+        });
+
+        let error = match connect_ws(format!("ws://{address}"), Duration::from_millis(50)).await {
+            Ok(_) => panic!("stalled WebSocket handshake should time out"),
+            Err(error) => error,
+        };
+        assert_eq!(error.kind, ErrorKind::Timeout);
+        server.await.unwrap();
+    }
+
+    #[tokio::test]
+    async fn pending_send_maps_to_timeout() {
+        let mut pending = NeverReadySink;
+        let error = send_ws(
+            &mut pending,
+            Instant::now() + Duration::from_millis(50),
+            "set_auth_token",
+            json!(["unauthorized_user_token"]),
+        )
+        .await
+        .unwrap_err();
+        assert_eq!(error.kind, ErrorKind::Timeout);
+    }
+
+    #[tokio::test]
+    async fn pending_heartbeat_pong_preserves_bars_timeout_diagnostics() {
+        let request =
+            validate_bars_range_request("NASDAQ:AAPL", "1D", "2020-01-01", "2020-01-31", 500)
+                .unwrap();
+        let bars = vec![bar(1_577_836_800)];
+        let wait_summary = BarsWaitSummary::new(&request);
+        let mut pending = NeverReadySink;
+
+        let error = send_heartbeat_pong(
+            &mut pending,
+            Instant::now() + Duration::from_millis(50),
+            123,
+            HeartbeatDiagnostics {
+                request: &request,
+                bars: &bars,
+                request_more_count: 1,
+                wait_summary: &wait_summary,
+                elapsed_ms: 25,
+            },
+        )
+        .await
+        .unwrap_err();
+
+        assert_eq!(error.kind, ErrorKind::Timeout);
+        let details = error.details.unwrap();
+        assert_eq!(details["source"], "tradingview_bars_ws");
+        assert_eq!(details["availability_status"], "unavailable");
+        assert_eq!(
+            details["source_availability"]["unavailable_reason"],
+            "websocket_send_timeout"
+        );
+        assert_eq!(details["source_availability"]["bar_count"], 1);
+        assert_eq!(details["source_availability"]["timed_out"], true);
+        assert!(details["source_availability"].get("wait_summary").is_some());
+        assert_eq!(details["range_fetch_summary"]["request_more_count"], 1);
     }
 }

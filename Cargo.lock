@@ -2006,6 +2006,7 @@ dependencies = [
  "reqwest",
  "serde",
  "serde_json",
+ "tokio",
  "tradingview-core",
 ]
 
@@ -2016,6 +2017,7 @@ dependencies = [
  "reqwest",
  "serde",
  "serde_json",
+ "tokio",
  "tradingview-core",
 ]
 

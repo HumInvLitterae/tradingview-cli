@@ -70,6 +70,7 @@
 
 mod common;
 mod hotlist;
+mod http;
 mod metainfo;
 mod scan;
 mod types;

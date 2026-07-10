@@ -14,6 +14,7 @@ use tradingview_core::{AppError, ErrorKind};
 use crate::Target;
 
 const DEFAULT_TIMEOUT: Duration = Duration::from_secs(10);
+const CONNECT_TIMEOUT: Duration = Duration::from_secs(5);
 const MAX_PENDING_EVENTS: usize = 1024;
 const MAX_PENDING_EVENT_BYTES: usize = 8 * 1024 * 1024;
 
@@ -176,14 +177,19 @@ enum IncomingMessage {
 
 impl CdpClient {
     pub async fn connect(target: &Target) -> Result<Self, AppError> {
+        Self::connect_with_timeout(target, CONNECT_TIMEOUT).await
+    }
+
+    async fn connect_with_timeout(target: &Target, timeout: Duration) -> Result<Self, AppError> {
         let ws_url = target.web_socket_debugger_url.as_deref().ok_or_else(|| {
             AppError::new(
                 ErrorKind::Connection,
                 "Target did not include a webSocketDebuggerUrl",
             )
         })?;
-        let (stream, _) = connect_async(ws_url)
+        let (stream, _) = tokio::time::timeout(timeout, connect_async(ws_url))
             .await
+            .map_err(|_| AppError::new(ErrorKind::Timeout, "CDP WebSocket connection timed out"))?
             .map_err(|err| AppError::new(ErrorKind::Connection, err.to_string()))?;
         let client = Self {
             stream,
@@ -196,17 +202,20 @@ impl CdpClient {
 
     pub async fn call_method(&mut self, method: &str, params: Value) -> Result<Value, AppError> {
         let id = self.next_request_id();
+        let deadline = tokio::time::Instant::now() + self.timeout;
         let request = json!({
             "id": id,
             "method": method,
             "params": params,
         });
-        self.stream
-            .send(Message::Text(request.to_string().into()))
-            .await
-            .map_err(map_ws_error)?;
+        send_message_until(
+            &mut self.stream,
+            deadline,
+            Message::Text(request.to_string().into()),
+        )
+        .await?;
 
-        self.wait_for_response(id).await
+        self.wait_for_response(id, deadline).await
     }
 
     pub async fn next_event(&mut self, timeout: Duration) -> Result<Option<Value>, AppError> {
@@ -226,8 +235,11 @@ impl CdpClient {
         }
     }
 
-    async fn wait_for_response(&mut self, request_id: u64) -> Result<Value, AppError> {
-        let deadline = tokio::time::Instant::now() + self.timeout;
+    async fn wait_for_response(
+        &mut self,
+        request_id: u64,
+        deadline: tokio::time::Instant,
+    ) -> Result<Value, AppError> {
         loop {
             match self
                 .next_message_until(deadline, "CDP request timed out")
@@ -267,6 +279,21 @@ impl CdpClient {
         self.next_id += 1;
         id
     }
+}
+
+async fn send_message_until<S>(
+    stream: &mut S,
+    deadline: tokio::time::Instant,
+    message: Message,
+) -> Result<(), AppError>
+where
+    S: futures_util::Sink<Message> + Unpin,
+    S::Error: std::fmt::Display,
+{
+    tokio::time::timeout_at(deadline, stream.send(message))
+        .await
+        .map_err(|_| AppError::new(ErrorKind::Timeout, "CDP request timed out"))?
+        .map_err(|err| AppError::new(ErrorKind::Connection, err.to_string()))
 }
 
 impl RuntimeEvaluator for CdpClient {
@@ -436,10 +463,47 @@ fn map_ws_error(err: WsError) -> AppError {
 
 #[cfg(test)]
 mod tests {
+    use futures_util::Sink;
+    use std::{
+        convert::Infallible,
+        pin::Pin,
+        task::{Context, Poll},
+    };
     use tokio::net::TcpListener;
     use tokio_tungstenite::accept_async;
 
     use super::*;
+
+    struct NeverReadySink;
+
+    impl Sink<Message> for NeverReadySink {
+        type Error = Infallible;
+
+        fn poll_ready(
+            self: Pin<&mut Self>,
+            _context: &mut Context<'_>,
+        ) -> Poll<Result<(), Self::Error>> {
+            Poll::Pending
+        }
+
+        fn start_send(self: Pin<&mut Self>, _item: Message) -> Result<(), Self::Error> {
+            unreachable!("pending sink must never accept an item")
+        }
+
+        fn poll_flush(
+            self: Pin<&mut Self>,
+            _context: &mut Context<'_>,
+        ) -> Poll<Result<(), Self::Error>> {
+            Poll::Pending
+        }
+
+        fn poll_close(
+            self: Pin<&mut Self>,
+            _context: &mut Context<'_>,
+        ) -> Poll<Result<(), Self::Error>> {
+            Poll::Pending
+        }
+    }
 
     fn initial_domain_enable_methods() -> &'static [&'static str] {
         &[]
@@ -673,6 +737,46 @@ mod tests {
         let client = CdpClient::connect(&target).await.unwrap();
         let server = accept.await.unwrap();
         (client, server)
+    }
+
+    #[tokio::test]
+    async fn stalled_websocket_handshake_maps_to_timeout() {
+        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let address = listener.local_addr().unwrap();
+        let server = tokio::spawn(async move {
+            let (_stream, _) = listener.accept().await.unwrap();
+            tokio::time::sleep(Duration::from_millis(200)).await;
+        });
+        let target = Target {
+            id: "test-target".to_string(),
+            title: "test".to_string(),
+            kind: "page".to_string(),
+            url: "https://example.invalid/chart".to_string(),
+            web_socket_debugger_url: Some(format!("ws://{address}")),
+        };
+
+        let error = match CdpClient::connect_with_timeout(&target, Duration::from_millis(50)).await
+        {
+            Ok(_) => panic!("stalled WebSocket handshake should time out"),
+            Err(error) => error,
+        };
+        assert_eq!(error.kind, ErrorKind::Timeout);
+        assert_eq!(error.message, "CDP WebSocket connection timed out");
+        server.await.unwrap();
+    }
+
+    #[tokio::test]
+    async fn pending_method_send_maps_to_existing_timeout() {
+        let mut pending = NeverReadySink;
+        let error = send_message_until(
+            &mut pending,
+            tokio::time::Instant::now() + Duration::from_millis(50),
+            Message::Text("{}".into()),
+        )
+        .await
+        .unwrap_err();
+        assert_eq!(error.kind, ErrorKind::Timeout);
+        assert_eq!(error.message, "CDP request timed out");
     }
 
     async fn next_request_id(server: &mut WebSocketStream<TcpStream>) -> u64 {
