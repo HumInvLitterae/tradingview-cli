@@ -28,7 +28,7 @@ pub(super) fn frame(payload: &str) -> String {
 }
 
 pub(super) fn pong_frame(value: i64) -> String {
-    format!("~m~{}~m~~h~{}~", value.to_string().len() + 3, value)
+    frame(&format!("~h~{value}"))
 }
 
 pub(super) fn parse_packets(message: Message) -> Result<Vec<WsPacket>, AppError> {
@@ -195,6 +195,54 @@ pub(super) fn bar_to_value(bar: Bar) -> Value {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn decode_single_frame(raw: &str) -> (usize, &str) {
+        let rest = raw
+            .strip_prefix("~m~")
+            .expect("frame should start with the message marker");
+        let (length, payload) = rest
+            .split_once("~m~")
+            .expect("frame should contain the payload marker");
+        (
+            length.parse::<usize>().expect("frame length should parse"),
+            payload,
+        )
+    }
+
+    #[test]
+    fn pong_frames_use_canonical_payload_and_exact_byte_lengths() {
+        for value in [7, 42, 1_234_567_890] {
+            let pong = pong_frame(value);
+            let expected_payload = format!("~h~{value}");
+            let (declared_length, payload) = decode_single_frame(&pong);
+
+            assert_eq!(pong, frame(&expected_payload));
+            assert_eq!(declared_length, payload.len());
+            assert_eq!(payload, expected_payload);
+        }
+    }
+
+    #[test]
+    fn parses_canonical_legacy_and_bare_heartbeat_packets() {
+        let canonical = frame("~h~42");
+        let legacy = frame("~h~43~");
+        let packets = parse_text_packets(&format!("{canonical}{legacy}~h~44")).unwrap();
+
+        assert_eq!(
+            packets,
+            vec![WsPacket::Ping(42), WsPacket::Ping(43), WsPacket::Ping(44)]
+        );
+    }
+
+    #[test]
+    fn rejects_truncated_and_invalid_framed_heartbeat_packets() {
+        for raw in ["~m~5~m~~h~4".to_string(), frame("~h~"), frame("~h~abc")] {
+            let error = parse_text_packets(&raw).unwrap_err();
+            assert_eq!(error.kind, ErrorKind::InternalApiUnavailable);
+            assert!(!error.message.is_empty());
+            assert!(error.details.is_none());
+        }
+    }
 
     #[test]
     fn parse_text_packets_handles_multiple_frames_and_ping() {

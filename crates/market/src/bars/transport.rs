@@ -697,6 +697,20 @@ mod tests {
 
     struct NeverReadySink;
 
+    #[derive(Default)]
+    struct RecordingSink {
+        messages: Vec<Message>,
+    }
+
+    #[derive(Debug)]
+    struct HeartbeatProbeEvidence {
+        heartbeat_count: usize,
+        pong_count: usize,
+        post_pong_request_more_count: usize,
+        post_request_update_count: usize,
+        post_request_completion_count: usize,
+    }
+
     impl Sink<Message> for NeverReadySink {
         type Error = Infallible;
 
@@ -723,6 +737,36 @@ mod tests {
             _context: &mut Context<'_>,
         ) -> Poll<Result<(), Self::Error>> {
             Poll::Pending
+        }
+    }
+
+    impl Sink<Message> for RecordingSink {
+        type Error = Infallible;
+
+        fn poll_ready(
+            self: Pin<&mut Self>,
+            _context: &mut Context<'_>,
+        ) -> Poll<Result<(), Self::Error>> {
+            Poll::Ready(Ok(()))
+        }
+
+        fn start_send(mut self: Pin<&mut Self>, item: Message) -> Result<(), Self::Error> {
+            self.messages.push(item);
+            Ok(())
+        }
+
+        fn poll_flush(
+            self: Pin<&mut Self>,
+            _context: &mut Context<'_>,
+        ) -> Poll<Result<(), Self::Error>> {
+            Poll::Ready(Ok(()))
+        }
+
+        fn poll_close(
+            self: Pin<&mut Self>,
+            _context: &mut Context<'_>,
+        ) -> Poll<Result<(), Self::Error>> {
+            Poll::Ready(Ok(()))
         }
     }
 
@@ -868,5 +912,231 @@ mod tests {
         assert_eq!(details["source_availability"]["timed_out"], true);
         assert!(details["source_availability"].get("wait_summary").is_some());
         assert_eq!(details["range_fetch_summary"]["request_more_count"], 1);
+    }
+
+    #[tokio::test]
+    async fn heartbeat_pong_sends_one_canonical_frame() {
+        let request = validate_bars_request("NASDAQ:AAPL", "1D", 5).unwrap();
+        let wait_summary = BarsWaitSummary::new(&request);
+        let mut sink = RecordingSink::default();
+
+        send_heartbeat_pong(
+            &mut sink,
+            Instant::now() + Duration::from_secs(1),
+            42,
+            HeartbeatDiagnostics {
+                request: &request,
+                bars: &[],
+                request_more_count: 0,
+                wait_summary: &wait_summary,
+                elapsed_ms: 0,
+            },
+        )
+        .await
+        .unwrap();
+
+        assert_eq!(sink.messages.len(), 1);
+        assert_eq!(sink.messages[0], Message::Text("~m~5~m~~h~42".into()));
+    }
+
+    #[tokio::test]
+    #[ignore = "requires TradingView WebSocket availability and TV_LIVE_BARS_HEARTBEAT_SMOKE=1"]
+    async fn canonical_heartbeat_pong_live_probe() {
+        if std::env::var("TV_LIVE_BARS_HEARTBEAT_SMOKE")
+            .ok()
+            .as_deref()
+            != Some("1")
+        {
+            panic!(
+                "heartbeat live probe is gated; set TV_LIVE_BARS_HEARTBEAT_SMOKE=1 and run with --ignored"
+            );
+        }
+
+        let evidence = run_canonical_heartbeat_live_probe()
+            .await
+            .expect("public-safe heartbeat probe should complete");
+        assert!(evidence.heartbeat_count > 0);
+        assert_eq!(evidence.pong_count, 1);
+        assert_eq!(evidence.post_pong_request_more_count, 1);
+        assert!(evidence.post_request_update_count + evidence.post_request_completion_count > 0);
+        println!(
+            "heartbeat live probe passed: heartbeat_count={} pong_count={} post_pong_request_more_count={} post_request_update_count={} post_request_completion_count={} connection_usable_after_pong=true",
+            evidence.heartbeat_count,
+            evidence.pong_count,
+            evidence.post_pong_request_more_count,
+            evidence.post_request_update_count,
+            evidence.post_request_completion_count,
+        );
+    }
+
+    async fn run_canonical_heartbeat_live_probe() -> Result<HeartbeatProbeEvidence, AppError> {
+        let request = validate_bars_request("NASDAQ:AAPL", "1", 5)?;
+        let mut ws_request = WS_ENDPOINT.into_client_request().map_err(|err| {
+            AppError::new(
+                ErrorKind::InternalApiUnavailable,
+                format!("Could not prepare heartbeat probe request: {err}"),
+            )
+        })?;
+        ws_request.headers_mut().insert(
+            "Origin",
+            "https://www.tradingview.com"
+                .parse()
+                .expect("valid origin header"),
+        );
+        let mut stream = connect_ws(ws_request, request.timeout).await?;
+        let chart_session = session_id("cs_");
+        let symbol_key = "symbol_1";
+        let setup_deadline = Instant::now() + request.timeout;
+        for (method, params) in [
+            ("set_auth_token", json!(["unauthorized_user_token"])),
+            ("chart_create_session", json!([chart_session, ""])),
+            (
+                "resolve_symbol",
+                json!([
+                    chart_session,
+                    symbol_key,
+                    format!(
+                        "={}",
+                        json!({"symbol": request.symbol, "adjustment": "splits"})
+                    )
+                ]),
+            ),
+            (
+                "create_series",
+                json!([
+                    chart_session,
+                    "s1",
+                    "s1",
+                    symbol_key,
+                    request.timeframe,
+                    request.initial_fetch_count()
+                ]),
+            ),
+            ("switch_timezone", json!([chart_session, "Etc/UTC"])),
+        ] {
+            send_ws(&mut stream, setup_deadline, method, params).await?;
+        }
+
+        let deadline = Instant::now() + Duration::from_secs(45);
+        let mut heartbeat_count = 0usize;
+        let mut pong_count = 0usize;
+        let mut post_pong_request_more_count = 0usize;
+        let mut post_request_update_count = 0usize;
+        let mut post_request_completion_count = 0usize;
+        let mut initial_series_completed = false;
+        let mut websocket_message_index = 0usize;
+        let mut post_pong_request_message_index = None;
+
+        while Instant::now() < deadline {
+            let next = tokio::time::timeout_at(deadline, stream.next())
+                .await
+                .map_err(|_| {
+                    AppError::new(ErrorKind::Timeout, "Heartbeat live probe timed out")
+                        .with_details(json!({
+                            "heartbeat_count": heartbeat_count,
+                            "pong_count": pong_count,
+                            "post_pong_request_more_count": post_pong_request_more_count,
+                            "post_request_update_count": post_request_update_count,
+                            "post_request_completion_count": post_request_completion_count,
+                        }))
+                })?;
+            let Some(message) = next else {
+                return Err(AppError::new(
+                    ErrorKind::Connection,
+                    "Heartbeat live probe connection closed",
+                ));
+            };
+            let message = message.map_err(|err| {
+                AppError::new(
+                    ErrorKind::Connection,
+                    format!("Heartbeat live probe read failed: {err}"),
+                )
+            })?;
+            websocket_message_index += 1;
+
+            for packet in parse_packets(message)? {
+                match packet {
+                    WsPacket::Ping(value) => {
+                        heartbeat_count += 1;
+                        if pong_count == 0 {
+                            let candidate = frame(&format!("~h~{value}"));
+                            send_message(
+                                &mut stream,
+                                deadline,
+                                Message::Text(candidate.into()),
+                                "Heartbeat live probe pong",
+                            )
+                            .await?;
+                            pong_count = 1;
+                            if initial_series_completed {
+                                send_ws(
+                                    &mut stream,
+                                    deadline,
+                                    "request_more_data",
+                                    json!([chart_session, "s1", 5]),
+                                )
+                                .await?;
+                                post_pong_request_more_count = 1;
+                                post_pong_request_message_index = Some(websocket_message_index);
+                            }
+                        }
+                    }
+                    WsPacket::Message(value) => {
+                        let method = value.get("m").and_then(Value::as_str).unwrap_or_default();
+                        let received_after_request = post_pong_request_message_index
+                            .is_some_and(|index| websocket_message_index > index);
+                        if method == "series_completed" {
+                            if received_after_request {
+                                post_request_completion_count += 1;
+                            }
+                            initial_series_completed = true;
+                            if pong_count > 0 && post_pong_request_more_count == 0 {
+                                send_ws(
+                                    &mut stream,
+                                    deadline,
+                                    "request_more_data",
+                                    json!([chart_session, "s1", 5]),
+                                )
+                                .await?;
+                                post_pong_request_more_count = 1;
+                                post_pong_request_message_index = Some(websocket_message_index);
+                            }
+                        } else if received_after_request
+                            && matches!(method, "timescale_update" | "du")
+                        {
+                            post_request_update_count += 1;
+                        }
+
+                        if heartbeat_count > 0
+                            && pong_count == 1
+                            && post_pong_request_more_count == 1
+                            && post_request_update_count + post_request_completion_count > 0
+                        {
+                            cleanup_ws(&mut stream, &chart_session, request.timeout).await;
+                            return Ok(HeartbeatProbeEvidence {
+                                heartbeat_count,
+                                pong_count,
+                                post_pong_request_more_count,
+                                post_request_update_count,
+                                post_request_completion_count,
+                            });
+                        }
+                    }
+                }
+            }
+        }
+
+        cleanup_ws(&mut stream, &chart_session, request.timeout).await;
+        Err(
+            AppError::new(ErrorKind::Timeout, "Heartbeat live probe timed out").with_details(
+                json!({
+                    "heartbeat_count": heartbeat_count,
+                    "pong_count": pong_count,
+                    "post_pong_request_more_count": post_pong_request_more_count,
+                    "post_request_update_count": post_request_update_count,
+                    "post_request_completion_count": post_request_completion_count,
+                }),
+            ),
+        )
     }
 }
