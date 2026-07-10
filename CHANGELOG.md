@@ -7,6 +7,13 @@ package version omits the leading `v`.
 
 ## Unreleased
 
+### Fixed
+
+- Made JSON and JSONL output tolerate closed downstream pipes without a Rust
+  panic, backtrace, duplicate error output, or continued JSONL polling after
+  the consumer exits, while preserving normal output bytes and command exit
+  codes.
+
 ### Documentation
 
 - Added the `v0.26.0` robustness and I/O-correctness roadmap, an ordered

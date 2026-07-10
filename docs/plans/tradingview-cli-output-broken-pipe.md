@@ -14,24 +14,25 @@ without a panic message, backtrace, duplicate error envelope, or continued
 network polling. Normal JSON bytes, event contracts, and command exit codes
 must remain unchanged.
 
-The current implementation uses `println!` and `eprintln!` in
-`crates/cli/src/app/output.rs`. Rust's standard printing macros panic when the
-underlying write fails. The failure is observable today with a bounded
-Desktop-free JSONL command whose first readiness line is consumed and whose
-later output is written after the reader has closed.
+Before this slice, `crates/cli/src/app/output.rs` used `println!` and
+`eprintln!`. Rust's standard printing macros panic when the underlying write
+fails. The failure was observable with a bounded Desktop-free JSONL command
+whose first readiness line was consumed and whose later output was written
+after the reader had closed.
 
 ## Progress
 
 - [x] (2026-07-10) Reproduced a JSONL stdout broken pipe as exit code 101 with a Rust panic.
 - [x] (2026-07-10) Created this self-contained ExecPlan and made it the active `v0.26.0` plan.
 - [x] (2026-07-10) Resolved plan review findings by fixing stderr behavior and the deterministic no-more-polls test seam before implementation.
-- [ ] Add writer-level tests that fail with the current `println!`-based boundary or demonstrate the required replacement behavior.
-- [ ] Replace output macros with explicit serialization and `std::io::Write` handling.
-- [ ] Propagate closed-stdout completion through one-shot and JSONL runners without attempting a second error write.
-- [ ] Add a writer-injected watch runner test proving that no poll occurs after a stdout broken pipe is detected.
-- [ ] Add subprocess coverage for a consumer that closes after the first output line.
-- [ ] Run focused tests, the workspace baseline, and a public-safe behavior smoke.
-- [ ] Update this plan, the changelog, roadmap status, and outcomes after implementation.
+- [x] (2026-07-10) Added writer-level tests for unchanged pretty JSON and compact JSONL bytes, broken pipes, other I/O failures, and serialization failures.
+- [x] (2026-07-10) Replaced JSON and JSONL output macros with locked explicit writers and private output result types.
+- [x] (2026-07-10) Propagated closed-stdout completion and fixed stderr policies through one-shot and all four JSONL runners.
+- [x] (2026-07-10) Added a writer-injected watch runner test proving that no poll occurs after a stdout broken pipe is detected.
+- [x] (2026-07-10) Added local subprocess coverage for closed one-shot stdout and unavailable terminal stderr.
+- [x] (2026-07-10) Ran focused tests, the workspace baseline, and a public-safe `watch compare | head -1` smoke.
+- [x] (2026-07-10) Updated this plan, the changelog, roadmap status, work inventory, and local continuity ledger after implementation.
+- [x] (2026-07-10) Completed independent read-only review with no findings and closed Gate 1.
 
 ## Surprises & Discoveries
 
@@ -41,6 +42,25 @@ later output is written after the reader has closed.
   Evidence: local reproduction on 2026-07-10 showed the standard Rust
   `failed printing to stdout: Broken pipe` panic. Raw JSONL output was not
   copied into tracked files.
+
+- Observation: a one-shot subprocess test needs output substantially larger
+  than the pipe buffer to prove that the child observes the closed reader
+  rather than finishing before it closes.
+  Evidence: the local regression test sends synthetic Pine source that creates
+  many deterministic diagnostics, reads only the opening pretty-JSON line,
+  closes the reader, and requires a prompt successful exit without panic text.
+
+- Observation: terminal stderr behavior can be tested quickly and
+  deterministically on Unix without waiting for a CDP connection failure.
+  Evidence: the regression test gives the child the write end of a local
+  stream whose reader is already closed, then confirms that a validation error
+  retains exit code 1.
+
+- Observation: the real Desktop-free watch pipeline now exits successfully as
+  soon as `head` closes the reader.
+  Evidence: the public-safe smoke completed in under one second with exit code
+  0, no stderr bytes, and no panic or broken-pipe marker. Raw JSONL was not
+  retained.
 
 ## Decision Log
 
@@ -90,12 +110,40 @@ later output is written after the reader has closed.
 
   Date/Author: 2026-07-10 / Codex.
 
+- Decision: serialize each object before writing it and hold one locked stdout
+  or stderr writer for each production JSONL workflow.
+  Rationale: this keeps serialization failures distinct from I/O failures,
+  preserves exact existing formatting, avoids repeated standard-stream lock
+  acquisition, and still allows injected writers in deterministic tests.
+  Date/Author: 2026-07-10 / Codex.
+
+- Decision: keep the JSONL stderr-output runner error as a marker without
+  retaining or re-reporting the underlying output error.
+  Rationale: after a non-broken stderr output failure, the required behavior is
+  unconditionally exit 1 with no recursive stderr attempt. Retaining the error
+  would add no observable behavior and triggered an otherwise unused-field
+  warning under the release clippy policy.
+  Date/Author: 2026-07-10 / Codex.
+
 ## Outcomes & Retrospective
 
-Planning is complete and implementation has not started. The expected outcome
-is quiet consumer termination with unchanged wire contracts. Record the final
-exit behavior, test evidence, residual platform differences, and any output
-call sites intentionally left unchanged when implementation finishes.
+Implementation, local validation, and independent read-only review are
+complete. The review reported no findings. Pretty one-shot JSON and compact JSONL retain their previous bytes
+and trailing newline when writes succeed. A closed stdout now ends successful
+one-shot and JSONL output with exit code 0. JSONL runners return immediately,
+so they do not emit a summary, an extra error, or another poll after detecting
+the closed consumer. Terminal stderr failure preserves the command's existing
+exit code, while nonterminal JSONL stderr `BrokenPipe` suppresses only that
+runtime-error line.
+
+Focused tests, CLI contract tests, clippy with warnings denied, the full
+workspace test suite, metadata, formatting, diff checks, package-script syntax,
+and the public-safe watch pipeline smoke are green. The subprocess test for a
+terminal stderr with no reader is Unix-only because it uses a local Unix
+stream; the cross-platform writer-level policy remains covered through
+`std::io::Write` test doubles. Clap's plain-text help and version output remain
+intentionally outside this JSON/JSONL slice. Gate 1 is complete; the next work
+item may now be planned separately without mixing it into this commit.
 
 ## Context and Orientation
 
@@ -112,11 +160,11 @@ The JSONL command loops live in:
 - `crates/cli/src/app/watch.rs` for Desktop-free watch comparison;
 - `crates/cli/src/app/replay_log.rs` for bounded Replay step logs.
 
-All four call `print_jsonl_stdout`; some also call `print_jsonl_stderr` for
-runtime errors. The one-shot dispatcher calls `print_json_stdout` or
-`print_json_stderr`. `startup_error` also uses stderr. The current print
-functions return no result, so callers cannot distinguish a successful write,
-a closed consumer, or another output failure.
+All four now use the private `JsonlOutput` writer and inspect
+`OutputDisposition` for each stdout event; stream, observe, and watch also use
+the shared nonterminal stderr policy for runtime errors. The one-shot
+dispatcher calls result-returning `print_json_stdout` or `print_json_stderr`,
+and `startup_error` uses the same stderr writer while preserving exit code 1.
 
 No JSON envelope or JSONL event field should change. This plan changes only
 how serialized bytes reach stdout or stderr and how the application reacts
@@ -185,10 +233,11 @@ guard if the standard library behavior differs on Windows. This subprocess
 test is supporting evidence; the writer-injected watch test is the
 deterministic proof that polling stops.
 
-Finally, update `CHANGELOG.md` under `Unreleased` and mark Gate 1 complete in
-`docs/v0.26-roadmap.md` and `docs/v0.26-work-items.md`. Promote the CDP event
-buffering item into its own fresh ExecPlan only after this plan's focused and
-full validation is green.
+Finally, update `CHANGELOG.md` under `Unreleased`. Before independent review,
+record Gate 1 as implemented with review pending in `docs/v0.26-roadmap.md` and
+`docs/v0.26-work-items.md`. After the review and any resulting fixes are
+complete, mark Gate 1 complete. Only then may the CDP event-buffering item be
+promoted into a fresh ExecPlan.
 
 ## Concrete Steps
 
@@ -313,4 +362,7 @@ behaviors and record the naming-only adjustment in the Decision Log.
 Revision note: created on 2026-07-10 as the first active implementation plan
 for the `v0.26.0` robustness roadmap after two read-only architecture reviews.
 Revised on 2026-07-10 to fix stderr behavior, deterministic poll-stop testing,
-and private output interfaces before implementation.
+and private output interfaces before implementation. Revised again on
+2026-07-10 after implementation and local validation to record green evidence
+and leave Gate 1 open for independent review. Finalized on 2026-07-10 after an
+independent read-only review reported no findings.

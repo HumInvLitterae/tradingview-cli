@@ -6,7 +6,10 @@ use tradingview_core::{AppError, ErrorKind, SuccessEnvelope};
 use tradingview_model::replay::{MAX_REPLAY_LOG_STEPS, validate_replay_log_steps};
 
 use crate::{
-    app::{output::print_jsonl_stdout, runtime::connect_runtime},
+    app::{
+        output::{JsonlOutput, JsonlRunError, OutputDisposition, emit_jsonl_stdout},
+        runtime::connect_runtime,
+    },
     ops,
 };
 
@@ -102,16 +105,20 @@ pub async fn run_replay_log_command(
     attach_ohlcv_summary: bool,
     ohlcv_count: Option<usize>,
     config: &TransportConfig,
-) -> Result<(), AppError> {
+) -> Result<(), JsonlRunError> {
     validate_replay_log_steps(steps)?;
     let attachment_controls = ReplayLogAttachmentControls::new(attach_ohlcv_summary, ohlcv_count)?;
+    let stdout = std::io::stdout();
+    let mut stdout = JsonlOutput::new(stdout.lock());
     let started_at = Instant::now();
     let mut runtime = connect_runtime(config).await?;
 
     let initial_status = ops::replay_status(&mut runtime).await?;
     let readiness = replay_log_readiness(steps, attachment_controls, &initial_status)?;
     let envelope = SuccessEnvelope::new("replay", readiness);
-    print_jsonl_stdout(&envelope);
+    if emit_jsonl_stdout(&mut stdout, &envelope)? == OutputDisposition::BrokenPipe {
+        return Ok(());
+    }
 
     let started_at_replay_date = replay_current_date(&initial_status);
     let mut ended_at_replay_date = started_at_replay_date.clone();
@@ -160,7 +167,9 @@ pub async fn run_replay_log_command(
                     };
                     let payload = replay_log_step(step_index, step, attachment)?;
                     let envelope = SuccessEnvelope::new("replay", payload);
-                    print_jsonl_stdout(&envelope);
+                    if emit_jsonl_stdout(&mut stdout, &envelope)? == OutputDisposition::BrokenPipe {
+                        return Ok(());
+                    }
                 }
                 Err(err) => {
                     failure_count += 1;
@@ -190,7 +199,7 @@ pub async fn run_replay_log_command(
         end_reason,
     )?;
     let envelope = SuccessEnvelope::new("replay", summary);
-    print_jsonl_stdout(&envelope);
+    let _ = emit_jsonl_stdout(&mut stdout, &envelope)?;
     Ok(())
 }
 

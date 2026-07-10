@@ -4,7 +4,9 @@ use tradingview_core::{AppError, ErrorBody, ErrorEnvelope, SuccessEnvelope};
 
 use crate::{
     app::{
-        output::{print_jsonl_stderr, print_jsonl_stdout},
+        output::{
+            JsonlOutput, JsonlRunError, OutputDisposition, emit_jsonl_stderr, emit_jsonl_stdout,
+        },
         runtime::connect_runtime,
     },
     cli::StreamCommand,
@@ -15,8 +17,12 @@ use tradingview_cdp::TransportConfig;
 pub async fn run_stream_command(
     command: StreamCommand,
     config: &TransportConfig,
-) -> Result<(), AppError> {
+) -> Result<(), JsonlRunError> {
     let request = stream_request_from_command(command)?;
+    let stdout = std::io::stdout();
+    let stderr = std::io::stderr();
+    let mut stdout = JsonlOutput::new(stdout.lock());
+    let mut stderr = JsonlOutput::new(stderr.lock());
     let mut runtime = connect_runtime(config).await?;
     let mut dedupe = ops::StreamDedupe::default();
     let interval = Duration::from_millis(request.interval_ms);
@@ -43,7 +49,11 @@ pub async fn run_stream_command(
                         sample_count += 1;
                         last_sample_ts = sample["_ts"].as_u64();
                         let envelope = SuccessEnvelope::new("stream", sample);
-                        print_jsonl_stdout(&envelope);
+                        if emit_jsonl_stdout(&mut stdout, &envelope)?
+                            == OutputDisposition::BrokenPipe
+                        {
+                            return Ok(());
+                        }
                         last_output_at = Instant::now();
                         next_heartbeat_at = heartbeat.map(|heartbeat| last_output_at + heartbeat);
                         if request
@@ -56,7 +66,7 @@ pub async fn run_stream_command(
                 }
                 Err(err) => {
                     let envelope = ErrorEnvelope::new("stream", ErrorBody::from(err));
-                    print_jsonl_stderr(&envelope);
+                    emit_jsonl_stderr(&mut stderr, &envelope)?;
                 }
             }
             next_sample_at = Instant::now() + interval;
@@ -74,7 +84,9 @@ pub async fn run_stream_command(
                 last_sample_ts,
             )?;
             let envelope = SuccessEnvelope::new("stream", payload);
-            print_jsonl_stdout(&envelope);
+            if emit_jsonl_stdout(&mut stdout, &envelope)? == OutputDisposition::BrokenPipe {
+                return Ok(());
+            }
             heartbeat_count += 1;
             last_output_at = Instant::now();
             next_heartbeat_at = heartbeat.map(|heartbeat| last_output_at + heartbeat);
@@ -103,7 +115,7 @@ pub async fn run_stream_command(
         end_reason,
     )?;
     let envelope = SuccessEnvelope::new("stream", payload);
-    print_jsonl_stdout(&envelope);
+    let _ = emit_jsonl_stdout(&mut stdout, &envelope)?;
     Ok(())
 }
 
