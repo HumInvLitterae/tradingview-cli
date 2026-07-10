@@ -1,5 +1,4 @@
-use std::future::Future;
-use std::time::Duration;
+use std::{collections::VecDeque, future::Future, time::Duration};
 
 use base64::{Engine, engine::general_purpose::STANDARD};
 use futures_util::{SinkExt, StreamExt};
@@ -15,6 +14,8 @@ use tradingview_core::{AppError, ErrorKind};
 use crate::Target;
 
 const DEFAULT_TIMEOUT: Duration = Duration::from_secs(10);
+const MAX_PENDING_EVENTS: usize = 1024;
+const MAX_PENDING_EVENT_BYTES: usize = 8 * 1024 * 1024;
 
 pub trait RuntimeEvaluator {
     fn evaluate(
@@ -106,6 +107,71 @@ pub struct CdpClient {
     stream: WebSocketStream<MaybeTlsStream<TcpStream>>,
     next_id: u64,
     timeout: Duration,
+    pending_events: PendingEvents,
+}
+
+#[derive(Debug)]
+struct PendingEvent {
+    value: Value,
+    encoded_len: usize,
+}
+
+#[derive(Debug)]
+struct PendingEvents {
+    queue: VecDeque<PendingEvent>,
+    encoded_bytes: usize,
+    max_events: usize,
+    max_encoded_bytes: usize,
+}
+
+impl PendingEvents {
+    fn production() -> Self {
+        Self::with_limits(MAX_PENDING_EVENTS, MAX_PENDING_EVENT_BYTES)
+    }
+
+    fn with_limits(max_events: usize, max_encoded_bytes: usize) -> Self {
+        Self {
+            queue: VecDeque::new(),
+            encoded_bytes: 0,
+            max_events,
+            max_encoded_bytes,
+        }
+    }
+
+    fn push(&mut self, value: Value, encoded_len: usize) -> Result<(), AppError> {
+        let next_count = self.queue.len().saturating_add(1);
+        let next_bytes = self.encoded_bytes.saturating_add(encoded_len);
+        if next_count > self.max_events || next_bytes > self.max_encoded_bytes {
+            return Err(AppError::new(
+                ErrorKind::InternalApiUnavailable,
+                "CDP pending event queue reached its safety limit",
+            )
+            .with_details(json!({
+                "reason": "pending_event_queue_limit",
+                "queued_event_count": self.queue.len(),
+                "queued_event_bytes": self.encoded_bytes,
+                "maximum_event_count": self.max_events,
+                "maximum_event_bytes": self.max_encoded_bytes,
+                "incoming_event_bytes": encoded_len,
+                "raw_event_included": false,
+            })));
+        }
+        self.queue.push_back(PendingEvent { value, encoded_len });
+        self.encoded_bytes = next_bytes;
+        Ok(())
+    }
+
+    fn pop(&mut self) -> Option<Value> {
+        let event = self.queue.pop_front()?;
+        self.encoded_bytes = self.encoded_bytes.saturating_sub(event.encoded_len);
+        Some(event.value)
+    }
+}
+
+enum IncomingMessage {
+    Event { value: Value, encoded_len: usize },
+    Response(Value),
+    Ignore,
 }
 
 impl CdpClient {
@@ -123,6 +189,7 @@ impl CdpClient {
             stream,
             next_id: 1,
             timeout: DEFAULT_TIMEOUT,
+            pending_events: PendingEvents::production(),
         };
         Ok(client)
     }
@@ -139,26 +206,60 @@ impl CdpClient {
             .await
             .map_err(map_ws_error)?;
 
-        wait_for_response(&mut self.stream, id, self.timeout).await
+        self.wait_for_response(id).await
     }
 
     pub async fn next_event(&mut self, timeout: Duration) -> Result<Option<Value>, AppError> {
-        loop {
-            let Some(message) = tokio::time::timeout(timeout, self.stream.next())
-                .await
-                .map_err(|_| AppError::new(ErrorKind::Timeout, "CDP event wait timed out"))?
-            else {
-                return Err(AppError::new(
-                    ErrorKind::Connection,
-                    "CDP connection closed",
-                ));
-            };
-            let message = message.map_err(map_ws_error)?;
-            let Some(value) = parse_event_message(message)? else {
-                continue;
-            };
-            return Ok(Some(value));
+        if let Some(event) = self.pending_events.pop() {
+            return Ok(Some(event));
         }
+
+        let deadline = tokio::time::Instant::now() + timeout;
+        loop {
+            match self
+                .next_message_until(deadline, "CDP event wait timed out")
+                .await?
+            {
+                IncomingMessage::Event { value, .. } => return Ok(Some(value)),
+                IncomingMessage::Response(_) | IncomingMessage::Ignore => continue,
+            }
+        }
+    }
+
+    async fn wait_for_response(&mut self, request_id: u64) -> Result<Value, AppError> {
+        let deadline = tokio::time::Instant::now() + self.timeout;
+        loop {
+            match self
+                .next_message_until(deadline, "CDP request timed out")
+                .await?
+            {
+                IncomingMessage::Event { value, encoded_len } => {
+                    self.pending_events.push(value, encoded_len)?;
+                }
+                IncomingMessage::Response(value) => {
+                    if let Some(response) = match_response_value(request_id, value) {
+                        return response;
+                    }
+                }
+                IncomingMessage::Ignore => {}
+            }
+        }
+    }
+
+    async fn next_message_until(
+        &mut self,
+        deadline: tokio::time::Instant,
+        timeout_message: &'static str,
+    ) -> Result<IncomingMessage, AppError> {
+        if tokio::time::Instant::now() >= deadline {
+            return Err(AppError::new(ErrorKind::Timeout, timeout_message));
+        }
+        let message = tokio::time::timeout_at(deadline, self.stream.next())
+            .await
+            .map_err(|_| AppError::new(ErrorKind::Timeout, timeout_message))?
+            .ok_or_else(|| AppError::new(ErrorKind::Connection, "CDP connection closed"))?
+            .map_err(map_ws_error)?;
+        classify_message(message)
     }
 
     fn next_request_id(&mut self) -> u64 {
@@ -281,63 +382,25 @@ fn screenshot_bytes_from_response(response: &Value) -> Result<Vec<u8>, AppError>
     })
 }
 
-async fn wait_for_response(
-    stream: &mut WebSocketStream<MaybeTlsStream<TcpStream>>,
-    request_id: u64,
-    timeout: Duration,
-) -> Result<Value, AppError> {
-    loop {
-        let message = tokio::time::timeout(timeout, stream.next())
-            .await
-            .map_err(|_| AppError::new(ErrorKind::Timeout, "CDP request timed out"))?
-            .ok_or_else(|| AppError::new(ErrorKind::Connection, "CDP connection closed"))?
-            .map_err(map_ws_error)?;
-
-        let Some(response) = parse_response_message(request_id, message)? else {
-            continue;
-        };
-        return response;
-    }
-}
-
-fn parse_response_message(
-    request_id: u64,
-    message: Message,
-) -> Result<Option<Result<Value, AppError>>, AppError> {
+fn classify_message(message: Message) -> Result<IncomingMessage, AppError> {
     match message {
         Message::Text(text) => {
-            let value: Value = serde_json::from_str(&text).map_err(|err| {
-                AppError::new(ErrorKind::Connection, format!("Invalid CDP JSON: {err}"))
-            })?;
-            Ok(match_response_value(request_id, value))
-        }
-        Message::Binary(_) | Message::Ping(_) | Message::Pong(_) => Ok(None),
-        Message::Close(_) => Err(AppError::new(
-            ErrorKind::Connection,
-            "CDP connection closed",
-        )),
-        Message::Frame(_) => Ok(None),
-    }
-}
-
-fn parse_event_message(message: Message) -> Result<Option<Value>, AppError> {
-    match message {
-        Message::Text(text) => {
+            let encoded_len = text.len();
             let value: Value = serde_json::from_str(&text).map_err(|err| {
                 AppError::new(ErrorKind::Connection, format!("Invalid CDP JSON: {err}"))
             })?;
             if value.get("method").and_then(Value::as_str).is_some() {
-                Ok(Some(value))
+                Ok(IncomingMessage::Event { value, encoded_len })
             } else {
-                Ok(None)
+                Ok(IncomingMessage::Response(value))
             }
         }
-        Message::Binary(_) | Message::Ping(_) | Message::Pong(_) => Ok(None),
+        Message::Binary(_) | Message::Ping(_) | Message::Pong(_) => Ok(IncomingMessage::Ignore),
         Message::Close(_) => Err(AppError::new(
             ErrorKind::Connection,
             "CDP connection closed",
         )),
-        Message::Frame(_) => Ok(None),
+        Message::Frame(_) => Ok(IncomingMessage::Ignore),
     }
 }
 
@@ -373,6 +436,9 @@ fn map_ws_error(err: WsError) -> AppError {
 
 #[cfg(test)]
 mod tests {
+    use tokio::net::TcpListener;
+    use tokio_tungstenite::accept_async;
+
     use super::*;
 
     fn initial_domain_enable_methods() -> &'static [&'static str] {
@@ -385,23 +451,19 @@ mod tests {
     }
 
     #[test]
-    fn ignores_events_while_waiting_for_response() {
-        let event = json!({ "method": "Runtime.consoleAPICalled", "params": {} });
-
-        assert!(match_response_value(7, event).is_none());
-    }
-
-    #[test]
-    fn parses_cdp_event_messages() {
+    fn classifies_cdp_event_messages() {
         let event = Message::Text(
             json!({ "method": "Network.webSocketFrameReceived", "params": {} })
                 .to_string()
                 .into(),
         );
 
-        let parsed = parse_event_message(event).unwrap().unwrap();
+        let IncomingMessage::Event { value, encoded_len } = classify_message(event).unwrap() else {
+            panic!("message should be classified as an event");
+        };
 
-        assert_eq!(parsed["method"], "Network.webSocketFrameReceived");
+        assert_eq!(value["method"], "Network.webSocketFrameReceived");
+        assert!(encoded_len > 0);
     }
 
     #[test]
@@ -442,5 +504,194 @@ mod tests {
             exception_message(&exception),
             "TypeError: chart is undefined"
         );
+    }
+
+    #[test]
+    fn pending_events_enforce_count_and_byte_limits_without_raw_values() {
+        let mut count_limited = PendingEvents::with_limits(1, 100);
+        count_limited
+            .push(json!({ "method": "First" }), 10)
+            .unwrap();
+        let error = count_limited
+            .push(json!({ "method": "Second", "raw": "private" }), 10)
+            .unwrap_err();
+        assert_eq!(error.kind, ErrorKind::InternalApiUnavailable);
+        let details = error.details.unwrap();
+        assert_eq!(details["reason"], "pending_event_queue_limit");
+        assert_eq!(details["queued_event_count"], 1);
+        assert_eq!(details["maximum_event_count"], 1);
+        assert_eq!(details["raw_event_included"], false);
+        assert!(details.get("raw").is_none());
+        assert_eq!(count_limited.pop().unwrap()["method"], "First");
+        assert_eq!(count_limited.encoded_bytes, 0);
+        count_limited
+            .push(json!({ "method": "AfterPop" }), 10)
+            .unwrap();
+
+        let mut byte_limited = PendingEvents::with_limits(10, 5);
+        let error = byte_limited
+            .push(json!({ "method": "Large" }), 6)
+            .unwrap_err();
+        let details = error.details.unwrap();
+        assert_eq!(details["queued_event_bytes"], 0);
+        assert_eq!(details["maximum_event_bytes"], 5);
+        assert_eq!(details["incoming_event_bytes"], 6);
+    }
+
+    #[tokio::test]
+    async fn events_received_before_method_response_are_returned_in_order() {
+        let (mut client, mut server) = connected_test_client().await;
+        let server_task = tokio::spawn(async move {
+            let id = next_request_id(&mut server).await;
+            send_json(
+                &mut server,
+                json!({ "method": "Network.first", "params": { "index": 1 } }),
+            )
+            .await;
+            send_json(
+                &mut server,
+                json!({ "method": "Network.second", "params": { "index": 2 } }),
+            )
+            .await;
+            send_json(&mut server, json!({ "id": id, "result": { "ok": true } })).await;
+        });
+
+        let response = client
+            .call_method("Network.enable", json!({}))
+            .await
+            .unwrap();
+        assert_eq!(response["ok"], true);
+        assert_eq!(
+            client.next_event(Duration::ZERO).await.unwrap().unwrap()["method"],
+            "Network.first"
+        );
+        assert_eq!(
+            client.next_event(Duration::ZERO).await.unwrap().unwrap()["method"],
+            "Network.second"
+        );
+        server_task.await.unwrap();
+    }
+
+    #[tokio::test]
+    async fn event_received_before_method_error_remains_queued() {
+        let (mut client, mut server) = connected_test_client().await;
+        let server_task = tokio::spawn(async move {
+            let id = next_request_id(&mut server).await;
+            send_json(
+                &mut server,
+                json!({ "method": "Network.beforeError", "params": {} }),
+            )
+            .await;
+            send_json(
+                &mut server,
+                json!({ "id": id, "error": { "message": "No network API" } }),
+            )
+            .await;
+        });
+
+        let error = client
+            .call_method("Network.enable", json!({}))
+            .await
+            .unwrap_err();
+        assert_eq!(error.kind, ErrorKind::InternalApiUnavailable);
+        let event = client.next_event(Duration::ZERO).await.unwrap().unwrap();
+        assert_eq!(event["method"], "Network.beforeError");
+        server_task.await.unwrap();
+    }
+
+    #[tokio::test]
+    async fn unrelated_events_cannot_extend_method_response_deadline() {
+        let (mut client, mut server) = connected_test_client().await;
+        client.timeout = Duration::from_millis(50);
+        let server_task = tokio::spawn(async move {
+            let _ = next_request_id(&mut server).await;
+            for index in 0..30 {
+                if send_json_if_open(
+                    &mut server,
+                    json!({ "method": "Network.noise", "params": { "index": index } }),
+                )
+                .await
+                .is_err()
+                {
+                    break;
+                }
+                tokio::time::sleep(Duration::from_millis(10)).await;
+            }
+        });
+
+        let started = tokio::time::Instant::now();
+        let error = client
+            .call_method("Runtime.evaluate", json!({}))
+            .await
+            .unwrap_err();
+        assert_eq!(error.kind, ErrorKind::Timeout);
+        assert_eq!(error.message, "CDP request timed out");
+        assert!(started.elapsed() < Duration::from_millis(200));
+        server_task.abort();
+    }
+
+    #[tokio::test]
+    async fn unrelated_responses_cannot_extend_event_deadline() {
+        let (mut client, mut server) = connected_test_client().await;
+        let server_task = tokio::spawn(async move {
+            for id in 100..130 {
+                if send_json_if_open(&mut server, json!({ "id": id, "result": {} }))
+                    .await
+                    .is_err()
+                {
+                    break;
+                }
+                tokio::time::sleep(Duration::from_millis(10)).await;
+            }
+        });
+
+        let started = tokio::time::Instant::now();
+        let error = client
+            .next_event(Duration::from_millis(50))
+            .await
+            .unwrap_err();
+        assert_eq!(error.kind, ErrorKind::Timeout);
+        assert_eq!(error.message, "CDP event wait timed out");
+        assert!(started.elapsed() < Duration::from_millis(200));
+        server_task.abort();
+    }
+
+    async fn connected_test_client() -> (CdpClient, WebSocketStream<TcpStream>) {
+        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let address = listener.local_addr().unwrap();
+        let accept = tokio::spawn(async move {
+            let (stream, _) = listener.accept().await.unwrap();
+            accept_async(stream).await.unwrap()
+        });
+        let target = Target {
+            id: "test-target".to_string(),
+            title: "test".to_string(),
+            kind: "page".to_string(),
+            url: "https://example.invalid/chart".to_string(),
+            web_socket_debugger_url: Some(format!("ws://{address}")),
+        };
+        let client = CdpClient::connect(&target).await.unwrap();
+        let server = accept.await.unwrap();
+        (client, server)
+    }
+
+    async fn next_request_id(server: &mut WebSocketStream<TcpStream>) -> u64 {
+        let Message::Text(text) = server.next().await.unwrap().unwrap() else {
+            panic!("client should send a text request");
+        };
+        serde_json::from_str::<Value>(&text).unwrap()["id"]
+            .as_u64()
+            .unwrap()
+    }
+
+    async fn send_json(server: &mut WebSocketStream<TcpStream>, value: Value) {
+        send_json_if_open(server, value).await.unwrap();
+    }
+
+    async fn send_json_if_open(
+        server: &mut WebSocketStream<TcpStream>,
+        value: Value,
+    ) -> Result<(), WsError> {
+        server.send(Message::Text(value.to_string().into())).await
     }
 }
