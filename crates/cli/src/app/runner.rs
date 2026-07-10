@@ -7,7 +7,10 @@ use crate::{
     app::{
         dispatch::dispatch,
         observe::run_observe_command,
-        output::{print_json_stderr, print_json_stdout, startup_error},
+        output::{
+            JsonlRunError, OutputDisposition, OutputFailure, print_json_stderr, print_json_stdout,
+            startup_error,
+        },
         replay_log::run_replay_log_command,
         stream::run_stream_command,
         watch::run_watch_command,
@@ -44,51 +47,26 @@ async fn async_main() -> ExitCode {
         }
         Err(err) => {
             let app_error = AppError::new(ErrorKind::Validation, err.to_string());
-            let envelope = ErrorEnvelope::new("tv", ErrorBody::from(app_error));
-            print_json_stderr(&envelope);
-            return ExitCode::from(1);
+            return terminal_error("tv", app_error);
         }
     };
 
     let config = match TransportConfig::from_env_with_target_id(cli.target_id.as_deref()) {
         Ok(config) => config,
         Err(err) => {
-            let code = err.exit_code();
-            let envelope = ErrorEnvelope::new("tv", ErrorBody::from(err));
-            print_json_stderr(&envelope);
-            return ExitCode::from(code);
+            return terminal_error("tv", err);
         }
     };
 
     let command = cli.command;
     match command {
-        Command::Stream { command } => match run_stream_command(command, &config).await {
-            Ok(()) => ExitCode::SUCCESS,
-            Err(err) => {
-                let code = err.exit_code();
-                let envelope = ErrorEnvelope::new("stream", ErrorBody::from(err));
-                print_json_stderr(&envelope);
-                ExitCode::from(code)
-            }
-        },
-        Command::Observe { command } => match run_observe_command(command, &config).await {
-            Ok(()) => ExitCode::SUCCESS,
-            Err(err) => {
-                let code = err.exit_code();
-                let envelope = ErrorEnvelope::new("observe", ErrorBody::from(err));
-                print_json_stderr(&envelope);
-                ExitCode::from(code)
-            }
-        },
-        Command::Watch { command } => match run_watch_command(command).await {
-            Ok(()) => ExitCode::SUCCESS,
-            Err(err) => {
-                let code = err.exit_code();
-                let envelope = ErrorEnvelope::new("watch", ErrorBody::from(err));
-                print_json_stderr(&envelope);
-                ExitCode::from(code)
-            }
-        },
+        Command::Stream { command } => {
+            jsonl_exit_code("stream", run_stream_command(command, &config).await)
+        }
+        Command::Observe { command } => {
+            jsonl_exit_code("observe", run_observe_command(command, &config).await)
+        }
+        Command::Watch { command } => jsonl_exit_code("watch", run_watch_command(command).await),
         Command::Replay {
             command:
                 ReplayCommand::Log {
@@ -96,34 +74,49 @@ async fn async_main() -> ExitCode {
                     attach_ohlcv_summary,
                     ohlcv_count,
                 },
-        } => {
-            match run_replay_log_command(steps, attach_ohlcv_summary, ohlcv_count, &config).await {
-                Ok(()) => ExitCode::SUCCESS,
-                Err(err) => {
-                    let code = err.exit_code();
-                    let envelope = ErrorEnvelope::new("replay", ErrorBody::from(err));
-                    print_json_stderr(&envelope);
-                    ExitCode::from(code)
-                }
-            }
-        }
+        } => jsonl_exit_code(
+            "replay",
+            run_replay_log_command(steps, attach_ohlcv_summary, ohlcv_count, &config).await,
+        ),
         command => {
             let command_name = command.name();
             match dispatch(command, &config).await {
                 Ok(data) => {
                     let envelope = SuccessEnvelope::new(command_name, data);
-                    print_json_stdout(&envelope);
-                    ExitCode::SUCCESS
+                    match print_json_stdout(&envelope) {
+                        Ok(OutputDisposition::Written | OutputDisposition::BrokenPipe) => {
+                            ExitCode::SUCCESS
+                        }
+                        Err(error) => stdout_failure(command_name, error),
+                    }
                 }
-                Err(err) => {
-                    let code = err.exit_code();
-                    let envelope = ErrorEnvelope::new(command_name, ErrorBody::from(err));
-                    print_json_stderr(&envelope);
-                    ExitCode::from(code)
-                }
+                Err(err) => terminal_error(command_name, err),
             }
         }
     }
+}
+
+fn jsonl_exit_code(command: &'static str, result: Result<(), JsonlRunError>) -> ExitCode {
+    match result {
+        Ok(()) => ExitCode::SUCCESS,
+        Err(JsonlRunError::Application(error)) => terminal_error(command, error),
+        Err(JsonlRunError::Stdout(error)) => stdout_failure(command, error),
+        Err(JsonlRunError::Stderr) => ExitCode::from(1),
+    }
+}
+
+fn terminal_error(command: &'static str, error: AppError) -> ExitCode {
+    let code = error.exit_code();
+    let envelope = ErrorEnvelope::new(command, ErrorBody::from(error));
+    let _ = print_json_stderr(&envelope);
+    ExitCode::from(code)
+}
+
+fn stdout_failure(command: &'static str, error: OutputFailure) -> ExitCode {
+    let error = error.into_app_error("stdout");
+    let envelope = ErrorEnvelope::new(command, ErrorBody::from(error));
+    let _ = print_json_stderr(&envelope);
+    ExitCode::from(1)
 }
 
 fn init_tracing() {

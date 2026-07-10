@@ -1,11 +1,17 @@
-use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
+use std::{
+    future::Future,
+    io,
+    time::{Duration, Instant, SystemTime, UNIX_EPOCH},
+};
 
 use serde_json::{Value, json};
 use tradingview_core::{AppError, ErrorBody, ErrorEnvelope, ErrorKind, SuccessEnvelope};
 use tradingview_market::quote_symbols_typed;
 
 use crate::{
-    app::output::{print_jsonl_stderr, print_jsonl_stdout},
+    app::output::{
+        JsonlOutput, JsonlRunError, OutputDisposition, emit_jsonl_stderr, emit_jsonl_stdout,
+    },
     cli::{WatchCommand, WatchCompareOptions},
 };
 
@@ -64,15 +70,46 @@ impl WatchEndReason {
     }
 }
 
-pub async fn run_watch_command(command: WatchCommand) -> Result<(), AppError> {
+pub async fn run_watch_command(command: WatchCommand) -> Result<(), JsonlRunError> {
     let request = watch_request_from_command(command)?;
     run_watch_compare(request).await
 }
 
-async fn run_watch_compare(request: WatchCompareRequest) -> Result<(), AppError> {
+async fn run_watch_compare(request: WatchCompareRequest) -> Result<(), JsonlRunError> {
+    let poll_request = request.clone();
+    let stdout = std::io::stdout();
+    let stderr = std::io::stderr();
+    let mut stdout = JsonlOutput::new(stdout.lock());
+    let mut stderr = JsonlOutput::new(stderr.lock());
+    run_watch_compare_with(
+        request,
+        &mut stdout,
+        &mut stderr,
+        move |elapsed_ms, poll_index| {
+            let request = poll_request.clone();
+            async move { watch_sample(&request, elapsed_ms, poll_index).await }
+        },
+    )
+    .await
+}
+
+async fn run_watch_compare_with<WOut, WErr, Poll, PollFuture>(
+    request: WatchCompareRequest,
+    stdout: &mut JsonlOutput<WOut>,
+    stderr: &mut JsonlOutput<WErr>,
+    mut poll: Poll,
+) -> Result<(), JsonlRunError>
+where
+    WOut: io::Write,
+    WErr: io::Write,
+    Poll: FnMut(u64, u64) -> PollFuture,
+    PollFuture: Future<Output = Result<Value, AppError>>,
+{
     let readiness = watch_readiness(&request)?;
     let envelope = SuccessEnvelope::new("watch", readiness);
-    print_jsonl_stdout(&envelope);
+    if emit_jsonl_stdout(stdout, &envelope)? == OutputDisposition::BrokenPipe {
+        return Ok(());
+    }
 
     let interval = Duration::from_millis(request.interval_ms);
     let duration = Duration::from_millis(request.duration_ms);
@@ -98,13 +135,7 @@ async fn run_watch_compare(request: WatchCompareRequest) -> Result<(), AppError>
 
         if now >= next_sample_at {
             poll_count += 1;
-            match watch_sample(
-                &request,
-                started_at.elapsed().as_millis() as u64,
-                poll_count,
-            )
-            .await
-            {
+            match poll(started_at.elapsed().as_millis() as u64, poll_count).await {
                 Ok(sample) => {
                     last_resolved_count = sample["resolved_count"].as_u64().unwrap_or(0);
                     last_error_count = sample["error_count"].as_u64().unwrap_or(0);
@@ -112,7 +143,9 @@ async fn run_watch_compare(request: WatchCompareRequest) -> Result<(), AppError>
                         sample_count += 1;
                         last_sample_ts = sample["_ts"].as_u64();
                         let envelope = SuccessEnvelope::new("watch", sample);
-                        print_jsonl_stdout(&envelope);
+                        if emit_jsonl_stdout(stdout, &envelope)? == OutputDisposition::BrokenPipe {
+                            return Ok(());
+                        }
                         last_output_at = Instant::now();
                         next_heartbeat_at = last_output_at + heartbeat;
                         if request
@@ -126,7 +159,7 @@ async fn run_watch_compare(request: WatchCompareRequest) -> Result<(), AppError>
                 Err(err) => {
                     poll_error_count += 1;
                     let envelope = ErrorEnvelope::new("watch", ErrorBody::from(err));
-                    print_jsonl_stderr(&envelope);
+                    emit_jsonl_stderr(stderr, &envelope)?;
                 }
             }
             next_sample_at = Instant::now() + interval;
@@ -142,7 +175,9 @@ async fn run_watch_compare(request: WatchCompareRequest) -> Result<(), AppError>
                 last_sample_ts,
             )?;
             let envelope = SuccessEnvelope::new("watch", payload);
-            print_jsonl_stdout(&envelope);
+            if emit_jsonl_stdout(stdout, &envelope)? == OutputDisposition::BrokenPipe {
+                return Ok(());
+            }
             heartbeat_count += 1;
             last_output_at = Instant::now();
             next_heartbeat_at = last_output_at + heartbeat;
@@ -171,7 +206,7 @@ async fn run_watch_compare(request: WatchCompareRequest) -> Result<(), AppError>
         end_reason,
     )?;
     let envelope = SuccessEnvelope::new("watch", payload);
-    print_jsonl_stdout(&envelope);
+    let _ = emit_jsonl_stdout(stdout, &envelope)?;
     Ok(())
 }
 
@@ -428,7 +463,52 @@ fn comparable_watch_sample(sample: &Value) -> Value {
 
 #[cfg(test)]
 mod tests {
+    use std::{cell::Cell, io::Write, rc::Rc};
+
     use super::*;
+
+    #[derive(Clone, Default)]
+    struct LineWriterState {
+        completed_lines: Rc<Cell<usize>>,
+    }
+
+    struct BreakAfterFirstLine {
+        state: LineWriterState,
+    }
+
+    struct BrokenPipeWriter;
+
+    impl Write for BreakAfterFirstLine {
+        fn write(&mut self, buffer: &[u8]) -> io::Result<usize> {
+            if self.state.completed_lines.get() >= 1 {
+                return Err(io::Error::new(
+                    io::ErrorKind::BrokenPipe,
+                    "test consumer closed",
+                ));
+            }
+            if buffer.contains(&b'\n') {
+                self.state.completed_lines.set(1);
+            }
+            Ok(buffer.len())
+        }
+
+        fn flush(&mut self) -> io::Result<()> {
+            Ok(())
+        }
+    }
+
+    impl Write for BrokenPipeWriter {
+        fn write(&mut self, _buffer: &[u8]) -> io::Result<usize> {
+            Err(io::Error::new(
+                io::ErrorKind::BrokenPipe,
+                "test consumer closed",
+            ))
+        }
+
+        fn flush(&mut self) -> io::Result<()> {
+            Ok(())
+        }
+    }
 
     fn request() -> WatchCompareRequest {
         watch_compare_request(
@@ -610,6 +690,84 @@ mod tests {
         assert!(dedupe.should_emit(&first));
         assert!(!dedupe.should_emit(&second));
         assert!(dedupe.should_emit(&changed));
+    }
+
+    #[tokio::test]
+    async fn broken_stdout_stops_after_the_poll_that_detects_it() {
+        let request = WatchCompareRequest {
+            symbols: vec!["NASDAQ:AAPL".to_string(), "NASDAQ:MSFT".to_string()],
+            interval_ms: 1000,
+            duration_ms: 30000,
+            max_events: None,
+            heartbeat_ms: 10000,
+        };
+        let state = LineWriterState::default();
+        let mut stdout = JsonlOutput::new(BreakAfterFirstLine {
+            state: state.clone(),
+        });
+        let mut stderr = JsonlOutput::new(Vec::new());
+        let poll_count = Rc::new(Cell::new(0_u64));
+        let observed_poll_count = poll_count.clone();
+
+        let result = run_watch_compare_with(
+            request,
+            &mut stdout,
+            &mut stderr,
+            move |_elapsed_ms, poll_index| {
+                observed_poll_count.set(observed_poll_count.get() + 1);
+                std::future::ready(Ok(json!({
+                    "_ts": 1,
+                    "resolved_count": 2,
+                    "error_count": 0,
+                    "poll_index": poll_index,
+                    "items": [],
+                })))
+            },
+        )
+        .await;
+
+        assert!(result.is_ok());
+        assert_eq!(poll_count.get(), 1);
+        assert_eq!(state.completed_lines.get(), 1);
+    }
+
+    #[tokio::test]
+    async fn broken_stderr_suppresses_the_poll_error_and_keeps_watching() {
+        let request = WatchCompareRequest {
+            symbols: vec!["NASDAQ:AAPL".to_string(), "NASDAQ:MSFT".to_string()],
+            interval_ms: 0,
+            duration_ms: 30000,
+            max_events: Some(1),
+            heartbeat_ms: 10000,
+        };
+        let mut stdout = JsonlOutput::new(Vec::new());
+        let mut stderr = JsonlOutput::new(BrokenPipeWriter);
+        let poll_count = Rc::new(Cell::new(0_u64));
+        let observed_poll_count = poll_count.clone();
+
+        let result = run_watch_compare_with(
+            request,
+            &mut stdout,
+            &mut stderr,
+            move |_elapsed_ms, poll_index| {
+                observed_poll_count.set(observed_poll_count.get() + 1);
+                std::future::ready(if poll_index == 1 {
+                    Err(AppError::new(ErrorKind::Connection, "test poll failure"))
+                } else {
+                    Ok(json!({
+                        "_ts": 1,
+                        "resolved_count": 2,
+                        "error_count": 0,
+                        "poll_index": poll_index,
+                        "items": [],
+                    }))
+                })
+            },
+        )
+        .await;
+
+        assert!(result.is_ok());
+        assert_eq!(poll_count.get(), 2);
     }
 
     #[test]

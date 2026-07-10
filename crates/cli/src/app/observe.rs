@@ -5,7 +5,9 @@ use tradingview_core::{AppError, ErrorBody, ErrorEnvelope, SuccessEnvelope};
 
 use crate::{
     app::{
-        output::{print_jsonl_stderr, print_jsonl_stdout},
+        output::{
+            JsonlOutput, JsonlRunError, OutputDisposition, emit_jsonl_stderr, emit_jsonl_stdout,
+        },
         runtime::connect_runtime,
     },
     cli::ObserveCommand,
@@ -15,12 +17,18 @@ use crate::{
 pub async fn run_observe_command(
     command: ObserveCommand,
     config: &TransportConfig,
-) -> Result<(), AppError> {
+) -> Result<(), JsonlRunError> {
     let request = observe_request_from_command(command)?;
+    let stdout = std::io::stdout();
+    let stderr = std::io::stderr();
+    let mut stdout = JsonlOutput::new(stdout.lock());
+    let mut stderr = JsonlOutput::new(stderr.lock());
     let readiness = ops::readiness(config).await?;
     let readiness = ops::observe_readiness_event(readiness)?;
     let envelope = SuccessEnvelope::new("observe", readiness);
-    print_jsonl_stdout(&envelope);
+    if emit_jsonl_stdout(&mut stdout, &envelope)? == OutputDisposition::BrokenPipe {
+        return Ok(());
+    }
 
     let mut runtime = connect_runtime(config).await?;
     let mut dedupe = ops::StreamDedupe::default();
@@ -49,7 +57,11 @@ pub async fn run_observe_command(
                         last_sample_ts = sample["_ts"].as_u64();
                         let sample = ops::observe_chart_event(sample)?;
                         let envelope = SuccessEnvelope::new("observe", sample);
-                        print_jsonl_stdout(&envelope);
+                        if emit_jsonl_stdout(&mut stdout, &envelope)?
+                            == OutputDisposition::BrokenPipe
+                        {
+                            return Ok(());
+                        }
                         last_output_at = Instant::now();
                         next_heartbeat_at = heartbeat.map(|heartbeat| last_output_at + heartbeat);
                         if request
@@ -62,7 +74,7 @@ pub async fn run_observe_command(
                 }
                 Err(err) => {
                     let envelope = ErrorEnvelope::new("observe", ErrorBody::from(err));
-                    print_jsonl_stderr(&envelope);
+                    emit_jsonl_stderr(&mut stderr, &envelope)?;
                 }
             }
             next_sample_at = Instant::now() + interval;
@@ -81,7 +93,9 @@ pub async fn run_observe_command(
             )?;
             let payload = ops::observe_chart_event(payload)?;
             let envelope = SuccessEnvelope::new("observe", payload);
-            print_jsonl_stdout(&envelope);
+            if emit_jsonl_stdout(&mut stdout, &envelope)? == OutputDisposition::BrokenPipe {
+                return Ok(());
+            }
             heartbeat_count += 1;
             last_output_at = Instant::now();
             next_heartbeat_at = heartbeat.map(|heartbeat| last_output_at + heartbeat);
@@ -111,7 +125,7 @@ pub async fn run_observe_command(
     )?;
     let payload = ops::observe_chart_event(payload)?;
     let envelope = SuccessEnvelope::new("observe", payload);
-    print_jsonl_stdout(&envelope);
+    let _ = emit_jsonl_stdout(&mut stdout, &envelope)?;
     Ok(())
 }
 
