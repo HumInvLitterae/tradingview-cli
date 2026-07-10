@@ -13,6 +13,9 @@ package version omits the leading `v`.
   panic, backtrace, duplicate error output, or continued JSONL polling after
   the consumer exits, while preserving normal output bytes and command exit
   codes.
+- Preserved CDP events that arrive while a method response is pending and made
+  response/event receive loops use absolute deadlines, preventing event loss
+  and timeout extension under unrelated traffic.
 
 ### Documentation
 

@@ -32,6 +32,12 @@ connection because recent TradingView Desktop / Electron builds can hang on
 those enable calls while still accepting `Runtime.evaluate`,
 `Page.captureScreenshot`, and `Input.*` methods.
 
+The connected CDP client keeps method calls sequential. Events received while
+waiting for a method response are held in a bounded FIFO queue for the next
+event read, and response/event waits use one absolute deadline per operation.
+Connection establishment deadlines are handled separately from this message
+routing boundary.
+
 Before adding more DOM retries, check whether a page-session API, storage
 payload, or endpoint can replace the visible UI path. The public-safe reference
 for these dependencies is `docs/internal-tradingview-apis.md`.
