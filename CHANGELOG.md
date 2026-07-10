@@ -7,6 +7,13 @@ package version omits the leading `v`.
 
 ## Unreleased
 
+### Documentation
+
+- Added the `v0.26.0` robustness and I/O-correctness roadmap, an ordered
+  work-item inventory with retained feature follow-ups, and the first
+  broken-pipe hardening ExecPlan. Refreshed contributor sources, plan indexing,
+  and current-state guidance after the `v0.25.0` release.
+
 ## v0.25.0 - 2026-06-11
 
 ### Added
