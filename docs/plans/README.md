@@ -6,10 +6,8 @@ for release and next-phase planning.
 
 ## Current and future plans
 
-Current plan:
-
-- None. Gate 3 is complete. The next step is to create the Gate 4 bars
-  heartbeat verification ExecPlan from the ordered work inventory.
+There is no active ExecPlan. Gate 4 is complete; the next step is to create a
+self-contained Gate 5 HTTP error taxonomy ExecPlan before implementation.
 
 The ordered `v0.26.0` implementation inventory is maintained in
 `docs/v0.26-work-items.md`. CDP event buffering, transport deadlines and HTTP
@@ -19,6 +17,11 @@ previous item is complete and green.
 
 Recently completed:
 
+- `tradingview-cli-bars-heartbeat-wire-format.md`: corrected browserless bars
+  heartbeat pong framing, preserved receive compatibility, and verified the
+  canonical form through deterministic tests plus a public-safe live probe.
+  Independent re-review reported no remaining findings; the plan now lives
+  under `docs/plans/archives/`.
 - `tradingview-cli-transport-deadlines-http-reuse.md`: bounded public HTTP,
   CDP HTTP/WebSocket, and bars WebSocket transport operations while reusing
   configured HTTP clients in sequential multi-read workflows. Review

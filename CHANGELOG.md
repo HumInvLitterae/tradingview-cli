@@ -20,6 +20,9 @@ package version omits the leading `v`.
   WebSocket deadlines, and reused configured HTTP clients within sequential
   operations so stalled transport now reports the existing timeout error
   instead of waiting indefinitely.
+- Corrected browserless-bars heartbeat pong framing so the declared payload
+  length matches the bytes sent while retaining legacy heartbeat receive
+  compatibility.
 
 ### Documentation
 
