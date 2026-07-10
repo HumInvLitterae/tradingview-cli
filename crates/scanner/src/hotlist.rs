@@ -3,7 +3,7 @@ use serde_json::{Value, json};
 use tradingview_core::{AppError, ErrorKind};
 
 use super::common::field_values_object;
-use super::http::{configured_client, map_http_error};
+use super::http::{configured_client, map_http_error, remote_status_error};
 use super::types::{ScannerHotlistResult, ScannerRow};
 
 const HOTLIST_BASE_URL: &str = "https://scanner.tradingview.com/presets";
@@ -45,23 +45,20 @@ pub async fn scanner_hotlist_typed(
         .get(url)
         .send()
         .await
-        .map_err(|err| map_http_error(err, ErrorKind::Connection, "Scanner hotlist request"))?;
+        .map_err(|err| map_http_error(err, "Scanner hotlist request"))?;
 
     let status = response.status();
     if !status.is_success() {
-        return Err(AppError::new(
-            ErrorKind::Connection,
-            format!("TradingView scanner preset API returned {status}"),
+        return Err(remote_status_error(
+            "TradingView scanner preset API",
+            status,
         ));
     }
 
-    let value = response.json::<Value>().await.map_err(|err| {
-        map_http_error(
-            err,
-            ErrorKind::InternalApiUnavailable,
-            "Scanner hotlist response",
-        )
-    })?;
+    let value = response
+        .json::<Value>()
+        .await
+        .map_err(|err| map_http_error(err, "Scanner hotlist response"))?;
 
     normalize_hotlist_response_typed(slug, limit, &value)
 }

@@ -23,6 +23,9 @@ package version omits the leading `v`.
 - Corrected browserless-bars heartbeat pong framing so the declared payload
   length matches the bytes sent while retaining legacy heartbeat receive
   compatibility.
+- Made Market, Scanner, Pine, and CDP HTTP failures use consistent connection,
+  timeout, remote-status, and payload classifications with public-safe
+  diagnostics and stable exit codes.
 
 ### Documentation
 

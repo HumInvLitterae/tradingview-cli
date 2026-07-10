@@ -6,8 +6,9 @@ for release and next-phase planning.
 
 ## Current and future plans
 
-There is no active ExecPlan. Gate 4 is complete; the next step is to create a
-self-contained Gate 5 HTTP error taxonomy ExecPlan before implementation.
+There is no active ExecPlan. Gate 5 is complete; the next step is to create a
+self-contained Gate 6 measured bounded-concurrency ExecPlan before
+implementation.
 
 The ordered `v0.26.0` implementation inventory is maintained in
 `docs/v0.26-work-items.md`. CDP event buffering, transport deadlines and HTTP
@@ -17,6 +18,10 @@ previous item is complete and green.
 
 Recently completed:
 
+- `tradingview-cli-http-error-taxonomy.md`: made HTTP transport, timeout,
+  remote-status, and payload failures consistent across Market, Scanner, Pine,
+  and CDP while keeping diagnostics public-safe. Independent review reported
+  no findings; the plan now lives under `docs/plans/archives/`.
 - `tradingview-cli-bars-heartbeat-wire-format.md`: corrected browserless bars
   heartbeat pong framing, preserved receive compatibility, and verified the
   canonical form through deterministic tests plus a public-safe live probe.

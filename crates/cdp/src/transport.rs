@@ -121,7 +121,7 @@ impl CdpHttpSession {
             .connect_timeout(connect_timeout)
             .timeout(total_timeout)
             .build()
-            .map_err(|err| AppError::new(ErrorKind::Internal, err.to_string()))?;
+            .map_err(|_| AppError::new(ErrorKind::Internal, "Could not build CDP HTTP client"))?;
         Ok(Self {
             config: config.clone(),
             client,
@@ -137,22 +137,20 @@ impl CdpHttpSession {
             .map_err(|err| self.target_list_request_error(err))?;
 
         if !response.status().is_success() {
-            return Err(AppError::new(
-                ErrorKind::Connection,
-                format!("CDP target list returned HTTP {}", response.status()),
-            )
-            .with_details(json!({
+            return Err(remote_status_error("CDP target list", response.status()).with_details(json!({
+                "operation": "CDP target list",
+                "http_failure_class": "remote_status",
                 "cdp_host": self.config.host,
                 "cdp_port": self.config.port,
-                "endpoint": self.config.list_url(),
                 "status": response.status().as_u16(),
                 "next_action_hint": "Run `tv status` to confirm the CDP endpoint, or run `tv launch` to restart TradingView Desktop with remote debugging enabled.",
             })));
         }
 
-        response.json::<Vec<Target>>().await.map_err(|err| {
-            map_cdp_http_error(err, ErrorKind::Connection, "CDP target list response")
-        })
+        response
+            .json::<Vec<Target>>()
+            .await
+            .map_err(|err| map_cdp_http_error(err, "CDP target list response"))
     }
 
     pub async fn new_target_url(&self, url: &str) -> Result<Target, AppError> {
@@ -168,33 +166,33 @@ impl CdpHttpSession {
             .put(self.config.new_target_url(url))
             .send()
             .await
-            .map_err(|err| map_cdp_http_error(err, ErrorKind::Connection, "CDP target creation"))?;
+            .map_err(|err| map_cdp_http_error(err, "CDP target creation"))?;
 
         let status = response.status();
         if !status.is_success() {
-            let text = response.text().await.unwrap_or_default();
-            return Err(AppError::new(
-                ErrorKind::Connection,
-                format!("CDP target creation returned HTTP {status}"),
-            )
-            .with_details(json!({
-                "url": url,
-                "status": status.as_u16(),
-                "body": text,
-            })));
+            return Err(
+                remote_status_error("CDP target creation", status).with_details(json!({
+                    "operation": "CDP target creation",
+                    "http_failure_class": "remote_status",
+                    "status": status.as_u16(),
+                })),
+            );
         }
 
-        let target = response.json::<Target>().await.map_err(|err| {
-            map_cdp_http_error(err, ErrorKind::Connection, "CDP target creation response")
-        })?;
+        let target = response
+            .json::<Target>()
+            .await
+            .map_err(|err| map_cdp_http_error(err, "CDP target creation response"))?;
         if target.id.trim().is_empty() || target.kind != "page" {
             return Err(AppError::new(
                 ErrorKind::InternalApiUnavailable,
                 "CDP target creation returned an unusable target",
             )
             .with_details(json!({
-                "url": url,
-                "target": target,
+                "operation": "CDP target creation response",
+                "http_failure_class": "payload_shape",
+                "target_kind": target.kind,
+                "target_id_present": !target.id.trim().is_empty(),
             })));
         }
         Ok(target)
@@ -206,13 +204,11 @@ impl CdpHttpSession {
             .get(self.config.activate_url(target_id))
             .send()
             .await
-            .map_err(|err| {
-                map_cdp_http_error(err, ErrorKind::Connection, "CDP target activation")
-            })?;
+            .map_err(|err| map_cdp_http_error(err, "CDP target activation"))?;
         if !response.status().is_success() {
-            return Err(AppError::new(
-                ErrorKind::Connection,
-                format!("CDP target activation returned HTTP {}", response.status()),
+            return Err(remote_status_error(
+                "CDP target activation",
+                response.status(),
             ));
         }
         Ok(())
@@ -235,11 +231,7 @@ impl CdpHttpSession {
         {
             Ok(response) => response,
             Err(error) if error.is_timeout() => {
-                return Err(map_cdp_http_error(
-                    error,
-                    ErrorKind::Connection,
-                    "CDP version probe",
-                ));
+                return Err(map_cdp_http_error(error, "CDP version probe"));
             }
             Err(_) => return Ok(None),
         };
@@ -250,7 +242,7 @@ impl CdpHttpSession {
             .json::<Value>()
             .await
             .map(Some)
-            .map_err(|err| map_cdp_http_error(err, ErrorKind::Connection, "CDP version response"))
+            .map_err(|err| map_cdp_http_error(err, "CDP version response"))
     }
 
     pub async fn discover_target(&self) -> Result<Target, AppError> {
@@ -258,26 +250,59 @@ impl CdpHttpSession {
     }
 
     fn target_list_request_error(&self, error: reqwest::Error) -> AppError {
-        let error = map_cdp_http_error(error, ErrorKind::Connection, "CDP target list request");
+        let error = map_cdp_http_error(error, "CDP target list request");
+        let failure_class = if error.kind == ErrorKind::Timeout {
+            "timeout"
+        } else {
+            "connection"
+        };
         error.with_details(json!({
+            "operation": "CDP target list request",
+            "http_failure_class": failure_class,
             "cdp_host": self.config.host,
             "cdp_port": self.config.port,
-            "endpoint": self.config.list_url(),
             "next_action_hint": "Run `tv status` to confirm the CDP endpoint, or run `tv launch` to start TradingView Desktop with remote debugging enabled.",
         }))
     }
 }
 
-fn map_cdp_http_error(
-    error: reqwest::Error,
-    fallback_kind: ErrorKind,
-    operation: &str,
-) -> AppError {
+fn map_cdp_http_error(error: reqwest::Error, operation: &str) -> AppError {
     if error.is_timeout() {
-        AppError::new(ErrorKind::Timeout, format!("{operation} timed out"))
+        http_failure(ErrorKind::Timeout, operation, "timeout", "timed out")
+    } else if error.is_decode() {
+        http_failure(
+            ErrorKind::InternalApiUnavailable,
+            operation,
+            "payload",
+            "returned an unusable payload",
+        )
     } else {
-        AppError::new(fallback_kind, error.to_string())
+        http_failure(
+            ErrorKind::Connection,
+            operation,
+            "connection",
+            "failed during HTTP transport",
+        )
     }
+}
+
+fn remote_status_error(operation: &str, status: reqwest::StatusCode) -> AppError {
+    AppError::new(
+        ErrorKind::InternalApiUnavailable,
+        format!("{operation} returned HTTP {status}"),
+    )
+    .with_details(json!({
+        "operation": operation,
+        "http_failure_class": "remote_status",
+        "status": status.as_u16(),
+    }))
+}
+
+fn http_failure(kind: ErrorKind, operation: &str, failure_class: &str, message: &str) -> AppError {
+    AppError::new(kind, format!("{operation} {message}")).with_details(json!({
+        "operation": operation,
+        "http_failure_class": failure_class,
+    }))
 }
 
 pub async fn fetch_targets(config: &TransportConfig) -> Result<Vec<Target>, AppError> {
@@ -664,6 +689,138 @@ mod tests {
         assert!(session.fetch_targets().await.unwrap().is_empty());
         assert!(session.fetch_targets().await.unwrap().is_empty());
         server.await.unwrap();
+    }
+
+    #[tokio::test]
+    async fn target_list_remote_status_maps_to_internal_api_unavailable() {
+        for (status_line, status) in [
+            ("429 Too Many Requests", 429u16),
+            ("500 Internal Server Error", 500u16),
+        ] {
+            let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+            let address = listener.local_addr().unwrap();
+            let server = tokio::spawn(async move {
+                let (mut stream, _) = listener.accept().await.unwrap();
+                read_http_request(&mut stream).await;
+                let response = format!(
+                    "HTTP/1.1 {status_line}\r\nContent-Length: 6\r\nConnection: close\r\n\r\nsecret"
+                );
+                stream.write_all(response.as_bytes()).await.unwrap();
+            });
+            let config = TransportConfig {
+                host: address.ip().to_string(),
+                port: address.port(),
+                target_id: None,
+            };
+            let error = CdpHttpSession::new(&config)
+                .unwrap()
+                .fetch_targets()
+                .await
+                .unwrap_err();
+            assert_eq!(error.kind, ErrorKind::InternalApiUnavailable);
+            assert_eq!(error.exit_code(), 3);
+            assert_eq!(error.details.as_ref().unwrap()["status"], status);
+            assert!(
+                !serde_json::to_string(&error.details)
+                    .unwrap()
+                    .contains("secret")
+            );
+            server.await.unwrap();
+        }
+    }
+
+    #[tokio::test]
+    async fn target_list_malformed_json_maps_to_internal_api_unavailable() {
+        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let address = listener.local_addr().unwrap();
+        let server = tokio::spawn(async move {
+            let (mut stream, _) = listener.accept().await.unwrap();
+            read_http_request(&mut stream).await;
+            stream
+                .write_all(b"HTTP/1.1 200 OK\r\nContent-Length: 1\r\nConnection: close\r\n\r\n{")
+                .await
+                .unwrap();
+        });
+        let config = TransportConfig {
+            host: address.ip().to_string(),
+            port: address.port(),
+            target_id: None,
+        };
+        let error = CdpHttpSession::new(&config)
+            .unwrap()
+            .fetch_targets()
+            .await
+            .unwrap_err();
+        assert_eq!(error.kind, ErrorKind::InternalApiUnavailable);
+        assert_eq!(error.exit_code(), 3);
+        assert_eq!(error.details.unwrap()["http_failure_class"], "payload");
+        server.await.unwrap();
+    }
+
+    #[tokio::test]
+    async fn target_list_connection_refusal_remains_connection() {
+        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let address = listener.local_addr().unwrap();
+        drop(listener);
+        let config = TransportConfig {
+            host: address.ip().to_string(),
+            port: address.port(),
+            target_id: None,
+        };
+        let error = CdpHttpSession::new(&config)
+            .unwrap()
+            .fetch_targets()
+            .await
+            .unwrap_err();
+        assert_eq!(error.kind, ErrorKind::Connection);
+        assert_eq!(error.exit_code(), 2);
+    }
+
+    #[tokio::test]
+    async fn version_probe_malformed_success_maps_to_internal_api_unavailable() {
+        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let address = listener.local_addr().unwrap();
+        let server = tokio::spawn(async move {
+            let (mut stream, _) = listener.accept().await.unwrap();
+            read_http_request(&mut stream).await;
+            stream
+                .write_all(b"HTTP/1.1 200 OK\r\nContent-Length: 1\r\nConnection: close\r\n\r\n{")
+                .await
+                .unwrap();
+        });
+        let config = TransportConfig {
+            host: address.ip().to_string(),
+            port: address.port(),
+            target_id: None,
+        };
+        let error = CdpHttpSession::new(&config)
+            .unwrap()
+            .version_json()
+            .await
+            .unwrap_err();
+        assert_eq!(error.kind, ErrorKind::InternalApiUnavailable);
+        assert_eq!(error.exit_code(), 3);
+        server.await.unwrap();
+    }
+
+    #[tokio::test]
+    async fn version_probe_connection_refusal_remains_not_ready() {
+        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let address = listener.local_addr().unwrap();
+        drop(listener);
+        let config = TransportConfig {
+            host: address.ip().to_string(),
+            port: address.port(),
+            target_id: None,
+        };
+        assert_eq!(
+            CdpHttpSession::new(&config)
+                .unwrap()
+                .version_json()
+                .await
+                .unwrap(),
+            None
+        );
     }
 
     async fn read_http_request(stream: &mut tokio::net::TcpStream) {

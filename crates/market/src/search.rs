@@ -2,7 +2,7 @@ use serde_json::Value;
 use tradingview_core::{AppError, ErrorKind};
 
 use crate::{
-    http::{configured_client, map_http_error},
+    http::{configured_client, map_http_error, remote_status_error},
     normalize::strip_em,
     types::{SymbolSearchResponse, SymbolSearchResult},
 };
@@ -54,23 +54,17 @@ pub(crate) async fn search_symbols_typed_with_client(
         .header("Referer", "https://www.tradingview.com/")
         .send()
         .await
-        .map_err(|err| map_http_error(err, ErrorKind::Connection, "Symbol search request"))?;
+        .map_err(|err| map_http_error(err, "Symbol search request"))?;
 
     let status = response.status();
     if !status.is_success() {
-        return Err(AppError::new(
-            ErrorKind::Connection,
-            format!("Symbol search API returned {status}"),
-        ));
+        return Err(remote_status_error("Symbol search API", status));
     }
 
-    let value = response.json::<Value>().await.map_err(|err| {
-        map_http_error(
-            err,
-            ErrorKind::InternalApiUnavailable,
-            "Symbol search response",
-        )
-    })?;
+    let value = response
+        .json::<Value>()
+        .await
+        .map_err(|err| map_http_error(err, "Symbol search response"))?;
     Ok(normalize_symbol_search_response_typed(query, &value))
 }
 

@@ -3,7 +3,7 @@ use serde_json::{Value, json};
 use tradingview_core::{AppError, ErrorKind};
 
 use super::common::field_values_object;
-use super::http::{configured_client, map_http_error};
+use super::http::{configured_client, map_http_error, remote_status_error};
 use super::types::{ScannerRow, ScannerScanResult, ScannerSort};
 
 const SCAN_BASE_URL: &str = "https://scanner.tradingview.com";
@@ -132,23 +132,17 @@ pub async fn scanner_scan_typed(
         .json(&normalized.body)
         .send()
         .await
-        .map_err(|err| map_http_error(err, ErrorKind::Connection, "Scanner scan request"))?;
+        .map_err(|err| map_http_error(err, "Scanner scan request"))?;
 
     let status = response.status();
     if !status.is_success() {
-        return Err(AppError::new(
-            ErrorKind::Connection,
-            format!("TradingView scanner scan API returned {status}"),
-        ));
+        return Err(remote_status_error("TradingView scanner scan API", status));
     }
 
-    let value = response.json::<Value>().await.map_err(|err| {
-        map_http_error(
-            err,
-            ErrorKind::InternalApiUnavailable,
-            "Scanner scan response",
-        )
-    })?;
+    let value = response
+        .json::<Value>()
+        .await
+        .map_err(|err| map_http_error(err, "Scanner scan response"))?;
 
     normalize_scan_response_typed(&normalized, &value)
 }
