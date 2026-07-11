@@ -16,4 +16,4 @@ tokio-tungstenite = { workspace = true }
 tradingview-core = { workspace = true }
 
 [dev-dependencies]
-tokio = { workspace = true, features = ["io-util", "macros", "rt", "sync", "time", "net"] }
+tokio = { workspace = true, features = ["io-util", "macros", "rt", "time", "net"] }
