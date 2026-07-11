@@ -37,6 +37,8 @@ package version omits the leading `v`.
   and current-state guidance after the `v0.25.0` release.
 - Started the v0.26 pre-release completion and architecture audit after all six
   robustness gates completed implementation and independent review.
+- Removed a machine-specific username from historical documentation-validation
+  patterns while preserving their generic macOS absolute-path detection.
 
 ## v0.25.0 - 2026-06-11
 

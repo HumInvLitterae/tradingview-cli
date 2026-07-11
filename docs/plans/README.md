@@ -8,9 +8,9 @@ for release and next-phase planning.
 
 Current plan:
 
-- `tradingview-cli-v0.26-pre-release-audit.md`: audit the completed v0.26
-  robustness gates, public contracts, documentation, validation, and module
-  responsibilities before release readiness.
+- `tradingview-cli-machine-specific-path-cleanup.md`: remove a redundant local
+  username from historical documentation-validation patterns before v0.26
+  release readiness.
 
 The ordered `v0.26.0` implementation inventory is maintained in
 `docs/v0.26-work-items.md`. CDP event buffering, transport deadlines and HTTP
@@ -20,6 +20,10 @@ previous item is complete and green.
 
 Recently completed:
 
+- `tradingview-cli-v0.26-pre-release-audit.md`: audited all six v0.26
+  robustness gates, found no release-blocking architecture issue, and completed
+  independent review and focused re-review. The plan now lives under
+  `docs/plans/archives/`.
 - `tradingview-cli-bounded-multi-symbol-concurrency.md`: measured and added
   input-ordered four-wide concurrency to bounded Desktop-free quote, compare,
   and event reads. Independent review and focused re-review are complete; the
