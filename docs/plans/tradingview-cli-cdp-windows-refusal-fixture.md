@@ -74,7 +74,8 @@ preserved; this plan does not perform another dependency update.
   local baseline.
 - [x] (2026-07-12) Committed the controlled-disconnect test correction as
   `32321d2` with `test(cdp): Use controlled transport disconnect fixture`.
-- [ ] Obtain focused independent review of the correction wave.
+- [x] (2026-07-12) Deferred focused review of the correction wave until after
+  the first Windows CI run, as directed by the project owner.
 - [x] (2026-07-12) Committed the correction-wave documentation and requested
   explicit approval before the next normal push.
 - [x] (2026-07-12) Pushed the controlled-disconnect correction and confirmed
@@ -86,7 +87,20 @@ preserved; this plan does not perform another dependency update.
   code assertions.
 - [x] (2026-07-12) Passed the complete five-test CLI contract target 25
   consecutive times with 16 test threads and reran the full local baseline.
-- [ ] Obtain focused independent review of the CLI fixture correction.
+- [x] (2026-07-12) Committed the initial CLI fixture correction as `1b3af72`
+  and pushed it for CI-first validation.
+- [x] (2026-07-12) Confirmed run `29165315156` passes all 32 CDP tests and all
+  five `cli_contract` tests on Windows, then fails 17
+  `cli_contract_desktop` tests that still use fixed port 9. Two later
+  `cli_contract_quote` tests had the same latent assumption.
+- [x] (2026-07-12) Moved the reconnect-capable controlled-disconnect fixture
+  into shared CLI integration-test support and applied it to every test that
+  expects a CDP connection error. Validation-only port sentinels remain
+  separate because they must prove no connection is attempted.
+- [x] (2026-07-12) Passed the core, Desktop, and quote CLI contract targets,
+  strict Clippy, the full workspace suite, metadata, public hygiene, packaging
+  syntax, guide parity, and diff checks after the shared-fixture correction.
+- [ ] Obtain focused independent review of the complete CLI fixture correction.
 - [ ] Verify Windows CI is green after the corrected push.
 
 ## Surprises & Discoveries
@@ -143,6 +157,21 @@ preserved; this plan does not perform another dependency update.
   `readiness_connection_failure_uses_structured_json_and_exit_code_2` because
   fixed port 9 timed out and produced exit code 4 instead of 2.
 
+- Observation: fixed port 9 was a suite-wide portability assumption, not just
+  a two-test problem.
+  Evidence: run `29165315156` passed the corrected five-test `cli_contract`
+  target, then failed 17 tests in `cli_contract_desktop` with timeout / exit
+  code 4. Source inspection found two additional connection-error assertions
+  in `cli_contract_quote`, while other port-9 uses are validation sentinels
+  that never connect.
+
+- Observation: a one-connection server is insufficient for subprocess
+  contracts because the HTTP client may reconnect after an EOF.
+  Evidence: the first shared fixture made all assertions green but left the
+  93-test desktop target at 171 seconds because retries reached a released
+  port. Keeping the listener alive for the command lifetime and disconnecting
+  every accepted request reduced the target to 37 seconds locally.
+
 ## Decision Log
 
 - Superseded decision: serialize every ephemeral loopback-listener allocation
@@ -176,6 +205,15 @@ preserved; this plan does not perform another dependency update.
   structured connection error and exit code without firewall assumptions.
   Date/Author: 2026-07-12 / Codex
 
+- Decision: centralize a reconnect-capable fixture in CLI integration-test
+  support and use it only for assertions that expect a connection failure.
+  Rationale: all such tests require the same portable transport condition,
+  including subprocess commands that trigger more than one HTTP attempt.
+  Validation-before-network tests retain a non-listening sentinel so an
+  accidental connection remains observable rather than being satisfied by the
+  fixture.
+  Date/Author: 2026-07-12 / Codex
+
 - Superseded decision: enable Tokio `sync` only in the `tradingview-cdp`
   dev-dependency.
   Rationale: this was required only by the disproven mutex approach. The
@@ -192,12 +230,15 @@ CI still failed the same two released-port tests, disproving the fixture-race
 hypothesis.
 
 The second correction removes the unnecessary serialization and uses a
-controlled post-request disconnect. Run `29164449455` confirms that correction
-is green in all 32 CDP tests on Windows. It also exposed the same portability
-problem in two CLI integration tests that used fixed port 9. Those tests now
-own controlled disconnect servers and retain their existing public JSON and
-exit-code assertions. Local focused validation is green; full validation,
-review, commit, and another Windows CI run remain open.
+controlled post-request disconnect. Runs `29164449455` and `29165315156`
+confirm that correction is green in all 32 CDP tests on Windows. The latter run
+also confirms the first two CLI contract corrections are green, then exposes
+the remaining fixed-port assumption in 17 desktop contract tests. The current
+wave centralizes a reconnect-capable controlled server for every CLI test that
+expects a CDP connection error, including two quote contracts that had not yet
+run. Existing public JSON and exit-code assertions remain unchanged. Focused
+and full local validation are green; review, commit, and another Windows CI run
+remain open.
 
 ## Context and Orientation
 
@@ -287,8 +328,9 @@ Acceptance requires all of the following:
   `target_list_transport_disconnect_remains_connection` with `Connection` and
   exit code 2, and
   `version_probe_transport_disconnect_remains_not_ready` with `Ok(None)`.
-- The same Windows job passes the `status` and `readiness` CLI connection-error
-  contract tests with `kind: "connection"` and exit code 2.
+- The same Windows job passes every CLI test that expects a CDP connection
+  error, including the core, Desktop-backed, and quote contract targets, with
+  the existing `kind: "connection"` and exit-code assertions.
 - The Linux and macOS CI test jobs remain green.
 - `git diff` shows removal of the temporary mutex/dev feature, the new
   test-only disconnect fixture, and correction-wave docs. There is no
@@ -298,13 +340,13 @@ Acceptance requires all of the following:
   machine-specific paths, or one-off private review prompts.
 
 Controlled-disconnect local result (2026-07-12): the complete 32-test CDP suite
-passed 25 consecutive runs with 16 test threads. After the CLI fixture
-correction, the complete five-test `cli_contract` target also passed 25
-consecutive runs with 16 test threads. Formatting, strict Clippy, the full
-workspace suite, metadata, public hygiene self-test/check across 559 tracked
-files, release-script syntax, guide parity, and `git diff --check` passed.
-Focused independent review of the latest CLI fixture and Windows CI
-confirmation remain open.
+passed 25 consecutive runs with 16 test threads. The five-test `cli_contract`
+target also passed 25 consecutive runs before the shared-fixture expansion.
+After expansion, the core 5-test, Desktop 93-test, and quote 26-test contract
+targets passed, as did formatting, strict Clippy, the full workspace suite,
+metadata, public hygiene self-test/check across 559 tracked files,
+release-script syntax, guide parity, and `git diff --check`. Focused independent
+review of the complete CLI fixture and Windows CI confirmation remain open.
 
 If Windows still reports a timeout, the implementation is not accepted.
 Preserve the failure evidence, do not skip the test or broaden the error
@@ -320,10 +362,12 @@ rollback bundles are unrelated safety artifacts and must remain untouched.
 
 ## Artifacts and Notes
 
-The latest CI evidence after the CDP controlled-disconnect correction is:
+The latest CI evidence after the first CLI controlled-disconnect correction is:
 
     Windows CDP: all 32 tests passed
-    Windows CLI: two fixed-port-9 tests failed with Timeout / exit code 4
+    Windows core CLI contract: all 5 tests passed
+    Windows Desktop CLI contract: 17 fixed-port-9 tests failed
+    Failure class: Timeout / exit code 4 instead of Connection / exit code 2
     Ubuntu:  all workspace tests passed
     macOS:   all workspace tests passed
     Clippy:  passed

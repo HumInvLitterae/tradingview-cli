@@ -3,7 +3,7 @@ mod support;
 use predicates::prelude::*;
 use serde_json::json;
 
-use support::{stderr_json, tv};
+use support::{stderr_json, tv, tv_with_cdp_disconnect};
 
 #[test]
 fn quote_help_explains_symbol_and_target_selection() {
@@ -693,8 +693,7 @@ fn quote_data_source_requires_symbol_before_connecting() {
 
 #[test]
 fn quote_chart_source_attempts_connection_when_cdp_is_unavailable() {
-    let assert = tv()
-        .env("TV_CDP_PORT", "9")
+    let assert = tv_with_cdp_disconnect()
         .args(["quote", "AAPL", "--source", "chart"])
         .assert()
         .failure()
@@ -707,8 +706,7 @@ fn quote_chart_source_attempts_connection_when_cdp_is_unavailable() {
 
 #[test]
 fn quote_data_source_attempts_connection_when_cdp_is_unavailable() {
-    let assert = tv()
-        .env("TV_CDP_PORT", "9")
+    let assert = tv_with_cdp_disconnect()
         .args(["quote", "AAPL", "--source", "quote-data"])
         .assert()
         .failure()

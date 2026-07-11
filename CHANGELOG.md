@@ -50,8 +50,8 @@ package version omits the leading `v`.
 ### Tests
 
 - Replaced platform-dependent released-port and fixed-port CDP failure tests
-  with controlled transport disconnect fixtures; Windows CI revalidation is
-  pending.
+  with reconnect-capable controlled transport disconnect fixtures shared by
+  CLI connection-error contracts; Windows CI revalidation is pending.
 
 ## v0.25.0 - 2026-06-11
 
