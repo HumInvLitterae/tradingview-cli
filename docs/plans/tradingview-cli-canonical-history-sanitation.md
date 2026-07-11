@@ -63,14 +63,22 @@ provider caches. Those limits must be communicated explicitly.
 - [x] (2026-07-11) Aligned the documented rollback remote and bundle-manifest
   ordering with the private generator. Exact current-freeze regeneration state
   remains in ignored `summary.json` and the local continuity ledger.
-- [ ] Independently review the final private preflight artifacts and exact
-  mutation scripts.
-- [ ] Obtain explicit project-owner approval for workflow disable, atomic force-push of main and tags, and workflow re-enable.
-- [ ] Temporarily disable the release workflow and verify its disabled state.
-- [ ] Atomically force-update canonical `main` and all 28 tags from the sanitized repository.
-- [ ] Re-enable the release workflow even if the push fails, restoring its prior state.
-- [ ] Verify remote refs, all tag trees, GitHub Release IDs/assets, and fresh-clone history.
-- [ ] Confirm no unexpected release workflows were triggered by the tag rewrite.
+- [x] (2026-07-11) Independently reviewed the final private preflight
+  artifacts and exact mutation scripts.
+- [x] (2026-07-11) Obtained explicit project-owner approval for workflow
+  disable, atomic force-push of main and tags, and workflow re-enable.
+- [x] (2026-07-11) Temporarily disabled the release workflow and verified its
+  disabled state.
+- [x] (2026-07-11) Atomically force-updated canonical `main` and all 28 tags
+  from the sanitized repository.
+- [x] (2026-07-11) Re-enabled the release workflow and verified its active
+  state.
+- [x] (2026-07-11) Verified remote refs, all tag trees, GitHub Release
+  IDs/assets, and fresh-clone history.
+- [x] (2026-07-11) Confirmed no unexpected release workflows were triggered by
+  the tag rewrite.
+- [ ] Obtain focused re-review of the post-rewrite documentation corrections
+  and closeout evidence.
 - [ ] Ask for explicit approval before deleting the private rollback bundle.
 - [ ] Record downstream instructions and stop before v0.26 release readiness until post-rewrite review is green.
 
@@ -188,19 +196,28 @@ Planning and the first local dry-run are complete. The dry-run rewrote the
 expected refs, removed all sensitive matches, preserved the current HEAD tree,
 kept all 28 tags, passed `git fsck`, and pruned only the expected empty commit.
 
-The destructive external phase has not started. Independent review of all ten
-plan corrections and the preparatory implementation is green. A complete
-preflight rehearsal passed, and the five artifact-review findings are corrected
-in the regenerated private artifacts. Exact freeze and rewrite OIDs remain in
-private `summary.json` and the local continuity ledger so the tracked tree can
-stay frozen during focused artifact review.
+The destructive external phase completed after explicit project-owner approval.
+The reviewed script disabled the release workflow, atomically moved canonical
+`main` and all 28 tags with exact per-ref leases, and restored the workflow to
+`active`. All 29 live refs match the rewritten manifest; the normalized 27-
+Release / 135-asset manifest is unchanged; no release workflow run was created;
+and rollback was not needed.
+
+A fresh canonical clone preserves the expected tree, has no reachable legacy
+path or concrete username alternation, and passes the hygiene guard, formatting,
+strict clippy, workspace tests, metadata, fsck, and diff checks. The first
+post-rewrite review found no mutation or validation defect, but identified stale
+pre-mutation wording in this living plan and the downstream recovery notice.
+Those documentation findings are corrected and await focused re-review before
+sanitation closeout or v0.26 release readiness.
 
 ## Context and Orientation
 
-The latest public release is `v0.25.0`. The current cleanup commit is
-`97949d7`. The canonical remote is the GitHub `origin`; only `main` is a normal
-branch. There are 28 Git tags and 27 GitHub Releases because one historical tag
-has no release object. The release workflow publishes on every `v*` tag push.
+The latest public release is `v0.25.0`. The pre-rewrite cleanup tip was
+`97949d7`; canonical `main` now points to the rewritten history. The canonical
+remote is the GitHub `origin`; only `main` is a normal branch. There are 28 Git
+tags and 27 GitHub Releases because one historical tag has no release object.
+The release workflow publishes on every `v*` tag push.
 
 History rewriting changes commit identifiers because each descendant commit
 contains a different parent or tree identifier. A tag that points into rewritten
@@ -551,12 +568,12 @@ These are historical rehearsal values. Exact current freeze OIDs, commit counts,
 script hashes, and bundle hash live only in the ignored private summary and the
 local continuity ledger until post-rewrite closeout.
 
-The current repository has 27 GitHub Release objects and 135 assets. The
-release workflow is active. Repository rulesets are empty; the classic
-branch-protection endpoint returned 404, so actual force-push permission
-remains UNCONFIRMED until final preflight. The local `main` is ahead of the
-canonical remote, which is why rollback evidence must be fetched from the
-remote itself rather than bundled from the working repository.
+The canonical repository has 27 GitHub Release objects and 135 assets. The
+release workflow is active and idle. The reviewed leased atomic push confirmed
+force-update permission and moved all 29 refs without partial movement. The
+original primary clone remains on old history by design; a separate fresh clone
+tracks rewritten canonical `main`. The rollback evidence was fetched from the
+pre-rewrite remote and remains available as a private mode-0600 bundle.
 
 ## Interfaces and Dependencies
 
@@ -564,17 +581,19 @@ Use installed `git-filter-repo` for rewriting and `gh` for workflow and release
 inspection. The recurrence guard uses Python 3 standard library only. No Rust
 dependency, CLI surface, payload, source boundary, or package version changes.
 
-External mutations are limited to temporarily disabling/re-enabling one GitHub
-workflow and atomically force-updating canonical main and tag refs. The normal
-path performs those as three phases in one reviewed temporary script; rollback
-is exceptional and needs a second explicit approval. No external mutation is
-authorized by this plan revision.
+The completed forward mutation was limited to temporarily disabling/re-enabling
+one GitHub workflow and atomically force-updating canonical main and tag refs in
+one reviewed script. Rollback remains exceptional and requires a second explicit
+approval; it was not performed.
 
 ## Open Questions
 
-Force-push permission is UNCONFIRMED until dry-run. GitHub cache purge is not
-part of canonical sanitation and should be considered only if the project owner
-requires provider-level removal beyond canonical ref reachability.
+The remaining owner decisions are whether to retain or delete the private
+rollback bundle after closeout and whether to replace the old primary clone with
+a fresh clone or use the separately confirmed realignment procedure. GitHub
+cache purge is not part of canonical sanitation and should be considered only
+if the project owner requires provider-level removal beyond canonical ref
+reachability.
 
 Revision note (2026-07-11): created after current-tree cleanup commit `97949d7`
 and a successful disposable rewrite proof. Revised after two plan-review rounds,
@@ -582,5 +601,6 @@ updated when the recurrence guard and migration notice were implemented, and
 updated again after their review/commit and the first full preflight rehearsal.
 The final artifact review then identified a documentation/generator drift in
 the rollback remote name and manifest sort key; this revision aligns the
-procedure before regenerating the freeze. No external refs or workflow state
-were changed.
+procedure before regenerating the freeze. The reviewed forward mutation then
+completed successfully; this post-rewrite revision records its validation and
+the remaining documentation closeout gate.

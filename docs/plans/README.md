@@ -10,9 +10,9 @@ Current plan:
 
 - `tradingview-cli-canonical-history-sanitation.md`: remove machine-specific
   path text from canonical main and release-tag history through a backed-up,
-  reviewed, atomic rewrite before v0.26 release readiness. Its recurrence
-  guard and downstream recovery notice are committed; corrected private
-  preflight artifacts are awaiting focused review.
+  reviewed, atomic rewrite before v0.26 release readiness. The mutation and
+  technical validation are complete; post-rewrite status corrections await
+  focused re-review before closeout.
 
 The ordered `v0.26.0` implementation inventory is maintained in
 `docs/v0.26-work-items.md`. CDP event buffering, transport deadlines and HTTP
