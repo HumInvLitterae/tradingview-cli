@@ -31,7 +31,9 @@ provider caches. Those limits must be communicated explicitly.
 - [x] (2026-07-11) Confirmed the rewrite prunes only empty commit `3ad570b`, reducing main from 393 to 392 commits.
 - [x] (2026-07-11) Confirmed the release workflow is active and GitHub repository rulesets are empty.
 - [x] (2026-07-11) Made this plan current in the plan index, roadmap, work inventory, changelog, and continuity ledger.
-- [x] (2026-07-11) Added a self-contained read-only plan-review prompt.
+- [x] (2026-07-11) Used a self-contained read-only plan-review prompt, then
+  removed transient review prompts from the tracked tree after their gates
+  closed.
 - [x] (2026-07-11) Deleted the first disposable mirror and replacement file after recording public-safe aggregate evidence.
 - [x] (2026-07-11) Received an independent plan review with three mutation-safety blockers and four documentation/verification findings.
 - [x] (2026-07-11) Revised the plan to use exact remote-ref backups,
@@ -53,8 +55,11 @@ provider caches. Those limits must be communicated explicitly.
 - [x] (2026-07-11) Completed a full preflight rehearsal from `0f0e42e`,
   including rewrite, exact remote backup, manifests, and leased atomic push
   dry-run, without external mutation.
-- [ ] Commit this preflight-state update as the final freeze point, then rerun
-  the disposable rewrite and record its final commit map.
+- [x] (2026-07-11) Established the final freeze protocol: the tracked plan uses
+  state-independent invariants, while exact freeze OIDs and generated evidence
+  live in private `summary.json` and the local continuity ledger.
+- [x] (2026-07-11) Regenerated the disposable rewrite, manifests, rollback
+  bundle, dry-run, and exact mutation scripts from the current freeze commit.
 - [ ] Independently review the final private preflight artifacts and exact
   mutation scripts.
 - [ ] Obtain explicit project-owner approval for workflow disable, atomic force-push of main and tags, and workflow re-enable.
@@ -108,6 +113,13 @@ provider caches. Those limits must be communicated explicitly.
   Evidence: the object target follows the commit map while tag name, type,
   tagger, and complete message remain byte-identical.
 
+- Observation: recording an exact freeze commit in the same tracked commit is
+  self-referential and would force endless regeneration.
+  Evidence: every tracked status update creates a new source commit and changes
+  the rewritten tip and commit count. Stable docs now record invariants only;
+  the ignored private summary and local continuity ledger record exact current
+  values until post-rewrite closeout.
+
 ## Decision Log
 
 - Decision: rewrite canonical `main` and every release tag before v0.26 release
@@ -160,6 +172,13 @@ provider caches. Those limits must be communicated explicitly.
   refs into a temporary namespace.
   Date/Author: 2026-07-11 / Codex
 
+- Decision: keep one-off reviewer prompts outside the tracked repository.
+  Rationale: acceptance criteria and outcomes belong in the ExecPlan, while a
+  point-in-time handoff prompt becomes stale and adds no durable evidence
+  without its review result. Active prompts live with ignored preflight
+  artifacts and are removed after use.
+  Date/Author: 2026-07-11 / Codex
+
 ## Outcomes & Retrospective
 
 Planning and the first local dry-run are complete. The dry-run rewrote the
@@ -167,11 +186,11 @@ expected refs, removed all sensitive matches, preserved the current HEAD tree,
 kept all 28 tags, passed `git fsck`, and pruned only the expected empty commit.
 
 The destructive external phase has not started. Independent review of all ten
-plan corrections and the preparatory implementation is green, and preparation
-is committed as `0f0e42e`. A complete preflight rehearsal also passed. This
-state update must become the final freeze commit, after which the same preflight
-must be rerun once more and independently reviewed before owner approval is
-requested.
+plan corrections and the preparatory implementation is green. A complete
+preflight rehearsal passed, and the five artifact-review findings are corrected
+in the regenerated private artifacts. Exact freeze and rewrite OIDs remain in
+private `summary.json` and the local continuity ledger so the tracked tree can
+stay frozen during focused artifact review.
 
 ## Context and Orientation
 
@@ -321,7 +340,8 @@ The recurrence guard must pass locally and in CI. The final disposable rewrite
 must satisfy:
 
     refs/heads/main plus 28 refs/tags entries
-    392 main commits after expected empty-commit pruning
+    exactly one fewer main commit than the frozen source after expected
+    empty-commit pruning
     unchanged current HEAD tree
     zero legacy username matches across rewritten main and tags
     zero concrete username alternations across rewritten main and tags
@@ -522,8 +542,9 @@ The first complete preflight rehearsal from `0f0e42e` produced:
     leased atomic push dry-run: passed
     external mutation performed: no
 
-These are rehearsal values because recording them changes `main`. The final
-private artifacts must be regenerated from the next committed freeze point.
+These are historical rehearsal values. Exact current freeze OIDs, commit counts,
+script hashes, and bundle hash live only in the ignored private summary and the
+local continuity ledger until post-rewrite closeout.
 
 The current repository has 27 GitHub Release objects and 135 assets. The
 release workflow is active. Repository rulesets are empty; the classic

@@ -40,7 +40,8 @@ be reported as a separate refactor plan rather than folded into this audit.
 - [x] (2026-07-11) Ran focused CLI quote, bars, diagnose, and Desktop contract tests.
 - [x] (2026-07-11) Ran final formatting, metadata, diff, packaging, and guide-consistency checks after documentation finalization.
 - [x] (2026-07-11) Did not modify runtime skills, so no skill validation was required.
-- [x] (2026-07-11) Created a self-contained independent-review prompt under `docs/notes/`.
+- [x] (2026-07-11) Created and used a self-contained independent-review prompt;
+  the transient prompt was removed after review completion.
 - [x] (2026-07-11) Recorded final outcomes as `implemented and fully validated; independent review pending` and stopped uncommitted.
 - [x] (2026-07-11) Independent review approved the implementation and architecture conclusion and identified two documentation findings.
 - [x] (2026-07-11) Replaced ten machine-specific validator paths across three archived plans with a portable `CODEX_HOME` form.
@@ -92,9 +93,11 @@ be reported as a separate refactor plan rather than folded into this audit.
   it adds external variability without changing the release decision.
   Date/Author: 2026-07-11 / Codex
 
-- Decision: prepare a tracked independent-review prompt in `docs/notes/`.
-  Rationale: the user requested a reusable reviewer handoff after completion,
-  and repository guidance assigns handoff material to `docs/notes/`.
+- Decision: preserve review criteria and outcomes in this ExecPlan instead of
+  retaining the point-in-time review prompt.
+  Rationale: the prompt was useful during handoff but became stale after the
+  review; the durable evidence is the recorded findings, corrections, and
+  validation outcome.
   Date/Author: 2026-07-11 / Codex
 
 - Decision: no dedicated architecture refactor is required before v0.26
@@ -222,8 +225,8 @@ green.
 
 The completed Gate 6 plan is archived at
 `docs/plans/archives/tradingview-cli-bounded-multi-symbol-concurrency.md`.
-The independent-review prompt will live at
-`docs/notes/v0.26-pre-release-audit-review-prompt.md`.
+The transient independent-review prompt was removed after its review completed;
+the criteria and outcome remain in this plan.
 
 ## Interfaces and Dependencies
 
