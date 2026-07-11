@@ -8,11 +8,9 @@ for release and next-phase planning.
 
 Current plan:
 
-- `tradingview-cli-canonical-history-sanitation.md`: remove machine-specific
-  path text from canonical main and release-tag history through a backed-up,
-  reviewed, atomic rewrite before v0.26 release readiness. The mutation and
-  technical validation are complete; post-rewrite status corrections await
-  focused re-review before closeout.
+- `tradingview-cli-cdp-windows-refusal-fixture.md`: stabilize the local CDP
+  HTTP refusal fixtures that currently fail on Windows CI before v0.26 release
+  readiness. Canonical history sanitation is complete and archived.
 
 The ordered `v0.26.0` implementation inventory is maintained in
 `docs/v0.26-work-items.md`. CDP event buffering, transport deadlines and HTTP
@@ -21,6 +19,11 @@ multi-symbol concurrency are promoted into separate ExecPlans only when the
 previous item is complete and green.
 
 Recently completed:
+
+- `tradingview-cli-canonical-history-sanitation.md`: removed the sensitive
+  machine-specific path from canonical main and release-tag history, completed
+  remote and fresh-clone verification, and realigned the primary clone. The
+  completed plan now lives under `docs/plans/archives/`.
 
 - `tradingview-cli-machine-specific-path-cleanup.md`: removed 79 redundant
   username-specific regex branches across 61 tracked documents. Independent
