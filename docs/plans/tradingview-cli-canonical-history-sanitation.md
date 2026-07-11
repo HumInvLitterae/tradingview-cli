@@ -58,8 +58,11 @@ provider caches. Those limits must be communicated explicitly.
 - [x] (2026-07-11) Established the final freeze protocol: the tracked plan uses
   state-independent invariants, while exact freeze OIDs and generated evidence
   live in private `summary.json` and the local continuity ledger.
-- [x] (2026-07-11) Regenerated the disposable rewrite, manifests, rollback
-  bundle, dry-run, and exact mutation scripts from the current freeze commit.
+- [x] (2026-07-11) Completed a final-freeze rehearsal of the disposable
+  rewrite, manifests, rollback bundle, dry-run, and exact mutation scripts.
+- [x] (2026-07-11) Aligned the documented rollback remote and bundle-manifest
+  ordering with the private generator. Exact current-freeze regeneration state
+  remains in ignored `summary.json` and the local continuity ledger.
 - [ ] Independently review the final private preflight artifacts and exact
   mutation scripts.
 - [ ] Obtain explicit project-owner approval for workflow disable, atomic force-push of main and tags, and workflow re-enable.
@@ -420,9 +423,11 @@ peeled annotated-tag line:
     git ls-remote --tags origin 'refs/tags/*'
 
 Initialize the rollback repository with `git init --bare`, add the canonical
-URL as `origin`, and construct one `git fetch --no-tags origin` invocation with
-29 exact `+<remote-ref>:<same-local-ref>` arguments generated from that
-manifest. A count or OID mismatch aborts before bundling. Bundle only the
+URL as `canonical`, remove its default `remote.canonical.fetch` refspec, and
+construct one `git fetch --no-tags canonical` invocation with 29 exact
+`+<remote-ref>:<same-local-ref>` arguments generated from that manifest. Assert
+that the bare repository contains exactly those 29 refs and no remote-tracking
+or other refs. A count or OID mismatch aborts before bundling. Bundle only the
 explicitly enumerated canonical refs, not a glob. Normalize
 `git bundle list-heads` as `<oid><TAB><ref>` sorted by ref and compare it
 byte-for-byte with the 29 direct-ref manifest.
@@ -575,4 +580,7 @@ Revision note (2026-07-11): created after current-tree cleanup commit `97949d7`
 and a successful disposable rewrite proof. Revised after two plan-review rounds,
 updated when the recurrence guard and migration notice were implemented, and
 updated again after their review/commit and the first full preflight rehearsal.
-No external refs or workflow state were changed.
+The final artifact review then identified a documentation/generator drift in
+the rollback remote name and manifest sort key; this revision aligns the
+procedure before regenerating the freeze. No external refs or workflow state
+were changed.
