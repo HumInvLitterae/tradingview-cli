@@ -6,9 +6,11 @@ for release and next-phase planning.
 
 ## Current and future plans
 
-There is no active ExecPlan. Gate 5 is complete; the next step is to create a
-self-contained Gate 6 measured bounded-concurrency ExecPlan before
-implementation.
+Current plan:
+
+- `tradingview-cli-bounded-multi-symbol-concurrency.md`: measure and, where the
+  deterministic threshold is met, add input-ordered four-wide concurrency to
+  bounded Desktop-free multi-symbol reads.
 
 The ordered `v0.26.0` implementation inventory is maintained in
 `docs/v0.26-work-items.md`. CDP event buffering, transport deadlines and HTTP

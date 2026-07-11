@@ -120,6 +120,9 @@ Do not use `TV_CDP_TARGET_ID`; explicit target handoff is `--target-id`.
   source. These are event-shaped field evidence, not complete event calendars.
   Do not use event-like fields as ranking, recommendation, trading judgment,
   or hidden fallback evidence.
+- `tv quotes`, Desktop-free `tv compare`, and `tv events compare` accept at
+  most 25 symbols and preserve input order. Batch quote items include a
+  zero-based `requested_index`; it is ordering metadata, not ranking.
 - Use `tv chart compare <SYMBOL>...` only for a small finalist set where the
   selected TradingView Desktop chart feed itself is the source under review.
   It is Desktop-backed, may temporarily switch the selected chart, and returns
@@ -177,7 +180,7 @@ The release archive includes CLI-oriented skills under `.agents/skills/` and
 - `chart-analysis`: live chart review and screenshot-backed context.
 - `market-data-interpretation`: quote, scanner, chart, OHLCV, freshness, and
   extended-hours interpretation.
-- `multi-symbol-scan`: small serial symbol scans and comparisons.
+- `multi-symbol-scan`: bounded symbol scans and comparisons.
 - `pine-develop`: Pine Script read/edit/check/compile workflows.
 - `replay-practice`: bounded TradingView replay practice.
 - `screener-result-analysis`: scanner and Screener result explanation without

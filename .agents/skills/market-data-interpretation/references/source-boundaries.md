@@ -74,6 +74,10 @@ scanner-backed quote, symbol info, and fundamentals sections.
 packet. It preserves input order and returns per-symbol quote, info, and
 fundamentals sections.
 
+`tv quotes`, `tv compare`, and `tv events compare` accept at most 25 symbols.
+Batch quote items expose zero-based `requested_index`; do not reinterpret this
+ordering metadata as ranking.
+
 `tv chart compare <SYMBOL>...` is different: it is Desktop-backed selected
 chart evidence for a small finalist set. It returns `chart_compare.v1`, may
 temporarily switch the selected chart, and reports item status plus restore

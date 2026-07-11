@@ -3,6 +3,7 @@ use serde_json::Value;
 use tradingview_core::{AppError, ErrorKind};
 
 use crate::{
+    bounded::{MAX_MULTI_SYMBOLS, MULTI_SYMBOL_CONCURRENCY, collect_ordered_bounded},
     fundamentals::{
         fundamentals_symbol_with_groups_typed_with_client, is_fundamental_field_in_group,
     },
@@ -47,11 +48,17 @@ pub async fn compare_symbols_typed(symbols: Vec<String>) -> Result<Compare, AppE
     let client = configured_client()?;
     let requested_symbols = normalize_compare_symbols(symbols)?;
     let requested_count = requested_symbols.len();
-    let mut items = Vec::with_capacity(requested_count);
-
-    for (requested_index, requested_symbol) in requested_symbols.into_iter().enumerate() {
-        items.push(compare_one_symbol(&client, requested_index, requested_symbol).await);
-    }
+    let items = collect_ordered_bounded(
+        requested_symbols,
+        MULTI_SYMBOL_CONCURRENCY,
+        |requested_index, requested_symbol| {
+            compare_one_symbol(&client, requested_index, requested_symbol)
+        },
+    )
+    .await
+    .into_iter()
+    .map(|(_, item)| item)
+    .collect();
 
     finalize_compare_items(requested_count, items)
 }
@@ -156,25 +163,37 @@ fn finalize_compare_items(
 
 fn normalize_compare_symbols(symbols: Vec<String>) -> Result<Vec<String>, AppError> {
     if symbols.len() < 2 {
-        return Err(AppError::new(
-            ErrorKind::Validation,
+        return Err(compare_validation_error(
             "compare requires at least two symbols",
         ));
+    }
+    if symbols.len() > MAX_MULTI_SYMBOLS {
+        return Err(compare_validation_error(format!(
+            "compare accepts at most {MAX_MULTI_SYMBOLS} symbols"
+        )));
     }
 
     let mut normalized = Vec::with_capacity(symbols.len());
     for symbol in symbols {
         let symbol = symbol.trim();
         if symbol.is_empty() {
-            return Err(AppError::new(
-                ErrorKind::Validation,
-                "compare symbol must not be empty",
-            ));
+            return Err(compare_validation_error("compare symbol must not be empty"));
         }
         normalized.push(symbol.to_string());
     }
 
     Ok(normalized)
+}
+
+fn compare_validation_error(message: impl Into<String>) -> AppError {
+    AppError::new(ErrorKind::Validation, message).with_details(serde_json::json!({
+        "minimum": 2,
+        "maximum": MAX_MULTI_SYMBOLS,
+        "source": COMPARE_SOURCE,
+        "source_category": DESKTOP_FREE_READ_CATEGORY,
+        "requires_desktop": false,
+        "non_mutating": true,
+    }))
 }
 
 fn section_from_result<T>(section: &str, result: Result<T, AppError>) -> SnapshotSection
@@ -588,6 +607,14 @@ mod tests {
             normalize_compare_symbols(vec![" AAPL ".to_string(), "NYSE:IONQ".to_string()]).unwrap(),
             vec!["AAPL".to_string(), "NYSE:IONQ".to_string()]
         );
+        let too_many = normalize_compare_symbols(
+            (0..=MAX_MULTI_SYMBOLS)
+                .map(|index| format!("SYM{index}"))
+                .collect(),
+        )
+        .unwrap_err();
+        assert_eq!(too_many.kind, ErrorKind::Validation);
+        assert_eq!(too_many.details.unwrap()["maximum"], MAX_MULTI_SYMBOLS);
     }
 
     #[test]

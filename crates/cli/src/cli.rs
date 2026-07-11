@@ -84,7 +84,7 @@ pub enum Command {
     },
     #[command(
         about = "Compare Desktop-free evidence for multiple symbols",
-        long_about = "Compare Desktop-free evidence for multiple symbols without connecting to TradingView Desktop.\n\nThe comparison packet preserves input order and includes scanner quote, symbol info, and default scanner-backed fundamentals sections for each symbol. It is intended for screening and evidence comparison, not realtime chart-feed batching or buy/sell recommendations. Follow-up hints are advisory metadata for possible next evidence checks; they are not auto-run, ranking, or source mixing. Use `tv snapshot <SYMBOL>` for one-symbol detail, and `tv observe chart` or `tv quote <SYMBOL> --source chart` for selected-chart follow-up after narrowing candidates."
+        long_about = "Compare Desktop-free evidence for 2 to 25 symbols without connecting to TradingView Desktop.\n\nThe comparison packet preserves input order and includes scanner quote, symbol info, and default scanner-backed fundamentals sections for each symbol. It is intended for screening and evidence comparison, not realtime chart-feed batching or buy/sell recommendations. Follow-up hints are advisory metadata for possible next evidence checks; they are not auto-run, ranking, or source mixing. Use `tv snapshot <SYMBOL>` for one-symbol detail, and `tv observe chart` or `tv quote <SYMBOL> --source chart` for selected-chart follow-up after narrowing candidates."
     )]
     Compare { symbols: Vec<String> },
     #[command(
@@ -136,7 +136,7 @@ pub enum Command {
     },
     #[command(
         about = "Get scanner-backed quotes for multiple symbols",
-        long_about = "Get Desktop-free scanner-backed quotes for multiple symbols.\n\nScanner-backed quotes are not a realtime guarantee; inspect each item's `time`, `update_mode`, and `delay_seconds` for freshness. The command preserves input order in data.items. Each successful item contains the same quote payload shape as `tv quote <SYMBOL>` when its Desktop-free scanner path succeeds. Failed items contain structured errors and do not fall back to chart target selection."
+        long_about = "Get Desktop-free scanner-backed quotes for 1 to 25 symbols.\n\nScanner-backed quotes are not a realtime guarantee; inspect each item's `time`, `update_mode`, and `delay_seconds` for freshness. The command preserves input order in data.items and reports each zero-based requested_index. Each successful item contains the same quote payload shape as `tv quote <SYMBOL>` when its Desktop-free scanner path succeeds. Failed items contain structured errors and do not fall back to chart target selection."
     )]
     Quotes { symbols: Vec<String> },
     #[command(about = "Get current indicator values")]

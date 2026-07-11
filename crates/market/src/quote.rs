@@ -2,6 +2,7 @@ use serde_json::{Value, json};
 use tradingview_core::{AppError, ErrorKind};
 
 use crate::{
+    bounded::{MAX_MULTI_SYMBOLS, MULTI_SYMBOL_CONCURRENCY, collect_ordered_bounded},
     http::{configured_client, map_http_error, remote_status_error},
     info::preferred_symbol_candidates,
     normalize::{bare_symbol, split_exchange_symbol},
@@ -120,15 +121,26 @@ async fn quote_symbols_typed_with_client_and_url(
 ) -> Result<BatchQuotes, AppError> {
     let requested_symbols = normalize_quote_symbols(symbols)?;
     let requested_count = requested_symbols.len();
+    let completed = collect_ordered_bounded(
+        requested_symbols,
+        MULTI_SYMBOL_CONCURRENCY,
+        |_, requested_symbol| async move {
+            let result =
+                quote_symbol_typed_with_client_and_url(client, &requested_symbol, scan_url).await;
+            (requested_symbol, result)
+        },
+    )
+    .await;
     let mut items = Vec::with_capacity(requested_count);
     let mut resolved_count = 0usize;
     let mut first_error: Option<AppError> = None;
 
-    for requested_symbol in requested_symbols {
-        match quote_symbol_typed_with_client_and_url(client, &requested_symbol, scan_url).await {
+    for (requested_index, (requested_symbol, result)) in completed {
+        match result {
             Ok(quote) => {
                 resolved_count += 1;
                 items.push(BatchQuoteItem {
+                    requested_index,
                     requested_symbol,
                     ok: true,
                     quote: Some(quote),
@@ -144,6 +156,7 @@ async fn quote_symbols_typed_with_client_and_url(
                     });
                 }
                 items.push(BatchQuoteItem {
+                    requested_index,
                     requested_symbol,
                     ok: false,
                     quote: None,
@@ -196,24 +209,38 @@ fn finalize_quote_items(
 
 fn normalize_quote_symbols(symbols: Vec<String>) -> Result<Vec<String>, AppError> {
     if symbols.is_empty() {
-        return Err(AppError::new(
-            ErrorKind::Validation,
+        return Err(quote_batch_validation_error(
             "quotes requires at least one symbol",
         ));
+    }
+    if symbols.len() > MAX_MULTI_SYMBOLS {
+        return Err(quote_batch_validation_error(format!(
+            "quotes accepts at most {MAX_MULTI_SYMBOLS} symbols"
+        )));
     }
 
     let mut normalized = Vec::with_capacity(symbols.len());
     for symbol in symbols {
         let symbol = symbol.trim();
         if symbol.is_empty() {
-            return Err(AppError::new(
-                ErrorKind::Validation,
+            return Err(quote_batch_validation_error(
                 "quote symbol must not be empty",
             ));
         }
         normalized.push(symbol.to_string());
     }
     Ok(normalized)
+}
+
+fn quote_batch_validation_error(message: impl Into<String>) -> AppError {
+    AppError::new(ErrorKind::Validation, message).with_details(json!({
+        "minimum": 1,
+        "maximum": MAX_MULTI_SYMBOLS,
+        "source": "scanner_scan_rest",
+        "source_category": DESKTOP_FREE_READ_CATEGORY,
+        "requires_desktop": false,
+        "non_mutating": true,
+    }))
 }
 
 fn error_payload(error: AppError) -> QuoteError {
@@ -454,51 +481,66 @@ fn scanner_quote_candidates(rows: &[Value]) -> Vec<Value> {
 
 #[cfg(test)]
 mod tests {
+    use std::sync::{
+        Arc,
+        atomic::{AtomicUsize, Ordering},
+    };
+
     use serde_json::json;
     use tokio::{
         io::{AsyncReadExt, AsyncWriteExt},
         net::TcpListener,
-        time::Duration,
+        time::{Duration, sleep},
     };
 
     use super::*;
 
     #[tokio::test]
-    async fn multi_symbol_quote_reuses_one_keep_alive_connection_and_preserves_order() {
+    async fn multi_symbol_quote_is_bounded_and_preserves_order() {
         let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
         let address = listener.local_addr().unwrap();
+        let active = Arc::new(AtomicUsize::new(0));
+        let max_active = Arc::new(AtomicUsize::new(0));
+        let server_active = Arc::clone(&active);
+        let server_max_active = Arc::clone(&max_active);
         let server = tokio::spawn(async move {
-            let (mut stream, _) = listener.accept().await.unwrap();
-            let mut requests = Vec::new();
-            for (symbol, description, last) in
-                [("AAPL", "Apple Inc.", 100.0), ("MSFT", "Microsoft", 200.0)]
-            {
-                let request = read_http_request(&mut stream).await;
-                assert!(request.contains(&format!(r#""right":"{symbol}""#)));
-                requests.push(request);
-                let payload = json!({
-                    "data": [{
-                        "s": format!("NASDAQ:{symbol}"),
-                        "d": [
-                            symbol, description, last, last, last, last,
-                            1000, 0.0, "NASDAQ", "stock", "common"
-                        ]
-                    }]
-                })
-                .to_string();
-                let response = format!(
-                    "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: keep-alive\r\n\r\n{}",
-                    payload.len(),
-                    payload
-                );
-                stream.write_all(response.as_bytes()).await.unwrap();
+            let mut tasks = Vec::new();
+            for _ in 0..2 {
+                let (mut stream, _) = listener.accept().await.unwrap();
+                let active = Arc::clone(&server_active);
+                let max_active = Arc::clone(&server_max_active);
+                tasks.push(tokio::spawn(async move {
+                    let now_active = active.fetch_add(1, Ordering::SeqCst) + 1;
+                    max_active.fetch_max(now_active, Ordering::SeqCst);
+                    let request = read_http_request(&mut stream).await;
+                    let (symbol, description, last, delay_ms) = if request.contains("AAPL") {
+                        ("AAPL", "Apple Inc.", 100.0, 80)
+                    } else {
+                        ("MSFT", "Microsoft", 200.0, 10)
+                    };
+                    sleep(Duration::from_millis(delay_ms)).await;
+                    let payload = json!({
+                        "data": [{
+                            "s": format!("NASDAQ:{symbol}"),
+                            "d": [
+                                symbol, description, last, last, last, last,
+                                1000, 0.0, "NASDAQ", "stock", "common"
+                            ]
+                        }]
+                    })
+                    .to_string();
+                    let response = format!(
+                        "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{}",
+                        payload.len(),
+                        payload
+                    );
+                    stream.write_all(response.as_bytes()).await.unwrap();
+                    active.fetch_sub(1, Ordering::SeqCst);
+                }));
             }
-            assert!(
-                tokio::time::timeout(Duration::from_millis(100), listener.accept())
-                    .await
-                    .is_err()
-            );
-            requests
+            for task in tasks {
+                task.await.unwrap();
+            }
         });
 
         let client = crate::http::configured_client().unwrap();
@@ -511,17 +553,75 @@ mod tests {
         .unwrap();
 
         assert_eq!(result.resolved_count, 2);
+        assert_eq!(result.items[0].requested_index, 0);
         assert_eq!(result.items[0].requested_symbol, "NASDAQ:AAPL");
         assert_eq!(
             result.items[0].quote.as_ref().unwrap().symbol,
             "NASDAQ:AAPL"
         );
+        assert_eq!(result.items[1].requested_index, 1);
         assert_eq!(result.items[1].requested_symbol, "NASDAQ:MSFT");
         assert_eq!(
             result.items[1].quote.as_ref().unwrap().symbol,
             "NASDAQ:MSFT"
         );
-        assert_eq!(server.await.unwrap().len(), 2);
+        server.await.unwrap();
+        assert_eq!(active.load(Ordering::SeqCst), 0);
+        assert_eq!(max_active.load(Ordering::SeqCst), 2);
+    }
+
+    #[tokio::test]
+    async fn concurrent_all_failed_quotes_keep_first_input_error() {
+        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let address = listener.local_addr().unwrap();
+        let server = tokio::spawn(async move {
+            let mut tasks = Vec::new();
+            for _ in 0..2 {
+                let (mut stream, _) = listener.accept().await.unwrap();
+                tasks.push(tokio::spawn(async move {
+                    let request = read_http_request(&mut stream).await;
+                    let (delay_ms, response) = if request.contains("FIRST") {
+                        (
+                            80,
+                            "HTTP/1.1 500 Internal Server Error\r\nContent-Length: 0\r\nConnection: close\r\n\r\n"
+                                .to_string(),
+                        )
+                    } else {
+                        let body = json!({"data": []}).to_string();
+                        (
+                            10,
+                            format!(
+                                "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{}",
+                                body.len(),
+                                body
+                            ),
+                        )
+                    };
+                    sleep(Duration::from_millis(delay_ms)).await;
+                    stream.write_all(response.as_bytes()).await.unwrap();
+                }));
+            }
+            for task in tasks {
+                task.await.unwrap();
+            }
+        });
+
+        let client = crate::http::configured_client().unwrap();
+        let error = quote_symbols_typed_with_client_and_url(
+            &client,
+            vec!["NASDAQ:FIRST".to_string(), "NASDAQ:SECOND".to_string()],
+            &format!("http://{address}/scan"),
+        )
+        .await
+        .unwrap_err();
+
+        assert_eq!(error.kind, ErrorKind::InternalApiUnavailable);
+        let details = error.details.unwrap();
+        assert_eq!(details["items"][0]["requested_index"], 0);
+        assert_eq!(details["items"][0]["requested_symbol"], "NASDAQ:FIRST");
+        assert_eq!(details["items"][1]["requested_index"], 1);
+        assert_eq!(details["items"][1]["requested_symbol"], "NASDAQ:SECOND");
+        server.await.unwrap();
     }
 
     async fn read_http_request(stream: &mut tokio::net::TcpStream) -> String {
@@ -763,6 +863,14 @@ mod tests {
             normalize_quote_symbols(vec![" AAPL ".to_string(), "NYSE:IONQ".to_string()]).unwrap(),
             vec!["AAPL".to_string(), "NYSE:IONQ".to_string()]
         );
+        let too_many = normalize_quote_symbols(
+            (0..=MAX_MULTI_SYMBOLS)
+                .map(|index| format!("SYM{index}"))
+                .collect(),
+        )
+        .unwrap_err();
+        assert_eq!(too_many.kind, ErrorKind::Validation);
+        assert_eq!(too_many.details.unwrap()["maximum"], MAX_MULTI_SYMBOLS);
     }
 
     #[test]
@@ -782,12 +890,14 @@ mod tests {
         .unwrap();
         let items = vec![
             BatchQuoteItem {
+                requested_index: 0,
                 requested_symbol: "AAPL".to_string(),
                 ok: true,
                 quote: Some(quote),
                 error: None,
             },
             BatchQuoteItem {
+                requested_index: 1,
                 requested_symbol: "BANANA".to_string(),
                 ok: false,
                 quote: None,
@@ -810,6 +920,7 @@ mod tests {
         assert_eq!(payload["resolved_count"], 1);
         assert_eq!(payload["error_count"], 1);
         assert_eq!(payload["items"][0]["requested_symbol"], "AAPL");
+        assert_eq!(payload["items"][0]["requested_index"], 0);
         assert_eq!(payload["items"][0]["quote"]["source"], "scanner_scan_rest");
         assert_eq!(
             payload["items"][0]["quote"]["source_category"],
@@ -818,12 +929,14 @@ mod tests {
         assert_eq!(payload["items"][0]["quote"]["requires_desktop"], false);
         assert_eq!(payload["items"][0]["quote"]["non_mutating"], true);
         assert_eq!(payload["items"][1]["requested_symbol"], "BANANA");
+        assert_eq!(payload["items"][1]["requested_index"], 1);
         assert_eq!(payload["items"][1]["error"]["kind"], "validation");
     }
 
     #[test]
     fn finalize_quote_items_returns_typed_batch_result() {
         let items = vec![BatchQuoteItem {
+            requested_index: 0,
             requested_symbol: "BANANA".to_string(),
             ok: false,
             quote: None,
@@ -852,6 +965,7 @@ mod tests {
     #[test]
     fn finalize_quote_items_returns_error_with_ordered_details_when_all_fail() {
         let items = vec![BatchQuoteItem {
+            requested_index: 0,
             requested_symbol: "BANANA".to_string(),
             ok: false,
             quote: None,

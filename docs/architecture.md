@@ -145,6 +145,10 @@ Keep responsibilities separated:
 - `crates/market/src/lib.rs` owns direct HTTP implementations behind
   `tv search <QUERY>`, `tv info <SYMBOL>`, the default
   `tv quote <SYMBOL>` scanner source, and `tv quotes <SYMBOL>...`.
+  Bounded Desktop-free quote, compare, and events workflows accept at most 25
+  symbols and run at most four symbol operations concurrently. Completion
+  order is restored by `requested_index` before payload shaping; the quote,
+  info, and fundamentals reads inside one compare symbol remain sequential.
 - `crates/scanner/src/lib.rs` owns direct HTTP implementations behind
   `tv scanner hotlist` and `tv scanner scan`.
 - `crates/pine/src/lib.rs` owns Desktop-free Pine static analysis,
