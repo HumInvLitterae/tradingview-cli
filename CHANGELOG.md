@@ -35,6 +35,8 @@ package version omits the leading `v`.
   work-item inventory with retained feature follow-ups, and the first
   broken-pipe hardening ExecPlan. Refreshed contributor sources, plan indexing,
   and current-state guidance after the `v0.25.0` release.
+- Started the v0.26 pre-release completion and architecture audit after all six
+  robustness gates completed implementation and independent review.
 
 ## v0.25.0 - 2026-06-11
 
