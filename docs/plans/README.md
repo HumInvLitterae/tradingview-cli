@@ -8,9 +8,10 @@ for release and next-phase planning.
 
 Current plan:
 
-- `tradingview-cli-cdp-windows-refusal-fixture.md`: stabilize the local CDP
-  HTTP refusal fixtures that currently fail on Windows CI before v0.26 release
-  readiness. Canonical history sanitation is complete and archived.
+- `tradingview-cli-cdp-windows-refusal-fixture.md`: replace platform-dependent
+  released-port CDP tests with controlled transport-disconnect fixtures before
+  v0.26 release readiness. Canonical history sanitation is complete and
+  archived.
 
 The ordered `v0.26.0` implementation inventory is maintained in
 `docs/v0.26-work-items.md`. CDP event buffering, transport deadlines and HTTP

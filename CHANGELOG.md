@@ -49,8 +49,8 @@ package version omits the leading `v`.
 
 ### Tests
 
-- Serialized CDP loopback fixtures in the test process to preserve the existing
-  connection-versus-timeout assertions; Windows CI revalidation is pending.
+- Replaced platform-dependent released-port CDP tests with controlled transport
+  disconnect fixtures; Windows CI revalidation is pending.
 
 ## v0.25.0 - 2026-06-11
 
