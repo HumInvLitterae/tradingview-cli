@@ -39,6 +39,10 @@ package version omits the leading `v`.
   robustness gates completed implementation and independent review.
 - Removed a machine-specific username from historical documentation-validation
   patterns while preserving their generic macOS absolute-path detection.
+- Planned canonical Git-history sanitation and a recurrence guard so old main
+  and release-tag refs no longer expose removed machine-specific path text.
+- Added a cross-platform tracked-tree hygiene guard and downstream clone
+  recovery guidance in preparation for the reviewed canonical history rewrite.
 
 ## v0.25.0 - 2026-06-11
 
