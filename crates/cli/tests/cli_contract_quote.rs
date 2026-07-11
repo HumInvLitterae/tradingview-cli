@@ -41,6 +41,8 @@ fn quotes_help_explains_batch_symbol_reads() {
         .stdout(predicate::str::contains("update_mode"))
         .stdout(predicate::str::contains("delay_seconds"))
         .stdout(predicate::str::contains("data.items"))
+        .stdout(predicate::str::contains("1 to 25 symbols"))
+        .stdout(predicate::str::contains("requested_index"))
         .stdout(predicate::str::contains("real-time").not());
 }
 
@@ -56,6 +58,21 @@ fn quotes_rejects_invalid_inputs_before_connecting() {
     assert_eq!(value["success"], false);
     assert_eq!(value["command"], "quotes");
     assert_eq!(value["error"]["kind"], "validation");
+
+    let symbols = (0..26)
+        .map(|index| format!("SYM{index}"))
+        .collect::<Vec<_>>();
+    let mut args = vec!["quotes".to_string()];
+    args.extend(symbols);
+    let too_many = tv()
+        .env("TV_CDP_PORT", "9")
+        .args(args)
+        .assert()
+        .failure()
+        .code(1);
+    let value = stderr_json(&too_many);
+    assert_eq!(value["error"]["kind"], "validation");
+    assert_eq!(value["error"]["details"]["maximum"], 25);
 
     let blank_symbol = tv()
         .env("TV_CDP_PORT", "9")
@@ -301,6 +318,7 @@ fn compare_help_explains_desktop_free_comparison() {
         .stdout(predicate::str::contains("scanner quote"))
         .stdout(predicate::str::contains("fundamentals"))
         .stdout(predicate::str::contains("Follow-up hints"))
+        .stdout(predicate::str::contains("2 to 25 symbols"))
         .stdout(predicate::str::contains("not auto-run"))
         .stdout(predicate::str::contains("snapshot"))
         .stdout(predicate::str::contains("observe chart"));
@@ -340,6 +358,21 @@ fn compare_rejects_invalid_inputs_before_connecting() {
     assert_eq!(value["success"], false);
     assert_eq!(value["command"], "compare");
     assert_eq!(value["error"]["kind"], "validation");
+
+    let symbols = (0..26)
+        .map(|index| format!("SYM{index}"))
+        .collect::<Vec<_>>();
+    let mut args = vec!["compare".to_string()];
+    args.extend(symbols);
+    let too_many = tv()
+        .env("TV_CDP_PORT", "9")
+        .args(args)
+        .assert()
+        .failure()
+        .code(1);
+    let value = stderr_json(&too_many);
+    assert_eq!(value["error"]["kind"], "validation");
+    assert_eq!(value["error"]["details"]["maximum"], 25);
 }
 
 #[test]

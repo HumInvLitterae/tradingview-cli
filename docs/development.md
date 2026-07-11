@@ -452,6 +452,18 @@ requested count, ordered items, section success/error shape, top-level error
 summaries, follow-up hint metadata, and next-action hints. Do not paste raw
 compare output or live response payloads into tracked docs.
 
+The deterministic Gate 6 scheduling measurement is opt-in and uses only a
+loopback HTTP fixture:
+
+```bash
+cargo test -p tradingview-market measure_sequential_and_bounded_http_workloads -- --ignored --nocapture
+```
+
+It compares five-run medians at 1, 2, 5, 10, and 25 symbols for quote-like,
+events-like, and compare-like workloads. Ordinary tests enforce input order and
+the maximum of four active symbol operations without depending on elapsed-time
+thresholds.
+
 For `tv bars` WebSocket contract evidence checks, run:
 
 ```bash

@@ -387,6 +387,8 @@ pub struct BatchQuotes {
 #[derive(Debug, Clone, PartialEq, Serialize)]
 /// One ordered batch quote item.
 pub struct BatchQuoteItem {
+    /// Zero-based position in the validated input symbol list.
+    pub requested_index: usize,
     /// Symbol text supplied for this item.
     pub requested_symbol: String,
     /// True when `quote` is present.

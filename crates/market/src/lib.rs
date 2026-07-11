@@ -50,6 +50,7 @@
 //! ```
 
 mod bars;
+mod bounded;
 mod compare;
 mod events;
 mod fundamentals;

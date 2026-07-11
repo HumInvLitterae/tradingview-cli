@@ -33,6 +33,8 @@ This reference keeps detailed source and command notes out of the core skill.
 - `tv compare` returns ordered Desktop-free evidence with quote, info, and
   fundamentals sections. `summary.coverage_status` means evidence
   completeness only; use raw `items[]` for the actual comparison.
+- `tv quotes`, `tv compare`, and `tv events compare` accept at most 25 symbols.
+  Preserve input order and report `requested_index` when it is present.
 - For regular-session movement, prefer
   `items[].movement.regular_change_percent` as first-pass readback and confirm
   against raw quote fields when needed.

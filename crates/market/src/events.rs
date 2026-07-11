@@ -2,6 +2,7 @@ use serde_json::{Map, Value, json};
 use tradingview_core::{AppError, ErrorKind};
 
 use crate::{
+    bounded::{MULTI_SYMBOL_CONCURRENCY, collect_ordered_bounded},
     fundamentals::fundamentals_symbol_with_groups_typed_with_client,
     http::configured_client,
     types::{
@@ -79,26 +80,38 @@ pub async fn events_compare_symbols_typed(
     let requested_event_type = normalize_event_type(event_type)?;
     let requested_symbols = normalize_compare_symbols(symbols)?;
 
-    let mut items = Vec::with_capacity(requested_symbols.len());
-    for (requested_index, requested_symbol) in requested_symbols.iter().enumerate() {
-        match events_symbol_typed_with_client(&client, requested_symbol, requested_event_type).await
-        {
-            Ok(events) => items.push(EventsCompareItem {
-                requested_index,
-                requested_symbol: requested_symbol.clone(),
-                status: "ok".to_string(),
-                events: Some(events),
-                failure_details: None,
-            }),
-            Err(err) => items.push(EventsCompareItem {
-                requested_index,
-                requested_symbol: requested_symbol.clone(),
-                status: "error".to_string(),
-                events: None,
-                failure_details: Some(sanitized_error_details(&err)),
-            }),
-        }
-    }
+    let completed = collect_ordered_bounded(
+        requested_symbols.clone(),
+        MULTI_SYMBOL_CONCURRENCY,
+        |_, requested_symbol| async {
+            let result =
+                events_symbol_typed_with_client(&client, &requested_symbol, requested_event_type)
+                    .await;
+            (requested_symbol, result)
+        },
+    )
+    .await;
+    let items = completed
+        .into_iter()
+        .map(
+            |(requested_index, (requested_symbol, result))| match result {
+                Ok(events) => EventsCompareItem {
+                    requested_index,
+                    requested_symbol,
+                    status: "ok".to_string(),
+                    events: Some(events),
+                    failure_details: None,
+                },
+                Err(err) => EventsCompareItem {
+                    requested_index,
+                    requested_symbol,
+                    status: "error".to_string(),
+                    events: None,
+                    failure_details: Some(sanitized_error_details(&err)),
+                },
+            },
+        )
+        .collect();
 
     Ok(events_compare_from_items(
         requested_symbols,

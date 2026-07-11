@@ -26,6 +26,8 @@ package version omits the leading `v`.
 - Made Market, Scanner, Pine, and CDP HTTP failures use consistent connection,
   timeout, remote-status, and payload classifications with public-safe
   diagnostics and stable exit codes.
+- Added measured four-wide concurrency and a 25-symbol limit to bounded
+  Desktop-free quote, compare, and event reads while preserving input order.
 
 ### Documentation
 
