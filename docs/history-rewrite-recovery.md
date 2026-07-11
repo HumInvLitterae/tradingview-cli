@@ -1,9 +1,11 @@
 # Canonical history rewrite recovery
 
-Status: canonical rewrite completed; post-rewrite documentation closeout review
-is pending. Fresh clones now receive the rewritten history. Do not run the
-optional existing-clone realignment commands below until a maintainer confirms
-that closeout review is green.
+Status: canonical rewrite and post-rewrite documentation closeout are complete.
+Fresh clones now receive the rewritten history. The maintainer primary clone has
+also been realigned after backup and exact remote-manifest verification. Do not
+run the optional existing-clone realignment commands below without first
+confirming a clean worktree, a private backup, and the current canonical
+manifest.
 
 The `v0.26.0` preparation rewrote canonical `main` and release tags to remove a
 machine-specific path from reachable Git history. File content at the new tip
@@ -100,8 +102,7 @@ submodule identifier; do not silently reset another repository's submodule pin.
 ## Optional existing-clone realignment
 
 Fresh clone recovery is preferred. Use this alternative only when the old clone
-must be retained, its worktree is clean, and a maintainer has confirmed that
-post-rewrite closeout review is green. The commands intentionally separate
+must be retained and its worktree is clean. The commands intentionally separate
 fetch, inspection, and destructive reset.
 
 First verify the worktree and create another local backup:

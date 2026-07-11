@@ -77,10 +77,12 @@ provider caches. Those limits must be communicated explicitly.
   IDs/assets, and fresh-clone history.
 - [x] (2026-07-11) Confirmed no unexpected release workflows were triggered by
   the tag rewrite.
-- [ ] Obtain focused re-review of the post-rewrite documentation corrections
-  and closeout evidence.
-- [ ] Ask for explicit approval before deleting the private rollback bundle.
-- [ ] Record downstream instructions and stop before v0.26 release readiness until post-rewrite review is green.
+- [x] (2026-07-11) Obtained focused re-review of the post-rewrite
+  documentation corrections and closeout evidence.
+- [x] (2026-07-11) Retained the private rollback bundles through the v0.26
+  release as explicitly approved; deletion remains a separate owner decision.
+- [x] (2026-07-11) Recorded downstream recovery instructions and completed
+  canonical sanitation closeout before release-readiness planning.
 
 ## Surprises & Discoveries
 
@@ -206,10 +208,11 @@ and rollback was not needed.
 A fresh canonical clone preserves the expected tree, has no reachable legacy
 path or concrete username alternation, and passes the hygiene guard, formatting,
 strict clippy, workspace tests, metadata, fsck, and diff checks. The first
-post-rewrite review found no mutation or validation defect, but identified stale
-pre-mutation wording in this living plan and the downstream recovery notice.
-Those documentation findings are corrected and await focused re-review before
-sanitation closeout or v0.26 release readiness.
+post-rewrite review found no mutation or validation defect, and the subsequent
+documentation correction passed focused re-review. The reviewed correction was
+committed as `e18f43f` and pushed normally. Canonical history sanitation is
+closed; the primary clone was then realigned to the rewritten main and canonical
+tags while preserving local backup refs and private rollback bundles.
 
 ## Context and Orientation
 
@@ -571,9 +574,9 @@ local continuity ledger until post-rewrite closeout.
 The canonical repository has 27 GitHub Release objects and 135 assets. The
 release workflow is active and idle. The reviewed leased atomic push confirmed
 force-update permission and moved all 29 refs without partial movement. The
-original primary clone remains on old history by design; a separate fresh clone
-tracks rewritten canonical `main`. The rollback evidence was fetched from the
-pre-rewrite remote and remains available as a private mode-0600 bundle.
+primary clone now tracks rewritten canonical `main`; `main-backup` retains the
+pre-rewrite local tip without an upstream. The rollback evidence was fetched
+from the pre-rewrite remote and remains available as private mode-0600 bundles.
 
 ## Interfaces and Dependencies
 
@@ -588,19 +591,18 @@ approval; it was not performed.
 
 ## Open Questions
 
-The remaining owner decisions are whether to retain or delete the private
-rollback bundle after closeout and whether to replace the old primary clone with
-a fresh clone or use the separately confirmed realignment procedure. GitHub
-cache purge is not part of canonical sanitation and should be considered only
-if the project owner requires provider-level removal beyond canonical ref
-reachability.
+The remaining owner decision is whether to delete the private rollback bundles
+after the v0.26 release. GitHub cache purge is not part of canonical sanitation
+and should be considered only if the project owner requires provider-level
+removal beyond canonical ref reachability.
 
 Revision note (2026-07-11): created after current-tree cleanup commit `97949d7`
 and a successful disposable rewrite proof. Revised after two plan-review rounds,
 updated when the recurrence guard and migration notice were implemented, and
 updated again after their review/commit and the first full preflight rehearsal.
 The final artifact review then identified a documentation/generator drift in
-the rollback remote name and manifest sort key; this revision aligns the
-procedure before regenerating the freeze. The reviewed forward mutation then
-completed successfully; this post-rewrite revision records its validation and
-the remaining documentation closeout gate.
+the rollback remote name and manifest sort key; this revision aligned the
+procedure before regenerating the freeze. The reviewed forward mutation and
+post-rewrite documentation closeout then completed successfully. The primary
+clone was realigned only after remote verification, and backup bundles remain
+retained by owner decision.
