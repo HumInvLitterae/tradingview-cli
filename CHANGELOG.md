@@ -43,6 +43,9 @@ package version omits the leading `v`.
   and release-tag refs no longer expose removed machine-specific path text.
 - Added a cross-platform tracked-tree hygiene guard and downstream clone
   recovery guidance in preparation for the reviewed canonical history rewrite.
+- Completed the reviewed canonical main and release-tag history rewrite while
+  preserving the current tree and GitHub Release assets, and updated downstream
+  recovery guidance for the post-rewrite state.
 
 ## v0.25.0 - 2026-06-11
 

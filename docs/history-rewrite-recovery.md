@@ -1,14 +1,15 @@
 # Canonical history rewrite recovery
 
-Status: preparatory notice. The canonical repository has not yet been rewritten.
-Do not run the realignment commands below until a maintainer announcement says
-the rewrite is complete.
+Status: canonical rewrite completed; post-rewrite documentation closeout review
+is pending. Fresh clones now receive the rewritten history. Do not run the
+optional existing-clone realignment commands below until a maintainer confirms
+that closeout review is green.
 
-The planned `v0.26.0` preparation rewrites canonical `main` and release tags to
-remove a machine-specific path from reachable Git history. File content at the
-new tip is intended to remain unchanged, and existing GitHub Release objects
-and assets are intended to remain in place. Commit and tag-target identifiers
-will change because rewriting an old commit changes every descendant identifier.
+The `v0.26.0` preparation rewrote canonical `main` and release tags to remove a
+machine-specific path from reachable Git history. File content at the new tip
+is unchanged, and existing GitHub Release objects and assets remain in place.
+Commit and tag-target identifiers changed because rewriting an old commit
+changes every descendant identifier.
 
 The safest recovery is a fresh clone. Do not pull or merge rewritten history
 into an old clone. Preserve the old clone until you have audited and recovered
@@ -52,8 +53,8 @@ contains the old history that the canonical repository is removing.
 
 ## Recommended fresh-clone recovery
 
-After the maintainer announces that the rewrite is complete, save the canonical
-URL while still in the old clone, then clone into a new sibling directory:
+Save the canonical URL while still in the old clone, then clone into a new
+sibling directory:
 
 ```bash
 CANONICAL_URL="$(git remote get-url origin)"
@@ -99,7 +100,8 @@ submodule identifier; do not silently reset another repository's submodule pin.
 ## Optional existing-clone realignment
 
 Fresh clone recovery is preferred. Use this alternative only when the old clone
-must be retained and its worktree is clean. The commands intentionally separate
+must be retained, its worktree is clean, and a maintainer has confirmed that
+post-rewrite closeout review is green. The commands intentionally separate
 fetch, inspection, and destructive reset.
 
 First verify the worktree and create another local backup:
