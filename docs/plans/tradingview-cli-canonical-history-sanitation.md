@@ -48,10 +48,15 @@ provider caches. Those limits must be communicated explicitly.
   self-tests, and unconditional Ubuntu/Windows CI execution.
 - [x] (2026-07-11) Added downstream fresh-clone and explicit realignment
   recovery guidance.
-- [ ] Independently review and commit the guard, notice, and this execution plan.
-- [ ] Re-run the disposable rewrite from the final pre-rewrite commit and record the final commit map.
-- [ ] Capture canonical remote refs, GitHub Release metadata, workflow state, and a private rollback bundle.
-- [ ] Verify an atomic force-push dry-run and confirm no concurrent remote ref movement.
+- [x] (2026-07-11) Independently reviewed and committed the guard, notice, and
+  execution plan as `0f0e42e`.
+- [x] (2026-07-11) Completed a full preflight rehearsal from `0f0e42e`,
+  including rewrite, exact remote backup, manifests, and leased atomic push
+  dry-run, without external mutation.
+- [ ] Commit this preflight-state update as the final freeze point, then rerun
+  the disposable rewrite and record its final commit map.
+- [ ] Independently review the final private preflight artifacts and exact
+  mutation scripts.
 - [ ] Obtain explicit project-owner approval for workflow disable, atomic force-push of main and tags, and workflow re-enable.
 - [ ] Temporarily disable the release workflow and verify its disabled state.
 - [ ] Atomically force-update canonical `main` and all 28 tags from the sanitized repository.
@@ -92,6 +97,16 @@ provider caches. Those limits must be communicated explicitly.
   deleted index entries in an in-progress worktree, and still scans regular
   tracked files and Windows checkouts where symlinks may be materialized as
   plain files.
+
+- Observation: the final preparation commit increases source history by one,
+  while the same historical cleanup commit remains the sole prune candidate.
+  Evidence: the preflight rehearsal rewrote 394 source commits to 393, preserved
+  the current tree, and mapped only `3ad570b` to the zero object.
+
+- Observation: the annotated `v0.1.0` target commit is rewritten, so its tag
+  object OID changes even though its metadata is preserved.
+  Evidence: the object target follows the commit map while tag name, type,
+  tagger, and complete message remain byte-identical.
 
 ## Decision Log
 
@@ -152,10 +167,11 @@ expected refs, removed all sensitive matches, preserved the current HEAD tree,
 kept all 28 tags, passed `git fsck`, and pruned only the expected empty commit.
 
 The destructive external phase has not started. Independent review of all ten
-plan corrections is green. The recurrence guard, two-OS CI integration,
-development instructions, and downstream recovery notice are implemented and
-locally validated. Their independent implementation review and commit remain
-before the final dry-run, exact remote backup, and final preflight.
+plan corrections and the preparatory implementation is green, and preparation
+is committed as `0f0e42e`. A complete preflight rehearsal also passed. This
+state update must become the final freeze commit, after which the same preflight
+must be rerun once more and independently reviewed before owner approval is
+requested.
 
 ## Context and Orientation
 
@@ -483,8 +499,31 @@ The preparatory guard implementation produced:
     matched private value echoed in diagnostics: no
     exact synthetic fixture occurrences: 2 designated source files only
 
-The guard and recovery notice have no Rust or Cargo diff from `97949d7`. They
-remain uncommitted pending independent implementation review.
+The guard and recovery notice have no Rust or Cargo diff from `97949d7`. Their
+independent review was green and they were committed as `0f0e42e`.
+
+The first complete preflight rehearsal from `0f0e42e` produced:
+
+    current tree preserved: yes
+    main commits before: 394
+    main commits after: 393
+    pruned commits: 1, expected cleanup commit only
+    canonical refs: 29
+    tags: 28
+    annotated tag metadata preserved: yes
+    legacy path matches: 0
+    concrete username alternations: 0
+    releases: 27
+    assets: 135
+    workflow state: active
+    queued/in-progress release runs: 0/0
+    rollback bundle mode: 0600
+    replacement file mode: 0600
+    leased atomic push dry-run: passed
+    external mutation performed: no
+
+These are rehearsal values because recording them changes `main`. The final
+private artifacts must be regenerated from the next committed freeze point.
 
 The current repository has 27 GitHub Release objects and 135 assets. The
 release workflow is active. Repository rulesets are empty; the classic
@@ -513,5 +552,6 @@ requires provider-level removal beyond canonical ref reachability.
 
 Revision note (2026-07-11): created after current-tree cleanup commit `97949d7`
 and a successful disposable rewrite proof. Revised after two plan-review rounds,
-then updated when the recurrence guard and migration notice were implemented.
+updated when the recurrence guard and migration notice were implemented, and
+updated again after their review/commit and the first full preflight rehearsal.
 No external refs or workflow state were changed.
