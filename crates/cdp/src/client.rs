@@ -463,7 +463,6 @@ fn map_ws_error(err: WsError) -> AppError {
 
 #[cfg(test)]
 mod tests {
-    use crate::test_support::loopback_fixture_lock;
     use futures_util::Sink;
     use std::{
         convert::Infallible,
@@ -605,7 +604,7 @@ mod tests {
 
     #[tokio::test]
     async fn events_received_before_method_response_are_returned_in_order() {
-        let (_fixture_guard, mut client, mut server) = connected_test_client().await;
+        let (mut client, mut server) = connected_test_client().await;
         let server_task = tokio::spawn(async move {
             let id = next_request_id(&mut server).await;
             send_json(
@@ -639,7 +638,7 @@ mod tests {
 
     #[tokio::test]
     async fn event_received_before_method_error_remains_queued() {
-        let (_fixture_guard, mut client, mut server) = connected_test_client().await;
+        let (mut client, mut server) = connected_test_client().await;
         let server_task = tokio::spawn(async move {
             let id = next_request_id(&mut server).await;
             send_json(
@@ -666,7 +665,7 @@ mod tests {
 
     #[tokio::test]
     async fn unrelated_events_cannot_extend_method_response_deadline() {
-        let (_fixture_guard, mut client, mut server) = connected_test_client().await;
+        let (mut client, mut server) = connected_test_client().await;
         client.timeout = Duration::from_millis(50);
         let server_task = tokio::spawn(async move {
             let _ = next_request_id(&mut server).await;
@@ -697,7 +696,7 @@ mod tests {
 
     #[tokio::test]
     async fn unrelated_responses_cannot_extend_event_deadline() {
-        let (_fixture_guard, mut client, mut server) = connected_test_client().await;
+        let (mut client, mut server) = connected_test_client().await;
         let server_task = tokio::spawn(async move {
             for id in 100..130 {
                 if send_json_if_open(&mut server, json!({ "id": id, "result": {} }))
@@ -721,12 +720,7 @@ mod tests {
         server_task.abort();
     }
 
-    async fn connected_test_client() -> (
-        tokio::sync::MutexGuard<'static, ()>,
-        CdpClient,
-        WebSocketStream<TcpStream>,
-    ) {
-        let fixture_guard = loopback_fixture_lock().await;
+    async fn connected_test_client() -> (CdpClient, WebSocketStream<TcpStream>) {
         let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
         let address = listener.local_addr().unwrap();
         let accept = tokio::spawn(async move {
@@ -742,12 +736,11 @@ mod tests {
         };
         let client = CdpClient::connect(&target).await.unwrap();
         let server = accept.await.unwrap();
-        (fixture_guard, client, server)
+        (client, server)
     }
 
     #[tokio::test]
     async fn stalled_websocket_handshake_maps_to_timeout() {
-        let _fixture_guard = loopback_fixture_lock().await;
         let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
         let address = listener.local_addr().unwrap();
         let server = tokio::spawn(async move {

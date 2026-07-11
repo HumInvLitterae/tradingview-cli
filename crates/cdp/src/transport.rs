@@ -459,7 +459,6 @@ fn targets_with_handoff(targets: &[Target]) -> Vec<serde_json::Value> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::test_support::loopback_fixture_lock;
     use std::sync::{Mutex, OnceLock};
     use tokio::{
         io::{AsyncReadExt, AsyncWriteExt},
@@ -629,7 +628,6 @@ mod tests {
 
     #[tokio::test]
     async fn stalled_target_list_maps_to_timeout() {
-        let _fixture_guard = loopback_fixture_lock().await;
         let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
         let address = listener.local_addr().unwrap();
         let server = tokio::spawn(async move {
@@ -657,7 +655,6 @@ mod tests {
 
     #[tokio::test]
     async fn session_reuses_connection_for_repeated_target_reads() {
-        let _fixture_guard = loopback_fixture_lock().await;
         let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
         let address = listener.local_addr().unwrap();
         let server = tokio::spawn(async move {
@@ -696,7 +693,6 @@ mod tests {
 
     #[tokio::test]
     async fn target_list_remote_status_maps_to_internal_api_unavailable() {
-        let _fixture_guard = loopback_fixture_lock().await;
         for (status_line, status) in [
             ("429 Too Many Requests", 429u16),
             ("500 Internal Server Error", 500u16),
@@ -735,7 +731,6 @@ mod tests {
 
     #[tokio::test]
     async fn target_list_malformed_json_maps_to_internal_api_unavailable() {
-        let _fixture_guard = loopback_fixture_lock().await;
         let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
         let address = listener.local_addr().unwrap();
         let server = tokio::spawn(async move {
@@ -763,16 +758,8 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn target_list_connection_refusal_remains_connection() {
-        let _fixture_guard = loopback_fixture_lock().await;
-        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
-        let address = listener.local_addr().unwrap();
-        drop(listener);
-        let config = TransportConfig {
-            host: address.ip().to_string(),
-            port: address.port(),
-            target_id: None,
-        };
+    async fn target_list_transport_disconnect_remains_connection() {
+        let (config, server) = transport_disconnect_fixture().await;
         let error = CdpHttpSession::new(&config)
             .unwrap()
             .fetch_targets()
@@ -780,11 +767,11 @@ mod tests {
             .unwrap_err();
         assert_eq!(error.kind, ErrorKind::Connection);
         assert_eq!(error.exit_code(), 2);
+        server.await.unwrap();
     }
 
     #[tokio::test]
     async fn version_probe_malformed_success_maps_to_internal_api_unavailable() {
-        let _fixture_guard = loopback_fixture_lock().await;
         let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
         let address = listener.local_addr().unwrap();
         let server = tokio::spawn(async move {
@@ -811,16 +798,8 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn version_probe_connection_refusal_remains_not_ready() {
-        let _fixture_guard = loopback_fixture_lock().await;
-        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
-        let address = listener.local_addr().unwrap();
-        drop(listener);
-        let config = TransportConfig {
-            host: address.ip().to_string(),
-            port: address.port(),
-            target_id: None,
-        };
+    async fn version_probe_transport_disconnect_remains_not_ready() {
+        let (config, server) = transport_disconnect_fixture().await;
         assert_eq!(
             CdpHttpSession::new(&config)
                 .unwrap()
@@ -829,6 +808,22 @@ mod tests {
                 .unwrap(),
             None
         );
+        server.await.unwrap();
+    }
+
+    async fn transport_disconnect_fixture() -> (TransportConfig, tokio::task::JoinHandle<()>) {
+        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let address = listener.local_addr().unwrap();
+        let server = tokio::spawn(async move {
+            let (mut stream, _) = listener.accept().await.unwrap();
+            read_http_request(&mut stream).await;
+        });
+        let config = TransportConfig {
+            host: address.ip().to_string(),
+            port: address.port(),
+            target_id: None,
+        };
+        (config, server)
     }
 
     async fn read_http_request(stream: &mut tokio::net::TcpStream) {
