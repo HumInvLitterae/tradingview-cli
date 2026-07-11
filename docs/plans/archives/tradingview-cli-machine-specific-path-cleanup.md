@@ -31,7 +31,8 @@ their ability to find absolute macOS user paths is unchanged.
 - [x] (2026-07-11) Verified the mechanical diff contains 79 additions and 79 deletions and preserves generic `/Users/` detection.
 - [x] (2026-07-11) Ran documentation whitespace, packaging-script, and contributor-guide checks.
 - [x] (2026-07-11) Confirmed Rust, Cargo manifests, and Cargo lockfile have no diff from audit commit `51600f8`.
-- [x] (2026-07-11) Created a focused read-only review prompt.
+- [x] (2026-07-11) Created and used a focused read-only review prompt, then
+  removed it after review completion.
 - [x] (2026-07-11) Recorded outcomes as `implemented and validated; independent review pending` and stopped uncommitted.
 - [x] (2026-07-11) Independent review reproduced the 61-file byte comparison and reported no findings.
 
@@ -139,9 +140,8 @@ reset unrelated user changes. Do not commit until independent review is green.
 ## Artifacts and Notes
 
 The completed v0.26 audit plan is archived at
-`docs/plans/archives/tradingview-cli-v0.26-pre-release-audit.md`. The focused
-review prompt will live at
-`docs/notes/v0.26-machine-specific-path-cleanup-review-prompt.md`.
+`docs/plans/archives/tradingview-cli-v0.26-pre-release-audit.md`. The transient
+review prompt was removed after its outcome was recorded in this plan.
 
 ## Interfaces and Dependencies
 
