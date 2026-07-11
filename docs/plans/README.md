@@ -8,9 +8,9 @@ for release and next-phase planning.
 
 Current plan:
 
-- `tradingview-cli-bounded-multi-symbol-concurrency.md`: measure and, where the
-  deterministic threshold is met, add input-ordered four-wide concurrency to
-  bounded Desktop-free multi-symbol reads.
+- `tradingview-cli-v0.26-pre-release-audit.md`: audit the completed v0.26
+  robustness gates, public contracts, documentation, validation, and module
+  responsibilities before release readiness.
 
 The ordered `v0.26.0` implementation inventory is maintained in
 `docs/v0.26-work-items.md`. CDP event buffering, transport deadlines and HTTP
@@ -20,6 +20,10 @@ previous item is complete and green.
 
 Recently completed:
 
+- `tradingview-cli-bounded-multi-symbol-concurrency.md`: measured and added
+  input-ordered four-wide concurrency to bounded Desktop-free quote, compare,
+  and event reads. Independent review and focused re-review are complete; the
+  plan now lives under `docs/plans/archives/`.
 - `tradingview-cli-http-error-taxonomy.md`: made HTTP transport, timeout,
   remote-status, and payload failures consistent across Market, Scanner, Pine,
   and CDP while keeping diagnostics public-safe. Independent review reported
