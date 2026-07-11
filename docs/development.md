@@ -487,6 +487,22 @@ non-empty bars, `summary`, `range`, `symbol_resolution`,
 `source_availability`, public-safe `wait_summary`, and `data_quality`. Do not
 paste raw WebSocket output or live response payloads into tracked docs.
 
+## Public hygiene guard
+
+Tracked text files must not contain machine-specific user-home paths. Run the
+deterministic detector tests and then scan the tracked tree:
+
+```bash
+python scripts/check-public-hygiene.py --self-test
+python scripts/check-public-hygiene.py
+```
+
+The guard runs in both Ubuntu and Windows CI jobs. It skips binary files and
+prints only a repository-relative file, line number, and detector category for
+each violation. Its only exceptions are the exact path-and-line pairs for two
+synthetic app-window URL fixtures. The same value in another file, or another
+user-home value in an allowed file, is rejected.
+
 ## Validation baseline
 
 For code changes, run:
@@ -510,12 +526,14 @@ For docs-only changes, at minimum run:
 
 ```bash
 git diff --check
-git grep -nE '(/Users/|C:\\|USER;|sessionid|cookie|authorization|bearer)' -- README.md CHANGELOG.md docs .agents/skills packaging scripts || true
+python scripts/check-public-hygiene.py --self-test
+python scripts/check-public-hygiene.py
+git grep -nE '(USER;|sessionid|cookie|authorization|bearer)' -- README.md CHANGELOG.md docs .agents/skills packaging scripts || true
 ```
 
-If the grep finds only validation-command examples or public-safe policy
-language, record that as acceptable. Remove any new local path, account id,
-credential, or raw live payload before committing.
+If the credential grep finds only validation-command examples or public-safe
+policy language, record that as acceptable. Remove any new local path, account
+id, credential, or raw live payload before committing.
 
 ## Optional local hooks
 

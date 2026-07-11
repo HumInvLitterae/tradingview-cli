@@ -8,9 +8,10 @@ for release and next-phase planning.
 
 Current plan:
 
-- `tradingview-cli-machine-specific-path-cleanup.md`: remove a redundant local
-  username from historical documentation-validation patterns before v0.26
-  release readiness.
+- `tradingview-cli-canonical-history-sanitation.md`: remove machine-specific
+  path text from canonical main and release-tag history through a backed-up,
+  reviewed, atomic rewrite before v0.26 release readiness. Its recurrence
+  guard and downstream recovery notice are implemented and awaiting review.
 
 The ordered `v0.26.0` implementation inventory is maintained in
 `docs/v0.26-work-items.md`. CDP event buffering, transport deadlines and HTTP
@@ -20,6 +21,10 @@ previous item is complete and green.
 
 Recently completed:
 
+- `tradingview-cli-machine-specific-path-cleanup.md`: removed 79 redundant
+  username-specific regex branches across 61 tracked documents. Independent
+  review reported no findings; the plan now lives under
+  `docs/plans/archives/`.
 - `tradingview-cli-v0.26-pre-release-audit.md`: audited all six v0.26
   robustness gates, found no release-blocking architecture issue, and completed
   independent review and focused re-review. The plan now lives under
