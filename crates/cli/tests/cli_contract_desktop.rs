@@ -4,7 +4,7 @@ use predicates::prelude::*;
 use serde_json::{Value, json};
 use std::fs;
 
-use support::{stderr_json, tv};
+use support::{stderr_json, tv, tv_with_cdp_disconnect};
 
 #[test]
 fn readiness_help_explains_desktop_backed_non_mutating_read() {
@@ -600,8 +600,7 @@ fn launch_rejects_port_zero_before_connecting() {
 
 #[test]
 fn ohlcv_without_summary_attempts_connection() {
-    let assert = tv()
-        .env("TV_CDP_PORT", "9")
+    let assert = tv_with_cdp_disconnect()
         .arg("ohlcv")
         .assert()
         .failure()
@@ -1198,8 +1197,7 @@ fn pine_open_requires_name_before_connecting() {
 
 #[test]
 fn pine_new_attempts_connection_when_cdp_is_unavailable() {
-    let assert = tv()
-        .env("TV_CDP_PORT", "9")
+    let assert = tv_with_cdp_disconnect()
         .args(["pine", "new", "indicator"])
         .assert()
         .failure()
@@ -1212,8 +1210,7 @@ fn pine_new_attempts_connection_when_cdp_is_unavailable() {
 
 #[test]
 fn pine_open_attempts_connection_when_cdp_is_unavailable() {
-    let assert = tv()
-        .env("TV_CDP_PORT", "9")
+    let assert = tv_with_cdp_disconnect()
         .args(["pine", "open", "My", "Script"])
         .assert()
         .failure()
@@ -1276,8 +1273,7 @@ fn pine_alertconditions_help_is_available() {
 
 #[test]
 fn pine_set_with_stdin_attempts_connection_when_cdp_is_unavailable() {
-    let assert = tv()
-        .env("TV_CDP_PORT", "9")
+    let assert = tv_with_cdp_disconnect()
         .args(["pine", "set"])
         .write_stdin("//@version=6\nindicator(\"X\")")
         .assert()
@@ -1295,8 +1291,7 @@ fn pine_set_with_file_attempts_connection_when_cdp_is_unavailable() {
     let path = dir.path().join("source.pine");
     fs::write(&path, "//@version=6\nindicator(\"X\")").unwrap();
 
-    let assert = tv()
-        .env("TV_CDP_PORT", "9")
+    let assert = tv_with_cdp_disconnect()
         .args(["pine", "set", "--file", path.to_str().unwrap()])
         .assert()
         .failure()
@@ -1381,8 +1376,7 @@ fn observe_rejects_invalid_observation_controls_before_connecting() {
 
 #[test]
 fn observe_connection_failure_uses_observe_error_envelope() {
-    let assert = tv()
-        .env("TV_CDP_PORT", "9")
+    let assert = tv_with_cdp_disconnect()
         .args(["observe", "chart", "--duration-ms", "100"])
         .assert()
         .failure()
@@ -1395,8 +1389,7 @@ fn observe_connection_failure_uses_observe_error_envelope() {
 
 #[test]
 fn stream_attempts_connection_when_cdp_is_unavailable() {
-    let assert = tv()
-        .env("TV_CDP_PORT", "9")
+    let assert = tv_with_cdp_disconnect()
         .args(["stream", "quote", "--interval", "100"])
         .assert()
         .failure()
@@ -1412,8 +1405,7 @@ fn stream_attempts_connection_when_cdp_is_unavailable() {
 
 #[test]
 fn pine_compile_attempts_connection_when_cdp_is_unavailable() {
-    let assert = tv()
-        .env("TV_CDP_PORT", "9")
+    let assert = tv_with_cdp_disconnect()
         .args(["pine", "compile"])
         .assert()
         .failure()
@@ -1516,8 +1508,7 @@ fn read_utilities_attempt_connection_when_cdp_is_unavailable() {
         vec!["ui", "fullscreen"],
         vec!["ui", "mouse", "1", "2"],
     ] {
-        let assert = tv()
-            .env("TV_CDP_PORT", "9")
+        let assert = tv_with_cdp_disconnect()
             .args(args)
             .assert()
             .failure()
@@ -1550,8 +1541,7 @@ fn ui_eval_is_disabled_before_connecting_without_env_gate() {
 
 #[test]
 fn ui_eval_attempts_connection_when_env_gate_is_enabled() {
-    let assert = tv()
-        .env("TV_CDP_PORT", "9")
+    let assert = tv_with_cdp_disconnect()
         .env("TV_ALLOW_UNSAFE_UI_EVAL", "1")
         .args(["ui", "eval", "1+1"])
         .assert()
@@ -1991,8 +1981,7 @@ fn alert_create_requires_price() {
 
 #[test]
 fn alert_create_indicator_normal_mode_attempts_connection_after_source_validation() {
-    let assert = tv()
-        .env("TV_CDP_PORT", "9")
+    let assert = tv_with_cdp_disconnect()
         .args([
             "alert",
             "create-indicator",
@@ -2038,8 +2027,7 @@ fn alert_create_indicator_rejects_conflicting_condition_selectors_before_connect
 
 #[test]
 fn alert_create_indicator_dry_run_attempts_connection_after_source_validation() {
-    let assert = tv()
-        .env("TV_CDP_PORT", "9")
+    let assert = tv_with_cdp_disconnect()
         .args([
             "alert",
             "create-indicator",
@@ -2119,8 +2107,7 @@ fn data_read_commands_attempt_connection_when_cdp_is_unavailable() {
         vec!["data", "boxes", "--verbose"],
         vec!["data", "shapes", "--count", "5", "--verbose"],
     ] {
-        let assert = tv()
-            .env("TV_CDP_PORT", "9")
+        let assert = tv_with_cdp_disconnect()
             .args(args)
             .assert()
             .failure()
@@ -2134,8 +2121,7 @@ fn data_read_commands_attempt_connection_when_cdp_is_unavailable() {
 
 #[test]
 fn screenshot_chart_region_attempts_connection() {
-    let assert = tv()
-        .env("TV_CDP_PORT", "9")
+    let assert = tv_with_cdp_disconnect()
         .args([
             "screenshot",
             "--region",
@@ -2154,8 +2140,7 @@ fn screenshot_chart_region_attempts_connection() {
 
 #[test]
 fn screenshot_strategy_region_attempts_connection() {
-    let assert = tv()
-        .env("TV_CDP_PORT", "9")
+    let assert = tv_with_cdp_disconnect()
         .args([
             "screenshot",
             "--region",
@@ -2212,12 +2197,12 @@ fn range_requires_from_and_to_together() {
 
 #[test]
 fn symbol_and_timeframe_allow_read_mode() {
-    tv().env("TV_CDP_PORT", "9")
+    tv_with_cdp_disconnect()
         .arg("symbol")
         .assert()
         .failure()
         .code(2);
-    tv().env("TV_CDP_PORT", "9")
+    tv_with_cdp_disconnect()
         .arg("timeframe")
         .assert()
         .failure()
@@ -2227,8 +2212,7 @@ fn symbol_and_timeframe_allow_read_mode() {
 #[test]
 fn type_attempts_connection_when_cdp_is_unavailable() {
     for args in [vec!["type"], vec!["type", "Line"], vec!["type", "1"]] {
-        let assert = tv()
-            .env("TV_CDP_PORT", "9")
+        let assert = tv_with_cdp_disconnect()
             .args(args)
             .assert()
             .failure()
