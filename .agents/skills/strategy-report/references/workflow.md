@@ -23,4 +23,13 @@ The original strategy-report skill collected strategy tester results, trade list
 
 Use the CLI for chart, market, and strategy context. If the strategy commands return empty metrics or an `error`, report that as an observation rather than filling the gap with guesses.
 
+All three structured strategy commands return an additive `strategy_context`.
+Confirm matching `selected_entity_id`, `selection_reason`, visibility, and
+report availability before combining their evidence. A hidden strategy must be
+made visible explicitly. Multiple equally plausible strategies return
+`ambiguous` rather than selecting chart order; leave one intended
+report-bearing strategy before retrying. `panel_status: "unknown"` means the
+current Desktop build did not expose a deterministic panel-state signal and
+does not by itself make structured data unavailable.
+
 Strategy Tester panel screenshots are visual evidence only. Use `tv data strategy`, `tv data trades`, and `tv data equity` for structured fields when available. The MCP server itself is not planned.

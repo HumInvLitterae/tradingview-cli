@@ -4,11 +4,23 @@ use tradingview_cdp::RuntimeEvaluator;
 use tradingview_core::AppError;
 
 use super::super::common::{CHART_API, MAX_TRADES_COUNT};
+use super::strategy_selection::{
+    StrategyReadKind, attach_strategy_context, inspect_and_select_strategy, unavailable_payload,
+};
 
 pub async fn data_strategy(runtime: &mut impl RuntimeEvaluator) -> Result<Value, AppError> {
-    runtime
-        .evaluate(&strategy_metrics_expression(), false)
-        .await
+    let selection = inspect_and_select_strategy(runtime).await?;
+    if !selection.is_available() {
+        return Ok(unavailable_payload(StrategyReadKind::Metrics, selection));
+    }
+    let entity_id = selection
+        .entity_id
+        .as_deref()
+        .expect("available strategy has id");
+    let payload = runtime
+        .evaluate(&strategy_metrics_expression(entity_id), false)
+        .await?;
+    Ok(attach_strategy_context(payload, selection))
 }
 
 pub async fn data_trades(
@@ -18,30 +30,46 @@ pub async fn data_trades(
     let limit = max_trades
         .unwrap_or(MAX_TRADES_COUNT)
         .clamp(1, MAX_TRADES_COUNT);
-    runtime
-        .evaluate(&strategy_trades_expression(limit), false)
-        .await
+    let selection = inspect_and_select_strategy(runtime).await?;
+    if !selection.is_available() {
+        return Ok(unavailable_payload(StrategyReadKind::Trades, selection));
+    }
+    let entity_id = selection
+        .entity_id
+        .as_deref()
+        .expect("available strategy has id");
+    let payload = runtime
+        .evaluate(&strategy_trades_expression(entity_id, limit), false)
+        .await?;
+    Ok(attach_strategy_context(payload, selection))
 }
 
 pub async fn data_equity(runtime: &mut impl RuntimeEvaluator) -> Result<Value, AppError> {
-    runtime.evaluate(&strategy_equity_expression(), false).await
+    let selection = inspect_and_select_strategy(runtime).await?;
+    if !selection.is_available() {
+        return Ok(unavailable_payload(StrategyReadKind::Equity, selection));
+    }
+    let entity_id = selection
+        .entity_id
+        .as_deref()
+        .expect("available strategy has id");
+    let payload = runtime
+        .evaluate(&strategy_equity_expression(entity_id), false)
+        .await?;
+    Ok(attach_strategy_context(payload, selection))
 }
 
-fn strategy_metrics_expression() -> String {
+fn strategy_metrics_expression(entity_id: &str) -> String {
+    let entity_id = serde_json::to_string(entity_id).expect("strategy entity id serializes");
     format!(
         r#"
         (function() {{
             {STRATEGY_HELPERS}
             try {{
                 var chart = {CHART_API}._chartWidget;
-                var sources = chart.model().model().dataSources();
-                var strat = __findStrategy(sources);
+                var strat = __findStrategyByEntityId(chart.model().model().dataSources(), {entity_id});
                 if (!strat) {{
-                    var domMiss = __strategyMetricsFromDom();
-                    if (Object.keys(domMiss.metrics).length > 0) {{
-                        return {{ metric_count: Object.keys(domMiss.metrics).length, source: "dom_fallback", metrics: domMiss.metrics }};
-                    }}
-                    return {{ metric_count: 0, source: "internal_api", metrics: {{}}, error: "No strategy found on chart. Add a strategy indicator first." }};
+                    return {{ metric_count: 0, source: "internal_api", metrics: {{}}, error: "Selected strategy is no longer available on chart." }};
                 }}
                 var metrics = {{}};
                 if (strat._reportData && strat._reportData.performance) {{
@@ -76,18 +104,16 @@ fn strategy_metrics_expression() -> String {
     )
 }
 
-fn strategy_trades_expression(limit: usize) -> String {
+fn strategy_trades_expression(entity_id: &str, limit: usize) -> String {
+    let entity_id = serde_json::to_string(entity_id).expect("strategy entity id serializes");
     format!(
         r#"
         (function() {{
             {STRATEGY_HELPERS}
             try {{
                 var chart = {CHART_API}._chartWidget;
-                var sources = chart.model().model().dataSources();
-                var strat = __findStrategy(sources);
-                if (!strat) {{
-                    return {{ trade_count: 0, source: "internal_api", trades: [], error: "No strategy found on chart." }};
-                }}
+                var strat = __findStrategyByEntityId(chart.model().model().dataSources(), {entity_id});
+                if (!strat) return {{ trade_count: 0, source: "internal_api", trades: [], error: "Selected strategy is no longer available on chart." }};
                 if (strat._reportData && Array.isArray(strat._reportData.trades)) {{
                     var closedTrades = strat._reportData.trades;
                     var normalized = [];
@@ -160,16 +186,16 @@ fn strategy_trades_expression(limit: usize) -> String {
     )
 }
 
-fn strategy_equity_expression() -> String {
+fn strategy_equity_expression(entity_id: &str) -> String {
+    let entity_id = serde_json::to_string(entity_id).expect("strategy entity id serializes");
     format!(
         r#"
         (function() {{
             {STRATEGY_HELPERS}
             try {{
                 var chart = {CHART_API}._chartWidget;
-                var sources = chart.model().model().dataSources();
-                var strat = __findStrategy(sources);
-                if (!strat) return {{ data_points: 0, source: "internal_api", data: [], error: "No strategy found on chart." }};
+                var strat = __findStrategyByEntityId(chart.model().model().dataSources(), {entity_id});
+                if (!strat) return {{ data_points: 0, source: "internal_api", data: [], error: "Selected strategy is no longer available on chart." }};
                 var data = [];
                 if (strat._reportData && Array.isArray(strat._reportData.buyHold)) {{
                     var buyHold = strat._reportData.buyHold;
@@ -261,20 +287,16 @@ function __flattenScalars(out, source, prefix) {
         }
     }
 }
-function __findStrategy(sources) {
+function __findStrategyByEntityId(sources, entityId) {
     for (var i = 0; i < sources.length; i++) {
         var source = sources[i];
         try {
-            var meta = source.metaInfo && source.metaInfo();
-            var id = meta && meta.id;
-            if (id && /^StrategyScript/.test(String(id))) return source;
-        } catch(e) {}
-    }
-    for (var j = 0; j < sources.length; j++) {
-        var fallback = sources[j];
-        try {
-            var legacyMeta = fallback.metaInfo && fallback.metaInfo();
-            if (legacyMeta && legacyMeta.is_price_study === false && (fallback.ordersData || fallback.reportData || fallback.performance || fallback._reportData)) return fallback;
+            var keys = ["id", "entityId"];
+            for (var k = 0; k < keys.length; k++) {
+                var id = source && source[keys[k]];
+                id = typeof id === "function" ? id.call(source) : id;
+                if (String(__unwrapValue(id) || "") === String(entityId)) return source;
+            }
         } catch(e) {}
     }
     return null;
@@ -343,6 +365,22 @@ mod tests {
     use super::super::super::test_support::FakeRuntime;
     use super::*;
 
+    fn ready_candidate() -> Value {
+        json!({
+            "candidates": [{
+                "entity_id": "study-1",
+                "detection_signals": ["tv_script_strategy"],
+                "visible": true,
+                "capabilities": {
+                    "performance": true,
+                    "trades": true,
+                    "equity": true
+                }
+            }],
+            "inspection_error": false
+        })
+    }
+
     #[tokio::test]
     async fn data_strategy_returns_runtime_payload() {
         let payload = json!({
@@ -350,34 +388,37 @@ mod tests {
             "source": "internal_api",
             "metrics": {"netProfit": 120.5}
         });
-        let mut runtime = FakeRuntime::new([payload.clone()]);
+        let mut runtime = FakeRuntime::new([ready_candidate(), payload.clone()]);
 
         let result = data_strategy(&mut runtime).await.unwrap();
 
-        assert_eq!(result, payload);
-        assert!(runtime.evaluated[0].0.contains("reportData"));
-        assert!(runtime.evaluated[0].0.contains("performance"));
-        assert!(runtime.evaluated[0].0.contains("StrategyScript"));
-        assert!(runtime.evaluated[0].0.contains("_reportData.performance"));
-        assert!(runtime.evaluated[0].0.contains("__strategyMetricsFromDom"));
+        assert_eq!(result["metric_count"], payload["metric_count"]);
+        assert_eq!(result["metrics"], payload["metrics"]);
+        assert_eq!(result["strategy_context"]["selected_entity_id"], "study-1");
+        assert!(runtime.evaluated[0].0.contains("isTVScriptStrategy"));
+        assert!(runtime.evaluated[1].0.contains("_reportData.performance"));
+        assert!(runtime.evaluated[1].0.contains("__strategyMetricsFromDom"));
+        assert!(runtime.evaluated[1].0.contains("study-1"));
     }
 
     #[tokio::test]
     async fn data_trades_clamps_max_to_20() {
-        let mut runtime =
-            FakeRuntime::new([json!({"trade_count": 0, "source": "internal_api", "trades": []})]);
+        let mut runtime = FakeRuntime::new([
+            ready_candidate(),
+            json!({"trade_count": 0, "source": "internal_api", "trades": []}),
+        ]);
 
         let _ = data_trades(&mut runtime, Some(900)).await.unwrap();
 
         assert!(
-            runtime.evaluated[0]
+            runtime.evaluated[1]
                 .0
                 .contains("Math.min(orders.length, 20)")
         );
-        assert!(runtime.evaluated[0].0.contains("_reportData.trades"));
-        assert!(runtime.evaluated[0].0.contains("total_trade_count"));
+        assert!(runtime.evaluated[1].0.contains("_reportData.trades"));
+        assert!(runtime.evaluated[1].0.contains("total_trade_count"));
         assert!(
-            runtime.evaluated[0]
+            runtime.evaluated[1]
                 .0
                 .contains("__strategyTradesFromDom(20)")
         );
@@ -391,11 +432,14 @@ mod tests {
             "source": "internal_api",
             "trades": [{"entry_price": 100.0, "pnl": 12.5}]
         });
-        let mut runtime = FakeRuntime::new([payload.clone()]);
+        let mut runtime = FakeRuntime::new([ready_candidate(), payload.clone()]);
 
         let result = data_trades(&mut runtime, Some(1)).await.unwrap();
 
-        assert_eq!(result, payload);
+        assert_eq!(result["trade_count"], payload["trade_count"]);
+        assert_eq!(result["total_trade_count"], payload["total_trade_count"]);
+        assert_eq!(result["trades"], payload["trades"]);
+        assert_eq!(result["strategy_context"]["selected_entity_id"], "study-1");
     }
 
     #[tokio::test]
@@ -405,13 +449,93 @@ mod tests {
             "source": "internal_api",
             "data": [{"time": 1, "equity": 1000, "drawdown": null}]
         });
-        let mut runtime = FakeRuntime::new([payload.clone()]);
+        let mut runtime = FakeRuntime::new([ready_candidate(), payload.clone()]);
 
         let result = data_equity(&mut runtime).await.unwrap();
 
-        assert_eq!(result, payload);
-        assert!(runtime.evaluated[0].0.contains("equityData"));
-        assert!(runtime.evaluated[0].0.contains("_reportData.buyHold"));
-        assert!(runtime.evaluated[0].0.contains("_reportData.performance"));
+        assert_eq!(result["data_points"], payload["data_points"]);
+        assert_eq!(result["data"], payload["data"]);
+        assert_eq!(result["strategy_context"]["selected_entity_id"], "study-1");
+        assert!(runtime.evaluated[1].0.contains("equityData"));
+        assert!(runtime.evaluated[1].0.contains("_reportData.buyHold"));
+        assert!(runtime.evaluated[1].0.contains("_reportData.performance"));
+    }
+
+    #[tokio::test]
+    async fn unavailable_strategy_stops_before_reader_and_keeps_legacy_error_text() {
+        let mut runtime = FakeRuntime::new([json!({
+            "candidates": [],
+            "inspection_error": false
+        })]);
+
+        let result = data_trades(&mut runtime, Some(5)).await.unwrap();
+
+        assert_eq!(runtime.evaluated.len(), 1);
+        assert_eq!(result["trade_count"], 0);
+        assert_eq!(result["error"], "No strategy found on chart.");
+        assert_eq!(
+            result["strategy_context"]["availability_status"],
+            "not_found"
+        );
+    }
+
+    #[tokio::test]
+    async fn entity_id_only_descriptor_reaches_reader_fallback() {
+        let inspection = json!({
+            "candidates": [{
+                "entity_id": "entity-only",
+                "detection_signals": ["strategy_flag"],
+                "visible": true,
+                "capabilities": {
+                    "performance": true,
+                    "trades": false,
+                    "equity": false
+                }
+            }],
+            "inspection_error": false
+        });
+        let payload = json!({
+            "metric_count": 1,
+            "source": "internal_api",
+            "metrics": {"netProfit": 1}
+        });
+        let mut runtime = FakeRuntime::new([inspection, payload]);
+
+        let result = data_strategy(&mut runtime).await.unwrap();
+
+        assert_eq!(
+            result["strategy_context"]["selected_entity_id"],
+            "entity-only"
+        );
+        assert!(runtime.evaluated[1].0.contains("entityId"));
+        assert!(runtime.evaluated[1].0.contains("entity-only"));
+    }
+
+    #[tokio::test]
+    async fn inspection_failure_keeps_nonterminal_metrics_payload() {
+        let mut runtime = FakeRuntime::new([json!({
+            "candidates": [],
+            "inspection_error": true
+        })]);
+
+        let result = data_strategy(&mut runtime).await.unwrap();
+
+        assert_eq!(runtime.evaluated.len(), 1);
+        assert_eq!(result["metric_count"], 0);
+        assert_eq!(result["source"], "internal_api");
+        assert!(result["error"].as_str().is_some());
+        assert_eq!(result["strategy_context"]["availability_status"], "unknown");
+    }
+
+    #[tokio::test]
+    async fn malformed_inspection_keeps_nonterminal_equity_payload() {
+        let mut runtime = FakeRuntime::new([json!({"unexpected": true})]);
+
+        let result = data_equity(&mut runtime).await.unwrap();
+
+        assert_eq!(runtime.evaluated.len(), 1);
+        assert_eq!(result["data_points"], 0);
+        assert!(result["error"].as_str().is_some());
+        assert_eq!(result["strategy_context"]["availability_status"], "unknown");
     }
 }

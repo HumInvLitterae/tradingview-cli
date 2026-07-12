@@ -159,6 +159,10 @@ Do not use `TV_CDP_TARGET_ID`; explicit target handoff is `--target-id`.
   evidence is needed. `strategy` captures the visible Strategy Tester panel
   when detectable. Screenshots do not mutate TradingView state but do write the
   requested local file.
+- For `tv data strategy|trades|equity`, inspect `strategy_context` before using
+  returned counts. Hidden, unready, missing, or ambiguous strategy state is a
+  source diagnostic; the commands do not open Strategy Tester or unhide a
+  study.
 - Before mutating chart, account, Pine, Replay, layout, tab, drawing, alert,
   watchlist, Screener, or generic UI state, explain the expected effect and get
   explicit user approval.

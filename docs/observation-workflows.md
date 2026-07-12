@@ -273,6 +273,12 @@ TradingView state, but they write a local file, so screenshot payloads report
 evidence only; it does not replace `tv data strategy`, `tv data trades`, or
 `tv data equity`.
 
+For structured strategy reads, compare `strategy_context` across all three
+commands before interpreting counts or values. `strategy_hidden`,
+`report_not_ready`, `ambiguous`, and `not_found` are selected-chart source
+diagnostics. Resolve them explicitly; the read commands do not open the panel
+or make a hidden strategy visible.
+
 ## Browserless Historical Bars
 
 `tv bars` is a bounded Desktop-free historical bars read:

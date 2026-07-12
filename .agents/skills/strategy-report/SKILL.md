@@ -15,13 +15,13 @@ The Rust `tv` CLI can read strategy metrics, trades, equity-style data, and Stra
 
 1. Confirm the active context with `tv status` and `tv state`.
 2. Gather market context with `tv info`, `tv quote`, and `tv ohlcv --summary`.
-3. Read strategy evidence with `tv data strategy`, `tv data trades --max <N>`, and `tv data equity`.
+3. Read strategy evidence with `tv data strategy`, `tv data trades --max <N>`, and `tv data equity`; confirm that their `strategy_context` identifies the same strategy before interpreting values.
 4. Use `tv values` when visible strategy-related studies expose useful values on the chart.
 5. Capture chart context with `tv screenshot --region chart --output <PATH>`.
 6. Capture Strategy Tester panel context with `tv screenshot --region strategy --output <PATH>` when the visible panel image matters.
 
 ## Reporting
 
-Do not infer missing strategy metrics. If a command returns an empty payload or `error` such as no strategy found, label that plainly and keep conclusions separate from evidence.
+Do not infer missing strategy metrics. Treat `strategy_hidden`, `report_not_ready`, `ambiguous`, and `not_found` as source diagnostics, not performance results. Follow explicit next actions only with user intent; these read commands do not open Strategy Tester or unhide studies.
 
 Read `references/workflow.md` when the task needs old MCP strategy command mapping or future migration notes.

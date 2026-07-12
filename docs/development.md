@@ -94,6 +94,11 @@ This project uses Rust 2024.
   visible Strategy Tester panel, but it must not open the panel, run a
   strategy, infer metrics, or replace `tv data strategy`, `tv data trades`, or
   `tv data equity`.
+- Keep Strategy Tester selection shared across metrics, trades, and equity.
+  Their additive `strategy_context` must use current strategy metadata,
+  explain report-based selection, reject unresolved multiple candidates, and
+  report hidden or unready state without opening the panel or changing study
+  visibility.
 - Once an adapter split exposes CDP-free request interpretation or validation,
   move that logic into `crates/model/` if it is reusable and not tied
   to clap or live page state. Drawing is the request-boundary example:

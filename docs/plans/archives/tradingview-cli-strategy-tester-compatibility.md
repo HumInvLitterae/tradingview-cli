@@ -34,29 +34,46 @@ Tester or change study visibility.
 - [x] (2026-07-12) Created this first v0.27 ExecPlan and fixed the initial
   boundary: diagnose current state before adding any panel or visibility
   mutation.
-- [ ] Prepare a disposable strategy test chart and record the bounded live
-  state matrix using public-safe summaries only.
-- [ ] Update `Surprises & Discoveries` and `Decision Log` with the matrix and
+- [x] (2026-07-12) Built the current CLI, inspected all three existing chart
+  targets without mutation, recorded the zero-count/no-fixture baseline, and
+  passed four strategy unit tests plus the grouped data-command connection
+  contract test.
+- [x] (2026-07-12) Preserved the three existing chart targets, created an
+  owner-approved dedicated test layout, added one exact built-in strategy, and
+  recorded visible, hidden, panel-open, and panel-closed states with only
+  public-safe summaries. Multiple-strategy state remains `UNCONFIRMED` because
+  current dialog search could not produce a unique exact second result.
+- [x] (2026-07-12) Updated `Surprises & Discoveries` and `Decision Log` with the matrix and
   finalize candidate-selection rules before editing production behavior.
-- [ ] Harden shared candidate detection and report selection for strategy,
+- [x] (2026-07-12) Hardened shared candidate detection and report selection for strategy,
   trades, and equity reads.
-- [ ] Add additive strategy context and public-safe unavailable/ambiguous
+- [x] (2026-07-12) Added additive strategy context and public-safe unavailable/ambiguous
   diagnostics without breaking existing practical fields.
-- [ ] Add deterministic focused tests and run the required Desktop smoke.
-- [ ] Synchronize help where applicable, stable docs, packaged agent guidance,
+- [x] (2026-07-12) Added deterministic focused tests and completed the final
+  visible, hidden, restored, and no-strategy Desktop smokes.
+- [x] (2026-07-12) Synchronized stable docs, packaged agent guidance,
   and the `strategy-report` and `chart-analysis` runtime skills.
-- [ ] Run the complete workspace, hygiene, skill, and packaging baseline.
-- [ ] Obtain independent review, correct findings, archive this plan, and only
-  then promote the next v0.27 work item.
+- [x] (2026-07-12) Ran the complete workspace, hygiene, skill, and packaging
+  baseline; all required checks passed.
+- [x] (2026-07-12) Received the first independent review, corrected all four
+  findings, reran focused live smokes and the complete baseline, and recorded
+  the correction architecture and evidence.
+- [x] (2026-07-12) Corrected the focused re-review findings by sharing the
+  `id` / `entityId` resolver contract, normalizing inspection exceptions into
+  nonterminal read payloads, updating orientation, and adding end-to-end
+  handoff and failure tests. Focused, live, and full validation passed again.
+- [x] (2026-07-12) Completed final independent re-review with no remaining
+  findings. This plan is ready to archive before promoting the next v0.27 work
+  item.
 
 ## Surprises & Discoveries
 
-- Observation: current Rust code already reads several modern report shapes,
+- Observation: the pre-change Rust code already read several modern report shapes,
   including `_reportData.performance`, `_reportData.trades`, and
   `reportData()`, but candidate selection can reject a current strategy before
   those readers run.
-  Evidence: `crates/cli/src/ops/data/strategy.rs` implements the report readers
-  after `__findStrategy`, whose fallback requires
+  Evidence: the original `crates/cli/src/ops/data/strategy.rs` implemented the
+  report readers after `__findStrategy`, whose fallback required
   `is_price_study === false`.
 
 - Observation: upstream current-build work reports that a strategy may expose
@@ -65,6 +82,62 @@ Tester or change study visibility.
   Evidence: the reviewed upstream changes are `653c273` and `51384e1` in the
   local research boundary `4795784..55534aa`. This is design evidence, not yet
   proof of failure in the released Rust binary.
+
+- Observation: all three existing chart targets returned zero strategy
+  evidence in the read-only baseline. Metrics and trades fell back to the DOM
+  and reported unavailable state, while equity returned zero points from the
+  internal API without an error field.
+  Evidence: the public-safe aggregate run recorded `metric_count: 0`,
+  `trade_count: 0`, and `data_points: 0` for each target. Current payloads do
+  not reveal whether equity selected a false-positive candidate or merely
+  reached a different no-data path.
+
+- Observation: filtering `cli_contract_desktop` by `strategy` runs only the
+  Strategy Tester screenshot test. The three data commands are covered by
+  `data_read_commands_attempt_connection_when_cdp_is_unavailable`.
+  Evidence: the first filtered run executed one screenshot test; source
+  inspection located the data commands in the grouped connection test.
+
+- Observation: a single visible current-build strategy exposed both the
+  `StrategyScript` ID prefix and `isTVScriptStrategy: true`, while
+  `is_price_study` was also true. Its structured report remained readable with
+  Strategy Tester visibly open and closed.
+  Evidence: all three commands selected one candidate and returned nonzero
+  public-safe counts in both panel states. The existing panel DOM selector did
+  not reliably distinguish the visibly open panel, so panel status remains
+  `unknown` rather than guessed.
+
+- Observation: hiding that strategy removed usable report containers while
+  leaving the strategy metadata candidate present. Before the fix, metrics and
+  trades reported DOM fallback errors while equity returned an unexplained
+  empty internal result.
+  Evidence: the final smoke returned `strategy_hidden`, zero counts,
+  `report_available: false`, and the same explicit next action for all three
+  commands; visibility was restored and verified immediately afterward.
+
+- Observation: the current Japanese Indicators dialog can expose a changed
+  DOM and locale shape that the upstream search parser reads as zero results.
+  Exact direct-add attempts for a second built-in strategy did not create a
+  study.
+  Evidence: no second study was created and the dialog was closed. The
+  multiple-strategy matrix row is therefore `UNCONFIRMED`; no partial match or
+  guessed script identifier was used.
+
+- Observation: retaining the old `is_price_study === false` plus generic
+  report-method fallback classified ordinary studies as candidates on a chart
+  with no strategy.
+  Evidence: after removing that heuristic, the same chart returned zero
+  candidates and `not_found`, while the dedicated strategy fixture still
+  returned one candidate through two explicit signals.
+
+- Observation: splitting candidate inspection from report reading introduced
+  two handoff risks that the first correction tests did not cover: an
+  `entityId`-only source could not be re-resolved, and chart/model inspection
+  exceptions escaped as terminal `AppError`s.
+  Evidence: focused re-review identified both paths. The final reader resolver
+  checks `id` and `entityId`, while the candidate expression returns a typed
+  public-safe inspection failure that all three read kinds normalize into
+  their existing success-envelope style.
 
 ## Decision Log
 
@@ -95,17 +168,47 @@ Tester or change study visibility.
   candidates from the same selected chart.
   Date/Author: 2026-07-12 / Codex
 
+- Decision: do not use any existing chart target as a disposable strategy
+  fixture without owner confirmation.
+  Rationale: adding a strategy, opening Strategy Tester, or changing
+  visibility can mutate an account-linked selected chart. The current targets
+  do not identify themselves as test state.
+  Date/Author: 2026-07-12 / Codex
+
+- Decision: use only explicit current strategy metadata signals and remove the
+  broad legacy `is_price_study` plus report-method fallback.
+  Rationale: collecting the legacy tier classified ordinary report-like
+  studies as strategies on a no-strategy chart, while the current fixture
+  exposed two explicit strategy signals. No live evidence justified retaining
+  the false-positive-prone fallback.
+  Date/Author: 2026-07-12 / Codex
+
+- Decision: do not claim deterministic panel status on the current build.
+  Rationale: structured data was available in both panel states, while the
+  existing DOM selector did not track the visibly open panel reliably.
+  `unknown` is more accurate and panel mutation is unnecessary.
+  Date/Author: 2026-07-12 / Codex
+
+- Decision: retain the dedicated owner-approved test layout until cleanup is
+  separately authorized.
+  Rationale: the localized new-tab landing page offered only persistent layout
+  creation. Deleting account-linked test state is a separate mutation and is
+  not implied by approval to create the fixture.
+  Date/Author: 2026-07-12 / Codex
+
 ## Outcomes & Retrospective
 
-Planning is complete. Current-build compatibility remains unconfirmed until
-the live matrix is executed. No runtime command, option, payload, dependency,
-or package version has changed in this planning slice.
+The live matrix and first implementation are complete except for the safely
+unavailable multiple-strategy fixture. Visible strategy reads work with the
+panel open or closed. Hidden state is now diagnosed consistently without
+mutation. Current metadata recognition and report-based selection share one
+helper across all three commands, and `strategy_context` is additive. No new
+command, option, dependency, or package version was added.
 
-The intended implementation outcome is a common, explainable strategy
-selection path with additive context and explicit unavailable or ambiguous
-states. If the matrix proves that panel opening or visibility changes are
-required, this plan must record that discovery and either add a separately
-explicit milestone or stop for a dedicated follow-up ExecPlan.
+Implementation, review corrections, final re-review, and validation are
+complete. A future exact-match study search command can provide a safe
+multiple-strategy fixture; this slice does not weaken exact-match safety to
+manufacture one.
 
 ## Context and Orientation
 
@@ -115,16 +218,18 @@ are `tv data strategy`, `tv data trades`, and `tv data equity`. Each connects to
 the selected TradingView Desktop target through CDP, short for Chrome DevTools
 Protocol, and evaluates a JavaScript expression inside the chart page.
 
-The operation code is in `crates/cli/src/ops/data/strategy.rs`. The functions
-`data_strategy`, `data_trades`, and `data_equity` send expressions built by
-`strategy_metrics_expression`, `strategy_trades_expression`, and
-`strategy_equity_expression`. All three embed `STRATEGY_HELPERS` and call its
-`__findStrategy` function before reading report data.
+The report readers are in `crates/cli/src/ops/data/strategy.rs`; candidate
+inspection and selection are in
+`crates/cli/src/ops/data/strategy_selection.rs`. JavaScript first returns only
+public-safe candidate descriptors. Rust `select_strategy` then chooses a
+candidate and shapes `strategy_context`. A second reader expression resolves
+the selected chart-local identity through the same `id` / `entityId` contract
+and reads metrics, trades, or equity.
 
-Current `__findStrategy` first returns a source whose metadata ID begins with
-`StrategyScript`. Its fallback returns the first source whose metadata says
-`is_price_study === false` and that exposes one of several report-like methods.
-That fallback is vulnerable to metadata drift and chart-order ambiguity.
+Candidate inspection recognizes `StrategyScript`, `isTVScriptStrategy`, and
+`is_strategy` signals. It does not treat `is_price_study` or generic report
+methods as strategy identity. Multiple candidates select the sole
+report-bearing strategy or return ambiguity instead of using chart order.
 
 The report readers are broader than the selector. Metrics inspect
 `_reportData.performance`, `reportData()`, and `performance()`. Trades inspect
@@ -179,16 +284,16 @@ remain ambiguous.
 
 ## Milestone 2: Harden candidate detection and selection
 
-Refactor `STRATEGY_HELPERS` so it builds public-safe candidate descriptors
-before selecting a strategy. A descriptor should retain the source object only
-inside the evaluated JavaScript and expose safe context separately. Inspect
-metadata defensively because fields may be values or callable wrappers.
+Build public-safe candidate descriptors in evaluated JavaScript, then select
+from those descriptors in I/O-free Rust. The descriptor carries no source
+object, title, metadata object, or report payload. Inspect metadata defensively
+because fields may be values or callable wrappers.
 
 Recognize the verified signals from the live matrix. The initial candidate set
-should consider the existing `StrategyScript` ID prefix plus boolean
-`isTVScriptStrategy` and `is_strategy` signals. Retain a legacy report-capable
-fallback only if the matrix and fixtures show it is needed, and do not treat
-`is_price_study` alone as sufficient evidence.
+uses the existing `StrategyScript` ID prefix plus boolean
+`isTVScriptStrategy` and `is_strategy` signals. The live no-strategy smoke
+showed that the legacy report-capable fallback creates false positives, so it
+is not retained.
 
 For each candidate, determine report availability without copying the report
 into diagnostics. Inspect only whether usable performance, trade, equity, or
@@ -214,7 +319,7 @@ fields that the implementation can observe reliably:
 
     candidate_count
     selected_entity_id
-    selected_title
+    selected_title (reserved as null unless a later contract proves public classification)
     detection_signals
     selection_reason
     visible
@@ -276,7 +381,7 @@ editing production code:
 
     git status --short --branch
     cargo test -p tradingview-cli ops::data::strategy -- --nocapture
-    cargo test -p tradingview-cli --test cli_contract_desktop strategy -- --nocapture
+    cargo test -p tradingview-cli --test cli_contract_desktop data_read_commands -- --nocapture
 
 Build a current binary for the live matrix:
 
@@ -294,7 +399,7 @@ restoration outcomes.
 After implementation, run focused validation:
 
     cargo test -p tradingview-cli ops::data::strategy -- --nocapture
-    cargo test -p tradingview-cli --test cli_contract_desktop strategy -- --nocapture
+    cargo test -p tradingview-cli --test cli_contract_desktop data_read_commands -- --nocapture
     cargo test -p tradingview-cli screenshot -- --nocapture
 
 Validate changed runtime skills with the repository's configured skill
@@ -338,10 +443,10 @@ corresponding behavior `UNCONFIRMED` and prevents a broad compatibility claim.
 ## Idempotence and Recovery
 
 Local tests and read-only data commands are repeatable. The live matrix must
-use a disposable chart or layout. Capture original strategy visibility and
+use a dedicated test chart or layout. Capture original strategy visibility and
 panel state before each mutation, restore immediately afterward, and stop if
-restoration cannot be verified. Never delete a strategy or save a layout as
-part of this plan.
+restoration cannot be verified. Do not delete account-linked test state without
+separate owner authorization.
 
 If current metadata differs from the upstream evidence, update this plan with
 the observed signals rather than adding every guessed fallback. If report
@@ -359,9 +464,31 @@ Planning evidence:
     Released baseline: v0.26.0 at 5e7f48f
     Upstream research boundary: 4795784..55534aa
     Relevant upstream changes: 653c273, 51384e1
-    Current selector: StrategyScript prefix, then legacy is_price_study false
+    Current selector: explicit StrategyScript, isTVScriptStrategy, is_strategy
     Current report readers: performance, trades, orders, equity, DOM fallback
-    Live compatibility matrix: pending
+    Existing chart targets inspected: 3
+    Confirmed applied strategy fixtures: 1 dedicated built-in strategy
+    Metrics/trades baseline: zero count with unavailable DOM fallback
+    Equity baseline: zero points without an error field
+    Visible, panel closed: one candidate; all three structured reads available
+    Visible, panel open: one candidate; all three structured reads available
+    Hidden: one candidate; all three report strategy_hidden; state restored
+    Multiple strategies: UNCONFIRMED; exact second add unavailable
+    Panel status readback: unknown because current DOM detection drifted
+    Focused strategy tests: 14 passed after focused re-review corrections
+    Desktop data-command contract: 1 passed
+    Screenshot-focused tests: 7 passed
+    Workspace tests, strict Clippy, formatting, metadata: passed
+    Public hygiene, skill validation, packaging syntax, guide parity: passed
+    Initial independent review: four findings corrected
+    Focused re-review: three findings corrected
+    Final independent re-review: no findings
+
+Final outcome: `tv data strategy`, `tv data trades`, and `tv data equity` now
+share current-build candidate inspection and I/O-free selection, preserve all
+existing reader capabilities, expose public-safe context without strategy
+titles, and keep unavailable states nonterminal and non-mutating. The only
+retained live uncertainty is multiple-strategy current-selection evidence.
 
 When the live matrix is complete, add a public-safe summary here. Do not add
 the symbol, strategy name if account-linked, performance values, trades, equity
@@ -369,9 +496,10 @@ rows, report payloads, chart target, or local environment paths.
 
 ## Interfaces and Dependencies
 
-The primary implementation remains in
-`crates/cli/src/ops/data/strategy.rs`. Keep these public Rust operation
-signatures unless evidence requires a separately reviewed change:
+The report readers remain in `crates/cli/src/ops/data/strategy.rs`; candidate
+inspection, Rust selection, context shaping, and fixture tests live in
+`crates/cli/src/ops/data/strategy_selection.rs`. Keep these public Rust
+operation signatures unless evidence requires a separately reviewed change:
 
     pub async fn data_strategy(
         runtime: &mut impl RuntimeEvaluator,
@@ -390,27 +518,45 @@ Do not add a new dependency. Use the existing `RuntimeEvaluator`, JSON value
 handling, chart API constant, count cap, JSON envelope, and error contract.
 Keep chart-target discovery and CDP transport ownership unchanged.
 
-The expected internal JavaScript design is one helper that returns both the
-selected source object for the report reader and a public-safe context object
-for the payload. Every command must call the same helper logic. Do not return
-the source object, metadata object, or report object in the public JSON.
+Candidate JavaScript returns only chart-local entity ID, explicit detection
+signals, visibility, and capability booleans. Rust selects one candidate and
+shapes context; the reader evaluation then resolves only that chart-local
+entity. Do not return the source object, title, metadata object, or report
+object in public JSON.
 
 ## Open Questions
 
-- UNCONFIRMED: whether current visible single-strategy reads fail in the
-  released binary or only less common states do.
 - UNCONFIRMED: whether Strategy Tester exposes a reliable current-selection
   marker when multiple strategies are present.
-- UNCONFIRMED: whether report generation requires the panel to have been opened
-  in the current Desktop build.
-- UNCONFIRMED: whether a hidden strategy can provide valid existing report data
-  without a visibility mutation.
+- UNCONFIRMED: live multiple-strategy selection, because the current localized
+  dialog did not provide a safe unique exact second strategy fixture.
 
-These questions are not delegated to the implementer as design choices. They
-must be resolved by Milestone 1, recorded in this plan, and used to update the
-prescriptive selection and readiness rules before production edits begin.
+Visible single-strategy reads are confirmed with the panel open and closed.
+Hidden state is confirmed unavailable without mutation. The owner-approved
+dedicated test layout remains isolated from the three pre-existing targets.
 
 Revision note (2026-07-12): created as the first v0.27 ExecPlan after the
 post-v0.26 upstream review. The initial scope deliberately separates
 current-build diagnosis from selector implementation and excludes silent panel
 or visibility mutation.
+
+Revision note (2026-07-12): recorded the three-target no-strategy baseline and
+corrected the focused integration-test filter. At that checkpoint, positive
+matrix states had not yet been prepared and production selection code was
+unchanged.
+
+Revision note (2026-07-12): completed the dedicated live matrix except for the
+safe multiple-strategy fixture, implemented shared selection/context, and
+passed the full baseline. Review then identified reader-capability gating,
+private title exposure, inconsistent DOM fallback semantics, weak selector
+tests, and stale plan text. The correction moves selection/context shaping to
+I/O-free Rust, covers every preserved reader capability with executable
+fixtures, reserves `selected_title` as null, and makes not-found behavior
+consistent across all three commands.
+
+Revision note (2026-07-12): focused re-review found mismatched `entityId`
+handoff, terminal inspection exceptions, and one stale orientation paragraph.
+The final correction shares `id` / `entityId` resolution, catches chart/model
+inspection inside the evaluated expression, normalizes typed or malformed
+inspection failure into nonterminal read payloads, and adds operation-level
+tests for both paths.
