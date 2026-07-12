@@ -19,8 +19,10 @@ package version omits the leading `v`.
   recorded that current Desktop result semantics remain unconfirmed, and gated
   any command implementation behind a separate stop/go parser-feasibility
   slice with explicit empty-state, privacy, timeout, and restoration rules.
-- Started the bounded indicator-search parser-feasibility plan without adding a
-  public command, payload contract, or study mutation.
+- Completed bounded indicator-search parser feasibility and upstream quality
+  comparison. A class-free structural parser supports a limited positive-result
+  implementation, while absent explicit empty/loading markers require
+  fail-closed diagnostics; no public command or study mutation was added yet.
 
 ## v0.26.0 - 2026-07-12
 

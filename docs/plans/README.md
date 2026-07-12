@@ -8,9 +8,8 @@ for release and next-phase planning.
 
 Current plan:
 
-- `tradingview-cli-indicator-search-parser-feasibility.md`: use bounded
-  current-build probes and deterministic fixtures to make a stop/go decision
-  before any indicator search command is implemented.
+- None. R6 parser feasibility is complete and ready to archive. The next plan
+  will define the positive-result-only R6b implementation.
 
 The ordered `v0.27.0` implementation inventory is maintained in
 `docs/v0.27-work-items.md`. Strategy Tester compatibility, indicator discovery,
@@ -19,6 +18,10 @@ separate ExecPlans only when the previous item is complete and green.
 
 Recently completed:
 
+- `tradingview-cli-indicator-search-parser-feasibility.md`: compared upstream
+  quality, proved a strict class-free structural parser across three queries,
+  and recorded limited go with fail-closed no-result behavior. The completed
+  plan now lives under `docs/plans/archives/`.
 - `tradingview-cli-indicator-search-contract.md`: recorded the current
   Indicators dialog observation limit, defined the provisional search and
   failure contracts, and gated implementation behind a reviewed stop/go
