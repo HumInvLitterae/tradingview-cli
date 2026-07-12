@@ -7,6 +7,10 @@ package version omits the leading `v`.
 
 ## Unreleased
 
+No unreleased changes.
+
+## v0.26.0 - 2026-07-12
+
 ### Fixed
 
 - Made JSON and JSONL output tolerate closed downstream pipes without a Rust
@@ -51,7 +55,8 @@ package version omits the leading `v`.
 
 - Replaced platform-dependent released-port and fixed-port CDP failure tests
   with reconnect-capable controlled transport disconnect fixtures shared by
-  CLI connection-error contracts; Windows CI revalidation is pending.
+  CLI connection-error contracts, with the full cross-platform CI matrix
+  passing afterward.
 
 ## v0.25.0 - 2026-06-11
 

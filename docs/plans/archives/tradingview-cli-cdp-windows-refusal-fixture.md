@@ -100,8 +100,10 @@ preserved; this plan does not perform another dependency update.
 - [x] (2026-07-12) Passed the core, Desktop, and quote CLI contract targets,
   strict Clippy, the full workspace suite, metadata, public hygiene, packaging
   syntax, guide parity, and diff checks after the shared-fixture correction.
-- [ ] Obtain focused independent review of the complete CLI fixture correction.
-- [ ] Verify Windows CI is green after the corrected push.
+- [x] (2026-07-12) Received focused independent review with no implementation
+  finding; the only finding was stale post-CI project-state documentation.
+- [x] (2026-07-12) Verified run `29173925167` is green for Windows, Ubuntu,
+  macOS, Clippy, Format, and both operating-system script-check jobs.
 
 ## Surprises & Discoveries
 
@@ -172,6 +174,12 @@ preserved; this plan does not perform another dependency update.
   port. Keeping the listener alive for the command lifetime and disconnecting
   every accepted request reduced the target to 37 seconds locally.
 
+- Observation: the reconnect-capable shared fixture closes the Windows gate
+  without weakening any assertion.
+  Evidence: run `29173925167` passed all workspace tests on Windows, Ubuntu,
+  and macOS together with Clippy, Format, and both script-check jobs. Focused
+  review found no implementation issue.
+
 ## Decision Log
 
 - Superseded decision: serialize every ephemeral loopback-listener allocation
@@ -237,8 +245,9 @@ the remaining fixed-port assumption in 17 desktop contract tests. The current
 wave centralizes a reconnect-capable controlled server for every CLI test that
 expects a CDP connection error, including two quote contracts that had not yet
 run. Existing public JSON and exit-code assertions remain unchanged. Focused
-and full local validation are green; review, commit, and another Windows CI run
-remain open.
+and full local validation, independent review, and cross-platform CI are green.
+The Windows fixture blocker is closed and `v0.26.0` release readiness is the
+next project slice.
 
 ## Context and Orientation
 
@@ -339,14 +348,15 @@ Acceptance requires all of the following:
 - No tracked document contains raw payloads, credentials, account-local data,
   machine-specific paths, or one-off private review prompts.
 
-Controlled-disconnect local result (2026-07-12): the complete 32-test CDP suite
+Controlled-disconnect result (2026-07-12): the complete 32-test CDP suite
 passed 25 consecutive runs with 16 test threads. The five-test `cli_contract`
 target also passed 25 consecutive runs before the shared-fixture expansion.
 After expansion, the core 5-test, Desktop 93-test, and quote 26-test contract
 targets passed, as did formatting, strict Clippy, the full workspace suite,
 metadata, public hygiene self-test/check across 559 tracked files,
-release-script syntax, guide parity, and `git diff --check`. Focused independent
-review of the complete CLI fixture and Windows CI confirmation remain open.
+release-script syntax, guide parity, and `git diff --check`. Independent review
+reported no implementation finding. GitHub Actions run `29173925167` passed
+Windows, Ubuntu, macOS, Clippy, Format, and both script-check jobs.
 
 If Windows still reports a timeout, the implementation is not accepted.
 Preserve the failure evidence, do not skip the test or broaden the error
@@ -362,41 +372,43 @@ rollback bundles are unrelated safety artifacts and must remain untouched.
 
 ## Artifacts and Notes
 
-The latest CI evidence after the first CLI controlled-disconnect correction is:
+The final CI evidence after the shared reconnect-capable correction is:
 
-    Windows CDP: all 32 tests passed
-    Windows core CLI contract: all 5 tests passed
-    Windows Desktop CLI contract: 17 fixed-port-9 tests failed
-    Failure class: Timeout / exit code 4 instead of Connection / exit code 2
-    Ubuntu:  all workspace tests passed
-    macOS:   all workspace tests passed
-    Clippy:  passed
-    Format:  passed
-    Script checks: passed
+    Run: 29173925167
+    Windows tests: passed
+    Ubuntu tests: passed
+    macOS tests: passed
+    Clippy: passed
+    Format: passed
+    Ubuntu and Windows script checks: passed
 
-The post-fix evidence must add a successful Windows run and must not include raw
-CI environment paths or account-local identifiers in tracked documents.
+The recorded evidence contains only public-safe run and job outcomes. It does
+not include raw CI environment paths or account-local identifiers.
 
 ## Interfaces and Dependencies
 
-The only new code-level interface is private test support:
+The new code-level interfaces are private test support. The CDP crate uses:
 
     async fn transport_disconnect_fixture() ->
         (TransportConfig, tokio::task::JoinHandle<()>)
 
 It is defined and used only inside `#[cfg(test)]` code in `tradingview-cdp`.
+CLI integration tests use a private `CdpDisconnectCommand` guard and
+`tv_with_cdp_disconnect()` helper under `crates/cli/tests/support/mod.rs`. The
+guard keeps the listener alive through client reconnects and joins its server
+thread when the subprocess assertion completes.
 Production builds, public Rust APIs, CLI output, HTTP deadlines, error kinds,
 and exit codes remain unchanged.
 
 ## Open Questions
 
-The correction-wave implementation choice is fixed; complete validation and
-focused review remain. The later external gate is owner approval for the normal
-push needed to obtain Windows CI evidence. Rollback bundle deletion remains a
-separate post-release owner decision.
+There is no unresolved implementation or release-readiness blocker in this
+plan. Rollback bundle deletion remains a separate post-release owner decision.
 
 Revision note (2026-07-12): created after canonical history sanitation closed
 and the first post-rewrite CI run showed two Windows-only released-port fixture
 failures. Revised after the reviewed mutex approach also failed Windows CI; the
 current correction uses a controlled server disconnect and removes the
-disproven serialization infrastructure.
+disproven serialization infrastructure. Revised again after run `29173925167`
+passed every CI job and focused review found only stale project-state docs; the
+plan is now complete and ready for archive.
