@@ -15,6 +15,9 @@ package version omits the leading `v`.
   strategy selection context across metrics, trades, and equity, with explicit
   hidden, unready, missing, and ambiguous diagnostics and no automatic chart
   mutation.
+- Started the v0.27 indicator and strategy discovery contract, including
+  localized DOM-drift diagnostics, explicit empty-state proof, privacy
+  classification, bounded readiness, and dialog restoration requirements.
 
 ## v0.26.0 - 2026-07-12
 

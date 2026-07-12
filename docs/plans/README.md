@@ -8,8 +8,9 @@ for release and next-phase planning.
 
 Current plan:
 
-- No implementation ExecPlan is active. The next planned promotion is the R5
-  indicator and strategy search contract from `docs/v0.27-work-items.md`.
+- `tradingview-cli-indicator-search-contract.md`: inventory the current
+  localized Indicators dialog and fix the read-oriented search, empty-state,
+  privacy, timeout, and restoration contract before implementation.
 
 The ordered `v0.27.0` implementation inventory is maintained in
 `docs/v0.27-work-items.md`. Strategy Tester compatibility, indicator discovery,
