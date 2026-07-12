@@ -47,6 +47,9 @@ in a later turn.
   package-script, stale-version, guide-parity, and diff checks.
 - [x] (2026-07-12) Recorded final local evidence. Tag, push, and GitHub Release
   creation remain owner-controlled actions.
+- [x] (2026-07-12) Project owner published GitHub Release `v0.26.0` from
+  release-preparation commit `5e7f48f`; local `main`, `origin/main`, and the
+  release tag agree. Archived this completed plan during the v0.27 transition.
 
 ## Surprises & Discoveries
 
@@ -78,14 +81,15 @@ in a later turn.
 
 ## Outcomes & Retrospective
 
-The release-preparation changes are complete locally. The workspace and all
+The release-preparation changes completed locally and were released. The
+workspace and all
 member packages report `0.26.0`; the staged binary reports `tv 0.26.0`; the
 package contains the binary, public docs, user-facing guides, eight runtime
 skills in both supported skill roots, and no development-only skills. The full
-Rust baseline and public hygiene checks are green. No tag, push, or GitHub
-Release mutation was performed by this plan. The remaining owner action is to
-review and commit these release-preparation changes, then separately decide
-when to tag, push, and publish.
+Rust baseline and public hygiene checks are green. This plan itself stopped
+before remote mutation as required; the project owner subsequently committed,
+pushed, tagged, and published `v0.26.0`. Planning then moved to v0.27 without a
+post-release correction.
 
 ## Context and Orientation
 
@@ -265,13 +269,17 @@ The GitHub Release body is the Markdown content of
 
 ## Open Questions
 
-There is no unresolved release-scope or validation question. The actual
-release date must be rechecked immediately before tagging; if it differs from
-`2026-07-12`, update the dated changelog section first. Push, tag creation,
-GitHub Release creation, rollback-bundle deletion, and `main-backup` deletion
-remain separate owner actions.
+There is no unresolved release-scope or validation question. Release
+`v0.26.0` was published on `2026-07-12`. Rollback-bundle deletion and
+`main-backup` deletion remain separate owner decisions and are not implied by
+this completed release plan.
 
 Revision note (2026-07-12): created after cross-platform CI and focused review
 closed the final Windows fixture blocker. This plan intentionally freezes
 feature and refactor work and moves the repository into `v0.26.0` release
 preparation.
+
+Revision note (2026-07-12): archived after GitHub Release `v0.26.0` was
+published from `5e7f48f`. The release outcome was recorded without changing the
+historical boundary that remote release actions required separate owner
+authorization.
