@@ -8,9 +8,8 @@ for release and next-phase planning.
 
 Current plan:
 
-- `tradingview-cli-indicator-search-contract.md`: inventory the current
-  localized Indicators dialog and fix the read-oriented search, empty-state,
-  privacy, timeout, and restoration contract before implementation.
+- None. R5 is complete and archived. The next plan will define R6 indicator
+  and strategy parser feasibility without adding a public command.
 
 The ordered `v0.27.0` implementation inventory is maintained in
 `docs/v0.27-work-items.md`. Strategy Tester compatibility, indicator discovery,
@@ -19,6 +18,11 @@ separate ExecPlans only when the previous item is complete and green.
 
 Recently completed:
 
+- `tradingview-cli-indicator-search-contract.md`: recorded the current
+  Indicators dialog observation limit, defined the provisional search and
+  failure contracts, and gated implementation behind a reviewed stop/go
+  parser-feasibility slice. The completed plan now lives under
+  `docs/plans/archives/`.
 - `tradingview-cli-strategy-tester-compatibility.md`: hardened current-build
   Strategy Tester detection and report selection across metrics, trades, and
   equity, added public-safe shared context, and completed independent review.
