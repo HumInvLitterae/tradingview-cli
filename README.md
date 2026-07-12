@@ -347,7 +347,8 @@ details, see `docs/breaking-changes-from-js-cli.md`.
   and contribution
   workflow.
 - [docs/history-rewrite-recovery.md](docs/history-rewrite-recovery.md):
-  preparatory recovery guidance for the planned canonical history rewrite.
+  existing-clone recovery guidance after the completed canonical history
+  rewrite.
 - [docs/release-packaging.md](docs/release-packaging.md): release archive contents and packaging checks.
 - [docs/internal-tradingview-apis.md](docs/internal-tradingview-apis.md):
   public-safe reference for non-public

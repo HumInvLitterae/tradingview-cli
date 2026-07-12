@@ -8,19 +8,22 @@ for release and next-phase planning.
 
 Current plan:
 
-- `tradingview-cli-v0.26.0-release-readiness.md`: finalize the `v0.26.0`
-  package version, changelog, curated release notes, public download examples,
-  staged archive, and release baseline after all hardening and Windows CI gates
-  completed.
+- `tradingview-cli-strategy-tester-compatibility.md`: establish a current-build
+  Strategy Tester state matrix, harden strategy detection and report
+  selection, and preserve explicit mutation boundaries before broader v0.27
+  chart workflow work.
 
-The ordered `v0.26.0` implementation inventory is maintained in
-`docs/v0.26-work-items.md`. CDP event buffering, transport deadlines and HTTP
-client reuse, bars heartbeat verification, HTTP error taxonomy, and measured
-multi-symbol concurrency are promoted into separate ExecPlans only when the
-previous item is complete and green.
+The ordered `v0.27.0` implementation inventory is maintained in
+`docs/v0.27-work-items.md`. Strategy Tester compatibility, indicator discovery,
+visible-range history paging, and evidence-fidelity work are promoted into
+separate ExecPlans only when the previous item is complete and green.
 
 Recently completed:
 
+- `tradingview-cli-v0.26.0-release-readiness.md`: prepared and validated the
+  released `v0.26.0` package, changelog, release notes, README examples, and
+  explicit archive contents. The completed plan now lives under
+  `docs/plans/archives/`.
 - `tradingview-cli-cdp-windows-refusal-fixture.md`: replaced platform-dependent
   released-port and fixed-port assumptions with controlled reconnect-capable
   failure fixtures. Cross-platform CI run `29173925167` and focused review are
