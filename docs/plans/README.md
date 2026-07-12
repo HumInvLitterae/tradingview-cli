@@ -8,10 +8,10 @@ for release and next-phase planning.
 
 Current plan:
 
-- `tradingview-cli-cdp-windows-refusal-fixture.md`: replace platform-dependent
-  released-port CDP tests with controlled transport-disconnect fixtures before
-  v0.26 release readiness. Canonical history sanitation is complete and
-  archived.
+- `tradingview-cli-v0.26.0-release-readiness.md`: finalize the `v0.26.0`
+  package version, changelog, curated release notes, public download examples,
+  staged archive, and release baseline after all hardening and Windows CI gates
+  completed.
 
 The ordered `v0.26.0` implementation inventory is maintained in
 `docs/v0.26-work-items.md`. CDP event buffering, transport deadlines and HTTP
@@ -21,6 +21,10 @@ previous item is complete and green.
 
 Recently completed:
 
+- `tradingview-cli-cdp-windows-refusal-fixture.md`: replaced platform-dependent
+  released-port and fixed-port assumptions with controlled reconnect-capable
+  failure fixtures. Cross-platform CI run `29173925167` and focused review are
+  green; the completed plan now lives under `docs/plans/archives/`.
 - `tradingview-cli-canonical-history-sanitation.md`: removed the sensitive
   machine-specific path from canonical main and release-tag history, completed
   remote and fresh-clone verification, and realigned the primary clone. The
