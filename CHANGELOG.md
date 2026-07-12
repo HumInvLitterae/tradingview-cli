@@ -19,6 +19,8 @@ package version omits the leading `v`.
   recorded that current Desktop result semantics remain unconfirmed, and gated
   any command implementation behind a separate stop/go parser-feasibility
   slice with explicit empty-state, privacy, timeout, and restoration rules.
+- Started the bounded indicator-search parser-feasibility plan without adding a
+  public command, payload contract, or study mutation.
 
 ## v0.26.0 - 2026-07-12
 

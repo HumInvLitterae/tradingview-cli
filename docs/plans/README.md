@@ -8,8 +8,9 @@ for release and next-phase planning.
 
 Current plan:
 
-- None. R5 is complete and archived. The next plan will define R6 indicator
-  and strategy parser feasibility without adding a public command.
+- `tradingview-cli-indicator-search-parser-feasibility.md`: use bounded
+  current-build probes and deterministic fixtures to make a stop/go decision
+  before any indicator search command is implemented.
 
 The ordered `v0.27.0` implementation inventory is maintained in
 `docs/v0.27-work-items.md`. Strategy Tester compatibility, indicator discovery,
