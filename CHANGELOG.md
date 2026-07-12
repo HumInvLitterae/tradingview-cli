@@ -23,9 +23,9 @@ package version omits the leading `v`.
   comparison. A class-free structural parser supports a limited positive-result
   implementation, while absent explicit empty/loading markers require
   fail-closed diagnostics; no public command or study mutation was added yet.
-- Planned the narrowed positive-result indicator search implementation with
-  class-free parsing, stable samples, restoration, and no successful empty
-  result until TradingView exposes a trustworthy state marker.
+- Evaluated a class-free positive-result indicator search implementation and
+  deferred it without public CLI changes after repeated live runs could not
+  reproduce stable result readiness across dialog states.
 
 ## v0.26.0 - 2026-07-12
 
