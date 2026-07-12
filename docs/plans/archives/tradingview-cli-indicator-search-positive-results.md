@@ -13,7 +13,7 @@ positive results, but it did not expose a trustworthy explicit empty or loading
 state.
 
 This R6b slice adds `tv indicator search <QUERY> [--limit <N>]` for positive
-rendered results only. A known-result query returns normalized rows without
+rendered results in an already-open Indicators dialog only. A known-result query returns normalized rows without
 clicking or adding anything. A query that does not produce one unique stable
 result host fails with `dom_contract_unavailable`; it never returns a false
 successful empty array. The command restores the original dialog open/closed
@@ -25,22 +25,19 @@ state and query, or fails if restoration cannot be verified.
   quality comparison and a three-query class-free structural prototype.
 - [x] (2026-07-12) Created this R6b implementation ExecPlan with positive-result
   success and fail-closed no-result semantics.
-- [ ] Add pre-connection query and limit validation plus I/O-free normalized
-  result/readiness models.
-- [ ] Add deterministic structural parser and restoration fixtures without raw
-  live DOM or generated class names.
-- [ ] Implement the Desktop adapter with an absolute readiness deadline, two
-  stable samples, and finally-style restoration.
-- [ ] Add `IndicatorCommand::Search`, dispatch, help, success payload, and
-  public-safe error details without changing existing indicator commands.
-- [ ] Add focused unit and CLI contract tests, including zero-result and DOM
-  drift failure paths.
-- [ ] Run one bounded public-safe live smoke on the dedicated test layout and
-  restore its initial dialog state.
-- [ ] Update README, stable workflow docs, packaged agent guidance, and focused
-  runtime-skill references without overloading core workflows.
-- [ ] Run the full Rust, docs, packaging, and hygiene validation baseline.
-- [ ] Obtain independent review before commit or R7 exact-add planning.
+- [x] (2026-07-12) Implemented an I/O-free model, class-free Desktop adapter,
+  CLI surface, and focused tests as a local trial; focused tests passed.
+- [x] (2026-07-12) Ran repeated live trials on the dedicated layout. One
+  already-open state produced positive success, but closed/open reruns could
+  leave the input updated while no structural result host appeared before the
+  deadline.
+- [x] (2026-07-12) Verified fail-closed errors and dialog restoration during
+  failed trials. No study, saved script, or account state changed.
+- [x] (2026-07-12) Reverted all Rust, CLI, test, and Cargo-adjacent trial
+  changes because positive behavior was not reproducible enough for a public
+  contract.
+- [x] (2026-07-12) Recorded R6b as deferred. No public command, option, payload,
+  dependency, or runtime skill/docs surface is added.
 
 ## Surprises & Discoveries
 
@@ -60,6 +57,14 @@ state and query, or fails if restoration cannot be verified.
   as explicit empty.
   Evidence: neither the localized message nor its illustration has a
   purpose-specific QA ID, ARIA state, `data-name`, or live-region marker.
+
+- Observation: the class-free parser was structurally correct when results were
+  present, but result production was not repeatable through the command adapter.
+  Evidence: an already-open live run returned five results from six observed
+  rows and restored the prior open query. Subsequent closed and freshly opened
+  runs updated the input but observed zero hosts/rows until the absolute
+  deadline; manual screenshots later showed results. Setter and native typing
+  variants did not make readiness deterministic.
 
 ## Decision Log
 
@@ -86,10 +91,23 @@ state and query, or fails if restoration cannot be verified.
   scrolling or its own progress/termination contract.
   Date/Author: 2026-07-12 / Codex
 
+- Decision: defer R6b and remove the local implementation trial.
+  Rationale: a public search command must reproduce positive readiness, not
+  merely parse rows after they eventually appear. Adding larger sleeps or
+  weaker readiness would recreate upstream's false-empty/stale-state risks.
+  Date/Author: 2026-07-12 / Codex
+
 ## Outcomes & Retrospective
 
-R6b planning is complete. Implementation, live confirmation, docs/skills
-synchronization, and independent review remain.
+R6b is complete as a deferred implementation attempt. The model, adapter, CLI,
+and tests were locally implemented and passed focused tests, but positive live
+readiness was not repeatable across dialog states. All production/test trial
+changes were removed. The Rust tree and public CLI remain unchanged.
+
+Reopen only when current Desktop evidence provides a stable query-dispatch or
+results-ready signal that works from both fresh and already-open dialog states.
+R7 exact-add remains deferred with search. The next independent roadmap item is
+R8 visible-range history paging.
 
 ## Context and Orientation
 
@@ -176,7 +194,7 @@ No-result, unresolved loading, no/multiple structural host, malformed rows,
 unexpected dialog close, or unstable samples use the normal JSON error envelope
 with `ErrorKind::InternalApiUnavailable`, public
 `error.kind: "internal_api_unavailable"`, exit code 3, and
-`diagnostic_code: "dom_contract_unavailable"`, except a five-second absolute
+`diagnostic_code: "dom_contract_unavailable"`, except an eight-second absolute
 deadline uses `ErrorKind::Timeout`, `error.kind: "timeout"`, exit code 4, and
 `diagnostic_code: "search_timeout"`.
 
@@ -211,11 +229,11 @@ within the same absolute deadline. Never reset the deadline inside the loop.
 
 ## Dialog Restoration
 
-Before UI action, record whether the dialog is open and its query when open. If
-closed, open it through `[data-name="open-indicators-dialog"]`; after search,
-click the stable close QA control and verify absence. If already open, restore
-the exact prior query with the same prototype setter and bubbling `input` event
-used for search, wait for the input value to match, and leave the dialog open.
+Before UI action, require the dialog to be open and record its query. A closed
+dialog returns `dialog_not_open` without opening or typing and tells the user to
+open Indicators and retry. Restore the exact prior query with the same
+prototype setter and bubbling `input` event used for search, wait for the input
+value to match, and leave the dialog open.
 
 Restoration runs after success and failure. Do not return successful results if
 restoration fails. The command must not click a result, add/remove/toggle a
@@ -274,6 +292,9 @@ wire contract; all existing indicator commands remain unchanged; the bounded
 live smoke proves one positive success and one no-result diagnostic with state
 restored; docs and skills describe the narrower behavior; and the complete
 baseline is green.
+
+These acceptance conditions were not met because positive live readiness was
+not reproducible. Therefore this plan does not ship the command.
 
 Search must never produce successful `results: []`, use generated class
 selectors, scroll the virtualized list, choose or click a result, call
@@ -334,3 +355,9 @@ Revision note (2026-07-12): created after R6 rejected upstream's weak
 class-fragment and false-empty behavior but proved a strict class-free
 positive-result parser. The first implementation intentionally fails closed for
 all no-host cases and leaves search-result mutation to R7.
+
+Revision note (2026-07-12): implemented the planned model/adapter/CLI trial and
+passed focused tests, then withdrew it after repeated public-safe live runs
+failed to reproduce positive result readiness from fresh and reopened dialog
+states. All Rust changes were removed; R6b and R7 are deferred rather than
+lowering the contract to fixed sleeps or stale-result behavior.

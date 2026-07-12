@@ -8,9 +8,9 @@ for release and next-phase planning.
 
 Current plan:
 
-- `tradingview-cli-indicator-search-positive-results.md`: implement class-free
-  positive-result indicator search with stable samples, state restoration, and
-  fail-closed no-result diagnostics.
+- None. R6b indicator search was attempted and deferred after positive live
+  readiness was not reproducible. The next plan will promote R8 visible-range
+  history paging.
 
 The ordered `v0.27.0` implementation inventory is maintained in
 `docs/v0.27-work-items.md`. Strategy Tester compatibility, indicator discovery,
@@ -19,6 +19,10 @@ separate ExecPlans only when the previous item is complete and green.
 
 Recently completed:
 
+- `tradingview-cli-indicator-search-positive-results.md`: implemented and
+  tested a local positive-result search trial, then removed it when repeated
+  live readiness was not reproducible. The completed deferred plan now lives
+  under `docs/plans/archives/`.
 - `tradingview-cli-indicator-search-parser-feasibility.md`: compared upstream
   quality, proved a strict class-free structural parser across three queries,
   and recorded limited go with fail-closed no-result behavior. The completed
