@@ -24,6 +24,7 @@ loaded every time the skill triggers.
 | Selected-chart export | `tv export chart-bars --from ... --to ...` |
 | Study values | `tv values` |
 | Pine drawing data | `tv data lines`, `tv data labels`, `tv data tables`, `tv data boxes` |
+| Strategy metrics, trades, equity | `tv data strategy`, `tv data trades --max <N>`, `tv data equity` |
 | Indicator lifecycle | `tv indicator add/remove/toggle/set` |
 | Drawing lifecycle | `tv draw shape/list/get/remove/clear` |
 | Replay controls | `tv replay status/start/step/autoplay/trade/stop` |
@@ -52,6 +53,9 @@ loaded every time the skill triggers.
 - Replay commands depend on and mutate selected-chart Replay state, except
   status reads. `tv replay log` records bounded Replay step evidence; it is not
   historical bars input.
+- Strategy data reads share `strategy_context`. Hidden, unready, missing, and
+  ambiguous states are diagnostics and never trigger automatic panel opening
+  or visibility changes.
 - `tv quote <SYMBOL> --source quote-data` is explicit Desktop-backed
   quote-data readback such as `qsd.rtc`. If unavailable, report
   `source_availability`; do not treat unavailability as proof that a symbol has

@@ -242,7 +242,10 @@ its own `replay_log_ohlcv_summary_attachment.v1` source metadata.
 Use `tv screenshot --region strategy --output <PATH>` when a report needs
 visual evidence of the visible Strategy Tester panel. It is screenshot
 evidence only; use `tv data strategy`, `tv data trades`, and `tv data equity`
-for structured strategy fields when TradingView exposes them.
+for structured strategy fields when TradingView exposes them. These reads now
+return the same additive `strategy_context`, including candidate count,
+selection reason, visibility, report availability, and an explicit unavailable
+state. They do not open Strategy Tester or unhide a strategy.
 
 Use `tv --help` for the full command list and `tv <COMMAND> --help` for command
 details. See `docs/observation-workflows.md` for practical command sequences

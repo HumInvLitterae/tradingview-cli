@@ -11,6 +11,10 @@ package version omits the leading `v`.
 
 - Added the `v0.27.0` current-build chart and evidence workflow roadmap, its
   ordered work inventory, and the first Strategy Tester compatibility plan.
+- Hardened Strategy Tester reads for current strategy metadata and added shared
+  strategy selection context across metrics, trades, and equity, with explicit
+  hidden, unready, missing, and ambiguous diagnostics and no automatic chart
+  mutation.
 
 ## v0.26.0 - 2026-07-12
 

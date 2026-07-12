@@ -8,10 +8,8 @@ for release and next-phase planning.
 
 Current plan:
 
-- `tradingview-cli-strategy-tester-compatibility.md`: establish a current-build
-  Strategy Tester state matrix, harden strategy detection and report
-  selection, and preserve explicit mutation boundaries before broader v0.27
-  chart workflow work.
+- No implementation ExecPlan is active. The next planned promotion is the R5
+  indicator and strategy search contract from `docs/v0.27-work-items.md`.
 
 The ordered `v0.27.0` implementation inventory is maintained in
 `docs/v0.27-work-items.md`. Strategy Tester compatibility, indicator discovery,
@@ -20,6 +18,10 @@ separate ExecPlans only when the previous item is complete and green.
 
 Recently completed:
 
+- `tradingview-cli-strategy-tester-compatibility.md`: hardened current-build
+  Strategy Tester detection and report selection across metrics, trades, and
+  equity, added public-safe shared context, and completed independent review.
+  The completed plan now lives under `docs/plans/archives/`.
 - `tradingview-cli-v0.26.0-release-readiness.md`: prepared and validated the
   released `v0.26.0` package, changelog, release notes, README examples, and
   explicit archive contents. The completed plan now lives under

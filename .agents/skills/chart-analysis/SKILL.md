@@ -41,6 +41,9 @@ details, or unsupported-feature reminders. If command choice is unclear, check
 5. Use `tv screenshot --region chart --output <PATH>` when chart visual
    evidence would materially help. Use `--region strategy` only when the
    visible Strategy Tester panel itself is the evidence.
+   For structured strategy evidence, use `tv data strategy|trades|equity` and
+   verify their shared `strategy_context`; do not treat unavailable context as
+   zero performance.
 6. Use `tv observe chart --duration-ms ...` only for a short selected-chart
    observation window. Use `tv stream ...` only when a lower-level sample type
    is specifically needed.

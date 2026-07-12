@@ -133,7 +133,10 @@ do not explain the visible state. Use
 `tv screenshot --region strategy --output <PATH>` only when the visible
 Strategy Tester panel itself is needed as visual evidence; use `tv data
 strategy`, `tv data trades`, and `tv data equity` for structured strategy
-fields. For short monitoring windows, prefer bounded `tv observe chart
+fields. Read their additive `strategy_context` before interpreting results;
+hidden, unready, missing, and ambiguous strategy states are diagnostics rather
+than zero-performance evidence. The commands do not open Strategy Tester or
+change study visibility. For short monitoring windows, prefer bounded `tv observe chart
 --duration-ms ... --heartbeat-ms ...` when readiness plus last-bar observation
 is the workflow you need. Use lower-level bounded stream controls such as
 `--duration-ms`, `--max-events`, and `--heartbeat-ms` when a specific
