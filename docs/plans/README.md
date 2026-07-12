@@ -8,9 +8,10 @@ for release and next-phase planning.
 
 Current plan:
 
-- None. R6b indicator search was attempted and deferred after positive live
-  readiness was not reproducible. The next plan will promote R8 visible-range
-  history paging.
+- `tradingview-cli-visible-range-history-paging-implementation.md`: implements
+  the reviewed bounded selected-chart history-loading contract, deterministic
+  stopping and clamp policy, additive diagnostics, and pre-connection
+  validation for the existing bounded `tv range` setter.
 
 The ordered `v0.27.0` implementation inventory is maintained in
 `docs/v0.27-work-items.md`. Strategy Tester compatibility, indicator discovery,
@@ -19,6 +20,11 @@ separate ExecPlans only when the previous item is complete and green.
 
 Recently completed:
 
+- `tradingview-cli-visible-range-history-paging-contract.md`: defined and
+  independently reviewed bounded selected-chart history paging, deadline and
+  terminal precedence, endpoint coverage, discrete-bar matching, viewport
+  application, validation placement, and source boundaries. The completed R8
+  plan now lives under `docs/plans/archives/`.
 - `tradingview-cli-indicator-search-positive-results.md`: implemented and
   tested a local positive-result search trial, then removed it when repeated
   live readiness was not reproducible. The completed deferred plan now lives
