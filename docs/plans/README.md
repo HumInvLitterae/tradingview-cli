@@ -8,8 +8,9 @@ for release and next-phase planning.
 
 Current plan:
 
-- None. R6 parser feasibility is complete and ready to archive. The next plan
-  will define the positive-result-only R6b implementation.
+- `tradingview-cli-indicator-search-positive-results.md`: implement class-free
+  positive-result indicator search with stable samples, state restoration, and
+  fail-closed no-result diagnostics.
 
 The ordered `v0.27.0` implementation inventory is maintained in
 `docs/v0.27-work-items.md`. Strategy Tester compatibility, indicator discovery,
