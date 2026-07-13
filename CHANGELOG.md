@@ -30,6 +30,9 @@ package version omits the leading `v`.
   deterministic stopping, endpoint coverage, discrete-bar and viewport
   diagnostics, pre-connection validation, composed progress/absolute
   deadlines, and no new source or fallback.
+- Planned an opt-in bounded screenshot render-readiness wait that preserves
+  immediate capture by default and refuses to write a misleading capture after
+  readiness timeout.
 
 ## v0.26.0 - 2026-07-12
 
