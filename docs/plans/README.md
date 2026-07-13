@@ -6,8 +6,11 @@ for release and next-phase planning.
 
 ## Current and future plans
 
-No implementation ExecPlan is active. R11 study-value identity is the next
-ordered slice and requires a dedicated ExecPlan before code changes.
+Current plan:
+
+- `tradingview-cli-study-value-identity.md`: add public-safe identity to
+  one-shot and streaming study-value rows so same-name studies are
+  distinguishable without changing existing values or study state.
 
 The ordered `v0.27.0` implementation inventory is maintained in
 `docs/v0.27-work-items.md`. Strategy Tester compatibility, indicator discovery,
