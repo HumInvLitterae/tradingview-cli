@@ -26,22 +26,29 @@ remain owner-controlled.
 - [x] (2026-07-13) Created this release-readiness ExecPlan and made it the
   current plan in the index, roadmap, work inventory, changelog, and continuity
   ledger.
-- [ ] Ground the release candidate from the current worktree, recent commits,
-  manifests, workflows, package allowlist, and latest relevant CI evidence.
-- [ ] Bump `[workspace.package].version` from `0.26.0` to `0.27.0` and
-  synchronize only workspace package entries in `Cargo.lock`.
-- [ ] Cut `CHANGELOG.md` `Unreleased` content into a dated
+- [x] (2026-07-13) Grounded the release candidate from the current worktree,
+  recent commits, manifests, workflows, package allowlist, and latest relevant
+  CI evidence.
+- [x] (2026-07-13) Bumped `[workspace.package].version` from `0.26.0` to
+  `0.27.0` and synchronized only workspace package entries in `Cargo.lock`.
+- [x] (2026-07-13) Cut `CHANGELOG.md` `Unreleased` content into a dated
   `v0.27.0 - 2026-07-13` section, leaving a fresh empty `Unreleased` section.
-- [ ] Add curated GitHub Release notes at `docs/releases/v0.27.0.md` without a
-  redundant top-level version heading.
-- [ ] Update versioned README release-asset examples and verify packaged
-  guidance against the reviewed v0.27 behavior.
-- [ ] Build with `--release --locked`, stage the explicit release package, and
-  inspect its file and runtime-skill allowlists.
-- [ ] Run focused release checks, the dedicated pinned-Node contract gate, and
-  the complete Rust and public-hygiene baseline.
-- [ ] Record final local evidence and stop before tag, push, or GitHub Release
-  creation.
+- [x] (2026-07-13) Added curated GitHub Release notes at
+  `docs/releases/v0.27.0.md` without a redundant top-level version heading.
+- [x] (2026-07-13) Updated versioned README release-asset examples and verified
+  packaged guidance against the reviewed v0.27 behavior.
+- [x] (2026-07-13) Built with `--release --locked`, staged the explicit release
+  package, and inspected its file and runtime-skill allowlists.
+- [x] (2026-07-13) Ran focused release checks, the dedicated pinned-Node
+  contract gate, and the complete Rust and public-hygiene baseline.
+- [x] (2026-07-13) Recorded final local evidence and stopped before tag, push,
+  or GitHub Release creation.
+- [x] (2026-07-13) Completed independent review. The only finding was stale
+  workspace-version wording in the roadmap and work inventory.
+- [x] (2026-07-13) Corrected both current-state documents to `0.27.0` and
+  reran the focused stale-version, hygiene, and diff checks.
+- [x] (2026-07-13) Replaced informal ordinal work labels in current
+  source-of-truth documents with descriptive names and repository paths.
 
 ## Surprises & Discoveries
 
@@ -50,6 +57,19 @@ remain owner-controlled.
   Node.js on `PATH`, while `scripts/check-study-values-js-contract.py` executes
   the generated JavaScript helper under Node.js `24.18.0`. CI and the release
   workflow install that exact Node version for a dedicated required job.
+
+- Observation: the latest remote CI evidence covers the released v0.26 tree,
+  not the 19 local v0.27 commits.
+  Evidence: CI and Release runs `29181079491` and `29181079505` are green at
+  `5e7f48f`. The complete local release baseline is therefore required before
+  the owner decides whether to push the candidate and obtain fresh CI evidence.
+
+- Observation: checking the built binary version is a necessary package gate,
+  not a redundant display check.
+  Evidence: the first combined build/stage attempt ended before the release
+  build completed and exposed a stale `tv 0.26.0` binary. A standalone locked
+  build completed successfully; restaging then reported `tv 0.27.0` for both
+  the source and staged binaries. No stale package was accepted as evidence.
 
 ## Decision Log
 
@@ -82,9 +102,29 @@ remain owner-controlled.
 
 ## Outcomes & Retrospective
 
-Planning is complete. Release-preparation edits, package staging, and final
-validation remain. No tag, push, release publication, dependency update,
-feature implementation, or refactor has occurred in this plan.
+Local release preparation is complete. All seven workspace packages and the
+locked release binary report `0.27.0`. The changelog, curated release notes,
+README asset example, and staged package agree. The explicit package contains
+the binary, public docs, packaged guides, both getting-started documents, and
+eight runtime skills under each supported skill root; no development-only
+skill or planning document is staged.
+
+The dedicated JavaScript helper fixture passes under Node.js `24.18.0`.
+Formatting, strict Clippy, the complete workspace suite with Node absent from
+`PATH`, Cargo metadata, public-hygiene self-test and 579 tracked-file scan,
+separate hygiene and whitespace checks for the new release note, workflow YAML
+parsing, package-script syntax, contributor-guide parity, stale-version scan,
+and diff checks are green. Independent review found only two stale
+workspace-version statements; both now distinguish the pre-release-readiness
+`0.26.0` state from the current `0.27.0` state. No feature, dependency,
+workflow, source,
+fallback, or payload semantic changed. No tag, push, workflow mutation, or
+GitHub Release publication occurred.
+
+After release preparation, current planning sources were also normalized to
+use descriptive work names instead of an informal ordinal scheme. Contributor
+guidance now makes that naming rule durable. Archived plans retain their
+historical wording and are not current coordination sources.
 
 ## Context and Orientation
 
@@ -264,6 +304,22 @@ Record final local evidence here during implementation. Do not paste raw JSON,
 bars, report data, DOM, target IDs, account-local values, credentials, or
 machine-specific paths.
 
+Final local evidence:
+
+    Workspace packages: seven at 0.27.0
+    Release and staged binary: tv 0.27.0
+    Cargo.lock: workspace package versions only
+    Locked release build: passed
+    Runtime skills: eight under each supported skill root
+    Development-only staged skills: none
+    Study-value JavaScript contract: passed with Node.js 24.18.0
+    Rust-only workspace suite: passed with Node absent from PATH
+    CLI unit tests: 410 passed, one dedicated JavaScript fixture ignored
+    Strict Clippy and formatting: passed
+    Public hygiene: passed, 579 tracked files plus new release note inspected
+    Metadata, workflow YAML, package syntax, guide parity, diff: passed
+    Remote mutation: none
+
 ## Interfaces and Dependencies
 
 This plan changes no public Rust API, CLI command, option, JSON/JSONL contract,
@@ -280,10 +336,10 @@ not begin with a redundant top-level `# v0.27.0` heading.
 
 ## Open Questions
 
-No release-scope or architecture question remains. The planned date must be
-updated if publication occurs after 2026-07-13. Tag creation, push, and GitHub
-Release publication require separate owner action after this local plan is
-complete.
+No release-scope or architecture question remains. Local preparation,
+validation, and focused review correction are complete. The planned date must
+be updated if publication occurs after 2026-07-13. Push, CI confirmation, tag
+creation, and GitHub Release publication require separate owner action.
 
 Revision note (2026-07-13): Created after completion-audit independent review
 reported no findings. The plan freezes the reviewed v0.27 candidate, preserves
@@ -293,3 +349,11 @@ actions.
 Revision note (2026-07-13): Replaced informal work-item numbering in current
 planning sources with descriptive names and paths. This avoids importing a
 conversation-local numbering scheme into durable project state.
+
+Revision note (2026-07-13): Completed local release preparation and validation.
+The release package and both test-tool layers are green; changes remain
+uncommitted for review, and no remote action was performed.
+
+Revision note (2026-07-13): Independent review found only stale current-version
+wording in the roadmap and work inventory. Both now report `0.27.0`; focused
+stale-version, hygiene, and diff checks are green.
