@@ -178,6 +178,10 @@ Do not use `TV_CDP_TARGET_ID`; explicit target handoff is `--target-id`.
 - Before mutating chart, account, Pine, Replay, layout, tab, drawing, alert,
   watchlist, Screener, or generic UI state, explain the expected effect and get
   explicit user approval.
+- `tv pine open <NAME...>` changes Pine Editor's active saved-script binding
+  but does not save or compile. Treat success as valid only when
+  `slot_rebound` and `binding_verified` are true; on failure, do not proceed to
+  `tv pine save` from an unverified editor state.
 - Use dry-run modes when available, especially for broad actions such as
   `alert delete --all --dry-run`, `draw clear --dry-run`,
   `layout switch --dry-run`, and Screener mutations.

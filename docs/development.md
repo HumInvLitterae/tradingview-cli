@@ -541,18 +541,22 @@ git diff --check
 ```
 
 The regular Cargo baseline remains Rust-only. Changes to the production
-study-value JavaScript identity helper also require a separate executable
-contract gate:
+study-value JavaScript identity helper or saved-script binding helper also
+require separate executable contract gates:
 
 ```bash
 mise run check:study-values-js
+mise run check:pine-open-js
 ```
 
-This gate uses Node.js `24.18.0`, pinned in `mise.toml`, to execute the exact
-helper with synthetic sources and throwing Proxy fixtures. The corresponding
-Rust test is ignored during ordinary `cargo test --workspace`; CI and the
-release workflow install the pinned Node version and run the dedicated gate
-explicitly. Node.js is not a runtime dependency of `tv`.
+These gates use Node.js `24.18.0`, pinned in `mise.toml`. The study-value gate
+executes the exact helper with synthetic sources and throwing Proxy fixtures.
+The Pine-open gate executes the generated asynchronous page expression against
+synthetic Pine facade and editor-manager objects, including missing methods,
+identity mismatch, and throwing readback. The corresponding Rust tests are
+ignored during ordinary `cargo test --workspace`; CI and the release workflow
+install the pinned Node version and run each gate explicitly. Node.js is not a
+runtime dependency of `tv`.
 
 For focused command work, also run the relevant module or contract tests. For
 example:

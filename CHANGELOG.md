@@ -7,6 +7,19 @@ package version omits the leading `v`.
 
 ## Unreleased
 
+### Changed
+
+- Made `tv pine open` fail closed unless TradingView's saved-script manager
+  rebinds the requested script and active identity/version readback verifies
+  the binding, removing source-only Monaco replacement as a success fallback.
+
+### Documentation
+
+- Added the `v0.28.0` Pine and indicator mutation safety roadmap, its ordered
+  work inventory, and a fail-closed plan for verified saved-script slot
+  binding in `tv pine open`, based on current Rust behavior and reviewed
+  upstream compatibility evidence.
+
 ## v0.27.0 - 2026-07-13
 
 ### Changed
