@@ -8,8 +8,10 @@ for release and next-phase planning.
 
 Current plan:
 
-- No implementation ExecPlan is active. R9 is complete and the next plan will
-  cover R10 bounded screenshot render-readiness.
+- `tradingview-cli-screenshot-render-ready-wait.md`: adds an opt-in bounded
+  readiness wait before full, chart, or Strategy Tester screenshots while
+  preserving immediate capture by default and refusing to capture after a
+  readiness timeout.
 
 The ordered `v0.27.0` implementation inventory is maintained in
 `docs/v0.27-work-items.md`. Strategy Tester compatibility, indicator discovery,
