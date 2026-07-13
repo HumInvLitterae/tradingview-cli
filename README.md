@@ -223,7 +223,12 @@ Read `source_availability` and its `wait_summary` when bars are partial or
 unavailable; those fields describe bounded historical-source behavior, not a
 trading recommendation or proof that a symbol has no history. Use
 `tv range` only for selected Desktop chart viewport movement; it is not a
-historical export contract for `tv ohlcv`.
+historical export contract for `tv ohlcv`. Bounded
+`tv range --from <UNIX_SECONDS> --to <UNIX_SECONDS>` requests older history
+from that selected chart's main series when needed and reports
+`history_paging` plus `viewport_application`. Read coverage, stop reason,
+matching-bar count, and clamp status before treating the requested viewport as
+applied. It does not fall back to Desktop-free `tv bars` or another source.
 
 Use `tv export chart-bars --from <UNIX_SECONDS> --to <UNIX_SECONDS>` only when
 you intentionally want the selected TradingView Desktop chart as the source. It

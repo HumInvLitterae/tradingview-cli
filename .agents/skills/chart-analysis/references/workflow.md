@@ -31,6 +31,11 @@ loaded every time the skill triggers.
 | Replay step log | `tv replay log --steps <N>` |
 | Screenshot | `tv screenshot --region full|chart|strategy --output <PATH>` |
 
+For bounded range changes, report `history_paging.coverage_status`,
+`stop_reason`, and `request_count`, then report
+`viewport_application.status`, `matching_bar_count`, and `applied_range`.
+Do not infer that the viewport moved from endpoint coverage alone.
+
 ## Source Notes
 
 - `tv snapshot <SYMBOL>` is a good one-symbol Desktop-free context read before

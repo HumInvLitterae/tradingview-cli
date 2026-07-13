@@ -79,7 +79,10 @@ tv --version
 - `tv watch compare` は、既知の複数銘柄を短時間だけ見続けるための
   コマンドです。TradingView Desktop を使わず、scanner 由来の価格情報を
   1行ずつ JSON で出します。
-- `tv range` は、表示中の Desktop チャートの表示範囲を動かすだけです。
+- `tv range` は、表示中の Desktop チャートの表示範囲を読みます。
+  `--from` と `--to` を付けると、必要な場合だけ選択中チャートの古い履歴を
+  上限付きで読み込み、該当する足がある場合に表示範囲を動かし、paging と
+  coverage の状態を返します。
 - `tv ohlcv` は、選択中の Desktop チャートから足を読みます。
 - `tv quote --source quote-data` は、Desktop を使って quote-data という
   TradingView 内部の価格情報を明示的に読みます。

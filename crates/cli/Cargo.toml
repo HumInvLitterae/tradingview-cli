@@ -31,4 +31,5 @@ assert_cmd = { workspace = true }
 futures-util = { workspace = true }
 predicates = { workspace = true }
 tempfile = { workspace = true }
+tokio = { workspace = true, features = ["test-util"] }
 tokio-tungstenite = { workspace = true }

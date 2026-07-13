@@ -120,6 +120,13 @@ only when the selected chart itself is the source being studied.
 `tv export chart-bars --from <UNIX_SECONDS> --to <UNIX_SECONDS>` is explicit
 Desktop-backed export evidence. It is not a fallback for `tv bars`.
 
+`tv range` without bounds is a selected-chart read. With `--from` and `--to`,
+it is a bounded Desktop-backed viewport operation that may load older history
+from the same chart main series. Read `history_paging.coverage_status` and
+`stop_reason` separately from `viewport_application.status` and
+`matching_bar_count`; endpoint coverage does not prove that a weekend or
+session-gap interval contains a bar.
+
 Replay commands are Desktop-backed selected-chart operations. `tv replay log
 --steps <N>` is bounded workflow evidence, not historical bars input.
 `--attach-ohlcv-summary` explicitly attaches selected-chart OHLCV summary

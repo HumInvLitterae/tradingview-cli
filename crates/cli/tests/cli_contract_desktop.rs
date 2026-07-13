@@ -2196,6 +2196,33 @@ fn range_requires_from_and_to_together() {
 }
 
 #[test]
+fn range_help_explains_bounded_selected_chart_paging() {
+    tv().args(["range", "--help"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("non-mutating Desktop-backed read"))
+        .stdout(predicate::str::contains("main-series history"))
+        .stdout(predicate::str::contains("bounded limits"))
+        .stdout(predicate::str::contains("hidden fallback"));
+}
+
+#[test]
+fn range_rejects_invalid_order_before_connecting() {
+    let assert = tv()
+        .env("TV_CDP_PORT", "9")
+        .args(["range", "--from", "2", "--to", "1"])
+        .assert()
+        .failure()
+        .code(1);
+    let value = stderr_json(&assert);
+    assert_eq!(value["success"], false);
+    assert_eq!(value["command"], "range");
+    assert_eq!(value["error"]["kind"], "validation");
+    assert_eq!(value["error"]["details"]["from"], 2.0);
+    assert_eq!(value["error"]["details"]["to"], 1.0);
+}
+
+#[test]
 fn symbol_and_timeframe_allow_read_mode() {
     tv_with_cdp_disconnect()
         .arg("symbol")

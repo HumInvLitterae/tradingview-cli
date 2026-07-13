@@ -357,6 +357,14 @@ Treat `selected_chart_range_match: "overlaps_visible_range"` as evidence that
 the returned bars and observed visible range intersect. It is not a guarantee
 that a reproducible historical export was produced.
 
+For bounded `tv range --from/--to`, inspect `history_paging.coverage_status`
+and `stop_reason` before `actual`. Then inspect
+`viewport_application.status`, `matching_bar_count`, and `applied_range`.
+`complete` endpoint coverage can coexist with
+`unchanged_no_matching_bars` when the requested interval is a weekend or
+session gap. `unchanged_no_overlap` and `unchanged_no_matching_bars` preserve
+the prior viewport rather than zooming to unrelated loaded bars.
+
 ## Replay Extraction Feasibility
 
 Replay-based extraction is still feasibility work, not a stable export

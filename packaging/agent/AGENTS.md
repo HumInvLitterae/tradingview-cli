@@ -134,6 +134,11 @@ Do not use `TV_CDP_TARGET_ID`; explicit target handoff is `--target-id`.
   chart range, reads selected-chart bars, and returns
   `export_chart_bars.v1` diagnostics. It is not a fallback for Desktop-free
   `tv bars --from/--to`.
+- `tv range` without bounds reads the selected-chart viewport. Bounded
+  `tv range --from/--to` may load older selected-chart main-series history and
+  move the viewport. Inspect `history_paging` and `viewport_application` for
+  coverage, stop reason, matching bars, and clamp status; do not treat it as a
+  fallback to `tv bars` or as historical export completeness.
 - Replay-based extraction is not a stable historical export. `tv replay
   status` is a Desktop-backed read with `replay_context`; `tv replay start`,
   `step`, `stop`, `autoplay`, and `trade` are Desktop-backed operations that

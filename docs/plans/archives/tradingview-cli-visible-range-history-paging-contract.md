@@ -205,7 +205,8 @@ R9 keeps the current command form:
 
 No new option is added. R9 must make validation genuinely pre-connection:
 both values are required together, both must be finite, and `from >= to` is a
-validation error with exit code 2 before connecting to Desktop. This is a
+validation error with the existing validation exit code 1 before connecting to
+Desktop. This is a
 behavioral correction; finite validation currently occurs only after
 `connect_runtime`.
 
@@ -372,7 +373,7 @@ error; do not relabel it `deadline_elapsed` or silently use stale state.
 ## Failure Contract
 
 Pre-connection input errors use the existing validation envelope and exit code
-2. Runtime inspection or request failures use the existing Desktop operation
+1. Runtime inspection or request failures use the existing Desktop operation
 error mapping and exit code; R9 adds public-safe details where available:
 `operation`, `source`, `source_category`, `requires_desktop`, `non_mutating`,
 `requested`, `paging_phase`, `request_count`, `earliest_loaded_before`,
@@ -600,3 +601,7 @@ separating endpoint coverage from discrete-bar presence and defining
 
 Revision note (2026-07-13): Recorded focused re-review green and closed R8 for
 archive. The separate R9 plan owns implementation and live validation.
+
+Revision note (2026-07-13): Corrected the validation exit-code text during R9
+implementation after verifying `tradingview-core::AppError::exit_code`; the
+reviewed pre-connection behavior is unchanged.

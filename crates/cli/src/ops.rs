@@ -33,7 +33,7 @@ pub use alert::{
 pub use chart::{
     current_chart_type, current_symbol, current_timeframe, scroll_to_date, set_chart_type,
     set_symbol, set_timeframe, set_visible_range, state, symbol_info, validate_chart_type,
-    visible_range,
+    validate_visible_range_request, visible_range,
 };
 pub use data::{
     data_boxes, data_equity, data_indicator, data_labels, data_lines, data_shapes, data_strategy,

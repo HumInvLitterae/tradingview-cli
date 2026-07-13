@@ -8,10 +8,8 @@ for release and next-phase planning.
 
 Current plan:
 
-- `tradingview-cli-visible-range-history-paging-implementation.md`: implements
-  the reviewed bounded selected-chart history-loading contract, deterministic
-  stopping and clamp policy, additive diagnostics, and pre-connection
-  validation for the existing bounded `tv range` setter.
+- No implementation ExecPlan is active. R9 is complete and the next plan will
+  cover R10 bounded screenshot render-readiness.
 
 The ordered `v0.27.0` implementation inventory is maintained in
 `docs/v0.27-work-items.md`. Strategy Tester compatibility, indicator discovery,
@@ -20,6 +18,11 @@ separate ExecPlans only when the previous item is complete and green.
 
 Recently completed:
 
+- `tradingview-cli-visible-range-history-paging-implementation.md`: added
+  bounded selected-chart history loading, deterministic stopping and clamp
+  policy, composed progress/absolute deadlines, additive diagnostics, and
+  pre-connection validation for the existing bounded `tv range` setter. The
+  completed R9 plan now lives under `docs/plans/archives/`.
 - `tradingview-cli-visible-range-history-paging-contract.md`: defined and
   independently reviewed bounded selected-chart history paging, deadline and
   terminal precedence, endpoint coverage, discrete-bar matching, viewport

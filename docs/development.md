@@ -89,6 +89,14 @@ This project uses Rust 2024.
   `export_chart_bars.v1`, `requested_visible_range`, `range_operation`,
   `chart_context`, `returned_bars_range`, and
   `selected_chart_range_match` are diagnostics, not trading judgments.
+- Keep bounded visible-range history paging inside the selected-chart adapter.
+  Shared finite/order validation and I/O-free paging/viewport policy belong in
+  `tradingview-model`; CDP history inspection, sequential
+  `requestMoreData(1000)`, absolute deadlines, and viewport application belong
+  in `crates/cli/src/ops/chart/visible_range.rs`. No-argument `tv range`
+  remains a read. The
+  bounded setter must not call Desktop-free bars, OHLCV, export, or Replay as a
+  fallback.
 - Treat Strategy Tester panel screenshots as visual evidence, not structured
   strategy data. `tv screenshot --region strategy` may locate and capture the
   visible Strategy Tester panel, but it must not open the panel, run a
