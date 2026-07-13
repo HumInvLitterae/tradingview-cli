@@ -26,22 +26,29 @@ dependency, or version bump is added.
 - [x] (2026-07-13) Completed and independently reviewed the R8 contract.
 - [x] (2026-07-13) Created this separate R9 implementation ExecPlan and made it
   the active v0.27 plan without changing Rust behavior.
-- [ ] Add shared I/O-free range validation and paging policy models.
-- [ ] Add deterministic model tests for validation, state transitions,
+- [x] (2026-07-13) Added shared I/O-free range validation, paging policy, and
+  viewport decision models.
+- [x] (2026-07-13) Added deterministic model tests for validation, state transitions,
   precedence, coverage, matching bars, and viewport application.
-- [ ] Refactor the selected-chart adapter into inspect, request, observe, apply,
+- [x] (2026-07-13) Refactored the selected-chart adapter into inspect, request, observe, apply,
   and readback operations under one absolute paging deadline.
-- [ ] Move setter validation before Desktop connection while retaining direct
+- [x] (2026-07-13) Moved setter validation before Desktop connection while retaining direct
   caller defense and export validation compatibility.
-- [ ] Add CLI operation and contract tests, including proof that invalid ranges
+- [x] (2026-07-13) Added CLI operation and contract tests, including proof that invalid ranges
   do not connect to Desktop.
-- [ ] Run a bounded public-safe live smoke on a dedicated chart and restore the
-  original visible range.
-- [ ] Update help, stable docs, packaged guidance, and only affected runtime
+- [x] (2026-07-13) Ran a bounded public-safe live smoke on the dedicated test
+  chart and reapplied the original requested range after evidence capture.
+- [x] (2026-07-13) Updated help, stable docs, packaged guidance, and only affected runtime
   skill references.
-- [ ] Run focused and complete validation.
-- [ ] Obtain independent implementation review and correct findings before
-  closeout.
+- [x] (2026-07-13) Ran focused tests, formatting, strict workspace Clippy, the
+  complete workspace test suite, metadata, public hygiene, package-script
+  syntax, guide parity, and changed-skill validation; all passed.
+- [x] (2026-07-13) Applied the first independent-review corrections: the
+  progress observation itself now uses the earlier absolute/progress deadline,
+  paging failures retain safe before/after evidence, adapter timing/failure
+  fixtures use paused time, and current docs are synchronized.
+- [x] (2026-07-13) Focused independent re-review reported no remaining
+  findings; R9 is complete and ready to archive.
 
 ## Surprises & Discoveries
 
@@ -63,6 +70,40 @@ dependency, or version bump is added.
   Evidence: weekend, market-closure, halt, and intraday session gaps can fall
   within loaded earliest/latest timestamps while containing zero bar
   timestamps. R9 must keep coverage and matching-bar evidence separate.
+
+- Observation: the reviewed R8 text named validation exit code 2, but the
+  repository's existing validation contract is exit code 1.
+  Evidence: `tradingview-core::AppError::exit_code` maps
+  `ErrorKind::Validation` to 1, and existing range/export contract tests assert
+  code 1. R9 preserves the existing mapping and corrected both plans.
+
+- Observation: a real page request can load substantially more than the
+  requested start, and a requested right edge can remain beyond the latest
+  loaded bar.
+  Evidence: the dedicated daily test chart moved its earliest loaded timestamp
+  from 2025 to 2021 with one request for a 2024 start. The result correctly
+  reported `coverage_status: partial`, `coverage_reached`, and
+  `applied_clamped` because the requested end included future whitespace.
+
+- Observation: reapplying an original visible range that includes future
+  whitespace restores the requested range only up to the latest loaded bar.
+  Evidence: the dedicated smoke reapplication succeeded with
+  `paging_not_needed` and `applied_clamped`; its actual right edge was the
+  latest loaded daily bar rather than the original future endpoint.
+
+- Observation: keeping the complete paging adapter in `ops/chart.rs` would
+  have grown that mixed module beyond 1200 lines.
+  Evidence: before final validation the file reached 1227 lines. Moving the
+  range adapter to `crates/cli/src/ops/chart/visible_range.rs` reduced the
+  parent chart module to roughly 630 lines while preserving its public facade
+  and existing test module.
+
+- Observation: bounding only the polling loop did not bound the CDP evaluation
+  that performs the progress observation.
+  Evidence: an evaluation started just before the 3-second boundary could
+  finish later and be accepted as progress while it still used the 30-second
+  absolute deadline. The adapter now passes the earlier composed deadline to
+  `timeout_at`, with absolute-deadline precedence when the two guards collide.
 
 ## Decision Log
 
@@ -92,10 +133,21 @@ dependency, or version bump is added.
   request. R9 must not apply, drop, rewrite, or include it.
   Date/Author: 2026-07-13 / Codex
 
+- Decision: make paging timing configurable only inside the adapter and use
+  paused Tokio time for deadline regression tests.
+  Rationale: production retains the reviewed 25-request, 30-second, 3-second,
+  and 200-millisecond controls while tests can deterministically prove guard
+  collisions and elapsed-time accounting without wall-clock sleeps.
+  Date/Author: 2026-07-13 / Codex
+
 ## Outcomes & Retrospective
 
-R9 is planned but not implemented. The outcome will be recorded after focused
-tests, live evidence, full validation, and independent review. If current
+R9 is complete through model, adapter, focused contract tests, live smoke,
+documentation synchronization, module-size cleanup, and the complete green
+baseline. The first independent review found a progress-deadline composition
+bug, missing adapter timing/failure coverage, incomplete safe error evidence,
+and two documentation drifts. Those focused corrections are applied and
+focused re-review reported no remaining findings. If current
 TradingView Desktop cannot provide bounded observable progress through the
 reviewed internal API boundary, stop implementation, preserve any trial in a
 named stash after owner confirmation, and record no-go rather than weakening
@@ -133,7 +185,7 @@ The command form remains:
     tv range --from <UNIX_SECONDS> --to <UNIX_SECONDS>
 
 Both values must be finite and `from < to`. Invalid input returns the existing
-validation envelope with exit code 2 before Desktop connection. The bounded
+validation envelope with exit code 1 before Desktop connection. The bounded
 setter's success and error metadata use `source: "chart_api"`,
 `source_category: "desktop_backed_operation"`, `requires_desktop: true`, and
 `non_mutating: false`. The no-argument getter remains
@@ -277,8 +329,9 @@ loaded-range observations, paging decisions, stop reasons, viewport decisions,
 and payload shaping. Keep time and CDP outside this module. Add exhaustive table
 fixtures before touching the Desktop adapter.
 
-Then refactor `crates/cli/src/ops/chart.rs`. Add small private evaluator calls
-for initial/final state inspection, one `requestMoreData(1000)`, and viewport
+Then implement `crates/cli/src/ops/chart/visible_range.rs` behind the existing
+`crates/cli/src/ops/chart.rs` facade. Add small private evaluator calls for
+initial/final state inspection, one `requestMoreData(1000)`, and viewport
 application. Orchestrate them in Rust with `tokio::time::Instant`, `timeout_at`,
 and `sleep`. Use one absolute deadline and one sequential runtime connection.
 Keep JavaScript class-free and return only normalized public-safe primitives.
@@ -316,9 +369,12 @@ After implementation and docs synchronization, run:
 
 The optional public-safe live smoke uses a dedicated chart. Record the original
 visible range, request a start older than the initially loaded history, verify
-at least one request moved the earliest timestamp backward, and restore the
-original visible range. Store only bounds, counts, coverage, stop/application
-status, elapsed time, and restoration outcome in this plan.
+at least one request moved the earliest timestamp backward, and reapply the
+original requested range. Store only bounds, counts, coverage,
+stop/application status, elapsed time, and restoration outcome in this plan.
+Because the setter addresses loaded bars, future whitespace in the original
+viewport can clamp to the latest loaded bar and is not an exact restoration
+guarantee.
 
 ## Validation and Acceptance
 
@@ -375,6 +431,21 @@ The upstream call and guard are evidence only:
 
 Do not copy its fixed wait, exception swallowing, or sparse response.
 
+The 2026-07-13 public-safe smoke produced one history request, moved the
+earliest loaded timestamp from 2025 to 2021 for a 2024 requested start, stopped
+with `coverage_reached`, and applied 632 matching daily bars. Endpoint coverage
+remained partial because the requested end extended beyond the latest loaded
+bar. Reapplying the original requested range succeeded but clamped its future
+right edge to the latest loaded bar. No raw bars, target ID, or account-local
+metadata is recorded here.
+
+Final corrected local validation included 32 CDP tests, 388 CLI unit tests, 95 Desktop
+contract tests, 52 model tests, the remaining workspace integration and doc
+tests, strict Clippy, formatting, metadata, public hygiene over 570 tracked
+files, release-script syntax, contributor-guide parity, and both changed skill
+validators. Environment-gated live tests remained ignored as designed; the
+dedicated range smoke was run separately and is summarized above.
+
 ## Interfaces and Dependencies
 
 In `crates/model/src/visible_range.rs`, define at minimum:
@@ -429,3 +500,20 @@ Revision note (2026-07-13): Created R9 after R8 contract review completed with
 no remaining findings. This plan repeats the reviewed state machine, viewport,
 validation, deadline, and source boundaries so implementation can proceed from
 this file alone.
+
+Revision note (2026-07-13): Recorded model/adapter implementation, focused
+tests, public-safe live evidence, documentation synchronization, the existing
+validation exit code, and the future-whitespace restoration limitation.
+
+Revision note (2026-07-13): Split the paging adapter into
+`ops/chart/visible_range.rs` before review so the existing chart module does
+not absorb another large mixed responsibility.
+
+Revision note (2026-07-13): Applied the first implementation-review
+corrections. Progress evaluation now obeys the composed guard itself,
+absolute-deadline collisions remain `deadline_elapsed`, safe earliest evidence
+survives request/observation failures, paused-time adapter fixtures cover the
+required terminal boundaries, and the roadmap/skill reference drift is fixed.
+
+Revision note (2026-07-13): Recorded the green focused re-review and closed R9
+for archival. No public contract changed after the corrected validation run.

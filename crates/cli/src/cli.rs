@@ -190,7 +190,10 @@ pub enum Command {
     Timeframe { timeframe: Option<String> },
     #[command(about = "Get or set the chart type")]
     Type { chart_type: Option<String> },
-    #[command(about = "Get or set the visible chart range")]
+    #[command(
+        about = "Get or set the visible chart range",
+        long_about = "Get or set the selected TradingView Desktop chart's visible range.\n\nWithout bounds this is a non-mutating Desktop-backed read. With both --from and --to, the command validates the Unix-second range before connecting, requests older selected-chart main-series history when needed under bounded limits, moves the viewport only when matching loaded bars exist, and reports history paging, coverage, clamp, and stop diagnostics. It does not use tv bars, tv ohlcv, export, Replay, or scanner data as a hidden fallback."
+    )]
     Range {
         #[arg(long)]
         from: Option<f64>,

@@ -26,10 +26,10 @@ package version omits the leading `v`.
 - Evaluated a class-free positive-result indicator search implementation and
   deferred it without public CLI changes after repeated live runs could not
   reproduce stable result readiness across dialog states.
-- Completed the reviewed v0.27 visible-range history paging contract and
-  started its separate implementation plan, defining bounded selected-chart
-  loading, deterministic stopping and viewport diagnostics, and no new source
-  or fallback.
+- Added bounded selected-chart history paging to `tv range --from/--to` with
+  deterministic stopping, endpoint coverage, discrete-bar and viewport
+  diagnostics, pre-connection validation, composed progress/absolute
+  deadlines, and no new source or fallback.
 
 ## v0.26.0 - 2026-07-12
 

@@ -75,7 +75,9 @@ Useful starting points:
 - `tv bars` is the reproducible historical bars entry point.
 - `tv watch compare` watches a known candidate set for a short time using
   Desktop-free scanner-backed quote reads and one JSON object per line.
-- `tv range` only moves the visible Desktop chart range.
+- `tv range` reads the visible Desktop chart range. With `--from` and `--to`,
+  it boundedly loads older selected-chart history when needed, moves the
+  viewport only when matching bars exist, and reports paging/coverage status.
 - `tv ohlcv` reads bars from the selected Desktop chart.
 - `tv quote --source quote-data` is an explicit Desktop-backed quote-data
   WebSocket read.

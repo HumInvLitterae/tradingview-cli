@@ -598,6 +598,7 @@ pub async fn dispatch(
         },
         Command::Range { from, to } => match (from, to) {
             (Some(from), Some(to)) => {
+                ops::validate_visible_range_request(from, to)?;
                 let mut runtime = connect_runtime(config).await?;
                 ops::set_visible_range(&mut runtime, from, to).await
             }

@@ -168,6 +168,16 @@ selected Desktop chart itself is the intended source. `tv range` still reports
 `operation: "visible_range"` so agents can distinguish viewport movement from
 the combined selected-chart export workflow.
 
+No-argument `tv range` remains `source_category: "desktop_backed_read"` and
+`non_mutating: true`. Bounded `tv range --from/--to` is a
+`desktop_backed_operation` with `non_mutating: false`: it may request older
+main-series history and move the selected-chart viewport. Its additive
+`history_paging` reports request count, endpoint coverage, stop reason,
+exhaustion, limit, and timeout evidence. `viewport_application` separately
+reports whether matching discrete bars were applied, clamped, absent because
+the intervals did not overlap, or absent inside a market/session gap. Endpoint
+coverage does not guarantee that a requested interval contains a bar.
+
 Do not treat `tv quote <SYMBOL> --source chart` as a multi-symbol realtime
 batch source. It is a correctness-first single-symbol read that may switch and
 restore the visible chart to prove the selected-chart feed for one requested

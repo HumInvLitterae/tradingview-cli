@@ -1,11 +1,13 @@
+mod visible_range;
+
+pub use visible_range::{set_visible_range, validate_visible_range_request, visible_range};
+
 use serde_json::Value;
 
 use tradingview_cdp::RuntimeEvaluator;
 use tradingview_core::AppError;
 
-use super::common::{
-    BARS_PATH, CHART_API, CHART_TYPES, js_string, parse_chart_type, require_finite,
-};
+use super::common::{BARS_PATH, CHART_API, CHART_TYPES, js_string, parse_chart_type};
 
 pub async fn state(runtime: &mut impl RuntimeEvaluator) -> Result<Value, AppError> {
     runtime
@@ -257,78 +259,6 @@ pub fn validate_chart_type(chart_type: &str) -> Result<(), AppError> {
     parse_chart_type(chart_type).map(|_| ())
 }
 
-pub async fn visible_range(runtime: &mut impl RuntimeEvaluator) -> Result<Value, AppError> {
-    runtime
-        .evaluate(
-            &format!(
-                r#"
-                (function() {{
-                    var chart = {CHART_API};
-                    return {{
-                        operation: "visible_range",
-                        source: "chart_api",
-                        source_category: "desktop_backed_read",
-                        requires_desktop: true,
-                        non_mutating: true,
-                        visible_range: chart.getVisibleRange(),
-                        bars_range: chart.getVisibleBarsRange()
-                    }};
-                }})()
-                "#
-            ),
-            false,
-        )
-        .await
-}
-
-pub async fn set_visible_range(
-    runtime: &mut impl RuntimeEvaluator,
-    from: f64,
-    to: f64,
-) -> Result<Value, AppError> {
-    require_finite(from, "from")?;
-    require_finite(to, "to")?;
-    runtime
-        .evaluate(
-            &format!(
-                r#"
-                (function() {{
-                    var chart = {CHART_API};
-                    var m = chart._chartWidget.model();
-                    var ts = m.timeScale();
-                    var bars = m.mainSeries().bars();
-                    var startIdx = bars.firstIndex();
-                    var endIdx = bars.lastIndex();
-                    var fromIdx = startIdx, toIdx = endIdx;
-                    for (var i = startIdx; i <= endIdx; i++) {{
-                        var v = bars.valueAt(i);
-                        if (v && v[0] >= {from} && fromIdx === startIdx) fromIdx = i;
-                        if (v && v[0] <= {to}) toIdx = i;
-                    }}
-                    ts.zoomToBarsRange(fromIdx, toIdx);
-                    return new Promise(function(resolve) {{
-                        setTimeout(function() {{
-                            var actual = null;
-                            try {{ actual = chart.getVisibleRange(); }} catch(e) {{}}
-                            resolve({{
-                                operation: "visible_range",
-                                source: "chart_api",
-                                source_category: "desktop_backed_read",
-                                requires_desktop: true,
-                                non_mutating: true,
-                                requested: {{ from: {from}, to: {to} }},
-                                actual: actual || {{ from: 0, to: 0 }}
-                            }});
-                        }}, 500);
-                    }});
-                }})()
-                "#
-            ),
-            true,
-        )
-        .await
-}
-
 pub async fn scroll_to_date(
     runtime: &mut impl RuntimeEvaluator,
     date: &str,
@@ -547,6 +477,19 @@ mod tests {
             .expect_err("NaN should be rejected");
 
         assert_eq!(err.kind, ErrorKind::Validation);
+        assert!(runtime.evaluated.is_empty());
+    }
+
+    #[tokio::test]
+    async fn set_visible_range_rejects_invalid_order_before_evaluating() {
+        let mut runtime = FakeRuntime::new([]);
+
+        let err = set_visible_range(&mut runtime, 2.0, 1.0)
+            .await
+            .expect_err("reversed range should be rejected");
+
+        assert_eq!(err.kind, ErrorKind::Validation);
+        assert!(runtime.evaluated.is_empty());
     }
 
     #[tokio::test]
@@ -573,22 +516,123 @@ mod tests {
 
     #[tokio::test]
     async fn set_visible_range_reports_viewport_operation_metadata() {
-        let payload = json!({
-            "operation": "visible_range",
-            "source": "chart_api",
-            "source_category": "desktop_backed_read",
-            "requires_desktop": true,
-            "non_mutating": true,
-            "requested": {"from": 1, "to": 2},
-            "actual": {"from": 1, "to": 2}
-        });
-        let mut runtime = FakeRuntime::new([payload.clone()]);
+        let mut runtime = FakeRuntime::new([
+            json!({
+                "status": "ok",
+                "earliest": 1.0,
+                "latest": 2.0,
+                "more_available": true,
+                "request_method_available": true,
+                "availability_method_available": true
+            }),
+            json!({
+                "status": "ok",
+                "visible_range": {"from": 1.0, "to": 2.0},
+                "bars": [
+                    {"index": 4, "timestamp": 1.0},
+                    {"index": 5, "timestamp": 2.0}
+                ]
+            }),
+            json!({"from": 1.0, "to": 2.0}),
+        ]);
 
         let result = set_visible_range(&mut runtime, 1.0, 2.0).await.unwrap();
 
-        assert_eq!(result, payload);
         assert_eq!(result["operation"], "visible_range");
-        assert_eq!(result["source_category"], "desktop_backed_read");
-        assert!(runtime.evaluated[0].0.contains("zoomToBarsRange"));
+        assert_eq!(result["source_category"], "desktop_backed_operation");
+        assert_eq!(result["non_mutating"], false);
+        assert_eq!(result["history_paging"]["stop_reason"], "paging_not_needed");
+        assert_eq!(result["history_paging"]["request_count"], 0);
+        assert_eq!(result["viewport_application"]["status"], "applied");
+        assert_eq!(result["viewport_application"]["matching_bar_count"], 2);
+        assert!(
+            runtime.evaluated[0]
+                .0
+                .contains("needsPaging && availabilityMethod")
+        );
+        assert!(runtime.evaluated[2].0.contains("zoomToBarsRange(4, 5)"));
+    }
+
+    #[tokio::test]
+    async fn set_visible_range_does_not_zoom_when_no_loaded_bar_matches() {
+        let original = json!({"from": 100.0, "to": 500.0});
+        let mut runtime = FakeRuntime::new([
+            json!({
+                "status": "ok",
+                "earliest": 100.0,
+                "latest": 500.0,
+                "more_available": true,
+                "request_method_available": true,
+                "availability_method_available": true
+            }),
+            json!({
+                "status": "ok",
+                "visible_range": original,
+                "bars": [
+                    {"index": 10, "timestamp": 100.0},
+                    {"index": 11, "timestamp": 500.0}
+                ]
+            }),
+        ]);
+
+        let result = set_visible_range(&mut runtime, 200.0, 400.0).await.unwrap();
+
+        assert_eq!(
+            result["viewport_application"]["status"],
+            "unchanged_no_matching_bars"
+        );
+        assert_eq!(result["actual"], original);
+        assert_eq!(runtime.evaluated.len(), 2);
+        assert!(
+            runtime
+                .evaluated
+                .iter()
+                .all(|(expression, _)| !expression.contains("zoomToBarsRange"))
+        );
+    }
+
+    #[tokio::test]
+    async fn set_visible_range_requests_history_until_left_edge_is_covered() {
+        let mut runtime = FakeRuntime::new([
+            json!({
+                "status": "ok",
+                "earliest": 300.0,
+                "latest": 500.0,
+                "more_available": true,
+                "request_method_available": true,
+                "availability_method_available": true
+            }),
+            json!(true),
+            json!({
+                "status": "ok",
+                "earliest": 100.0,
+                "latest": 500.0,
+                "more_available": true,
+                "request_method_available": true,
+                "availability_method_available": true
+            }),
+            json!({
+                "status": "ok",
+                "visible_range": {"from": 300.0, "to": 500.0},
+                "bars": [
+                    {"index": 1, "timestamp": 100.0},
+                    {"index": 2, "timestamp": 300.0},
+                    {"index": 3, "timestamp": 500.0}
+                ]
+            }),
+            json!({"from": 100.0, "to": 500.0}),
+        ]);
+
+        let result = set_visible_range(&mut runtime, 100.0, 500.0).await.unwrap();
+
+        assert_eq!(result["history_paging"]["request_count"], 1);
+        assert_eq!(result["history_paging"]["stop_reason"], "coverage_reached");
+        assert_eq!(result["history_paging"]["coverage_status"], "complete");
+        assert!(
+            runtime
+                .evaluated
+                .iter()
+                .any(|(expression, _)| expression.contains("requestMoreData(1000)"))
+        );
     }
 }

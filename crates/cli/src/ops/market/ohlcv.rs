@@ -2,11 +2,14 @@ use serde_json::{Value, json};
 
 use tradingview_cdp::RuntimeEvaluator;
 use tradingview_core::{AppError, ErrorKind};
+use tradingview_model::visible_range::{
+    VisibleRangeValidationFailure, validate_visible_range_bounds,
+};
 
 use super::super::chart::set_visible_range;
 use super::super::common::{
     BARS_PATH, CHART_API, DEFAULT_OHLCV_COUNT, MAX_OHLCV_COUNT, desktop_backed_read_metadata,
-    merge_object, require_finite, round2,
+    merge_object, round2,
 };
 
 const EXPORT_CHART_BARS_CONTRACT_VERSION: &str = "export_chart_bars.v1";
@@ -201,18 +204,20 @@ pub fn validate_export_chart_bars_request(
     to: f64,
     count: Option<usize>,
 ) -> Result<(), AppError> {
-    require_finite(from, "from")?;
-    require_finite(to, "to")?;
-    if from >= to {
-        return Err(AppError::new(
+    validate_visible_range_bounds(from, to).map_err(|failure| match failure {
+        VisibleRangeValidationFailure::NonFinite { field } => AppError::new(
+            ErrorKind::Validation,
+            format!("{field} must be a finite number"),
+        ),
+        VisibleRangeValidationFailure::InvalidOrder { from, to } => AppError::new(
             ErrorKind::Validation,
             "export chart-bars requires --from to be less than --to",
         )
         .with_details(json!({
             "from": from,
             "to": to,
-        })));
-    }
+        })),
+    })?;
     if let Some(count) = count
         && (count == 0 || count > MAX_OHLCV_COUNT)
     {
@@ -598,11 +603,6 @@ mod tests {
 
     #[tokio::test]
     async fn export_chart_bars_adds_operation_contract_metadata() {
-        let range_operation = json!({
-            "operation": "visible_range",
-            "requested": {"from": 1.0, "to": 2.0},
-            "actual": {"from": 1.0, "to": 2.0}
-        });
         let bars_payload = json!({
             "symbol": "NASDAQ:AAPL",
             "resolution": "D",
@@ -625,7 +625,22 @@ mod tests {
                 {"time": 2.0, "open": 105.0, "high": 120.0, "low": 101.0, "close": 115.0, "volume": 20.0}
             ]
         });
-        let mut runtime = FakeRuntime::new([range_operation.clone(), bars_payload]);
+        let mut runtime = FakeRuntime::new([
+            json!({
+                "status": "ok", "earliest": 1.0, "latest": 2.0,
+                "more_available": true, "request_method_available": true,
+                "availability_method_available": true
+            }),
+            json!({
+                "status": "ok", "visible_range": {"from": 1.0, "to": 2.0},
+                "bars": [
+                    {"index": 1, "timestamp": 1.0},
+                    {"index": 2, "timestamp": 2.0}
+                ]
+            }),
+            json!({"from": 1.0, "to": 2.0}),
+            bars_payload,
+        ]);
 
         let result = export_chart_bars(&mut runtime, 1.0, 2.0, Some(2), false)
             .await
@@ -639,21 +654,36 @@ mod tests {
         assert_eq!(result["non_mutating"], false);
         assert_eq!(result["output_mode"], "bars");
         assert_eq!(result["requested_visible_range"]["from"], 1.0);
-        assert_eq!(result["range_operation"], range_operation);
+        assert_eq!(
+            result["range_operation"]["history_paging"]["stop_reason"],
+            "paging_not_needed"
+        );
+        assert_eq!(
+            result["range_operation"]["viewport_application"]["status"],
+            "applied"
+        );
         assert_eq!(result["chart_context"]["symbol"], "NASDAQ:AAPL");
         assert_eq!(result["returned_bars_range"]["bar_count"], 2);
         assert!(result["bars"].is_array());
-        assert_eq!(runtime.evaluated.len(), 2);
+        assert_eq!(runtime.evaluated.len(), 4);
     }
 
     #[tokio::test]
     async fn export_chart_bars_summary_omits_raw_bars() {
         let mut runtime = FakeRuntime::new([
             json!({
-                "operation": "visible_range",
-                "requested": {"from": 1.0, "to": 2.0},
-                "actual": {"from": 1.0, "to": 2.0}
+                "status": "ok", "earliest": 1.0, "latest": 2.0,
+                "more_available": true, "request_method_available": true,
+                "availability_method_available": true
             }),
+            json!({
+                "status": "ok", "visible_range": {"from": 1.0, "to": 2.0},
+                "bars": [
+                    {"index": 1, "timestamp": 1.0},
+                    {"index": 2, "timestamp": 2.0}
+                ]
+            }),
+            json!({"from": 1.0, "to": 2.0}),
             json!({
                 "symbol": "NASDAQ:AAPL",
                 "resolution": "D",
