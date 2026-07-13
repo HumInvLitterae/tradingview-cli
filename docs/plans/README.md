@@ -6,11 +6,8 @@ for release and next-phase planning.
 
 ## Current and future plans
 
-Current plan:
-
-- `tradingview-cli-v0.27-pre-release-audit.md`: freeze the promoted v0.27
-  feature scope and audit contracts, architecture, docs, skills, tests, and the
-  separate pinned-Node JavaScript contract gate before release readiness.
+There is no active ExecPlan. The independently reviewed R13 audit is complete;
+the next plan is R14 v0.27 release readiness.
 
 The ordered `v0.27.0` implementation inventory is maintained in
 `docs/v0.27-work-items.md`. Strategy Tester compatibility, indicator discovery,
@@ -19,6 +16,11 @@ separate ExecPlans only when the previous item is complete and green.
 
 Recently completed:
 
+- `tradingview-cli-v0.27-pre-release-audit.md`: froze the promoted v0.27
+  feature scope, audited contracts, architecture, docs, skills, tests, and the
+  separate pinned-Node JavaScript contract gate, and found no release blocker
+  or required pre-release refactor. Independent review reported no findings;
+  the completed plan now lives under `docs/plans/archives/`.
 - `tradingview-cli-study-value-identity.md`: added public-safe identity,
   compact inputs, visibility, and conservative study kind to one-shot and
   streaming study-value rows while preserving existing values and study state.

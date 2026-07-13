@@ -36,8 +36,10 @@ package version omits the leading `v`.
 - Added public-safe study-instance identity, compact inputs, visibility, and
   conservative study kind to `tv values` and `tv stream values`, including
   same-name fixtures and identity-aware stream dedupe coverage.
-- Started the v0.27 completion and architecture audit after the promoted
-  feature scope and documentation/runtime-skill consolidation completed.
+- Completed local v0.27 completion and architecture audit validation with no
+  release-blocking refactor requirement, and aligned Strategy data help with
+  its shared selection and no-mutation contract. Independent review reported
+  no findings.
 
 ## v0.26.0 - 2026-07-12
 

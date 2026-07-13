@@ -33,45 +33,47 @@ deferred because their positive live readiness was not reproducible.
 - [x] (2026-07-13) Created this self-contained R13 audit ExecPlan.
 - [x] (2026-07-13) Made this ExecPlan current in the plan index, roadmap, work
   inventory, changelog, and continuity ledger.
-- [ ] Confirm the exact v0.27 candidate diff from tag `v0.26.0` and record any
-  unexpected production or dependency changes.
-- [ ] Audit Strategy Tester candidate selection, no-mutation behavior,
+- [x] (2026-07-13) Confirmed the exact v0.27 candidate diff from tag `v0.26.0`
+  and recorded production and dependency changes.
+- [x] (2026-07-13) Audited Strategy Tester candidate selection, no-mutation behavior,
   ambiguity handling, and public-safe context across metrics, trades, and
   equity.
-- [ ] Confirm indicator-search trial code remains absent and the named local
+- [x] (2026-07-13) Confirmed indicator-search trial code remains absent and the named local
   prototype stash remains untouched.
-- [ ] Audit `tv range` paging deadlines, stopping precedence, endpoint
+- [x] (2026-07-13) Audited `tv range` paging deadlines, stopping precedence, endpoint
   coverage, discrete-bar gaps, viewport application, and selected-chart-only
   source boundary.
-- [ ] Audit screenshot readiness opt-in behavior, region-scoped observation,
+- [x] (2026-07-13) Audited screenshot readiness opt-in behavior, region-scoped observation,
   timeout no-write behavior, and immediate-capture compatibility.
-- [ ] Audit one-shot and streaming study-value identity, same-instance
+- [x] (2026-07-13) Audited one-shot and streaming study-value identity, same-instance
   association, compact-input filtering, optional-field fallback, ordering,
   and dedupe behavior.
-- [ ] Confirm ordinary Cargo tests remain Rust-only and the executable
+- [x] (2026-07-13) Confirmed ordinary Cargo tests remain Rust-only and the executable
   JavaScript helper fixture remains a separately managed mandatory gate with
   Node.js `24.18.0` pinned in local tooling, CI, and release workflows.
-- [ ] Inspect module sizes and production/test boundaries for Strategy Tester
+- [x] (2026-07-13) Inspected module sizes and production/test boundaries for Strategy Tester
   selection, visible-range paging, screenshot readiness, stream values, and
   shared study-value shaping.
-- [ ] Decide whether any inspected module requires a release-blocking
-  refactor, a deferred maintainability note, or no action.
-- [ ] Audit help, README, stable docs, packaged guidance, and runtime skills
+- [x] (2026-07-13) Decided no inspected module requires a release-blocking
+  refactor and recorded visible-range adapter decomposition as a deferred
+  maintainability note.
+- [x] (2026-07-13) Audited help, README, stable docs, packaged guidance, and runtime skills
   for source, mutation, readiness, identity, and deferred-feature boundaries.
-- [ ] Inspect changed skill size and routing, validate affected skills, and
+- [x] (2026-07-13) Inspected changed skill size and routing, validated affected skills, and
   confirm no duplicate shipped skill copy has drifted.
-- [ ] Scan tracked files and public diagnostics for private values, raw live
+- [x] (2026-07-13) Scanned tracked files and public diagnostics for private values, raw live
   evidence, stale current-state wording, and machine-specific paths.
-- [ ] Run focused Strategy Tester, range, screenshot, study-value, stream, and
+- [x] (2026-07-13) Ran focused Strategy Tester, range, screenshot, study-value, stream, and
   Desktop contract tests.
-- [ ] Run the pinned-Node JavaScript contract gate separately from ordinary
+- [x] (2026-07-13) Ran the pinned-Node JavaScript contract gate separately from ordinary
   Cargo tests.
-- [ ] Run formatting, strict Clippy, the complete Rust-only workspace suite,
+- [x] (2026-07-13) Ran formatting, strict Clippy, the complete Rust-only workspace suite,
   metadata, hygiene, package-script, workflow, guide-parity, and diff checks.
-- [ ] Record an explicit architecture verdict and all small corrections in
+- [x] (2026-07-13) Recorded the architecture verdict and one small help/test correction in
   this plan.
-- [ ] Prepare a self-contained read-only reviewer prompt, obtain independent
-  review, and correct any findings before R13 closeout.
+- [x] (2026-07-13) Prepared a self-contained read-only reviewer prompt.
+- [x] (2026-07-13) Obtained independent review with no findings and closed
+  R13 without further code or documentation corrections.
 
 ## Surprises & Discoveries
 
@@ -87,6 +89,37 @@ deferred because their positive live readiness was not reproducible.
   Rust fixture selected through `scripts/check-study-values-js-contract.py`.
   `mise.toml`, CI, and the release workflow pin Node.js `24.18.0`, while
   ordinary `cargo test --workspace` succeeds without Node on `PATH`.
+
+- Observation: the v0.27 candidate is broad in documentation but narrow in
+  production ownership.
+  Evidence: `v0.26.0..HEAD` changes 53 files and adds archived plans and current
+  guidance, while production work is confined to Strategy Tester selection,
+  visible-range paging, screenshot readiness, and study-value identity. The
+  only Cargo manifest change is CLI dev-only Tokio `test-util`; the lockfile
+  and production dependency graph are unchanged.
+
+- Observation: the largest new adapter is cohesive but merits future attention
+  if history paging grows.
+  Evidence: `crates/cli/src/ops/chart/visible_range.rs` has about 715 production
+  lines before its test section. It owns one bounded selected-chart operation:
+  history inspection, request/progress observation, viewport application, and
+  public-safe diagnostics. I/O-free validation, stop decisions, coverage, and
+  discrete-bar intersection already live in `tradingview-model`. A future
+  internal split may separate CDP inspection/request/application helpers, but
+  no current contract or safety issue requires that split before release.
+
+- Observation: other inspected v0.27 modules retain clear boundaries.
+  Evidence: Strategy selection has about 270 production lines, screenshot
+  render wait about 454, shared study-value shaping about 214, and the model
+  visible-range decision module about 270. Screenshot capture and readiness are
+  separate modules; one-shot and stream identity use one shared helper; and
+  Strategy metrics, trades, and equity use one shared selector.
+
+- Observation: Strategy data help lagged behind its reviewed payload contract.
+  Evidence: `tv data strategy|trades|equity --help` described only the data
+  shape and omitted shared `strategy_context`, ambiguity, hidden/unready state,
+  and no-mutation behavior. The audit adds long help and one contract test; it
+  changes no command, option, payload, or runtime behavior.
 
 ## Decision Log
 
@@ -112,12 +145,44 @@ deferred because their positive live readiness was not reproducible.
   merely to reproduce evidence already reviewed green.
   Date/Author: 2026-07-13 / Codex
 
+- Decision: no release-blocking architecture refactor is required before
+  v0.27 release readiness.
+  Rationale: each promoted feature has a named owner and focused tests;
+  I/O-free range decisions and shared Strategy/study-value concerns are already
+  separated. The largest adapter remains one cohesive operation. Record its
+  possible internal split as post-release maintainability work only if future
+  paging behavior expands.
+  Date/Author: 2026-07-13 / Codex
+
+- Decision: correct Strategy data help inside the audit.
+  Rationale: help text was the only clear user-facing drift and can be fixed
+  additively without changing a public contract. A deterministic CLI contract
+  test prevents the shared selection/no-mutation explanation from drifting.
+  Date/Author: 2026-07-13 / Codex
+
 ## Outcomes & Retrospective
 
-R13 planning is complete. Implementation, architecture inspection, complete
-validation, and independent review remain. Release readiness must not begin
-until this section records one explicit verdict: no release-blocking issue,
-small corrections applied, or a larger refactor required before release.
+R13 implementation and complete local validation are finished. The audit found
+no release-blocking architecture issue and no need for a dedicated refactor
+before v0.27 release readiness. It applied one small correction: Strategy data
+help now explains shared selection context, ambiguous/hidden/unready state, and
+that the reads do not open Strategy Tester or change study visibility. One
+contract test covers all three subcommands.
+
+Focused tests are green: 19 Strategy tests, 16 visible-range tests, 22
+screenshot tests, 6 ordinary study-value tests with the executable fixture
+ignored, 16 stream tests, and 98 Desktop contract tests. The separately managed
+JavaScript contract fixture passes with Node.js `24.18.0`.
+
+The complete workspace suite passes with Node absent from `PATH`; CLI reports
+410 passed and one intentionally ignored JavaScript fixture. Formatting,
+strict Clippy, Cargo metadata, public hygiene over 578 tracked files, workflow
+YAML parsing, package-script syntax, contributor-guide parity, diff checks, and
+the three affected runtime-skill validators are green. Existing reviewed live
+evidence was not repeated and no TradingView state was mutated. Independent
+review reported no findings, confirmed the no-refactor verdict, and found no
+contract, source-boundary, documentation, or scope drift. R13 is complete;
+release-readiness planning is the next separate slice.
 
 ## Context and Orientation
 
@@ -256,7 +321,7 @@ All inspections and tests are non-destructive and repeatable. Do not run a live
 mutation or apply/drop the preserved stash. Documentation corrections should
 be small and made with `apply_patch`. Build artifacts may be regenerated safely.
 Do not commit audit changes until independent review and focused corrections
-are complete.
+are complete. That gate is now satisfied: review reported no findings.
 
 ## Artifacts and Notes
 
@@ -267,6 +332,9 @@ indicator-search prototype remains outside the tracked tree in the named stash
 
 Do not retain a point-in-time reviewer prompt after review. Record durable
 review criteria, findings, corrections, and outcomes in this ExecPlan.
+The current transient prompt is
+`target/v0.27-pre-release-audit-review-prompt.md`; it is ignored by Git and must
+be removed after review is complete.
 
 ## Interfaces and Dependencies
 
@@ -281,10 +349,18 @@ create a dedicated plan before implementation.
 
 ## Open Questions
 
-The audit verdict is open. It must conclude one of the following: no release-
-blocking architecture issue, small corrections applied with no public behavior
-change, or a larger refactor required before release readiness.
+No product or architecture question remains open. Independent review reported
+no findings. Release readiness may begin under a separate R14 ExecPlan.
 
 Revision note (2026-07-13): Created after R11 final focused review reported no
 findings and the R12 documentation/runtime-skill consolidation pass completed.
 R6b indicator search and R7 exact-add remain explicitly deferred.
+
+Revision note (2026-07-13): Completed local R13 inspection and validation. The
+audit found no release-blocking architecture issue, recorded visible-range
+adapter decomposition as a future maintainability candidate only, corrected
+Strategy data help drift, and stopped before independent review.
+
+Revision note (2026-07-13): Independent review reported no findings, confirmed
+the release-ready architecture verdict and audit correction scope, and closed
+R13. The transient reviewer prompt was removed after review.
