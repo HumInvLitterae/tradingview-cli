@@ -786,14 +786,23 @@ pub enum DataCommand {
     Indicator { entity_id: String },
     #[command(about = "Get visible DOM / Depth of Market bid and ask levels")]
     Depth,
-    #[command(about = "Get strategy performance metrics")]
+    #[command(
+        about = "Get strategy performance metrics",
+        long_about = "Get performance metrics from the selected TradingView Desktop chart's report-bearing strategy.\n\nThe payload includes public-safe strategy_context describing candidate count, selection reason, visibility, report availability, and hidden, unready, missing, or ambiguous state. This read does not open Strategy Tester, change study visibility, or choose an unresolved ambiguous strategy."
+    )]
     Strategy,
-    #[command(about = "Get strategy trade list")]
+    #[command(
+        about = "Get strategy trade list",
+        long_about = "Get trades from the selected TradingView Desktop chart's report-bearing strategy.\n\nThe payload includes public-safe strategy_context describing candidate count, selection reason, visibility, report availability, and hidden, unready, missing, or ambiguous state. This read does not open Strategy Tester, change study visibility, or choose an unresolved ambiguous strategy."
+    )]
     Trades {
         #[arg(long, short = 'n')]
         max: Option<usize>,
     },
-    #[command(about = "Get strategy equity curve")]
+    #[command(
+        about = "Get strategy equity curve",
+        long_about = "Get equity evidence from the selected TradingView Desktop chart's report-bearing strategy.\n\nThe payload includes public-safe strategy_context describing candidate count, selection reason, visibility, report availability, and hidden, unready, missing, or ambiguous state. This read does not open Strategy Tester, change study visibility, or choose an unresolved ambiguous strategy."
+    )]
     Equity,
     #[command(about = "Get Pine Script line.new() price levels")]
     Lines {

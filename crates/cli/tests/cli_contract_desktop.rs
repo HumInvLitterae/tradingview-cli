@@ -1025,6 +1025,19 @@ fn data_help_lists_advanced_read_subcommands() {
 }
 
 #[test]
+fn strategy_data_help_explains_selection_context_and_no_mutation() {
+    for command in ["strategy", "trades", "equity"] {
+        tv().args(["data", command, "--help"])
+            .assert()
+            .success()
+            .stdout(predicate::str::contains("strategy_context"))
+            .stdout(predicate::str::contains("ambiguous"))
+            .stdout(predicate::str::contains("does not open Strategy Tester"))
+            .stdout(predicate::str::contains("change study visibility"));
+    }
+}
+
+#[test]
 fn data_indicator_requires_entity_id() {
     let assert = tv().args(["data", "indicator"]).assert().failure().code(1);
     let value = stderr_json(&assert);
