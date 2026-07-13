@@ -1604,7 +1604,43 @@ fn screenshot_help_lists_supported_regions() {
         .stdout(predicate::str::contains("chart"))
         .stdout(predicate::str::contains("strategy"))
         .stdout(predicate::str::contains("Strategy Tester"))
+        .stdout(predicate::str::contains("--wait-for-render"))
+        .stdout(predicate::str::contains("--wait-timeout-ms"))
+        .stdout(predicate::str::contains("immediate capture"))
         .stdout(predicate::str::contains("non-mutating"));
+}
+
+#[test]
+fn screenshot_rejects_invalid_wait_controls_before_connecting() {
+    for args in [
+        vec![
+            "screenshot",
+            "--output",
+            "target/test.png",
+            "--wait-timeout-ms",
+            "500",
+        ],
+        vec![
+            "screenshot",
+            "--output",
+            "target/test.png",
+            "--wait-for-render",
+            "--wait-timeout-ms",
+            "499",
+        ],
+        vec![
+            "screenshot",
+            "--output",
+            "target/test.png",
+            "--wait-for-render",
+            "--wait-timeout-ms",
+            "30001",
+        ],
+    ] {
+        let assert = tv().args(args).assert().failure().code(1);
+        let value = stderr_json(&assert);
+        assert_eq!(value["error"]["kind"], "validation");
+    }
 }
 
 #[test]

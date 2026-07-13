@@ -82,6 +82,10 @@ pub use screener::{
     screener_screens_switch, screener_status,
 };
 pub use screenshot::{screenshot_chart, screenshot_full, screenshot_strategy};
+pub(crate) use screenshot::{
+    screenshot_chart_with_render_wait, screenshot_full_with_render_wait,
+    screenshot_strategy_with_render_wait, validate_screenshot_render_wait,
+};
 pub use status::status;
 pub use stream::{
     StreamDedupe, StreamEndReason, StreamKind, StreamRequest, stream_heartbeat, stream_sample,

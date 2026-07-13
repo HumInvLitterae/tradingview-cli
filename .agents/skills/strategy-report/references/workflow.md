@@ -13,11 +13,11 @@ The original strategy-report skill collected strategy tester results, trade list
 | `quote_get` | `tv quote` |
 | `data_get_ohlcv` | `tv ohlcv --summary` or `tv ohlcv --count <N>` |
 | Visible values | `tv values` when available on chart |
-| Chart screenshot | `tv screenshot --region full|chart --output <PATH>` |
+| Chart screenshot | `tv screenshot --region full|chart --output <PATH> [--wait-for-render]` |
 | `data_get_strategy_results` | `tv data strategy` |
 | `data_get_trades` | `tv data trades --max <N>` |
 | `data_get_equity` | `tv data equity` |
-| Strategy tester screenshot | `tv screenshot --region strategy --output <PATH>` |
+| Strategy tester screenshot | `tv screenshot --region strategy --output <PATH> [--wait-for-render]` |
 
 ## Working Pattern Today
 
@@ -33,3 +33,8 @@ current Desktop build did not expose a deterministic panel-state signal and
 does not by itself make structured data unavailable.
 
 Strategy Tester panel screenshots are visual evidence only. Use `tv data strategy`, `tv data trades`, and `tv data equity` for structured fields when available. The MCP server itself is not planned.
+
+When a screenshot follows an explicit chart or panel change, opt into
+`--wait-for-render` if stable selected-chart context is required. A timeout
+does not capture or overwrite an image; it is not evidence that strategy
+metrics are unavailable.

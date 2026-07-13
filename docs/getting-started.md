@@ -206,8 +206,13 @@ Screener, alert, watchlist, drawing, or layout state:
 ```bash
 tv state
 tv ohlcv --summary --count 100
-tv screenshot --region chart --output target/tv-chart.png
+tv screenshot --region chart --output target/tv-chart.png --wait-for-render
 ```
+
+The wait flag is useful immediately after changing chart or panel state. It is
+opt-in; without it, screenshot capture remains immediate. A bounded readiness
+timeout writes no image. Use `--wait-timeout-ms <500..30000>` only with
+`--wait-for-render` when the default 5000 ms is not suitable.
 
 If you need to watch the selected chart briefly, use a bounded JSON-lines
 observation:

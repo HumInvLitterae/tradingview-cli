@@ -42,19 +42,29 @@ selected-chart context.
   `e7932e7` and `01c09fb` against this repository's quality requirements.
 - [x] (2026-07-13) Created this R10 implementation ExecPlan and made it the
   active v0.27 plan without changing screenshot behavior.
-- [ ] Inventory current-build selected-chart, canvas, loading, and Strategy
-  Tester panel signals on the dedicated test layout using public-safe counts
-  and dimensions only.
-- [ ] Add pre-connection option validation and deterministic readiness policy.
-- [ ] Add bounded sequential observation and opt-in screenshot integration.
-- [ ] Add paused-time adapter tests, CLI contract tests, and file-write tests.
-- [ ] Run a bounded public-safe live smoke on the dedicated test layout and
-  restore any test-only chart state that was changed.
-- [ ] Synchronize stable docs, packaged guidance, and only affected runtime
-  skill references.
-- [ ] Run focused and complete validation.
-- [ ] Obtain independent implementation review and correct findings before
-  closeout.
+- [x] (2026-07-13) Inventoried current-build selected-chart, chart-surface,
+  viewport, main-series last-bar, and scoped loading signals on the dedicated
+  layout. Strategy Tester bounds remain unobserved because the panel is closed
+  and the existing CLI has no supported strategy-panel open operation.
+- [x] (2026-07-13) Added pre-connection option validation and deterministic
+  readiness policy.
+- [x] (2026-07-13) Added bounded sequential observation and opt-in screenshot
+  integration under one absolute deadline.
+- [x] (2026-07-13) Added paused-time adapter tests, CLI contract tests, and
+  file-write/non-overwrite tests.
+- [x] (2026-07-13) Ran bounded public-safe stable-state smoke checks for full
+  and chart success and Strategy Tester timeout. No test-only chart mutation
+  remained after the earlier inventory probe.
+- [x] (2026-07-13) Synchronized stable docs, packaged guidance, and only the
+  affected runtime skill references.
+- [x] (2026-07-13) Ran focused and complete validation, public hygiene,
+  packaging syntax, guide parity, and changed-skill validation.
+- [x] (2026-07-13) Corrected the first independent-review findings: absolute
+  deadline precedence now covers simultaneous evaluation errors, loader
+  candidates must intersect both the requested region and viewport, and the
+  missing deterministic/adapter fixtures are present.
+- [x] (2026-07-13) Obtained focused independent re-review after corrections;
+  no findings remain.
 
 ## Surprises & Discoveries
 
@@ -77,6 +87,50 @@ selected-chart context.
   builds after R9.
   Evidence: `crates/cli/Cargo.toml` enables Tokio `test-util` only as a
   dev-dependency feature, and R9 uses it for deterministic deadline tests.
+
+- Observation: current Desktop exposes `[data-name="pane-canvas"]` as the
+  visible chart surface but does not place a child `canvas` element beneath it.
+  Evidence: the dedicated stable chart reported a finite positive 1028 by 690
+  pane surface, a 1512 by 841 viewport, nonempty symbol/resolution, and an
+  available last-bar timestamp, while the nested canvas lookup was absent.
+
+- Observation: no scoped known loading marker was visible in the stable-state
+  inventory, and Strategy Tester bounds were unavailable while its panel was
+  closed.
+  Evidence: pane-scoped data-name, loader-fragment, and loading-fragment counts
+  were all zero. Existing `tv screenshot --region strategy` returned the
+  public-safe `strategy_bounds_missing` diagnostic and wrote no file. This is
+  not evidence that loading markers never appear or that strategy readiness is
+  infeasible.
+
+- Observation: stable full and chart waits completed after exactly three
+  matching observations on the dedicated layout. A closed Strategy Tester
+  panel timed out with no output file.
+  Evidence: public-safe smoke summaries reported `screenshot_render_wait.v1`,
+  `status: ready`, `sample_count: 3`, and `stable_sample_count: 3` for full and
+  chart. The bounded 500 ms strategy smoke reported `output_written: false`;
+  an independent filesystem check confirmed the requested file was absent.
+
+- Observation: the earlier test-only chart mutation probe did not expose a
+  reproducible unstable or loading sample before restoration.
+  Evidence: the selected test chart was restored to its captured symbol and
+  timeframe during inventory, and later stable smoke required only three
+  matching samples. Acceptance therefore relies on deterministic transition
+  fixtures plus stable-state live evidence, as this plan permits.
+
+- Observation: the first independent review found that Tokio can return an
+  inner evaluation error when that error and the timeout become ready on the
+  same poll.
+  Evidence: the wait loop previously checked the post-evaluation deadline only
+  after successful values. It now checks the deadline before interpreting
+  either success or failure, and a paused-time collision fixture returns
+  `ErrorKind::Timeout`.
+
+- Observation: DOM ancestry alone does not prove that a loading element can
+  appear in the requested capture.
+  Evidence: the reviewed full-region query could include positive-size
+  off-viewport descendants. Loading candidates now require rectangle
+  intersection with both the requested region and viewport.
 
 ## Decision Log
 
@@ -117,14 +171,43 @@ selected-chart context.
   and keeps errors attributable.
   Date/Author: 2026-07-13 / Codex
 
+- Decision: define `canvas_width` and `canvas_height` from the stable
+  `[data-name="pane-canvas"]` chart surface rather than requiring a nested
+  HTML canvas.
+  Rationale: the current build's visual chart surface is measurable and is
+  already the primary chart screenshot bound. Requiring a nonexistent child
+  canvas would make every current chart time out.
+  Date/Author: 2026-07-13 / Codex
+
+- Decision: preserve the existing public two-argument Rust screenshot helpers
+  and route CLI wait controls through crate-private companion helpers.
+  Rationale: the CLI addition is additive and should not make the existing
+  `tradingview_cli::ops::screenshot_*` call shape a breaking Rust API change.
+  Date/Author: 2026-07-13 / Codex
+
 ## Outcomes & Retrospective
 
-R10 is planned but not implemented. The outcome will be recorded after the
-current-build signal inventory, focused tests, live evidence, complete
-validation, and independent review. If current Desktop cannot expose a
-bounded, public-safe stability signature that distinguishes loading from ready
-state, record no-go rather than copying broad upstream selectors or weakening
-timeout semantics.
+R10 is implemented, fully validated, and independently reviewed green.
+Immediate screenshots remain unchanged. Opt-in waits validate before
+Desktop connection, observe one sequential public-safe signature under an
+absolute deadline, require three matching ready samples, and capture only
+after readiness. Timeout and observation failure paths write no file.
+Existing public Rust screenshot helper signatures are also unchanged.
+
+Deterministic fixtures now cover loading, unavailable and malformed fields,
+zero dimensions, every signature component, stable success, partial-stability
+timeout, evaluation-error/deadline collision, ordinary runtime errors,
+full/chart/strategy attachment, capture counts, and existing-file
+preservation for timeout and runtime-error paths. Stable live full and chart
+waits succeeded; a closed Strategy Tester panel produced the expected no-file
+timeout. A live unstable transition was not reproducible, so no stronger live
+claim is made.
+
+Strict Clippy, formatting, all 403 CLI unit tests, 96 Desktop contract tests,
+the complete workspace suite, Cargo metadata, public hygiene over 573 tracked
+files, package-script syntax, contributor-guide parity, and both changed skill
+validators pass. Focused re-review after the three corrections reported no
+remaining findings.
 
 ## Context and Orientation
 
@@ -224,7 +307,9 @@ On success, add this nested object to the existing screenshot payload:
     }
 
 `last_bar_time` is nullable because an otherwise visible chart may not expose
-a loaded bar yet; a null last bar cannot form a ready signature. The example
+a loaded bar yet; a null last bar cannot form a ready signature. The names
+`canvas_width` and `canvas_height` describe the visible `pane-canvas` chart
+surface and do not require a nested HTML canvas. The example
 values are illustrative, not live evidence to copy into tests or docs.
 
 On timeout, do not call any capture method and do not create or overwrite the
@@ -431,13 +516,24 @@ background task, retry/backoff policy, or version bump.
 
 ## Open Questions
 
-No unresolved contract question blocks implementation. The initial current-
-build inventory must still confirm the narrow scoped loading signal and exact
-main-series bar-time read path. If either is unavailable, update this living
-plan with the observed limitation and a reviewed no-go or reduced readiness
-contract before writing production behavior.
+No unresolved contract question blocks chart/full implementation. The stable
+inventory confirmed selected-chart context, main-series bar time, pane surface,
+viewport, and scoped loading-marker absence. Strategy-region ready success
+still needs a visible-panel live check; deterministic fixtures and existing
+bounds behavior must remain the acceptance basis until that state is available.
 
 Revision note (2026-07-13): Created R10 after R9 implementation and focused
 re-review completed green. The plan incorporates direct upstream quality
 comparison, preserves immediate screenshots by default, and makes timeout a
 no-capture structured failure rather than a misleading ready result.
+
+Revision note (2026-07-13): Implemented the bounded wait, deterministic tests,
+public-safe live smoke, and focused documentation/skill synchronization.
+Independent implementation review remains the closeout gate.
+
+Revision note (2026-07-13): Corrected three first-review findings covering
+deadline/error collision precedence, capture-geometry loader scoping, and
+overstated fixture coverage. Focused re-review remains pending.
+
+Revision note (2026-07-13): Focused re-review reported no remaining findings.
+R10 is complete and this ExecPlan moves to the archive before R11 planning.

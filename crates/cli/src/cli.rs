@@ -275,13 +275,17 @@ pub enum Command {
     },
     #[command(
         about = "Capture Desktop visual evidence",
-        long_about = "Capture TradingView Desktop visual evidence to a local file.\n\nSupported regions are `full`, `chart`, and `strategy`. `full` captures the selected target viewport, `chart` clips to the visible chart area when detectable, and `strategy` clips to the Strategy Tester panel when it is open. This is a Desktop-backed, non-mutating read that writes the requested output file; it does not change chart state, open the Strategy Tester panel, export bars, or infer strategy results."
+        long_about = "Capture TradingView Desktop visual evidence to a local file.\n\nSupported regions are `full`, `chart`, and `strategy`. `full` captures the selected target viewport, `chart` clips to the visible chart area when detectable, and `strategy` clips to the Strategy Tester panel when it is open. Use `--wait-for-render` for an opt-in bounded stability wait before capture; `--wait-timeout-ms` controls its 500-30000 ms deadline and is only valid with the wait flag. A readiness timeout writes no file. The default remains immediate capture. This is a Desktop-backed, non-mutating read that does not change chart state, open the Strategy Tester panel, export bars, or infer strategy results."
     )]
     Screenshot {
         #[arg(long, short, default_value = "full")]
         region: String,
         #[arg(long, short)]
         output: String,
+        #[arg(long)]
+        wait_for_render: bool,
+        #[arg(long)]
+        wait_timeout_ms: Option<u64>,
     },
 }
 

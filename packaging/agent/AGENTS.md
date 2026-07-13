@@ -163,7 +163,9 @@ Do not use `TV_CDP_TARGET_ID`; explicit target handoff is `--target-id`.
 - Use `tv screenshot --region chart|full|strategy --output <PATH>` when visual
   evidence is needed. `strategy` captures the visible Strategy Tester panel
   when detectable. Screenshots do not mutate TradingView state but do write the
-  requested local file.
+  requested local file. After changing chart or panel state, add
+  `--wait-for-render` when capture must wait for stable selected-chart context;
+  a timeout writes no image.
 - For `tv data strategy|trades|equity`, inspect `strategy_context` before using
   returned counts. Hidden, unready, missing, or ambiguous strategy state is a
   source diagnostic; the commands do not open Strategy Tester or unhide a

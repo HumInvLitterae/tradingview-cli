@@ -29,12 +29,17 @@ loaded every time the skill triggers.
 | Drawing lifecycle | `tv draw shape/list/get/remove/clear` |
 | Replay controls | `tv replay status/start/step/autoplay/trade/stop` |
 | Replay step log | `tv replay log --steps <N>` |
-| Screenshot | `tv screenshot --region full|chart|strategy --output <PATH>` |
+| Screenshot | `tv screenshot --region full|chart|strategy --output <PATH> [--wait-for-render]` |
 
 For bounded range changes, report `history_paging.coverage_status`,
 `stop_reason`, and `request_count`, then report
 `viewport_application.status`, `matching_bar_count`, and `applied_range`.
 Do not infer that the viewport moved from endpoint coverage alone.
+
+`--wait-for-render` is an opt-in bounded readiness check for screenshots taken
+after selected-chart state changes. Success includes
+`screenshot_render_wait.v1`; timeout captures nothing and leaves the requested
+file untouched. Use `--wait-timeout-ms <500..30000>` only with the wait flag.
 
 ## Source Notes
 
