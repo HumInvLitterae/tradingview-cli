@@ -119,9 +119,10 @@ current-chart `tv info`, chart-model data reads, `tv screenshot`, and
 `tv stream ...` JSONL observation commands. `tv observe chart` is also a
 Desktop-backed read: it emits readiness first, then selected-chart bar samples
 and heartbeats, then a final bounded-window summary as a workflow-level JSONL
-observation. Screenshots are
-non-mutating visual evidence reads, but they do write a local output file and
-report `writes_file: true`.
+observation. Screenshots are non-mutating visual evidence reads, but they do
+write a local output file and report `writes_file: true`. Their optional
+`--wait-for-render` phase is a bounded read of the same selected-chart context;
+it does not change the screenshot source or mutate chart state.
 Core Desktop-backed reads report `source_category: "desktop_backed_read"`,
 `requires_desktop: true`, and `non_mutating` so agents can distinguish them
 from scanner REST reads and account/page operations.
@@ -136,7 +137,9 @@ strategy`, `tv data trades`, and `tv data equity` for structured strategy
 fields. Read their additive `strategy_context` before interpreting results;
 hidden, unready, missing, and ambiguous strategy states are diagnostics rather
 than zero-performance evidence. The commands do not open Strategy Tester or
-change study visibility. For short monitoring windows, prefer bounded `tv observe chart
+change study visibility. Add `--wait-for-render` after a chart or panel state
+change when capture should require stable chart context; timeout writes no
+image. For short monitoring windows, prefer bounded `tv observe chart
 --duration-ms ... --heartbeat-ms ...` when readiness plus last-bar observation
 is the workflow you need. Use lower-level bounded stream controls such as
 `--duration-ms`, `--max-events`, and `--heartbeat-ms` when a specific

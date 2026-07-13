@@ -1198,7 +1198,12 @@ pub async fn dispatch(
                 }
             }
         }
-        Command::Screenshot { region, output } => {
+        Command::Screenshot {
+            region,
+            output,
+            wait_for_render,
+            wait_timeout_ms,
+        } => {
             if !matches!(region.as_str(), "full" | "chart" | "strategy") {
                 return Err(AppError::new(
                     ErrorKind::Validation,
@@ -1212,11 +1217,20 @@ pub async fn dispatch(
                     "Output path must not be empty",
                 ));
             }
+            let render_wait =
+                ops::validate_screenshot_render_wait(wait_for_render, wait_timeout_ms)?;
             let mut runtime = connect_runtime(config).await?;
             match region.as_str() {
-                "full" => ops::screenshot_full(&mut runtime, &output).await,
-                "chart" => ops::screenshot_chart(&mut runtime, &output).await,
-                "strategy" => ops::screenshot_strategy(&mut runtime, &output).await,
+                "full" => {
+                    ops::screenshot_full_with_render_wait(&mut runtime, &output, render_wait).await
+                }
+                "chart" => {
+                    ops::screenshot_chart_with_render_wait(&mut runtime, &output, render_wait).await
+                }
+                "strategy" => {
+                    ops::screenshot_strategy_with_render_wait(&mut runtime, &output, render_wait)
+                        .await
+                }
                 _ => unreachable!("screenshot region should be validated"),
             }
         }

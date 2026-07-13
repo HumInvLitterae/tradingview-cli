@@ -102,6 +102,11 @@ This project uses Rust 2024.
   visible Strategy Tester panel, but it must not open the panel, run a
   strategy, infer metrics, or replace `tv data strategy`, `tv data trades`, or
   `tv data equity`.
+- Keep screenshot render waiting opt-in, sequential, and bounded by one
+  absolute deadline. Read only selected-chart context and requested-region
+  geometry, require three stable observations, and capture nothing after a
+  readiness timeout. Do not broaden scoped loading checks into arbitrary
+  global class-fragment selectors.
 - Keep Strategy Tester selection shared across metrics, trades, and equity.
   Their additive `strategy_context` must use current strategy metadata,
   explain report-based selection, reject unresolved multiple candidates, and

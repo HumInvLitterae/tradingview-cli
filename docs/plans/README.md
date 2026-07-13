@@ -6,12 +6,8 @@ for release and next-phase planning.
 
 ## Current and future plans
 
-Current plan:
-
-- `tradingview-cli-screenshot-render-ready-wait.md`: adds an opt-in bounded
-  readiness wait before full, chart, or Strategy Tester screenshots while
-  preserving immediate capture by default and refusing to capture after a
-  readiness timeout.
+No implementation ExecPlan is active. R11 study-value identity is the next
+ordered slice and requires a dedicated ExecPlan before code changes.
 
 The ordered `v0.27.0` implementation inventory is maintained in
 `docs/v0.27-work-items.md`. Strategy Tester compatibility, indicator discovery,
@@ -20,6 +16,11 @@ separate ExecPlans only when the previous item is complete and green.
 
 Recently completed:
 
+- `tradingview-cli-screenshot-render-ready-wait.md`: added an opt-in bounded
+  readiness wait before full, chart, or Strategy Tester screenshots while
+  preserving immediate capture by default and refusing to capture after a
+  readiness timeout. The completed R10 plan now lives under
+  `docs/plans/archives/`.
 - `tradingview-cli-visible-range-history-paging-implementation.md`: added
   bounded selected-chart history loading, deterministic stopping and clamp
   policy, composed progress/absolute deadlines, additive diagnostics, and

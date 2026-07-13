@@ -6,6 +6,10 @@ use serde_json::{Value, json};
 use tradingview_cdp::{RuntimeEvaluator, ScreenshotClip};
 use tradingview_core::{AppError, ErrorKind};
 
+mod render_wait;
+
+use render_wait::{RenderWaitControls, ScreenshotRegion, wait_for_render};
+
 const SCREENSHOT_SOURCE: &str = "desktop_screenshot";
 const SCREENSHOT_SOURCE_CATEGORY: &str = "desktop_backed_read";
 
@@ -13,27 +17,49 @@ pub async fn screenshot_full(
     runtime: &mut impl RuntimeEvaluator,
     output_path: &str,
 ) -> Result<Value, AppError> {
+    screenshot_full_with_render_wait(runtime, output_path, None).await
+}
+
+pub(crate) async fn screenshot_full_with_render_wait(
+    runtime: &mut impl RuntimeEvaluator,
+    output_path: &str,
+    render_wait: Option<RenderWaitControls>,
+) -> Result<Value, AppError> {
+    let render_wait = run_render_wait(runtime, ScreenshotRegion::Full, render_wait).await?;
     let bytes = runtime.capture_screenshot().await?;
     write_screenshot(output_path, &bytes, "full")?;
-    Ok(with_screenshot_metadata(json!({
-        "file_path": output_path,
-        "method": "cdp",
-        "output_path": output_path,
-        "region": "full",
-        "size_bytes": bytes.len(),
-    })))
+    Ok(with_optional_render_wait(
+        with_screenshot_metadata(json!({
+            "file_path": output_path,
+            "method": "cdp",
+            "output_path": output_path,
+            "region": "full",
+            "size_bytes": bytes.len(),
+        })),
+        render_wait,
+    ))
 }
 
 pub async fn screenshot_chart(
     runtime: &mut impl RuntimeEvaluator,
     output_path: &str,
 ) -> Result<Value, AppError> {
+    screenshot_chart_with_render_wait(runtime, output_path, None).await
+}
+
+pub(crate) async fn screenshot_chart_with_render_wait(
+    runtime: &mut impl RuntimeEvaluator,
+    output_path: &str,
+    render_wait: Option<RenderWaitControls>,
+) -> Result<Value, AppError> {
+    let render_wait = run_render_wait(runtime, ScreenshotRegion::Chart, render_wait).await?;
     screenshot_clipped(
         runtime,
         output_path,
         "chart",
         chart_bounds_expression(),
         None,
+        render_wait,
     )
     .await
 }
@@ -42,12 +68,22 @@ pub async fn screenshot_strategy(
     runtime: &mut impl RuntimeEvaluator,
     output_path: &str,
 ) -> Result<Value, AppError> {
+    screenshot_strategy_with_render_wait(runtime, output_path, None).await
+}
+
+pub(crate) async fn screenshot_strategy_with_render_wait(
+    runtime: &mut impl RuntimeEvaluator,
+    output_path: &str,
+    render_wait: Option<RenderWaitControls>,
+) -> Result<Value, AppError> {
+    let render_wait = run_render_wait(runtime, ScreenshotRegion::Strategy, render_wait).await?;
     screenshot_clipped(
         runtime,
         output_path,
         "strategy",
         strategy_tester_bounds_expression(),
         Some(("evidence_role", json!("strategy_tester_panel"))),
+        render_wait,
     )
     .await
 }
@@ -58,6 +94,7 @@ async fn screenshot_clipped(
     region: &str,
     bounds_expression: &'static str,
     extra_metadata: Option<(&str, Value)>,
+    render_wait: Option<Value>,
 ) -> Result<Value, AppError> {
     let bounds = runtime.evaluate(bounds_expression, false).await?;
     let bounds = screenshot_bounds_from_value(&bounds, region)?;
@@ -86,7 +123,34 @@ async fn screenshot_clipped(
     {
         object.insert(key.to_string(), value);
     }
-    Ok(payload)
+    Ok(with_optional_render_wait(payload, render_wait))
+}
+
+pub(crate) fn validate_screenshot_render_wait(
+    wait_for_render: bool,
+    wait_timeout_ms: Option<u64>,
+) -> Result<Option<RenderWaitControls>, AppError> {
+    RenderWaitControls::from_cli(wait_for_render, wait_timeout_ms)
+}
+
+async fn run_render_wait(
+    runtime: &mut impl RuntimeEvaluator,
+    region: ScreenshotRegion,
+    controls: Option<RenderWaitControls>,
+) -> Result<Option<Value>, AppError> {
+    match controls {
+        Some(controls) => wait_for_render(runtime, region, controls).await.map(Some),
+        None => Ok(None),
+    }
+}
+
+fn with_optional_render_wait(mut payload: Value, render_wait: Option<Value>) -> Value {
+    if let Some(render_wait) = render_wait
+        && let Some(object) = payload.as_object_mut()
+    {
+        object.insert("render_wait".to_string(), render_wait);
+    }
+    payload
 }
 
 fn chart_bounds_expression() -> &'static str {
@@ -383,6 +447,7 @@ mod tests {
         assert_eq!(data["writes_file"], true);
         assert_eq!(data["visual_evidence"], true);
         assert_eq!(runtime.screenshot_count, 1);
+        assert!(runtime.evaluated.is_empty());
         assert_eq!(fs::read(output).unwrap(), vec![137, 80, 78, 71]);
     }
 
@@ -401,6 +466,104 @@ mod tests {
         assert_eq!(data["size_bytes"], 4);
         assert_eq!(runtime.screenshot_count, 1);
         assert_eq!(fs::read(output).unwrap(), vec![137, 80, 78, 71]);
+    }
+
+    #[tokio::test(start_paused = true)]
+    async fn screenshot_full_waits_for_ready_evidence_before_capture() {
+        let dir = tempdir().unwrap();
+        let output = dir.path().join("waited.png");
+        let ready = json!({
+            "symbol": "NASDAQ:AAPL",
+            "resolution": "1D",
+            "last_bar_time": 1000.0,
+            "known_loading_visible": false,
+            "canvas_width": 1200,
+            "canvas_height": 640,
+            "region_width": 1512,
+            "region_height": 841,
+        });
+        let mut runtime = FakeRuntime::new([ready.clone(), ready.clone(), ready]);
+        let controls = validate_screenshot_render_wait(true, None)
+            .unwrap()
+            .unwrap();
+
+        let data = screenshot_full_with_render_wait(
+            &mut runtime,
+            output.to_str().unwrap(),
+            Some(controls),
+        )
+        .await
+        .unwrap();
+
+        assert_eq!(data["render_wait"]["status"], "ready");
+        assert_eq!(data["render_wait"]["sample_count"], 3);
+        assert_eq!(runtime.evaluated.len(), 3);
+        assert_eq!(runtime.screenshot_count, 1);
+        assert!(output.exists());
+    }
+
+    #[tokio::test(start_paused = true)]
+    async fn screenshot_timeout_does_not_capture_or_overwrite_output() {
+        let dir = tempdir().unwrap();
+        let output = dir.path().join("existing.png");
+        fs::write(&output, b"existing").unwrap();
+        let unavailable = json!({
+            "symbol": "NASDAQ:AAPL",
+            "resolution": "1D",
+            "last_bar_time": null,
+            "known_loading_visible": false,
+            "canvas_width": 1200,
+            "canvas_height": 640,
+            "region_width": 1512,
+            "region_height": 841,
+        });
+        let mut runtime =
+            FakeRuntime::new(std::iter::repeat_n(unavailable, 30).collect::<Vec<_>>());
+        let controls = validate_screenshot_render_wait(true, Some(500))
+            .unwrap()
+            .unwrap();
+
+        let error = screenshot_full_with_render_wait(
+            &mut runtime,
+            output.to_str().unwrap(),
+            Some(controls),
+        )
+        .await
+        .unwrap_err();
+
+        assert_eq!(error.kind, ErrorKind::Timeout);
+        assert_eq!(error.details.unwrap()["output_written"], false);
+        assert_eq!(runtime.screenshot_count, 0);
+        assert_eq!(runtime.clipped_screenshot_count, 0);
+        assert_eq!(fs::read(output).unwrap(), b"existing");
+    }
+
+    #[tokio::test]
+    async fn screenshot_runtime_error_does_not_capture_or_overwrite_output() {
+        let dir = tempdir().unwrap();
+        let output = dir.path().join("existing.png");
+        fs::write(&output, b"existing").unwrap();
+        let mut runtime = FakeRuntime::new([]).with_evaluate_error(ErrorKind::Connection);
+        let controls = validate_screenshot_render_wait(true, None)
+            .unwrap()
+            .unwrap();
+
+        let error = screenshot_full_with_render_wait(
+            &mut runtime,
+            output.to_str().unwrap(),
+            Some(controls),
+        )
+        .await
+        .unwrap_err();
+
+        assert_eq!(error.kind, ErrorKind::Connection);
+        let details = error.details.unwrap();
+        assert_eq!(details["phase"], "wait_for_render");
+        assert_eq!(details["output_written"], false);
+        assert!(details.get("raw").is_none());
+        assert_eq!(runtime.screenshot_count, 0);
+        assert_eq!(runtime.clipped_screenshot_count, 0);
+        assert_eq!(fs::read(output).unwrap(), b"existing");
     }
 
     #[tokio::test]
@@ -452,6 +615,52 @@ mod tests {
         let cropped = image::load_from_memory(&fs::read(output).unwrap()).unwrap();
         assert_eq!(cropped.width(), 640);
         assert_eq!(cropped.height(), 360);
+    }
+
+    #[tokio::test(start_paused = true)]
+    async fn screenshot_chart_attaches_render_wait_before_bounds_and_capture() {
+        let dir = tempdir().unwrap();
+        let output = dir.path().join("waited-chart.png");
+        let ready = json!({
+            "symbol": "NASDAQ:AAPL",
+            "resolution": "1D",
+            "last_bar_time": 1000.0,
+            "known_loading_visible": false,
+            "canvas_width": 1200,
+            "canvas_height": 640,
+            "region_width": 1200,
+            "region_height": 640,
+        });
+        let bounds = json!({
+            "x": 10.0,
+            "y": 20.0,
+            "width": 640.0,
+            "height": 360.0,
+            "viewport_width": 1000.0,
+            "viewport_height": 500.0,
+        });
+        let mut runtime = FakeRuntime::new([ready.clone(), ready.clone(), ready, bounds])
+            .with_clipped_screenshot(png_fixture(640, 360));
+        let controls = validate_screenshot_render_wait(true, None)
+            .unwrap()
+            .unwrap();
+
+        let data = screenshot_chart_with_render_wait(
+            &mut runtime,
+            output.to_str().unwrap(),
+            Some(controls),
+        )
+        .await
+        .unwrap();
+
+        assert_eq!(
+            data["render_wait"]["contract_version"],
+            "screenshot_render_wait.v1"
+        );
+        assert_eq!(data["render_wait"]["status"], "ready");
+        assert_eq!(runtime.evaluated.len(), 4);
+        assert_eq!(runtime.clipped_screenshot_count, 1);
+        assert_eq!(runtime.screenshot_count, 0);
     }
 
     #[tokio::test]
@@ -525,6 +734,48 @@ mod tests {
         let cropped = image::load_from_memory(&fs::read(output).unwrap()).unwrap();
         assert_eq!(cropped.width(), 700);
         assert_eq!(cropped.height(), 260);
+    }
+
+    #[tokio::test(start_paused = true)]
+    async fn screenshot_strategy_attaches_render_wait_when_requested() {
+        let dir = tempdir().unwrap();
+        let output = dir.path().join("waited-strategy.png");
+        let ready = json!({
+            "symbol": "NASDAQ:AAPL",
+            "resolution": "1D",
+            "last_bar_time": 1000.0,
+            "known_loading_visible": false,
+            "canvas_width": 1200,
+            "canvas_height": 640,
+            "region_width": 700,
+            "region_height": 260,
+        });
+        let bounds = json!({
+            "x": 30.0,
+            "y": 420.0,
+            "width": 700.0,
+            "height": 260.0,
+            "viewport_width": 1000.0,
+            "viewport_height": 720.0,
+        });
+        let mut runtime = FakeRuntime::new([ready.clone(), ready.clone(), ready, bounds])
+            .with_clipped_screenshot(png_fixture(700, 260));
+        let controls = validate_screenshot_render_wait(true, None)
+            .unwrap()
+            .unwrap();
+
+        let data = screenshot_strategy_with_render_wait(
+            &mut runtime,
+            output.to_str().unwrap(),
+            Some(controls),
+        )
+        .await
+        .unwrap();
+
+        assert_eq!(data["render_wait"]["status"], "ready");
+        assert_eq!(data["evidence_role"], "strategy_tester_panel");
+        assert_eq!(runtime.evaluated.len(), 4);
+        assert_eq!(runtime.clipped_screenshot_count, 1);
     }
 
     #[tokio::test]

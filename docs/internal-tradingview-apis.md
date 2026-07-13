@@ -772,6 +772,11 @@ changes the boundary:
   `non_mutating: true`, `writes_file: true`, and `visual_evidence: true`.
   Bounds, crop, and file-write failures should return public-safe phase details
   and a recovery hint rather than raw DOM payloads.
+- `screenshot --wait-for-render`: performs an opt-in bounded observation of
+  selected-chart symbol, resolution, main-series last-bar time, pane and
+  requested-region geometry, and known scoped loading state. It uses the
+  current chart API and intentional screenshot DOM boundaries only; timeout
+  captures and writes nothing.
 - strategy DOM fallbacks: read currently rendered Strategy Tester rows only
   when chart-model report data is unavailable.
 - generic `ui` commands: compatibility automation by definition; prefer

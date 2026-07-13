@@ -130,7 +130,7 @@ tv state
 tv ohlcv --summary --count 100
 tv chart compare NASDAQ:AAPL NASDAQ:MSFT
 tv export chart-bars --from 1704067200 --to 1706745600 --summary
-tv screenshot --region chart --output target/tv-chart.png
+tv screenshot --region chart --output target/tv-chart.png --wait-for-render
 tv screenshot --region strategy --output target/tv-strategy.png
 ```
 

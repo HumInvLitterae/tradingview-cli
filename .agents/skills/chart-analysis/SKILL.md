@@ -40,7 +40,9 @@ details, or unsupported-feature reminders. If command choice is unclear, check
    `tv ohlcv --summary`, `tv values`, and `tv data lines|labels|tables|boxes`.
 5. Use `tv screenshot --region chart --output <PATH>` when chart visual
    evidence would materially help. Use `--region strategy` only when the
-   visible Strategy Tester panel itself is the evidence.
+   visible Strategy Tester panel itself is the evidence. After changing chart
+   state, add `--wait-for-render` when the image must wait for stable chart
+   context.
    For structured strategy evidence, use `tv data strategy|trades|equity` and
    verify their shared `strategy_context`; do not treat unavailable context as
    zero performance.

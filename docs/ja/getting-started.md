@@ -213,8 +213,13 @@ tv --target-id <ID> state
 ```bash
 tv state
 tv ohlcv --summary --count 100
-tv screenshot --region chart --output target/tv-chart.png
+tv screenshot --region chart --output target/tv-chart.png --wait-for-render
 ```
+
+チャートやパネルの状態を変更した直後に撮る場合は、安定したチャート状態を
+待つため `--wait-for-render` を指定できます。待機は明示指定した場合だけ行われ、
+期限切れ時は画像を作成・上書きしません。既定の 5000 ms を変更する場合だけ、
+待機フラグとともに `--wait-timeout-ms <500..30000>` を指定してください。
 
 短時間だけ選択中チャートを観測したい場合は、1行ずつ JSON を出す観測コマンドを
 使います。

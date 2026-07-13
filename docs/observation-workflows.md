@@ -273,6 +273,14 @@ TradingView state, but they write a local file, so screenshot payloads report
 evidence only; it does not replace `tv data strategy`, `tv data trades`, or
 `tv data equity`.
 
+After an explicit symbol, timeframe, visible-range, or panel change, add
+`--wait-for-render` when the image must wait for a stable selected-chart
+signature. The wait is opt-in; ordinary screenshots remain immediate. A
+successful wait reports `screenshot_render_wait.v1` under `render_wait`.
+`--wait-timeout-ms` defaults to 5000 and accepts 500 through 30000 only with
+`--wait-for-render`. A wait timeout returns a structured timeout error and does
+not capture, create, or overwrite the requested file.
+
 For structured strategy reads, compare `strategy_context` across all three
 commands before interpreting counts or values. `strategy_hidden`,
 `report_not_ready`, `ambiguous`, and `not_found` are selected-chart source
