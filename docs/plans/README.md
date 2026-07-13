@@ -28,21 +28,21 @@ Recently completed:
 - `tradingview-cli-study-value-identity.md`: added public-safe identity,
   compact inputs, visibility, and conservative study kind to one-shot and
   streaming study-value rows while preserving existing values and study state.
-  The completed R11 plan now lives under `docs/plans/archives/`.
+  The completed plan now lives under `docs/plans/archives/`.
 - `tradingview-cli-screenshot-render-ready-wait.md`: added an opt-in bounded
   readiness wait before full, chart, or Strategy Tester screenshots while
   preserving immediate capture by default and refusing to capture after a
-  readiness timeout. The completed R10 plan now lives under
+  readiness timeout. The completed plan now lives under
   `docs/plans/archives/`.
 - `tradingview-cli-visible-range-history-paging-implementation.md`: added
   bounded selected-chart history loading, deterministic stopping and clamp
   policy, composed progress/absolute deadlines, additive diagnostics, and
   pre-connection validation for the existing bounded `tv range` setter. The
-  completed R9 plan now lives under `docs/plans/archives/`.
+  completed plan now lives under `docs/plans/archives/`.
 - `tradingview-cli-visible-range-history-paging-contract.md`: defined and
   independently reviewed bounded selected-chart history paging, deadline and
   terminal precedence, endpoint coverage, discrete-bar matching, viewport
-  application, validation placement, and source boundaries. The completed R8
+  application, validation placement, and source boundaries. The completed
   plan now lives under `docs/plans/archives/`.
 - `tradingview-cli-indicator-search-positive-results.md`: implemented and
   tested a local positive-result search trial, then removed it when repeated
