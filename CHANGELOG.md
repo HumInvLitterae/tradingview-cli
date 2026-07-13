@@ -7,28 +7,14 @@ package version omits the leading `v`.
 
 ## Unreleased
 
+## v0.27.0 - 2026-07-13
+
 ### Changed
 
-- Started v0.27.0 release readiness after the independently reviewed completion
-  and architecture audit found no release blocker or required pre-release
-  refactor.
-- Added the `v0.27.0` current-build chart and evidence workflow roadmap, its
-  ordered work inventory, and the first Strategy Tester compatibility plan.
 - Hardened Strategy Tester reads for current strategy metadata and added shared
   strategy selection context across metrics, trades, and equity, with explicit
   hidden, unready, missing, and ambiguous diagnostics and no automatic chart
   mutation.
-- Defined a provisional v0.27 indicator and strategy discovery contract,
-  recorded that current Desktop result semantics remain unconfirmed, and gated
-  any command implementation behind a separate stop/go parser-feasibility
-  slice with explicit empty-state, privacy, timeout, and restoration rules.
-- Completed bounded indicator-search parser feasibility and upstream quality
-  comparison. A class-free structural parser supports a limited positive-result
-  implementation, while absent explicit empty/loading markers require
-  fail-closed diagnostics; no public command or study mutation was added yet.
-- Evaluated a class-free positive-result indicator search implementation and
-  deferred it without public CLI changes after repeated live runs could not
-  reproduce stable result readiness across dialog states.
 - Added bounded selected-chart history paging to `tv range --from/--to` with
   deterministic stopping, endpoint coverage, discrete-bar and viewport
   diagnostics, pre-connection validation, composed progress/absolute
@@ -39,10 +25,25 @@ package version omits the leading `v`.
 - Added public-safe study-instance identity, compact inputs, visibility, and
   conservative study kind to `tv values` and `tv stream values`, including
   same-name fixtures and identity-aware stream dedupe coverage.
+
+### Documentation
+
+- Added the `v0.27.0` current-build chart and evidence workflow roadmap and its
+  ordered work inventory.
+- Defined and investigated an indicator and strategy discovery contract, then
+  deferred the public command after positive result readiness was not
+  reproducible across dialog states. No search or study-mutation command was
+  shipped.
 - Completed local v0.27 completion and architecture audit validation with no
   release-blocking refactor requirement, and aligned Strategy data help with
   its shared selection and no-mutation contract. Independent review reported
   no findings.
+
+### Tests
+
+- Added a separately managed executable JavaScript contract gate for the
+  generated study-value identity helper, pinned to Node.js `24.18.0` in local
+  tooling, CI, and release builds while keeping ordinary Cargo tests Rust-only.
 
 ## v0.26.0 - 2026-07-12
 

@@ -11,7 +11,9 @@ Current plan:
 - `tradingview-cli-v0.27.0-release-readiness.md`: freeze the independently
   reviewed v0.27 candidate, align versioned release materials and package
   staging, run the ordinary Rust and separately pinned JavaScript gates, and
-  stop before tag, push, or GitHub Release creation.
+  stop before tag, push, or GitHub Release creation. Local preparation,
+  validation, and the focused documentation correction are complete; remote
+  release actions remain owner-controlled.
 
 The ordered `v0.27.0` implementation inventory is maintained in
 `docs/v0.27-work-items.md`. Strategy Tester compatibility, indicator discovery,
