@@ -77,6 +77,21 @@ jobs:
       - name: Run clippy
         run: cargo clippy --workspace --all-targets --all-features -- -D warnings
 
+  study-values-js-contract:
+    name: Study-values JavaScript contract
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24.18.0"
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+      - name: Run study-values JavaScript contract
+        run: python3 scripts/check-study-values-js-contract.py
+
   test:
     name: Test (${{ matrix.os }})
     runs-on: ${{ matrix.os }}

@@ -12,8 +12,24 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
+  study-values-js-contract:
+    name: Study-values JavaScript contract
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24.18.0"
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+      - name: Run study-values JavaScript contract
+        run: python3 scripts/check-study-values-js-contract.py
+
   build:
     name: Build ${{ matrix.target }}
+    needs: study-values-js-contract
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false

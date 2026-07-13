@@ -1,3 +1,6 @@
+[tools]
+node = "24.18.0"
+
 [tasks."check:fast"]
 description = "Run fast local checks used by the pre-commit hook"
 run = "bash scripts/git-hooks/pre-commit-fast.sh"
@@ -7,6 +10,11 @@ run_windows = "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/g
 description = "Run the full local baseline used by the pre-push hook"
 run = "bash scripts/git-hooks/pre-push-baseline.sh"
 run_windows = "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/git-hooks/pre-push-baseline.ps1"
+
+[tasks."check:study-values-js"]
+description = "Run the study-value JavaScript contract with pinned Node.js"
+run = "python3 scripts/check-study-values-js-contract.py"
+run_windows = "python scripts/check-study-values-js-contract.py"
 
 [tasks."hooks:install"]
 description = "Install Git 2.54 config-based hooks into local git config"

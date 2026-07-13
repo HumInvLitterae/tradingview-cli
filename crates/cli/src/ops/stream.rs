@@ -6,6 +6,7 @@ use tradingview_cdp::RuntimeEvaluator;
 use tradingview_core::{AppError, ErrorKind};
 
 use super::common::{CHART_API, CHART_WIDGET_COLLECTION, js_string};
+use super::data::study_values::{identity_helper_js, normalize_study_value_rows};
 
 const MIN_STREAM_INTERVAL_MS: u64 = 100;
 const STREAM_CONTRACT_VERSION: &str = "stream.v1";
@@ -169,6 +170,9 @@ pub async fn stream_sample(
             "Stream sample was empty",
         ));
     }
+    if request.kind == StreamKind::Values {
+        normalize_study_value_rows(&mut sample);
+    }
     add_stream_metadata(&mut sample, request.kind)?;
     Ok(sample)
 }
@@ -330,6 +334,7 @@ fn values_expression() -> String {
     format!(
         r#"
         (function() {{
+            {identity_helper}
             var chart = {CHART_API};
             var studies = chart.getAllStudies();
             var results = [];
@@ -346,12 +351,19 @@ fn values_expression() -> String {
                             if (typeof data[k] === 'number' && !isNaN(data[k])) vals[k] = data[k];
                         }}
                     }}
-                    if (Object.keys(vals).length > 0) results.push({{ name: studies[i].name, values: vals }});
+                    if (Object.keys(vals).length > 0) {{
+                        var meta = {{}};
+                        try {{ if (src && typeof src.metaInfo === 'function') meta = src.metaInfo() || {{}}; }} catch(e) {{}}
+                        var identity = {{ entity_id: null, short_name: null, study_kind: 'unknown', inputs: null, visible: null }};
+                        try {{ identity = tvStudyValueIdentity(src, study, meta, studies[i].id); }} catch(e) {{}}
+                        results.push(Object.assign({{ name: studies[i].name, values: vals }}, identity));
+                    }}
                 }} catch(e) {{}}
             }}
             return {{ symbol: chart.symbol(), study_count: results.length, studies: results }};
         }})()
-        "#
+        "#,
+        identity_helper = identity_helper_js(),
     )
 }
 
@@ -552,6 +564,42 @@ mod tests {
         assert!(dedupe.should_emit(&changed));
     }
 
+    #[test]
+    fn stream_dedupe_treats_study_identity_changes_as_evidence() {
+        let mut dedupe = StreamDedupe::default();
+        let first = json!({
+            "studies": [{"name": "EMA", "values": {"MA": 1}, "entity_id": "first", "inputs": {"length": 9}, "visible": true}],
+            "_ts": 1,
+            "_event": "sample"
+        });
+        let timestamp_only = json!({
+            "studies": [{"name": "EMA", "values": {"MA": 1}, "entity_id": "first", "inputs": {"length": 9}, "visible": true}],
+            "_ts": 2,
+            "_event": "sample"
+        });
+        let changed_input = json!({
+            "studies": [{"name": "EMA", "values": {"MA": 1}, "entity_id": "first", "inputs": {"length": 20}, "visible": true}],
+            "_ts": 3,
+            "_event": "sample"
+        });
+        let changed_entity = json!({
+            "studies": [{"name": "EMA", "values": {"MA": 1}, "entity_id": "second", "inputs": {"length": 20}, "visible": true}],
+            "_ts": 4,
+            "_event": "sample"
+        });
+        let changed_visibility = json!({
+            "studies": [{"name": "EMA", "values": {"MA": 1}, "entity_id": "second", "inputs": {"length": 20}, "visible": false}],
+            "_ts": 5,
+            "_event": "sample"
+        });
+
+        assert!(dedupe.should_emit(&first));
+        assert!(!dedupe.should_emit(&timestamp_only));
+        assert!(dedupe.should_emit(&changed_input));
+        assert!(dedupe.should_emit(&changed_entity));
+        assert!(dedupe.should_emit(&changed_visibility));
+    }
+
     #[tokio::test]
     async fn stream_sample_adds_metadata_and_uses_quote_expression() {
         let mut runtime = FakeRuntime::new([json!({
@@ -577,6 +625,33 @@ mod tests {
         assert_eq!(sample["non_mutating"], true);
         assert!(sample["_ts"].as_u64().unwrap() > 0);
         assert!(runtime.evaluated[0].0.contains("chart.symbol()"));
+    }
+
+    #[tokio::test]
+    async fn stream_values_adds_shared_identity_contract() {
+        let mut runtime = FakeRuntime::new([json!({
+            "symbol": "NASDAQ:AAPL",
+            "study_count": 2,
+            "studies": [
+                {"name": "EMA", "values": {"MA": 1}, "entity_id": "first", "short_name": "EMA", "study_kind": "indicator", "inputs": {"length": 9}, "visible": true},
+                {"name": "EMA", "values": {"MA": 2}, "entity_id": "second", "short_name": "EMA", "study_kind": "indicator", "inputs": {"length": 20}, "visible": true}
+            ]
+        })]);
+        let request = StreamRequest::new(StreamKind::Values, None, None).unwrap();
+
+        let sample = stream_sample(&mut runtime, &request).await.unwrap();
+
+        assert_eq!(sample["study_count"], 2);
+        assert_eq!(sample["studies"][0]["name"], "EMA");
+        assert_eq!(sample["studies"][0]["values"], json!({"MA": 1}));
+        assert_eq!(sample["studies"][0]["entity_id"], "first");
+        assert_eq!(sample["studies"][0]["inputs"]["length"], 9);
+        assert_eq!(sample["studies"][1]["entity_id"], "second");
+        assert_eq!(sample["studies"][1]["inputs"]["length"], 20);
+        assert_eq!(sample["_stream"], "values");
+        assert!(runtime.evaluated[0].0.contains("tvStudyValueIdentity"));
+        assert!(runtime.evaluated[0].0.contains("_lastBarValues"));
+        assert!(runtime.evaluated[0].0.contains("!study.isVisible()"));
     }
 
     #[test]

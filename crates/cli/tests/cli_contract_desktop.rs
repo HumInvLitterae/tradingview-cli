@@ -949,12 +949,28 @@ fn stream_help_lists_read_subcommands() {
         .stdout(predicate::str::contains("--max-events"))
         .stdout(predicate::str::contains("--heartbeat-ms"));
 
+    tv().args(["stream", "values", "--help"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("public-safe identity"))
+        .stdout(predicate::str::contains("timestamp-only"));
+
     tv().args(["stream", "quote", "--help"])
         .assert()
         .success()
         .stdout(predicate::str::contains("--duration-ms"))
         .stdout(predicate::str::contains("--max-events"))
         .stdout(predicate::str::contains("--heartbeat-ms"));
+}
+
+#[test]
+fn values_help_explains_same_name_identity() {
+    tv().args(["values", "--help"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("entity_id"))
+        .stdout(predicate::str::contains("same-name"))
+        .stdout(predicate::str::contains("optional identity"));
 }
 
 #[test]

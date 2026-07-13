@@ -148,6 +148,14 @@ chart samples with `source: "desktop_chart_stream"` and `source_category:
 "desktop_backed_read"` so agents can distinguish them from Desktop-free
 scanner reads or browserless historical bars.
 
+`tv values` and `tv stream values` are selected-chart study reads. Their study
+rows preserve the established `name` and `values` fields and add
+`entity_id`, `short_name`, `study_kind`, compact `inputs`, and `visible`.
+Use identity and compact inputs to distinguish same-name instances. Optional
+metadata can be null, and `study_kind: "unknown"` is the conservative result
+when the chart exposes no explicit kind marker. These fields do not authorize
+automatic indicator mutation or name/order-based joins.
+
 For `v0.18`, JSONL observation maturity is contract polish on these existing
 selected-chart reads. `tv stream ...` sample, heartbeat, and summary events
 carry `contract_version: "stream.v1"`. `tv observe chart` readiness, sample,

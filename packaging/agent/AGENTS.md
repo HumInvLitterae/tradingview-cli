@@ -153,6 +153,11 @@ Do not use `TV_CDP_TARGET_ID`; explicit target handoff is `--target-id`.
   by `contract_version` (`observe_chart.v1` or `stream.v1`), `_event`, and
   source metadata. Summary events describe the bounded observation window; they
   are not market-data samples.
+- `tv values` and `tv stream values` study rows expose public-safe
+  `entity_id`, `short_name`, `study_kind`, compact `inputs`, and `visible`.
+  Use `entity_id` plus inputs to distinguish same-name studies. Do not infer
+  identity from row order, and do not mutate a study merely because its
+  identity appears in readback.
 
 ## Safety Rules
 
