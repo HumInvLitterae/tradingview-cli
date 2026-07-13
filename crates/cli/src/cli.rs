@@ -755,7 +755,10 @@ pub enum PineCommand {
     Save,
     #[command(about = "Create a new Pine Script template in the editor")]
     New { script_type: Option<String> },
-    #[command(about = "Open a saved Pine Script by name into the editor")]
+    #[command(
+        about = "Open and verify a saved Pine Script in the editor",
+        long_about = "Open a saved Pine Script by exact name or unique partial name through TradingView's saved-script manager and verify the editor's active saved-script binding.\n\nThis Desktop-backed operation fails without source-only fallback when the current TradingView build cannot rebind and read back the active script safely. It does not save or compile the script."
+    )]
     Open { name: Vec<String> },
     #[command(about = "Run offline Pine Script static analysis")]
     Analyze {

@@ -853,6 +853,16 @@ fn pine_help_lists_current_subcommands() {
         .success()
         .stdout(predicate::str::contains("--file"));
 
+    tv().args(["pine", "open", "--help"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("saved-script manager"))
+        .stdout(predicate::str::contains("active saved-script binding"))
+        .stdout(predicate::str::contains(
+            "fails without source-only fallback",
+        ))
+        .stdout(predicate::str::contains("does not save or compile"));
+
     tv().args(["pine", "save", "--help"])
         .assert()
         .success()

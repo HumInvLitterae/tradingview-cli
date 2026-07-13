@@ -11,7 +11,7 @@ pub(super) struct FakeRuntime {
     responses: VecDeque<Value>,
     screenshot: Vec<u8>,
     clipped_screenshot: Result<Vec<u8>, ErrorKind>,
-    evaluate_error: Option<ErrorKind>,
+    evaluate_error: Option<AppError>,
     pub(super) screenshot_count: usize,
     pub(super) clipped_screenshot_count: usize,
     pub(super) inserted_text: Vec<String>,
@@ -51,7 +51,12 @@ impl FakeRuntime {
     }
 
     pub(super) fn with_evaluate_error(mut self, kind: ErrorKind) -> Self {
-        self.evaluate_error = Some(kind);
+        self.evaluate_error = Some(AppError::new(kind, "simulated runtime evaluation failure"));
+        self
+    }
+
+    pub(super) fn with_evaluate_app_error(mut self, error: AppError) -> Self {
+        self.evaluate_error = Some(error);
         self
     }
 }
@@ -59,8 +64,8 @@ impl FakeRuntime {
 impl RuntimeEvaluator for FakeRuntime {
     async fn evaluate(&mut self, expression: &str, await_promise: bool) -> Result<Value, AppError> {
         self.evaluated.push((expression.to_string(), await_promise));
-        if let Some(kind) = self.evaluate_error {
-            return Err(AppError::new(kind, "simulated runtime evaluation failure"));
+        if let Some(error) = self.evaluate_error.take() {
+            return Err(error);
         }
         Ok(self.responses.pop_front().unwrap_or(Value::Null))
     }

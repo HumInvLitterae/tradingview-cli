@@ -290,7 +290,7 @@ Use this category when the command can change chart, account, editor, Replay,
 Screener, layout, drawing, alert, watchlist, or generic UI state. Examples
 include `tv symbol <SYMBOL>`, `tv watchlist add`, `tv watchlist remove`,
 `tv alert create`, `tv export chart-bars`, `tv screener ...` mutation commands,
-`tv pine save`, `tv draw position`, Replay controls, layout switching, and
+`tv pine open`, `tv pine save`, `tv draw position`, Replay controls, layout switching, and
 generic `tv ui` automation.
 
 Recommended agent use: explain the expected side effect, use `--dry-run` when

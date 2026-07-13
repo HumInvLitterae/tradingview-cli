@@ -162,10 +162,17 @@ tv values
 tv watchlist get
 tv alert list
 tv pine get
+tv pine open "Saved Script"
 tv screener open --full-page
 tv screener filters add --name RSI --min 70 --dry-run
 tv draw position long --entry-price 100 --stop-loss 95 --take-profit 110
 ```
+
+`tv pine open <NAME...>` is a Desktop-backed editor operation. It opens the
+resolved saved script through TradingView's script manager and succeeds only
+after the active saved-script binding is read back and verified. It does not
+save or compile the script, and it does not fall back to source-only Monaco
+replacement when binding cannot be verified.
 
 Bounded stream observations emit newline-delimited JSON:
 

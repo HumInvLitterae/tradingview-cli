@@ -535,8 +535,11 @@ Safety boundary:
 - saved script identifiers are account-linked metadata and must not appear in
   public docs
 - `pine check` validates source without mutating the Pine Editor
-- `pine open` loads a script into the local editor buffer but does not save or
-  compile
+- `pine open` resolves saved metadata through Pine facade, opens the selected
+  script through TradingView's internal Pine Editor manager, and succeeds only
+  when active saved-script identity and version readback match the request; it
+  does not save or compile and does not fall back to source-only Monaco
+  replacement
 - malformed or unavailable responses should become validation or
   `internal_api_unavailable` errors, depending on whether the user input or the
   endpoint shape is at fault
