@@ -8,20 +8,24 @@ for release and next-phase planning.
 
 Current plan:
 
-- `tradingview-cli-v0.27.0-release-readiness.md`: freeze the independently
-  reviewed v0.27 candidate, align versioned release materials and package
-  staging, run the ordinary Rust and separately pinned JavaScript gates, and
-  stop before tag, push, or GitHub Release creation. Local preparation,
-  validation, and the focused documentation correction are complete; remote
-  release actions remain owner-controlled.
+- `tradingview-cli-pine-saved-script-binding-safety.md`: make `tv pine open`
+  succeed only after TradingView's active saved-script slot is rebound and
+  verified, with no source-only fallback, deterministic contract coverage,
+  and an owner-approved disposable-script live matrix. Implementation and full
+  local validation and focused re-review are complete, including initial review
+  corrections; live mutation evidence remains.
 
-The ordered `v0.27.0` implementation inventory is maintained in
-`docs/v0.27-work-items.md`. Strategy Tester compatibility, indicator discovery,
-visible-range history paging, and evidence-fidelity work are promoted into
-separate ExecPlans only when the previous item is complete and green.
+The ordered `v0.28.0` implementation inventory is maintained in
+`docs/v0.28-work-items.md`. Pine and indicator mutation safety, current-build
+Desktop compatibility, and bounded chart workflow candidates are promoted into
+separate ExecPlans only when the preceding required item is complete and green.
 
 Recently completed:
 
+- `tradingview-cli-v0.27.0-release-readiness.md`: prepared, validated, and
+  released `v0.27.0` with aligned versions, changelog, release notes, package
+  contents, Rust baseline, and separately pinned JavaScript contract gate. The
+  completed plan now lives under `docs/plans/archives/`.
 - `tradingview-cli-v0.27-pre-release-audit.md`: froze the promoted v0.27
   feature scope, audited contracts, architecture, docs, skills, tests, and the
   separate pinned-Node JavaScript contract gate, and found no release blocker
