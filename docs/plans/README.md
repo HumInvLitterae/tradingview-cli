@@ -6,8 +6,12 @@ for release and next-phase planning.
 
 ## Current and future plans
 
-There is no active ExecPlan. The independently reviewed R13 audit is complete;
-the next plan is R14 v0.27 release readiness.
+Current plan:
+
+- `tradingview-cli-v0.27.0-release-readiness.md`: freeze the independently
+  reviewed v0.27 candidate, align versioned release materials and package
+  staging, run the ordinary Rust and separately pinned JavaScript gates, and
+  stop before tag, push, or GitHub Release creation.
 
 The ordered `v0.27.0` implementation inventory is maintained in
 `docs/v0.27-work-items.md`. Strategy Tester compatibility, indicator discovery,

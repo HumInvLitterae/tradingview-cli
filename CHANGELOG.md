@@ -9,6 +9,9 @@ package version omits the leading `v`.
 
 ### Changed
 
+- Started v0.27.0 release readiness after the independently reviewed completion
+  and architecture audit found no release blocker or required pre-release
+  refactor.
 - Added the `v0.27.0` current-build chart and evidence workflow roadmap, its
   ordered work inventory, and the first Strategy Tester compatibility plan.
 - Hardened Strategy Tester reads for current strategy metadata and added shared
