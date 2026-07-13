@@ -18,7 +18,10 @@ package version omits the leading `v`.
 - Added the `v0.28.0` Pine and indicator mutation safety roadmap, its ordered
   work inventory, and a fail-closed plan for verified saved-script slot
   binding in `tv pine open`, based on current Rust behavior and reviewed
-  upstream compatibility evidence.
+  upstream compatibility evidence. Added a follow-up stop/go plan for current
+  Pine Editor ownership and saved-script readback compatibility after the live
+  matrix stopped safely before mutation on a current-build compatibility
+  blocker.
 
 ## v0.27.0 - 2026-07-13
 
