@@ -84,6 +84,8 @@ What is true now:
 8. Commit related changes in sensible batches. Do not accumulate unrelated
    edits into one large mixed commit.
 9. Never push to a remote unless the user explicitly asks in the current turn.
+10. Use descriptive names and repository paths for plans and work items. Do not
+    invent ordinal aliases that require an external numbering scheme.
 
 ## Documentation Policy
 

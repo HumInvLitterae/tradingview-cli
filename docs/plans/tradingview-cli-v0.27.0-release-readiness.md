@@ -6,8 +6,8 @@ Maintain it according to `.agents/PLANS.md`.
 
 ## Purpose / Big Picture
 
-This slice prepares `v0.27.0` after the independently reviewed R13 completion
-and architecture audit found no release blocker or required pre-release
+This slice prepares `v0.27.0` after the independently reviewed completion and
+architecture audit found no release blocker or required pre-release
 refactor. It freezes feature work and aligns package version metadata, the
 changelog, curated GitHub Release notes, README download examples, packaged
 agent guidance, and the staged release archive with the reviewed candidate.
@@ -21,8 +21,9 @@ remain owner-controlled.
 
 ## Progress
 
-- [x] (2026-07-13) Closed and archived the independently reviewed R13 audit.
-- [x] (2026-07-13) Created this R14 release-readiness ExecPlan and made it the
+- [x] (2026-07-13) Closed and archived the independently reviewed completion
+  and architecture audit.
+- [x] (2026-07-13) Created this release-readiness ExecPlan and made it the
   current plan in the index, roadmap, work inventory, changelog, and continuity
   ledger.
 - [ ] Ground the release candidate from the current worktree, recent commits,
@@ -56,7 +57,7 @@ remain owner-controlled.
   without reopening deferred indicator search or exact-add work.
   Rationale: current-build Strategy Tester selection, selected-chart history
   paging, screenshot render readiness, and study-value identity form a coherent
-  correctness release. R6b search readiness was not reproducible and its
+  correctness release. Indicator-search readiness was not reproducible and its
   prototype remains deliberately outside the tracked tree.
   Date/Author: 2026-07-13 / Codex
 
@@ -71,6 +72,13 @@ remain owner-controlled.
   Rationale: this is the current project date when release readiness starts. If
   publication occurs later, update the date before creating the tag.
   Date/Author: 2026-07-13 / Codex
+
+- Decision: refer to plans and work items by descriptive name and repository
+  path rather than by an invented ordinal alias.
+  Rationale: a local numbering scheme is context that readers must reconstruct
+  outside the named artifact. Descriptive references keep each current source
+  self-contained and reduce coordination drift.
+  Date/Author: 2026-07-13 / Project owner and Codex
 
 ## Outcomes & Retrospective
 
@@ -98,8 +106,9 @@ One-shot and streaming study values add same-instance public-safe identity,
 compact inputs, visibility, and conservative kind without changing their
 existing value-reader semantics.
 
-Indicator search R6b and exact-add R7 remain deferred. The recovered search
-prototype stays in the named local stash and must not be applied, dropped, or
+Indicator search implementation and exact-match search-result add remain
+deferred. The recovered search prototype stays in the named local stash and
+must not be applied, dropped, or
 packaged during release preparation. The audit also recorded the roughly
 715-line selected-chart paging adapter as a future internal-split candidate
 only if its responsibilities grow; no refactor is required before release.
@@ -244,7 +253,7 @@ Entry evidence:
 
     Latest release: v0.26.0 at 5e7f48f
     Workspace version before preparation: 0.26.0
-    R13 audit: complete; independent review reported no findings
+    Completion and architecture audit: independent review reported no findings
     Architecture blocker: none
     Preserved search prototype: named stash, untouched
     Promoted feature areas: four
@@ -276,6 +285,11 @@ updated if publication occurs after 2026-07-13. Tag creation, push, and GitHub
 Release publication require separate owner action after this local plan is
 complete.
 
-Revision note (2026-07-13): Created after R13 independent review reported no
-findings. The plan freezes the reviewed v0.27 candidate, preserves the separate
-pinned-Node contract boundary, and stops before remote release actions.
+Revision note (2026-07-13): Created after completion-audit independent review
+reported no findings. The plan freezes the reviewed v0.27 candidate, preserves
+the separate pinned-Node contract boundary, and stops before remote release
+actions.
+
+Revision note (2026-07-13): Replaced informal work-item numbering in current
+planning sources with descriptive names and paths. This avoids importing a
+conversation-local numbering scheme into durable project state.
