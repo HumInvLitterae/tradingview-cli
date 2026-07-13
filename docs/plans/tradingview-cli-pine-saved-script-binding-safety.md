@@ -53,8 +53,13 @@ and does not inject the fetched source as a fallback.
   ambiguity before mutation. Re-ran focused and full local validation green.
 - [x] (2026-07-14) Focused independent re-review found no remaining findings
   and approved proceeding to the separately owner-authorized live matrix.
-- [ ] With explicit owner approval, run the disposable two-script live matrix
-  and record only a public-safe summary.
+- [x] (2026-07-14) Received owner approval to use `Testスクリプト` and
+  `Testスクリプト2` on the ELVN chart without cloud-script cleanup, confirmed
+  both scripts, and attempted the live matrix. The command failed closed before
+  any set or save because current-build active-slot readback was unavailable.
+- [ ] Complete the separate current-build Active Pine Editor compatibility
+  plan, then rerun the already authorized two-script live matrix and record
+  only a public-safe summary.
 - [ ] Archive this plan only after the required live evidence is green.
 
 ## Surprises & Discoveries
@@ -105,6 +110,22 @@ and does not inject the fetched source as a fallback.
   completion audit should reconsider an `open`/`save` module split if another
   Pine persistence feature lands, but a behavior-neutral split is not required
   to review this safety correction.
+
+- Observation: The current Desktop build can display a visible Pine Editor and
+  a visible Monaco instance while the legacy `.pine-editor-monaco` selector and
+  the Pine test API's active editor/store provider both remain unavailable.
+  Evidence: On the owner-selected ELVN chart, a capability-only CDP probe found
+  two Monaco instances, one visible, and found the Pine test API factory and
+  open methods. `tv pine get` still reported that Monaco was unavailable, and
+  the test API did not expose active-slot readback.
+
+- Observation: Calling the current build's internal `openEditor()` does not
+  settle or initialize active-slot readback within a bounded 15-second
+  observation, even when the editor is visibly open.
+  Evidence: `tv pine open Testスクリプト` reached its normal evaluation timeout
+  with the fixed public-safe error, and a separate capability-only same-instance
+  probe observed neither promise settlement nor active readback. No source,
+  script ID, target ID, or raw object was retained.
 
 ## Decision Log
 
@@ -162,6 +183,23 @@ and does not inject the fetched source as a fallback.
   unverified and the user is told not to save from that state.
   Date/Author: 2026-07-14 / Codex.
 
+- Decision: Record the owner-approved live matrix as a current-build no-go and
+  stop before `pine set` or `pine save` rather than weakening binding
+  verification.
+  Rationale: The visible editor does not provide the active-slot evidence
+  required by this plan, and the internal editor-open operation does not finish
+  within the bounded command deadline. The fail-closed result is the intended
+  safety behavior; saving from this state would defeat the purpose of the
+  correction.
+  Date/Author: 2026-07-14 / Codex.
+
+- Decision: Promote Active Pine Editor targeting and readback compatibility
+  ahead of indicator insertion, then return to this plan's live matrix.
+  Rationale: The roadmap already allowed that work to move earlier when it
+  blocks Pine binding validation. The current live evidence establishes that
+  condition without justifying an unsafe source-only fallback.
+  Date/Author: 2026-07-14 / Codex.
+
 ## Outcomes & Retrospective
 
 Implementation, focused Rust tests, executable JavaScript coverage, help, docs,
@@ -171,10 +209,14 @@ and matching active ID/version/name readback. Failure details are whitelisted
 and do not retain source, raw page values, or internal script identity.
 
 Full local validation after the initial review corrections and focused
-independent re-review are green. The owner-approved disposable-script save
-matrix remains. The Rust overwrite risk is therefore still `UNCONFIRMED`;
-deterministic coverage proves fail-closed control flow but does not replace
-live proof that a later save updates only the intended disposable slot.
+independent re-review are green. The owner-approved disposable-script matrix
+was attempted on ELVN with the requested two test scripts and stopped safely
+before any source change or save. The current Desktop build did not provide a
+bounded active-slot readback path, so the overwrite-safety matrix remains
+incomplete and the Rust overwrite risk remains `UNCONFIRMED`. A separate
+current-build editor-targeting/readback compatibility plan now blocks the
+matrix; deterministic coverage and the live fail-closed result do not replace
+proof that a later save updates only the intended disposable slot.
 
 ## Context and Orientation
 
@@ -295,17 +337,17 @@ changes the local buffer. Keep the skill's core workflow short and place
 uncommon recovery or binding diagnostics in its existing reference file.
 Validate every changed skill.
 
-Finally run the owner-approved live matrix. Use two explicitly disposable
-saved scripts with distinct display names and harmless sources. Capture only
+Finally run the owner-approved live matrix with `Testスクリプト` and
+`Testスクリプト2`. Capture only
 public-safe preconditions: requested display name, version, and a digest or
 boolean unchanged marker computed without storing source. Open the first
 script through the TradingView UI or verified internal path, run `tv pine open`
 for the second, verify `slot_rebound` and observed display identity, then make
-an explicit harmless edit and save only if the owner separately approved that
-mutation. Confirm the first script remains unchanged and the second is the
-only script whose version or digest changes. Restore or delete disposable
-state through an owner-approved procedure. Do not run this matrix against a
-production script or infer safety from source text copied into tracked files.
+an explicit harmless edit and save. Confirm the first script remains unchanged
+and the second is the only script whose version or digest changes. Leave both
+cloud scripts in their resulting disposable test state; the owner requested no
+cleanup. Do not run this matrix against any other script or infer safety from
+source text copied into tracked files.
 
 ## Concrete Steps
 
@@ -346,8 +388,8 @@ The live matrix command names depend on the disposable scripts prepared by the
 owner. Record commands here only with placeholders or public-safe display
 names; never persist internal IDs or source. The final evidence should state
 the command, `slot_rebound`, `binding_verified`, observed display-name match,
-which disposable changed, whether the other remained unchanged, and cleanup
-status.
+which disposable changed, whether the other remained unchanged, and that no
+cloud-script cleanup was requested or performed.
 
 ## Validation and Acceptance
 
@@ -384,12 +426,12 @@ builds leave the editor unchanged. Re-running a successful open for the same
 script should be idempotent with respect to cloud source and version.
 
 The live save matrix is not idempotent because saving can create a new version.
-Run it only after explicit approval, only on disposable scripts, and at most
-once per reviewed candidate unless a correction requires another run. Capture
-pre-operation public-safe digests in ignored `target/` files if recovery needs
-them. Never place source or identifiers in tracked files. If verification is
-ambiguous, stop without another save and recover manually through TradingView's
-version history or an owner-approved disposable cleanup procedure.
+The owner has approved it only for the two named disposable scripts; run it at
+most once per reviewed candidate unless a correction requires another run.
+Capture pre-operation public-safe digests in ignored `target/` files if
+recovery needs them. Never place source or identifiers in tracked files. If
+verification is ambiguous, stop without another save. Leave cloud-script state
+as-is because the owner requested no cleanup.
 
 The recovered indicator-search prototype stash is unrelated. Do not apply,
 drop, rewrite, or include it in this slice.
@@ -407,6 +449,11 @@ Planning evidence:
     Pinned Pine open JavaScript contract: 1 passed on Node.js 24.18.0
     Full CLI unit suite: 414 passed, 2 managed fixtures ignored
     Full workspace baseline and public hygiene after review corrections: passed
+    Owner-approved ELVN live matrix: stopped before mutation
+    Correct-target pine open result: bounded fail-closed timeout
+    Visible current-build Monaco instances: 1
+    Active saved-script readback: unavailable
+    Disposable scripts changed or saved: 0
     Rust live overwrite reproduction: UNCONFIRMED
 
 Replace this section with concise test counts, JavaScript gate evidence, live
@@ -444,15 +491,23 @@ runtime or ordinary-test dependency.
 
 ## Open Questions
 
-- UNCONFIRMED: The read-only probe confirmed `openEditor` and `openScript` on
-  all current chart targets, with active readback becoming available only
-  after editor initialization. The owner-approved live matrix still must prove
-  that the verified readback tracks the intended disposable saved script after
-  the real operation and subsequent explicit save.
-- Owner approval is required before creating, saving, restoring, or deleting
-  the two disposable scripts used for live mutation evidence.
+- UNCONFIRMED: The current build exposes `openEditor` and `openScript`, but the
+  owner-approved ELVN probe found that `openEditor()` did not settle and active
+  readback did not become available even while a visible Pine Editor was open.
+  The compatibility plan must identify a trustworthy bounded path or record a
+  durable no-go before this matrix can be retried.
+- The owner approved changing and saving `Testスクリプト` and
+  `Testスクリプト2` for the ELVN matrix and requested no cloud-script cleanup.
+  That authorization does not relax the requirement to stop before saving when
+  binding verification is unavailable.
 
 Revision note (2026-07-14): Created after the v0.27 release and current
 upstream-PR triage. The plan intentionally chooses fail-closed slot rebinding
 over upstream's source-only fallback because a warning cannot prevent an
 explicit later save from targeting the wrong account-linked script.
+
+Revision note (2026-07-14): Recorded the owner-approved ELVN matrix no-go. The
+current build showed a visible generic Monaco editor, but legacy editor
+selection and active-slot provider readback were unavailable and the internal
+editor-open operation did not settle. No script was changed or saved; Active
+Pine Editor compatibility now blocks the remaining matrix.
