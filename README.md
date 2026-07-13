@@ -158,6 +158,7 @@ Common Desktop operations:
 ```bash
 tv symbol NASDAQ:AAPL
 tv timeframe 1D
+tv values
 tv watchlist get
 tv alert list
 tv pine get
@@ -179,6 +180,13 @@ with readiness details, follows the selected chart's last bar, and ends with a
 summary event describing counts, elapsed time, controls, and end reason. Use
 the lower-level `tv stream ...` commands when you already know which specific
 chart sample type you need; bounded stream runs also end with a summary event.
+
+`tv values` returns formatted selected-chart study values. Each row also
+reports `entity_id`, `short_name`, `study_kind`, compact `inputs`, and
+`visible` when available, so same-name study instances can be distinguished
+without chart-order guesses. `tv stream values` uses the same identity fields
+for visible numeric-value samples; identity or input changes are evidence, not
+automatic study mutation.
 
 For an explicit Desktop-backed WebSocket quote-data readback, use:
 

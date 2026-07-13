@@ -33,9 +33,9 @@ package version omits the leading `v`.
 - Added opt-in `tv screenshot --wait-for-render` readiness checks with a
   caller-bounded absolute timeout and stable selected-chart evidence, while
   preserving immediate capture by default and writing no image after timeout.
-- Planned additive public-safe identity for `tv values` and
-  `tv stream values`, with same-name fixtures, compact inputs, visibility, and
-  stream dedupe coverage before implementation.
+- Added public-safe study-instance identity, compact inputs, visibility, and
+  conservative study kind to `tv values` and `tv stream values`, including
+  same-name fixtures and identity-aware stream dedupe coverage.
 
 ## v0.26.0 - 2026-07-12
 

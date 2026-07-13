@@ -139,7 +139,10 @@ pub enum Command {
         long_about = "Get Desktop-free scanner-backed quotes for 1 to 25 symbols.\n\nScanner-backed quotes are not a realtime guarantee; inspect each item's `time`, `update_mode`, and `delay_seconds` for freshness. The command preserves input order in data.items and reports each zero-based requested_index. Each successful item contains the same quote payload shape as `tv quote <SYMBOL>` when its Desktop-free scanner path succeeds. Failed items contain structured errors and do not fall back to chart target selection."
     )]
     Quotes { symbols: Vec<String> },
-    #[command(about = "Get current indicator values")]
+    #[command(
+        about = "Get current indicator values",
+        long_about = "Get formatted values from studies on the selected TradingView Desktop chart.\n\nEach study row includes public-safe instance identity, compact inputs, visibility, and a conservative study kind when available. Use entity_id and inputs to distinguish same-name studies; missing optional identity does not remove an otherwise readable value row."
+    )]
     Values,
     #[command(about = "Report available TradingView internal API paths")]
     Discover,
@@ -916,7 +919,10 @@ pub enum StreamCommand {
         #[command(flatten)]
         options: StreamOptions,
     },
-    #[command(about = "Stream visible indicator values")]
+    #[command(
+        about = "Stream visible indicator values",
+        long_about = "Stream numeric values from visible studies on the selected TradingView Desktop chart.\n\nStudy rows include the same public-safe identity fields as `tv values`. Identity, compact-input, and visibility changes are meaningful samples; timestamp-only changes remain deduplicated."
+    )]
     Values {
         #[command(flatten)]
         options: StreamOptions,

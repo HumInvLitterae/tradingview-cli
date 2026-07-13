@@ -173,6 +173,13 @@ counts, elapsed time, controls, and end reason; it is not itself a chart
 sample. These commands are not browserless historical bars, scanner quote
 evidence, quote-data readback, or a multi-symbol realtime feed.
 
+For selected-chart study evidence, `tv values` returns formatted values and
+public-safe instance identity. `tv stream values` keeps the existing
+visible-only numeric sample boundary and carries the same identity fields.
+Report `entity_id` and compact `inputs` when same-name studies must be
+distinguished; do not infer identity from row order. Optional identity can be
+null without making the underlying value unavailable.
+
 Do not add manual sleeps or double-call loops around chart-source quote reads.
 The CLI performs its own readiness checks and returns structured errors when
 chart data is not ready.

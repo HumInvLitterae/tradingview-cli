@@ -48,20 +48,26 @@ The example ID is synthetic. Never record a live entity ID in tracked files.
 - [x] (2026-07-13) Ran a public-safe read-only current-build inventory on the
   dedicated layout without recording entity IDs or raw values.
 - [x] (2026-07-13) Created this R11 ExecPlan and made it the active v0.27 plan.
-- [ ] Inventory the exact identity/input method shapes used by the six
-  value-bearing current-build sources and record aggregate availability only.
-- [ ] Add one shared identity collector and public-safe compact input shaping.
-- [ ] Add identity to one-shot and streaming values without changing existing
-  value inclusion or formatting.
-- [ ] Add deterministic same-name, sanitization, nullability, ordering, and
-  stream-dedupe fixtures.
-- [ ] Run a bounded public-safe live smoke on the dedicated layout without
-  mutating studies.
-- [ ] Synchronize stable docs, packaged guidance, and only affected skill
-  references.
-- [ ] Run focused and complete validation.
-- [ ] Obtain independent implementation review and correct findings before
-  closeout.
+- [x] (2026-07-13) Inventoried the exact identity/input method shapes used by
+  the six value-bearing current-build sources and recorded aggregate
+  availability only.
+- [x] (2026-07-13) Added one shared identity collector and public-safe compact
+  input shaping.
+- [x] (2026-07-13) Added identity to one-shot and streaming values without
+  changing existing value inclusion or formatting.
+- [x] (2026-07-13) Added deterministic same-name, sanitization, nullability,
+  ordering, and stream-dedupe fixtures.
+- [x] (2026-07-13) Ran a bounded public-safe live smoke on the dedicated layout
+  without mutating studies.
+- [x] (2026-07-13) Synchronized stable docs, packaged guidance, command help,
+  and only affected skill references.
+- [x] (2026-07-13) Ran focused and complete validation.
+- [x] (2026-07-13) Obtained initial independent implementation review and
+  corrected all three findings.
+- [x] (2026-07-13) Obtained the first focused independent re-review and
+  corrected its undeclared Node.js test-prerequisite finding.
+- [x] (2026-07-13) Obtained final focused independent re-review with no
+  findings.
 
 ## Surprises & Discoveries
 
@@ -92,6 +98,55 @@ The example ID is synthetic. Never record a live entity ID in tracked files.
   its diff adds no focused test, returns the input object without compact
   public-safety filtering, and does not update the separate stream-values
   path.
+
+- Observation: all six value-bearing sources in the current dedicated layout
+  expose same-instance identity, inputs, and visibility.
+  Evidence: the bounded aggregate probe observed six successful `id()` string
+  reads, six object-valued `inputs()` reads, and six boolean `isVisible()`
+  reads directly on the value-bearing source instances. The same six IDs
+  resolved wrappers with array-valued `getInputValues()` and boolean
+  `isVisible()`. All six exposed a short-name field; none exposed an explicit
+  strategy/type marker, so `study_kind` must conservatively be `unknown` for
+  that live state. The follow-up read still returned six value rows and 33
+  state-visible studies.
+
+- Observation: one-shot and stream retain intentionally different inclusion
+  and value readers after enrichment.
+  Evidence: the public-safe live smoke returned identity, compact inputs, and
+  known visibility for all 6 one-shot formatted rows and all 15 visible stream
+  numeric rows. The layout had zero duplicate-name groups, so deterministic
+  same-name fixtures remain the acceptance evidence. No ID, name, input,
+  value, target ID, or raw output was recorded.
+
+- Observation: the first independent review found that input-object property
+  access could still throw after `source.inputs()` returned.
+  Evidence: a Proxy throwing from `ownKeys` escaped compact-input shaping and
+  reached the enclosing row catch before `results.push`, violating the
+  optional-metadata fallback contract. The correction makes compact input and
+  identity collection total and keeps an additional caller-side default row
+  identity boundary.
+
+- Observation: a `FakeRuntime` payload cannot prove JavaScript collector
+  behavior because it does not execute the generated expression.
+  Evidence: the correction adds a separately gated test that executes the
+  production helper itself with Node.js and synthetic same-name sources, conflicting
+  wrapper fallbacks, unsafe inputs, an `ownKeys`-throwing Proxy, and an
+  all-getters-throwing Proxy.
+
+- Observation: making that executable fixture a regular Rust unit test added
+  an undeclared Node.js prerequisite to the ordinary Cargo baseline.
+  Evidence: the first focused re-review reproduced the compiled test binary
+  failing when `node` was absent from `PATH`, while Node.js was not declared in
+  `mise.toml`, CI, the release workflow, or stable development guidance. The
+  correction keeps ordinary Cargo tests Rust-only and runs the ignored fixture
+  through a separately managed gate with Node.js `24.18.0` pinned in all four
+  places.
+
+- Observation: correction validation preserved live identity coverage while
+  the existing one-shot value-bearing row count changed with chart state.
+  Evidence: the final public-safe read-only smoke returned identity, compact
+  inputs, and known visibility for all 9 one-shot rows and all 15 stream rows.
+  No live name, ID, input, value, target ID, or raw payload was recorded.
 
 ## Decision Log
 
@@ -144,14 +199,43 @@ The example ID is synthetic. Never record a live entity ID in tracked files.
   unchanged identity with only timestamp metadata should remain deduped.
   Date/Author: 2026-07-13 / Codex
 
+- Decision: prefer `source.id()`, `source.inputs()`, and
+  `source.isVisible()` for one-shot identity, then use the wrapper resolved
+  from that exact ID only as a field-level fallback. In stream values, use the
+  already resolved wrapper and its `_study` source with the same precedence.
+  Rationale: current-build aggregate evidence proves all required fields are
+  associated with the same value-bearing instance. This avoids both display
+  name joins and independently enumerated index joins.
+  Date/Author: 2026-07-13 / Codex
+
+- Decision: keep the ordinary Cargo baseline Rust-only and run the executable
+  JavaScript collector fixture as a separate mandatory contract gate.
+  Rationale: the helper needs execution-level coverage, but `cargo test
+  --workspace` must remain valid in a Rust-only development environment. The
+  gate pins Node.js `24.18.0` in `mise.toml`, CI, and the release workflow and
+  selects the ignored Rust fixture through
+  `scripts/check-study-values-js-contract.py`.
+  Date/Author: 2026-07-13 / Codex
+
 ## Outcomes & Retrospective
 
-R11 is planned but not implemented. Current code and read-only live evidence
-show that the required identity signals exist, while upstream confirms the
-user value of distinguishing same-name studies. Implementation still requires
-an exact current-build method-shape inventory, one shared safe collector,
-deterministic same-name fixtures, stream parity, full validation, and
-independent review.
+R11 implementation and documentation are complete locally. One-shot and
+stream values share bounded identity shaping while preserving their existing
+value readers and inclusion rules. Deterministic same-name, sanitization,
+nullability, ordering, and dedupe fixtures pass, and public-safe live evidence
+confirms identity availability on every returned row in the dedicated layout.
+Strict Clippy, all 410 ordinary CLI unit tests with the executable JavaScript
+fixture ignored, 97 Desktop contract tests, the complete Rust-only workspace
+suite, formatting, metadata, public hygiene over 575 tracked files,
+package-script syntax, guide parity, and both changed skill validators pass.
+The separately managed JavaScript contract gate also passes with pinned Node.js
+`24.18.0`.
+The first independent review found three correctable issues. Production
+identity collection is now nonthrowing, the production JavaScript helper has
+a deterministic executable fixture, and current planning state is synchronized.
+The first focused re-review found and closed the fixture's undeclared Node.js
+prerequisite. Final focused independent re-review reported no findings. R11 is
+complete and ready to archive.
 
 ## Context and Orientation
 
@@ -211,9 +295,9 @@ a one-shot row merely because identity is partial. Preserve the stream's
 existing visible-only inclusion rule and numeric value representation.
 
 Normalize a candidate entity ID and short name by trimming strings and mapping
-empty or non-string values to null. Do not echo a requested identifier because
-there is no identifier input to these commands. `study_kind` must use explicit
-metadata only and fall back to `unknown`.
+empty, non-string, or longer-than-200-character values to null. Do not echo a
+requested identifier because there is no identifier input to these commands.
+`study_kind` must use explicit metadata only and fall back to `unknown`.
 
 The exact current-build collector may use the model data source's `id()` /
 `inputs()` / `isVisible()` methods, public wrapper methods returned by
@@ -261,6 +345,16 @@ and limits, deterministic input key ordering, stable row order, unchanged
 legacy fields, and malformed optional metadata. Add stream tests proving
 identity fields are present in value samples, timestamp-only samples dedupe,
 and changed identity/input/visibility causes emission.
+
+Execute the production JavaScript identity helper in a deterministic ignored
+Rust test with synthetic sources and wrappers. Select that fixture through
+`scripts/check-study-values-js-contract.py`, pin Node.js `24.18.0` in
+`mise.toml`, and run the gate explicitly in CI and the release workflow.
+Ordinary `cargo test --workspace` must not require Node.js. The separately
+managed fixture must cover source-over-wrapper precedence, unsafe input
+omission, a Proxy that throws from `ownKeys`, and an object whose property
+getters all throw. Node.js remains a test-only interpreter, not a Cargo or
+runtime dependency.
 
 Finally, update only the stable docs and runtime-skill references that explain
 study values or selected-chart evidence. Keep Core Workflow sections short;
@@ -402,6 +496,12 @@ the existing `study_values` helper through the current facade. Use existing
 Serde JSON, `RuntimeEvaluator`, and `AppError`; add no dependency, source,
 background task, retry, command option, or package-version change.
 
+The executable JavaScript contract fixture is ignored by ordinary Cargo tests
+and invoked only through `scripts/check-study-values-js-contract.py` with the
+Node.js version pinned in `mise.toml`, CI, and the release workflow. Do not call
+Node from production code or add a JavaScript runtime dependency to the shipped
+binary.
+
 ## Open Questions
 
 No product-contract question blocks Milestone 1. The exact current-build
@@ -414,3 +514,8 @@ Revision note (2026-07-13): Created R11 after R10 focused re-review completed
 green. The plan incorporates current Rust one-shot/stream differences, direct
 upstream quality comparison, public-safe compact inputs, same-instance
 association, deterministic same-name acceptance, and stream dedupe semantics.
+
+Revision note (2026-07-13): Closed R11 after final focused independent
+re-review reported no findings. The ordinary Cargo baseline remains Rust-only,
+and the production JavaScript helper is covered by the separately managed
+pinned-Node contract gate.

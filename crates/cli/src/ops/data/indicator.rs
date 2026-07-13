@@ -4,13 +4,15 @@ use tradingview_cdp::RuntimeEvaluator;
 use tradingview_core::{AppError, ErrorKind};
 
 use super::super::common::{CHART_API, js_string};
+use super::study_values::{identity_helper_js, normalize_study_value_rows};
 
 pub async fn study_values(runtime: &mut impl RuntimeEvaluator) -> Result<Value, AppError> {
-    runtime
+    let mut payload = runtime
         .evaluate(
             &format!(
                 r#"
                 (function() {{
+                    {identity_helper}
                     var chart = {CHART_API};
                     var sources = chart._chartWidget.model().model().dataSources();
                     var results = [];
@@ -34,16 +36,27 @@ pub async fn study_values(runtime: &mut impl RuntimeEvaluator) -> Result<Value, 
                                     }}
                                 }}
                             }} catch(e) {{}}
-                            if (Object.keys(values).length > 0) results.push({{ name: name, values: values }});
+                            if (Object.keys(values).length > 0) {{
+                                var sourceId = null;
+                                try {{ if (typeof s.id === 'function') sourceId = s.id(); }} catch(e) {{}}
+                                var wrapper = null;
+                                try {{ if (sourceId) wrapper = chart.getStudyById(sourceId); }} catch(e) {{}}
+                                var identity = {{ entity_id: null, short_name: null, study_kind: 'unknown', inputs: null, visible: null }};
+                                try {{ identity = tvStudyValueIdentity(s, wrapper, meta, sourceId); }} catch(e) {{}}
+                                results.push(Object.assign({{ name: name, values: values }}, identity));
+                            }}
                         }} catch(e) {{}}
                     }}
                     return {{ study_count: results.length, studies: results }};
                 }})()
-                "#
+                "#,
+                identity_helper = identity_helper_js(),
             ),
             false,
         )
-        .await
+        .await?;
+    normalize_study_value_rows(&mut payload);
+    Ok(payload)
 }
 
 pub async fn data_indicator(
@@ -107,8 +120,34 @@ mod tests {
 
         let result = study_values(&mut runtime).await.unwrap();
 
-        assert_eq!(result, payload);
+        assert_eq!(result["study_count"], payload["study_count"]);
+        assert_eq!(result["studies"][0]["name"], "Relative Strength");
+        assert_eq!(result["studies"][0]["values"], json!({"RS": "98"}));
+        assert_eq!(result["studies"][0]["study_kind"], "unknown");
+        assert!(result["studies"][0]["entity_id"].is_null());
         assert!(runtime.evaluated[0].0.contains("dataWindowView"));
+        assert!(runtime.evaluated[0].0.contains("tvStudyValueIdentity"));
+    }
+
+    #[tokio::test]
+    async fn study_values_preserves_same_name_rows_and_hidden_values() {
+        let mut runtime = FakeRuntime::new([json!({
+            "study_count": 2,
+            "studies": [
+                {"name": "EMA", "values": {"MA": "1"}, "entity_id": "first", "short_name": "EMA", "study_kind": "indicator", "inputs": {"length": 9}, "visible": false},
+                {"name": "EMA", "values": {"MA": "2"}, "entity_id": "second", "short_name": "EMA", "study_kind": "indicator", "inputs": {"length": 20}, "visible": true}
+            ]
+        })]);
+
+        let result = study_values(&mut runtime).await.unwrap();
+
+        assert_eq!(result["study_count"], 2);
+        assert_eq!(result["studies"][0]["values"], json!({"MA": "1"}));
+        assert_eq!(result["studies"][0]["entity_id"], "first");
+        assert_eq!(result["studies"][0]["inputs"]["length"], 9);
+        assert_eq!(result["studies"][0]["visible"], false);
+        assert_eq!(result["studies"][1]["entity_id"], "second");
+        assert_eq!(result["studies"][1]["inputs"]["length"], 20);
     }
 
     #[tokio::test]

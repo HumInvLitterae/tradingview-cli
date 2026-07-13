@@ -41,6 +41,13 @@ after selected-chart state changes. Success includes
 `screenshot_render_wait.v1`; timeout captures nothing and leaves the requested
 file untouched. Use `--wait-timeout-ms <500..30000>` only with the wait flag.
 
+`tv values` rows preserve formatted `name` and `values` and add
+`entity_id`, `short_name`, `study_kind`, compact `inputs`, and `visible`.
+When names repeat, distinguish instances with `entity_id` and inputs rather
+than row order. `tv stream values` uses the same identity fields for its
+existing visible-only numeric samples; an identity or input change is a new
+sample, not a mutation request.
+
 ## Source Notes
 
 - `tv snapshot <SYMBOL>` is a good one-symbol Desktop-free context read before

@@ -6,11 +6,10 @@ for release and next-phase planning.
 
 ## Current and future plans
 
-Current plan:
-
-- `tradingview-cli-study-value-identity.md`: add public-safe identity to
-  one-shot and streaming study-value rows so same-name studies are
-  distinguishable without changing existing values or study state.
+No implementation ExecPlan is active. R11 study-value identity and the R12
+documentation/runtime-skill consolidation pass are complete. R13 v0.27
+completion and architecture audit is next and requires a dedicated ExecPlan
+before audit work begins.
 
 The ordered `v0.27.0` implementation inventory is maintained in
 `docs/v0.27-work-items.md`. Strategy Tester compatibility, indicator discovery,
@@ -19,6 +18,10 @@ separate ExecPlans only when the previous item is complete and green.
 
 Recently completed:
 
+- `tradingview-cli-study-value-identity.md`: added public-safe identity,
+  compact inputs, visibility, and conservative study kind to one-shot and
+  streaming study-value rows while preserving existing values and study state.
+  The completed R11 plan now lives under `docs/plans/archives/`.
 - `tradingview-cli-screenshot-render-ready-wait.md`: added an opt-in bounded
   readiness wait before full, chart, or Strategy Tester screenshots while
   preserving immediate capture by default and refusing to capture after a

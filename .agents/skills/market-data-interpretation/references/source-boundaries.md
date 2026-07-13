@@ -107,6 +107,12 @@ normal exits.
 `tv stream ...` is lower-level Desktop-backed current-chart streaming. A
 heartbeat means the stream is alive; it is not a market update.
 
+`tv values` and `tv stream values` are selected-chart study evidence. Their
+rows carry public-safe study identity and compact inputs so same-name instances
+can be separated without order-based inference. Preserve null optional fields
+and `study_kind: "unknown"` as source diagnostics; do not invent missing
+identity or treat the fields as permission to reconfigure an indicator.
+
 ## Desktop-Backed Reads
 
 Desktop-backed reads depend on the selected TradingView Desktop chart. Run

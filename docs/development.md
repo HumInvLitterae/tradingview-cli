@@ -372,6 +372,14 @@ events are observation-window readbacks, not market-data samples. Do not paste
 raw JSONL live output, target ids, raw WebSocket frames, account-local
 metadata, or local validation paths into tracked docs.
 
+Study-value rows use one shared identity contract across `tv values` and
+`tv stream values`: `entity_id`, `short_name`, `study_kind`, bounded `inputs`,
+and `visible`. Preserve each command's existing value reader, row inclusion,
+formatting, and order. Identity must come from the same study instance as the
+value; never join independently enumerated collections by display name or
+index. Compact inputs omit source/script text, nested objects, oversized
+strings, and entries beyond the fixed bounds before output.
+
 For bounded Desktop-free watch compare contract checks, run:
 
 ```bash
@@ -531,6 +539,20 @@ cargo clippy --workspace --all-targets --all-features -- -D warnings
 cargo test --workspace
 git diff --check
 ```
+
+The regular Cargo baseline remains Rust-only. Changes to the production
+study-value JavaScript identity helper also require a separate executable
+contract gate:
+
+```bash
+mise run check:study-values-js
+```
+
+This gate uses Node.js `24.18.0`, pinned in `mise.toml`, to execute the exact
+helper with synthetic sources and throwing Proxy fixtures. The corresponding
+Rust test is ignored during ordinary `cargo test --workspace`; CI and the
+release workflow install the pinned Node version and run the dedicated gate
+explicitly. Node.js is not a runtime dependency of `tv`.
 
 For focused command work, also run the relevant module or contract tests. For
 example:
