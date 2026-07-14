@@ -6,8 +6,8 @@ for release and next-phase planning.
 
 ## Current and future plans
 
-There is no active ExecPlan. The next plan will cover current-build indicator
-insertion and must be created before implementation starts.
+There is no active ExecPlan. The next plan will cover launch environment
+hardening and must be created before implementation starts.
 
 The ordered `v0.28.0` implementation inventory is maintained in
 `docs/v0.28-work-items.md`. Pine and indicator mutation safety, current-build
@@ -15,6 +15,13 @@ Desktop compatibility, and bounded chart workflow candidates are promoted into
 separate ExecPlans only when the preceding required item is complete and green.
 
 Recently completed:
+
+- `tradingview-cli-current-build-indicator-insertion.md`: replaced the legacy
+  indicator add path with exact metainfo resolution, awaited chart-owned
+  insertion, immediate inventory-name and same-ID input verification,
+  public-safe failures, pinned JavaScript coverage, and a green final CLI
+  add/remove smoke. The completed plan now lives under
+  `docs/plans/archives/`.
 
 - `tradingview-cli-active-pine-editor-compatibility.md`: established semantic
   Pine Editor ownership, trigger-linked saved-script selection, verified

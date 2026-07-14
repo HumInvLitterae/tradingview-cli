@@ -547,6 +547,7 @@ require separate executable contract gates:
 ```bash
 mise run check:study-values-js
 mise run check:pine-open-js
+mise run check:indicator-insertion-js
 ```
 
 These gates use Node.js `24.18.0`, pinned in `mise.toml`. The study-value gate

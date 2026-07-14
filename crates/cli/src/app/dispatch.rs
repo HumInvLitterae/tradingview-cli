@@ -753,7 +753,7 @@ pub async fn dispatch(
                 }
                 let inputs = inputs
                     .as_deref()
-                    .map(ops::parse_indicator_inputs)
+                    .map(ops::parse_indicator_add_inputs)
                     .transpose()?;
                 let mut runtime = connect_runtime(config).await?;
                 ops::indicator_add(&mut runtime, &indicator, inputs.as_ref()).await

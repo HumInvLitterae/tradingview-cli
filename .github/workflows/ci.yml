@@ -107,6 +107,21 @@ jobs:
       - name: Run Pine open JavaScript contract
         run: python3 scripts/check-pine-open-js-contract.py
 
+  indicator-insertion-js-contract:
+    name: Indicator insertion JavaScript contract
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24.18.0"
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+      - name: Run indicator insertion JavaScript contract
+        run: python3 scripts/check-indicator-insertion-js-contract.py
+
   test:
     name: Test (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
