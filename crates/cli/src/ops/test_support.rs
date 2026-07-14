@@ -1,4 +1,4 @@
-use std::{collections::VecDeque, io::Cursor};
+use std::{collections::VecDeque, io::Cursor, time::Duration};
 
 use image::{ImageBuffer, ImageFormat, Rgba};
 use serde_json::Value;
@@ -12,6 +12,8 @@ pub(super) struct FakeRuntime {
     screenshot: Vec<u8>,
     clipped_screenshot: Result<Vec<u8>, ErrorKind>,
     evaluate_error: Option<AppError>,
+    evaluate_error_after_responses: Option<AppError>,
+    evaluate_delay: Option<Duration>,
     pub(super) screenshot_count: usize,
     pub(super) clipped_screenshot_count: usize,
     pub(super) inserted_text: Vec<String>,
@@ -27,6 +29,8 @@ impl FakeRuntime {
             screenshot: vec![137, 80, 78, 71],
             clipped_screenshot: Ok(vec![137, 80, 78, 71]),
             evaluate_error: None,
+            evaluate_error_after_responses: None,
+            evaluate_delay: None,
             screenshot_count: 0,
             clipped_screenshot_count: 0,
             inserted_text: Vec::new(),
@@ -59,15 +63,34 @@ impl FakeRuntime {
         self.evaluate_error = Some(error);
         self
     }
+
+    pub(super) fn with_evaluate_app_error_after_responses(mut self, error: AppError) -> Self {
+        self.evaluate_error_after_responses = Some(error);
+        self
+    }
+
+    pub(super) fn with_evaluate_delay(mut self, delay: Duration) -> Self {
+        self.evaluate_delay = Some(delay);
+        self
+    }
 }
 
 impl RuntimeEvaluator for FakeRuntime {
     async fn evaluate(&mut self, expression: &str, await_promise: bool) -> Result<Value, AppError> {
         self.evaluated.push((expression.to_string(), await_promise));
+        if let Some(delay) = self.evaluate_delay {
+            tokio::time::sleep(delay).await;
+        }
         if let Some(error) = self.evaluate_error.take() {
             return Err(error);
         }
-        Ok(self.responses.pop_front().unwrap_or(Value::Null))
+        if let Some(response) = self.responses.pop_front() {
+            return Ok(response);
+        }
+        if let Some(error) = self.evaluate_error_after_responses.take() {
+            return Err(error);
+        }
+        Ok(Value::Null)
     }
 
     async fn capture_screenshot(&mut self) -> Result<Vec<u8>, AppError> {

@@ -172,7 +172,14 @@ tv draw position long --entry-price 100 --stop-loss 95 --take-profit 110
 resolved saved script through TradingView's script manager and succeeds only
 after the active saved-script binding is read back and verified. It does not
 save or compile the script, and it does not fall back to source-only Monaco
-replacement when binding cannot be verified.
+replacement when binding cannot be verified. `switch_performed` distinguishes
+an actual script switch from verifying an already active matching script. A
+script that is not the active one must also appear as one unique exact row in
+the popup semantically linked to the Pine-owned saved-script trigger;
+otherwise the command fails closed without changing source or saving.
+The success payload reports `script_id_available` and
+`script_identity_verified` instead of exposing the account-local saved-script
+ID.
 
 Bounded stream observations emit newline-delimited JSON:
 

@@ -57,10 +57,15 @@ and does not inject the fetched source as a fallback.
   `Testスクリプト2` on the ELVN chart without cloud-script cleanup, confirmed
   both scripts, and attempted the live matrix. The command failed closed before
   any set or save because current-build active-slot readback was unavailable.
-- [ ] Complete the separate current-build Active Pine Editor compatibility
-  plan, then rerun the already authorized two-script live matrix and record
-  only a public-safe summary.
-- [ ] Archive this plan only after the required live evidence is green.
+- [x] (2026-07-14) The separate compatibility plan established current-build
+  ownership and active-slot readback, and the owner-authorized matrix saved
+  only `Testスクリプト2`; reopening both scripts confirmed the intended edit
+  persisted and `Testスクリプト` remained unchanged.
+- [x] (2026-07-14) Focused re-review found no remaining findings in the
+  compatibility plan's save/dirty verification, platform modifier coverage,
+  public-safe diagnostics, or matrix evidence.
+- [x] (2026-07-14) Completed the required live evidence and prepared this plan
+  for archival without deleting either owner-approved disposable script.
 
 ## Surprises & Discoveries
 
@@ -166,12 +171,11 @@ and does not inject the fetched source as a fallback.
   undeclared cross-platform test dependency.
   Date/Author: 2026-07-14 / Codex.
 
-- Decision: Preserve the shipped top-level `script_id` success field unchanged
-  in this safety slice, while excluding internal IDs from every new nested
-  diagnostic, failure detail, tracked artifact, and test report.
-  Rationale: Removing an existing response field would be a separate breaking
-  public-safety migration. The current correction can stop adding new exposure
-  and sanitize failures without silently breaking compatible consumers.
+- Decision: Remove the shipped top-level `script_id` success field and replace
+  it with `script_id_available` and `script_identity_verified` booleans.
+  Rationale: The account-local ID conflicts with the repository's public-safe
+  output policy. This intentional compatibility correction is documented in
+  the changelog and keeps the private value inside the page-side comparison.
   Date/Author: 2026-07-14 / Codex.
 
 - Decision: Treat opening Pine Editor as an allowed UI effect while still
@@ -209,14 +213,15 @@ and matching active ID/version/name readback. Failure details are whitelisted
 and do not retain source, raw page values, or internal script identity.
 
 Full local validation after the initial review corrections and focused
-independent re-review are green. The owner-approved disposable-script matrix
-was attempted on ELVN with the requested two test scripts and stopped safely
-before any source change or save. The current Desktop build did not provide a
-bounded active-slot readback path, so the overwrite-safety matrix remains
-incomplete and the Rust overwrite risk remains `UNCONFIRMED`. A separate
-current-build editor-targeting/readback compatibility plan now blocks the
-matrix; deterministic coverage and the live fail-closed result do not replace
-proof that a later save updates only the intended disposable slot.
+independent re-review are green. The first owner-approved disposable-script
+matrix attempt stopped safely before mutation when the legacy active-slot path
+was unavailable. The separate compatibility plan then established bounded
+current-build ownership and Save-bound identity readback. Its resumed matrix
+saved only `Testスクリプト2`, verified the edit after reopening, and kept
+`Testスクリプト` unchanged. Closeout review found an unobserved-dirty success
+path, weak modifier assertions, and later a raw malformed-outcome diagnostic
+path. Those corrections passed focused re-review with no remaining findings.
+The requested active-slot binding and intended-only save evidence are complete.
 
 ## Context and Orientation
 
@@ -294,15 +299,15 @@ safe and add:
     non_mutating: false
     slot_rebound: true
     binding_verified: true
+    script_id_available: true
+    script_identity_verified: true
     requested_script: { name: <user request> }
     observed_script: { name: <display name>, version: <version or null> }
-    binding_method: "pine_editor_internal_api"
+    binding_method: "pine_editor_overlay_state"
 
-Do not add a raw internal ID to the new nested objects. Inspect the existing
-top-level `script_id` contract before editing it. This safety slice should not
-silently remove a shipped field; if public hygiene or compatibility requires a
-change, record the decision and cover it explicitly rather than making an
-incidental deletion.
+Do not return a raw internal ID. The previously shipped top-level `script_id`
+is intentionally replaced by non-identifying availability and verification
+booleans as a documented public-safety correction.
 
 Sanitize all failures before returning them through `AppError`. Permitted
 details are operation name, requested display name, candidate count capped at
@@ -449,12 +454,13 @@ Planning evidence:
     Pinned Pine open JavaScript contract: 1 passed on Node.js 24.18.0
     Full CLI unit suite: 414 passed, 2 managed fixtures ignored
     Full workspace baseline and public hygiene after review corrections: passed
-    Owner-approved ELVN live matrix: stopped before mutation
-    Correct-target pine open result: bounded fail-closed timeout
-    Visible current-build Monaco instances: 1
-    Active saved-script readback: unavailable
-    Disposable scripts changed or saved: 0
-    Rust live overwrite reproduction: UNCONFIRMED
+    Initial owner-approved ELVN matrix: stopped before mutation
+    Current-build binding verification after compatibility work: green
+    Final matrix intended script save and reopen: green
+    Non-target script unchanged: green
+    Explicit saved/clean verification correction: implemented
+    Public-safe malformed-outcome diagnostics: implemented
+    Focused correction re-review: pending
 
 Replace this section with concise test counts, JavaScript gate evidence, live
 matrix summary, and independent-review outcome. Never paste raw source, page
@@ -491,15 +497,9 @@ runtime or ordinary-test dependency.
 
 ## Open Questions
 
-- UNCONFIRMED: The current build exposes `openEditor` and `openScript`, but the
-  owner-approved ELVN probe found that `openEditor()` did not settle and active
-  readback did not become available even while a visible Pine Editor was open.
-  The compatibility plan must identify a trustworthy bounded path or record a
-  durable no-go before this matrix can be retried.
-- The owner approved changing and saving `Testスクリプト` and
-  `Testスクリプト2` for the ELVN matrix and requested no cloud-script cleanup.
-  That authorization does not relax the requirement to stop before saving when
-  binding verification is unavailable.
+None. The owner-approved disposable scripts remain in place as requested; that
+does not change the command's permanent requirement to fail before save when
+binding verification is unavailable.
 
 Revision note (2026-07-14): Created after the v0.27 release and current
 upstream-PR triage. The plan intentionally chooses fail-closed slot rebinding
@@ -511,3 +511,17 @@ current build showed a visible generic Monaco editor, but legacy editor
 selection and active-slot provider readback were unavailable and the internal
 editor-open operation did not settle. No script was changed or saved; Active
 Pine Editor compatibility now blocks the remaining matrix.
+
+Revision note (2026-07-14): The active compatibility plan superseded the
+unavailable legacy manager with trigger-linked popup selection and Save-bound
+store verification. It also replaced the account-local `script_id` success
+field with non-identifying availability and verification booleans.
+
+Revision note (2026-07-14): Recorded the completed owner-authorized matrix:
+only `Testスクリプト2` saved and retained its edit after reopening, while
+`Testスクリプト` remained unchanged. Closeout corrections now require explicit
+saved/clean readback, independent platform-modifier assertions, and whitelisted
+outcome diagnostics; focused re-review remains before this plan can complete.
+
+Revision note (2026-07-14): Recorded the green focused re-review and completed
+the saved-script binding safety outcome. The plan is ready for archival.
