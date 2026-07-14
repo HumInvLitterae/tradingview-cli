@@ -45,7 +45,8 @@ pub use drawing::{
     drawing_clear, drawing_get, drawing_list, drawing_position, drawing_remove, drawing_shape,
 };
 pub use indicator::{
-    indicator_add, indicator_remove, indicator_set, indicator_toggle, parse_indicator_inputs,
+    indicator_add, indicator_remove, indicator_set, indicator_toggle, parse_indicator_add_inputs,
+    parse_indicator_inputs,
 };
 pub use launch::{LaunchRequest, launch};
 pub use layout::{

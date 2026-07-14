@@ -9,6 +9,12 @@ package version omits the leading `v`.
 
 ### Changed
 
+- Replaced `tv indicator add`'s fixed-delay legacy `createStudy` call with the
+  current chart-owned study inserter. Add now resolves one exact metainfo row,
+  awaits insertion, requires one immediate inventory row with the requested
+  public name, verifies requested scalar inputs through the same chart-local
+  entity ID, and sanitizes failure diagnostics. It does not try alternate
+  signatures, dialog clicks, or the legacy path as fallback.
 - Made `tv pine open` fail closed unless TradingView's saved-script manager
   rebinds the requested script and active identity/version readback verifies
   the binding, removing source-only Monaco replacement as a success fallback.
@@ -37,6 +43,20 @@ package version omits the leading `v`.
 
 ### Documentation
 
+- Added a current-build indicator insertion plan that separates read-only
+  metainfo discovery from an owner-authorized disposable mutation probe and
+  gates production replacement behind exact resolution, awaited insertion,
+  exactly-one-study verification, and strict keyed-input readback. Read-only
+  discovery confirmed the expected chart-owned capability shape without
+  invoking mutation, selected public non-default input `length: 21`, and fixed
+  the sole upstream-derived insertion signature and failure cleanup separately
+  from completion acceptance. The owner-approved exact probe established
+  thenable fulfillment, immediate one-study creation, keyed-input readback, and
+  identity cleanup, but its reviewed instance-description condition failed.
+  Follow-up non-mutating investigation found that current inventory and lookup
+  wrappers do not expose the assumed metadata methods. A revised
+  owner-authorized probe verified the immediate inventory name and same-ID
+  input readback used by the production replacement.
 - Added the `v0.28.0` Pine and indicator mutation safety roadmap, its ordered
   work inventory, and a fail-closed plan for verified saved-script slot
   binding in `tv pine open`, based on current Rust behavior and reviewed

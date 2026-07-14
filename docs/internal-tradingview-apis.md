@@ -86,6 +86,11 @@ Safety boundary:
 - user input must be serialized into JavaScript, not hand-escaped
 - mutation commands must verify the observable after-state before returning
   success
+- `indicator add` resolves a case-sensitive exact public description from the
+  selected chart's metainfo repository, uses the chart model's study inserter,
+  and accepts success only when the first post-await inventory contains one new
+  row with that name and the same chart-local ID resolves requested scalar
+  inputs. It does not fall back to `createStudy` or indicator-dialog clicking.
 - `readiness` is the first-line Desktop-backed readiness read. It aggregates
   CDP endpoint information, target handoff (`target_cli_args`), chart API
   readiness, and a one-bar OHLCV readiness check without mutating chart,

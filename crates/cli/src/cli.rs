@@ -652,7 +652,10 @@ pub enum AlertCommand {
 
 #[derive(Debug, Subcommand)]
 pub enum IndicatorCommand {
-    #[command(about = "Add an indicator to the chart")]
+    #[command(
+        about = "Add and verify an exact indicator on the chart",
+        long_about = "Add and verify an exact indicator on the selected TradingView Desktop chart.\n\nThe name is matched case-sensitively after trimming against the current metainfo repository. The operation awaits the chart-owned inserter, requires exactly one new inventory row with the requested name, and verifies requested scalar inputs through the same chart-local entity ID. It does not fall back to legacy createStudy or indicator-dialog clicking."
+    )]
     Add {
         indicator: Vec<String>,
         #[arg(long, short)]
