@@ -181,7 +181,12 @@ Do not use `TV_CDP_TARGET_ID`; explicit target handoff is `--target-id`.
 - `tv pine open <NAME...>` changes Pine Editor's active saved-script binding
   but does not save or compile. Treat success as valid only when
   `slot_rebound` and `binding_verified` are true; on failure, do not proceed to
-  `tv pine save` from an unverified editor state.
+  `tv pine save` from an unverified editor state. `switch_performed: false`
+  means the requested script was already active and still passed the same
+  identity/version/name verification. If a non-active script is absent from
+  the popup semantically linked to the Pine-owned saved-script trigger,
+  `pine open` fails closed; do not replace that failure with source injection
+  followed by save.
 - Use dry-run modes when available, especially for broad actions such as
   `alert delete --all --dry-run`, `draw clear --dry-run`,
   `layout switch --dry-run`, and Screener mutations.

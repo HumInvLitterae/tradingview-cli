@@ -44,7 +44,7 @@ pub async fn pine_set(
         .with_details(value.clone())
     })?;
 
-    if observed_source != source {
+    if !pine_sources_match(source, observed_source) {
         return Err(AppError::new(
             ErrorKind::InternalApiUnavailable,
             "Pine source set verification failed",
@@ -95,7 +95,7 @@ pub async fn pine_new(
         .with_details(value.clone())
     })?;
 
-    if observed_source != template {
+    if !pine_sources_match(template, observed_source) {
         return Err(AppError::new(
             ErrorKind::InternalApiUnavailable,
             "Pine new script verification failed",
@@ -127,6 +127,14 @@ m.editor.setValue({source});
 return m.editor.getValue();
 "#
     ))
+}
+
+fn pine_sources_match(expected: &str, observed: &str) -> bool {
+    normalize_pine_line_endings(expected) == normalize_pine_line_endings(observed)
+}
+
+fn normalize_pine_line_endings(source: &str) -> String {
+    source.replace("\r\n", "\n").replace('\r', "\n")
 }
 
 fn pine_template(script_type: &str) -> &'static str {
@@ -203,6 +211,18 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn pine_set_accepts_monaco_line_ending_normalization() {
+        let source = "//@version=6\r\nindicator(\"X\")\nplot(close)\r\n// matrix\n";
+        let observed = "//@version=6\r\nindicator(\"X\")\r\nplot(close)\r\n// matrix\r\n";
+        let mut runtime = FakeRuntime::new([json!(true), json!(observed)]);
+
+        let result = pine_set(&mut runtime, source, "file").await.unwrap();
+
+        assert_eq!(result["char_count"], source.chars().count());
+        assert_eq!(result["lines_set"], 5);
+    }
+
+    #[tokio::test]
     async fn pine_set_opens_editor_when_needed() {
         let mut runtime = FakeRuntime::new([
             json!(false),
@@ -230,6 +250,13 @@ mod tests {
 
         assert_eq!(error.kind, ErrorKind::InternalApiUnavailable);
         assert_eq!(error.message, "Pine source set verification failed");
+    }
+
+    #[test]
+    fn pine_source_verification_normalizes_crlf_and_lone_cr_only() {
+        assert!(pine_sources_match("a\nb\n", "a\r\nb\r\n"));
+        assert!(pine_sources_match("a\rb", "a\nb"));
+        assert!(!pine_sources_match("plot(close)\n", "plot(open)\r\n"));
     }
 
     #[test]
@@ -262,6 +289,18 @@ mod tests {
         assert_eq!(result["editor_open_before"], true);
         assert_eq!(result["opened_editor"], false);
         assert!(runtime.evaluated[1].0.contains("setValue"));
+    }
+
+    #[tokio::test]
+    async fn pine_new_accepts_monaco_line_ending_normalization() {
+        let template = pine_template("strategy");
+        let observed = template.replace('\n', "\r\n");
+        let mut runtime = FakeRuntime::new([json!(true), json!(observed)]);
+
+        let result = pine_new(&mut runtime, "strategy").await.unwrap();
+
+        assert_eq!(result["type"], "strategy");
+        assert_eq!(result["char_count"], template.chars().count());
     }
 
     #[tokio::test]

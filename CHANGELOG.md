@@ -12,6 +12,28 @@ package version omits the leading `v`.
 - Made `tv pine open` fail closed unless TradingView's saved-script manager
   rebinds the requested script and active identity/version readback verifies
   the binding, removing source-only Monaco replacement as a success fallback.
+- Updated current-build Pine Editor targeting to ignore hidden stale Monaco
+  instances, require visible Pine ownership, and open saved scripts through an
+  exact rendered overlay-menu selection followed by Save-bound identity
+  verification under bounded readiness and binding deadlines. Readiness
+  evaluation failures now retain their error classification without exposing
+  runtime exception details.
+- Removed the account-local `script_id` from successful `tv pine open` output;
+  `script_id_available` and `script_identity_verified` now report the
+  non-identifying verification state. Pine menu selection is scoped to the
+  popup linked to the Pine-owned trigger, and Monaco ambiguity is evaluated
+  after collecting both global and fiber-discovered editor registries.
+- Made `tv pine set` and `tv pine new` post-checks treat CRLF, LF, and lone CR
+  line endings as equivalent while continuing to reject source-content
+  differences, matching Monaco's current-build buffer normalization.
+- Corrected the generated `tv pine save` preflight expression and made both
+  save-stage Runtime evaluation failures preserve their error kind without
+  exposing CDP exception, script, or object metadata. Pine save now dispatches
+  Command+S on macOS and Control+S on Windows/Linux instead of assuming
+  Control on every platform, and reports success only when saved and clean
+  state are both observed explicitly. Malformed save outcomes and page errors
+  now cross a fixed public-safe diagnostic whitelist instead of forwarding the
+  runtime payload.
 
 ### Documentation
 
@@ -21,7 +43,8 @@ package version omits the leading `v`.
   upstream compatibility evidence. Added a follow-up stop/go plan for current
   Pine Editor ownership and saved-script readback compatibility after the live
   matrix stopped safely before mutation on a current-build compatibility
-  blocker.
+  blocker. The resumed owner-approved matrix changed only the intended
+  disposable script, and its closeout corrections passed focused re-review.
 
 ## v0.27.0 - 2026-07-13
 

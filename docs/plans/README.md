@@ -6,20 +6,8 @@ for release and next-phase planning.
 
 ## Current and future plans
 
-Current plan:
-
-- `tradingview-cli-active-pine-editor-compatibility.md`: prove and implement a
-  current-build path for unique visible Pine Editor ownership and trustworthy
-  active saved-script readback. The plan has an explicit full-go,
-  editor-only-go, or no-go gate before any saved-script mutation.
-
-Paused prerequisite plan:
-
-- `tradingview-cli-pine-saved-script-binding-safety.md`: fail-closed saved-script
-  rebinding implementation, local validation, and focused re-review are green.
-  Its owner-approved ELVN live matrix stopped before mutation because the
-  current build did not expose bounded active-slot readback. Resume the matrix
-  only after the compatibility plan is green.
+There is no active ExecPlan. The next plan will cover current-build indicator
+insertion and must be created before implementation starts.
 
 The ordered `v0.28.0` implementation inventory is maintained in
 `docs/v0.28-work-items.md`. Pine and indicator mutation safety, current-build
@@ -27,6 +15,17 @@ Desktop compatibility, and bounded chart workflow candidates are promoted into
 separate ExecPlans only when the preceding required item is complete and green.
 
 Recently completed:
+
+- `tradingview-cli-active-pine-editor-compatibility.md`: established semantic
+  Pine Editor ownership, trigger-linked saved-script selection, verified
+  Save-bound identity, line-ending-safe source checks, platform-correct save
+  shortcuts, and public-safe fail-closed diagnostics. The authorized live
+  matrix and focused closeout review are green; the completed plan now lives
+  under `docs/plans/archives/`.
+- `tradingview-cli-pine-saved-script-binding-safety.md`: replaced source-only
+  saved-script opening with verified slot rebinding and completed its bounded
+  two-script live matrix without changing the unintended script. The completed
+  plan now lives under `docs/plans/archives/`.
 
 - `tradingview-cli-v0.27.0-release-readiness.md`: prepared, validated, and
   released `v0.27.0` with aligned versions, changelog, release notes, package

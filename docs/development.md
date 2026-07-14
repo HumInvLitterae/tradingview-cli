@@ -552,8 +552,18 @@ mise run check:pine-open-js
 These gates use Node.js `24.18.0`, pinned in `mise.toml`. The study-value gate
 executes the exact helper with synthetic sources and throwing Proxy fixtures.
 The Pine-open gate executes the generated asynchronous page expression against
-synthetic Pine facade and editor-manager objects, including missing methods,
-identity mismatch, and throwing readback. The corresponding Rust tests are
+synthetic Pine facade, Pine-owned Monaco, overlay-menu, and Save-bound store
+objects, including hidden stale editors, ambiguous visible editors, missing
+store/menu state, unrelated same-name menu rows, cross-registry editor
+ambiguity, and identity mismatch. Rust tests separately verify the single
+readiness deadline, sanitized runtime-evaluation failure boundary, and removal
+of account-local script IDs from successful output. Pine source setter tests
+also verify that Monaco CRLF/LF/lone-CR normalization is accepted while all
+other source differences remain fail-closed verification errors.
+The same pinned Pine gate executes the generated save preflight and
+post-shortcut inspection expressions so syntax drift cannot hide behind fake
+Runtime payloads; Rust tests verify public-safe save evaluation failures.
+The corresponding executable JavaScript tests are
 ignored during ordinary `cargo test --workspace`; CI and the release workflow
 install the pinned Node version and run each gate explicitly. Node.js is not a
 runtime dependency of `tv`.

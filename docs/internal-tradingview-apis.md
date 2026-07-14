@@ -524,22 +524,32 @@ Current command family:
 Related DOM-backed Pine commands:
 
 - `pine get/set/new/errors/console` intentionally use the local Monaco editor
-  model and are not endpoint replacement priorities.
+  model and are not endpoint replacement priorities. `pine set` and `pine new`
+  post-check source after normalizing CRLF, LF, and lone CR line endings because
+  Monaco may normalize the buffer convention; non-line-ending source
+  differences still fail closed.
 - `pine compile`, `pine raw-compile`, and `pine save` use visible editor
   actions, keyboard shortcuts, dirty-state checks, and save/compile buttons.
+  `pine save` dispatches Command+S on macOS and Control+S on Windows/Linux.
+  Pine save preflight/post-shortcut Runtime evaluation failures are sanitized
+  at the operation boundary, and malformed outcome/page-error diagnostics use
+  a fixed whitelist rather than forwarding runtime payloads.
   Treat endpoint replacement as `research_only` unless a future plan proves a
   safe compile or save endpoint with the same editor/account semantics.
 
 Safety boundary:
 
-- saved script identifiers are account-linked metadata and must not appear in
-  public docs
+- saved script identifiers are account-linked metadata; `pine open` compares
+  them in-page without returning them, and public docs must not contain their
+  values
 - `pine check` validates source without mutating the Pine Editor
 - `pine open` resolves saved metadata through Pine facade, opens the selected
-  script through TradingView's internal Pine Editor manager, and succeeds only
-  when active saved-script identity and version readback match the request; it
-  does not save or compile and does not fall back to source-only Monaco
-  replacement
+  script through the popup semantically linked to the visible Pine-owned
+  saved-script trigger, and succeeds only when the same Save-bound store
+  confirms internal identity, version, and public display name. Internal IDs
+  are compared in-page; public output contains only non-identifying
+  availability/verification booleans. The command does not save or compile and
+  does not fall back to source-only Monaco replacement
 - malformed or unavailable responses should become validation or
   `internal_api_unavailable` errors, depending on whether the user input or the
   endpoint shape is at fault
