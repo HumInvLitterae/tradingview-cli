@@ -60,9 +60,11 @@ package version omits the leading `v`.
   implemented. Three safety-contract correction waves require bounded
   pre-mutation state, exact restoration call counts, and executable same-object
   JavaScript coverage wired into CI and release gates, while range and
-  screenshot commands remain unchanged. The reviewed read-only capability probe
-  later observed a finite non-integer current value and recorded no-go without
-  invoking the setter or adding a stable command.
+  screenshot commands remain unchanged. The read-only capability probe run
+  under the reviewed contract later observed a finite non-integer current value
+  and recorded an integer-before contract no-go without invoking the setter or
+  adding a stable command. A finite-`f64` internal restoration design remains
+  an untested future planning candidate.
 - Added a launch environment hardening plan for removing
   `ELECTRON_RUN_AS_NODE` from direct TradingView spawn and the macOS system
   launcher, distinguishing confirmed child exit from a still-loading process

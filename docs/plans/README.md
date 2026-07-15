@@ -13,8 +13,11 @@ separately approved reversible set/read/restore probe before implementing a
 bounded `tv right-offset` get/set/reset command. No chart mutation has been
 authorized or performed in this plan. Three plan-review correction waves and
 focused review are complete. The bounded read-only probe found a finite but
-non-integer current value, so the reviewed integer contract is no-go and the
-evidence awaits focused review before this plan is archived.
+non-integer current value, so this plan's integer-before contract is no-go and
+the corrected evidence awaits focused re-review before archive. This is not a
+capability-wide no-go: a finite-`f64` internal restoration design remains an
+untested future candidate that requires a separate ExecPlan, review, and owner
+approval before any mutation probe.
 
 The ordered `v0.28.0` implementation inventory is maintained in
 `docs/v0.28-work-items.md`. Pine and indicator mutation safety, current-build
