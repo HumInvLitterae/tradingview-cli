@@ -44,6 +44,9 @@ monitor behavior, or implement Windows package-identity launch.
   `ELECTRON_RUN_AS_NODE`; no TradingView process or account state was used.
 - [x] (2026-07-15) Corrected fallback precedence, made both user-facing hints
   exact, and removed an unavailable skill-validator requirement.
+- [x] (2026-07-15) Applied the second focused-review corrections by representing
+  intentionally unobserved child state as `None` and covering both launch
+  environments in the CLI help instruction.
 - [ ] Add deterministic direct-spawn environment construction and tests that
   prove `ELECTRON_RUN_AS_NODE` is removed from the TradingView child.
 - [ ] Add deterministic macOS `open` command construction and tests that prove
@@ -135,7 +138,7 @@ monitor behavior, or implement Windows package-identity launch.
 
 ## Outcomes & Retrospective
 
-Planning and the first independent-review correction wave are complete.
+Planning and two independent-review correction waves are complete.
 Implementation, production validation, and implementation review have not
 started. The completed outcome must preserve the existing launch methods and
 success payload while making both launch environments and confirmed direct
@@ -234,16 +237,23 @@ prove that a supplied original-child state cannot override
 Represent the observation with a private, I/O-free enum such as
 `DirectChildState` with `Running`, `Exited { code: Option<i32> }`, and
 `Unavailable` variants. A small adapter converts the real `try_wait` result to
-that enum without carrying raw operating-system error text. A separate pure
-classifier receives the readiness result plus launch metadata and applies
-these rules:
+that enum without carrying raw operating-system error text. Pass it to the pure
+classifier as `Option<DirectChildState>`: `None` means the child was
+intentionally not observed because CDP was already ready or the macOS fallback
+succeeded; `Some(Unavailable)` means `try_wait` was attempted and failed. A
+separate pure classifier receives the readiness result plus launch metadata and
+applies these rules:
 
 - CDP ready: return the existing success payload regardless of launch method or
   original child state.
 - CDP not ready after a successful macOS `open` fallback: return the existing
   `macos_open` success payload with `cdp_ready: false` and its warning,
-  regardless of whether the original child is `Running`, `Exited`, or
-  `Unavailable`.
+  with production passing `state: None` because the original child is not
+  observed.
+- As a defensive precedence rule, CDP not ready after a successful fallback
+  also returns warning success if a test or future caller supplies
+  `Some(Running)`, `Some(Exited)`, or `Some(Unavailable)`; original-child state
+  never overrides the successful fallback.
 - CDP not ready, no successful fallback, and direct child still running: return
   the existing direct-launch success payload with `cdp_ready: false` and its
   warning.
@@ -256,6 +266,10 @@ these rules:
   `ErrorKind::Connection`, fixed message
   `TradingView process state could not be verified after CDP startup failed`,
   and exit code 2.
+- CDP not ready, no successful fallback, and `state: None`: return `AppError`
+  with `ErrorKind::Internal`, fixed message
+  `Direct launch process state was not observed`, and exit code 1. This is a
+  fail-closed implementation-invariant error, not a claim about the process.
 
 The new error details must be built from a fixed whitelist and can only be
 emitted when `fallback_used` is false. For confirmed exit they contain
@@ -268,6 +282,11 @@ For unavailable observation, use
 `reason: "direct_spawn_status_unavailable"`, omit the unverified exit code,
 omit `process_running`, and use
 `next_action_hint: "Run tv readiness to check whether TradingView is still starting; if it remains unavailable, start the app manually before retrying tv launch."`.
+For the missing-state invariant, use
+`reason: "direct_spawn_state_missing"`, `cdp_port`, `launch_method`,
+`fallback_used: false`, `kill_existing`, `process_started: true`, omit
+`process_running` and `exit_code`, and use
+`next_action_hint: "Run tv readiness to inspect the current app state before retrying tv launch."`.
 Do not include executable paths, environment values, raw child output,
 operating-system error text, target IDs, or account-local metadata.
 
@@ -280,23 +299,27 @@ that an exited child without successful fallback yields `connection` and exit
 2, a running child preserves the warning success, CDP readiness wins over stale
 child status, unavailable status fails without raw details, and each error
 detail object has exactly the documented public-safe key set. Add the explicit
-regression case `fallback_used: true`, `cdp_ready: false`, and
-`DirectChildState::Exited`; it must return the existing `macos_open` warning
-success and must not contain `process_running: false` or an error envelope.
-Add `fallback_used: false`, `cdp_ready: false`, and
-`DirectChildState::Exited` as the failed-fallback/direct-exit case; it must
-return the connection error. Do not launch a real app or rely on shell commands
-in unit tests.
+production regression case `fallback_used: true`, `cdp_ready: false`, and
+`state: None`; it must return the existing `macos_open` warning success. Retain
+`fallback_used: true` with `state: Some(Exited { ... })` as a defensive
+precedence test; it must also return warning success and must not contain
+`process_running: false` or an error envelope. Add `fallback_used: false`,
+`cdp_ready: false`, and `state: Some(Exited { ... })` as the
+failed-fallback/direct-exit case; it must return the connection error. Add
+`fallback_used: false`, `cdp_ready: false`, and `state: None` as the invariant
+case; it must return the fixed sanitized `Internal` error. Do not launch a real
+app or rely on shell commands in unit tests.
 
 At the end of this milestone, downstream callers can distinguish confirmed
 direct-process termination from a bounded slow-start warning.
 
 ### Milestone 3: Synchronize user and agent guidance
 
-Update the `tv launch` long help in `crates/cli/src/cli.rs` to state that direct
-launch removes the incompatible Electron mode and that confirmed direct-child
-exit is a connection failure. Do not expose implementation internals or imply
-that all CDP timeouts are failures.
+Update the `tv launch` long help in `crates/cli/src/cli.rs` to state that both
+direct spawn and normal macOS system launch remove the incompatible Electron
+mode, and that confirmed direct-child exit without successful fallback is a
+connection failure. Do not expose implementation internals or imply that all
+CDP timeouts are failures.
 
 Update the launch sections in `README.md`, `docs/getting-started.md`,
 `docs/ja/getting-started.md`, `docs/development.md`, and
@@ -394,9 +417,12 @@ The implementation is accepted when all of the following behavior is proven:
   error envelope with `kind: "connection"`, process exit code 2, and only the
   fixed public-safe details;
 - a successful macOS fallback followed by CDP timeout retains the existing
-  warning success even when the original direct child exited;
+  warning success with `state: None`; a defensive supplied exited state cannot
+  override that result;
 - inability to observe the child after CDP failure also returns a sanitized
   connection error rather than guessing that the launch succeeded;
+- an absent child observation without CDP readiness or successful fallback is
+  a sanitized internal invariant error rather than a fabricated process state;
 - no default or fallback path kills TradingView unless `--kill-existing` was
   explicit;
 - no alternate Windows package activation, restart loop, daemon, dependency,
@@ -449,7 +475,9 @@ Expected deterministic evidence after implementation should resemble:
     exited_direct_child_without_cdp_is_connection_error ... ok
     running_direct_child_without_cdp_keeps_warning_success ... ok
     successful_macos_fallback_ignores_original_child_exit ... ok
+    successful_macos_fallback_needs_no_child_observation ... ok
     failed_macos_fallback_keeps_direct_child_exit_error ... ok
+    missing_direct_child_observation_is_internal_error ... ok
     cdp_ready_precedes_direct_child_exit_status ... ok
 
 Do not paste full JSON envelopes, local executable paths, environment dumps, or
@@ -470,6 +498,9 @@ In `crates/cli/src/ops/launch.rs`, add private production helpers equivalent to:
     const STATUS_UNAVAILABLE_NEXT_ACTION_HINT: &str =
         "Run tv readiness to check whether TradingView is still starting; if it remains unavailable, start the app manually before retrying tv launch.";
 
+    const STATE_MISSING_NEXT_ACTION_HINT: &str =
+        "Run tv readiness to inspect the current app state before retrying tv launch.";
+
     fn configure_direct_spawn(command: &mut Command, port: u16);
 
     fn configure_macos_open(command: &mut Command, port: u16);
@@ -486,17 +517,20 @@ In `crates/cli/src/ops/launch.rs`, add private production helpers equivalent to:
         request: &LaunchRequest,
         input: LaunchPayloadInput,
         direct_method: LaunchMethod,
-        state: DirectChildState,
+        state: Option<DirectChildState>,
     ) -> Result<Value, AppError>;
 
 Names may change only if the resulting names more accurately describe the same
 single responsibilities. `direct_launch_result` returns the existing success
 payload when `input.cdp_ready` is true, when `input.fallback_used` is true, or
-when both are false and the child is `Running`. It returns a sanitized
-`Connection` error for `Exited` or `Unavailable` only when CDP is not ready and
-no fallback succeeded. Production only needs to observe the child after the
-final CDP readiness result is absent. Keep helper ownership in `ops/launch.rs`;
-this slice does not justify a new module.
+when both are false and `state` is `Some(Running)`. It returns a sanitized
+`Connection` error for `Some(Exited)` or `Some(Unavailable)` only when CDP is
+not ready and no fallback succeeded. In that same no-CDP/no-fallback state,
+`None` returns the fixed sanitized `Internal` invariant error. Production passes
+`None` without observing the child whenever CDP is ready or a fallback
+succeeded, and passes `Some(observe_direct_child(...))` only after CDP and
+fallback both failed. Keep helper ownership in `ops/launch.rs`; this slice does
+not justify a new module.
 
 Use only `std::process::Command::env_remove`, the existing Tokio timing,
 `tradingview_cdp::CdpHttpSession`, and `tradingview_core::AppError`. Do not add a
@@ -527,3 +561,8 @@ a successful macOS fallback as a separate unobservable process, records a
 bounded probe proving `open` environment propagation, removes the variable from
 both launch command shapes, defines exact next-action hints, and removes an
 unavailable skill-validator requirement.
+
+2026-07-15: Revised after focused re-review. The classifier now represents an
+intentionally unobserved original child as `None`, distinguishes it from a
+failed `try_wait`, fails closed on an impossible missing observation, and makes
+the CLI help instruction cover direct and macOS system launch.

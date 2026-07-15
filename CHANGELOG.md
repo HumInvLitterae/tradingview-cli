@@ -54,7 +54,8 @@ package version omits the leading `v`.
   launcher, distinguishing confirmed child exit from a still-loading process
   without misclassifying a successful fallback, preserving the no-kill
   default, and keeping Windows MSIX package-identity investigation separate.
-  Initial review corrections are applied and focused re-review is pending.
+  Two review-correction waves are applied, including an explicit unobserved
+  child state for successful fallback, and focused re-review is pending.
 - Added a current-build indicator insertion plan that separates read-only
   metainfo discovery from an owner-authorized disposable mutation probe and
   gates production replacement behind exact resolution, awaited insertion,

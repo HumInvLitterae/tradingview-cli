@@ -11,8 +11,8 @@ The active ExecPlan is
 `ELECTRON_RUN_AS_NODE` removal from direct spawn and the macOS system launcher,
 plus confirmed child-exit classification that cannot override a successful
 fallback. The no-kill default and live-but-not-ready warning response remain
-unchanged. Initial review corrections are applied; focused re-review is pending
-and implementation has not started.
+unchanged. Two review-correction waves are applied; focused re-review is
+pending and implementation has not started.
 
 The ordered `v0.28.0` implementation inventory is maintained in
 `docs/v0.28-work-items.md`. Pine and indicator mutation safety, current-build
