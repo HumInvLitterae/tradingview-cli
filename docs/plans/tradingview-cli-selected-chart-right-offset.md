@@ -40,6 +40,8 @@ feasibility probe proves the exact getter, setter, and restoration path.
 - [x] (2026-07-15) Applied focused re-review corrections: required production
   set/reset to validate the current value before mutation, fixed exact
   per-branch JavaScript call counts, and named the CI and release gate wiring.
+- [x] (2026-07-15) Corrected restoration-setter throw handling so the retained
+  time-scale getter is still called exactly once before the branch terminates.
 - [ ] Obtain focused independent review of this plan and apply corrections.
 - [ ] Run the bounded read-only current-build capability probe.
 - [ ] If read-only evidence is provisional go, obtain separate owner approval
@@ -146,7 +148,7 @@ feasibility probe proves the exact getter, setter, and restoration path.
 ## Outcomes & Retrospective
 
 Planning has started. The previous launch-hardening item is complete and
-archived. Two independent-review correction waves are applied, and focused
+archived. Three independent-review correction waves are applied, and focused
 re-review is pending. Current-build right-offset ownership, readback, setter
 acceptance, and restoration remain `UNCONFIRMED`; no probe, command, production
 behavior, or live chart mutation has been authorized or performed.
@@ -222,12 +224,13 @@ it never returns exception text. Once the probe setter has been invoked,
 setter throw, post-set getter throw, non-finite or non-integer post-set value,
 and exact-value mismatch all mean mutation may have occurred. For every such
 responsive page-side failure, call `ts.setRightOffset(before)` exactly once.
-If that restoration setter returns, perform exactly one immediate
-`ts.rightOffset()` restoration readback. A restoration setter throw means zero
-restoration getter calls. A restoration getter throw, malformed readback, or
-value other than `before` ends with no additional setter/getter attempt. Report
-the fixed restoration outcome and do not reinterpret a failed probe as
-production go.
+Immediately after that call completes by return or throw, perform exactly one
+`ts.rightOffset()` restoration readback on the retained object. This getter is
+read-only evidence of whether an apply-then-throw setter restored the value; it
+is not a retry. A restoration getter throw, malformed readback, non-finite or
+non-integer value, or value other than `before` ends with no additional
+setter/getter attempt. Report the fixed restoration outcome and do not
+reinterpret a failed probe as production go.
 If the outer Runtime evaluation times out and mutation outcome is unknown, do
 not retry, poll, or restore automatically; obtain owner approval for a
 read-only recovery observation.
@@ -275,13 +278,13 @@ slots reset value.
 After the production setter is invoked, setter throw, post-set getter throw,
 non-finite or non-integer post-set value, and exact-value mismatch all trigger
 the same bounded recovery inside that expression: call
-`ts.setRightOffset(before)` exactly once. If that restoration setter returns,
-call `ts.rightOffset()` exactly once immediately afterward; if it throws, call
-the restoration getter zero times. Return failure with
+`ts.setRightOffset(before)` exactly once. Whether that restoration setter
+returns or throws, call `ts.rightOffset()` exactly once immediately afterward
+on the retained object. Return failure with
 `restoration_attempted`, `restored`, and a fixed restoration stage; never
 return success from a recovery branch. Restoration setter/getter throw,
-malformed restoration readback, or restoration mismatch ends the expression
-without another setter/getter attempt. Raw
+malformed, non-finite, non-integer, or mismatched restoration readback ends the
+expression without another setter/getter attempt. Raw
 exception values never cross CDP. An outer Runtime timeout has unknown mutation
 outcome and triggers no automatic retry, polling, restoration expression, or
 second setter call. The error instructs the user to run read mode before
@@ -331,14 +334,13 @@ times and the restoration setter zero times. Success calls the requested
 setter once and the first immediate post-set getter once. A requested setter
 that throws after applying calls the requested setter once, the post-set getter
 zero times, the restoration setter exactly once, and the first immediate
-restoration getter exactly once unless that restoration setter itself throws.
+restoration getter exactly once, including when the restoration setter throws.
 Post-set getter throw, non-finite, non-integer, and mismatch branches call the
 requested setter once, post-set getter once, restoration setter exactly once,
-and first immediate restoration getter exactly once unless the restoration
-setter throws. If the restoration setter throws, its call count is one, the
-restoration getter count is zero, and all later setter/getter call counts are
-zero. If the restoration getter throws, is malformed, or mismatches, its call
-count is one and all later setter/getter call counts are zero. The fixture must
+and first immediate restoration getter exactly once, including when the
+restoration setter throws. If the restoration getter throws, is malformed,
+non-finite, non-integer, or mismatches, its call count is one and all later
+setter/getter call counts are zero. The fixture must
 assert this exact order and these counts, with no delay, timer, polling,
 alternate signature, or fallback. Private strings injected into thrown values
 must not appear in the expression result or Rust error details. Outer Runtime
@@ -492,3 +494,9 @@ required before the read-only capability probe.
 for every executable fixture branch, and fixing the required `mise.toml`, CI,
 release `build.needs`, and development-guide integration points. Another
 focused re-review is required before the read-only capability probe.
+
+2026-07-15: Corrected the remaining restoration-setter throw branch. A
+responsive restoration setter throw now still requires exactly one immediate
+read-only restoration getter on the retained time-scale object, followed by
+zero additional setter/getter calls. Focused re-review remains required before
+the read-only capability probe.
