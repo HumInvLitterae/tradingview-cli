@@ -58,18 +58,61 @@ Method presence or upstream evidence alone is not production go.
   ordinary Cargo tests.
 - [x] (2026-07-16) Completed focused and full local validation without running
   the ignored live mutation test.
-- [ ] Obtain focused independent implementation review of the probe and its
-  executable contract before requesting live-mutation approval.
-- [ ] Obtain separate owner approval for one disposable native
+- [x] (2026-07-16) Obtained focused independent implementation review of the
+  probe and its executable contract.
+- [x] (2026-07-16) Obtained separate owner approval for one disposable native
   `parallel_channel` create/read/remove probe on an explicitly selected chart.
-- [ ] Run the mutation probe, record only public-safe aggregate evidence, and
-  stop on any ambiguous or unverified state.
-- [ ] If and only if mutation evidence and its focused review are green,
-  implement the stable explicit-three-point CLI contract.
-- [ ] Run focused/full validation and obtain independent implementation review
-  before archiving this plan.
+- [x] (2026-07-16) Ran the initially approved mutation probe once. It observed
+  one new entity and three points, but exact point verification failed with
+  `point_mismatch`. At owner direction, follow-up controlled runs then isolated
+  native normalization and cleanup visibility behavior on the disposable
+  target.
+- [x] (2026-07-16) Investigated the initial mismatch on the disposable target.
+  Readback showed bar-time normalization, native width-point canonicalization,
+  and floating-point round-trip noise rather than a missing capability.
+- [x] (2026-07-16) Confirmed a second probe false negative: exact geometry
+  verification passed, removal was issued, and the entity disappeared shortly
+  afterward, but the immediate cleanup readback was too early.
+- [x] (2026-07-16) Validated the corrected width-point, numeric comparison, and
+  cleanup-observation contract deterministically and on the disposable target.
+  The final run verified and removed exactly one native entity.
+- [x] (2026-07-16) Applied focused-review corrections for malformed inventory
+  rows, executable fresh-cleanup coverage, immediate absence fields, exact-time
+  mismatch, epsilon rejection, and stale durable state.
+- [x] (2026-07-16) Distinguished a readable stale lookup handle from a failed
+  lookup. Cleanup promotion now requires authoritative inventory absence and a
+  successful lookup call, while lookup absence remains diagnostic.
+- [ ] Obtain focused review of the corrected evidence before deciding whether
+  stable implementation is justified.
 
 ## Surprises & Discoveries
+
+- Observation: native `parallel_channel` does not preserve an arbitrary third
+  point as three independent coordinates. It canonicalizes the third point as
+  a width point anchored to the first point's time.
+  Evidence: the first disposable-target readback preserved the first two
+  prices, normalized their times to loaded daily-bar anchors, and returned the
+  third point at the first point's normalized time with a geometry-derived
+  price.
+
+- Observation: a canonical width point can round-trip with harmless binary
+  floating-point noise.
+  Evidence: with point3 time equal to point1 time, a requested decimal price
+  was read back with only a machine-precision representation difference. An
+  exactly representable price passed point verification.
+
+- Observation: `removeEntity` can become observable after the immediate
+  synchronous readback used by the initial probe.
+  Evidence: the exactly representable run attempted cleanup and initially
+  reported `cleanup_unverified`; the next read-only inventory contained zero
+  drawings. Cleanup verification therefore needs bounded observation under the
+  existing absolute deadline, not a second mutation or an unbounded wait.
+
+- Observation: after verified removal, fresh inventory was authoritative while
+  `getShapeById` still returned a stale handle.
+  Evidence: the final corrected run reported `cleanup_inventory_absent: true`,
+  `cleanup_lookup_absent: false`, and overall `verified_cleaned`. The chart
+  inventory contained no candidate, and no second remove was issued.
 
 - Observation: current Rust `tv draw shape` supports one point through
   `createShape` and two points through `createMultipointShape`, but the request
@@ -124,13 +167,38 @@ Method presence or upstream evidence alone is not production go.
   vector. Pair/ordering errors are I/O-free validation failures before CDP.
   Date/Author: 2026-07-15 / Codex.
 
-- Decision: support only explicit third-point geometry initially; defer
-  width-derived channels.
-  Rationale: explicit points preserve caller intent. Width derivation requires
-  a separate contract for sign, units, time anchor, zero/negative width, and
-  price normalization. Upstream behavior is evidence, not sufficient authority
-  to choose those semantics here.
-  Date/Author: 2026-07-15 / Codex.
+- Decision: treat point3 for `parallel_channel` as a width point whose time must
+  equal point1 time; do not claim support for an arbitrary third coordinate.
+  Rationale: current-build live readback canonicalizes point3 to the first
+  point's time. Requiring that anchor before mutation preserves caller intent
+  and makes the native representation verifiable without reverse-engineering
+  chart-coordinate projection.
+  Date/Author: 2026-07-16 / Codex.
+
+- Decision: compare finite prices with a scale-aware machine-epsilon boundary
+  while keeping times exact after the probe's bar-anchor selection.
+  Rationale: live readback changed only the binary representation of a decimal
+  price. Exact JavaScript equality rejects an otherwise identical native value;
+  a small relative epsilon does not permit tick, rounding, or material price
+  normalization.
+  Date/Author: 2026-07-16 / Codex.
+
+- Decision: after the one permitted `removeEntity` call, first observe lookup
+  and inventory under the page-side deadline. If that retained evaluation still
+  reports the candidate, wait a fixed two seconds and perform exactly one
+  separate read-only Runtime evaluation on a fresh CDP connection for the same
+  candidate ID.
+  Rationale: current-build removal was externally visible only after the
+  mutation evaluation returned. A second read-only evaluation verifies the same
+  mutation without retrying removal, broad cleanup, or another creation.
+  Inventory absence is the completion boundary because inventory difference is
+  also the authoritative creation-attribution boundary; lookup absence remains
+  an additive diagnostic because a stale handle may outlive inventory removal.
+  Every inventory row ID must be read successfully before absence can be true;
+  malformed or throwing rows keep cleanup unverified. The lookup call must also
+  complete successfully; a returned stale handle is diagnostic, but a thrown
+  lookup keeps cleanup unverified.
+  Date/Author: 2026-07-16 / Codex.
 
 - Decision: in this initial slice, allow point3 only when the trimmed shape
   type is exactly `parallel_channel`.
@@ -192,12 +260,16 @@ Method presence or upstream evidence alone is not production go.
 
 ## Outcomes & Retrospective
 
-Planning review and deterministic probe implementation are complete. The
-ignored probe, fixed public-safe result shape, production-expression JavaScript
-contract, and required CI/release gate are implemented and locally validated
-without adding a stable CLI option or touching TradingView state. Focused
-implementation review is the next gate. Live create/read/remove remains
-separately owner-authorized.
+Planning review, deterministic probe implementation, and implementation review
+are complete. Follow-up investigation on the disposable target showed that the
+initial no-go was not capability evidence: native width-point canonicalization,
+machine-precision price round-trip, and delayed cleanup visibility each
+conflicted with overly strict probe assumptions. The corrected probe contract
+requires point3 to use the point1 time anchor, uses a narrow scale-aware price
+comparison, and observes one cleanup mutation under the original absolute
+deadline. The corrected live run then verified one native entity, three
+canonical points, and inventory-confirmed cleanup. Stable CLI implementation
+remains paused until focused review of this corrected evidence is green.
 
 ## Context and Orientation
 
@@ -242,7 +314,7 @@ finite point values in `TV_LIVE_THREE_POINT_TIME1`,
 values stop before CDP with fixed messages. The test never infers geometry from
 quote, bars, screenshots, visible-range mutation, or another source.
 
-The probe uses one page-side async expression and retained chart API. It reads
+The probe uses one page-side async mutation expression and retained chart API. It reads
 baseline IDs and confirms `createMultipointShape`, `getAllShapes`,
 `getShapeById`, and `removeEntity` are callable. It then calls exactly once:
 
@@ -276,15 +348,24 @@ IDs, followed by one observation before the deadline with exactly one ID in
 `after - before`, the same ID resolving through `getShapeById`, native
 identity exactly equal to `parallel_channel` in the inventory row, and
 `getPoints()` returning exactly three finite time/price entries in caller order.
-Every observed time and price must equal its requested value without rounding,
-tolerance, string coercion, bar lookup, or tick normalization. The owner must
-therefore approve points already chosen from suitable loaded bar anchors and
-tick-aligned prices. Any normalization or mismatch is no-go for this contract;
-a different normalization contract requires plan revision and focused review.
+Point3 time must equal point1 time before CDP because native
+`parallel_channel` represents the third point as a width point anchored there.
+Observed times must equal the requested loaded-bar anchors exactly. Prices use
+only a scale-aware `8 * Number.EPSILON` comparison; string coercion, tick
+rounding, bar lookup, or broader normalization remains prohibited.
 
 If one fully verified entity exists, call `removeEntity` exactly once for that
-ID and require absence from both lookup and inventory. Probe success requires
-cleanup success. Zero IDs, any observation of multiple IDs, identity mismatch,
+ID and observe absence from both lookup and inventory under the same absolute
+deadline. If the entity is still visible when that expression returns, the Rust
+runner may execute exactly one fixed read-only cleanup readback for the same
+candidate ID on a fresh CDP connection after a fixed two-second delay. It
+must not call remove again, create again, or broaden the candidate set. Probe
+success requires inventory absence; lookup absence is reported separately but
+does not override authoritative inventory removal. `cleanup_lookup_readable`
+must be true so a lookup exception cannot masquerade as a stale handle.
+Inventory absence requires every row to expose a readable string ID; an
+unreadable or malformed row fails closed as `cleanup_unverified`.
+Zero IDs, any observation of multiple IDs, identity mismatch,
 point mismatch, or lookup/readback failure are no-go with no automatic
 cleanup. Candidate chart-local IDs may be returned through the public-safe
 manual-inspection handle field, but recovery or removal then requires a
@@ -451,8 +532,8 @@ symbol/timeframe, or tries another signature.
 
 An outer Runtime timeout is unknown outcome: no second mutation or automatic
 cleanup expression. Recovery requires a separate owner-approved read-only
-inventory check. Responsive failures permit in-expression removal only after
-the candidate passed exact native identity and exact three-point verification.
+inventory check. A responsive `cleanup_unverified` result after the one
+verified removal may use one fixed read-only evaluation for that exact ID.
 Unique but unverified and multiple IDs remain untouched.
 
 ## Artifacts and Notes
@@ -494,11 +575,8 @@ ranking, recommendation, or version bump is allowed.
 
 ## Open Questions
 
-- UNCONFIRMED: whether requested times are preserved or bar-normalized.
-- UNCONFIRMED: whether prices are exact or tick-normalized.
-- UNCONFIRMED: whether creation return fulfills, rejects, or varies while chart
-  state still verifies.
-- UNCONFIRMED: the exact inventory name for native `parallel_channel`.
+- UNCONFIRMED: whether the same width-point and cleanup timing semantics are
+  stable across other TradingView Desktop builds and chart resolutions.
 - UNCONFIRMED: whether width convenience merits a later separate slice.
 
 2026-07-15: Created after the reviewed right-offset no-go closeout. The plan
@@ -518,3 +596,19 @@ production-expression Node.js fixtures, and required local/CI/release gate.
 The live test was compiled but not run; no target or point values were selected
 and no drawing mutation occurred. Focused/full validation is green, including
 the pinned Node gate, strict Clippy, and the Node-free workspace test suite.
+
+2026-07-16: Focused implementation re-review reported no findings. The first
+live run exposed native bar/width-point normalization rather than a missing
+creation capability. Follow-up read-only inspection and controlled runs on the
+owner-designated disposable target isolated two probe defects: exact decimal
+price equality and immediate-only cleanup readback. The plan now reflects the
+native point1-anchored width point, scale-aware machine-epsilon comparison, and
+bounded cleanup observation. Stable CLI implementation remains paused pending
+corrected validation and evidence review.
+
+2026-07-16: The corrected deterministic fixture and final disposable-target
+run are green. The run created one native candidate, verified three canonical
+points with scale-aware price comparison, called remove once, and confirmed
+fresh-inventory absence after the fixed delay. Lookup retained a stale handle,
+so it remains diagnostic rather than authoritative. No drawing remained and no
+stable CLI option was added. Focused evidence review is the next gate.

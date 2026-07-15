@@ -53,14 +53,28 @@ async fn native_three_point_drawing_mutation_probe() {
     let mut runtime = CdpClient::connect(&target).await.unwrap_or_else(|_| {
         panic!("three-point drawing probe could not connect to the selected chart target")
     });
-    let result = tokio::time::timeout(PROBE_TIMEOUT, runtime.evaluate(&expression, true))
+    let mut result = tokio::time::timeout(PROBE_TIMEOUT, runtime.evaluate(&expression, true))
         .await
         .unwrap_or_else(|_| panic!("three-point drawing probe timed out with an unknown outcome"))
         .unwrap_or_else(|_| panic!("three-point drawing probe evaluation failed"));
 
+    if needs_external_cleanup_readback(&result) {
+        tokio::time::sleep(Duration::from_secs(2)).await;
+        let expression = cleanup_readback_expression(&result);
+        let mut readback_runtime = CdpClient::connect(&target).await.unwrap_or_else(|_| {
+            panic!("three-point drawing probe cleanup readback could not reconnect")
+        });
+        let readback =
+            tokio::time::timeout(PROBE_TIMEOUT, readback_runtime.evaluate(&expression, true))
+                .await
+                .unwrap_or_else(|_| panic!("three-point drawing probe cleanup readback timed out"))
+                .unwrap_or_else(|_| panic!("three-point drawing probe cleanup readback failed"));
+        apply_external_cleanup_readback(&mut result, &readback);
+    }
+
     assert_public_safe_result(&result);
     println!(
-        "three-point drawing probe: status={} observation_status={} creation_signal={} new_shape_count={} observed_point_count={} cleanup_attempted={} cleanup_succeeded={} sticky_ambiguity={}",
+        "three-point drawing probe: status={} observation_status={} creation_signal={} new_shape_count={} observed_point_count={} cleanup_attempted={} cleanup_succeeded={} cleanup_inventory_absent={} cleanup_lookup_readable={} cleanup_lookup_absent={} sticky_ambiguity={}",
         text_field(&result, "status"),
         text_field(&result, "observation_status"),
         text_field(&result, "creation_signal"),
@@ -68,6 +82,9 @@ async fn native_three_point_drawing_mutation_probe() {
         u64_field(&result, "observed_point_count"),
         bool_field(&result, "cleanup_attempted"),
         bool_field(&result, "cleanup_succeeded"),
+        bool_field(&result, "cleanup_inventory_absent"),
+        bool_field(&result, "cleanup_lookup_readable"),
+        bool_field(&result, "cleanup_lookup_absent"),
         bool_field(&result, "sticky_ambiguity"),
     );
     assert_eq!(result.get("status").and_then(Value::as_str), Some("go"));
@@ -145,6 +162,71 @@ fn javascript_three_point_probe_contract_is_bounded_and_verified() {
     assert_eq!(cleanup_unverified["result"]["cleanup_succeeded"], false);
     assert_eq!(cleanup_unverified["observations"]["removeCalls"], 1);
 
+    let cleanup_malformed = execute_expression(&expression, "{ cleanupMalformedRow: true }");
+    assert_eq!(cleanup_malformed["result"]["status"], "no_go");
+    assert_eq!(
+        cleanup_malformed["result"]["observation_status"],
+        "cleanup_unverified"
+    );
+    assert_eq!(
+        cleanup_malformed["result"]["cleanup_inventory_absent"],
+        false
+    );
+    assert_eq!(cleanup_malformed["observations"]["removeCalls"], 1);
+
+    let floating_round_trip = execute_expression(
+        &expression,
+        "{ appearanceDelay: 1, floatingRoundTrip: true }",
+    );
+    assert_go(&floating_round_trip, "fulfilled");
+
+    let delayed_cleanup =
+        execute_expression(&expression, "{ appearanceDelay: 1, delayedRemoval: true }");
+    assert_go(&delayed_cleanup, "fulfilled");
+    assert!(
+        delayed_cleanup["observations"]["inventoryReads"]
+            .as_u64()
+            .is_some_and(|count| count >= 4)
+    );
+
+    for options in ["{ timeMismatch: true }", "{ priceOutsideEpsilon: true }"] {
+        let mismatch = execute_expression(&expression, options);
+        assert_no_go_without_cleanup(&mismatch, "point_mismatch");
+    }
+
+    let cleanup_expression = cleanup_readback_expression(&json!({
+        "candidate_entity_ids": ["candidate"]
+    }));
+    let absent = execute_cleanup_expression(&cleanup_expression, "{}");
+    assert_eq!(absent["inventory_absent"], true);
+    assert_eq!(absent["lookup_readable"], true);
+    assert_eq!(absent["lookup_absent"], true);
+
+    let stale_lookup = execute_cleanup_expression(&cleanup_expression, "{ staleLookup: true }");
+    assert_eq!(stale_lookup["inventory_absent"], true);
+    assert_eq!(stale_lookup["lookup_readable"], true);
+    assert_eq!(stale_lookup["lookup_absent"], false);
+
+    for options in [
+        "{ candidatePresent: true }",
+        "{ malformedRow: true }",
+        "{ idGetterThrows: true }",
+        "{ inventoryThrows: true }",
+    ] {
+        let unverified = execute_cleanup_expression(&cleanup_expression, options);
+        assert_eq!(unverified["inventory_absent"], false);
+    }
+
+    let lookup_throws = execute_cleanup_expression(&cleanup_expression, "{ lookupThrows: true }");
+    assert_eq!(lookup_throws["inventory_absent"], true);
+    assert_eq!(lookup_throws["lookup_readable"], false);
+    assert_eq!(lookup_throws["lookup_absent"], false);
+
+    let mut lookup_failure_result = cleanup_pending_result();
+    apply_external_cleanup_readback(&mut lookup_failure_result, &lookup_throws);
+    assert_eq!(lookup_failure_result["status"], "no_go");
+    assert_eq!(lookup_failure_result["cleanup_succeeded"], false);
+
     let missing_method = execute_expression(&expression, "{ missingCreateMethod: true }");
     assert_eq!(missing_method["result"]["status"], "no_go");
     assert_eq!(
@@ -199,7 +281,7 @@ fn fixture_points() -> [ProbePoint; 3] {
             price: 20.0,
         },
         ProbePoint {
-            time: 300.0,
+            time: 100.0,
             price: 30.0,
         },
     ]
@@ -207,7 +289,7 @@ fn fixture_points() -> [ProbePoint; 3] {
 
 #[test]
 fn probe_config_requires_target_and_six_finite_values() {
-    let values = || ["100", "10", "200", "20", "300", "30"].map(|value| Some(value.to_string()));
+    let values = || ["100", "10", "200", "20", "100", "30"].map(|value| Some(value.to_string()));
     assert_eq!(
         parse_probe_config(None, values()).err(),
         Some("three-point drawing probe requires an explicit chart target")
@@ -236,8 +318,15 @@ fn probe_config_requires_target_and_six_finite_values() {
 
     let parsed = parse_probe_config(Some(" target ".into()), values()).unwrap();
     assert_eq!(parsed.target_id, "target");
-    assert_eq!(parsed.points[2].time, 300.0);
+    assert_eq!(parsed.points[2].time, 100.0);
     assert_eq!(parsed.points[2].price, 30.0);
+
+    let mut mismatched_anchor = values();
+    mismatched_anchor[4] = Some("300".into());
+    assert_eq!(
+        parse_probe_config(Some("target".into()), mismatched_anchor).err(),
+        Some("three-point drawing probe requires point3 time to equal point1 time")
+    );
 }
 
 fn three_point_probe_expression(points: [ProbePoint; 3]) -> String {
@@ -273,6 +362,9 @@ fn parse_probe_config(
                 .ok_or("three-point drawing probe point values must be finite numbers")
         })
         .collect::<Result<Vec<_>, _>>()?;
+    if numbers[4] != numbers[0] {
+        return Err("three-point drawing probe requires point3 time to equal point1 time");
+    }
     Ok(ProbeConfig {
         target_id,
         points: [
@@ -306,6 +398,9 @@ fn assert_public_safe_result(result: &Value) {
         "observed_point_count",
         "cleanup_attempted",
         "cleanup_succeeded",
+        "cleanup_inventory_absent",
+        "cleanup_lookup_readable",
+        "cleanup_lookup_absent",
         "sticky_ambiguity",
     ];
     assert!(object.keys().all(|key| allowed.contains(&key.as_str())));
@@ -316,6 +411,9 @@ fn assert_public_safe_result(result: &Value) {
         "method_ready",
         "cleanup_attempted",
         "cleanup_succeeded",
+        "cleanup_inventory_absent",
+        "cleanup_lookup_readable",
+        "cleanup_lookup_absent",
         "sticky_ambiguity",
     ] {
         assert!(object.get(key).is_some_and(Value::is_boolean));
@@ -329,6 +427,99 @@ fn assert_public_safe_result(result: &Value) {
             .and_then(Value::as_array)
             .is_some_and(|ids| ids.iter().all(Value::is_string))
     );
+}
+
+fn needs_external_cleanup_readback(result: &Value) -> bool {
+    result.get("cleanup_attempted").and_then(Value::as_bool) == Some(true)
+        && result.get("cleanup_succeeded").and_then(Value::as_bool) == Some(false)
+        && result.get("observation_status").and_then(Value::as_str) == Some("cleanup_unverified")
+}
+
+fn cleanup_readback_expression(result: &Value) -> String {
+    let ids = result
+        .get("candidate_entity_ids")
+        .and_then(Value::as_array)
+        .filter(|ids| ids.len() == 1 && ids.iter().all(Value::is_string))
+        .unwrap_or_else(|| panic!("three-point drawing probe cleanup handle was invalid"));
+    let ids = serde_json::to_string(ids).expect("cleanup handles should serialize");
+    CLEANUP_READBACK_TEMPLATE.replace("__CANDIDATE_IDS__", &ids)
+}
+
+fn apply_external_cleanup_readback(result: &mut Value, readback: &Value) {
+    let inventory_absent = readback
+        .get("inventory_absent")
+        .and_then(Value::as_bool)
+        .unwrap_or(false);
+    let lookup_absent = readback
+        .get("lookup_absent")
+        .and_then(Value::as_bool)
+        .unwrap_or(false);
+    let lookup_readable = readback
+        .get("lookup_readable")
+        .and_then(Value::as_bool)
+        .unwrap_or(false);
+    if let Some(object) = result.as_object_mut() {
+        object.insert(
+            "cleanup_inventory_absent".into(),
+            Value::Bool(inventory_absent),
+        );
+        object.insert(
+            "cleanup_lookup_readable".into(),
+            Value::Bool(lookup_readable),
+        );
+        object.insert("cleanup_lookup_absent".into(), Value::Bool(lookup_absent));
+    }
+    if inventory_absent
+        && lookup_readable
+        && let Some(object) = result.as_object_mut()
+    {
+        object.insert("status".into(), Value::String("go".into()));
+        object.insert(
+            "observation_status".into(),
+            Value::String("verified_cleaned".into()),
+        );
+        object.insert("cleanup_succeeded".into(), Value::Bool(true));
+    }
+}
+
+fn cleanup_pending_result() -> Value {
+    json!({
+        "status": "no_go",
+        "observation_status": "cleanup_unverified",
+        "cleanup_attempted": true,
+        "cleanup_succeeded": false,
+        "cleanup_inventory_absent": false,
+        "cleanup_lookup_readable": false,
+        "cleanup_lookup_absent": false,
+        "candidate_entity_ids": ["candidate"]
+    })
+}
+
+#[test]
+fn external_cleanup_readback_only_promotes_explicit_absence() {
+    let mut result = cleanup_pending_result();
+    assert!(needs_external_cleanup_readback(&result));
+    assert!(cleanup_readback_expression(&result).contains("candidate"));
+
+    apply_external_cleanup_readback(
+        &mut result,
+        &json!({"inventory_absent": false, "lookup_readable": true, "lookup_absent": false}),
+    );
+    assert_eq!(result["status"], "no_go");
+    apply_external_cleanup_readback(
+        &mut result,
+        &json!({"inventory_absent": "invalid", "lookup_readable": true, "lookup_absent": true}),
+    );
+    assert_eq!(result["status"], "no_go");
+
+    apply_external_cleanup_readback(
+        &mut result,
+        &json!({"inventory_absent": true, "lookup_readable": true, "lookup_absent": false}),
+    );
+    assert_eq!(result["status"], "go");
+    assert_eq!(result["observation_status"], "verified_cleaned");
+    assert_eq!(result["cleanup_succeeded"], true);
+    assert_eq!(result["cleanup_lookup_readable"], true);
 }
 
 fn assert_go(run: &Value, creation_signal: &str) {
@@ -345,6 +536,9 @@ fn assert_go(run: &Value, creation_signal: &str) {
     );
     assert_eq!(result["cleanup_attempted"], true);
     assert_eq!(result["cleanup_succeeded"], true);
+    assert_eq!(result["cleanup_inventory_absent"], true);
+    assert_eq!(result["cleanup_lookup_readable"], true);
+    assert_eq!(result["cleanup_lookup_absent"], true);
     assert_eq!(run["observations"]["createCalls"], 1);
     assert_eq!(run["observations"]["removeCalls"], 1);
 }
@@ -376,6 +570,22 @@ fn execute_expression(expression: &str, options: &str) -> Value {
     serde_json::from_slice(&output.stdout).expect("fixture should return JSON")
 }
 
+fn execute_cleanup_expression(expression: &str, options: &str) -> Value {
+    let script = CLEANUP_NODE_FIXTURE_TEMPLATE
+        .replace("__OPTIONS__", options)
+        .replace("__EXPRESSION__", expression);
+    let output = Command::new("node")
+        .args(["-e", &script])
+        .output()
+        .expect("Node.js is required to execute the cleanup readback fixture");
+    assert!(
+        output.status.success(),
+        "cleanup readback fixture failed: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    serde_json::from_slice(&output.stdout).expect("cleanup readback fixture should return JSON")
+}
+
 fn text_field<'a>(value: &'a Value, key: &str) -> &'a str {
     value.get(key).and_then(Value::as_str).unwrap_or("invalid")
 }
@@ -401,9 +611,16 @@ const THREE_POINT_PROBE_TEMPLATE: &str = r#"
         observed_point_count: 0,
         cleanup_attempted: false,
         cleanup_succeeded: false,
+        cleanup_inventory_absent: false,
+        cleanup_lookup_readable: false,
+        cleanup_lookup_absent: false,
         sticky_ambiguity: false,
     };
     const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+    const nearlyEqual = (actual, expected) => {
+        const scale = Math.max(1, Math.abs(actual), Math.abs(expected));
+        return Math.abs(actual - expected) <= Number.EPSILON * 8 * scale;
+    };
     const shapeIdentity = (row) => {
         try {
             const value = typeof row.name === "function" ? row.name() : row.name;
@@ -454,7 +671,7 @@ const THREE_POINT_PROBE_TEMPLATE: &str = r#"
                 wellFormed,
                 exact: wellFormed && points.every((point, index) =>
                     point.time === requestedPoints[index].time
-                    && point.price === requestedPoints[index].price),
+                    && nearlyEqual(point.price, requestedPoints[index].price)),
             };
         } catch (_) {
             return { wellFormed: false, exact: false };
@@ -569,12 +786,24 @@ const THREE_POINT_PROBE_TEMPLATE: &str = r#"
                 result.observation_status = "cleanup_failed";
                 return finish(creationSignal);
             }
-            const afterLookup = lookup(api, candidateId);
-            const afterCleanup = inventory(api);
-            result.cleanup_succeeded = afterLookup.ok
-                && !afterLookup.value
-                && Array.isArray(afterCleanup)
-                && !afterCleanup.some((row) => shapeId(row) === candidateId);
+            while (Date.now() - startedAt < 3000) {
+                const afterLookup = lookup(api, candidateId);
+                const afterCleanup = inventory(api);
+                if (!afterLookup.ok || !Array.isArray(afterCleanup)) {
+                    result.observation_status = "cleanup_unverified";
+                    return finish(creationSignal);
+                }
+                const cleanupIds = afterCleanup.map(shapeId);
+                const inventoryReadable = cleanupIds.every((id) => id !== null);
+                result.cleanup_inventory_absent = inventoryReadable
+                    && !cleanupIds.includes(candidateId);
+                result.cleanup_lookup_readable = afterLookup.ok;
+                result.cleanup_lookup_absent = !afterLookup.value;
+                result.cleanup_succeeded = result.cleanup_inventory_absent
+                    && result.cleanup_lookup_readable;
+                if (result.cleanup_succeeded) break;
+                await sleep(100);
+            }
             if (!result.cleanup_succeeded) {
                 result.observation_status = "cleanup_unverified";
                 return finish(creationSignal);
@@ -588,6 +817,59 @@ const THREE_POINT_PROBE_TEMPLATE: &str = r#"
 
     result.observation_status = "deadline_no_candidate";
     return finish(creationSignal);
+})()
+"#;
+
+const CLEANUP_READBACK_TEMPLATE: &str = r#"
+(function() {
+    const candidateIds = __CANDIDATE_IDS__;
+    try {
+        const api = window.TradingViewApi?._activeChartWidgetWV?.value?.();
+        if (!api || typeof api.getAllShapes !== "function"
+            || typeof api.getShapeById !== "function") {
+            return {
+                inventory_absent: false,
+                lookup_readable: false,
+                lookup_absent: false,
+            };
+        }
+        const rows = api.getAllShapes();
+        if (!Array.isArray(rows)) {
+            return {
+                inventory_absent: false,
+                lookup_readable: false,
+                lookup_absent: false,
+            };
+        }
+        const rowIds = rows.map((row) => {
+            try {
+                return row && typeof row.id === "string" ? row.id : null;
+            } catch (_) {
+                return null;
+            }
+        });
+        const inventoryReadable = rowIds.every((id) => id !== null);
+        const inventoryAbsent = inventoryReadable
+            && candidateIds.every((id) => !rowIds.includes(id));
+        let lookupReadable = true;
+        const lookupAbsent = candidateIds.every((id) => {
+            try { return !api.getShapeById(id); } catch (_) {
+                lookupReadable = false;
+                return false;
+            }
+        });
+        return {
+            inventory_absent: inventoryAbsent,
+            lookup_readable: lookupReadable,
+            lookup_absent: lookupAbsent,
+        };
+    } catch (_) {
+        return {
+            inventory_absent: false,
+            lookup_readable: false,
+            lookup_absent: false,
+        };
+    }
 })()
 "#;
 
@@ -605,7 +887,7 @@ const events = [];
 const requested = [
   { time: 100, price: 10 },
   { time: 200, price: 20 },
-  { time: 300, price: 30 },
+  { time: 100, price: 30 },
 ];
 const makeShape = (id, identity, points) => {
   if (options.pointGetterThrows) {
@@ -630,6 +912,11 @@ const addRequestedShape = () => {
   if (options.zeroShape) return;
   const points = requested.map((point) => ({ ...point }));
   if (options.pointMismatch) points[2].price = 31;
+  if (options.floatingRoundTrip) points[2].price = 29.999999999999996;
+  if (options.timeMismatch) points[2].time += 1;
+  if (options.priceOutsideEpsilon) {
+    points[2].price += Number.EPSILON * 32 * Math.max(1, Math.abs(points[2].price));
+  }
   shapes.push(makeShape('probe-shape', options.identityMismatch ? 'trend_line' : 'parallel_channel', points));
 };
 const api = {
@@ -682,8 +969,12 @@ const api = {
     events.push('remove');
     if (options.removeThrows) throw new Error('private remove failure');
     if (options.removeNoop) return;
-    shapes = shapes.filter((row) => row.id !== id);
-    delete instances[id];
+    const remove = function() {
+      shapes = shapes.filter((row) => row.id !== id);
+      delete instances[id];
+      if (options.cleanupMalformedRow) shapes.push({ id: null });
+    };
+    if (options.delayedRemoval) scheduled.push(remove); else remove();
   }
 };
 if (options.missingCreateMethod) delete api.createMultipointShape;
@@ -712,4 +1003,35 @@ Promise.resolve(__EXPRESSION__).then(function(result) {
   process.stderr.write(String(error && error.stack || error));
   process.exit(1);
 });
+"#;
+
+const CLEANUP_NODE_FIXTURE_TEMPLATE: &str = r#"
+const options = __OPTIONS__;
+const candidate = { id: 'candidate' };
+if (options.idGetterThrows) {
+  Object.defineProperty(candidate, 'id', {
+    get: function() { throw new Error('private id getter failure'); }
+  });
+}
+let rows = [];
+if (options.candidatePresent || options.idGetterThrows) rows.push(candidate);
+if (options.malformedRow) rows.push({ id: null });
+const api = {
+  getAllShapes: function() {
+    if (options.inventoryThrows) throw new Error('private inventory failure');
+    return rows;
+  },
+  getShapeById: function() {
+    if (options.lookupThrows) throw new Error('private lookup failure');
+    return options.staleLookup ? {} : null;
+  }
+};
+global.window = global;
+window.TradingViewApi = { _activeChartWidgetWV: { value: function() { return api; } } };
+try {
+  process.stdout.write(JSON.stringify(__EXPRESSION__));
+} catch (error) {
+  process.stderr.write(String(error && error.stack || error));
+  process.exit(1);
+}
 "#;

@@ -12,10 +12,15 @@ third-point support on the existing `tv draw shape` surface and gates stable
 implementation on a reviewed, separately owner-approved native
 `parallel_channel` create/read/remove probe. Width-derived geometry is deferred.
 Plan re-review is green. The ignored probe, deterministic production-expression
-contract, and CI/release gate are implemented; focused implementation review is
-pending after green local validation. No live probe or drawing mutation has
-been authorized or performed. The archived
-right-offset plan remains a limited integer-before no-go; its untested
+contract, and CI/release gate are implemented, and focused implementation
+review is green. The separately owner-approved probe ran once and returned a
+`point_mismatch` after observing one candidate and three points. Follow-up work
+on the disposable target showed native width-point canonicalization,
+machine-precision price noise, and delayed cleanup visibility. The probe
+contract was corrected and the final bounded run verified one native entity,
+three canonical points, and inventory-confirmed cleanup. Focused evidence
+review is pending before stable point3 implementation. The
+archived right-offset plan remains a limited integer-before no-go; its untested
 finite-`f64` candidate is not being promoted implicitly.
 
 The ordered `v0.28.0` implementation inventory is maintained in
