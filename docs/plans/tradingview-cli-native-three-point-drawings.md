@@ -44,8 +44,12 @@ Method presence or upstream evidence alone is not production go.
   support on `tv draw shape`, with no width-derived convenience command.
 - [x] (2026-07-15) Created this feasibility-gated ExecPlan and synchronized
   the current project state.
-- [ ] Obtain focused independent review before adding or running the
-  disposable three-point mutation probe.
+- [x] (2026-07-15) Applied the first focused-review correction wave: limited
+  point3 to native `parallel_channel`, made ambiguity sticky, restricted probe
+  cleanup to fully verified entities, defined Promise-independent observation,
+  and fixed the no-go closeout path.
+- [ ] Obtain focused independent re-review of the corrected plan before adding
+  or running the disposable three-point mutation probe.
 - [ ] Add the gated probe and deterministic probe-contract tests without
   adding a stable CLI option.
 - [ ] Obtain separate owner approval for one disposable native
@@ -120,12 +124,13 @@ Method presence or upstream evidence alone is not production go.
   to choose those semantics here.
   Date/Author: 2026-07-15 / Codex.
 
-- Decision: use native `parallel_channel` as the disposable feasibility shape,
-  while keeping generic point3 support compatible with other TradingView
-  three-point shape names such as `pitchfork`.
-  Rationale: native parallel channels are the concrete roadmap workflow and
-  have upstream live evidence. The CLI already accepts generic shape names; a
-  broad allowlist would overstate support for private identifiers.
+- Decision: in this initial slice, allow point3 only when the trimmed shape
+  type is exactly `parallel_channel`.
+  Rationale: the reviewed feasibility probe proves only native parallel
+  channels. Allowing another three-point shape would mutate the chart before
+  reaching a postcondition that the current evidence cannot satisfy. Other
+  three-point shape types require their own feasibility evidence and plan
+  revision before becoming stable.
   Date/Author: 2026-07-15 / Codex.
 
 - Decision: reject non-empty `--text` when the trimmed shape type is exactly
@@ -139,7 +144,14 @@ Method presence or upstream evidence alone is not production go.
   sanitized signal, never as the success boundary.
   Rationale: upstream observed rejected Promises after successful creation.
   Success must come from chart state: exactly one new entity, expected native
-  shape identity when readable, and a ready three-point readback.
+  shape identity, and a ready three-point readback.
+  Date/Author: 2026-07-15 / Codex.
+
+- Decision: attach a non-blocking observer to a returned thenable and perform
+  inventory polling independently of Promise settlement.
+  Rationale: upstream evidence shows chart mutation and Promise outcome can
+  diverge. Awaiting the Promise first would prevent bounded state verification
+  and verified cleanup when the Promise never settles.
   Date/Author: 2026-07-15 / Codex.
 
 - Decision: replace the fixed sleep and first-ID acceptance with one bounded
@@ -149,15 +161,19 @@ Method presence or upstream evidence alone is not production go.
   points, or deadline exhaustion cannot be success.
   Date/Author: 2026-07-15 / Codex.
 
-- Decision: do not automatically remove multiple newly observed IDs.
+- Decision: once any observation contains multiple new IDs, keep that run
+  permanently ambiguous and never return it to success or automatic cleanup.
   Rationale: concurrent user activity could contribute to an ambiguous
-  baseline difference. Removing every delta could delete an unrelated drawing.
+  baseline difference. A later reduction to one ID does not establish that the
+  remaining entity belongs to the probe.
   Date/Author: 2026-07-15 / Codex.
 
-- Decision: during the owner-authorized probe, remove only the one uniquely
-  verified entity ID and require post-remove absence.
-  Rationale: disposable cleanup must be identity-scoped. `draw clear`,
-  display-name cleanup, broad polling cleanup, and layout reset are prohibited.
+- Decision: during the owner-authorized probe, remove only an entity that has
+  passed the complete native-identity and exact-point verification contract,
+  then require post-remove absence.
+  Rationale: uniqueness alone does not prove attribution. `draw clear`,
+  display-name cleanup, unverified-candidate cleanup, broad polling cleanup,
+  and layout reset are prohibited.
   Date/Author: 2026-07-15 / Codex.
 
 - Decision: keep raw Runtime exceptions, Promise rejection text, raw DOM,
@@ -229,14 +245,26 @@ baseline IDs and confirms `createMultipointShape`, `getAllShapes`,
 It does not include text, try another shape, reorder points, derive width,
 click UI, or call `createShape` as fallback.
 
-Capture only `returned_non_thenable`, `fulfilled`, `rejected`, or `threw` as a
-creation-signal enum; never expose rejection/exception text. Observe inventory
-and shape readiness under one three-second absolute page-side deadline with a
-100-millisecond interval. The deadline begins immediately before creation and
-is never reset. A five-second outer Runtime deadline bounds evaluation.
+Call the creation method exactly once. If its return is thenable, attach one
+non-blocking settlement observer with `.then`/`.catch`; do not await settlement
+before observing chart state. Inventory polling, readback, and verified cleanup
+run independently of Promise settlement. Capture only
+`returned_non_thenable`, `fulfilled`, `rejected`, `threw`, or
+`pending_at_observation` as a creation-signal enum; never expose
+rejection/exception text. `pending_at_observation` means the thenable had not
+settled when the page-side operation reached its terminal observation result.
+Settlement after that terminal observation does not revise the returned signal
+or trigger more polling, readback, cleanup, or mutation.
 
-Probe success requires one observation before the deadline with exactly one
-ID in `after - before`, the same ID resolving through `getShapeById`, native
+Observe inventory and shape readiness under one three-second absolute
+page-side deadline with a 100-millisecond interval. The deadline starts
+immediately before the exactly-once creation call and is never reset by
+polling, Promise activity, or readback. A five-second outer Runtime deadline
+bounds evaluation.
+
+Probe success requires that no observation has ever contained multiple new
+IDs, followed by one observation before the deadline with exactly one ID in
+`after - before`, the same ID resolving through `getShapeById`, native
 identity exactly equal to `parallel_channel` in the inventory row, and
 `getPoints()` returning exactly three finite time/price entries in caller order.
 Every observed time and price must equal its requested value without rounding,
@@ -245,17 +273,31 @@ therefore approve points already chosen from suitable loaded bar anchors and
 tick-aligned prices. Any normalization or mismatch is no-go for this contract;
 a different normalization contract requires plan revision and focused review.
 
-If one verified entity exists, call `removeEntity` exactly once for that ID and
-require absence from both lookup and inventory. Probe success requires cleanup
-success. Zero/multiple IDs are no-go with no broad cleanup. One unique but
-unverified candidate may receive one identity-scoped cleanup attempt before
-no-go. Track only fixed statuses/counts in docs, never target ID, raw Runtime
-payload, exception, or account/layout metadata.
+If one fully verified entity exists, call `removeEntity` exactly once for that
+ID and require absence from both lookup and inventory. Probe success requires
+cleanup success. Zero IDs, any observation of multiple IDs, identity mismatch,
+point mismatch, or lookup/readback failure are no-go with no automatic
+cleanup. Candidate chart-local IDs may be returned through the public-safe
+manual-inspection handle field, but recovery or removal then requires a
+separate owner-approved operation. Track only fixed statuses/counts in docs,
+never target ID, raw Runtime payload, exception, or account/layout metadata.
 
 Add deterministic tests for gate validation, fixed failures, field allowlist,
-point order, deadline behavior, zero/one/multiple classification,
-rejection-with-verified-state, and cleanup call counts. Do not run live mutation
-until focused probe review and separate owner approval of target and points.
+point order, deadline behavior, zero/one/multiple classification, sticky
+ambiguity, never-settling and late-settling thenables,
+rejection-with-verified-state, Promise-independent polling, and cleanup
+ordering/call counts. The executable fixture must run the exact production
+JavaScript expression generated by Rust; it must not duplicate the production
+state machine in fixture-only logic. Do not run live mutation until focused
+probe review and separate owner approval of target and points.
+
+Add `scripts/check-three-point-drawing-js-contract.py` in this milestone. It
+runs the ignored Rust test that emits and executes the exact production probe
+expression under pinned Node.js `24.18.0`. Add
+`check:three-point-drawing-js` to `mise.toml` and wire a named required
+CI/release job while keeping normal `cargo test --workspace` Node-free. These
+deterministic probe gates must be green and independently reviewed before
+requesting live-mutation approval.
 
 ### Milestone 2: Add I/O-free three-point request validation
 
@@ -266,9 +308,11 @@ type, finite point values, and ordered arity: point1 always exists, point2 is
 optional, and point3 is allowed only with point2.
 
 Add `--price3` and `--time3` to `DrawingCommand::Shape`. Each point pair must be
-complete before CDP. Reject point3 without point2. Reject non-empty text with
-exact `parallel_channel`. Do not add `--width`, infer point3, or change
-one/two-point defaults. Tests cover all pair/finite/ordering combinations.
+complete before CDP. Reject point3 without point2. When point3 is present,
+require the trimmed shape type to equal `parallel_channel` exactly. Reject
+non-empty text with exact `parallel_channel`. Do not add `--width`, infer
+point3, or change one/two-point defaults. Tests cover all
+pair/finite/ordering/type combinations.
 
 ### Milestone 3: Implement verified bounded creation
 
@@ -304,11 +348,14 @@ verified-state success, zero/multiple failure, probe cleanup failure,
 production no-auto-cleanup, exact point equality, metadata, and existing
 drawing regressions.
 
-Add an ignored executable JavaScript contract and
-`scripts/check-three-point-drawing-js-contract.py` because fake Runtime payloads
-cannot prove Promise/poll/readback/cleanup ordering. Run pinned Node.js
-`24.18.0`, add `check:three-point-drawing-js` to `mise.toml`, and wire a named
-required CI/release job. Normal `cargo test --workspace` remains Node-free.
+Extend the already reviewed executable JavaScript probe contract with the
+stable production creation path. Fake Runtime payloads cannot prove
+Promise/poll/readback/cleanup ordering. The contract continues to execute the
+production expressions generated by Rust and covers never-settling, late
+fulfill/reject, rejection-with-verified-state, sticky ambiguity, and
+verified-only probe cleanup. Do not reconstruct the state machine in
+fixture-only logic or add a second JavaScript gate for the same ownership
+boundary.
 
 Update README, source taxonomy, observation workflows, development/internal
 API docs, packaged guidance, and chart-analysis drawing reference. Keep skill
@@ -326,8 +373,17 @@ metadata, docs, workflow gates, and existing drawing regressions.
 
 Archive only after review is green. If the mutation probe cannot establish one
 native entity, three ready points, and identity cleanup, record no-go and add no
-CLI options. That no-go can close after evidence/outcome review without an
-implementation.
+CLI options. For this no-go path, update this plan's `Progress`, `Surprises &
+Discoveries`, `Decision Log`, and `Outcomes & Retrospective`; obtain focused
+review of the evidence and outcome; then move this plan to
+`docs/plans/archives/` and synchronize `docs/plans/README.md`,
+`docs/v0.28-roadmap.md`, `docs/v0.28-work-items.md`, `CHANGELOG.md`, and
+`CONTINUITY.md` with the probe result, cleanup result, and absence of a stable
+option. The probe executable gate remains in `mise.toml` and CI/release while
+the ignored probe code remains, because it protects the reviewed safety and
+cleanup state machine. Removing the probe later must remove that gate in the
+same separately reviewed slice. Do not archive or claim closeout before the
+no-go evidence/outcome review is green.
 
 ## Concrete Steps
 
@@ -366,9 +422,11 @@ Run the full baseline:
 ## Validation and Acceptance
 
 Probe acceptance requires exactly one native `parallel_channel`, exactly three
-finite ordered points, and removal of that entity. Promise fulfillment alone,
-method presence, visual appearance alone, zero/multiple IDs, or an unremoved
-entity is not go evidence.
+finite ordered points, and removal of that fully verified entity. Promise
+fulfillment alone, method presence, visual appearance alone, zero/multiple
+IDs, a unique but unverified candidate, or an unremoved entity is not go
+evidence. Multiple new IDs observed at any point make the run permanently
+ambiguous.
 
 Implementation acceptance requires paired third-point help/options; pre-CDP
 validation; preserved one/two-point contracts; one verified native object with
@@ -384,8 +442,9 @@ symbol/timeframe, or tries another signature.
 
 An outer Runtime timeout is unknown outcome: no second mutation or automatic
 cleanup expression. Recovery requires a separate owner-approved read-only
-inventory check. A uniquely observed ID before responsive failure may receive
-the one in-expression removal described above. Multiple IDs remain untouched.
+inventory check. Responsive failures permit in-expression removal only after
+the candidate passed exact native identity and exact three-point verification.
+Unique but unverified and multiple IDs remain untouched.
 
 ## Artifacts and Notes
 
@@ -437,3 +496,9 @@ ranking, recommendation, or version bump is allowed.
 adopts upstream #223 only as evidence, requires explicit point3, fixes
 exactly-one postcondition and cleanup boundaries, defers width derivation, and
 requires review plus separate owner approval before live mutation.
+
+2026-07-15: Applied the first focused-review correction wave. Point3 is limited
+to exact `parallel_channel`; multiple-ID ambiguity is sticky; only a fully
+verified entity can be removed automatically; Promise settlement is observed
+without blocking inventory/readback/cleanup; and the no-go durable closeout
+path is explicit.

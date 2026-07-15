@@ -11,6 +11,7 @@ The active ExecPlan is
 third-point support on the existing `tv draw shape` surface and gates stable
 implementation on a reviewed, separately owner-approved native
 `parallel_channel` create/read/remove probe. Width-derived geometry is deferred.
+The first plan-review corrections are applied; focused re-review is pending.
 No probe or drawing mutation has been authorized or performed. The archived
 right-offset plan remains a limited integer-before no-go; its untested
 finite-`f64` candidate is not being promoted implicitly.
