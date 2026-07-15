@@ -11,8 +11,10 @@ The active ExecPlan is
 the current-build selected-chart time-scale getter and setter, then requires a
 separately approved reversible set/read/restore probe before implementing a
 bounded `tv right-offset` get/set/reset command. No chart mutation has been
-authorized or performed in this plan. Three plan-review correction waves are
-applied; focused re-review is pending before any current-build probe.
+authorized or performed in this plan. Three plan-review correction waves and
+focused review are complete. The bounded read-only probe found a finite but
+non-integer current value, so the reviewed integer contract is no-go and the
+evidence awaits focused review before this plan is archived.
 
 The ordered `v0.28.0` implementation inventory is maintained in
 `docs/v0.28-work-items.md`. Pine and indicator mutation safety, current-build
