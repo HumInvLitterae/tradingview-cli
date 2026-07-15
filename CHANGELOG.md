@@ -60,7 +60,8 @@ package version omits the leading `v`.
   without misclassifying a successful fallback, preserving the no-kill
   default, and keeping Windows MSIX package-identity investigation separate.
   Two planning review-correction waves and the implementation are complete;
-  independent implementation review is pending.
+  implementation-review documentation corrections are applied and focused
+  re-review is pending.
 - Added a current-build indicator insertion plan that separates read-only
   metainfo discovery from an owner-authorized disposable mutation probe and
   gates production replacement behind exact resolution, awaited insertion,
