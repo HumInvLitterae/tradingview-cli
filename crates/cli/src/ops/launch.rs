@@ -13,6 +13,10 @@ use tradingview_core::{AppError, ErrorKind};
 const LAUNCH_READY_ATTEMPTS: usize = 15;
 const LAUNCH_READY_DELAY: Duration = Duration::from_secs(1);
 const LAUNCH_PROBE_TIMEOUT: Duration = Duration::from_secs(1);
+const EXITED_NEXT_ACTION_HINT: &str = "Start TradingView Desktop manually or correct the explicit executable path, then run tv readiness before retrying tv launch.";
+const STATUS_UNAVAILABLE_NEXT_ACTION_HINT: &str = "Run tv readiness to check whether TradingView is still starting; if it remains unavailable, start the app manually before retrying tv launch.";
+const STATE_MISSING_NEXT_ACTION_HINT: &str =
+    "Run tv readiness to inspect the current app state before retrying tv launch.";
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum LaunchMethod {
@@ -74,6 +78,13 @@ struct LaunchPayloadInput {
     fallback_used: bool,
     version: CdpVersion,
     warning: Option<String>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum DirectChildState {
+    Running,
+    Exited { code: Option<i32> },
+    Unavailable,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -179,22 +190,16 @@ pub async fn launch(request: LaunchRequest) -> Result<Value, AppError> {
     } else {
         LaunchMethod::DirectSpawn
     };
-    let mut child = Command::new(&target.path)
-        .arg(format!("--remote-debugging-port={}", request.port))
-        .stdin(Stdio::null())
-        .stdout(Stdio::null())
-        .stderr(Stdio::null())
-        .spawn()
-        .map_err(|err| {
-            AppError::new(
-                ErrorKind::Connection,
-                format!("Failed to launch TradingView: {err}"),
-            )
-            .with_details(json!({ "binary": path_display(&target.path) }))
-        })?;
+    let mut command = Command::new(&target.path);
+    configure_direct_spawn(&mut command, request.port);
+    let mut child = command.spawn().map_err(|err| {
+        AppError::new(
+            ErrorKind::Connection,
+            format!("Failed to launch TradingView: {err}"),
+        )
+        .with_details(json!({ "binary": path_display(&target.path) }))
+    })?;
     let pid = child.id();
-    // The child should continue running after this CLI exits. Dropping the handle does not kill it.
-    let _ = child.try_wait();
 
     let mut last_version = wait_for_cdp_version(&request).await?;
     let mut final_method = launch_method;
@@ -209,8 +214,13 @@ pub async fn launch(request: LaunchRequest) -> Result<Value, AppError> {
     }
     let ready = last_version.is_some();
     let warning = launch_warning(ready, fallback_used, request.kill_existing);
+    let state = if ready || fallback_used {
+        None
+    } else {
+        Some(observe_direct_child(&mut child))
+    };
 
-    Ok(launch_payload(
+    direct_launch_result(
         &request,
         LaunchPayloadInput {
             binary: Some(target.path),
@@ -226,7 +236,98 @@ pub async fn launch(request: LaunchRequest) -> Result<Value, AppError> {
             }),
             warning,
         },
-    ))
+        launch_method,
+        state,
+    )
+}
+
+fn configure_direct_spawn(command: &mut Command, port: u16) {
+    command
+        .arg(format!("--remote-debugging-port={port}"))
+        .env_remove("ELECTRON_RUN_AS_NODE")
+        .stdin(Stdio::null())
+        .stdout(Stdio::null())
+        .stderr(Stdio::null());
+}
+
+fn configure_macos_open(command: &mut Command, port: u16) {
+    command
+        .args([
+            "-a",
+            "TradingView",
+            "--args",
+            &format!("--remote-debugging-port={port}"),
+        ])
+        .env_remove("ELECTRON_RUN_AS_NODE")
+        .stdin(Stdio::null())
+        .stdout(Stdio::null())
+        .stderr(Stdio::null());
+}
+
+fn observe_direct_child(child: &mut std::process::Child) -> DirectChildState {
+    match child.try_wait() {
+        Ok(Some(status)) => DirectChildState::Exited {
+            code: status.code(),
+        },
+        Ok(None) => DirectChildState::Running,
+        Err(_) => DirectChildState::Unavailable,
+    }
+}
+
+fn direct_launch_result(
+    request: &LaunchRequest,
+    input: LaunchPayloadInput,
+    direct_method: LaunchMethod,
+    state: Option<DirectChildState>,
+) -> Result<Value, AppError> {
+    if input.cdp_ready || input.fallback_used {
+        return Ok(launch_payload(request, input));
+    }
+
+    match state {
+        Some(DirectChildState::Running) => Ok(launch_payload(request, input)),
+        Some(DirectChildState::Exited { code }) => Err(AppError::new(
+            ErrorKind::Connection,
+            "TradingView exited before CDP became ready",
+        )
+        .with_details(json!({
+            "reason": "direct_spawn_exited_before_cdp_ready",
+            "cdp_port": request.port,
+            "launch_method": direct_method.as_str(),
+            "fallback_used": false,
+            "kill_existing": request.kill_existing,
+            "process_started": true,
+            "process_running": false,
+            "exit_code": code,
+            "next_action_hint": EXITED_NEXT_ACTION_HINT,
+        }))),
+        Some(DirectChildState::Unavailable) => Err(AppError::new(
+            ErrorKind::Connection,
+            "TradingView process state could not be verified after CDP startup failed",
+        )
+        .with_details(json!({
+            "reason": "direct_spawn_status_unavailable",
+            "cdp_port": request.port,
+            "launch_method": direct_method.as_str(),
+            "fallback_used": false,
+            "kill_existing": request.kill_existing,
+            "process_started": true,
+            "next_action_hint": STATUS_UNAVAILABLE_NEXT_ACTION_HINT,
+        }))),
+        None => Err(AppError::new(
+            ErrorKind::Internal,
+            "Direct launch process state was not observed",
+        )
+        .with_details(json!({
+            "reason": "direct_spawn_state_missing",
+            "cdp_port": request.port,
+            "launch_method": direct_method.as_str(),
+            "fallback_used": false,
+            "kill_existing": request.kill_existing,
+            "process_started": true,
+            "next_action_hint": STATE_MISSING_NEXT_ACTION_HINT,
+        }))),
+    }
 }
 
 #[cfg(test)]
@@ -546,23 +647,14 @@ fn launch_with_macos_open(request: &LaunchRequest) -> Result<(), AppError> {
         ));
     }
 
-    let status = Command::new("open")
-        .args([
-            "-a",
-            "TradingView",
-            "--args",
-            &format!("--remote-debugging-port={}", request.port),
-        ])
-        .stdin(Stdio::null())
-        .stdout(Stdio::null())
-        .stderr(Stdio::null())
-        .status()
-        .map_err(|err| {
-            AppError::new(
-                ErrorKind::Connection,
-                format!("Failed to launch TradingView with macOS open fallback: {err}"),
-            )
-        })?;
+    let mut command = Command::new("open");
+    configure_macos_open(&mut command, request.port);
+    let status = command.status().map_err(|err| {
+        AppError::new(
+            ErrorKind::Connection,
+            format!("Failed to launch TradingView with macOS open fallback: {err}"),
+        )
+    })?;
     if !status.success() {
         return Err(AppError::new(
             ErrorKind::Connection,
@@ -603,9 +695,54 @@ fn kill_existing_tradingview() {
 
 #[cfg(test)]
 mod tests {
+    use std::ffi::OsStr;
+
     use tempfile::NamedTempFile;
 
     use super::*;
+
+    fn direct_input(cdp_ready: bool, fallback_used: bool) -> LaunchPayloadInput {
+        LaunchPayloadInput {
+            binary: Some(PathBuf::from("TradingView")),
+            pid: Some(1234),
+            used_existing: false,
+            cdp_ready,
+            launch_method: if fallback_used {
+                LaunchMethod::MacosOpen
+            } else {
+                LaunchMethod::DirectSpawn
+            },
+            resolved_by: Some(ResolvedBy::ExplicitPath),
+            fallback_used,
+            version: CdpVersion {
+                browser: None,
+                user_agent: None,
+            },
+            warning: launch_warning(cdp_ready, fallback_used, false),
+        }
+    }
+
+    fn test_request() -> LaunchRequest {
+        LaunchRequest {
+            host: "127.0.0.1".to_string(),
+            port: 9222,
+            binary_path: None,
+            kill_existing: false,
+        }
+    }
+
+    fn detail_keys(error: &AppError) -> Vec<&str> {
+        let mut keys = error
+            .details
+            .as_ref()
+            .and_then(Value::as_object)
+            .unwrap()
+            .keys()
+            .map(String::as_str)
+            .collect::<Vec<_>>();
+        keys.sort_unstable();
+        keys
+    }
 
     #[test]
     fn launch_request_uses_env_port_unless_overridden() {
@@ -661,6 +798,43 @@ mod tests {
     }
 
     #[test]
+    fn direct_spawn_removes_incompatible_electron_mode_only() {
+        let mut command = Command::new("TradingView");
+        command.env("KEEP_ME", "yes");
+
+        configure_direct_spawn(&mut command, 9444);
+
+        assert_eq!(
+            command.get_args().collect::<Vec<_>>(),
+            vec![OsStr::new("--remote-debugging-port=9444")]
+        );
+        let envs = command.get_envs().collect::<Vec<_>>();
+        assert!(envs.contains(&(OsStr::new("KEEP_ME"), Some(OsStr::new("yes")))));
+        assert!(envs.contains(&(OsStr::new("ELECTRON_RUN_AS_NODE"), None)));
+    }
+
+    #[test]
+    fn macos_open_removes_incompatible_electron_mode_only() {
+        let mut command = Command::new("open");
+        command.env("KEEP_ME", "yes");
+
+        configure_macos_open(&mut command, 9555);
+
+        assert_eq!(
+            command.get_args().collect::<Vec<_>>(),
+            vec![
+                OsStr::new("-a"),
+                OsStr::new("TradingView"),
+                OsStr::new("--args"),
+                OsStr::new("--remote-debugging-port=9555"),
+            ]
+        );
+        let envs = command.get_envs().collect::<Vec<_>>();
+        assert!(envs.contains(&(OsStr::new("KEEP_ME"), Some(OsStr::new("yes")))));
+        assert!(envs.contains(&(OsStr::new("ELECTRON_RUN_AS_NODE"), None)));
+    }
+
+    #[test]
     fn first_non_empty_line_ignores_blank_powershell_lines() {
         assert_eq!(
             first_non_empty_line("\r\n  \n  C:\\Program Files\\WindowsApps\\TradingView.exe\r\n"),
@@ -694,6 +868,160 @@ mod tests {
     #[test]
     fn launch_warning_is_absent_when_cdp_ready() {
         assert!(launch_warning(true, true, false).is_none());
+    }
+
+    #[test]
+    fn exited_direct_child_without_cdp_is_connection_error() {
+        let error = direct_launch_result(
+            &test_request(),
+            direct_input(false, false),
+            LaunchMethod::DirectSpawn,
+            Some(DirectChildState::Exited { code: Some(7) }),
+        )
+        .unwrap_err();
+
+        assert_eq!(error.kind, ErrorKind::Connection);
+        assert_eq!(error.exit_code(), 2);
+        assert_eq!(error.message, "TradingView exited before CDP became ready");
+        assert_eq!(
+            detail_keys(&error),
+            vec![
+                "cdp_port",
+                "exit_code",
+                "fallback_used",
+                "kill_existing",
+                "launch_method",
+                "next_action_hint",
+                "process_running",
+                "process_started",
+                "reason",
+            ]
+        );
+        let details = error.details.unwrap();
+        assert_eq!(details["exit_code"], 7);
+        assert_eq!(details["process_running"], false);
+        assert_eq!(details["next_action_hint"], EXITED_NEXT_ACTION_HINT);
+    }
+
+    #[test]
+    fn unavailable_direct_child_without_cdp_is_connection_error() {
+        let error = direct_launch_result(
+            &test_request(),
+            direct_input(false, false),
+            LaunchMethod::DirectSpawn,
+            Some(DirectChildState::Unavailable),
+        )
+        .unwrap_err();
+
+        assert_eq!(error.kind, ErrorKind::Connection);
+        assert_eq!(error.exit_code(), 2);
+        assert_eq!(
+            detail_keys(&error),
+            vec![
+                "cdp_port",
+                "fallback_used",
+                "kill_existing",
+                "launch_method",
+                "next_action_hint",
+                "process_started",
+                "reason",
+            ]
+        );
+        let details = error.details.unwrap();
+        assert_eq!(
+            details["next_action_hint"],
+            STATUS_UNAVAILABLE_NEXT_ACTION_HINT
+        );
+        assert!(details.get("process_running").is_none());
+        assert!(details.get("exit_code").is_none());
+    }
+
+    #[test]
+    fn running_direct_child_without_cdp_keeps_warning_success() {
+        let value = direct_launch_result(
+            &test_request(),
+            direct_input(false, false),
+            LaunchMethod::DirectSpawn,
+            Some(DirectChildState::Running),
+        )
+        .unwrap();
+
+        assert_eq!(value["cdp_ready"], false);
+        assert_eq!(value["launch_method"], "direct_spawn");
+        assert!(value["warning"].as_str().is_some());
+    }
+
+    #[test]
+    fn successful_macos_fallback_needs_no_child_observation() {
+        let value = direct_launch_result(
+            &test_request(),
+            direct_input(false, true),
+            LaunchMethod::DirectSpawn,
+            None,
+        )
+        .unwrap();
+
+        assert_eq!(value["cdp_ready"], false);
+        assert_eq!(value["launch_method"], "macos_open");
+        assert_eq!(value["fallback_used"], true);
+    }
+
+    #[test]
+    fn successful_macos_fallback_ignores_original_child_exit() {
+        let value = direct_launch_result(
+            &test_request(),
+            direct_input(false, true),
+            LaunchMethod::DirectSpawn,
+            Some(DirectChildState::Exited { code: Some(9) }),
+        )
+        .unwrap();
+
+        assert_eq!(value["launch_method"], "macos_open");
+        assert!(value.get("process_running").is_none());
+    }
+
+    #[test]
+    fn cdp_ready_precedes_direct_child_exit_status() {
+        let value = direct_launch_result(
+            &test_request(),
+            direct_input(true, false),
+            LaunchMethod::DirectSpawn,
+            Some(DirectChildState::Exited { code: Some(9) }),
+        )
+        .unwrap();
+
+        assert_eq!(value["cdp_ready"], true);
+        assert!(value["warning"].is_null());
+    }
+
+    #[test]
+    fn missing_direct_child_observation_is_internal_error() {
+        let error = direct_launch_result(
+            &test_request(),
+            direct_input(false, false),
+            LaunchMethod::DirectSpawn,
+            None,
+        )
+        .unwrap_err();
+
+        assert_eq!(error.kind, ErrorKind::Internal);
+        assert_eq!(error.exit_code(), 1);
+        assert_eq!(
+            detail_keys(&error),
+            vec![
+                "cdp_port",
+                "fallback_used",
+                "kill_existing",
+                "launch_method",
+                "next_action_hint",
+                "process_started",
+                "reason",
+            ]
+        );
+        assert_eq!(
+            error.details.unwrap()["next_action_hint"],
+            STATE_MISSING_NEXT_ACTION_HINT
+        );
     }
 
     #[test]

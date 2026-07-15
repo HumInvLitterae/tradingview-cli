@@ -175,6 +175,14 @@ macOS では、通常の `tv launch` はシステムのアプリ起動機能を�
 明示して起動したい場合だけ使ってください。`--kill-existing` は、既に開いている
 TradingView Desktop を終了して起動し直してよい場合だけ使います。
 
+direct spawn と通常の macOS システム起動は、TradingView を起動する前に互換性の
+ない継承 Electron mode を除去します。`cdp_ready: false` の warning response は、
+アプリがまだ読み込み中の可能性を示すため、再試行する前に `tv readiness` を実行
+してください。direct spawn 後の structured connection error は、child が終了した
+か、その状態を確認できなかったことを示します。手動でアプリを起動するか、明示
+した path を修正してから再試行してください。明示的な許可なしに
+`--kill-existing` を追加しないでください。
+
 `tv launch` が TradingView Desktop を見つけられない場合は、実行ファイルの
 場所を指定します。
 

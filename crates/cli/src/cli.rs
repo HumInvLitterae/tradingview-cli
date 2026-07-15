@@ -30,7 +30,7 @@ pub enum Command {
     Readiness,
     #[command(
         about = "Launch TradingView Desktop with CDP enabled",
-        long_about = "Launch or reuse TradingView Desktop with CDP enabled.\n\nIf a CDP endpoint is already responding, this command reuses it and does not start another app process. On macOS, the normal no-path launch uses the system app launcher (`open -a TradingView --args ...`) so the app is not tied to the CLI child-process lifetime. Use `--path <PATH>` only when you intentionally want to launch an explicit executable path. `--kill-existing` is opt-in and may terminate an existing TradingView Desktop session before relaunch."
+        long_about = "Launch or reuse TradingView Desktop with CDP enabled.\n\nIf a CDP endpoint is already responding, this command reuses it and does not start another app process. Direct spawn and the normal macOS system launch remove an incompatible inherited Electron mode before starting TradingView. On macOS, the normal no-path launch uses the system app launcher (`open -a TradingView --args ...`) so the app is not tied to the CLI child-process lifetime. A confirmed direct-child exit without a successful fallback is reported as a connection error; a running or system-launched app that is still loading retains the bounded warning response. Use `--path <PATH>` only when you intentionally want to launch an explicit executable path. `--kill-existing` is opt-in and may terminate an existing TradingView Desktop session before relaunch."
     )]
     Launch {
         #[arg(long, short)]

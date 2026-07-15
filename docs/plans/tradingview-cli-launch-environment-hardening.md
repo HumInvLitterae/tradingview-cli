@@ -47,17 +47,17 @@ monitor behavior, or implement Windows package-identity launch.
 - [x] (2026-07-15) Applied the second focused-review corrections by representing
   intentionally unobserved child state as `None` and covering both launch
   environments in the CLI help instruction.
-- [ ] Add deterministic direct-spawn environment construction and tests that
+- [x] (2026-07-15) Added deterministic direct-spawn environment construction and tests that
   prove `ELECTRON_RUN_AS_NODE` is removed from the TradingView child.
-- [ ] Add deterministic macOS `open` command construction and tests that prove
+- [x] (2026-07-15) Added deterministic macOS `open` command construction and tests that prove
   the same variable is removed before LaunchServices starts the app.
-- [ ] Add bounded post-readiness child-state classification and public-safe
+- [x] (2026-07-15) Added bounded post-readiness child-state classification and public-safe
   connection errors for exited or unobservable direct children.
-- [ ] Preserve and test existing-CDP reuse, live-but-not-ready warning success,
+- [x] (2026-07-15) Preserved and tested existing-CDP reuse, live-but-not-ready warning success,
   macOS system-launcher behavior, no-kill default, and explicit-path behavior.
-- [ ] Update help, stable docs, and packaged guidance without expanding runtime
+- [x] (2026-07-15) Updated help, stable docs, and packaged guidance without expanding runtime
   skills or unrelated workflows.
-- [ ] Run focused launch tests, CLI contract tests, the full Rust baseline,
+- [x] (2026-07-15) Ran focused launch tests, CLI contract tests, the full Rust baseline,
   public-hygiene checks, packaging checks, and guide parity.
 - [ ] Obtain focused independent review, apply any required corrections, and
   archive this plan only after the implementation and review are green.
@@ -138,11 +138,13 @@ monitor behavior, or implement Windows package-identity launch.
 
 ## Outcomes & Retrospective
 
-Planning and two independent-review correction waves are complete.
-Implementation, production validation, and implementation review have not
-started. The completed outcome must preserve the existing launch methods and
-success payload while making both launch environments and confirmed direct
-child exit deterministic without misclassifying a successful macOS fallback.
+Planning, two independent-review correction waves, implementation, focused
+launch tests, CLI contract tests, and full validation are complete. Independent
+implementation review remains. The implementation preserves the existing
+launch methods and success payload while making both launch environments and
+confirmed direct child exit deterministic without misclassifying a successful
+macOS fallback. The optional live launch smoke was not run because deterministic
+coverage proves the new behavior without starting or terminating TradingView.
 
 ## Context and Orientation
 
@@ -566,3 +568,10 @@ unavailable skill-validator requirement.
 intentionally unobserved original child as `None`, distinguishes it from a
 failed `try_wait`, fails closed on an impossible missing observation, and makes
 the CLI help instruction cover direct and macOS system launch.
+
+2026-07-15: Implemented and validated the reviewed contract. Both launch command
+shapes remove only `ELECTRON_RUN_AS_NODE`; the pure result classifier preserves
+fallback precedence and emits fixed public-safe failures for exited,
+unavailable, or impossible missing child observations. Focused tests, strict
+workspace validation, public hygiene, packaging syntax, and guide parity are
+green. Independent implementation review remains.

@@ -62,6 +62,14 @@ readiness. Use `tv launch --path <PATH>` only when the user intentionally wants
 to start a specific executable. Use `--kill-existing` only with explicit user
 approval because it can terminate an existing TradingView Desktop session.
 
+Both direct spawn and the normal macOS system launch remove an incompatible
+inherited Electron mode before starting TradingView. If launch returns a
+warning with `cdp_ready: false`, run `tv readiness` before retrying because the
+app may still be loading. Treat a structured connection error after direct
+spawn as evidence that the child exited or could not be verified; ask the user
+to start the app manually or correct the explicit path. Do not add
+`--kill-existing` without explicit user approval.
+
 If `tv launch` cannot find TradingView Desktop, ask the user for the executable
 path and use `tv launch --path <PATH>`.
 

@@ -46,6 +46,11 @@ package version omits the leading `v`.
   state are both observed explicitly. Malformed save outcomes and page errors
   now cross a fixed public-safe diagnostic whitelist instead of forwarding the
   runtime payload.
+- Removed inherited `ELECTRON_RUN_AS_NODE` from both direct TradingView spawn
+  and the normal macOS system launcher. When CDP remains unavailable, `tv
+  launch` now distinguishes a still-running direct child from confirmed exit
+  or unavailable process status without letting the original child override a
+  successful macOS fallback.
 
 ### Documentation
 
@@ -54,8 +59,8 @@ package version omits the leading `v`.
   launcher, distinguishing confirmed child exit from a still-loading process
   without misclassifying a successful fallback, preserving the no-kill
   default, and keeping Windows MSIX package-identity investigation separate.
-  Two review-correction waves are applied, including an explicit unobserved
-  child state for successful fallback, and focused re-review is pending.
+  Two planning review-correction waves and the implementation are complete;
+  independent implementation review is pending.
 - Added a current-build indicator insertion plan that separates read-only
   metainfo discovery from an owner-authorized disposable mutation probe and
   gates production replacement behind exact resolution, awaited insertion,
