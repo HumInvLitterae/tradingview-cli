@@ -568,7 +568,11 @@ fn launch_help_lists_safety_options() {
         .success()
         .stdout(predicate::str::contains("--port"))
         .stdout(predicate::str::contains("--path"))
-        .stdout(predicate::str::contains("--kill-existing"));
+        .stdout(predicate::str::contains("--kill-existing"))
+        .stdout(predicate::str::contains(
+            "incompatible inherited Electron mode",
+        ))
+        .stdout(predicate::str::contains("confirmed direct-child exit"));
 }
 
 #[test]

@@ -170,6 +170,14 @@ to start a specific executable. Use `--kill-existing` only when you are ready
 to terminate an existing TradingView Desktop session and start it again with
 the local connection option.
 
+Both direct spawn and the normal macOS system launch remove an incompatible
+inherited Electron mode before starting TradingView. If launch succeeds with
+`cdp_ready: false`, the app may still be loading; run `tv readiness` before
+retrying. A structured connection error after direct spawn means the child
+exited or its state could not be verified. Start the app manually or correct
+the explicit path before retrying. Do not add `--kill-existing` unless you have
+explicitly decided to terminate the current Desktop session.
+
 If `tv launch` cannot find TradingView Desktop, use:
 
 ```bash

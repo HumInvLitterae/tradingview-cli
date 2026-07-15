@@ -155,6 +155,12 @@ This project uses Rust 2024.
 - Put shared TradingView Desktop CDP connection code in `crates/cdp/`. Do not
   duplicate target discovery, `RuntimeEvaluator`, screenshot/input event
   primitives, or target handoff helpers inside operation modules.
+- Keep TradingView process launch policy in `crates/cli/src/ops/launch.rs`.
+  Direct spawn and the macOS `open` command must remove only
+  `ELECTRON_RUN_AS_NODE`, preserve unrelated inherited environment entries,
+  and retain the no-kill default. Observe a direct child only after CDP and any
+  macOS fallback both fail; a successful fallback is not evidence about the
+  original child's final state.
 - Put shared TradingView Desktop app-window helpers in
   `crates/cli/src/ops/desktop.rs` when multiple operation adapters need the
   same Desktop shell behavior, such as app-tab reads or new-tab launcher

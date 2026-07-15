@@ -139,6 +139,14 @@ and then checks CDP readiness. Use `--path <PATH>` only when you intentionally
 want to start a specific executable. `--kill-existing` is opt-in because it can
 terminate an existing TradingView Desktop session.
 
+Both direct spawn and the macOS system launcher remove an incompatible
+inherited Electron mode before starting TradingView. A warning response with
+`cdp_ready: false` means the process may still be loading; run `tv readiness`
+before retrying. A structured connection error after direct spawn means the
+child exited or its state could not be verified. Start the app manually or
+correct an explicit path before retrying, and do not add `--kill-existing`
+without explicit approval.
+
 `tv chart compare <SYMBOL>...` is a Desktop-backed comparison for a small
 finalist set. It temporarily switches the selected chart to each symbol, reads
 chart quote evidence, and reports `chart_compare.v1` item status and restore
