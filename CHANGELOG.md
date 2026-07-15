@@ -49,6 +49,11 @@ package version omits the leading `v`.
 
 ### Documentation
 
+- Added a launch environment hardening plan for removing
+  `ELECTRON_RUN_AS_NODE` only from direct TradingView child processes,
+  distinguishes confirmed child exit from a still-loading process, preserves
+  the macOS system launcher and no-kill default, and keeps Windows MSIX
+  package-identity investigation separate.
 - Added a current-build indicator insertion plan that separates read-only
   metainfo discovery from an owner-authorized disposable mutation probe and
   gates production replacement behind exact resolution, awaited insertion,
