@@ -112,6 +112,18 @@ package version omits the leading `v`.
   deterministic Promise, inventory, readback, ambiguity, and cleanup fixtures.
   The new CI/release gate performs no TradingView Desktop operation; live
   create/read/remove remains separately owner-authorized.
+- Recorded live native three-point investigation on an owner-designated
+  disposable chart. It identified point1-anchored width-point normalization,
+  machine-precision price round-trip, and delayed cleanup visibility, leading
+  to a corrected bounded probe contract. The final run verified one native
+  entity, three canonical points, and inventory-confirmed cleanup without
+  adding a stable point3 option.
+- Tightened the probe's cleanup evidence so every inventory row must expose a
+  readable ID before absence can be confirmed, and added executable coverage
+  for the exact fresh cleanup expression plus time and epsilon mismatch edges.
+- Separated readable stale drawing handles from lookup failures during cleanup
+  verification; only successful lookup evaluation can accompany authoritative
+  inventory absence in a green probe result.
 
 ## v0.27.0 - 2026-07-13
 
