@@ -42,17 +42,25 @@ feasibility probe proves the exact getter, setter, and restoration path.
   per-branch JavaScript call counts, and named the CI and release gate wiring.
 - [x] (2026-07-15) Corrected restoration-setter throw handling so the retained
   time-scale getter is still called exactly once before the branch terminates.
-- [ ] Obtain focused independent review of this plan and apply corrections.
-- [ ] Run the bounded read-only current-build capability probe.
-- [ ] If read-only evidence is provisional go, obtain separate owner approval
-  for a reversible set/read/restore feasibility probe.
-- [ ] Implement the command only if both feasibility gates are green.
-- [ ] Add deterministic validation, expression, payload, dispatch, help, and
-  CLI contract tests.
-- [ ] Synchronize public docs, packaged guidance, and runtime skills only where
-  the agent decision changes.
-- [ ] Run focused and full validation, then obtain independent implementation
-  review before archiving this plan.
+- [x] (2026-07-15) Obtained focused independent review of the corrected plan;
+  the reviewer reported no remaining findings and allowed the read-only probe.
+- [x] (2026-07-15) Ran the bounded read-only current-build capability probe.
+  The selected chart exposed the expected ownership path, callable setter and
+  getter, and readable visible range, but the getter returned a finite
+  non-integer number. The strict read-only gate therefore recorded no-go.
+- [x] (2026-07-15) Stopped before owner approval or mutation feasibility because
+  the read-only gate was no-go. No setter was invoked.
+- [x] (2026-07-15) Stopped production implementation because both feasibility
+  gates were not green. No stable command was added.
+- [x] (2026-07-15) Left production expression, payload, dispatch, help, CLI
+  contracts, workflow gates, and runtime skills unchanged because the
+  implementation gate was no-go.
+- [x] (2026-07-15) Synchronized the plan index, roadmap, work inventory,
+  changelog, and continuity ledger with the read-only no-go evidence.
+- [x] (2026-07-15) Ran focused probe compilation, the explicit read-only live
+  probe, formatting, strict Clippy, full workspace tests, metadata, public
+  hygiene, packaging syntax, guide parity, and diff checks successfully.
+- [ ] Obtain independent evidence review before archiving this no-go plan.
 
 ## Surprises & Discoveries
 
@@ -74,6 +82,18 @@ feasibility probe proves the exact getter, setter, and restoration path.
   left edge inward because the visible width is fixed.
   Evidence: upstream live notes explicitly report this effect. Therefore this
   command must not be a hidden follow-up inside range or screenshot workflows.
+
+- Observation: the current-build selected-chart ownership path exposes
+  callable `setRightOffset` and `rightOffset` methods, and `rightOffset()`
+  returned a finite number, but the observed value was not an integer.
+  Evidence: the bounded ignored live probe used one retained time-scale
+  reference, called no setter, and reported only aggregate capability flags and
+  a public-safe viewport count classification.
+
+- Observation: a finite non-integer current value cannot satisfy this plan's
+  bounded integer `before` contract or exact integer restoration requirement.
+  Evidence: Milestone 1 requires an integer getter result, and Milestones 2 and
+  3 prohibit mutation when `before` is non-integer.
 
 ## Decision Log
 
@@ -145,13 +165,23 @@ feasibility probe proves the exact getter, setter, and restoration path.
   restoration setter calls.
   Date/Author: 2026-07-15 / Codex.
 
+- Decision: record current-build feasibility as no-go rather than round,
+  truncate, coerce, or temporarily overwrite the finite non-integer value.
+  Rationale: any such conversion would lose the exact pre-mutation viewport
+  state and invalidate the reviewed restoration contract. A future design may
+  reconsider the public value type only through a separate plan and review.
+  Date/Author: 2026-07-15 / Codex.
+
 ## Outcomes & Retrospective
 
-Planning has started. The previous launch-hardening item is complete and
-archived. Three independent-review correction waves are applied, and focused
-re-review is pending. Current-build right-offset ownership, readback, setter
-acceptance, and restoration remain `UNCONFIRMED`; no probe, command, production
-behavior, or live chart mutation has been authorized or performed.
+The corrected plan passed focused review and the bounded read-only probe is
+complete. Current-build ownership, setter/getter presence, finite numeric
+readback, and visible-range readability were confirmed, but the getter result
+was non-integer. This violates the reviewed gate and makes exact integer
+restoration unavailable, so the outcome is no-go. No setter, chart mutation,
+stable command, production behavior, dependency, or workflow change was added.
+Focused independent review of this evidence and no-go classification remains
+before the plan can be archived.
 
 ## Context and Orientation
 
@@ -500,3 +530,9 @@ responsive restoration setter throw now still requires exactly one immediate
 read-only restoration getter on the retained time-scale object, followed by
 zero additional setter/getter calls. Focused re-review remains required before
 the read-only capability probe.
+
+2026-07-15: Focused review reported no remaining findings. The subsequent
+bounded read-only probe confirmed the expected time-scale ownership, callable
+setter/getter, finite numeric getter result, and visible-range readability, but
+the getter value was non-integer. Recorded no-go without invoking any setter;
+mutation feasibility and production implementation did not start.
