@@ -6,18 +6,13 @@ for release and next-phase planning.
 
 ## Current and future plans
 
-The active ExecPlan is
-`docs/plans/tradingview-cli-selected-chart-right-offset.md`. It first verifies
-the current-build selected-chart time-scale getter and setter, then requires a
-separately approved reversible set/read/restore probe before implementing a
-bounded `tv right-offset` get/set/reset command. No chart mutation has been
-authorized or performed in this plan. Three plan-review correction waves and
-focused review are complete. The bounded read-only probe found a finite but
-non-integer current value, so this plan's integer-before contract is no-go and
-the corrected evidence awaits focused re-review before archive. This is not a
-capability-wide no-go: a finite-`f64` internal restoration design remains an
-untested future candidate that requires a separate ExecPlan, review, and owner
-approval before any mutation probe.
+There is no active ExecPlan. The selected-chart right-offset plan completed
+through its independently reviewed integer-before no-go path and now lives
+under `docs/plans/archives/`. The next ordered candidate is native three-point
+drawing support; it has not yet been promoted into an ExecPlan. A finite-`f64`
+right-offset restoration design remains an untested future candidate and must
+not start without a separate ExecPlan, review, and owner-approved mutation
+probe.
 
 The ordered `v0.28.0` implementation inventory is maintained in
 `docs/v0.28-work-items.md`. Pine and indicator mutation safety, current-build
@@ -25,6 +20,12 @@ Desktop compatibility, and bounded chart workflow candidates are promoted into
 separate ExecPlans only when the preceding required item is complete and green.
 
 Recently completed:
+
+- `tradingview-cli-selected-chart-right-offset.md`: confirmed the current-build
+  getter/setter ownership with a read-only probe, found a finite fractional
+  current value, and closed the reviewed integer-before contract as no-go
+  without invoking a setter or adding a stable command. The completed plan now
+  lives under `docs/plans/archives/`.
 
 - `tradingview-cli-launch-environment-hardening.md`: removed inherited
   `ELECTRON_RUN_AS_NODE` from direct spawn and the macOS system launcher,

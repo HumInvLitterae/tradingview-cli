@@ -63,8 +63,12 @@ feasibility probe proves the exact getter, setter, and restoration path.
 - [x] (2026-07-15) Corrected the probe's transport-configuration failure path
   to emit only a fixed public-safe message, limited the no-go conclusion to
   this plan's integer-before contract, and added a viable no-go archive path.
-- [ ] Obtain focused independent re-review before archiving this plan as an
-  integer-before contract no-go.
+- [x] (2026-07-15) Obtained focused independent re-review of the corrected
+  probe, limited no-go classification, float-aware future boundary, and no-go
+  closeout route; the reviewer reported no findings.
+- [x] (2026-07-15) Archived this plan as an integer-before contract no-go
+  without promoting the untested finite-`f64` candidate or authorizing chart
+  mutation.
 
 ## Surprises & Discoveries
 
@@ -204,8 +208,10 @@ specific contract is no-go. It does not establish a capability-wide no-go: an
 exact finite-`f64` restoration design remains an untested future candidate
 that requires its own plan, review, and mutation approval. No setter, chart
 mutation, stable command, production behavior, dependency, or workflow change
-was added. Focused independent re-review of the corrected probe and limited
-no-go classification remains before this plan can be archived.
+was added. Focused independent re-review reported no findings, so this plan is
+complete and archived through its documented no-go path. The broader
+right-offset capability remains undecided unless a future finite-`f64` design
+is deliberately promoted through a separate plan and approval sequence.
 
 ## Context and Orientation
 
@@ -572,3 +578,8 @@ the outcome to an integer-before contract no-go. Recorded a separate
 finite-`f64` internal restoration design as an untested future ExecPlan
 candidate, and allowed this plan to archive after green no-go evidence review
 without requiring an implementation that the gate intentionally prohibited.
+
+2026-07-15: Focused independent re-review reported no findings in the corrected
+probe, limited no-go outcome, future-design boundary, or archive conditions.
+Archived the plan through the documented no-go path. No setter, mutation
+probe, production command, or automatic float-aware follow-up was authorized.
