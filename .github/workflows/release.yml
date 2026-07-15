@@ -57,12 +57,28 @@ jobs:
       - name: Run indicator insertion JavaScript contract
         run: python3 scripts/check-indicator-insertion-js-contract.py
 
+  three-point-drawing-js-contract:
+    name: Three-point drawing JavaScript contract
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24.18.0"
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+      - name: Run three-point drawing JavaScript contract
+        run: python3 scripts/check-three-point-drawing-js-contract.py
+
   build:
     name: Build ${{ matrix.target }}
     needs:
       - study-values-js-contract
       - pine-open-js-contract
       - indicator-insertion-js-contract
+      - three-point-drawing-js-contract
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
