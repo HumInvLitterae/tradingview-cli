@@ -61,8 +61,9 @@ monitor behavior, or implement Windows package-identity launch.
   baseline, public-hygiene checks, packaging checks, and guide parity.
 - [x] (2026-07-15) Corrected stale work-inventory state and replaced an empty
   focused CLI filter with the exact existing help contract test.
-- [ ] Obtain focused independent review, apply any required corrections, and
-  archive this plan only after the implementation and review are green.
+- [x] (2026-07-15) Completed focused independent implementation review,
+  corrected the two documentation findings, and passed focused re-review with
+  no remaining findings.
 
 ## Surprises & Discoveries
 
@@ -140,9 +141,9 @@ monitor behavior, or implement Windows package-identity launch.
 
 ## Outcomes & Retrospective
 
-Planning, two independent-review correction waves, implementation, focused
-launch tests, CLI contract tests, and full validation are complete. Independent
-implementation review remains. The implementation preserves the existing
+Planning, two planning-review correction waves, implementation, focused launch
+tests, CLI contract tests, full validation, implementation review, and focused
+re-review are complete. The implementation preserves the existing
 launch methods and success payload while making both launch environments and
 confirmed direct child exit deterministic without misclassifying a successful
 macOS fallback. The optional live launch smoke was not run because deterministic
@@ -582,3 +583,8 @@ green. Independent implementation review remains.
 status from the ordered work inventory and changed the focused general CLI
 contract command to execute `help_lists_v1_commands` instead of matching zero
 tests. Focused re-review remains before archive.
+
+2026-07-15: Closed after focused re-review reported no remaining findings. The
+runtime implementation, public-safe diagnostics, deterministic tests, public
+guidance, and project-state documentation are green. Windows MSIX
+package-identity launch remains a separate feasibility item.

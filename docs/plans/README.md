@@ -7,12 +7,11 @@ for release and next-phase planning.
 ## Current and future plans
 
 The active ExecPlan is
-`docs/plans/tradingview-cli-launch-environment-hardening.md`. It covers
-`ELECTRON_RUN_AS_NODE` removal from direct spawn and the macOS system launcher,
-plus confirmed child-exit classification that cannot override a successful
-fallback. The no-kill default and live-but-not-ready warning response remain
-unchanged. Implementation and full validation are complete; independent
-review corrections are applied and focused re-review is pending.
+`docs/plans/tradingview-cli-selected-chart-right-offset.md`. It first verifies
+the current-build selected-chart time-scale getter and setter, then requires a
+separately approved reversible set/read/restore probe before implementing a
+bounded `tv right-offset` get/set/reset command. No chart mutation has been
+authorized or performed in this plan.
 
 The ordered `v0.28.0` implementation inventory is maintained in
 `docs/v0.28-work-items.md`. Pine and indicator mutation safety, current-build
@@ -20,6 +19,12 @@ Desktop compatibility, and bounded chart workflow candidates are promoted into
 separate ExecPlans only when the preceding required item is complete and green.
 
 Recently completed:
+
+- `tradingview-cli-launch-environment-hardening.md`: removed inherited
+  `ELECTRON_RUN_AS_NODE` from direct spawn and the macOS system launcher,
+  classified direct-child outcomes without overriding successful fallback,
+  and passed full validation plus focused independent re-review. The completed
+  plan now lives under `docs/plans/archives/`.
 
 - `tradingview-cli-current-build-indicator-insertion.md`: replaced the legacy
   indicator add path with exact metainfo resolution, awaited chart-owned
