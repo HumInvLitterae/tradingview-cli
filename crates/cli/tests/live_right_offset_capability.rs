@@ -20,7 +20,7 @@ async fn selected_chart_right_offset_read_only_capability_probe() {
         .filter(|value| !value.is_empty())
         .expect("TV_LIVE_RIGHT_OFFSET_TARGET_ID must select the intended chart target");
     let config = TransportConfig::from_env_with_target_id(Some(&target_id))
-        .expect("right-offset probe transport configuration should be valid");
+        .unwrap_or_else(|_| panic!("right-offset probe transport configuration was invalid"));
     let target = discover_target(&config).await.unwrap_or_else(|_| {
         panic!("right-offset probe could not resolve the selected chart target")
     });

@@ -60,7 +60,11 @@ feasibility probe proves the exact getter, setter, and restoration path.
 - [x] (2026-07-15) Ran focused probe compilation, the explicit read-only live
   probe, formatting, strict Clippy, full workspace tests, metadata, public
   hygiene, packaging syntax, guide parity, and diff checks successfully.
-- [ ] Obtain independent evidence review before archiving this no-go plan.
+- [x] (2026-07-15) Corrected the probe's transport-configuration failure path
+  to emit only a fixed public-safe message, limited the no-go conclusion to
+  this plan's integer-before contract, and added a viable no-go archive path.
+- [ ] Obtain focused independent re-review before archiving this plan as an
+  integer-before contract no-go.
 
 ## Surprises & Discoveries
 
@@ -94,6 +98,15 @@ feasibility probe proves the exact getter, setter, and restoration path.
   bounded integer `before` contract or exact integer restoration requirement.
   Evidence: Milestone 1 requires an integer getter result, and Milestones 2 and
   3 prohibit mutation when `before` is non-integer.
+
+- Observation: the public TradingView time-scale API describes both
+  `rightOffset()` and `setRightOffset(offset)` with the JavaScript `number`
+  type rather than an integer-only type.
+  Evidence: the official Advanced Charts
+  [`ITimeScaleApi`](https://www.tradingview.com/charting-library-docs/latest/api/interfaces/Charting_Library.ITimeScaleApi/)
+  reference. This does not prove the private current-build setter's mutation or
+  restoration semantics, but it means the observed fractional value is not
+  evidence that right-offset control as a whole is impossible.
 
 ## Decision Log
 
@@ -168,8 +181,17 @@ feasibility probe proves the exact getter, setter, and restoration path.
 - Decision: record current-build feasibility as no-go rather than round,
   truncate, coerce, or temporarily overwrite the finite non-integer value.
   Rationale: any such conversion would lose the exact pre-mutation viewport
-  state and invalidate the reviewed restoration contract. A future design may
-  reconsider the public value type only through a separate plan and review.
+  state and invalidate this plan's reviewed restoration contract.
+  Date/Author: 2026-07-15 / Codex.
+
+- Decision: limit this result to the integer-before contract; do not classify
+  the broader right-offset capability as no-go.
+  Rationale: a separate design could keep public requests as integers in
+  `0..=500` while retaining the exact finite internal `before` value as `f64`
+  for readback and restoration without rounding. That design is untested and
+  must be promoted through a separate ExecPlan, focused review, and separate
+  owner approval before any mutation probe. It is not an automatic
+  continuation of this plan.
   Date/Author: 2026-07-15 / Codex.
 
 ## Outcomes & Retrospective
@@ -177,11 +199,13 @@ feasibility probe proves the exact getter, setter, and restoration path.
 The corrected plan passed focused review and the bounded read-only probe is
 complete. Current-build ownership, setter/getter presence, finite numeric
 readback, and visible-range readability were confirmed, but the getter result
-was non-integer. This violates the reviewed gate and makes exact integer
-restoration unavailable, so the outcome is no-go. No setter, chart mutation,
-stable command, production behavior, dependency, or workflow change was added.
-Focused independent review of this evidence and no-go classification remains
-before the plan can be archived.
+was non-integer. This violates the reviewed integer-before gate, so that
+specific contract is no-go. It does not establish a capability-wide no-go: an
+exact finite-`f64` restoration design remains an untested future candidate
+that requires its own plan, review, and mutation approval. No setter, chart
+mutation, stable command, production behavior, dependency, or workflow change
+was added. Focused independent re-review of the corrected probe and limited
+no-go classification remains before this plan can be archived.
 
 ## Context and Orientation
 
@@ -407,7 +431,9 @@ changes.
 Obtain focused independent review of feasibility evidence, exact mutation and
 restoration order, integer validation, error sanitization, source/mutation
 metadata, hidden-fallback absence, docs, and module ownership. Archive this
-plan only after implementation review is green.
+plan through one of two explicit paths: implementation review is green after
+both feasibility gates authorize and implementation completes, or focused
+evidence/outcome review is green after a documented no-go stops implementation.
 
 ## Concrete Steps
 
@@ -458,6 +484,10 @@ plus independent review are green.
 If getter, setter, immediate readback, or restoration cannot be established,
 the accepted outcome is documented no-go with no stable command. Upstream
 method presence and visible-range movement alone are insufficient.
+
+The current evidence satisfies only the no-go path for this plan's
+integer-before contract. A future finite-`f64` internal restoration design is
+outside this plan and is neither reviewed nor authorized.
 
 ## Idempotence and Recovery
 
@@ -536,3 +566,9 @@ bounded read-only probe confirmed the expected time-scale ownership, callable
 setter/getter, finite numeric getter result, and visible-range readability, but
 the getter value was non-integer. Recorded no-go without invoking any setter;
 mutation feasibility and production implementation did not start.
+
+2026-07-15: Corrected the probe's remaining raw-error failure path and narrowed
+the outcome to an integer-before contract no-go. Recorded a separate
+finite-`f64` internal restoration design as an untested future ExecPlan
+candidate, and allowed this plan to archive after green no-go evidence review
+without requiring an implementation that the gate intentionally prohibited.
