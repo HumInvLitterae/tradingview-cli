@@ -54,14 +54,17 @@ package version omits the leading `v`.
 
 ### Documentation
 
+- Added a feasibility-gated selected-chart right-offset plan. It requires
+  current-build getter/setter evidence and a separately approved reversible
+  set/read/restore probe before a bounded `tv right-offset` command can be
+  implemented; range and screenshot commands remain unchanged.
 - Added a launch environment hardening plan for removing
   `ELECTRON_RUN_AS_NODE` from direct TradingView spawn and the macOS system
   launcher, distinguishing confirmed child exit from a still-loading process
   without misclassifying a successful fallback, preserving the no-kill
   default, and keeping Windows MSIX package-identity investigation separate.
-  Two planning review-correction waves and the implementation are complete;
-  implementation-review documentation corrections are applied and focused
-  re-review is pending.
+  Two planning review-correction waves, implementation, full validation,
+  independent review, and focused re-review are complete.
 - Added a current-build indicator insertion plan that separates read-only
   metainfo discovery from an owner-authorized disposable mutation probe and
   gates production replacement behind exact resolution, awaited insertion,
