@@ -105,6 +105,14 @@ package version omits the leading `v`.
   blocker. The resumed owner-approved matrix changed only the intended
   disposable script, and its closeout corrections passed focused re-review.
 
+### Tests
+
+- Added an ignored, explicitly gated native three-point drawing probe and a
+  pinned Node.js contract that executes its Rust-generated expression against
+  deterministic Promise, inventory, readback, ambiguity, and cleanup fixtures.
+  The new CI/release gate performs no TradingView Desktop operation; live
+  create/read/remove remains separately owner-authorized.
+
 ## v0.27.0 - 2026-07-13
 
 ### Changed
@@ -139,11 +147,6 @@ package version omits the leading `v`.
 
 ### Tests
 
-- Added an ignored, explicitly gated native three-point drawing probe and a
-  pinned Node.js contract that executes its Rust-generated expression against
-  deterministic Promise, inventory, readback, ambiguity, and cleanup fixtures.
-  The new CI/release gate performs no TradingView Desktop operation; live
-  create/read/remove remains separately owner-authorized.
 - Added a separately managed executable JavaScript contract gate for the
   generated study-value identity helper, pinned to Node.js `24.18.0` in local
   tooling, CI, and release builds while keeping ordinary Cargo tests Rust-only.
