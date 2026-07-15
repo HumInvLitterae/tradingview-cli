@@ -33,6 +33,10 @@ feasibility probe proves the exact getter, setter, and restoration path.
   movement, but it does not verify a getter or restoration contract.
 - [x] (2026-07-15) Created this self-contained feasibility-gated implementation
   plan and synchronized the current project state.
+- [x] (2026-07-15) Applied initial review corrections: bounded the probe
+  candidate from an in-range before value, required one-shot restoration for
+  every responsive post-mutation failure, added an executable JavaScript
+  contract gate, and corrected the continuity goal and authorization scope.
 - [ ] Obtain focused independent review of this plan and apply corrections.
 - [ ] Run the bounded read-only current-build capability probe.
 - [ ] If read-only evidence is provisional go, obtain separate owner approval
@@ -104,12 +108,37 @@ feasibility probe proves the exact getter, setter, and restoration path.
   or mutation mixing would make viewport evidence ambiguous.
   Date/Author: 2026-07-15 / Codex.
 
+- Decision: treat every responsive page-side failure after the probe or
+  production setter may have run as a restoration branch, while treating an
+  outer Runtime timeout as an unknown outcome that forbids automatic recovery.
+  Rationale: setter application and JavaScript exception delivery are not an
+  atomic boundary. A setter throw or a later malformed/throwing getter can
+  leave changed state, but a caller-side timeout cannot safely establish
+  whether another setter invocation would restore or compound that state.
+  Date/Author: 2026-07-15 / Codex.
+
+- Decision: stop before mutation when the observed `before` value is outside
+  `0..=500`; otherwise probe `before + 1`, except probe `499` from `500`.
+  Rationale: the reversible probe needs a distinct candidate inside the public
+  contract and must not assume that an out-of-contract value can be restored
+  through the proposed bounded setter contract.
+  Date/Author: 2026-07-15 / Codex.
+
+- Decision: require an executable production-expression contract under pinned
+  Node.js in addition to Rust fake-runtime tests.
+  Rationale: fake Runtime payloads cannot prove same-object identity, exact
+  getter/setter ordering and count, or one-shot restoration after JavaScript
+  exceptions. The dedicated gate must run in CI and release builds without
+  making the ordinary Cargo baseline depend on Node.js.
+  Date/Author: 2026-07-15 / Codex.
+
 ## Outcomes & Retrospective
 
 Planning has started. The previous launch-hardening item is complete and
-archived. Current-build right-offset ownership, readback, setter acceptance,
-and restoration remain `UNCONFIRMED`; no command, production behavior, or live
-chart mutation has been added yet.
+archived. Initial independent-review corrections are applied, and focused
+re-review is pending. Current-build right-offset ownership, readback, setter
+acceptance, and restoration remain `UNCONFIRMED`; no probe, command, production
+behavior, or live chart mutation has been authorized or performed.
 
 ## Context and Orientation
 
@@ -159,9 +188,12 @@ and setter ownership path or stops without changing chart state.
 
 Proceed only after Milestone 1 is green, focused review confirms the exact
 probe, and the owner separately authorizes a chart viewport mutation. Capture
-the finite integer `before` value. Choose a bounded probe value that differs
-from `before`: prefer `before + 1` when it is at most 500, otherwise
-`before - 1` when non-negative. If neither is valid, stop without mutation.
+the finite integer `before` value. Continue only when `before` itself is in
+`0..=500`; an out-of-range current value is no-go before mutation because this
+plan does not assume the setter can safely restore values outside the public
+contract. Choose `before + 1` when `before < 500`; when `before == 500`, choose
+`499`. The resulting candidate is always in `0..=500` and differs from
+`before`. Any failure to construct that exact candidate stops before mutation.
 
 Use one bounded page-side async expression that resolves `model` and `ts`
 exactly once and retains that `ts` reference for the complete sequence. Call
@@ -175,10 +207,14 @@ probe value, observed value, restored value, and boolean status. These are
 viewport counts, not private identifiers.
 
 The expression catches errors by stage and returns only a fixed stage label;
-it never returns exception text. If the probe setter throws or the first
-readback is wrong, perform at most one identity-preserving restoration attempt
-through the retained `ts` reference when it remains usable. Report restoration
-status separately and do not reinterpret a failed mutation as production go.
+it never returns exception text. Once the probe setter has been invoked,
+setter throw, post-set getter throw, non-finite or non-integer post-set value,
+and exact-value mismatch all mean mutation may have occurred. For every such
+responsive page-side failure, call `ts.setRightOffset(before)` at most once and
+perform exactly one immediate `ts.rightOffset()` restoration readback. If the
+restoration setter or getter throws, or restoration readback is malformed or
+does not equal `before`, report that fixed restoration outcome and make no
+additional attempt. Do not reinterpret any failed probe as production go.
 If the outer Runtime evaluation times out and mutation outcome is unknown, do
 not retry, poll, or restore automatically; obtain owner approval for a
 read-only recovery observation.
@@ -219,14 +255,18 @@ payload uses the same contract marker with `action: "set"` or `"reset"`,
 zero is TradingView's product default; it is this command's explicit no-empty-
 slots reset value.
 
-If set/reset readback mismatches after mutation, the same expression performs
-at most one restoration call to `before` and one immediate restoration
-readback. It returns a failure with `restoration_attempted` and `restored`
-instead of a success payload. Setter or getter exceptions are reduced to fixed
-stage labels; raw exception values never cross CDP. An outer Runtime timeout
-has unknown mutation outcome and triggers no automatic retry or second
-expression. The error instructs the user to run read mode before deciding
-whether to retry or restore manually.
+After the production setter is invoked, setter throw, post-set getter throw,
+non-finite or non-integer post-set value, and exact-value mismatch all trigger
+the same bounded recovery inside that expression: call
+`ts.setRightOffset(before)` at most once and call `ts.rightOffset()` exactly
+once immediately afterward. Return failure with `restoration_attempted`,
+`restored`, and a fixed restoration stage; never return success from a recovery
+branch. Restoration setter/getter throw, malformed restoration readback, or
+restoration mismatch ends the expression without another attempt. Raw
+exception values never cross CDP. An outer Runtime timeout has unknown mutation
+outcome and triggers no automatic retry, polling, restoration expression, or
+second setter call. The error instructs the user to run read mode before
+deciding whether to retry or restore manually.
 
 Missing API, malformed getter values, setter exceptions, and readback mismatch
 return fixed public-safe errors. Details may include contract marker, action,
@@ -243,9 +283,31 @@ selected-chart-only, and fail-closed.
 Add model tests for read/set/reset action selection, conflict rejection, and
 the `0..=500` boundary. Add operation tests using the existing fake runtime for
 read success, exact set verification, reset, missing getter/setter, malformed
-values, evaluation error sanitization, mismatch failure, and preservation of
-the same time-scale ownership path. Tests must prove no `tv range`, screenshot,
-bars, scanner, DOM click, or fallback expression appears.
+values, evaluation error sanitization, mismatch failure, outer Runtime timeout,
+and public-safe timeout guidance. These Rust tests verify typed payload and
+error boundaries; they are not sufficient evidence for page-side call order.
+
+Add an ignored Rust contract test that executes the production-generated
+right-offset expression under pinned Node.js `24.18.0`, plus a repository
+wrapper `scripts/check-right-offset-js-contract.py` and a dedicated `mise`
+task. Wire that task as a required independent gate in CI and every release
+build, following the existing Pine-open and indicator-insertion JavaScript
+gates. Ordinary `cargo test --workspace` remains Rust-only.
+
+The executable fixture must use synthetic model/time-scale objects with
+identity assertions and call recording. It must prove `model()` and
+`timeScale()` are each resolved exactly once; every getter/setter call uses the
+same retained object; success calls requested setter once and immediate getter
+once; mismatch, setter-throw-after-apply, post-set getter throw, non-finite and
+non-integer readback each call restoration setter/getter at most once in exact
+order; restoration setter throw, restoration getter throw, malformed restore,
+and restore mismatch never retry; and no delay, timer, polling, alternate
+signature, or fallback is used. Private strings injected into thrown values
+must not appear in the expression result or Rust error details. Outer Runtime
+timeout is covered at the Rust evaluator boundary because a page-side fixture
+cannot observe an evaluation result that the caller timed out waiting for.
+Tests must also prove no `tv range`, screenshot, bars, scanner, DOM click, or
+fallback expression appears.
 
 Add CLI contracts showing `tv right-offset --help`, values below zero and above
 500, and value-plus-reset conflicts fail before CDP connection. Preserve all
@@ -265,10 +327,12 @@ never apply it automatically.
 
 ### Milestone 5: Validate and obtain independent review
 
-Run focused model, chart operation, help, and Desktop contract tests, then the
-full Rust baseline, metadata, public hygiene, packaging syntax, guide parity,
-and diff hygiene. Run the pinned JavaScript gates only if their production
-helpers changed; this plan should not touch Pine or study-value JavaScript.
+Run focused model, chart operation, help, Desktop contract, and the dedicated
+pinned right-offset JavaScript contract tests, then the full Rust baseline,
+metadata, public hygiene, packaging syntax, guide parity, workflow parsing, and
+diff hygiene. Existing Pine and study-value JavaScript gates remain unchanged,
+but the new right-offset gate is mandatory whenever its production expression
+changes.
 
 Obtain focused independent review of feasibility evidence, exact mutation and
 restoration order, integer validation, error sanitization, source/mutation
@@ -287,6 +351,7 @@ After the feasibility gates authorize implementation, run focused checks:
     cargo test -p tradingview-model right_offset -- --nocapture
     cargo test -p tradingview-cli right_offset -- --nocapture
     cargo test -p tradingview-cli --test cli_contract_desktop right_offset -- --nocapture
+    mise run check:right-offset-js
 
 Run the complete baseline:
 
@@ -377,3 +442,9 @@ judgment behavior.
 review and focused re-review. The plan promotes the first bounded chart-layout
 candidate, incorporates upstream PR #225 as evidence, and adds current-build
 getter plus reversible exact-readback gates before any stable implementation.
+
+2026-07-15: Corrected the initial plan-review findings by requiring an in-range
+distinct probe candidate, one bounded restore attempt for every responsive
+post-mutation failure, no automatic recovery after an outer Runtime timeout,
+and an executable same-object JavaScript contract gate. Focused re-review is
+required before the read-only capability probe.
