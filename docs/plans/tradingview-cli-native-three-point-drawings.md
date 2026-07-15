@@ -48,10 +48,18 @@ Method presence or upstream evidence alone is not production go.
   point3 to native `parallel_channel`, made ambiguity sticky, restricted probe
   cleanup to fully verified entities, defined Promise-independent observation,
   and fixed the no-go closeout path.
-- [ ] Obtain focused independent re-review of the corrected plan before adding
-  or running the disposable three-point mutation probe.
-- [ ] Add the gated probe and deterministic probe-contract tests without
+- [x] (2026-07-16) Focused independent re-review of the corrected plan reported
+  no findings and authorized deterministic probe implementation.
+- [x] (2026-07-16) Added the gated probe and deterministic probe-contract tests
+  without running live or
   adding a stable CLI option.
+- [x] (2026-07-16) Added the pinned production-expression Node.js gate to local
+  tooling, CI, release, and development guidance while preserving Node-free
+  ordinary Cargo tests.
+- [x] (2026-07-16) Completed focused and full local validation without running
+  the ignored live mutation test.
+- [ ] Obtain focused independent implementation review of the probe and its
+  executable contract before requesting live-mutation approval.
 - [ ] Obtain separate owner approval for one disposable native
   `parallel_channel` create/read/remove probe on an explicitly selected chart.
 - [ ] Run the mutation probe, record only public-safe aggregate evidence, and
@@ -184,11 +192,12 @@ Method presence or upstream evidence alone is not production go.
 
 ## Outcomes & Retrospective
 
-Planning is complete. The first slice is explicit third-point support in the
-existing drawing command, with a concrete current-build proof obligation before
-stable implementation. No Rust behavior, CLI option, dependency, workflow,
-chart drawing, or TradingView state has changed. Independent plan review is the
-next gate.
+Planning review and deterministic probe implementation are complete. The
+ignored probe, fixed public-safe result shape, production-expression JavaScript
+contract, and required CI/release gate are implemented and locally validated
+without adding a stable CLI option or touching TradingView state. Focused
+implementation review is the next gate. Live create/read/remove remains
+separately owner-authorized.
 
 ## Context and Orientation
 
@@ -502,3 +511,10 @@ to exact `parallel_channel`; multiple-ID ambiguity is sticky; only a fully
 verified entity can be removed automatically; Promise settlement is observed
 without blocking inventory/readback/cleanup; and the no-go durable closeout
 path is explicit.
+
+2026-07-16: Focused plan re-review reported no findings. Implemented the
+ignored live probe, fixed environment/config validation, exact
+production-expression Node.js fixtures, and required local/CI/release gate.
+The live test was compiled but not run; no target or point values were selected
+and no drawing mutation occurred. Focused/full validation is green, including
+the pinned Node gate, strict Clippy, and the Node-free workspace test suite.
