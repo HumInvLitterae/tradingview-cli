@@ -64,7 +64,9 @@ package version omits the leading `v`.
   under the reviewed contract later observed a finite non-integer current value
   and recorded an integer-before contract no-go without invoking the setter or
   adding a stable command. A finite-`f64` internal restoration design remains
-  an untested future planning candidate.
+  an untested future planning candidate. Focused evidence review found no
+  remaining issue, and the integer-before plan is archived through its
+  documented no-go path.
 - Added a launch environment hardening plan for removing
   `ELECTRON_RUN_AS_NODE` from direct TradingView spawn and the macOS system
   launcher, distinguishing confirmed child exit from a still-loading process
