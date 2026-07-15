@@ -26,6 +26,11 @@ description = "Run the indicator insertion JavaScript contract with pinned Node.
 run = "python3 scripts/check-indicator-insertion-js-contract.py"
 run_windows = "python scripts/check-indicator-insertion-js-contract.py"
 
+[tasks."check:three-point-drawing-js"]
+description = "Run the three-point drawing JavaScript contract with pinned Node.js"
+run = "python3 scripts/check-three-point-drawing-js-contract.py"
+run_windows = "python scripts/check-three-point-drawing-js-contract.py"
+
 [tasks."hooks:install"]
 description = "Install Git 2.54 config-based hooks into local git config"
 run = '''

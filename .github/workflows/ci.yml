@@ -122,6 +122,21 @@ jobs:
       - name: Run indicator insertion JavaScript contract
         run: python3 scripts/check-indicator-insertion-js-contract.py
 
+  three-point-drawing-js-contract:
+    name: Three-point drawing JavaScript contract
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24.18.0"
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+      - name: Run three-point drawing JavaScript contract
+        run: python3 scripts/check-three-point-drawing-js-contract.py
+
   test:
     name: Test (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
