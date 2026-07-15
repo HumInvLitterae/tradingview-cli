@@ -37,6 +37,9 @@ feasibility probe proves the exact getter, setter, and restoration path.
   candidate from an in-range before value, required one-shot restoration for
   every responsive post-mutation failure, added an executable JavaScript
   contract gate, and corrected the continuity goal and authorization scope.
+- [x] (2026-07-15) Applied focused re-review corrections: required production
+  set/reset to validate the current value before mutation, fixed exact
+  per-branch JavaScript call counts, and named the CI and release gate wiring.
 - [ ] Obtain focused independent review of this plan and apply corrections.
 - [ ] Run the bounded read-only current-build capability probe.
 - [ ] If read-only evidence is provisional go, obtain separate owner approval
@@ -132,10 +135,18 @@ feasibility probe proves the exact getter, setter, and restoration path.
   making the ordinary Cargo baseline depend on Node.js.
   Date/Author: 2026-07-15 / Codex.
 
+- Decision: production set/reset must validate that the captured `before`
+  value is a finite integer in `0..=500` before invoking any setter.
+  Rationale: restoration is safe only when the original value is inside the
+  same bounded contract proved by feasibility. Getter throw, malformed,
+  non-finite, non-integer, or out-of-range values stop with zero requested or
+  restoration setter calls.
+  Date/Author: 2026-07-15 / Codex.
+
 ## Outcomes & Retrospective
 
 Planning has started. The previous launch-hardening item is complete and
-archived. Initial independent-review corrections are applied, and focused
+archived. Two independent-review correction waves are applied, and focused
 re-review is pending. Current-build right-offset ownership, readback, setter
 acceptance, and restoration remain `UNCONFIRMED`; no probe, command, production
 behavior, or live chart mutation has been authorized or performed.
@@ -210,11 +221,13 @@ The expression catches errors by stage and returns only a fixed stage label;
 it never returns exception text. Once the probe setter has been invoked,
 setter throw, post-set getter throw, non-finite or non-integer post-set value,
 and exact-value mismatch all mean mutation may have occurred. For every such
-responsive page-side failure, call `ts.setRightOffset(before)` at most once and
-perform exactly one immediate `ts.rightOffset()` restoration readback. If the
-restoration setter or getter throws, or restoration readback is malformed or
-does not equal `before`, report that fixed restoration outcome and make no
-additional attempt. Do not reinterpret any failed probe as production go.
+responsive page-side failure, call `ts.setRightOffset(before)` exactly once.
+If that restoration setter returns, perform exactly one immediate
+`ts.rightOffset()` restoration readback. A restoration setter throw means zero
+restoration getter calls. A restoration getter throw, malformed readback, or
+value other than `before` ends with no additional setter/getter attempt. Report
+the fixed restoration outcome and do not reinterpret a failed probe as
+production go.
 If the outer Runtime evaluation times out and mutation outcome is unknown, do
 not retry, poll, or restore automatically; obtain owner approval for a
 read-only recovery observation.
@@ -246,8 +259,12 @@ The read operation calls the reviewed getter and returns
 `non_mutating: true`, and `right_offset`.
 
 Set and reset use one page-side expression that resolves the time-scale object
-once, captures `before`, calls the reviewed setter exactly once, then performs
-the first immediate getter readback. Success requires exact equality. Their
+once and captures `before`. Before invoking any setter, require `before` to be
+a finite integer in `0..=500`. A throwing getter, malformed value, non-finite
+number, non-integer number, or out-of-range integer fails before mutation with
+zero requested setter and zero restoration setter calls. Only after this check
+does the expression call the reviewed setter exactly once and perform the first
+immediate getter readback. Success requires exact equality. Their
 payload uses the same contract marker with `action: "set"` or `"reset"`,
 `source_category: "desktop_backed_operation"`, `non_mutating: false`,
 `requested_right_offset`, `before_right_offset`, `observed_right_offset`,
@@ -258,11 +275,13 @@ slots reset value.
 After the production setter is invoked, setter throw, post-set getter throw,
 non-finite or non-integer post-set value, and exact-value mismatch all trigger
 the same bounded recovery inside that expression: call
-`ts.setRightOffset(before)` at most once and call `ts.rightOffset()` exactly
-once immediately afterward. Return failure with `restoration_attempted`,
-`restored`, and a fixed restoration stage; never return success from a recovery
-branch. Restoration setter/getter throw, malformed restoration readback, or
-restoration mismatch ends the expression without another attempt. Raw
+`ts.setRightOffset(before)` exactly once. If that restoration setter returns,
+call `ts.rightOffset()` exactly once immediately afterward; if it throws, call
+the restoration getter zero times. Return failure with
+`restoration_attempted`, `restored`, and a fixed restoration stage; never
+return success from a recovery branch. Restoration setter/getter throw,
+malformed restoration readback, or restoration mismatch ends the expression
+without another setter/getter attempt. Raw
 exception values never cross CDP. An outer Runtime timeout has unknown mutation
 outcome and triggers no automatic retry, polling, restoration expression, or
 second setter call. The error instructs the user to run read mode before
@@ -284,25 +303,44 @@ Add model tests for read/set/reset action selection, conflict rejection, and
 the `0..=500` boundary. Add operation tests using the existing fake runtime for
 read success, exact set verification, reset, missing getter/setter, malformed
 values, evaluation error sanitization, mismatch failure, outer Runtime timeout,
-and public-safe timeout guidance. These Rust tests verify typed payload and
-error boundaries; they are not sufficient evidence for page-side call order.
+public-safe timeout guidance, and each invalid `before` classification. Require
+zero requested/restoration setter calls for pre-mutation getter throw,
+malformed, non-finite, non-integer, and out-of-range `before` values. These Rust
+tests verify typed payload and error boundaries; they are not sufficient
+evidence for page-side call order.
 
 Add an ignored Rust contract test that executes the production-generated
 right-offset expression under pinned Node.js `24.18.0`, plus a repository
-wrapper `scripts/check-right-offset-js-contract.py` and a dedicated `mise`
-task. Wire that task as a required independent gate in CI and every release
-build, following the existing Pine-open and indicator-insertion JavaScript
-gates. Ordinary `cargo test --workspace` remains Rust-only.
+wrapper `scripts/check-right-offset-js-contract.py`. Add
+`check:right-offset-js` to `mise.toml`, with both Unix and Windows commands.
+Add a separately named right-offset JavaScript contract job to
+`.github/workflows/ci.yml` and `.github/workflows/release.yml`, each installing
+Node.js `24.18.0` and Rust before invoking the wrapper. Add the release job ID
+to `.github/workflows/release.yml` under `build.needs` alongside the existing
+JavaScript jobs so every release test, build, package, and publish path is
+blocked when this contract fails. Document the dedicated command, pinned Node
+version, CI/release responsibility, and Rust-only ordinary Cargo baseline in
+`docs/development.md`.
 
 The executable fixture must use synthetic model/time-scale objects with
 identity assertions and call recording. It must prove `model()` and
 `timeScale()` are each resolved exactly once; every getter/setter call uses the
-same retained object; success calls requested setter once and immediate getter
-once; mismatch, setter-throw-after-apply, post-set getter throw, non-finite and
-non-integer readback each call restoration setter/getter at most once in exact
-order; restoration setter throw, restoration getter throw, malformed restore,
-and restore mismatch never retry; and no delay, timer, polling, alternate
-signature, or fallback is used. Private strings injected into thrown values
+same retained object. Pre-mutation getter throw, malformed, non-finite,
+non-integer, and out-of-range `before` branches call the requested setter zero
+times and the restoration setter zero times. Success calls the requested
+setter once and the first immediate post-set getter once. A requested setter
+that throws after applying calls the requested setter once, the post-set getter
+zero times, the restoration setter exactly once, and the first immediate
+restoration getter exactly once unless that restoration setter itself throws.
+Post-set getter throw, non-finite, non-integer, and mismatch branches call the
+requested setter once, post-set getter once, restoration setter exactly once,
+and first immediate restoration getter exactly once unless the restoration
+setter throws. If the restoration setter throws, its call count is one, the
+restoration getter count is zero, and all later setter/getter call counts are
+zero. If the restoration getter throws, is malformed, or mismatches, its call
+count is one and all later setter/getter call counts are zero. The fixture must
+assert this exact order and these counts, with no delay, timer, polling,
+alternate signature, or fallback. Private strings injected into thrown values
 must not appear in the expression result or Rust error details. Outer Runtime
 timeout is covered at the Rust evaluator boundary because a page-side fixture
 cannot observe an evaluation result that the caller timed out waiting for.
@@ -448,3 +486,9 @@ distinct probe candidate, one bounded restore attempt for every responsive
 post-mutation failure, no automatic recovery after an outer Runtime timeout,
 and an executable same-object JavaScript contract gate. Focused re-review is
 required before the read-only capability probe.
+
+2026-07-15: Corrected the focused re-review findings by applying the bounded
+`before` check to production before any setter, specifying exact call counts
+for every executable fixture branch, and fixing the required `mise.toml`, CI,
+release `build.needs`, and development-guide integration points. Another
+focused re-review is required before the read-only capability probe.

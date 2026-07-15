@@ -57,8 +57,9 @@ package version omits the leading `v`.
 - Added a feasibility-gated selected-chart right-offset plan. It requires
   current-build getter/setter evidence and a separately approved reversible
   set/read/restore probe before a bounded `tv right-offset` command can be
-  implemented; initial safety-contract corrections require bounded
-  restoration and executable same-object JavaScript coverage, while range and
+  implemented. Two safety-contract correction waves require bounded
+  pre-mutation state, exact restoration call counts, and executable same-object
+  JavaScript coverage wired into CI and release gates, while range and
   screenshot commands remain unchanged.
 - Added a launch environment hardening plan for removing
   `ELECTRON_RUN_AS_NODE` from direct TradingView spawn and the macOS system
