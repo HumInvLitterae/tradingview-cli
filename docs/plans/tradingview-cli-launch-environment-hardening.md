@@ -57,8 +57,10 @@ monitor behavior, or implement Windows package-identity launch.
   macOS system-launcher behavior, no-kill default, and explicit-path behavior.
 - [x] (2026-07-15) Updated help, stable docs, and packaged guidance without expanding runtime
   skills or unrelated workflows.
-- [x] (2026-07-15) Ran focused launch tests, CLI contract tests, the full Rust baseline,
-  public-hygiene checks, packaging checks, and guide parity.
+- [x] (2026-07-15) Ran focused launch tests, CLI contract tests, the full Rust
+  baseline, public-hygiene checks, packaging checks, and guide parity.
+- [x] (2026-07-15) Corrected stale work-inventory state and replaced an empty
+  focused CLI filter with the exact existing help contract test.
 - [ ] Obtain focused independent review, apply any required corrections, and
   archive this plan only after the implementation and review are green.
 
@@ -374,7 +376,7 @@ Implement and format the focused change, then run:
     cargo fmt --check
     cargo test -p tradingview-cli ops::launch -- --nocapture
     cargo test -p tradingview-cli --test cli_contract_desktop launch -- --nocapture
-    cargo test -p tradingview-cli --test cli_contract launch -- --nocapture
+    cargo test -p tradingview-cli --test cli_contract help_lists_v1_commands -- --nocapture
 
 Run the complete baseline and repository checks:
 
@@ -575,3 +577,8 @@ fallback precedence and emits fixed public-safe failures for exited,
 unavailable, or impossible missing child observations. Focused tests, strict
 workspace validation, public hygiene, packaging syntax, and guide parity are
 green. Independent implementation review remains.
+
+2026-07-15: Revised after implementation review. Removed stale implementation
+status from the ordered work inventory and changed the focused general CLI
+contract command to execute `help_lists_v1_commands` instead of matching zero
+tests. Focused re-review remains before archive.
