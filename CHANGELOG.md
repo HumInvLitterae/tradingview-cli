@@ -54,6 +54,13 @@ package version omits the leading `v`.
 
 ### Documentation
 
+- Added a feasibility-gated native three-point drawing plan. The proposed
+  surface adds an explicit third point to `tv draw shape`, verifies a native
+  `parallel_channel` through exactly-one entity and three-point readback, and
+  uses identity-scoped probe cleanup. Width-derived geometry, unverified
+  polling success, broad cleanup, and live mutation without separate owner
+  approval are excluded.
+
 - Added a feasibility-gated selected-chart right-offset plan. It requires
   current-build getter/setter evidence and a separately approved reversible
   set/read/restore probe before a bounded `tv right-offset` command can be

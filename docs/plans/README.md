@@ -6,13 +6,14 @@ for release and next-phase planning.
 
 ## Current and future plans
 
-There is no active ExecPlan. The selected-chart right-offset plan completed
-through its independently reviewed integer-before no-go path and now lives
-under `docs/plans/archives/`. The next ordered candidate is native three-point
-drawing support; it has not yet been promoted into an ExecPlan. A finite-`f64`
-right-offset restoration design remains an untested future candidate and must
-not start without a separate ExecPlan, review, and owner-approved mutation
-probe.
+The active ExecPlan is
+`docs/plans/tradingview-cli-native-three-point-drawings.md`. It plans explicit
+third-point support on the existing `tv draw shape` surface and gates stable
+implementation on a reviewed, separately owner-approved native
+`parallel_channel` create/read/remove probe. Width-derived geometry is deferred.
+No probe or drawing mutation has been authorized or performed. The archived
+right-offset plan remains a limited integer-before no-go; its untested
+finite-`f64` candidate is not being promoted implicitly.
 
 The ordered `v0.28.0` implementation inventory is maintained in
 `docs/v0.28-work-items.md`. Pine and indicator mutation safety, current-build
