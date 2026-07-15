@@ -15,6 +15,12 @@ package version omits the leading `v`.
   public name, verifies requested scalar inputs through the same chart-local
   entity ID, and sanitizes failure diagnostics. It does not try alternate
   signatures, dialog clicks, or the legacy path as fallback.
+- Hardened the pending `tv indicator add` implementation after independent
+  review by preserving special JSON input keys, validating typed result/count
+  relationships and JavaScript-safe numeric values, rejecting all known
+  failure-only success markers, reusing the first post-await snapshot for
+  cleanup identity, and expanding executable exactly-once failure coverage.
+  Focused re-review found no remaining issue.
 - Made `tv pine open` fail closed unless TradingView's saved-script manager
   rebinds the requested script and active identity/version readback verifies
   the binding, removing source-only Monaco replacement as a success fallback.

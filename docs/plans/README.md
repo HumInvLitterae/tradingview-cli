@@ -18,9 +18,9 @@ Recently completed:
 
 - `tradingview-cli-current-build-indicator-insertion.md`: replaced the legacy
   indicator add path with exact metainfo resolution, awaited chart-owned
-  insertion, immediate inventory-name and same-ID input verification,
-  public-safe failures, pinned JavaScript coverage, and a green final CLI
-  add/remove smoke. The completed plan now lives under
+  insertion, strict input and typed-result validation, first-snapshot cleanup,
+  public-safe failures, and pinned executable coverage. Two correction waves
+  and focused re-review are green; the completed plan now lives under
   `docs/plans/archives/`.
 
 - `tradingview-cli-active-pine-editor-compatibility.md`: established semantic

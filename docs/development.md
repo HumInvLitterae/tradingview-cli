@@ -541,8 +541,9 @@ git diff --check
 ```
 
 The regular Cargo baseline remains Rust-only. Changes to the production
-study-value JavaScript identity helper or saved-script binding helper also
-require separate executable contract gates:
+study-value JavaScript identity helper, saved-script binding helper, or
+indicator-insertion expression also require separate executable contract
+gates:
 
 ```bash
 mise run check:study-values-js
