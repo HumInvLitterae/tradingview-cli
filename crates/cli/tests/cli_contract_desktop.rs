@@ -1974,6 +1974,13 @@ fn indicator_set_rejects_invalid_inputs_before_connecting() {
         vec!["indicator", "set", "study-id", "--inputs", "{}"],
         vec!["indicator", "set", "study-id", "--inputs", "{"],
         vec!["indicator", "add", "Volume", "--inputs", "[]"],
+        vec![
+            "indicator",
+            "add",
+            "Volume",
+            "--inputs",
+            r#"{"length":9007199254740993}"#,
+        ],
     ] {
         let assert = tv()
             .env("TV_CDP_PORT", "9")

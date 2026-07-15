@@ -87,6 +87,30 @@ unchanged rather than introducing a DOM-click fallback.
 - [x] (2026-07-15) Synchronized public docs and completed this plan. The owner
   directed implementation to proceed from direct current-build evidence rather
   than add another planning-only review gate.
+- [x] (2026-07-15) Obtained independent implementation review. It found
+  special input-key loss, cleanup reclassification from a later snapshot,
+  insufficient Rust result typing, and incomplete executable failure coverage.
+- [x] (2026-07-15) Implemented the review corrections: parse serialized inputs,
+  use exact definition membership, validate result types/count relationships,
+  reuse the first post-await delta for settled cleanup, and expand fixture
+  counters and failure cases.
+- [x] (2026-07-15) Re-ran the full Rust baseline, all three pinned JavaScript
+  gates, metadata, public hygiene, package syntax, guide parity, and diff
+  checks; all passed after the corrections.
+- [x] (2026-07-15) Focused re-review confirmed the prior input-key, cleanup,
+  sanitization, and project-state corrections, then found three deterministic
+  residual gaps: unsafe integer rounding, remaining failure-only success
+  markers, and incomplete failure-path exactly-once assertions.
+- [x] (2026-07-15) Rejected numeric values that cannot cross into JavaScript
+  losslessly, rejected every known failure-only success marker, and asserted
+  factory/configurator/insert counts across the complete fixture matrix.
+- [x] (2026-07-15) Re-ran focused Rust and pinned JavaScript contracts, the
+  full workspace baseline, pre-connect CLI validation, metadata, public
+  hygiene, package syntax, guide parity, and diff checks; all passed.
+- [x] (2026-07-15) Obtained focused independent re-review of the corrected
+  implementation; no findings remain.
+- [x] (2026-07-15) Archived this plan again and unblocked launch environment
+  hardening.
 
 ## Surprises & Discoveries
 
@@ -260,9 +284,11 @@ that the required metadata method is absent from current inventory and lookup
 wrappers, while an exact inventory name can be joined by the same chart-local
 ID to input readback. At owner direction, the revised probe proceeded without
 another planning-only review and passed. The production add path and executable
-JavaScript contract are implemented. Full validation and the final CLI
-add/remove smoke are green, and the selected chart was restored. This plan is
-complete; launch environment hardening is the next planned slice.
+JavaScript contract are implemented, and the earlier CLI add/remove smoke
+restored the selected chart. Independent review then found three
+safety-boundary defects and incomplete fixtures. Those corrections are
+implemented, and focused re-review found no remaining issue. This plan is
+complete and archived; launch environment hardening is the next planned slice.
 
 ## Context and Orientation
 
