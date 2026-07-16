@@ -66,8 +66,8 @@ must be included in the candidate, architecture, docs, and test inspection.
   continuity ledger.
 - [x] (2026-07-16) Applied the Pine diagnostics and candidate/ledger
   corrections and reran focused and full validation.
-- [ ] Obtain independent review before archiving this plan or starting release
-  readiness.
+- [x] (2026-07-16) Completed focused independent review and the final narrow
+  ledger consistency check. No unresolved finding remains.
 
 ## Milestones
 
@@ -187,8 +187,10 @@ evidence after a dependency commit. Those corrections are applied. Focused
   Pine validation and the complete baseline are green; the four JavaScript
   gates were already green on the dependency-bearing `HEAD`.
 
-The candidate remains frozen and release readiness remains blocked only on
-focused independent review of this audit. Windows MSIX launch, finite-`f64`
+The candidate remains frozen. Focused independent review found no
+release-blocking architecture issue. Its Pine diagnostic and state-evidence
+corrections are complete, the final ledger consistency check is green, and
+release-readiness planning may begin. Windows MSIX launch, finite-`f64`
 right-offset restoration, width-derived drawing geometry, other three-point
 shapes, and the preserved indicator-search prototype remain deferred.
 
@@ -401,11 +403,10 @@ production dependency, or live mutation requires a separate plan and approval.
 ## Open Questions
 
 No critical planning question is open. Local inspection and independent review
-found no inspected module that needs a release-blocking refactor. Focused
-independent re-review of the corrections is the remaining audit gate. Windows
-MSIX behavior and finite-`f64` right-offset restoration remain `UNCONFIRMED`
-and are not release prerequisites unless existing shipped behavior is found to
-depend on them.
+found no inspected module that needs a release-blocking refactor. Audit
+corrections and the final ledger check are complete. Windows MSIX behavior and
+finite-`f64` right-offset restoration remain `UNCONFIRMED` and are not release
+prerequisites unless existing shipped behavior is found to depend on them.
 
 Revision note (2026-07-16): created this audit after reviewed native three-
 point drawing support completed the promoted feature scope. It freezes features,
@@ -420,3 +421,7 @@ Revision note (2026-07-16): independent review found Pine source-operation
 diagnostic leakage and stale candidate/ledger evidence after dependency commit
 `b28603a`. The local sanitizer and evidence corrections are applied; focused
 re-review is pending.
+
+Revision note (2026-07-16): the final focused review found only one stale
+continuity paragraph. After synchronizing that paragraph and rechecking all
+current-state sources, the audit closed with no unresolved finding.

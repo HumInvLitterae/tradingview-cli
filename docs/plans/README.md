@@ -7,14 +7,11 @@ for release and next-phase planning.
 ## Current and future plans
 
 The current ExecPlan is
-`docs/plans/tradingview-cli-v0.28-pre-release-audit.md`. Bounded Desktop-free
-scanner pagination was the final owner-approved v0.28 feature exception; its
-implementation, full validation, correction waves, and focused independent
-re-review are green, and its completed plan now lives under
-`docs/plans/archives/`. Independent audit review found no release-blocking
-architecture issue, but identified a Pine source-diagnostics leak and stale
-candidate evidence after a dependency update. Corrections are applied and
-focused re-review is pending.
+`docs/plans/tradingview-cli-v0.28.0-release-readiness.md`. Bounded Desktop-free
+scanner pagination was the final owner-approved v0.28 feature exception. The
+completion and architecture audit then closed with no release-blocking
+architecture issue after Pine diagnostic and state-evidence corrections. Both
+completed plans now live under `docs/plans/archives/`.
 
 Width-derived drawing geometry, the archived right-offset plan's finite-`f64`
 candidate, and Windows MSIX launch feasibility remain deferred rather than
@@ -27,6 +24,11 @@ separate ExecPlans only when the preceding required item is complete and green.
 
 Recently completed:
 
+- `tradingview-cli-v0.28-pre-release-audit.md`: audited the five promoted
+  v0.28 areas, classified the dependency-bearing candidate, closed Pine source
+  diagnostic leakage, and found no release-blocking architecture issue or
+  required pre-release refactor. The completed plan now lives under
+  `docs/plans/archives/`.
 - `tradingview-cli-scanner-bounded-pagination.md`: added explicit offset reads
   and bounded aggregate scanner pagination with exact raw-page completeness,
   shared-client ownership, drift metadata, source-compatible result types, and
