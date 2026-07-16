@@ -86,6 +86,9 @@ Safety boundary:
 - user input must be serialized into JavaScript, not hand-escaped
 - mutation commands must verify the observable after-state before returning
   success
+- three-point `draw shape` is limited to native `parallel_channel`; point 3 is
+  a width point at point 1's time, and success requires exactly-one identity
+  plus three-point readback verification
 - `indicator add` resolves a case-sensitive exact public description from the
   selected chart's metainfo repository, uses the chart model's study inserter,
   and accepts success only when the first post-await inventory contains one new

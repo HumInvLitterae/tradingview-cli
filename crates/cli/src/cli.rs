@@ -695,6 +695,13 @@ pub enum DrawingCommand {
         price2: Option<f64>,
         #[arg(long)]
         time2: Option<f64>,
+        #[arg(
+            long,
+            help = "Parallel-channel width-point price (requires --time3 equal to --time)"
+        )]
+        price3: Option<f64>,
+        #[arg(long, help = "Parallel-channel width-point time; must equal --time")]
+        time3: Option<f64>,
         #[arg(long)]
         text: Option<String>,
         #[arg(long)]

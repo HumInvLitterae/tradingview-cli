@@ -6,22 +6,12 @@ for release and next-phase planning.
 
 ## Current and future plans
 
-The active ExecPlan is
-`docs/plans/tradingview-cli-native-three-point-drawings.md`. It plans explicit
-third-point support on the existing `tv draw shape` surface and gates stable
-implementation on a reviewed, separately owner-approved native
-`parallel_channel` create/read/remove probe. Width-derived geometry is deferred.
-Plan re-review is green. The ignored probe, deterministic production-expression
-contract, and CI/release gate are implemented, and focused implementation
-review is green. The separately owner-approved probe ran once and returned a
-`point_mismatch` after observing one candidate and three points. Follow-up work
-on the disposable target showed native width-point canonicalization,
-machine-precision price noise, and delayed cleanup visibility. The probe
-contract was corrected and the final bounded run verified one native entity,
-three canonical points, and inventory-confirmed cleanup. Focused evidence
-review is pending before stable point3 implementation. The
-archived right-offset plan remains a limited integer-before no-go; its untested
-finite-`f64` candidate is not being promoted implicitly.
+No implementation ExecPlan is active. Native three-point `parallel_channel`
+support is complete and archived after reviewed probe evidence, stable
+implementation, full validation, and focused re-review. The next planned slice
+is the `v0.28.0` completion and architecture audit. Width-derived drawing
+geometry and the archived right-offset plan's finite-`f64` candidate remain
+deferred rather than being promoted implicitly.
 
 The ordered `v0.28.0` implementation inventory is maintained in
 `docs/v0.28-work-items.md`. Pine and indicator mutation safety, current-build
@@ -29,6 +19,11 @@ Desktop compatibility, and bounded chart workflow candidates are promoted into
 separate ExecPlans only when the preceding required item is complete and green.
 
 Recently completed:
+
+- `tradingview-cli-native-three-point-drawings.md`: added paired third-point
+  options to `tv draw shape` for verified native `parallel_channel` creation,
+  preserving the one/two-point path and returning one exact chart-local entity
+  ID. The completed plan now lives under `docs/plans/archives/`.
 
 - `tradingview-cli-selected-chart-right-offset.md`: confirmed the current-build
   getter/setter ownership with a read-only probe, found a finite fractional
