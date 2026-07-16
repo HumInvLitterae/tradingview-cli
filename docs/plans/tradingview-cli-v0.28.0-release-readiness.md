@@ -34,24 +34,25 @@ owner-controlled.
 - [x] (2026-07-16) Created this release-readiness ExecPlan and made it the
   current plan in the plan index, roadmap, work inventory, changelog, and local
   continuity ledger.
-- [ ] Ground the release candidate from the current worktree, recent commits,
+- [x] (2026-07-16) Grounded the release candidate from the current worktree, recent commits,
   manifests, lockfile, workflows, package allowlist, and relevant CI evidence.
-- [ ] Bump `[workspace.package].version` from `0.27.0` to `0.28.0` and
+- [x] (2026-07-16) Bumped `[workspace.package].version` from `0.27.0` to `0.28.0` and
   synchronize only workspace package versions in `Cargo.lock`.
-- [ ] Cut `CHANGELOG.md` `Unreleased` content into a dated `v0.28.0` section,
+- [x] (2026-07-16) Cut `CHANGELOG.md` `Unreleased` content into a dated `v0.28.0` section,
   leaving a fresh empty `Unreleased` section.
-- [ ] Add curated GitHub Release notes at `docs/releases/v0.28.0.md` without a
+- [x] (2026-07-16) Added curated GitHub Release notes at `docs/releases/v0.28.0.md` without a
   redundant top-level version heading.
-- [ ] Update versioned README release-asset examples and verify packaged
+- [x] (2026-07-16) Updated versioned README release-asset examples and verified packaged
   guidance against reviewed v0.28 behavior.
-- [ ] Build with `--release --locked`, stage the explicit release package, and
+- [x] (2026-07-16) Built with `--release --locked`, staged the explicit release package, and
   inspect its file and runtime-skill allowlists.
-- [ ] Run all four pinned JavaScript gates, the complete Rust baseline, locked
+- [x] (2026-07-16) Ran all four pinned JavaScript gates, the complete Rust baseline, locked
   release build, metadata, hygiene, packaging, workflow, parity, and diff
   checks.
-- [ ] Record final local evidence and stop before tag, push, workflow, or
+- [x] (2026-07-16) Recorded final local evidence and stopped before tag, push, workflow, or
   GitHub Release mutation.
-- [ ] Obtain independent review before committing release preparation.
+- [x] (2026-07-16) Completed independent review with no findings or release
+  blocker. Release preparation is ready to commit.
 
 ## Milestones
 
@@ -79,7 +80,21 @@ outside this plan.
 
 ## Surprises & Discoveries
 
-- None yet.
+- Observation: the version bump changed only the seven workspace package
+  entries in `Cargo.lock`.
+  Evidence: `git diff b28603a -- Cargo.toml Cargo.lock` contains the root
+  workspace version and seven `0.27.0` to `0.28.0` package changes; no
+  third-party package version changed.
+
+- Observation: the explicit release package remains compact despite carrying
+  two skill roots.
+  Evidence: staging produced 46 files, including eight runtime skills under
+  `.agents/skills` and the same eight under `.claude/skills`. Development-only
+  skills and `docs/plans` were absent.
+
+- Observation: the Desktop CLI contract suite remains the longest local gate.
+  Evidence: all 99 tests passed, with connection-unavailable coverage consuming
+  most of the baseline elapsed time. This is not a release blocker.
 
 ## Decision Log
 
@@ -109,10 +124,24 @@ outside this plan.
 
 ## Outcomes & Retrospective
 
-Release preparation has not started. The completion audit is archived and the
-candidate is frozen. The required outcome is a locally proven `v0.28.0`
-release package plus independently reviewed versioned artifacts, with no remote
-mutation.
+Local release preparation is complete. All seven workspace packages and both
+the source and staged binaries report `0.28.0`. The changelog, curated release
+notes, README asset example, and explicit package agree with the reviewed
+candidate. No new dependency, feature flag, command, source, fallback, or
+payload semantic was introduced during release preparation.
+
+All four pinned JavaScript gates passed. Formatting, strict Clippy, the complete
+workspace suite, Cargo metadata, locked release build, public-hygiene self-test
+and 596-file tracked scan, release-note-specific hygiene, workflow YAML parsing,
+package-script syntax, contributor-guide parity, stale-version scan, and diff
+checks are green. CLI unit tests reported 442 passed and 3 ignored; Desktop CLI
+contracts reported 99 passed; scanner reported 36 passed.
+
+The staged package contains 46 files and eight runtime skills under each skill
+root. It excludes development-only skills, plans, and local ledgers. No tag,
+push, workflow mutation, or GitHub Release publication occurred. Independent
+review reported no findings. Local release readiness is complete and ready to
+commit.
 
 ## Context and Orientation
 
@@ -311,6 +340,18 @@ Prepare a self-contained read-only reviewer prompt after implementation. Do not
 retain a one-off prompt in the tracked tree unless it has reusable project
 value.
 
+Local evidence:
+
+- Workspace packages: seven at `0.28.0`.
+- Binary readback: source and staged binaries both `tv 0.28.0`.
+- Staged package: 46 files, eight `.agents` skills, eight `.claude` skills.
+- JavaScript contracts: four passed with pinned Node.js `24.18.0`.
+- Rust baseline: CLI 442 passed and 3 ignored; Desktop contracts 99 passed;
+  scanner 36 passed; all workspace and doc tests green.
+- Public hygiene: 596 tracked files plus the untracked release note checked
+  directly.
+- No live TradingView operation or remote mutation was performed.
+
 ## Interfaces and Dependencies
 
 This plan changes workspace package version metadata and release documentation
@@ -332,3 +373,8 @@ scanner pagination contracts, and package allowlists remain unchanged.
 Revision note (2026-07-16): created after the v0.28 completion and architecture
 audit closed with no release-blocking architecture issue. The plan freezes the
 reviewed dependency-bearing candidate and stops before every remote mutation.
+
+Revision note (2026-07-16): independent release-readiness review reported no
+findings. Versioned artifacts, locked build, staged package, four JavaScript
+gates, and the full baseline are green; tag, push, workflow, and GitHub Release
+actions remain owner-controlled.

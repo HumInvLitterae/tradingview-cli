@@ -1872,7 +1872,7 @@ dependencies = [
 
 [[package]]
 name = "tradingview-cdp"
-version = "0.27.0"
+version = "0.28.0"
 dependencies = [
  "base64",
  "futures-util",
@@ -1886,7 +1886,7 @@ dependencies = [
 
 [[package]]
 name = "tradingview-cli"
-version = "0.27.0"
+version = "0.28.0"
 dependencies = [
  "assert_cmd",
  "clap",
@@ -1911,7 +1911,7 @@ dependencies = [
 
 [[package]]
 name = "tradingview-core"
-version = "0.27.0"
+version = "0.28.0"
 dependencies = [
  "serde",
  "serde_json",
@@ -1920,7 +1920,7 @@ dependencies = [
 
 [[package]]
 name = "tradingview-market"
-version = "0.27.0"
+version = "0.28.0"
 dependencies = [
  "futures-util",
  "reqwest",
@@ -1933,7 +1933,7 @@ dependencies = [
 
 [[package]]
 name = "tradingview-model"
-version = "0.27.0"
+version = "0.28.0"
 dependencies = [
  "serde_json",
  "tradingview-core",
@@ -1941,7 +1941,7 @@ dependencies = [
 
 [[package]]
 name = "tradingview-pine"
-version = "0.27.0"
+version = "0.28.0"
 dependencies = [
  "reqwest",
  "serde",
@@ -1952,7 +1952,7 @@ dependencies = [
 
 [[package]]
 name = "tradingview-scanner"
-version = "0.27.0"
+version = "0.28.0"
 dependencies = [
  "reqwest",
  "serde",
