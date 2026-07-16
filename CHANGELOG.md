@@ -7,6 +7,8 @@ package version omits the leading `v`.
 
 ## Unreleased
 
+## v0.28.0 - 2026-07-16
+
 ### Changed
 
 - Added bounded Desktop-free scanner pagination. `tv scanner scan` now accepts
@@ -69,6 +71,8 @@ package version omits the leading `v`.
   paired `--price3` / `--time3` options. Point 3 is the native width point at
   point 1's time; success requires exactly one new chart-local entity, exact
   native identity, and a three-point readback before returning its ID.
+- Updated compatible Rust dependencies, including `clap` from `4.6.1` to
+  `4.6.2`, without adding a new dependency or feature flag.
 
 ### Documentation
 
