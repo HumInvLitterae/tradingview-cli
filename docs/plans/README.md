@@ -6,12 +6,16 @@ for release and next-phase planning.
 
 ## Current and future plans
 
-No implementation ExecPlan is active. Native three-point `parallel_channel`
-support is complete and archived after reviewed probe evidence, stable
-implementation, full validation, and focused re-review. The next planned slice
-is the `v0.28.0` completion and architecture audit. Width-derived drawing
-geometry and the archived right-offset plan's finite-`f64` candidate remain
-deferred rather than being promoted implicitly.
+The current ExecPlan is
+`docs/plans/tradingview-cli-v0.28-pre-release-audit.md`. Bounded Desktop-free
+scanner pagination was the final owner-approved v0.28 feature exception; its
+implementation, full validation, correction waves, and focused independent
+re-review are green, and its completed plan now lives under
+`docs/plans/archives/`.
+
+Width-derived drawing geometry, the archived right-offset plan's finite-`f64`
+candidate, and Windows MSIX launch feasibility remain deferred rather than
+being promoted implicitly.
 
 The ordered `v0.28.0` implementation inventory is maintained in
 `docs/v0.28-work-items.md`. Pine and indicator mutation safety, current-build
@@ -20,6 +24,11 @@ separate ExecPlans only when the preceding required item is complete and green.
 
 Recently completed:
 
+- `tradingview-cli-scanner-bounded-pagination.md`: added explicit offset reads
+  and bounded aggregate scanner pagination with exact raw-page completeness,
+  shared-client ownership, drift metadata, source-compatible result types, and
+  no partial successful aggregate. The completed plan now lives under
+  `docs/plans/archives/`.
 - `tradingview-cli-native-three-point-drawings.md`: added paired third-point
   options to `tv draw shape` for verified native `parallel_channel` creation,
   preserving the one/two-point path and returning one exact chart-local entity
