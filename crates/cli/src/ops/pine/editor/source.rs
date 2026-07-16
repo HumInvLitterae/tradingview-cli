@@ -7,16 +7,19 @@ use super::runtime::{ensure_pine_editor_open, with_monaco};
 
 pub async fn pine_get(runtime: &mut impl RuntimeEvaluator) -> Result<Value, AppError> {
     let open_state = ensure_pine_editor_open(runtime).await?;
-    let value = runtime
-        .evaluate(&with_monaco(PINE_GET_SOURCE_EXPRESSION), false)
-        .await?;
-    let source = value.as_str().ok_or_else(|| {
-        AppError::new(
-            ErrorKind::InternalApiUnavailable,
-            "Monaco editor found but source was not a string",
-        )
-        .with_details(value.clone())
-    })?;
+    let value = evaluate_pine_source(
+        runtime,
+        &with_monaco(PINE_GET_SOURCE_EXPRESSION),
+        "get",
+        "source_readback",
+    )
+    .await?;
+    let source = pine_source_string(
+        &value,
+        "get",
+        "source_readback",
+        "Monaco editor found but source was not a string",
+    )?;
 
     Ok(json!({
         "source": source,
@@ -33,16 +36,19 @@ pub async fn pine_set(
     input_source: &str,
 ) -> Result<Value, AppError> {
     let open_state = ensure_pine_editor_open(runtime).await?;
-    let value = runtime
-        .evaluate(&pine_set_source_expression(source), false)
-        .await?;
-    let observed_source = value.as_str().ok_or_else(|| {
-        AppError::new(
-            ErrorKind::InternalApiUnavailable,
-            "Monaco editor found but set source verification was not a string",
-        )
-        .with_details(value.clone())
-    })?;
+    let value = evaluate_pine_source(
+        runtime,
+        &pine_set_source_expression(source),
+        "set",
+        "source_verification",
+    )
+    .await?;
+    let observed_source = pine_source_string(
+        &value,
+        "set",
+        "source_verification",
+        "Monaco editor found but set source verification was not a string",
+    )?;
 
     if !pine_sources_match(source, observed_source) {
         return Err(AppError::new(
@@ -84,16 +90,19 @@ pub async fn pine_new(
     let script_type = validate_pine_script_type(script_type)?;
     let template = pine_template(script_type);
     let open_state = ensure_pine_editor_open(runtime).await?;
-    let value = runtime
-        .evaluate(&pine_set_source_expression(template), false)
-        .await?;
-    let observed_source = value.as_str().ok_or_else(|| {
-        AppError::new(
-            ErrorKind::InternalApiUnavailable,
-            "Monaco editor found but new script verification was not a string",
-        )
-        .with_details(value.clone())
-    })?;
+    let value = evaluate_pine_source(
+        runtime,
+        &pine_set_source_expression(template),
+        "new",
+        "source_verification",
+    )
+    .await?;
+    let observed_source = pine_source_string(
+        &value,
+        "new",
+        "source_verification",
+        "Monaco editor found but new script verification was not a string",
+    )?;
 
     if !pine_sources_match(template, observed_source) {
         return Err(AppError::new(
@@ -127,6 +136,46 @@ m.editor.setValue({source});
 return m.editor.getValue();
 "#
     ))
+}
+
+async fn evaluate_pine_source(
+    runtime: &mut impl RuntimeEvaluator,
+    expression: &str,
+    operation: &'static str,
+    stage: &'static str,
+) -> Result<Value, AppError> {
+    runtime.evaluate(expression, false).await.map_err(|error| {
+        AppError::new(error.kind, "Pine source evaluation failed").with_details(json!({
+            "operation": operation,
+            "stage": stage,
+        }))
+    })
+}
+
+fn pine_source_string<'a>(
+    value: &'a Value,
+    operation: &'static str,
+    stage: &'static str,
+    message: &'static str,
+) -> Result<&'a str, AppError> {
+    value.as_str().ok_or_else(|| {
+        AppError::new(ErrorKind::InternalApiUnavailable, message).with_details(json!({
+            "operation": operation,
+            "stage": stage,
+            "response_type": pine_source_response_type(value),
+        }))
+    })
+}
+
+fn pine_source_response_type(value: &Value) -> &'static str {
+    match value {
+        Value::Null => "null",
+        Value::Bool(_) => "boolean",
+        Value::Number(_) => "number",
+        Value::String(_) => "string",
+        Value::Array(_) => "array",
+        Value::Object(_) => "object",
+    }
 }
 
 fn pine_sources_match(expected: &str, observed: &str) -> bool {
@@ -250,6 +299,90 @@ mod tests {
 
         assert_eq!(error.kind, ErrorKind::InternalApiUnavailable);
         assert_eq!(error.message, "Pine source set verification failed");
+    }
+
+    #[tokio::test]
+    async fn pine_source_operations_sanitize_runtime_evaluation_failures() {
+        const PRIVATE_MARKER: &str = "private-runtime-marker";
+
+        for (operation, mut runtime) in [
+            (
+                "get",
+                FakeRuntime::new([json!(true)]).with_evaluate_app_error_after_responses(
+                    AppError::new(ErrorKind::Timeout, PRIVATE_MARKER).with_details(json!({
+                        "source": PRIVATE_MARKER,
+                        "scriptId": PRIVATE_MARKER,
+                    })),
+                ),
+            ),
+            (
+                "set",
+                FakeRuntime::new([json!(true)]).with_evaluate_app_error_after_responses(
+                    AppError::new(ErrorKind::Timeout, PRIVATE_MARKER).with_details(json!({
+                        "source": PRIVATE_MARKER,
+                        "scriptId": PRIVATE_MARKER,
+                    })),
+                ),
+            ),
+            (
+                "new",
+                FakeRuntime::new([json!(true)]).with_evaluate_app_error_after_responses(
+                    AppError::new(ErrorKind::Timeout, PRIVATE_MARKER).with_details(json!({
+                        "source": PRIVATE_MARKER,
+                        "scriptId": PRIVATE_MARKER,
+                    })),
+                ),
+            ),
+        ] {
+            let error = match operation {
+                "get" => pine_get(&mut runtime).await.unwrap_err(),
+                "set" => pine_set(&mut runtime, "plot(close)", "stdin")
+                    .await
+                    .unwrap_err(),
+                "new" => pine_new(&mut runtime, "indicator").await.unwrap_err(),
+                _ => unreachable!(),
+            };
+
+            assert_eq!(error.kind, ErrorKind::Timeout);
+            assert_eq!(error.message, "Pine source evaluation failed");
+            assert_eq!(error.details.as_ref().unwrap()["operation"], operation);
+            let serialized = serde_json::to_string(&error.details).unwrap();
+            assert!(!serialized.contains(PRIVATE_MARKER));
+            assert!(!serialized.contains("scriptId"));
+        }
+    }
+
+    #[tokio::test]
+    async fn pine_source_operations_sanitize_malformed_runtime_values() {
+        const PRIVATE_MARKER: &str = "private-payload-marker";
+        let malformed = json!({
+            "source": PRIVATE_MARKER,
+            "scriptId": PRIVATE_MARKER,
+            "raw": PRIVATE_MARKER,
+        });
+
+        for (operation, mut runtime) in [
+            ("get", FakeRuntime::new([json!(true), malformed.clone()])),
+            ("set", FakeRuntime::new([json!(true), malformed.clone()])),
+            ("new", FakeRuntime::new([json!(true), malformed.clone()])),
+        ] {
+            let error = match operation {
+                "get" => pine_get(&mut runtime).await.unwrap_err(),
+                "set" => pine_set(&mut runtime, "plot(close)", "stdin")
+                    .await
+                    .unwrap_err(),
+                "new" => pine_new(&mut runtime, "indicator").await.unwrap_err(),
+                _ => unreachable!(),
+            };
+
+            assert_eq!(error.kind, ErrorKind::InternalApiUnavailable);
+            assert_eq!(error.details.as_ref().unwrap()["operation"], operation);
+            assert_eq!(error.details.as_ref().unwrap()["response_type"], "object");
+            let serialized = serde_json::to_string(&error.details).unwrap();
+            assert!(!serialized.contains(PRIVATE_MARKER));
+            assert!(!serialized.contains("scriptId"));
+            assert!(!serialized.contains("raw"));
+        }
     }
 
     #[test]

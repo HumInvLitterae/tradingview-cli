@@ -39,27 +39,33 @@ must be included in the candidate, architecture, docs, and test inspection.
   the plan index, roadmap, work inventory, changelog, and continuity ledger.
 - [x] (2026-07-16) Completed, validated, independently reviewed, and archived
   the bounded scanner pagination exception.
-- [ ] Classify the exact `v0.27.0..HEAD` candidate diff by production,
+- [x] (2026-07-16) Classified the exact `v0.27.0..HEAD` candidate diff by production,
   dependency, workflow, test, documentation, and skill ownership.
-- [ ] Audit Pine saved-script selection, editor ownership, source and save
+- [x] (2026-07-16) Audited Pine saved-script selection, editor ownership, source and save
   verification, platform shortcuts, and public-safe diagnostics.
-- [ ] Audit indicator insertion resolution, exactly-once mutation, input
+- [x] (2026-07-16) Audited indicator insertion resolution, exactly-once mutation, input
   preservation, immediate readback, result typing, and cleanup.
-- [ ] Audit launch environment removal, macOS fallback precedence, child-state
+- [x] (2026-07-16) Audited launch environment removal, macOS fallback precedence, child-state
   classification, help, and failure shaping.
-- [ ] Audit native three-point validation, exactly-one creation, sticky
+- [x] (2026-07-16) Audited native three-point validation, exactly-one creation, sticky
   ambiguity, native point readback, and preserved one/two-point behavior.
-- [ ] Audit scanner offset and aggregate pagination, request/page caps, total
+- [x] (2026-07-16) Audited scanner offset and aggregate pagination, request/page caps, total
   and drift semantics, shared-client ownership, and no-partial-success.
-- [ ] Audit all pinned executable JavaScript gates and prove ordinary Cargo
+- [x] (2026-07-16) Audited all pinned executable JavaScript gates and confirmed ordinary Cargo
   tests remain Node.js-independent.
-- [ ] Inspect module size, production/test boundaries, helper ownership, and
+- [x] (2026-07-16) Inspected module size, production/test boundaries, helper ownership, and
   generated-JavaScript responsibilities.
-- [ ] Audit help, public docs, packaged guidance, runtime skills, tests, source
+- [x] (2026-07-16) Audited help, public docs, packaged guidance, runtime skills, tests, source
   taxonomy, mutation metadata, deferred boundaries, and public hygiene.
-- [ ] Run focused tests, every JavaScript gate, the full Rust baseline,
+- [x] (2026-07-16) Ran focused tests, every JavaScript gate, the full Rust baseline,
   packaging, workflow, guide-parity, and diff checks.
-- [ ] Record the architecture verdict and prepare a read-only reviewer prompt.
+- [x] (2026-07-16) Recorded the architecture verdict and prepared a read-only reviewer prompt.
+- [x] (2026-07-16) Received independent review with no architecture blocker
+  and three correction findings: sanitize Pine source-operation diagnostics,
+  classify the dependency-bearing current candidate, and synchronize the
+  continuity ledger.
+- [x] (2026-07-16) Applied the Pine diagnostics and candidate/ledger
+  corrections and reran focused and full validation.
 - [ ] Obtain independent review before archiving this plan or starting release
   readiness.
 
@@ -107,6 +113,29 @@ planning begin.
   tooling and CI/release workflows, while their Rust fixtures are ignored in
   ordinary workspace tests.
 
+- Observation: the largest changed modules remain operation-cohesive once
+  deterministic fixtures are separated from production code.
+  Evidence: production/test boundaries begin near line 752 in Pine
+  `scripts.rs`, 558 in `indicator.rs`, 697 in `launch.rs`, 597 in drawing
+  `create.rs`, and 932 in scanner `scan.rs`. Each production section owns one
+  public operation family and its sanitizer/readback boundary; no cross-source
+  fallback or shared mutable background runtime was introduced.
+
+- Observation: a dependency-update commit landed after the audit plan began
+  and is part of the current frozen candidate.
+  Evidence: current `HEAD` is `b28603a`; `Cargo.toml` updates direct `clap`
+  from `4.6.1` to `4.6.2`, and `Cargo.lock` records compatible patch/minor
+  updates for `bitflags`, `bstr`, `clap`, `http-body`, `regex`, `simd_cesu8`,
+  `socket2`, `syn`, and related transitive packages. The complete baseline and
+  metadata are green with these versions.
+
+- Observation: Pine source operations retained an older raw Runtime error
+  boundary after adjacent open/save paths had been sanitized.
+  Evidence: independent review found direct evaluation-error propagation and
+  raw malformed-value details in `source.rs`. The correction preserves the
+  original `ErrorKind` and exposes only fixed operation, stage, and
+  response-type metadata for `get`, `set`, and `new`.
+
 ## Decision Log
 
 - Decision: freeze v0.28 feature work after native three-point drawing support.
@@ -141,14 +170,27 @@ planning begin.
   Rationale: each requires separate platform or mutation evidence and approval.
   Date/Author: 2026-07-16 / Codex
 
+- Decision: no dedicated architecture refactor is required before v0.28
+  release readiness.
+  Rationale: all five promoted areas retain clear operation or crate
+  ownership, focused and full tests are green, public contracts agree with
+  help and guidance, and no unsafe coupling, hidden fallback, dead production
+  path, or release-blocking module responsibility drift was found.
+  Date/Author: 2026-07-16 / Codex
+
 ## Outcomes & Retrospective
 
-The final promoted scanner slice is green and archived, so audit inspection may
-now begin. The required outcome is a documented
-release-blocker and architecture verdict backed by focused inspection, the
-full Rust baseline, every pinned JavaScript gate, public hygiene, packaging
-checks, and independent review. Small corrections belong here; larger behavior
-or ownership changes require a separate ExecPlan.
+Local audit inspection and validation found no release-blocking architecture
+issue or dedicated pre-release refactor. Independent review found one local
+public-safety defect in Pine source diagnostics plus stale candidate and ledger
+evidence after a dependency commit. Those corrections are applied. Focused
+  Pine validation and the complete baseline are green; the four JavaScript
+  gates were already green on the dependency-bearing `HEAD`.
+
+The candidate remains frozen and release readiness remains blocked only on
+focused independent review of this audit. Windows MSIX launch, finite-`f64`
+right-offset restoration, width-derived drawing geometry, other three-point
+shapes, and the preserved indicator-search prototype remain deferred.
 
 ## Context and Orientation
 
@@ -323,6 +365,26 @@ Record concise counts, contract markers, module boundaries, and pass/fail
 summaries. Never record raw JSON, Runtime payloads, source text, target IDs,
 account-local IDs, machine-specific paths, or private live values.
 
+Audit evidence:
+
+- Candidate range: `v0.27.0..b28603a` before the audit correction worktree.
+- Candidate size at `b28603a`: 58 changed paths, approximately 10,871
+  insertions and 367 deletions across 29 commits.
+- Dependency classification: direct `clap` update `4.6.1` to `4.6.2` plus
+  compatible lockfile updates; no new production dependency or feature flag.
+- Focused results: Pine 45 passed and 1 ignored; indicator 22 passed and 1
+  ignored; launch 21 passed; model drawing 7 passed; CLI drawing 26 passed;
+  scanner 20 passed.
+- JavaScript gates: study values, Pine open/save, indicator insertion, and
+  three-point drawing all passed with pinned Node.js `24.18.0`.
+- Full baseline after corrections: CLI unit tests reported 442 passed and 3
+  ignored; Desktop CLI
+  contracts reported 99 passed; scanner reported 36 passed; all other
+  workspace and doc tests passed.
+- Public hygiene inspected 595 tracked files. Metadata, package-script syntax,
+  workflow YAML parsing, contributor-guide parity, and diff checks passed.
+- No live TradingView operation or ignored mutation probe was executed.
+
 The reviewer prompt must identify the commit range and validation commands,
 request findings in severity order, and require an explicit release-readiness
 go/no-go. Do not retain a one-off reviewer prompt after review unless it has
@@ -338,12 +400,23 @@ production dependency, or live mutation requires a separate plan and approval.
 
 ## Open Questions
 
-No critical planning question is open. The audit must determine whether any
-inspected module needs a release-blocking refactor. Windows MSIX behavior and
-finite-`f64` right-offset restoration remain `UNCONFIRMED` and are not release
-prerequisites unless existing shipped behavior is found to depend on them.
+No critical planning question is open. Local inspection and independent review
+found no inspected module that needs a release-blocking refactor. Focused
+independent re-review of the corrections is the remaining audit gate. Windows
+MSIX behavior and finite-`f64` right-offset restoration remain `UNCONFIRMED`
+and are not release prerequisites unless existing shipped behavior is found to
+depend on them.
 
 Revision note (2026-07-16): created this audit after reviewed native three-
 point drawing support completed the promoted feature scope. It freezes features,
 makes every executable JavaScript gate explicit, and separates small audit
 corrections from dedicated refactors and deferred feasibility work.
+
+Revision note (2026-07-16): completed local architecture inspection and all
+deterministic validation. No release-blocking architecture issue was found;
+focused independent review is pending.
+
+Revision note (2026-07-16): independent review found Pine source-operation
+diagnostic leakage and stale candidate/ledger evidence after dependency commit
+`b28603a`. The local sanitizer and evidence corrections are applied; focused
+re-review is pending.

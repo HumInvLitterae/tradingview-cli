@@ -11,7 +11,10 @@ The current ExecPlan is
 scanner pagination was the final owner-approved v0.28 feature exception; its
 implementation, full validation, correction waves, and focused independent
 re-review are green, and its completed plan now lives under
-`docs/plans/archives/`.
+`docs/plans/archives/`. Independent audit review found no release-blocking
+architecture issue, but identified a Pine source-diagnostics leak and stale
+candidate evidence after a dependency update. Corrections are applied and
+focused re-review is pending.
 
 Width-derived drawing geometry, the archived right-offset plan's finite-`f64`
 candidate, and Windows MSIX launch feasibility remain deferred rather than

@@ -57,6 +57,9 @@ package version omits the leading `v`.
   state are both observed explicitly. Malformed save outcomes and page errors
   now cross a fixed public-safe diagnostic whitelist instead of forwarding the
   runtime payload.
+- Sanitized `tv pine get`, `tv pine set`, and `tv pine new` Runtime evaluation
+  and malformed-response failures so public diagnostics preserve the error
+  kind while exposing only fixed operation, stage, and response-type metadata.
 - Removed inherited `ELECTRON_RUN_AS_NODE` from both direct TradingView spawn
   and the normal macOS system launcher. When CDP remains unavailable, `tv
   launch` now distinguishes a still-running direct child from confirmed exit
@@ -73,10 +76,11 @@ package version omits the leading `v`.
   slice before the completion audit, with a 100-row request cap and explicit
   sequential-observation semantics. Implementation, correction waves, full
   validation, and focused independent re-review are complete.
-- Queued the v0.28 completion and architecture audit after bounded scanner
-  pagination implementation, validation, and independent review are complete.
-  The audit will freeze the reviewed Pine, indicator, launch, native
-  three-point drawing, and scanner-pagination scope.
+- Completed the local v0.28 completion and architecture audit after bounded
+  scanner pagination passed independent review. The first audit review found
+  no release-blocking architecture issue, but identified Pine source-operation
+  diagnostic leakage and stale candidate evidence after a dependency update.
+  Corrections are applied and focused re-review remains pending.
   Windows MSIX launch, finite-`f64` right-offset restoration, width-derived
   drawing geometry, and other unshipped candidates remain deferred.
 
