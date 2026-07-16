@@ -60,10 +60,15 @@ Prefer the typed functions from `tradingview-scanner` for Rust callers:
 
 - `scanner_hotlist_typed(slug, limit)`
 - `scanner_scan_typed(request)`
+- `scanner_scan_page_typed(request)`
+- `scanner_scan_aggregate_typed(request)`
 - `scanner_metainfo_typed(request)`
 
-The JSON-returning functions `scanner_hotlist`, `scanner_scan`, and
-`scanner_metainfo` remain public for CLI payload compatibility.
+The JSON-returning functions `scanner_hotlist`, `scanner_scan`,
+`scanner_scan_page`, `scanner_scan_aggregate`, and `scanner_metainfo` remain
+public for CLI payload compatibility. Explicit-offset reads return a separate
+`ScannerPageScanResult` wrapper so `ScannerScanResult` and the default
+first-page JSON contract remain source- and payload-compatible.
 
 `ScannerScanResult::symbols[].field_values` intentionally remains a JSON value
 because scanner columns can contain numbers, strings, booleans, or nulls
@@ -71,6 +76,13 @@ depending on the requested column and market state. A later internal API review
 may introduce stronger field-value enums if downstream consumers need that.
 Scanner typed results expose `source_category: "desktop_free_read"`,
 `requires_desktop: false`, and `non_mutating: true`.
+
+`ScannerAggregateScanRequest` wraps a `ScannerScanRequest` plus `page_size`
+and `max_results`. The aggregate API reuses one configured HTTP client, keeps
+each page at 100 rows or fewer, requires an integer provider total on every
+page, and returns `ScannerAggregateScanResult` only after bounded completion.
+Its deduplicated symbols and drift metadata describe a sequential observation,
+not an atomic snapshot.
 
 Example shape:
 

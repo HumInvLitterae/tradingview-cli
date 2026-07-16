@@ -28,6 +28,11 @@ This reference keeps detailed source and command notes out of the core skill.
 | Watchlist add | `tv watchlist add-bulk <SYMBOL>... --allow-partial` |
 | Screenshot | `tv screenshot --region full|chart --output <PATH>` |
 
+When broad discovery needs more than one scanner page, use
+`tv scanner scan --max-results <N> --page-size <N>`. Treat its combined result
+as a bounded sequential observation and inspect total-count and duplicate drift
+metadata before using it as a candidate universe.
+
 ## Scanner And Compare Notes
 
 - `tv compare` returns ordered Desktop-free evidence with quote, info, and

@@ -43,7 +43,13 @@ tv info NASDAQ:AAPL
 tv fundamentals NYSE:IONQ --group earnings
 tv events NASDAQ:AAPL --event-type earnings
 tv scanner scan --limit 10
+tv scanner scan --sort name --asc --max-results 500 --page-size 100
 ```
+
+Use scanner aggregate mode only when one page is insufficient. It keeps a
+100-row request cap and reports sequential-page drift and duplicate metadata;
+do not interpret the combined rows as an atomic market snapshot. A page error
+produces no partial successful aggregate.
 
 Before chart-dependent reads or operations, check Desktop readiness:
 

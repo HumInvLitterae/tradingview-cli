@@ -70,7 +70,9 @@ pub use replay::{
 };
 pub use saved_layout::{saved_layout_list, saved_layout_switch};
 pub use scanner::{
-    ScannerMetainfoRequest, ScannerScanRequest, scanner_hotlist, scanner_metainfo, scanner_scan,
+    ScannerAggregateScanRequest, ScannerMetainfoRequest, ScannerPageScanRequest,
+    ScannerScanRequest, scanner_hotlist, scanner_metainfo, scanner_scan, scanner_scan_aggregate,
+    scanner_scan_page,
 };
 pub use screener::{
     screener_close, screener_columns_actions, screener_columns_add, screener_columns_config,

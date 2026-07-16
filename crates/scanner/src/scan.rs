@@ -1,16 +1,29 @@
+use std::{
+    collections::HashSet,
+    future::Future,
+    pin::Pin,
+    sync::Arc,
+    time::{SystemTime, UNIX_EPOCH},
+};
+
+use reqwest::Client;
 use serde_json::{Value, json};
 
 use tradingview_core::{AppError, ErrorKind};
 
 use super::common::field_values_object;
 use super::http::{configured_client, map_http_error, remote_status_error};
-use super::types::{ScannerRow, ScannerScanResult, ScannerSort};
+use super::types::{
+    ScannerAggregateScanResult, ScannerPageScanResult, ScannerRow, ScannerScanResult, ScannerSort,
+};
 
 const SCAN_BASE_URL: &str = "https://scanner.tradingview.com";
 const SCAN_SOURCE: &str = "scanner_scan_rest";
 const DESKTOP_FREE_READ_CATEGORY: &str = "desktop_free_read";
 const DEFAULT_SCAN_LIMIT: usize = 20;
 const MAX_SCAN_LIMIT: usize = 100;
+const MAX_AGGREGATE_RESULTS: usize = 10_000;
+const MAX_AGGREGATE_PAGES: usize = 100;
 const DEFAULT_SCAN_COLUMNS: &[&str] = &[
     "name",
     "description",
@@ -77,7 +90,7 @@ const SUPPORTED_SCAN_COLUMNS: &[&str] = &[
     "postmarket_volume",
 ];
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 /// Request for a Desktop-free scanner table read.
 pub struct ScannerScanRequest {
     pub market: String,
@@ -112,8 +125,30 @@ pub struct ScannerScanRequest {
     pub max_recommendation: Option<f64>,
 }
 
+#[derive(Debug, Clone)]
+/// Request for one scanner page starting at an explicit provider offset.
+pub struct ScannerPageScanRequest {
+    pub scan: ScannerScanRequest,
+    pub offset: usize,
+}
+
+#[derive(Debug, Clone)]
+/// Request for a bounded sequence of Desktop-free scanner pages.
+pub struct ScannerAggregateScanRequest {
+    pub scan: ScannerScanRequest,
+    pub page_size: Option<usize>,
+    pub max_results: usize,
+}
+
 pub async fn scanner_scan(request: ScannerScanRequest) -> Result<Value, AppError> {
     serde_json::to_value(scanner_scan_typed(request).await?)
+        .map_err(|err| AppError::new(ErrorKind::Internal, err.to_string()))
+}
+
+pub async fn scanner_scan_aggregate(
+    request: ScannerAggregateScanRequest,
+) -> Result<Value, AppError> {
+    serde_json::to_value(scanner_scan_aggregate_typed(request).await?)
         .map_err(|err| AppError::new(ErrorKind::Internal, err.to_string()))
 }
 
@@ -125,8 +160,32 @@ pub async fn scanner_scan_typed(
     request: ScannerScanRequest,
 ) -> Result<ScannerScanResult, AppError> {
     let normalized = normalize_scan_request(request)?;
-    let url = scan_url(&normalized.market)?;
     let client = configured_client()?;
+    Ok(fetch_scanner_page_typed(&client, &normalized).await?.result)
+}
+
+pub async fn scanner_scan_page(request: ScannerPageScanRequest) -> Result<Value, AppError> {
+    serde_json::to_value(scanner_scan_page_typed(request).await?)
+        .map_err(|err| AppError::new(ErrorKind::Internal, err.to_string()))
+}
+
+pub async fn scanner_scan_page_typed(
+    request: ScannerPageScanRequest,
+) -> Result<ScannerPageScanResult, AppError> {
+    let normalized = normalize_scan_request_at_offset(request.scan, request.offset)?;
+    let client = configured_client()?;
+    let page = fetch_scanner_page_typed(&client, &normalized).await?.result;
+    Ok(ScannerPageScanResult {
+        offset: normalized.offset,
+        page,
+    })
+}
+
+async fn fetch_scanner_page_typed(
+    client: &Client,
+    normalized: &NormalizedScannerScanRequest,
+) -> Result<NormalizedScannerPage, AppError> {
+    let url = scan_url(&normalized.market)?;
     let response = client
         .post(url)
         .json(&normalized.body)
@@ -144,7 +203,204 @@ pub async fn scanner_scan_typed(
         .await
         .map_err(|err| map_http_error(err, "Scanner scan response"))?;
 
-    normalize_scan_response_typed(&normalized, &value)
+    normalize_scan_response_page(normalized, &value)
+}
+
+/// Reads a complete bounded scanner population through sequential pages.
+pub async fn scanner_scan_aggregate_typed(
+    request: ScannerAggregateScanRequest,
+) -> Result<ScannerAggregateScanResult, AppError> {
+    let page_size = validate_aggregate_bounds(request.max_results, request.page_size)?;
+    if request.scan.limit.is_some() {
+        return Err(AppError::new(
+            ErrorKind::Validation,
+            "aggregate scanner reads cannot use --limit",
+        ));
+    }
+
+    let mut base = request.scan;
+    base.limit = Some(page_size);
+    let normalized = normalize_scan_request(base)?;
+    let client = Arc::new(configured_client()?);
+    let started_at_epoch_seconds = epoch_seconds()?;
+    scanner_scan_aggregate_with(
+        Arc::clone(&client),
+        normalized,
+        request.max_results,
+        started_at_epoch_seconds,
+        |client, page| Box::pin(async move { fetch_scanner_page_typed(&client, page).await }),
+    )
+    .await
+}
+
+fn validate_aggregate_bounds(
+    max_results: usize,
+    requested_page_size: Option<usize>,
+) -> Result<usize, AppError> {
+    if max_results == 0 || max_results > MAX_AGGREGATE_RESULTS {
+        return Err(AppError::new(
+            ErrorKind::Validation,
+            format!("--max-results must be between 1 and {MAX_AGGREGATE_RESULTS}"),
+        ));
+    }
+    let page_size = requested_page_size.unwrap_or(MAX_SCAN_LIMIT);
+    if page_size == 0 || page_size > MAX_SCAN_LIMIT {
+        return Err(AppError::new(
+            ErrorKind::Validation,
+            format!("--page-size must be between 1 and {MAX_SCAN_LIMIT}"),
+        ));
+    }
+    if max_results.div_ceil(page_size) > MAX_AGGREGATE_PAGES {
+        return Err(AppError::new(
+            ErrorKind::Validation,
+            format!(
+                "--max-results and --page-size may require at most {MAX_AGGREGATE_PAGES} pages"
+            ),
+        ));
+    }
+    Ok(page_size)
+}
+
+async fn scanner_scan_aggregate_with<C, F>(
+    context: C,
+    mut normalized: NormalizedScannerScanRequest,
+    max_results: usize,
+    started_at_epoch_seconds: u64,
+    mut fetch: F,
+) -> Result<ScannerAggregateScanResult, AppError>
+where
+    C: Clone,
+    F: for<'a> FnMut(
+        C,
+        &'a NormalizedScannerScanRequest,
+    )
+        -> Pin<Box<dyn Future<Output = Result<NormalizedScannerPage, AppError>> + 'a>>,
+{
+    let page_size = normalized.limit;
+    let query_fingerprint = scan_query_fingerprint(&normalized);
+    let mut rows = Vec::new();
+    let mut seen = HashSet::new();
+    let mut raw_count = 0usize;
+    let mut duplicate_count = 0usize;
+    let mut pages_fetched = 0usize;
+    let mut totals = Vec::new();
+
+    loop {
+        let page = fetch(context.clone(), &normalized).await?;
+        pages_fetched += 1;
+        let total = page
+            .result
+            .total_count
+            .as_u64()
+            .and_then(|value| usize::try_from(value).ok())
+            .ok_or_else(|| malformed_scan("aggregate totalCount"))?;
+        if total > max_results {
+            return Err(AppError::new(
+                ErrorKind::Validation,
+                "Scanner population exceeds --max-results",
+            )
+            .with_details(json!({
+                "max_results": max_results,
+                "observed_total_count": total,
+            })));
+        }
+        totals.push(total);
+
+        let expected_page_count = page_size.min(total.saturating_sub(normalized.offset));
+        if page.provider_row_count != expected_page_count {
+            return Err(AppError::new(
+                ErrorKind::InternalApiUnavailable,
+                "TradingView scanner returned an incomplete page before bounded completion",
+            )
+            .with_details(json!({
+                "offset": normalized.offset,
+                "page_size": page_size,
+                "observed_total_count": total,
+                "expected_page_count": expected_page_count,
+                "observed_page_count": page.provider_row_count,
+            })));
+        }
+
+        raw_count = raw_count
+            .checked_add(page.provider_row_count)
+            .ok_or_else(|| {
+                AppError::new(ErrorKind::Internal, "Scanner aggregate row count overflow")
+            })?;
+        for row in page.result.symbols {
+            if seen.insert(row.symbol.clone()) {
+                rows.push(row);
+            } else {
+                duplicate_count += 1;
+            }
+        }
+
+        let next_offset = normalized.offset.checked_add(page_size).ok_or_else(|| {
+            AppError::new(ErrorKind::Internal, "Scanner aggregate offset overflow")
+        })?;
+        if next_offset >= total {
+            break;
+        }
+        normalized.offset = next_offset;
+        normalized.body["range"] = json!([next_offset, next_offset + page_size]);
+    }
+
+    let first_total_count = totals.first().copied().unwrap_or(0);
+    let last_total_count = totals.last().copied().unwrap_or(0);
+    let maximum_total_count = totals.iter().copied().max().unwrap_or(0);
+    let completed_at_epoch_seconds = epoch_seconds()?.max(started_at_epoch_seconds);
+    Ok(ScannerAggregateScanResult {
+        source: SCAN_SOURCE.to_string(),
+        source_category: DESKTOP_FREE_READ_CATEGORY.to_string(),
+        requires_desktop: false,
+        non_mutating: true,
+        market: normalized.market,
+        page_size,
+        max_results,
+        count: rows.len(),
+        raw_count,
+        duplicate_count,
+        pages_fetched,
+        first_total_count,
+        last_total_count,
+        maximum_total_count,
+        query_fingerprint,
+        started_at_epoch_seconds,
+        completed_at_epoch_seconds,
+        total_count_changed: totals.iter().any(|total| *total != first_total_count),
+        duplicates_observed: duplicate_count > 0,
+        sequential_observation: true,
+        columns: normalized.columns,
+        sort: ScannerSort {
+            field: normalized.sort_field,
+            order: normalized.sort_order,
+        },
+        filters: normalized.filters,
+        symbols: rows,
+    })
+}
+
+fn scan_query_fingerprint(request: &NormalizedScannerScanRequest) -> String {
+    let query = json!({
+        "market": request.market,
+        "columns": request.columns,
+        "sort": { "field": request.sort_field, "order": request.sort_order },
+        "filters": request.filters,
+    })
+    .to_string();
+    let hash = query
+        .as_bytes()
+        .iter()
+        .fold(0xcbf29ce484222325u64, |hash, byte| {
+            (hash ^ u64::from(*byte)).wrapping_mul(0x100000001b3)
+        });
+    format!("fnv1a64:{hash:016x}")
+}
+
+fn epoch_seconds() -> Result<u64, AppError> {
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|duration| duration.as_secs())
+        .map_err(|_| AppError::new(ErrorKind::Internal, "System clock is before Unix epoch"))
 }
 
 fn scan_url(market: &str) -> Result<reqwest::Url, AppError> {
@@ -156,6 +412,7 @@ fn scan_url(market: &str) -> Result<reqwest::Url, AppError> {
 struct NormalizedScannerScanRequest {
     market: String,
     limit: usize,
+    offset: usize,
     columns: Vec<String>,
     sort_field: String,
     sort_order: String,
@@ -166,8 +423,18 @@ struct NormalizedScannerScanRequest {
 fn normalize_scan_request(
     request: ScannerScanRequest,
 ) -> Result<NormalizedScannerScanRequest, AppError> {
+    normalize_scan_request_at_offset(request, 0)
+}
+
+fn normalize_scan_request_at_offset(
+    request: ScannerScanRequest,
+    offset: usize,
+) -> Result<NormalizedScannerScanRequest, AppError> {
     let market = validate_scan_market(&request.market)?;
     let limit = normalize_scan_limit(request.limit)?;
+    let range_end = offset.checked_add(limit).ok_or_else(|| {
+        AppError::new(ErrorKind::Validation, "--offset plus --limit is too large")
+    })?;
     let columns = normalize_scan_columns(request.columns.as_deref())?;
     let sort_field = validate_scan_field(
         request.sort.as_deref().unwrap_or("market_cap_basic"),
@@ -189,12 +456,13 @@ fn normalize_scan_request(
             "sortBy": sort_field,
             "sortOrder": sort_order,
         },
-        "range": [0, limit],
+        "range": [offset, range_end],
     });
 
     Ok(NormalizedScannerScanRequest {
         market,
         limit,
+        offset,
         columns,
         sort_field,
         sort_order,
@@ -574,10 +842,23 @@ fn normalize_scan_response(
         .map_err(|err| AppError::new(ErrorKind::Internal, err.to_string()))
 }
 
+#[cfg(test)]
 fn normalize_scan_response_typed(
     request: &NormalizedScannerScanRequest,
     value: &Value,
 ) -> Result<ScannerScanResult, AppError> {
+    Ok(normalize_scan_response_page(request, value)?.result)
+}
+
+struct NormalizedScannerPage {
+    result: ScannerScanResult,
+    provider_row_count: usize,
+}
+
+fn normalize_scan_response_page(
+    request: &NormalizedScannerScanRequest,
+    value: &Value,
+) -> Result<NormalizedScannerPage, AppError> {
     let object = value
         .as_object()
         .ok_or_else(|| malformed_scan("response"))?;
@@ -596,22 +877,25 @@ fn normalize_scan_response_typed(
         .map(|row| normalize_scan_symbol(row, &request.columns))
         .collect::<Result<Vec<_>, _>>()?;
 
-    Ok(ScannerScanResult {
-        source: SCAN_SOURCE.to_string(),
-        source_category: DESKTOP_FREE_READ_CATEGORY.to_string(),
-        requires_desktop: false,
-        non_mutating: true,
-        market: request.market.clone(),
-        limit: request.limit,
-        count: normalized_symbols.len(),
-        total_count,
-        columns: request.columns.clone(),
-        sort: ScannerSort {
-            field: request.sort_field.clone(),
-            order: request.sort_order.clone(),
+    Ok(NormalizedScannerPage {
+        provider_row_count: symbols.len(),
+        result: ScannerScanResult {
+            source: SCAN_SOURCE.to_string(),
+            source_category: DESKTOP_FREE_READ_CATEGORY.to_string(),
+            requires_desktop: false,
+            non_mutating: true,
+            market: request.market.clone(),
+            limit: request.limit,
+            count: normalized_symbols.len(),
+            total_count,
+            columns: request.columns.clone(),
+            sort: ScannerSort {
+                field: request.sort_field.clone(),
+                order: request.sort_order.clone(),
+            },
+            filters: request.filters.clone(),
+            symbols: normalized_symbols,
         },
-        filters: request.filters.clone(),
-        symbols: normalized_symbols,
     })
 }
 
@@ -646,7 +930,79 @@ fn malformed_scan(label: &str) -> AppError {
 
 #[cfg(test)]
 mod tests {
+    use std::{cell::RefCell, collections::VecDeque, rc::Rc};
+
     use super::*;
+
+    fn aggregate_base_request(page_size: usize) -> NormalizedScannerScanRequest {
+        normalize_scan_request(ScannerScanRequest {
+            market: "america".to_string(),
+            exchanges: Vec::new(),
+            columns: Some("name,close".to_string()),
+            sort: Some("name".to_string()),
+            asc: true,
+            desc: false,
+            limit: Some(page_size),
+            min_price: None,
+            max_price: None,
+            min_volume: None,
+            min_market_cap: None,
+            sectors: Vec::new(),
+            industries: Vec::new(),
+            symbol_types: Vec::new(),
+            subtypes: Vec::new(),
+            min_change: None,
+            max_change: None,
+            min_relative_volume: None,
+            max_pe: None,
+            min_average_volume: None,
+            min_performance_week: None,
+            max_performance_week: None,
+            min_performance_month: None,
+            max_performance_month: None,
+            min_performance_quarter: None,
+            max_performance_quarter: None,
+            min_rsi: None,
+            max_rsi: None,
+            min_recommendation: None,
+            max_recommendation: None,
+        })
+        .unwrap()
+    }
+
+    fn scanner_page(total: Value, symbols: &[&str]) -> ScannerScanResult {
+        ScannerScanResult {
+            source: SCAN_SOURCE.to_string(),
+            source_category: DESKTOP_FREE_READ_CATEGORY.to_string(),
+            requires_desktop: false,
+            non_mutating: true,
+            market: "america".to_string(),
+            limit: 2,
+            count: symbols.len(),
+            total_count: total,
+            columns: vec!["name".to_string(), "close".to_string()],
+            sort: ScannerSort {
+                field: "name".to_string(),
+                order: "asc".to_string(),
+            },
+            filters: Vec::new(),
+            symbols: symbols
+                .iter()
+                .map(|symbol| ScannerRow {
+                    symbol: (*symbol).to_string(),
+                    values: vec![json!(symbol), json!(1.0)],
+                    field_values: json!({ "name": symbol, "close": 1.0 }),
+                })
+                .collect(),
+        }
+    }
+
+    fn aggregate_page(total: Value, symbols: &[&str]) -> NormalizedScannerPage {
+        NormalizedScannerPage {
+            result: scanner_page(total, symbols),
+            provider_row_count: symbols.len(),
+        }
+    }
 
     #[test]
     fn normalize_scan_request_uses_defaults_and_builds_body() {
@@ -1413,5 +1769,315 @@ mod tests {
                 .kind,
             ErrorKind::InternalApiUnavailable
         );
+    }
+
+    #[test]
+    fn normalize_scan_request_builds_offset_range_and_rejects_overflow() {
+        let mut request = aggregate_base_request(25);
+        request.offset = 100;
+        request.body["range"] = json!([100, 125]);
+        assert_eq!(request.body["range"], json!([100, 125]));
+
+        let raw = ScannerScanRequest {
+            market: "america".to_string(),
+            exchanges: Vec::new(),
+            columns: None,
+            sort: None,
+            asc: false,
+            desc: false,
+            limit: Some(2),
+            min_price: None,
+            max_price: None,
+            min_volume: None,
+            min_market_cap: None,
+            sectors: Vec::new(),
+            industries: Vec::new(),
+            symbol_types: Vec::new(),
+            subtypes: Vec::new(),
+            min_change: None,
+            max_change: None,
+            min_relative_volume: None,
+            max_pe: None,
+            min_average_volume: None,
+            min_performance_week: None,
+            max_performance_week: None,
+            min_performance_month: None,
+            max_performance_month: None,
+            min_performance_quarter: None,
+            max_performance_quarter: None,
+            min_rsi: None,
+            max_rsi: None,
+            min_recommendation: None,
+            max_recommendation: None,
+        };
+        assert_eq!(
+            normalize_scan_request_at_offset(raw.clone(), usize::MAX)
+                .unwrap_err()
+                .kind,
+            ErrorKind::Validation
+        );
+        let normalized = normalize_scan_request_at_offset(raw, 100).unwrap();
+        assert_eq!(normalized.body["range"], json!([100, 102]));
+    }
+
+    #[tokio::test]
+    async fn aggregate_scan_advances_offsets_deduplicates_and_reports_drift() {
+        let pages = Rc::new(RefCell::new(VecDeque::from([
+            aggregate_page(json!(4), &["NASDAQ:A", "NASDAQ:B"]),
+            aggregate_page(json!(5), &["NASDAQ:B", "NASDAQ:C"]),
+            aggregate_page(json!(5), &["NASDAQ:D"]),
+        ])));
+        let offsets = Rc::new(RefCell::new(Vec::new()));
+        let context = Arc::new(Client::new());
+        let observed_contexts = Rc::new(RefCell::new(Vec::new()));
+        let result =
+            scanner_scan_aggregate_with(Arc::clone(&context), aggregate_base_request(2), 10, 1, {
+                let pages = Rc::clone(&pages);
+                let offsets = Rc::clone(&offsets);
+                let observed_contexts = Rc::clone(&observed_contexts);
+                move |context, request| {
+                    observed_contexts.borrow_mut().push(context);
+                    offsets.borrow_mut().push(request.offset);
+                    let page = pages.borrow_mut().pop_front().unwrap();
+                    Box::pin(std::future::ready(Ok(page)))
+                }
+            })
+            .await
+            .unwrap();
+
+        assert_eq!(*offsets.borrow(), [0, 2, 4]);
+        assert!(
+            observed_contexts
+                .borrow()
+                .iter()
+                .all(|observed| Arc::ptr_eq(observed, &context))
+        );
+        assert_eq!(result.pages_fetched, 3);
+        assert_eq!(result.raw_count, 5);
+        assert_eq!(result.count, 4);
+        assert_eq!(result.duplicate_count, 1);
+        assert_eq!(result.first_total_count, 4);
+        assert_eq!(result.last_total_count, 5);
+        assert_eq!(result.maximum_total_count, 5);
+        assert!(result.total_count_changed);
+        assert!(result.duplicates_observed);
+        assert!(result.sequential_observation);
+        assert!(result.query_fingerprint.starts_with("fnv1a64:"));
+        assert_eq!(
+            result
+                .symbols
+                .iter()
+                .map(|row| row.symbol.as_str())
+                .collect::<Vec<_>>(),
+            ["NASDAQ:A", "NASDAQ:B", "NASDAQ:C", "NASDAQ:D"]
+        );
+        assert!(result.completed_at_epoch_seconds >= result.started_at_epoch_seconds);
+    }
+
+    #[tokio::test]
+    async fn aggregate_scan_fails_closed_for_bound_missing_total_and_premature_empty() {
+        for (page, kind) in [
+            (
+                aggregate_page(json!(11), &["NASDAQ:A"]),
+                ErrorKind::Validation,
+            ),
+            (
+                aggregate_page(Value::Null, &["NASDAQ:A"]),
+                ErrorKind::InternalApiUnavailable,
+            ),
+            (
+                aggregate_page(json!(2), &[]),
+                ErrorKind::InternalApiUnavailable,
+            ),
+        ] {
+            let page = Rc::new(RefCell::new(Some(page)));
+            let error = scanner_scan_aggregate_with((), aggregate_base_request(2), 10, 1, {
+                let page = Rc::clone(&page);
+                move |(), _| {
+                    let page = page.borrow_mut().take().unwrap();
+                    Box::pin(std::future::ready(Ok(page)))
+                }
+            })
+            .await
+            .unwrap_err();
+            assert_eq!(error.kind, kind);
+        }
+    }
+
+    #[tokio::test]
+    async fn aggregate_scan_propagates_page_failure_without_fetching_again() {
+        let calls = Rc::new(RefCell::new(0usize));
+        let error = scanner_scan_aggregate_with((), aggregate_base_request(2), 10, 1, {
+            let calls = Rc::clone(&calls);
+            move |(), _| {
+                *calls.borrow_mut() += 1;
+                let result = if *calls.borrow() == 1 {
+                    Ok(aggregate_page(json!(4), &["NASDAQ:A", "NASDAQ:B"]))
+                } else {
+                    Err(AppError::new(ErrorKind::Connection, "page failed"))
+                };
+                Box::pin(std::future::ready(result))
+            }
+        })
+        .await
+        .unwrap_err();
+
+        assert_eq!(error.kind, ErrorKind::Connection);
+        assert_eq!(*calls.borrow(), 2);
+    }
+
+    #[tokio::test]
+    async fn aggregate_scan_rejects_non_empty_short_page() {
+        let page = Rc::new(RefCell::new(Some(aggregate_page(json!(4), &["NASDAQ:A"]))));
+        let error = scanner_scan_aggregate_with((), aggregate_base_request(2), 4, 1, {
+            let page = Rc::clone(&page);
+            move |(), _| {
+                let page = page.borrow_mut().take().unwrap();
+                Box::pin(std::future::ready(Ok(page)))
+            }
+        })
+        .await
+        .unwrap_err();
+
+        assert_eq!(error.kind, ErrorKind::InternalApiUnavailable);
+        let details = error.details.unwrap();
+        assert_eq!(details["expected_page_count"], json!(2));
+        assert_eq!(details["observed_page_count"], json!(1));
+    }
+
+    #[tokio::test]
+    async fn aggregate_scan_rejects_overfull_provider_page_before_truncation() {
+        let request = aggregate_base_request(2);
+        let payload = json!({
+            "totalCount": 2,
+            "data": [
+                { "s": "NASDAQ:A", "d": ["A", 1.0] },
+                { "s": "NASDAQ:B", "d": ["B", 2.0] },
+                { "s": "NASDAQ:C", "d": ["C", 3.0] }
+            ]
+        });
+        let page = normalize_scan_response_page(&request, &payload).unwrap();
+        assert_eq!(page.provider_row_count, 3);
+        assert_eq!(page.result.symbols.len(), 2);
+
+        let page = Rc::new(RefCell::new(Some(page)));
+        let error = scanner_scan_aggregate_with((), request, 2, 1, {
+            let page = Rc::clone(&page);
+            move |(), _| {
+                let page = page.borrow_mut().take().unwrap();
+                Box::pin(std::future::ready(Ok(page)))
+            }
+        })
+        .await
+        .unwrap_err();
+
+        assert_eq!(error.kind, ErrorKind::InternalApiUnavailable);
+        let details = error.details.unwrap();
+        assert_eq!(details["expected_page_count"], json!(2));
+        assert_eq!(details["observed_page_count"], json!(3));
+    }
+
+    #[tokio::test]
+    async fn aggregate_scan_handles_zero_exact_boundary_and_downward_drift() {
+        let empty = scanner_scan_aggregate_with((), aggregate_base_request(2), 2, 1, {
+            move |(), _| Box::pin(std::future::ready(Ok(aggregate_page(json!(0), &[]))))
+        })
+        .await
+        .unwrap();
+        assert_eq!(empty.pages_fetched, 1);
+        assert_eq!(empty.count, 0);
+        assert_eq!(empty.maximum_total_count, 0);
+
+        let exact_pages = Rc::new(RefCell::new(VecDeque::from([
+            aggregate_page(json!(4), &["NASDAQ:A", "NASDAQ:B"]),
+            aggregate_page(json!(4), &["NASDAQ:C", "NASDAQ:D"]),
+        ])));
+        let exact = scanner_scan_aggregate_with((), aggregate_base_request(2), 4, 1, {
+            let pages = Rc::clone(&exact_pages);
+            move |(), _| {
+                Box::pin(std::future::ready(Ok(pages
+                    .borrow_mut()
+                    .pop_front()
+                    .unwrap())))
+            }
+        })
+        .await
+        .unwrap();
+        assert_eq!(exact.pages_fetched, 2);
+        assert_eq!(exact.raw_count, 4);
+        assert_eq!(exact.maximum_total_count, 4);
+
+        let drift_pages = Rc::new(RefCell::new(VecDeque::from([
+            aggregate_page(json!(5), &["NASDAQ:A", "NASDAQ:B"]),
+            aggregate_page(json!(3), &["NASDAQ:C"]),
+        ])));
+        let offsets = Rc::new(RefCell::new(Vec::new()));
+        let drift = scanner_scan_aggregate_with((), aggregate_base_request(2), 5, 1, {
+            let pages = Rc::clone(&drift_pages);
+            let offsets = Rc::clone(&offsets);
+            move |(), request| {
+                offsets.borrow_mut().push(request.offset);
+                Box::pin(std::future::ready(Ok(pages
+                    .borrow_mut()
+                    .pop_front()
+                    .unwrap())))
+            }
+        })
+        .await
+        .unwrap();
+        assert_eq!(*offsets.borrow(), [0, 2]);
+        assert_eq!(drift.first_total_count, 5);
+        assert_eq!(drift.last_total_count, 3);
+        assert_eq!(drift.maximum_total_count, 5);
+        assert!(drift.total_count_changed);
+    }
+
+    #[test]
+    fn aggregate_bounds_enforce_row_and_request_limits() {
+        assert_eq!(validate_aggregate_bounds(1, Some(1)).unwrap(), 1);
+        assert_eq!(
+            validate_aggregate_bounds(MAX_AGGREGATE_RESULTS, Some(MAX_SCAN_LIMIT)).unwrap(),
+            MAX_SCAN_LIMIT
+        );
+        assert_eq!(validate_aggregate_bounds(100, Some(1)).unwrap(), 1);
+        for (max_results, page_size) in [
+            (0, Some(1)),
+            (MAX_AGGREGATE_RESULTS + 1, Some(100)),
+            (1, Some(0)),
+            (1, Some(MAX_SCAN_LIMIT + 1)),
+            (101, Some(1)),
+        ] {
+            assert_eq!(
+                validate_aggregate_bounds(max_results, page_size)
+                    .unwrap_err()
+                    .kind,
+                ErrorKind::Validation
+            );
+        }
+    }
+
+    #[test]
+    fn aggregate_fingerprint_excludes_range_and_tracks_fixed_query_fields() {
+        let mut request = aggregate_base_request(25);
+        let original = scan_query_fingerprint(&request);
+        request.offset = 100;
+        request.body["range"] = json!([100, 125]);
+        assert_eq!(scan_query_fingerprint(&request), original);
+
+        request.columns.push("volume".to_string());
+        assert_ne!(scan_query_fingerprint(&request), original);
+    }
+
+    #[test]
+    fn explicit_page_wrapper_preserves_default_result_json() {
+        let page = scanner_page(json!(1), &["NASDAQ:A"]);
+        let default_json = serde_json::to_value(&page).unwrap();
+        assert!(default_json.get("offset").is_none());
+
+        let explicit_json =
+            serde_json::to_value(ScannerPageScanResult { offset: 100, page }).unwrap();
+        assert_eq!(explicit_json["offset"], json!(100));
+        assert_eq!(explicit_json["source"], json!(SCAN_SOURCE));
+        assert!(explicit_json.get("page").is_none());
     }
 }

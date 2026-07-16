@@ -627,6 +627,55 @@ fn scanner_scan_rejects_invalid_inputs_before_network() {
 }
 
 #[test]
+fn scanner_scan_pagination_help_and_conflicts_are_explicit() {
+    tv().args(["scanner", "scan", "--help"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("--offset"))
+        .stdout(predicate::str::contains("--max-results"))
+        .stdout(predicate::str::contains("--page-size"));
+
+    for args in [
+        vec!["scanner", "scan", "--page-size", "50"],
+        vec!["scanner", "scan", "--offset", "10", "--max-results", "500"],
+        vec!["scanner", "scan", "--limit", "10", "--max-results", "500"],
+    ] {
+        tv().args(args).assert().failure().code(1);
+    }
+
+    for args in [
+        vec!["scanner", "scan", "--max-results", "0"],
+        vec!["scanner", "scan", "--max-results", "10001"],
+        vec![
+            "scanner",
+            "scan",
+            "--max-results",
+            "500",
+            "--page-size",
+            "101",
+        ],
+        vec![
+            "scanner",
+            "scan",
+            "--max-results",
+            "500",
+            "--page-size",
+            "1",
+        ],
+    ] {
+        let assert = tv()
+            .env("TV_CDP_PORT", "9")
+            .args(args)
+            .assert()
+            .failure()
+            .code(1);
+        let value = stderr_json(&assert);
+        assert_eq!(value["command"], "scanner");
+        assert_eq!(value["error"]["kind"], "validation");
+    }
+}
+
+#[test]
 fn info_help_explains_current_chart_and_symbol_modes() {
     tv().args(["info", "--help"])
         .assert()

@@ -161,6 +161,9 @@ pub async fn dispatch(
                 asc,
                 desc,
                 limit,
+                offset,
+                max_results,
+                page_size,
                 min_price,
                 max_price,
                 min_volume,
@@ -217,7 +220,26 @@ pub async fn dispatch(
                     min_recommendation,
                     max_recommendation,
                 };
-                ops::scanner_scan(request).await
+                match max_results {
+                    Some(max_results) => {
+                        ops::scanner_scan_aggregate(ops::ScannerAggregateScanRequest {
+                            scan: request,
+                            page_size,
+                            max_results,
+                        })
+                        .await
+                    }
+                    None => match offset {
+                        Some(offset) => {
+                            ops::scanner_scan_page(ops::ScannerPageScanRequest {
+                                scan: request,
+                                offset,
+                            })
+                            .await
+                        }
+                        None => ops::scanner_scan(request).await,
+                    },
+                }
             }
         },
         Command::Screener { command } => {
