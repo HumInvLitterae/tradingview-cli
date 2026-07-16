@@ -818,6 +818,8 @@ pub async fn dispatch(
                 time,
                 price2,
                 time2,
+                price3,
+                time3,
                 text,
                 overrides,
             } => {
@@ -850,13 +852,28 @@ pub async fn dispatch(
                     .as_deref()
                     .map(parse_drawing_overrides)
                     .transpose()?;
+                let point3 = match (price3, time3) {
+                    (Some(price3), Some(time3)) => Some(DrawingPoint {
+                        time: time3,
+                        price: price3,
+                    }),
+                    (None, None) => None,
+                    _ => {
+                        return Err(AppError::new(
+                            ErrorKind::Validation,
+                            "--price3 and --time3 must be provided together",
+                        ));
+                    }
+                };
                 let request = DrawingShapeRequest {
                     shape_type: shape_type.trim().to_string(),
                     point: DrawingPoint { time, price },
                     point2,
+                    point3,
                     text,
                     overrides,
                 };
+                tradingview_model::drawing::validate_shape_request(&request)?;
                 let mut runtime = connect_runtime(config).await?;
                 ops::drawing_shape(&mut runtime, request).await
             }

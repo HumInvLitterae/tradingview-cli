@@ -51,10 +51,14 @@ package version omits the leading `v`.
   launch` now distinguishes a still-running direct child from confirmed exit
   or unavailable process status without letting the original child override a
   successful macOS fallback.
+- Added verified native `parallel_channel` creation to `tv draw shape` through
+  paired `--price3` / `--time3` options. Point 3 is the native width point at
+  point 1's time; success requires exactly one new chart-local entity, exact
+  native identity, and a three-point readback before returning its ID.
 
 ### Documentation
 
-- Added a feasibility-gated native three-point drawing plan. The proposed
+- Added a feasibility-gated native three-point drawing plan. The implemented
   surface adds an explicit third point to `tv draw shape`, verifies a native
   `parallel_channel` through exactly-one entity and three-point readback, and
   permits probe cleanup only after exact native identity and point verification.
@@ -116,8 +120,8 @@ package version omits the leading `v`.
   disposable chart. It identified point1-anchored width-point normalization,
   machine-precision price round-trip, and delayed cleanup visibility, leading
   to a corrected bounded probe contract. The final run verified one native
-  entity, three canonical points, and inventory-confirmed cleanup without
-  adding a stable point3 option.
+  entity, three canonical points, and inventory-confirmed cleanup before the
+  reviewed stable point3 implementation proceeded.
 - Tightened the probe's cleanup evidence so every inventory row must expose a
   readable ID before absence can be confirmed, and added executable coverage
   for the exact fresh cleanup expression plus time and epsilon mismatch edges.

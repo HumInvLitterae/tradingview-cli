@@ -1,5 +1,5 @@
 pub use tradingview_model::drawing::{
-    DrawingPositionRequest, DrawingShapeRequest, validate_position_request,
+    DrawingPositionRequest, DrawingShapeRequest, validate_position_request, validate_shape_request,
 };
 
 #[cfg(test)]

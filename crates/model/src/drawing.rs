@@ -13,8 +13,51 @@ pub struct DrawingShapeRequest {
     pub shape_type: String,
     pub point: DrawingPoint,
     pub point2: Option<DrawingPoint>,
+    pub point3: Option<DrawingPoint>,
     pub text: Option<String>,
     pub overrides: Option<Value>,
+}
+
+pub fn validate_shape_request(request: &DrawingShapeRequest) -> Result<(), AppError> {
+    require_finite(request.point.time, "time")?;
+    require_finite(request.point.price, "price")?;
+    if let Some(point2) = &request.point2 {
+        require_finite(point2.time, "time2")?;
+        require_finite(point2.price, "price2")?;
+    }
+    if let Some(point3) = &request.point3 {
+        require_finite(point3.time, "time3")?;
+        require_finite(point3.price, "price3")?;
+        if request.point2.is_none() {
+            return Err(AppError::new(
+                ErrorKind::Validation,
+                "point3 requires point2",
+            ));
+        }
+        if request.shape_type.trim() != "parallel_channel" {
+            return Err(AppError::new(
+                ErrorKind::Validation,
+                "point3 is supported only for parallel_channel",
+            ));
+        }
+        if point3.time != request.point.time {
+            return Err(AppError::new(
+                ErrorKind::Validation,
+                "time3 must equal time for parallel_channel width-point semantics",
+            ));
+        }
+        if request
+            .text
+            .as_deref()
+            .is_some_and(|text| !text.trim().is_empty())
+        {
+            return Err(AppError::new(
+                ErrorKind::Validation,
+                "text is not supported with parallel_channel point3",
+            ));
+        }
+    }
+    Ok(())
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -164,6 +207,62 @@ mod tests {
 
         let err = parse_drawing_overrides("{").unwrap_err();
         assert_eq!(err.kind, ErrorKind::Validation);
+    }
+
+    fn parallel_channel_request() -> DrawingShapeRequest {
+        DrawingShapeRequest {
+            shape_type: "parallel_channel".into(),
+            point: DrawingPoint {
+                time: 100.0,
+                price: 10.0,
+            },
+            point2: Some(DrawingPoint {
+                time: 200.0,
+                price: 12.0,
+            }),
+            point3: Some(DrawingPoint {
+                time: 100.0,
+                price: 8.0,
+            }),
+            text: None,
+            overrides: None,
+        }
+    }
+
+    #[test]
+    fn validate_shape_request_accepts_native_parallel_channel_width_point() {
+        assert!(validate_shape_request(&parallel_channel_request()).is_ok());
+    }
+
+    #[test]
+    fn validate_shape_request_rejects_unsupported_third_point_contracts() {
+        let mut request = parallel_channel_request();
+        request.point3.as_mut().unwrap().time = 200.0;
+        assert_eq!(
+            validate_shape_request(&request).unwrap_err().kind,
+            ErrorKind::Validation
+        );
+
+        let mut request = parallel_channel_request();
+        request.shape_type = "pitchfork".into();
+        assert_eq!(
+            validate_shape_request(&request).unwrap_err().kind,
+            ErrorKind::Validation
+        );
+
+        let mut request = parallel_channel_request();
+        request.text = Some("label".into());
+        assert_eq!(
+            validate_shape_request(&request).unwrap_err().kind,
+            ErrorKind::Validation
+        );
+
+        let mut request = parallel_channel_request();
+        request.point2 = None;
+        assert_eq!(
+            validate_shape_request(&request).unwrap_err().kind,
+            ErrorKind::Validation
+        );
     }
 
     #[test]

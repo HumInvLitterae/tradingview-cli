@@ -6,7 +6,10 @@ import sys
 
 
 EXPECTED_NODE_VERSION = "v24.18.0"
-TEST_NAME = "javascript_three_point_probe_contract_is_bounded_and_verified"
+TEST_NAMES = [
+    "javascript_three_point_probe_contract_is_bounded_and_verified",
+    "javascript_three_point_production_contract_is_bounded_and_verified",
+]
 
 
 def main() -> int:
@@ -34,23 +37,26 @@ def main() -> int:
         )
         return 1
 
-    result = subprocess.run(
-        [
-            "cargo",
-            "test",
-            "-p",
-            "tradingview-cli",
-            "--test",
-            "live_three_point_drawing_capability",
-            TEST_NAME,
-            "--",
-            "--ignored",
-            "--exact",
-            "--nocapture",
-        ],
-        check=False,
-    )
-    return result.returncode
+    for test_name in TEST_NAMES:
+        result = subprocess.run(
+            [
+                "cargo",
+                "test",
+                "-p",
+                "tradingview-cli",
+                "--test",
+                "live_three_point_drawing_capability",
+                test_name,
+                "--",
+                "--ignored",
+                "--exact",
+                "--nocapture",
+            ],
+            check=False,
+        )
+        if result.returncode != 0:
+            return result.returncode
+    return 0
 
 
 if __name__ == "__main__":

@@ -262,6 +262,16 @@ a separate scanner freshness reference in one packet. It is troubleshooting
 metadata, not a blended price read, and it does not switch symbols or add
 quote-data to `--source auto`.
 
+### Verified native parallel channels
+
+`tv draw shape --type parallel_channel` supports three explicit point pairs.
+Point 3 is the native width point and must use point 1's time. The first two
+times should be loaded bar anchors because the stable contract does not infer
+or normalize arbitrary timestamps. Success requires exactly one new native
+entity and verified three-point readback; retain its `entity_id` for `tv draw
+get` or exact cleanup with `tv draw remove`. Do not use `tv draw clear` for
+disposable cleanup when other drawings may exist.
+
 ## Visual Evidence Recovery
 
 Structured fields should come first. Use screenshots only when readiness,

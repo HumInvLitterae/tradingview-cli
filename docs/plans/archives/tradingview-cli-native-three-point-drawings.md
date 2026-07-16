@@ -82,8 +82,29 @@ Method presence or upstream evidence alone is not production go.
 - [x] (2026-07-16) Distinguished a readable stale lookup handle from a failed
   lookup. Cleanup promotion now requires authoritative inventory absence and a
   successful lookup call, while lookup absence remains diagnostic.
-- [ ] Obtain focused review of the corrected evidence before deciding whether
-  stable implementation is justified.
+- [x] (2026-07-16) Obtained focused review of the corrected evidence with no
+  remaining findings; stable implementation was authorized.
+- [x] (2026-07-16) Added paired third-point CLI/model validation and a bounded
+  verified native `parallel_channel` production path while preserving the
+  existing one/two-point path.
+- [x] (2026-07-16) Completed model/operation/CLI contract tests, the pinned
+  probe-and-production JavaScript gate, strict Clippy, workspace tests,
+  metadata, hygiene, packaging syntax, guide parity, and diff checks.
+- [x] (2026-07-16) Obtained focused independent implementation review; it
+  reported Rust success-boundary, failure-whitelist, and durable-state
+  findings, so public guidance, commit, and archive work remained blocked.
+- [x] (2026-07-16) Applied implementation-review corrections: Rust now rejects
+  contradictory success fields, normalizes Runtime enum strings and candidate
+  handles through fixed public-safe rules, and covers each trust-boundary
+  contradiction deterministically.
+- [x] (2026-07-16) Closed the remaining success-boundary gap by requiring
+  non-negative integer `before_count` / `after_count`, empty `text`, and a
+  request-consistent integer `override_count`; missing and malformed variants
+  now fail closed in focused regression tests.
+- [x] (2026-07-16) Focused re-review reported no remaining findings after the
+  preserved success-field correction.
+- [x] (2026-07-16) Synchronized stable public, packaged, development, and skill
+  guidance and completed the implementation closeout.
 
 ## Surprises & Discoveries
 
@@ -260,16 +281,18 @@ Method presence or upstream evidence alone is not production go.
 
 ## Outcomes & Retrospective
 
-Planning review, deterministic probe implementation, and implementation review
-are complete. Follow-up investigation on the disposable target showed that the
+Planning review, deterministic probe implementation, stable implementation,
+and focused re-review are complete. Follow-up investigation on the disposable target showed that the
 initial no-go was not capability evidence: native width-point canonicalization,
 machine-precision price round-trip, and delayed cleanup visibility each
 conflicted with overly strict probe assumptions. The corrected probe contract
 requires point3 to use the point1 time anchor, uses a narrow scale-aware price
 comparison, and observes one cleanup mutation under the original absolute
 deadline. The corrected live run then verified one native entity, three
-canonical points, and inventory-confirmed cleanup. Stable CLI implementation
-remains paused until focused review of this corrected evidence is green.
+canonical points, and inventory-confirmed cleanup. The stable CLI now exposes
+verified native three-point `parallel_channel` creation while preserving the
+existing one/two-point path. Its Rust success boundary validates both additive
+verification metadata and preserved shape payload fields before success.
 
 ## Context and Orientation
 
@@ -603,12 +626,19 @@ creation capability. Follow-up read-only inspection and controlled runs on the
 owner-designated disposable target isolated two probe defects: exact decimal
 price equality and immediate-only cleanup readback. The plan now reflects the
 native point1-anchored width point, scale-aware machine-epsilon comparison, and
-bounded cleanup observation. Stable CLI implementation remains paused pending
-corrected validation and evidence review.
+bounded cleanup observation. Corrected evidence review, stable implementation,
+and focused implementation re-review are green.
 
 2026-07-16: The corrected deterministic fixture and final disposable-target
 run are green. The run created one native candidate, verified three canonical
 points with scale-aware price comparison, called remove once, and confirmed
 fresh-inventory absence after the fixed delay. Lookup retained a stale handle,
 so it remains diagnostic rather than authoritative. No drawing remained and no
-stable CLI option was added. Focused evidence review is the next gate.
+stable CLI option was added at that probe stage. Focused evidence review then
+passed, the stable CLI option was implemented and fully validated, and
+implementation-review trust-boundary corrections were applied before the final
+focused re-review.
+
+2026-07-16: Focused re-review closed the final preserved-field success-boundary
+finding. Stable public and packaged guidance was synchronized, final validation
+passed, and this completed ExecPlan was archived.

@@ -26,7 +26,7 @@ loaded every time the skill triggers.
 | Pine drawing data | `tv data lines`, `tv data labels`, `tv data tables`, `tv data boxes` |
 | Strategy metrics, trades, equity | `tv data strategy`, `tv data trades --max <N>`, `tv data equity` |
 | Indicator lifecycle | `tv indicator add/remove/toggle/set` |
-| Drawing lifecycle | `tv draw shape/list/get/remove/clear` |
+| Drawing lifecycle | `tv draw shape/list/get/remove/clear`; native `parallel_channel` accepts paired `--price3` / `--time3` as a point-1-time width point |
 | Replay controls | `tv replay status/start/step/autoplay/trade/stop` |
 | Replay step log | `tv replay log --steps <N>` |
 | Screenshot | `tv screenshot --region full|chart|strategy --output <PATH> [--wait-for-render]` |

@@ -2,7 +2,12 @@ use std::process::Command;
 use std::time::Duration;
 
 use serde_json::{Value, json};
-use tradingview_cdp::{CdpClient, RuntimeEvaluator, TransportConfig, discover_target};
+use tradingview_cdp::{
+    CdpClient, KeyEvent, MouseEvent, RuntimeEvaluator, ScreenshotClip, TransportConfig,
+    discover_target,
+};
+use tradingview_core::AppError;
+use tradingview_model::drawing::{DrawingPoint, DrawingShapeRequest};
 
 const PROBE_TIMEOUT: Duration = Duration::from_secs(5);
 
@@ -268,6 +273,120 @@ fn javascript_three_point_probe_contract_is_bounded_and_verified() {
             "inventory_after_remove",
         ]
     );
+}
+
+#[tokio::test]
+#[ignore = "run through scripts/check-three-point-drawing-js-contract.py with pinned Node.js"]
+async fn javascript_three_point_production_contract_is_bounded_and_verified() {
+    let mut runtime = CaptureRuntime::default();
+    let request = DrawingShapeRequest {
+        shape_type: "parallel_channel".into(),
+        point: DrawingPoint {
+            time: 100.0,
+            price: 10.0,
+        },
+        point2: Some(DrawingPoint {
+            time: 200.0,
+            price: 20.0,
+        }),
+        point3: Some(DrawingPoint {
+            time: 100.0,
+            price: 30.0,
+        }),
+        text: None,
+        overrides: None,
+    };
+    let _ = tradingview_cli::ops::drawing_shape(&mut runtime, request).await;
+    let expression = runtime
+        .expression
+        .expect("production expression should be evaluated");
+
+    for promise_mode in ["reject", "never", "non_thenable", "throw"] {
+        let options = format!("{{ appearanceDelay: 1, promiseMode: '{promise_mode}' }}");
+        let run = execute_expression(&expression, &options);
+        assert_eq!(run["result"]["verified"], true, "unexpected run: {run}");
+        assert_eq!(run["result"]["verification_status"], "verified");
+        assert_eq!(run["result"]["new_shape_count"], 1);
+        assert_eq!(run["result"]["observed_point_count"], 3);
+        assert_eq!(run["observations"]["createCalls"], 1);
+        assert_eq!(run["observations"]["removeCalls"], 0);
+    }
+
+    let ambiguous = execute_expression(
+        &expression,
+        "{ ambiguousFirst: true, shrinkAfterAmbiguity: true }",
+    );
+    assert_eq!(ambiguous["result"]["verified"], false);
+    assert_eq!(
+        ambiguous["result"]["verification_status"],
+        "ambiguous_multiple_candidates"
+    );
+    assert_eq!(ambiguous["result"]["sticky_ambiguity"], true);
+    assert_eq!(ambiguous["observations"]["createCalls"], 1);
+    assert_eq!(ambiguous["observations"]["removeCalls"], 0);
+}
+
+#[derive(Default)]
+struct CaptureRuntime {
+    expression: Option<String>,
+}
+
+impl RuntimeEvaluator for CaptureRuntime {
+    async fn evaluate(
+        &mut self,
+        expression: &str,
+        _await_promise: bool,
+    ) -> Result<Value, AppError> {
+        self.expression = Some(expression.to_string());
+        Ok(json!({
+            "action": "shape",
+            "verified": true,
+            "entity_id": "fixture",
+            "new_shape_count": 1,
+            "candidate_entity_ids": ["fixture"],
+            "requested_point_count": 3,
+            "observed_point_count": 3,
+            "shape": "parallel_channel",
+            "verification_status": "verified",
+            "source": "chart_api",
+            "source_category": "desktop_backed_operation",
+            "requires_desktop": true,
+            "non_mutating": false,
+            "sticky_ambiguity": false,
+            "creation_signal": "fulfilled",
+            "point": {"time": 100, "price": 10},
+            "point2": {"time": 200, "price": 20},
+            "point3": {"time": 100, "price": 30},
+            "observed_points": [
+                {"time": 100, "price": 10},
+                {"time": 200, "price": 20},
+                {"time": 100, "price": 30}
+            ]
+        }))
+    }
+
+    async fn capture_screenshot(&mut self) -> Result<Vec<u8>, AppError> {
+        panic!("capture_screenshot is not used by the drawing contract")
+    }
+
+    async fn capture_screenshot_clip(
+        &mut self,
+        _clip: ScreenshotClip,
+    ) -> Result<Vec<u8>, AppError> {
+        panic!("capture_screenshot_clip is not used by the drawing contract")
+    }
+
+    async fn insert_text(&mut self, _text: &str) -> Result<(), AppError> {
+        panic!("insert_text is not used by the drawing contract")
+    }
+
+    async fn dispatch_key_event(&mut self, _event: KeyEvent) -> Result<(), AppError> {
+        panic!("dispatch_key_event is not used by the drawing contract")
+    }
+
+    async fn dispatch_mouse_event(&mut self, _event: MouseEvent) -> Result<(), AppError> {
+        panic!("dispatch_mouse_event is not used by the drawing contract")
+    }
 }
 
 fn fixture_points() -> [ProbePoint; 3] {

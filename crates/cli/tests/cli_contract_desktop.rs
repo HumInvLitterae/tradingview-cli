@@ -1801,6 +1801,78 @@ fn draw_shape_rejects_invalid_inputs_before_connecting() {
         vec![
             "draw",
             "shape",
+            "--type",
+            "parallel_channel",
+            "--price",
+            "100",
+            "--time",
+            "1700000000",
+            "--price2",
+            "101",
+            "--time2",
+            "1700000600",
+            "--price3",
+            "99",
+        ],
+        vec![
+            "draw",
+            "shape",
+            "--type",
+            "trend_line",
+            "--price",
+            "100",
+            "--time",
+            "1700000000",
+            "--price2",
+            "101",
+            "--time2",
+            "1700000600",
+            "--price3",
+            "99",
+            "--time3",
+            "1700000000",
+        ],
+        vec![
+            "draw",
+            "shape",
+            "--type",
+            "parallel_channel",
+            "--price",
+            "100",
+            "--time",
+            "1700000000",
+            "--price2",
+            "101",
+            "--time2",
+            "1700000600",
+            "--price3",
+            "99",
+            "--time3",
+            "1700000600",
+        ],
+        vec![
+            "draw",
+            "shape",
+            "--type",
+            "parallel_channel",
+            "--price",
+            "100",
+            "--time",
+            "1700000000",
+            "--price2",
+            "101",
+            "--time2",
+            "1700000600",
+            "--price3",
+            "99",
+            "--time3",
+            "1700000000",
+            "--text",
+            "unsupported",
+        ],
+        vec![
+            "draw",
+            "shape",
             "--price",
             "100",
             "--time",
@@ -1829,6 +1901,17 @@ fn draw_shape_rejects_invalid_inputs_before_connecting() {
         assert_eq!(value["success"], false);
         assert_eq!(value["error"]["kind"], "validation");
     }
+}
+
+#[test]
+fn draw_shape_help_explains_native_parallel_channel_width_point() {
+    tv().args(["draw", "shape", "--help"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("--price3"))
+        .stdout(predicate::str::contains("--time3"))
+        .stdout(predicate::str::contains("Parallel-channel width-point"))
+        .stdout(predicate::str::contains("must equal --time"));
 }
 
 #[test]

@@ -548,7 +548,7 @@ git diff --check
 
 The regular Cargo baseline remains Rust-only. Changes to the production
 study-value JavaScript identity helper, saved-script binding helper,
-indicator-insertion expression, or native three-point drawing probe expression
+indicator-insertion expression, or native three-point drawing probe/production expression
 also require separate executable contract gates:
 
 ```bash
@@ -572,11 +572,12 @@ other source differences remain fail-closed verification errors.
 The same pinned Pine gate executes the generated save preflight and
 post-shortcut inspection expressions so syntax drift cannot hide behind fake
 Runtime payloads; Rust tests verify public-safe save evaluation failures.
-The three-point drawing gate executes the exact Rust-generated probe expression
-and verifies Promise-independent polling, the absolute observation deadline,
-sticky multi-entity ambiguity, exact native identity and point readback, and
-verified-only cleanup. It does not connect to TradingView Desktop or perform a
-live drawing mutation.
+The three-point drawing gate executes the exact Rust-generated probe and stable
+production expressions. It verifies Promise-independent polling, the absolute
+observation deadline, sticky multi-entity ambiguity, exact native identity and
+point readback, verified-only probe cleanup, and the production path's
+no-auto-cleanup boundary. It does not connect to TradingView Desktop or perform
+a live drawing mutation.
 The corresponding executable JavaScript tests are
 ignored during ordinary `cargo test --workspace`; CI and the release workflow
 install the pinned Node version and run each gate explicitly. Node.js is not a

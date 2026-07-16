@@ -287,6 +287,12 @@ details. See `docs/observation-workflows.md` for practical command sequences
 that combine Desktop-free screening, Desktop-backed chart observation,
 selected-chart export, screenshots, browserless bars, and fundamentals reads.
 
+Create a native parallel channel with `tv draw shape --type parallel_channel`
+and three explicit point pairs. The third pair is TradingView's width point,
+so `--time3` must equal the first `--time`; use loaded bar timestamps for the
+first two anchors. Success returns one verified chart-local `entity_id` for
+exact follow-up with `tv draw get` or `tv draw remove`.
+
 ## What `tv` Does
 
 `tv` is one binary with several source categories:
