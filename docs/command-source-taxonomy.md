@@ -30,6 +30,12 @@ source, `tv quotes <SYMBOL>...`, `tv compare <SYMBOL>...`,
 `source_category: "desktop_free_read"`,
 `requires_desktop: false`, and `non_mutating: true`.
 
+`tv scanner scan --max-results <N>` keeps this Desktop-free boundary while
+reading sequential pages of at most 100 rows each. Its aggregate metadata
+reports provider-total drift and duplicates; it does not claim an atomic
+snapshot. A failed, malformed, premature-empty, or over-bound page returns an
+error instead of a partial successful aggregate.
+
 Recommended agent use: prefer these commands for broad discovery, one-off
 symbol metadata, fundamentals, quote reads, and known-symbol comparison when
 the exact selected Desktop chart feed is not required. Report source and

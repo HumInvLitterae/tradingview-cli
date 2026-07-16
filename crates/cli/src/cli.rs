@@ -377,6 +377,15 @@ pub enum ScannerCommand {
         desc: bool,
         #[arg(long, short = 'n')]
         limit: Option<usize>,
+        /// Zero-based first row for a single diagnostic page.
+        #[arg(long, conflicts_with = "max_results")]
+        offset: Option<usize>,
+        /// Require a complete sequential scan bounded to at most this many rows.
+        #[arg(long, conflicts_with_all = ["offset", "limit"])]
+        max_results: Option<usize>,
+        /// Rows per aggregate request (1-100, default 100).
+        #[arg(long, requires = "max_results")]
+        page_size: Option<usize>,
         #[arg(long)]
         min_price: Option<f64>,
         #[arg(long)]

@@ -16,6 +16,7 @@ tv snapshot NASDAQ:AAPL
 tv compare NASDAQ:AAPL NYSE:IONQ
 tv quotes AAPL MSFT NYSE:IONQ
 tv scanner scan --type stock --columns name,close,volume --limit 10
+tv scanner scan --type stock --sort name --asc --max-results 500 --page-size 100
 tv fundamentals NYSE:IONQ --group earnings
 tv scanner metainfo --market america --field close
 ```
@@ -40,6 +41,12 @@ to TradingView Desktop. Use `tv compare <SYMBOL>...` when the task is a
 Desktop-free comparison across several known symbols. Use the lower-level
 commands when you need just one section, ordered quotes only, or a scanner row
 set.
+
+For a provider population larger than one page, use explicit aggregate mode
+with `--max-results`. The CLI keeps each request at 100 rows or fewer, publishes
+no partial success after a page failure, and exposes page totals, duplicates,
+timing, and drift. Treat the result as a bounded sequential observation rather
+than a point-in-time snapshot. Use `--offset` only to inspect one page.
 
 `tv snapshot` also includes compare-style contract readback for a single
 symbol. Use `contract_version`, `summary.coverage_status`,

@@ -9,6 +9,17 @@ package version omits the leading `v`.
 
 ### Changed
 
+- Added bounded Desktop-free scanner pagination. `tv scanner scan` now accepts
+  `--offset` for one page and `--max-results` with optional `--page-size` for a
+  complete bounded sequence. Aggregate results retain the 100-row request cap,
+  deduplicate by first-seen symbol, expose total/duplicate/timing drift, and
+  fail without partial success when a page is malformed, incomplete, failed,
+  or exceeds the declared population bound.
+- Preserved the existing `ScannerScanResult` Rust and default JSON contract by
+  returning explicit-offset metadata through a separate page result, and made
+  aggregate scans reject non-empty short pages and overfull raw provider pages
+  before advancing the offset.
+
 - Replaced `tv indicator add`'s fixed-delay legacy `createStudy` call with the
   current chart-owned study inserter. Add now resolves one exact metainfo row,
   awaits insertion, requires one immediate inventory row with the requested
@@ -57,6 +68,17 @@ package version omits the leading `v`.
   native identity, and a three-point readback before returning its ID.
 
 ### Documentation
+
+- Promoted bounded Desktop-free scanner pagination as the final v0.28 feature
+  slice before the completion audit, with a 100-row request cap and explicit
+  sequential-observation semantics. Implementation, correction waves, full
+  validation, and focused independent re-review are complete.
+- Queued the v0.28 completion and architecture audit after bounded scanner
+  pagination implementation, validation, and independent review are complete.
+  The audit will freeze the reviewed Pine, indicator, launch, native
+  three-point drawing, and scanner-pagination scope.
+  Windows MSIX launch, finite-`f64` right-offset restoration, width-derived
+  drawing geometry, and other unshipped candidates remain deferred.
 
 - Added a feasibility-gated native three-point drawing plan. The implemented
   surface adds an explicit third point to `tv draw shape`, verifies a native

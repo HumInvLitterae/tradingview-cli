@@ -7,7 +7,9 @@
 //! Prefer the typed functions for Rust callers:
 //!
 //! - [`scanner_hotlist_typed`] for preset hotlist reads.
-//! - [`scanner_scan_typed`] for scanner table reads.
+//! - [`scanner_scan_typed`] for first-page scanner table reads.
+//! - [`scanner_scan_page_typed`] for one explicit-offset page.
+//! - [`scanner_scan_aggregate_typed`] for a bounded sequence of pages.
 //! - [`scanner_metainfo_typed`] for scanner field metadata discovery.
 //!
 //! The older JSON-returning functions remain public for CLI payload
@@ -77,8 +79,12 @@ mod types;
 
 pub use hotlist::{scanner_hotlist, scanner_hotlist_typed};
 pub use metainfo::{ScannerMetainfoRequest, scanner_metainfo, scanner_metainfo_typed};
-pub use scan::{ScannerScanRequest, scanner_scan, scanner_scan_typed};
+pub use scan::{
+    ScannerAggregateScanRequest, ScannerPageScanRequest, ScannerScanRequest, scanner_scan,
+    scanner_scan_aggregate, scanner_scan_aggregate_typed, scanner_scan_page,
+    scanner_scan_page_typed, scanner_scan_typed,
+};
 pub use types::{
-    ScannerFieldInfo, ScannerHotlistResult, ScannerMetainfoResult, ScannerRow, ScannerScanResult,
-    ScannerSort,
+    ScannerAggregateScanResult, ScannerFieldInfo, ScannerHotlistResult, ScannerMetainfoResult,
+    ScannerPageScanResult, ScannerRow, ScannerScanResult, ScannerSort,
 };

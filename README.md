@@ -80,6 +80,7 @@ tv events NASDAQ:AAPL --event-type earnings
 tv events NASDAQ:AAPL --event-type dividends
 tv events compare NASDAQ:AAPL NASDAQ:MSFT --event-type earnings
 tv scanner scan --type stock --columns name,close,volume --limit 10
+tv scanner scan --type stock --sort name --asc --max-results 500 --page-size 100
 tv scanner metainfo --market america --field close --field premarket_close
 ```
 
@@ -113,6 +114,13 @@ returns.
 to a small ordered candidate set with `contract_version:
 "events_compare.v1"`. It is not a full event calendar and does not rank or
 recommend symbols.
+
+`tv scanner scan --max-results <N>` performs a bounded sequence of Desktop-free
+scanner pages while retaining the 100-row per-request cap. It returns only
+after every accepted page completes, deduplicates symbols in first-seen order,
+and reports page, total-count, duplicate, timing, and drift metadata. The result
+is a sequential observation, not an atomic market snapshot. Use `--offset` for
+one diagnostic page; it cannot be combined with aggregate mode.
 
 Scanner-backed `tv quote <SYMBOL>` and `tv quotes <SYMBOL>...` are
 Desktop-free, but they are not a realtime guarantee. Inspect `time`,

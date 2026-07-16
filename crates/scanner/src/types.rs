@@ -69,6 +69,45 @@ pub struct ScannerScanResult {
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize)]
+/// Result for an explicit-offset scanner page read.
+pub struct ScannerPageScanResult {
+    /// Zero-based provider offset used for this page.
+    pub offset: usize,
+    /// Existing scanner page payload, flattened for JSON compatibility.
+    #[serde(flatten)]
+    pub page: ScannerScanResult,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize)]
+/// Completed bounded sequence of scanner table pages.
+pub struct ScannerAggregateScanResult {
+    pub source: String,
+    pub source_category: String,
+    pub requires_desktop: bool,
+    pub non_mutating: bool,
+    pub market: String,
+    pub page_size: usize,
+    pub max_results: usize,
+    pub count: usize,
+    pub raw_count: usize,
+    pub duplicate_count: usize,
+    pub pages_fetched: usize,
+    pub first_total_count: usize,
+    pub last_total_count: usize,
+    pub maximum_total_count: usize,
+    pub query_fingerprint: String,
+    pub started_at_epoch_seconds: u64,
+    pub completed_at_epoch_seconds: u64,
+    pub total_count_changed: bool,
+    pub duplicates_observed: bool,
+    pub sequential_observation: bool,
+    pub columns: Vec<String>,
+    pub sort: ScannerSort,
+    pub filters: Vec<Value>,
+    pub symbols: Vec<ScannerRow>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize)]
 /// Scanner sort descriptor.
 pub struct ScannerSort {
     /// Sort field name.
