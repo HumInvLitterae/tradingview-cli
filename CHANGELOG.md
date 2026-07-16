@@ -80,7 +80,8 @@ package version omits the leading `v`.
   scanner pagination passed independent review. The first audit review found
   no release-blocking architecture issue, but identified Pine source-operation
   diagnostic leakage and stale candidate evidence after a dependency update.
-  Corrections are applied and focused re-review remains pending.
+  Corrections and the final ledger check are complete, no architecture blocker
+  remains, and v0.28 release-readiness planning has started.
   Windows MSIX launch, finite-`f64` right-offset restoration, width-derived
   drawing geometry, and other unshipped candidates remain deferred.
 
