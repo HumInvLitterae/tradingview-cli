@@ -6,11 +6,13 @@ for release and next-phase planning.
 
 ## Current and future plans
 
-The transport measurement and failure-taxonomy slice is complete and archived.
-Pre-dispatch retry is deferred until ordinary operation or a later bounded
-probe records a relevant failure. The next planned slice is a connection and
-evaluation topology audit; its ExecPlan has not yet been created. The ordered
-`v0.29.0` inventory is maintained in `docs/v0.29-work-items.md`.
+No implementation ExecPlan is currently active. The connection and evaluation
+topology audit is complete and archived with one deferred target-list candidate
+and no evaluation candidate. The next ordered investigation is the
+recovery-semantics inventory; its ExecPlan has not yet been created. The
+ordered `v0.29.0` inventory is maintained in `docs/v0.29-work-items.md`.
+Pre-dispatch retry remains deferred until ordinary operation or a later bounded
+probe records a relevant failure.
 
 Width-derived drawing geometry, the archived right-offset plan's finite-`f64`
 candidate, and Windows MSIX launch feasibility remain deferred rather than
@@ -23,6 +25,12 @@ shared-connection feasibility decision lives in
 not an ExecPlan; each promoted slice requires its own reviewed plan.
 
 Recently completed:
+
+- `tradingview-cli-connection-evaluation-topology-audit.md`: accounted for 75
+  normal dispatcher connection sites, exceptional multi-target owners, and 134
+  Runtime evaluation sites in 44 files. Focused review confirmed one deferred
+  explicit-target `status` listing candidate and no evaluation candidate; the
+  completed plan now lives under `docs/plans/archives/`.
 
 - `tradingview-cli-cdp-transport-measurement.md`: added typed internal stage
   observations, public-safe `failure_stage` diagnostics, deterministic

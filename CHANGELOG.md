@@ -32,6 +32,12 @@ package version omits the leading `v`.
   strategy from the active transport measurement and failure-taxonomy
   ExecPlan; retry, shared connection, recovery metadata, and bounded wait
   behavior remain separately gated.
+- Started a read-only connection and Runtime-evaluation topology audit. The
+  audit inventories ownership and repeated work before any optimization is
+  proposed. The source audit found one deferred explicit-target `status`
+  listing candidate and no evaluation candidate. Independent review reproduced
+  the inventory; the audit adds no shared connection or production topology
+  change.
 
 ## v0.28.0 - 2026-07-16
 
