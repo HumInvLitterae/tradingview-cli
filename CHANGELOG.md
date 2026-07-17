@@ -38,6 +38,10 @@ package version omits the leading `v`.
   listing candidate and no evaluation candidate. Independent review reproduced
   the inventory; the audit adds no shared connection or production topology
   change.
+- Started a failure-specific recovery-semantics inventory. It separates
+  pre-dispatch failure, unknown post-dispatch outcome, verification failure,
+  restoration failure, local effects, and partial diagnostics without adding
+  retry or public recovery metadata.
 
 ## v0.28.0 - 2026-07-16
 

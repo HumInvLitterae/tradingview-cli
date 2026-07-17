@@ -6,11 +6,13 @@ for release and next-phase planning.
 
 ## Current and future plans
 
-No implementation ExecPlan is currently active. The connection and evaluation
+The current ExecPlan is
+`docs/plans/tradingview-cli-recovery-semantics-inventory.md`. It inventories
+failure boundaries, possible side effects, and safe operator responses without
+adding retry or public recovery metadata. The connection and evaluation
 topology audit is complete and archived with one deferred target-list candidate
-and no evaluation candidate. The next ordered investigation is the
-recovery-semantics inventory; its ExecPlan has not yet been created. The
-ordered `v0.29.0` inventory is maintained in `docs/v0.29-work-items.md`.
+and no evaluation candidate. The ordered `v0.29.0` inventory is maintained in
+`docs/v0.29-work-items.md`.
 Pre-dispatch retry remains deferred until ordinary operation or a later bounded
 probe records a relevant failure.
 
