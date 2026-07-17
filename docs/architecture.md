@@ -38,6 +38,14 @@ event read, and response/event waits use one absolute deadline per operation.
 Connection establishment deadlines are handled separately from this message
 routing boundary.
 
+CDP transport boundaries classify target listing, target selection, WebSocket
+connection, method calls, and event waits with internal typed observations.
+Transport failures add a public-safe `failure_stage` detail while preserving
+their existing error kind, message, exit code, and safe details. Stage timing
+is internal or opt-in probe evidence; it is not common success-envelope
+metadata. Classification does not retry, reconnect, switch targets, or promote
+a failed operation to success.
+
 Each crate that owns HTTP creates a configured `reqwest::Client` for the
 top-level operation and passes it through sequential internal reads, allowing
 connection-pool reuse without a global client or cross-source cache. Public

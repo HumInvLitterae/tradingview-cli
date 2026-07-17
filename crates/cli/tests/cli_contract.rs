@@ -82,6 +82,7 @@ fn connection_failure_uses_structured_json_and_exit_code_2() {
     assert_eq!(value["success"], false);
     assert_eq!(value["command"], "status");
     assert_eq!(value["error"]["kind"], "connection");
+    assert_eq!(value["error"]["details"]["failure_stage"], "target_list");
     assert_eq!(value["error"]["details"]["cdp_port"], port);
     assert!(
         value["error"]["details"]["next_action_hint"]
@@ -100,6 +101,7 @@ fn readiness_connection_failure_uses_structured_json_and_exit_code_2() {
     assert_eq!(value["success"], false);
     assert_eq!(value["command"], "readiness");
     assert_eq!(value["error"]["kind"], "connection");
+    assert_eq!(value["error"]["details"]["failure_stage"], "target_list");
     assert_eq!(value["error"]["details"]["cdp_port"], port);
     assert!(
         value["error"]["details"]["next_action_hint"]

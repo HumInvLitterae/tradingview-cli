@@ -353,10 +353,18 @@ Errors use the same envelope shape on stderr:
   "error": {
     "kind": "connection",
     "message": "CDP connection failed",
-    "details": null
+    "details": {
+      "failure_stage": "websocket_connect"
+    }
   }
 }
 ```
+
+Desktop CDP transport errors may include `failure_stage` with one of
+`target_list`, `target_select`, `websocket_connect`, `method_call`,
+`event_wait`, or `transport_unknown`. This classifies where the error surfaced;
+it does not mean the command is safe to retry. Existing error kind, message,
+and exit-code semantics remain authoritative.
 
 `tv stream ...` commands print newline-delimited JSON envelopes. Stream samples
 use `_event: "sample"`, optional heartbeats use `_event: "heartbeat"`, and

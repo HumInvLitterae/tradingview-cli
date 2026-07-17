@@ -232,6 +232,26 @@ Live CDP smoke checks are useful but environment-dependent. Keep them separate
 from automated tests and record meaningful results in the relevant ExecPlan or
 note without account-local identifiers.
 
+The ignored CDP transport measurement checks stage latency and failure
+classification without retrying a failed operation:
+
+```bash
+TV_LIVE_TRANSPORT_MEASUREMENT=1 \
+  TV_LIVE_TRANSPORT_MEASUREMENT_TARGET_ID=<TARGET_ID> \
+  TV_LIVE_TRANSPORT_MEASUREMENT_ITERATIONS=10 \
+  TV_LIVE_TRANSPORT_MEASUREMENT_DEADLINE_MS=120000 \
+  cargo test -p tradingview-cdp live_transport_measurement -- --ignored --nocapture
+```
+
+The target ID is required and must remain a local environment value. Iterations
+are bounded to `1..=100`, and the single run deadline is bounded to
+`1000..=300000` milliseconds. Output contains only aggregate counts, stage
+p50/p95 timing, deadline status, and stale-target diagnosis labels. Because the
+probe uses explicit target selection, its target-selection timing does not
+represent ordinary heuristic selection; deterministic fixtures cover the
+heuristic and ambiguity paths. Do not copy raw probe output or target values
+into tracked files.
+
 Some live checks are available as ignored integration tests. They are opt-in
 only and must not become CI requirements. For chart-source quote endurance
 checks, build the CLI and run:

@@ -6,11 +6,11 @@ for release and next-phase planning.
 
 ## Current and future plans
 
-The current ExecPlan is
-`docs/plans/tradingview-cli-cdp-transport-measurement.md`. It measures and
-classifies Desktop CDP transport stages without adding retry, reconnect,
-session, broker, or generalized wait behavior. The ordered `v0.29.0` inventory
-is maintained in `docs/v0.29-work-items.md`.
+The transport measurement and failure-taxonomy slice is complete and archived.
+Pre-dispatch retry is deferred until ordinary operation or a later bounded
+probe records a relevant failure. The next planned slice is a connection and
+evaluation topology audit; its ExecPlan has not yet been created. The ordered
+`v0.29.0` inventory is maintained in `docs/v0.29-work-items.md`.
 
 Width-derived drawing geometry, the archived right-offset plan's finite-`f64`
 candidate, and Windows MSIX launch feasibility remain deferred rather than
@@ -23,6 +23,12 @@ shared-connection feasibility decision lives in
 not an ExecPlan; each promoted slice requires its own reviewed plan.
 
 Recently completed:
+
+- `tradingview-cli-cdp-transport-measurement.md`: added typed internal stage
+  observations, public-safe `failure_stage` diagnostics, deterministic
+  classification fixtures, and one bounded live aggregate run without adding
+  retry or reconnect behavior. Focused closeout review is green; the completed
+  plan now lives under `docs/plans/archives/`.
 
 - `tradingview-cli-v0.28.0-release-readiness.md`: prepared and released
   `v0.28.0` with aligned workspace versions, release notes, package contents,
