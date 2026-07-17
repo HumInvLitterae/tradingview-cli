@@ -1,10 +1,14 @@
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use reqwest::{Client, Url};
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 
 use tradingview_core::{AppError, ErrorKind};
+
+use crate::diagnostics::{
+    PublicFailureStage, TransportObserver, TransportStage, with_failure_stage,
+};
 
 const CDP_HTTP_CONNECT_TIMEOUT: Duration = Duration::from_secs(1);
 const CDP_HTTP_TOTAL_TIMEOUT: Duration = Duration::from_secs(3);
@@ -105,6 +109,7 @@ impl TransportConfig {
 pub struct CdpHttpSession {
     config: TransportConfig,
     client: Client,
+    observer: Option<TransportObserver>,
 }
 
 impl CdpHttpSession {
@@ -125,10 +130,29 @@ impl CdpHttpSession {
         Ok(Self {
             config: config.clone(),
             client,
+            observer: None,
         })
     }
 
+    #[cfg(test)]
+    pub(crate) fn with_observer(mut self, observer: TransportObserver) -> Self {
+        self.observer = Some(observer);
+        self
+    }
+
     pub async fn fetch_targets(&self) -> Result<Vec<Target>, AppError> {
+        let started = Instant::now();
+        let result = self.fetch_targets_unobserved().await.map_err(|error| {
+            with_failure_stage(
+                error,
+                PublicFailureStage::from(Some(TransportStage::TargetList)),
+            )
+        });
+        self.record(TransportStage::TargetList, started.elapsed(), &result);
+        result
+    }
+
+    async fn fetch_targets_unobserved(&self) -> Result<Vec<Target>, AppError> {
         let response = self
             .client
             .get(self.config.list_url())
@@ -246,7 +270,26 @@ impl CdpHttpSession {
     }
 
     pub async fn discover_target(&self) -> Result<Target, AppError> {
-        discover_target_from_targets(&self.config, self.fetch_targets().await?)
+        let targets = self.fetch_targets().await?;
+        self.select_target_from(targets)
+    }
+
+    pub(crate) fn select_target_from(&self, targets: Vec<Target>) -> Result<Target, AppError> {
+        let started = Instant::now();
+        let result = discover_target_from_targets(&self.config, targets).map_err(|error| {
+            with_failure_stage(
+                error,
+                PublicFailureStage::from(Some(TransportStage::TargetSelect)),
+            )
+        });
+        self.record(TransportStage::TargetSelect, started.elapsed(), &result);
+        result
+    }
+
+    fn record<T>(&self, stage: TransportStage, elapsed: Duration, result: &Result<T, AppError>) {
+        if let Some(observer) = &self.observer {
+            observer.record(stage, elapsed, result);
+        }
     }
 
     fn target_list_request_error(&self, error: reqwest::Error) -> AppError {
@@ -459,6 +502,7 @@ fn targets_with_handoff(targets: &[Target]) -> Vec<serde_json::Value> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::diagnostics::StageOutcome;
     use std::sync::{Mutex, OnceLock};
     use tokio::{
         io::{AsyncReadExt, AsyncWriteExt},
@@ -641,15 +685,111 @@ mod tests {
             port: address.port(),
             target_id: None,
         };
+        let observer = TransportObserver::default();
         let session = CdpHttpSession::with_timeouts(
             &config,
             Duration::from_millis(25),
             Duration::from_millis(50),
         )
-        .unwrap();
+        .unwrap()
+        .with_observer(observer.clone());
 
         let error = session.fetch_targets().await.unwrap_err();
         assert_eq!(error.kind, ErrorKind::Timeout);
+        assert_eq!(
+            error.details.as_ref().unwrap()["failure_stage"],
+            "target_list"
+        );
+        let samples = observer.samples();
+        assert_eq!(samples.len(), 1);
+        assert_eq!(samples[0].stage, TransportStage::TargetList);
+        assert_eq!(
+            samples[0].outcome,
+            StageOutcome::Failure(ErrorKind::Timeout)
+        );
+        server.await.unwrap();
+    }
+
+    #[tokio::test]
+    async fn discovery_records_target_list_and_selection_separately() {
+        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let address = listener.local_addr().unwrap();
+        let body = serde_json::to_string(&vec![target(
+            "chart",
+            "https://www.tradingview.com/chart/test",
+        )])
+        .unwrap();
+        let server = tokio::spawn(async move {
+            let (mut stream, _) = listener.accept().await.unwrap();
+            read_http_request(&mut stream).await;
+            let response = format!(
+                "HTTP/1.1 200 OK\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{body}",
+                body.len()
+            );
+            stream.write_all(response.as_bytes()).await.unwrap();
+        });
+        let config = TransportConfig {
+            host: address.ip().to_string(),
+            port: address.port(),
+            target_id: None,
+        };
+        let observer = TransportObserver::default();
+        let session = CdpHttpSession::new(&config)
+            .unwrap()
+            .with_observer(observer.clone());
+
+        let selected = session.discover_target().await.unwrap();
+        assert_eq!(selected.id, "chart");
+        let samples = observer.samples();
+        assert_eq!(samples.len(), 2);
+        assert_eq!(samples[0].stage, TransportStage::TargetList);
+        assert_eq!(samples[0].outcome, StageOutcome::Success);
+        assert_eq!(samples[1].stage, TransportStage::TargetSelect);
+        assert_eq!(samples[1].outcome, StageOutcome::Success);
+        server.await.unwrap();
+    }
+
+    #[tokio::test]
+    async fn ambiguous_discovery_has_public_and_internal_selection_stage() {
+        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let address = listener.local_addr().unwrap();
+        let body = serde_json::to_string(&vec![
+            target("first", "https://www.tradingview.com/chart/first"),
+            target("second", "https://www.tradingview.com/chart/second"),
+        ])
+        .unwrap();
+        let server = tokio::spawn(async move {
+            let (mut stream, _) = listener.accept().await.unwrap();
+            read_http_request(&mut stream).await;
+            let response = format!(
+                "HTTP/1.1 200 OK\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{body}",
+                body.len()
+            );
+            stream.write_all(response.as_bytes()).await.unwrap();
+        });
+        let config = TransportConfig {
+            host: address.ip().to_string(),
+            port: address.port(),
+            target_id: None,
+        };
+        let observer = TransportObserver::default();
+        let session = CdpHttpSession::new(&config)
+            .unwrap()
+            .with_observer(observer.clone());
+
+        let error = session.discover_target().await.unwrap_err();
+        assert_eq!(error.kind, ErrorKind::TargetAmbiguous);
+        assert_eq!(
+            error.details.as_ref().unwrap()["failure_stage"],
+            "target_select"
+        );
+        let samples = observer.samples();
+        assert_eq!(samples.len(), 2);
+        assert_eq!(samples[1].stage, TransportStage::TargetSelect);
+        assert_eq!(
+            samples[1].outcome,
+            StageOutcome::Failure(ErrorKind::TargetAmbiguous)
+        );
         server.await.unwrap();
     }
 

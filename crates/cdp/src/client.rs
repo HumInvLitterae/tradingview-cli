@@ -1,4 +1,8 @@
-use std::{collections::VecDeque, future::Future, time::Duration};
+use std::{
+    collections::VecDeque,
+    future::Future,
+    time::{Duration, Instant},
+};
 
 use base64::{Engine, engine::general_purpose::STANDARD};
 use futures_util::{SinkExt, StreamExt};
@@ -11,7 +15,10 @@ use tokio_tungstenite::{
 
 use tradingview_core::{AppError, ErrorKind};
 
-use crate::Target;
+use crate::{
+    Target,
+    diagnostics::{PublicFailureStage, TransportObserver, TransportStage, with_failure_stage},
+};
 
 const DEFAULT_TIMEOUT: Duration = Duration::from_secs(10);
 const CONNECT_TIMEOUT: Duration = Duration::from_secs(5);
@@ -109,6 +116,7 @@ pub struct CdpClient {
     next_id: u64,
     timeout: Duration,
     pending_events: PendingEvents,
+    observer: Option<TransportObserver>,
 }
 
 #[derive(Debug)]
@@ -177,10 +185,34 @@ enum IncomingMessage {
 
 impl CdpClient {
     pub async fn connect(target: &Target) -> Result<Self, AppError> {
-        Self::connect_with_timeout(target, CONNECT_TIMEOUT).await
+        Self::connect_with_timeout_and_observer(target, CONNECT_TIMEOUT, None).await
     }
 
-    async fn connect_with_timeout(target: &Target, timeout: Duration) -> Result<Self, AppError> {
+    pub(crate) async fn connect_with_timeout_and_observer(
+        target: &Target,
+        timeout: Duration,
+        observer: Option<TransportObserver>,
+    ) -> Result<Self, AppError> {
+        let started = Instant::now();
+        let result = Self::connect_unobserved(target, timeout, observer.clone())
+            .await
+            .map_err(|error| {
+                with_failure_stage(
+                    error,
+                    PublicFailureStage::from(Some(TransportStage::WebSocketConnect)),
+                )
+            });
+        if let Some(observer) = observer {
+            observer.record(TransportStage::WebSocketConnect, started.elapsed(), &result);
+        }
+        result
+    }
+
+    async fn connect_unobserved(
+        target: &Target,
+        timeout: Duration,
+        observer: Option<TransportObserver>,
+    ) -> Result<Self, AppError> {
         let ws_url = target.web_socket_debugger_url.as_deref().ok_or_else(|| {
             AppError::new(
                 ErrorKind::Connection,
@@ -196,11 +228,31 @@ impl CdpClient {
             next_id: 1,
             timeout: DEFAULT_TIMEOUT,
             pending_events: PendingEvents::production(),
+            observer,
         };
         Ok(client)
     }
 
     pub async fn call_method(&mut self, method: &str, params: Value) -> Result<Value, AppError> {
+        let started = Instant::now();
+        let result = self
+            .call_method_unobserved(method, params)
+            .await
+            .map_err(|error| {
+                with_failure_stage(
+                    error,
+                    PublicFailureStage::from(Some(TransportStage::MethodCall)),
+                )
+            });
+        self.record(TransportStage::MethodCall, started.elapsed(), &result);
+        result
+    }
+
+    async fn call_method_unobserved(
+        &mut self,
+        method: &str,
+        params: Value,
+    ) -> Result<Value, AppError> {
         let id = self.next_request_id();
         let deadline = tokio::time::Instant::now() + self.timeout;
         let request = json!({
@@ -219,6 +271,21 @@ impl CdpClient {
     }
 
     pub async fn next_event(&mut self, timeout: Duration) -> Result<Option<Value>, AppError> {
+        let started = Instant::now();
+        let result = self.next_event_unobserved(timeout).await.map_err(|error| {
+            with_failure_stage(
+                error,
+                PublicFailureStage::from(Some(TransportStage::EventWait)),
+            )
+        });
+        self.record(TransportStage::EventWait, started.elapsed(), &result);
+        result
+    }
+
+    async fn next_event_unobserved(
+        &mut self,
+        timeout: Duration,
+    ) -> Result<Option<Value>, AppError> {
         if let Some(event) = self.pending_events.pop() {
             return Ok(Some(event));
         }
@@ -278,6 +345,12 @@ impl CdpClient {
         let id = self.next_id;
         self.next_id += 1;
         id
+    }
+
+    fn record<T>(&self, stage: TransportStage, elapsed: Duration, result: &Result<T, AppError>) {
+        if let Some(observer) = &self.observer {
+            observer.record(stage, elapsed, result);
+        }
     }
 }
 
@@ -473,6 +546,7 @@ mod tests {
     use tokio_tungstenite::accept_async;
 
     use super::*;
+    use crate::diagnostics::StageOutcome;
 
     struct NeverReadySink;
 
@@ -666,6 +740,8 @@ mod tests {
     #[tokio::test]
     async fn unrelated_events_cannot_extend_method_response_deadline() {
         let (mut client, mut server) = connected_test_client().await;
+        let observer = TransportObserver::default();
+        client.observer = Some(observer.clone());
         client.timeout = Duration::from_millis(50);
         let server_task = tokio::spawn(async move {
             let _ = next_request_id(&mut server).await;
@@ -690,6 +766,17 @@ mod tests {
             .unwrap_err();
         assert_eq!(error.kind, ErrorKind::Timeout);
         assert_eq!(error.message, "CDP request timed out");
+        assert_eq!(
+            error.details.as_ref().unwrap()["failure_stage"],
+            "method_call"
+        );
+        let samples = observer.samples();
+        assert_eq!(samples.len(), 1);
+        assert_eq!(samples[0].stage, TransportStage::MethodCall);
+        assert_eq!(
+            samples[0].outcome,
+            StageOutcome::Failure(ErrorKind::Timeout)
+        );
         assert!(started.elapsed() < Duration::from_millis(200));
         server_task.abort();
     }
@@ -697,6 +784,8 @@ mod tests {
     #[tokio::test]
     async fn unrelated_responses_cannot_extend_event_deadline() {
         let (mut client, mut server) = connected_test_client().await;
+        let observer = TransportObserver::default();
+        client.observer = Some(observer.clone());
         let server_task = tokio::spawn(async move {
             for id in 100..130 {
                 if send_json_if_open(&mut server, json!({ "id": id, "result": {} }))
@@ -716,6 +805,17 @@ mod tests {
             .unwrap_err();
         assert_eq!(error.kind, ErrorKind::Timeout);
         assert_eq!(error.message, "CDP event wait timed out");
+        assert_eq!(
+            error.details.as_ref().unwrap()["failure_stage"],
+            "event_wait"
+        );
+        let samples = observer.samples();
+        assert_eq!(samples.len(), 1);
+        assert_eq!(samples[0].stage, TransportStage::EventWait);
+        assert_eq!(
+            samples[0].outcome,
+            StageOutcome::Failure(ErrorKind::Timeout)
+        );
         assert!(started.elapsed() < Duration::from_millis(200));
         server_task.abort();
     }
@@ -755,13 +855,30 @@ mod tests {
             web_socket_debugger_url: Some(format!("ws://{address}")),
         };
 
-        let error = match CdpClient::connect_with_timeout(&target, Duration::from_millis(50)).await
+        let observer = TransportObserver::default();
+        let error = match CdpClient::connect_with_timeout_and_observer(
+            &target,
+            Duration::from_millis(50),
+            Some(observer.clone()),
+        )
+        .await
         {
             Ok(_) => panic!("stalled WebSocket handshake should time out"),
             Err(error) => error,
         };
         assert_eq!(error.kind, ErrorKind::Timeout);
         assert_eq!(error.message, "CDP WebSocket connection timed out");
+        assert_eq!(
+            error.details.as_ref().unwrap()["failure_stage"],
+            "websocket_connect"
+        );
+        let samples = observer.samples();
+        assert_eq!(samples.len(), 1);
+        assert_eq!(samples[0].stage, TransportStage::WebSocketConnect);
+        assert_eq!(
+            samples[0].outcome,
+            StageOutcome::Failure(ErrorKind::Timeout)
+        );
         server.await.unwrap();
     }
 

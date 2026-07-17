@@ -63,6 +63,13 @@ If TradingView Desktop is not connected, run:
 tv launch
 ```
 
+Desktop CDP errors can include a public-safe `failure_stage` detail such as
+`target_list`, `target_select`, `websocket_connect`, `method_call`, or
+`event_wait`. Use it to describe where the failure surfaced, not as automatic
+retry permission. A method may have been dispatched before a `method_call`
+failure, so preserve the original command outcome and ask before repeating a
+mutation.
+
 On macOS, normal `tv launch` uses the system app launcher and then checks CDP
 readiness. Use `tv launch --path <PATH>` only when the user intentionally wants
 to start a specific executable. Use `--kill-existing` only with explicit user

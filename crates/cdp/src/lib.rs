@@ -1,4 +1,7 @@
 mod client;
+mod diagnostics;
+#[cfg(test)]
+mod measurement;
 mod transport;
 
 pub use client::{

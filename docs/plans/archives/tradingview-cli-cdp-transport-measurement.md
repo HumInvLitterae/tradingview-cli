@@ -21,24 +21,38 @@ slice.
 
 ## Progress
 
-- [ ] Confirm the current transport and error-shaping call graph against the
+- [x] (2026-07-17) Confirm the current transport and error-shaping call graph against the
   released `v0.28.0` source.
-- [ ] Define internal typed stage, timing, and stale-target diagnosis models.
-- [ ] Add deterministic stage timing and failure-classification fixtures.
-- [ ] Add the bounded ignored live transport probe.
-- [ ] Add the reviewed stable public `failure_stage` mapping to transport
+- [x] (2026-07-17) Define internal typed stage, timing, and stale-target diagnosis models.
+- [x] (2026-07-17) Add deterministic stage timing and failure-classification fixtures.
+- [x] (2026-07-17) Add the bounded ignored live transport probe.
+- [x] (2026-07-17) Add the reviewed stable public `failure_stage` mapping to transport
   errors without changing existing kind, message, or exit code.
-- [ ] Run one owner-approved bounded live probe and record aggregate evidence.
-- [ ] Synchronize stable docs and development guidance for what actually ships.
-- [ ] Run focused and full validation.
-- [ ] Obtain focused independent implementation review and apply corrections.
-- [ ] Archive this plan and promote or decline the next transport slice from
-  evidence.
+- [x] (2026-07-17) Run one owner-approved bounded live probe and record aggregate evidence.
+- [x] (2026-07-17) Synchronize stable docs and development guidance for what actually ships.
+- [x] (2026-07-17) Run focused and full non-live validation. CDP focused tests,
+  strict workspace Clippy, the full workspace test suite, metadata, public
+  hygiene, package-script syntax, guide parity, and diff hygiene are green.
+- [x] (2026-07-17) Obtain focused independent evidence/closeout review. The
+  review found no blocker and approved archival.
+- [x] (2026-07-17) Archive this plan and defer pre-dispatch retry until ordinary
+  operation or a later bounded probe records a relevant transport failure.
 
 ## Surprises & Discoveries
 
-None yet. Record observations with concise deterministic or aggregate
-public-safe evidence as work proceeds.
+- The live-probe deadline must begin after constructing the reusable HTTP
+  client but before the first network operation. Including client construction
+  made a short deterministic deadline fixture measure local TLS/provider setup
+  rather than the transport run it was intended to bound.
+- A 250 ms stalled-loopback fixture is stable when acceptance checks the
+  recorded target-list stage duration rather than total caller wall time. The
+  production HTTP session still retains its existing one-second connect and
+  three-second total request deadlines.
+- A diagnostic re-discovery after connection failure contributes another
+  `target_list` sample to the aggregate stage distribution. This did not affect
+  the zero-failure live run. If a later run observes connection failures,
+  interpret that distribution as a mixture of ordinary and diagnostic target
+  listing, or separate the diagnostic label in a dedicated follow-up.
 
 ## Decision Log
 
@@ -64,12 +78,32 @@ public-safe evidence as work proceeds.
   Rationale: this measures detectability without converting diagnosis into
   retry behavior or changing an ordinary command result.
   Date/Author: 2026-07-17 / planning owner.
+- Decision: keep `PublicFailureStage` crate-private even though its serialized
+  values are a public JSON contract.
+  Rationale: downstream users consume the additive error detail; exposing the
+  Rust enum would create an unrelated public library compatibility promise.
+  Date/Author: 2026-07-17 / implementation owner.
+- Decision: defer rather than promote or permanently decline pre-dispatch
+  retry after this slice.
+  Rationale: one 10-iteration run observed no failure, so it does not establish
+  measured need for retry and does not disprove the owner's intermittent
+  failures. Reconsider retry if ordinary operation records `target_list` or
+  `websocket_connect` failures, or if a bounded load or multiple-target probe
+  records a relevant failure.
+  Date/Author: 2026-07-17 / planning owner.
 
 ## Outcomes & Retrospective
 
-Not started. At completion, record the observed stage distribution, whether a
-stable public failure-stage field shipped, and which next slice was promoted or
-declined.
+Implementation now records typed internal stage samples and adds the stable
+public-safe `failure_stage` detail to transport errors. Deterministic fixtures
+cover every stage, all five stale-target diagnosis labels, percentile shaping,
+and one absolute probe deadline. Ordinary commands still perform no retry,
+reconnect, target switch, session, or broker behavior. Focused implementation
+review and the owner-approved explicit-target run are complete. That run
+observed no failure. Focused evidence/closeout review found no blocker and
+approved archival. Pre-dispatch retry is deferred under the explicit
+re-evaluation triggers in the Decision Log; no retry or broker slice is
+promoted by this evidence.
 
 ## Context and Orientation
 
@@ -161,7 +195,11 @@ Desktop dependency is needed to prove it.
 
 ### Milestone 3: bounded public-safe live probe
 
-Add `crates/cdp/tests/live_transport_measurement.rs` as an ignored test. It
+Add a test-only measurement module at `crates/cdp/src/measurement.rs` with an
+ignored live test. Keeping the runner inside the crate lets it consume the
+same crate-private typed observer, selection boundary, and stale-target
+diagnosis used by deterministic transport fixtures without exposing a new Rust
+API solely for an integration test. It
 requires `TV_LIVE_TRANSPORT_MEASUREMENT=1` and a non-empty
 `TV_LIVE_TRANSPORT_MEASUREMENT_TARGET_ID` before opening a connection. Validate
 `TV_LIVE_TRANSPORT_MEASUREMENT_ITERATIONS` with default 10 and range `1..=100`,
@@ -228,7 +266,7 @@ names. At minimum:
 
 The ignored live test remains skipped in ordinary suites:
 
-    cargo test -p tradingview-cdp --test live_transport_measurement -- --nocapture
+    cargo test -p tradingview-cdp measurement -- --nocapture
 
 Expect the test to be listed as ignored and no Desktop connection to occur.
 After focused probe review and separate owner approval, run:
@@ -237,7 +275,7 @@ After focused probe review and separate owner approval, run:
       TV_LIVE_TRANSPORT_MEASUREMENT_TARGET_ID=<TARGET_ID> \
       TV_LIVE_TRANSPORT_MEASUREMENT_ITERATIONS=10 \
       TV_LIVE_TRANSPORT_MEASUREMENT_DEADLINE_MS=120000 \
-      cargo test -p tradingview-cdp --test live_transport_measurement -- --ignored --nocapture
+      cargo test -p tradingview-cdp live_transport_measurement -- --ignored --nocapture
 
 Do not replace `<TARGET_ID>` in this tracked plan or retain the command's raw
 output.
@@ -300,6 +338,34 @@ selection and therefore does not represent the latency or behavior of ordinary
 heuristic target selection; deterministic fixtures cover that selection path.
 Do not store raw output from a live target.
 
+Deterministic evidence as of 2026-07-17:
+
+- CDP library: 39 passed, covering target-list, target-select, WebSocket
+  connect, method-call, event-wait, explicit public mapping, and all five
+  stale-target diagnosis labels.
+- Measurement module: 6 passed and 1 owner-gated live test ignored.
+  The stalled-loopback fixture terminates under the one run deadline and counts
+  the started timeout iteration as completed failure evidence. Setup failure
+  also preserves `success_count + failure_count == iterations_completed`.
+- CLI subprocess contract: 2 focused connection-failure tests preserve exit
+  code 2 and existing details while exposing `failure_stage: target_list`.
+- Full workspace tests and strict workspace Clippy passed. These deterministic
+  baseline checks did not connect to TradingView Desktop.
+
+Owner-approved bounded live evidence as of 2026-07-17:
+
+- 10 iterations requested and completed; 10 succeeded, 0 failed, and the
+  absolute deadline was not reached.
+- `target_list`: 10 samples, p50 0 ms, p95 9 ms.
+- `target_select`: 10 samples, p50 0 ms, p95 0 ms.
+- `websocket_connect`: 10 samples, p50 0 ms, p95 1 ms.
+- `method_call`: 10 samples, p50 0 ms, p95 8 ms.
+- Failure-stage and stale-target diagnosis counts were empty.
+- The run used one explicit active chart target. It does not represent ordinary
+  heuristic target-selection latency or establish that transient failures do
+  not occur. No raw output, target identifier, endpoint, or chart metadata is
+  retained here.
+
 ## Interfaces and Dependencies
 
 No new production dependency is expected. Use `std::time::Instant` and existing
@@ -331,10 +397,11 @@ Exact names may change before implementation if the Decision Log records why,
 but the types remain internal and non-serializing. If a public failure-stage
 contract ships, define a separate serializable type and explicit conversion.
 
-The public mapping should provide equivalent concepts to:
+The public JSON mapping should use a separate crate-private serializable type
+with equivalent concepts to:
 
     #[serde(rename_all = "snake_case")]
-    pub enum PublicFailureStage {
+    pub(crate) enum PublicFailureStage {
         TargetList,
         TargetSelect,
         WebsocketConnect,
@@ -358,13 +425,14 @@ response values.
 
 ## Open Questions
 
-- Whether the internal collector is best passed explicitly, returned beside a
-  result, or represented by a small optional observer trait is UNCONFIRMED. Do
-  not use global mutable state.
-- Whether any existing transport error needs the conservative
-  `transport_unknown` mapping is UNCONFIRMED until Milestone 4.
+- The internal collector is an optional cloneable observer passed through the
+  transport owners. It uses no global mutable state and is absent in ordinary
+  command execution.
+- Construction/configuration failures outside a known transport stage use the
+  conservative `transport_unknown` aggregate label. Known target, WebSocket,
+  method, and event boundaries use their exact fixed label.
 - The frequency of each failure and stale-target diagnosis in the owner's
-  environment is UNCONFIRMED until the bounded live run.
+  environment remains UNCONFIRMED beyond this one zero-failure bounded run.
 - Whether measurement justifies pre-dispatch retry is deliberately unresolved.
 
 Revision note (2026-07-17): created this plan by splitting the measurement and
@@ -372,3 +440,10 @@ failure-taxonomy work from the former multi-phase CDP stability plan. Retry,
 operation restart, topology optimization, recovery metadata, wait commands,
 input preconditions, session mode, and broker feasibility now require separate
 evidence and ExecPlans.
+
+Revision note (2026-07-17): after initial implementation review, moved the
+probe runner from an external integration test into a test-only crate module so
+it consumes the production typed observer and selection boundary. Unified fresh
+target diagnosis, made duplicate exact IDs produce the ambiguous label, and
+fixed setup-count invariants. Focused implementation re-review is complete;
+focused review of the bounded live evidence and closeout decision remains.

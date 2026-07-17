@@ -7,6 +7,24 @@ package version omits the leading `v`.
 
 ## Unreleased
 
+### Changed
+
+- Added public-safe `failure_stage` details to Desktop CDP transport errors for
+  target listing, target selection, WebSocket connection, method calls, and
+  event waits. Existing error kinds, messages, exit codes, and transport
+  behavior remain unchanged; no retry or reconnect is performed.
+
+### Tests
+
+- Added deterministic CDP stage/deadline fixtures and an ignored, explicitly
+  gated transport measurement that reports aggregate timing and stale-target
+  diagnosis without exposing target or endpoint values. The probe consumes the
+  same typed observer and exact-selection boundary as the transport fixtures.
+  One bounded explicit-target run completed 10 read-only iterations without a
+  failure or deadline stop; this is non-regression evidence, not a reliability
+  guarantee. Focused closeout review deferred retry until a relevant failure is
+  observed in ordinary operation or a later bounded probe.
+
 ### Documentation
 
 - Started v0.29 planning around Desktop CDP transport resilience and
