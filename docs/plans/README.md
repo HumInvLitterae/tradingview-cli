@@ -7,22 +7,27 @@ for release and next-phase planning.
 ## Current and future plans
 
 The current ExecPlan is
-`docs/plans/tradingview-cli-v0.28.0-release-readiness.md`. Bounded Desktop-free
-scanner pagination was the final owner-approved v0.28 feature exception. The
-completion and architecture audit then closed with no release-blocking
-architecture issue after Pine diagnostic and state-evidence corrections. Both
-completed plans now live under `docs/plans/archives/`.
+`docs/plans/tradingview-cli-cdp-transport-measurement.md`. It measures and
+classifies Desktop CDP transport stages without adding retry, reconnect,
+session, broker, or generalized wait behavior. The ordered `v0.29.0` inventory
+is maintained in `docs/v0.29-work-items.md`.
 
 Width-derived drawing geometry, the archived right-offset plan's finite-`f64`
 candidate, and Windows MSIX launch feasibility remain deferred rather than
 being promoted implicitly.
 
-The ordered `v0.28.0` implementation inventory is maintained in
-`docs/v0.28-work-items.md`. Pine and indicator mutation safety, current-build
-Desktop compatibility, and bounded chart workflow candidates are promoted into
-separate ExecPlans only when the preceding required item is complete and green.
+The longer-term rationale for pre-dispatch resilience, topology auditing,
+failure-specific recovery semantics, bounded wait candidates, and a gated
+shared-connection feasibility decision lives in
+`docs/notes/cdp-stability-and-autonomous-operation-strategy.md`. That note is
+not an ExecPlan; each promoted slice requires its own reviewed plan.
 
 Recently completed:
+
+- `tradingview-cli-v0.28.0-release-readiness.md`: prepared and released
+  `v0.28.0` with aligned workspace versions, release notes, package contents,
+  Rust and pinned-JavaScript gates, public hygiene, and locked release build.
+  The completed plan now lives under `docs/plans/archives/`.
 
 - `tradingview-cli-v0.28-pre-release-audit.md`: audited the five promoted
   v0.28 areas, classified the dependency-bearing candidate, closed Pine source

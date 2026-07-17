@@ -7,6 +7,14 @@ package version omits the leading `v`.
 
 ## Unreleased
 
+### Documentation
+
+- Started v0.29 planning around Desktop CDP transport resilience and
+  diagnosability. Split the long-term stability and autonomous-operation
+  strategy from the active transport measurement and failure-taxonomy
+  ExecPlan; retry, shared connection, recovery metadata, and bounded wait
+  behavior remain separately gated.
+
 ## v0.28.0 - 2026-07-16
 
 ### Changed
