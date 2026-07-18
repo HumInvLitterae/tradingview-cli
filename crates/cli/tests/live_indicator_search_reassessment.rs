@@ -1,10 +1,13 @@
 use std::time::{Duration, Instant};
 
 use serde_json::{Value, json};
-use tradingview_cdp::{CdpClient, RuntimeEvaluator, TransportConfig, discover_target};
+use tradingview_cdp::{
+    CdpClient, KeyEvent, KeyEventType, RuntimeEvaluator, TransportConfig, discover_target,
+};
 
 const TRIAL_TIMEOUT: Duration = Duration::from_secs(8);
 const QUERIES: [&str; 3] = ["RSI", "MACD", "EMA"];
+const INITIAL_STATE_EXPRESSION: &str = "(()=>{const b=document.querySelector('[data-name=\"open-indicators-dialog\"]');return{dialog_closed:!document.querySelector('[data-name=\"indicators-dialog\"]'),launcher_rendered:!!b&&b.getBoundingClientRect().width>0&&b.getBoundingClientRect().height>0};})()";
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum DispatchCandidate {
@@ -131,28 +134,46 @@ async fn indicator_search_current_build_reassessment() {
 
 async fn assert_initially_closed(runtime: &mut CdpClient) {
     let state = runtime
-        .evaluate(
-            "(()=>({dialog_closed:!document.querySelector('[data-name=\"indicators-dialog\"]')}))()",
-            false,
-        )
+        .evaluate(INITIAL_STATE_EXPRESSION, false)
         .await
         .unwrap_or_else(|_| panic!("indicator-search initial baseline inspection failed"));
     if state.get("dialog_closed").and_then(Value::as_bool) != Some(true) {
         panic!("indicator-search disposable target must start with the Indicators dialog closed");
     }
+    if state.get("launcher_rendered").and_then(Value::as_bool) != Some(true) {
+        panic!("indicator-search current-build dialog launcher was not rendered");
+    }
 }
 
 async fn restore_closed_baseline(runtime: &mut CdpClient) {
-    let restored = runtime
-        .evaluate(
-            r#"(async()=>{const d=document.querySelector('[data-name="indicators-dialog"]');if(d){const c=d.querySelector('[data-name="close"]');if(!c)return {dialog_closed:false};c.click();await new Promise(r=>setTimeout(r,200));}return {dialog_closed:!document.querySelector('[data-name="indicators-dialog"]')};})()"#,
-            true,
-        )
-        .await
-        .unwrap_or_else(|_| panic!("indicator-search baseline restoration failed"));
-    if restored.get("dialog_closed").and_then(Value::as_bool) != Some(true) {
+    if !close_dialog_with_escape(runtime).await {
         panic!("indicator-search baseline restoration could not verify a closed dialog");
     }
+}
+
+async fn close_dialog_with_escape(runtime: &mut CdpClient) -> bool {
+    for event_type in [KeyEventType::KeyDown, KeyEventType::KeyUp] {
+        runtime
+            .dispatch_key_event(KeyEvent {
+                event_type,
+                key: "Escape",
+                code: "Escape",
+                windows_virtual_key_code: 27,
+                modifiers: 0,
+            })
+            .await
+            .unwrap_or_else(|_| panic!("indicator-search Escape restoration failed"));
+    }
+    tokio::time::sleep(Duration::from_millis(200)).await;
+    runtime
+        .evaluate(
+            "(()=>!document.querySelector('[data-name=\"indicators-dialog\"]'))()",
+            false,
+        )
+        .await
+        .ok()
+        .and_then(|value| value.as_bool())
+        == Some(true)
 }
 
 async fn assert_closed_baseline(runtime: &mut CdpClient) {
@@ -210,14 +231,22 @@ async fn run_trial(
                 .evaluate(&dispatch_failure_restoration_expression(state), true)
                 .await
                 .unwrap_or_else(|_| panic!("indicator-search dispatch failure restoration failed"));
-            return dispatch_failure_result(candidate, state, &restoration, started.elapsed());
+            let mut result =
+                dispatch_failure_result(candidate, state, &restoration, started.elapsed());
+            if matches!(state, InitialState::Closed) {
+                result.restoration_verified =
+                    result.restoration_verified && close_dialog_with_escape(runtime).await;
+            }
+            return result;
         }
 
-        let observed = runtime
-            .evaluate(&observe_and_restore_expression(query, state), true)
-            .await
-            .unwrap_or_else(|_| panic!("indicator-search observation failed"));
-        trial_result(candidate, state, &observed)
+        let observed = observe_and_restore(runtime, query, state, started).await;
+        let mut result = trial_result(candidate, state, &observed);
+        if matches!(state, InitialState::Closed) {
+            result.restoration_verified =
+                result.restoration_verified && close_dialog_with_escape(runtime).await;
+        }
+        result
     };
 
     tokio::time::timeout(TRIAL_TIMEOUT, future)
@@ -238,7 +267,7 @@ const dialog=()=>document.querySelector('[data-name="indicators-dialog"]');
 const input=()=>dialog()?.querySelector('[role="searchbox"]');
 const set=(i,v)=>{{const s=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set;s.call(i,v);i.dispatchEvent(new Event('input',{{bubbles:true}}));}};
 if ({close_first} && dialog()) {{ const c=dialog().querySelector('[data-name="close"]'); if(!c||!visible(c)) return {{prepared:false}}; c.click(); await new Promise(r=>setTimeout(r,200)); }}
-if(!dialog()) {{ const b=document.querySelector('[data-name="indicators-dialog-button"]'); if(!b||!visible(b)) return {{prepared:false}}; b.click(); await new Promise(r=>setTimeout(r,200)); }}
+if(!dialog()) {{ const b=document.querySelector('[data-name="open-indicators-dialog"]'); if(!b||!visible(b)) return {{prepared:false}}; b.click(); await new Promise(r=>setTimeout(r,200)); }}
 const i=input(); if(!i) return {{prepared:false}}; set(i,{baseline}); i.focus(); i.select();
 return {{prepared:i.value==={baseline},dialog_open:!!dialog(),input_focused:document.activeElement===i}};
 }})()"#,
@@ -265,33 +294,109 @@ fn dispatch_failure_restoration_expression(state: InitialState) -> String {
         InitialState::OpenEmpty | InitialState::Closed => "",
         InitialState::OpenDifferent => "SMA",
     };
-    let restore_closed = matches!(state, InitialState::Closed);
     format!(
-        r#"(async()=>{{const sleep=ms=>new Promise(r=>setTimeout(r,ms));const d=document.querySelector('[data-name="indicators-dialog"]');const i=d?.querySelector('[role="searchbox"]');let restored=false;if(i){{const s=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set;s.call(i,{baseline});i.dispatchEvent(new Event('input',{{bubbles:true}}));await sleep(200);restored=i.value==={baseline};}}if({restore_closed}){{const c=document.querySelector('[data-name="indicators-dialog"]')?.querySelector('[data-name="close"]');if(c){{c.click();await sleep(200);}}restored=restored&&!document.querySelector('[data-name="indicators-dialog"]');}}return{{restoration_verified:restored}};}})()"#,
+        r#"(async()=>{{const sleep=ms=>new Promise(r=>setTimeout(r,ms));const d=document.querySelector('[data-name="indicators-dialog"]');const i=d?.querySelector('[role="searchbox"]');let restored=false;if(i){{const s=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set;s.call(i,{baseline});i.dispatchEvent(new Event('input',{{bubbles:true}}));await sleep(200);restored=i.value==={baseline};}}return{{restoration_verified:restored}};}})()"#,
         baseline = js_string(baseline),
     )
 }
 
-fn observe_and_restore_expression(query: &str, state: InitialState) -> String {
+async fn observe_and_restore(
+    runtime: &mut CdpClient,
+    query: &str,
+    state: InitialState,
+    started: Instant,
+) -> Value {
+    let deadline = Instant::now() + Duration::from_secs(5);
+    let mut last = json!({
+        "status": "host_missing",
+        "ready": false,
+        "dispatch_observed": false,
+        "host_count": 0,
+        "row_count": 0,
+        "stable_samples": 0,
+    });
+    while Instant::now() < deadline {
+        tokio::time::sleep(Duration::from_millis(200)).await;
+        last = runtime
+            .evaluate(&observation_sample_expression(query), false)
+            .await
+            .unwrap_or_else(|_| panic!("indicator-search observation failed"));
+        let status = last
+            .get("status")
+            .and_then(Value::as_str)
+            .unwrap_or("invalid");
+        if ["ready", "host_ambiguity", "malformed", "unexpected_close"].contains(&status) {
+            break;
+        }
+    }
+    if last.get("status").and_then(Value::as_str) == Some("sampled") {
+        last["status"] = Value::String("unstable_sampled".to_string());
+    }
+
+    let restored = runtime
+        .evaluate(&query_restoration_expression(state), false)
+        .await
+        .unwrap_or_else(|_| panic!("indicator-search query restoration failed"));
+    tokio::time::sleep(Duration::from_millis(200)).await;
+    let restoration_verified = restored.as_bool() == Some(true)
+        && runtime
+            .evaluate(&restoration_readback_expression(state), false)
+            .await
+            .ok()
+            .and_then(|value| value.as_bool())
+            == Some(true);
+
+    json!({
+        "status": last.get("status").and_then(Value::as_str).unwrap_or("invalid"),
+        "ready": bool_field(&last, "ready"),
+        "dispatch_observed": bool_field(&last, "dispatch_observed"),
+        "host_count": u64_field(&last, "host_count"),
+        "row_count": u64_field(&last, "row_count"),
+        "stable_samples": u64_field(&last, "stable_samples"),
+        "restoration_verified": restoration_verified,
+        "elapsed_ms": started.elapsed().as_millis().min(u128::from(u64::MAX)) as u64,
+    })
+}
+
+fn observation_sample_expression(query: &str) -> String {
+    format!(
+        r#"(()=>{{
+const dialog=()=>document.querySelector('[data-name="indicators-dialog"]');
+const words={query}.toLocaleLowerCase().split(/\s+/).filter(Boolean);
+const d=dialog();if(!d)return{{status:'unexpected_close',ready:false,dispatch_observed:false,host_count:0,row_count:0,stable_samples:0}};
+const matched=Array.from(d.querySelectorAll('div[data-title]')).filter(r=>{{const t=r.getAttribute('data-title');return typeof t==='string'&&t.trim()&&words.every(w=>t.toLocaleLowerCase().includes(w));}});
+const parents=Array.from(new Set(matched.map(r=>r.parentElement).filter(Boolean)));
+if(parents.length!==1)return{{status:parents.length>1?'host_ambiguity':'host_missing',ready:false,dispatch_observed:false,host_count:parents.length,row_count:0,stable_samples:0}};
+let rows=[],malformed=false;for(const r of Array.from(parents[0].children)){{if(!r.matches('div[data-title]'))continue;const title=r.getAttribute('data-title');if(typeof title!=='string'||!title.trim()){{malformed=true;break;}}rows.push(title.trim());if(rows.length>=51)break;}}
+const queryMatches=matched.length>0;
+const signature=JSON.stringify(rows),key='__tvIndicatorSearchReassessment';
+const prior=globalThis[key]||{{signature:null,stable:0}};
+const stable=queryMatches?(signature===prior.signature?prior.stable+1:1):0;
+globalThis[key]={{signature,stable}};
+return{{status:malformed?'malformed':stable>=2?'ready':'sampled',ready:!malformed&&stable>=2,dispatch_observed:queryMatches,host_count:1,row_count:rows.length,stable_samples:stable}};
+}})()"#,
+        query = js_string(query),
+    )
+}
+
+fn query_restoration_expression(state: InitialState) -> String {
     let baseline = match state {
         InitialState::OpenEmpty | InitialState::Closed => "",
         InitialState::OpenDifferent => "SMA",
     };
-    let restore_closed = matches!(state, InitialState::Closed);
     format!(
-        r#"(async()=>{{
-const started=Date.now(),deadline=started+7000,sleep=ms=>new Promise(r=>setTimeout(r,ms));
-const dialog=()=>document.querySelector('[data-name="indicators-dialog"]');
-const input=()=>dialog()?.querySelector('[role="searchbox"]');
-const words={query}.toLocaleLowerCase().split(/\s+/).filter(Boolean);
-const sample=()=>{{const d=dialog();if(!d)return{{status:'unexpected_close',host_count:0,row_count:0,query_matches:false,signature:null}};const hs=Array.from(d.querySelectorAll('div')).filter(h=>{{const c=Array.from(h.children);return c.length>=2&&c.every(x=>getComputedStyle(x).position==='absolute')&&c.some(x=>!!x.querySelector(':scope > h3'));}});if(hs.length!==1)return{{status:hs.length>1?'host_ambiguity':'host_missing',host_count:hs.length,row_count:0,query_matches:false,signature:null}};let rows=[],malformed=false;for(const r of Array.from(hs[0].children)){{if(r.querySelector(':scope > h3'))continue;const title=((r.firstElementChild&&r.firstElementChild.textContent)||'').trim();if(!title){{malformed=true;break;}}rows.push(title);if(rows.length>=51)break;}}const matches=rows.filter(t=>words.every(w=>t.toLocaleLowerCase().includes(w))).length;return{{status:malformed?'malformed':'sampled',host_count:1,row_count:rows.length,query_matches:matches>0,signature:JSON.stringify(rows)}};}};
-let prior=null,stable=0,last={{status:'deadline',host_count:0,row_count:0,query_matches:false,signature:null}};
-while(Date.now()<deadline){{await sleep(200);last=sample();if(last.status==='host_ambiguity'||last.status==='malformed'||last.status==='unexpected_close')break;if(last.host_count===1&&last.row_count>0&&last.query_matches){{stable=last.signature===prior?stable+1:1;prior=last.signature;if(stable>=2){{last.status='ready';break;}}}}}}if(last.status==='sampled')last.status='unstable_sampled';
-const i=input();let restored=false;if(i){{const s=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set;s.call(i,{baseline});i.dispatchEvent(new Event('input',{{bubbles:true}}));await sleep(200);restored=i.value==={baseline};}}
-if({restore_closed}){{const c=dialog()?.querySelector('[data-name="close"]');if(c){{c.click();await sleep(200);}}restored=restored&&!dialog();}}
-return{{status:last.status,ready:last.status==='ready',dispatch_observed:last.query_matches===true,host_count:last.host_count,row_count:last.row_count,stable_samples:stable,restoration_verified:restored,elapsed_ms:Date.now()-started}};
-}})()"#,
-        query = js_string(query),
+        r#"(()=>{{delete globalThis.__tvIndicatorSearchReassessment;const i=document.querySelector('[data-name="indicators-dialog"] [role="searchbox"]');if(!i)return false;const s=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set;s.call(i,{baseline});i.dispatchEvent(new Event('input',{{bubbles:true}}));return i.value==={baseline};}})()"#,
+        baseline = js_string(baseline),
+    )
+}
+
+fn restoration_readback_expression(state: InitialState) -> String {
+    let baseline = match state {
+        InitialState::OpenEmpty | InitialState::Closed => "",
+        InitialState::OpenDifferent => "SMA",
+    };
+    format!(
+        r#"(()=>document.querySelector('[data-name="indicators-dialog"] [role="searchbox"]')?.value==={baseline})()"#,
         baseline = js_string(baseline),
     )
 }
@@ -562,18 +667,31 @@ fn matrix_summary_and_go_boundary_are_deterministic() {
 
 #[test]
 fn expressions_use_semantic_anchors_and_keep_rows_page_local() {
+    assert!(INITIAL_STATE_EXPRESSION.contains("launcher_rendered"));
+    assert!(INITIAL_STATE_EXPRESSION.contains("getBoundingClientRect().width>0"));
+    assert!(INITIAL_STATE_EXPRESSION.contains("open-indicators-dialog"));
+    assert!(!INITIAL_STATE_EXPRESSION.contains("indicators-dialog-button"));
+    let preparation = prepare_expression(InitialState::Closed);
+    assert!(preparation.contains("open-indicators-dialog"));
+    assert!(!preparation.contains("indicators-dialog-button"));
     for expression in [
-        prepare_expression(InitialState::Closed),
+        preparation,
         prototype_dispatch_expression("RSI"),
         assignment_readback_expression("RSI"),
         dispatch_failure_restoration_expression(InitialState::Closed),
-        observe_and_restore_expression("RSI", InitialState::OpenDifferent),
+        observation_sample_expression("RSI"),
+        query_restoration_expression(InitialState::OpenDifferent),
+        restoration_readback_expression(InitialState::OpenDifferent),
     ] {
         assert!(expression.contains("indicators-dialog"));
         assert!(!expression.contains("className"));
         assert!(!expression.contains("[class"));
     }
-    let observation = observe_and_restore_expression("RSI", InitialState::OpenEmpty);
+    let observation = observation_sample_expression("RSI");
+    assert!(observation.contains("div[data-title]"));
+    assert!(observation.contains("__tvIndicatorSearchReassessment"));
+    assert!(!observation.contains("position==='absolute'"));
+    assert!(!observation.contains(":scope > h3"));
     assert!(observation.contains("JSON.stringify(rows)"));
     assert!(!observation.contains("return{rows"));
 }
