@@ -28,8 +28,15 @@ prototype stash is read-only research material and must not be applied.
   audit review with no finding and was archived.
 - [x] (2026-07-18) Obtained focused independent review of this reassessment
   plan; the corrected maximum scope is 33 live trials.
-- [ ] Reconfirm current-build dialog ownership and semantic anchors without
-  recording private result text or raw DOM.
+- [x] (2026-07-18) Reconfirmed current dialog ownership and semantic anchors
+  from current source and archived evidence without recording private result
+  text or raw DOM.
+- [x] (2026-07-18) Added an ignored, explicitly gated 33-trial harness with
+  deterministic aggregate-contract fixtures; focused tests and strict Clippy
+  are green.
+- [x] (2026-07-18) Completed the full non-live workspace baseline, metadata,
+  hygiene, package-script syntax, guide parity, and diff checks. Live execution
+  remains unrun.
 - [ ] Run the bounded positive-readiness and restoration matrix on an
   owner-approved disposable target.
 - [ ] Record go/no-go evidence and obtain focused evidence review.
@@ -49,6 +56,12 @@ prototype stash is read-only research material and must not be applied.
   restoration. Later fresh/reopened trials sometimes showed no host before the
   deadline even though screenshots eventually showed results.
 
+- Observation: returning normalized rows to Rust is unnecessary for this
+  reassessment and would widen the evidence surface.
+  Evidence: the harness computes query matching and two-sample signatures
+  inside the page, then returns only fixed statuses, counts, latency, and
+  restoration state.
+
 ## Decision Log
 
 - Decision: investigate current readiness before reconsidering implementation.
@@ -66,6 +79,19 @@ prototype stash is read-only research material and must not be applied.
   Rationale: current production has changed substantially and the stash mixes
   tracked routing with untracked prototype modules. Use it only to identify
   old hypotheses and missing tests.
+  Date/Author: 2026-07-18 / Codex
+
+- Decision: use fixed public built-in queries `RSI`, `MACD`, and `EMA`, with
+  `SMA` as the different-prior-query baseline.
+  Rationale: fixed query tokens make the matrix reproducible without retaining
+  account-local result titles. They remain inside the ignored probe and are
+  never emitted in aggregate evidence.
+  Date/Author: 2026-07-18 / Codex
+
+- Decision: keep row titles and stability signatures page-local.
+  Rationale: the investigation needs only proof of positive query-sensitive
+  stable rows. Returning titles or derived signatures adds no acceptance value
+  and could expose account-local entries.
   Date/Author: 2026-07-18 / Codex
 
 ## Outcomes & Retrospective
@@ -105,7 +131,8 @@ Use aggregate counts and anchor categories only. Compare current observations
 with old assumptions; do not preserve selectors merely because the stash used
 them.
 
-Second, implement or use a test-only bounded probe. The probe must use one
+Second, use the test-only bounded probe in
+`crates/cli/tests/live_indicator_search_reassessment.rs`. The probe uses one
 absolute eight-second deadline per trial, sample no faster than 200 ms, and
 retain no raw DOM or result titles. It must distinguish query assignment,
 query dispatch evidence, first structural host appearance, two stable positive
@@ -133,6 +160,13 @@ selected candidate, or 33 trials total. Do not try unreviewed events, class
 selectors, coordinate clicks, multiple signatures, or increasing timeouts
 after a failure. A candidate that works only in one initial state is no-go.
 
+Require the disposable target to begin with the Indicators dialog closed. The
+harness checks this before any mutation. Each trial constructs and restores its
+declared state; a normal preflight no-go closes the dialog before returning,
+and a completed matrix verifies the same closed outer baseline. Unknown
+outcomes and restoration failures still stop without further automatic
+mutation.
+
 Finally, record one decision. Go requires one qualifying preflight candidate
 and all 27 selected-candidate trials to observe exactly one class-free host,
 positive query-sensitive rows, two stable samples, and exact restoration within
@@ -152,6 +186,8 @@ Run from the repository root before live work:
 Any test-only probe must be ignored in ordinary Cargo tests and require an
 explicit environment gate plus explicit target ID. Run deterministic fixtures
 first, then the owner-approved live matrix. Record only aggregate fields:
+
+    cargo test -p tradingview-cli --test live_indicator_search_reassessment -- --nocapture
 
     trials_requested
     trials_completed
@@ -207,6 +243,13 @@ and semantic anchor categories. Do not record raw DOM, selectors containing
 generated classes, result titles, account-local script names or IDs, target
 IDs, URLs, payloads, credentials, or machine-specific paths.
 
+The implemented harness is
+`crates/cli/tests/live_indicator_search_reassessment.rs`. Its ordinary run has
+three passing deterministic tests and one ignored live matrix. The live gate is
+`TV_LIVE_INDICATOR_SEARCH_REASSESSMENT=1`; an explicit disposable target is
+selected through `TV_LIVE_INDICATOR_SEARCH_TARGET_ID`. Do not retain either
+value in tracked evidence.
+
 ## Interfaces and Dependencies
 
 This investigation adds no public interface or production dependency. A
@@ -237,3 +280,8 @@ checks.
 Revision note (2026-07-18): the initial completion audit passed focused review
 and was archived. Marked this reassessment current and ready for deterministic
 preparation; live execution remains separately owner-authorized.
+
+Revision note (2026-07-18): added the test-only reassessment harness, fixed its
+queries and prior-query baseline, kept raw rows and stability signatures inside
+the page, and recorded green focused and full non-live validation. The live
+matrix remains unexecuted and separately owner-authorized.
