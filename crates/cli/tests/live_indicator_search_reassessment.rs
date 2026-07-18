@@ -1,4 +1,4 @@
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use serde_json::{Value, json};
 use tradingview_cdp::{CdpClient, RuntimeEvaluator, TransportConfig, discover_target};
@@ -49,6 +49,8 @@ struct MatrixSummary {
     host_missing_failures: u64,
     malformed_failures: u64,
     unexpected_close_failures: u64,
+    dispatch_failures: u64,
+    unstable_sampled_failures: u64,
     latency_p50_ms: u64,
     latency_p95_ms: u64,
 }
@@ -173,25 +175,42 @@ async fn run_trial(
     query: &str,
 ) -> TrialResult {
     let future = async {
+        let started = Instant::now();
         let prepared = runtime
             .evaluate(&prepare_expression(state), true)
             .await
             .unwrap_or_else(|_| panic!("indicator-search trial preparation failed"));
         assert_prepare_result(&prepared);
 
-        match candidate {
+        let assigned = match candidate {
             DispatchCandidate::PrototypeEvent => {
-                runtime
+                let dispatched = runtime
                     .evaluate(&prototype_dispatch_expression(query), false)
                     .await
                     .unwrap_or_else(|_| panic!("indicator-search prototype dispatch failed"));
+                dispatched.as_bool() == Some(true)
             }
             DispatchCandidate::NativeInsertText => {
                 runtime
                     .insert_text(query)
                     .await
                     .unwrap_or_else(|_| panic!("indicator-search native text dispatch failed"));
+                let readback = runtime
+                    .evaluate(&assignment_readback_expression(query), false)
+                    .await
+                    .unwrap_or_else(|_| {
+                        panic!("indicator-search native assignment readback failed")
+                    });
+                readback.as_bool() == Some(true)
             }
+        };
+
+        if !assigned {
+            let restoration = runtime
+                .evaluate(&dispatch_failure_restoration_expression(state), true)
+                .await
+                .unwrap_or_else(|_| panic!("indicator-search dispatch failure restoration failed"));
+            return dispatch_failure_result(candidate, state, &restoration, started.elapsed());
         }
 
         let observed = runtime
@@ -234,6 +253,25 @@ fn prototype_dispatch_expression(query: &str) -> String {
     )
 }
 
+fn assignment_readback_expression(query: &str) -> String {
+    format!(
+        r#"(()=>document.querySelector('[data-name="indicators-dialog"] [role="searchbox"]')?.value==={query})()"#,
+        query = js_string(query),
+    )
+}
+
+fn dispatch_failure_restoration_expression(state: InitialState) -> String {
+    let baseline = match state {
+        InitialState::OpenEmpty | InitialState::Closed => "",
+        InitialState::OpenDifferent => "SMA",
+    };
+    let restore_closed = matches!(state, InitialState::Closed);
+    format!(
+        r#"(async()=>{{const sleep=ms=>new Promise(r=>setTimeout(r,ms));const d=document.querySelector('[data-name="indicators-dialog"]');const i=d?.querySelector('[role="searchbox"]');let restored=false;if(i){{const s=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set;s.call(i,{baseline});i.dispatchEvent(new Event('input',{{bubbles:true}}));await sleep(200);restored=i.value==={baseline};}}if({restore_closed}){{const c=document.querySelector('[data-name="indicators-dialog"]')?.querySelector('[data-name="close"]');if(c){{c.click();await sleep(200);}}restored=restored&&!document.querySelector('[data-name="indicators-dialog"]');}}return{{restoration_verified:restored}};}})()"#,
+        baseline = js_string(baseline),
+    )
+}
+
 fn observe_and_restore_expression(query: &str, state: InitialState) -> String {
     let baseline = match state {
         InitialState::OpenEmpty | InitialState::Closed => "",
@@ -248,7 +286,7 @@ const input=()=>dialog()?.querySelector('[role="searchbox"]');
 const words={query}.toLocaleLowerCase().split(/\s+/).filter(Boolean);
 const sample=()=>{{const d=dialog();if(!d)return{{status:'unexpected_close',host_count:0,row_count:0,query_matches:false,signature:null}};const hs=Array.from(d.querySelectorAll('div')).filter(h=>{{const c=Array.from(h.children);return c.length>=2&&c.every(x=>getComputedStyle(x).position==='absolute')&&c.some(x=>!!x.querySelector(':scope > h3'));}});if(hs.length!==1)return{{status:hs.length>1?'host_ambiguity':'host_missing',host_count:hs.length,row_count:0,query_matches:false,signature:null}};let rows=[],malformed=false;for(const r of Array.from(hs[0].children)){{if(r.querySelector(':scope > h3'))continue;const title=((r.firstElementChild&&r.firstElementChild.textContent)||'').trim();if(!title){{malformed=true;break;}}rows.push(title);if(rows.length>=51)break;}}const matches=rows.filter(t=>words.every(w=>t.toLocaleLowerCase().includes(w))).length;return{{status:malformed?'malformed':'sampled',host_count:1,row_count:rows.length,query_matches:matches>0,signature:JSON.stringify(rows)}};}};
 let prior=null,stable=0,last={{status:'deadline',host_count:0,row_count:0,query_matches:false,signature:null}};
-while(Date.now()<deadline){{await sleep(200);last=sample();if(last.status==='host_ambiguity'||last.status==='malformed'||last.status==='unexpected_close')break;if(last.host_count===1&&last.row_count>0&&last.query_matches){{stable=last.signature===prior?stable+1:1;prior=last.signature;if(stable>=2){{last.status='ready';break;}}}}}}
+while(Date.now()<deadline){{await sleep(200);last=sample();if(last.status==='host_ambiguity'||last.status==='malformed'||last.status==='unexpected_close')break;if(last.host_count===1&&last.row_count>0&&last.query_matches){{stable=last.signature===prior?stable+1:1;prior=last.signature;if(stable>=2){{last.status='ready';break;}}}}}}if(last.status==='sampled')last.status='unstable_sampled';
 const i=input();let restored=false;if(i){{const s=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set;s.call(i,{baseline});i.dispatchEvent(new Event('input',{{bubbles:true}}));await sleep(200);restored=i.value==={baseline};}}
 if({restore_closed}){{const c=dialog()?.querySelector('[data-name="close"]');if(c){{c.click();await sleep(200);}}restored=restored&&!dialog();}}
 return{{status:last.status,ready:last.status==='ready',dispatch_observed:last.query_matches===true,host_count:last.host_count,row_count:last.row_count,stable_samples:stable,restoration_verified:restored,elapsed_ms:Date.now()-started}};
@@ -275,6 +313,30 @@ fn trial_result(candidate: DispatchCandidate, state: InitialState, value: &Value
             .and_then(Value::as_str)
             .unwrap_or("invalid")
             .to_string(),
+    }
+}
+
+fn dispatch_failure_result(
+    candidate: DispatchCandidate,
+    state: InitialState,
+    restoration: &Value,
+    elapsed: Duration,
+) -> TrialResult {
+    let object = restoration
+        .as_object()
+        .expect("dispatch failure restoration should return an object");
+    assert!(object.keys().all(|key| key == "restoration_verified"));
+    TrialResult {
+        candidate,
+        state,
+        ready: false,
+        dispatch_observed: false,
+        host_count: 0,
+        row_count: 0,
+        stable_samples: 0,
+        restoration_verified: bool_field(restoration, "restoration_verified"),
+        elapsed_ms: elapsed.as_millis().min(u128::from(u64::MAX)) as u64,
+        status: "dispatch_failed".to_string(),
     }
 }
 
@@ -315,6 +377,8 @@ fn summarize(results: &[TrialResult], requested: u64) -> MatrixSummary {
         host_missing_failures: failures(&|result| result.status == "host_missing"),
         malformed_failures: failures(&|result| result.status == "malformed"),
         unexpected_close_failures: failures(&|result| result.status == "unexpected_close"),
+        dispatch_failures: failures(&|result| result.status == "dispatch_failed"),
+        unstable_sampled_failures: failures(&|result| result.status == "unstable_sampled"),
         latency_p50_ms: percentile(&latencies, 50),
         latency_p95_ms: percentile(&latencies, 95),
     }
@@ -331,7 +395,7 @@ fn percentile(sorted: &[u64], percentile: usize) -> u64 {
 fn print_summary(results: &[TrialResult], requested: u64) {
     let summary = summarize(results, requested);
     println!(
-        "indicator-search reassessment: trials_requested={} trials_completed={} successes={} restoration_failures={} host_ambiguities={} deadline_stops={} prototype_failures={} native_failures={} open_empty_failures={} open_different_failures={} closed_failures={} host_missing_failures={} malformed_failures={} unexpected_close_failures={} latency_p50_ms={} latency_p95_ms={}",
+        "indicator-search reassessment: trials_requested={} trials_completed={} successes={} restoration_failures={} host_ambiguities={} deadline_stops={} prototype_failures={} native_failures={} open_empty_failures={} open_different_failures={} closed_failures={} host_missing_failures={} malformed_failures={} unexpected_close_failures={} dispatch_failures={} unstable_sampled_failures={} latency_p50_ms={} latency_p95_ms={}",
         summary.trials_requested,
         summary.trials_completed,
         summary.successes,
@@ -346,6 +410,8 @@ fn print_summary(results: &[TrialResult], requested: u64) {
         summary.host_missing_failures,
         summary.malformed_failures,
         summary.unexpected_close_failures,
+        summary.dispatch_failures,
+        summary.unstable_sampled_failures,
         summary.latency_p50_ms,
         summary.latency_p95_ms
     );
@@ -405,6 +471,8 @@ fn assert_public_safe_result(value: &Value) {
                 "malformed",
                 "unexpected_close",
                 "sampled",
+                "dispatch_failed",
+                "unstable_sampled",
             ]
             .contains(&status))
     );
@@ -482,6 +550,8 @@ fn matrix_summary_and_go_boundary_are_deterministic() {
             host_missing_failures: 0,
             malformed_failures: 0,
             unexpected_close_failures: 0,
+            dispatch_failures: 0,
+            unstable_sampled_failures: 0,
             latency_p50_ms: 400,
             latency_p95_ms: 400,
         }
@@ -495,6 +565,8 @@ fn expressions_use_semantic_anchors_and_keep_rows_page_local() {
     for expression in [
         prepare_expression(InitialState::Closed),
         prototype_dispatch_expression("RSI"),
+        assignment_readback_expression("RSI"),
+        dispatch_failure_restoration_expression(InitialState::Closed),
         observe_and_restore_expression("RSI", InitialState::OpenDifferent),
     ] {
         assert!(expression.contains("indicators-dialog"));
@@ -504,6 +576,28 @@ fn expressions_use_semantic_anchors_and_keep_rows_page_local() {
     let observation = observe_and_restore_expression("RSI", InitialState::OpenEmpty);
     assert!(observation.contains("JSON.stringify(rows)"));
     assert!(!observation.contains("return{rows"));
+}
+
+#[test]
+fn dispatch_failure_is_distinct_and_requires_restoration() {
+    let restored = dispatch_failure_result(
+        DispatchCandidate::NativeInsertText,
+        InitialState::OpenDifferent,
+        &json!({"restoration_verified": true}),
+        Duration::from_millis(250),
+    );
+    assert_eq!(restored.status, "dispatch_failed");
+    assert!(!restored.dispatch_observed);
+    assert!(restored.restoration_verified);
+
+    let failed_restore = dispatch_failure_result(
+        DispatchCandidate::PrototypeEvent,
+        InitialState::Closed,
+        &json!({"restoration_verified": false}),
+        Duration::from_millis(300),
+    );
+    assert!(!failed_restore.restoration_verified);
+    assert!(!trial_passed(&failed_restore));
 }
 
 #[test]

@@ -62,6 +62,9 @@ package version omits the leading `v`.
   a six-trial dispatch preflight, a selected-candidate 27-trial matrix,
   aggregate-only evidence, and deterministic public-safety fixtures. No live
   matrix or production command has been authorized or run.
+- Refined the reassessment evidence with exact post-dispatch assignment
+  readback, public-safe `dispatch_failed` restoration, and a distinct
+  `unstable_sampled` counter without changing the live trial bound.
 
 ## v0.28.0 - 2026-07-16
 
