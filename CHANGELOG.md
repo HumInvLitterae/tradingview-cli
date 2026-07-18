@@ -58,6 +58,10 @@ package version omits the leading `v`.
   explicit/heuristic selection and repeated/mixed cohorts. Neither investigation
   adds retry or a public command; promoted implementation would require its own
   plan and a refreshed completion audit.
+- Added an ignored, explicit-target indicator-search reassessment harness with
+  a six-trial dispatch preflight, a selected-candidate 27-trial matrix,
+  aggregate-only evidence, and deterministic public-safety fixtures. No live
+  matrix or production command has been authorized or run.
 
 ## v0.28.0 - 2026-07-16
 

@@ -8,8 +8,9 @@ for release and next-phase planning.
 
 The current ExecPlan is
 `tradingview-cli-indicator-search-current-build-reassessment.md`. Its bounded
-current-build investigation follows the green initial completion audit and
-requires separate owner approval before at most 33 live trials. The
+current-build harness and deterministic fixtures are implemented and full
+non-live validation is green; focused implementation review is pending before separate owner approval may be sought
+for at most 33 live trials. The
 `tradingview-cli-consecutive-invocation-resilience.md` investigation is queued
 after it. Neither plan authorizes a production command or retry. The completed
 v0.29 completion audit, recovery-semantics inventory, and connection/evaluation topology
