@@ -6,15 +6,25 @@ for release and next-phase planning.
 
 ## Current and future plans
 
-No implementation ExecPlan is currently active. The recovery-semantics
-inventory is complete and archived with its public-contract candidate deferred.
-The next ordered slice is the v0.29 completion and architecture audit; its
-ExecPlan has not yet been created. The connection and evaluation topology audit
-is also archived with one deferred target-list candidate and no evaluation
-candidate. The ordered `v0.29.0` inventory is maintained in
+The current ExecPlan is
+`tradingview-cli-indicator-search-current-build-reassessment.md`. Its bounded
+current-build investigation follows the green initial completion audit and
+requires separate owner approval before at most 33 live trials. The
+`tradingview-cli-consecutive-invocation-resilience.md` investigation is queued
+after it. Neither plan authorizes a production command or retry. The completed
+v0.29 completion audit, recovery-semantics inventory, and connection/evaluation topology
+inventories are archived documentation evidence rather than implemented
+runtime features. The ordered `v0.29.0` inventory is maintained in
 `docs/v0.29-work-items.md`.
 Pre-dispatch retry remains deferred until ordinary operation or a later bounded
 probe records a relevant failure.
+
+Completed current-cycle plans:
+
+- `tradingview-cli-v0.29-pre-release-audit.md`: audited the frozen five-commit
+  candidate, passed focused and full non-live validation, and completed
+  independent review with no release blocker or required architecture refactor.
+  The completed plan now lives under `docs/plans/archives/`.
 
 Width-derived drawing geometry, the archived right-offset plan's finite-`f64`
 candidate, and Windows MSIX launch feasibility remain deferred rather than
