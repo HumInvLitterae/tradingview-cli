@@ -41,7 +41,10 @@ package version omits the leading `v`.
 - Started a failure-specific recovery-semantics inventory. It separates
   pre-dispatch failure, unknown post-dispatch outcome, verification failure,
   restoration failure, local effects, and partial diagnostics without adding
-  retry or public recovery metadata.
+  retry or public recovery metadata. The inventory found useful operator-action
+  distinctions but deferred a public contract because dispatch and effect state
+  cannot yet be derived safely at shared error boundaries. Focused review
+  confirmed the inventory without adding production behavior.
 
 ## v0.28.0 - 2026-07-16
 

@@ -6,12 +6,12 @@ for release and next-phase planning.
 
 ## Current and future plans
 
-The current ExecPlan is
-`docs/plans/tradingview-cli-recovery-semantics-inventory.md`. It inventories
-failure boundaries, possible side effects, and safe operator responses without
-adding retry or public recovery metadata. The connection and evaluation
-topology audit is complete and archived with one deferred target-list candidate
-and no evaluation candidate. The ordered `v0.29.0` inventory is maintained in
+No implementation ExecPlan is currently active. The recovery-semantics
+inventory is complete and archived with its public-contract candidate deferred.
+The next ordered slice is the v0.29 completion and architecture audit; its
+ExecPlan has not yet been created. The connection and evaluation topology audit
+is also archived with one deferred target-list candidate and no evaluation
+candidate. The ordered `v0.29.0` inventory is maintained in
 `docs/v0.29-work-items.md`.
 Pre-dispatch retry remains deferred until ordinary operation or a later bounded
 probe records a relevant failure.
@@ -27,6 +27,12 @@ shared-connection feasibility decision lives in
 not an ExecPlan; each promoted slice requires its own reviewed plan.
 
 Recently completed:
+
+- `tradingview-cli-recovery-semantics-inventory.md`: classified shared failure
+  boundaries and Desktop workflow effects, confirmed that operator responses
+  differ, and deferred a public recovery contract because dispatch/effect state
+  cannot yet be derived safely. Focused review is green; the completed plan now
+  lives under `docs/plans/archives/`.
 
 - `tradingview-cli-connection-evaluation-topology-audit.md`: accounted for 75
   normal dispatcher connection sites, exceptional multi-target owners, and 134
