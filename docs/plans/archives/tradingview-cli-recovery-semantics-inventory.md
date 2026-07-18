@@ -27,29 +27,44 @@ or change production behavior.
 
 - [x] (2026-07-17) Create this self-contained inventory plan after transport
   measurement and topology audit closeout.
-- [ ] Freeze shared error, transport, runner, and output boundaries at the
-  current production commit.
-- [ ] Define documentation-only dispatch-state, effect-state, and operator-
+- [x] (2026-07-17) Freeze shared error, transport, runner, and output boundaries
+  at production commit `4f63bec`.
+- [x] (2026-07-17) Define documentation-only dispatch-state, effect-state, and operator-
   response labels.
-- [ ] Inventory every shared transport failure boundary before and after method
+- [x] (2026-07-17) Inventory every shared transport failure boundary before and after method
   dispatch.
-- [ ] Map every Desktop-backed command arm to a complete workflow archetype.
-- [ ] Inventory local output, process lifecycle, temporary mutation/restore,
+- [x] (2026-07-17) Map every Desktop-backed command arm to a complete workflow archetype.
+- [x] (2026-07-17) Inventory local output, process lifecycle, temporary mutation/restore,
   multi-target, streaming, and partial-diagnostic exceptions.
-- [ ] Write `docs/notes/cdp-recovery-semantics-inventory.md` with the complete
+- [x] (2026-07-17) Write `docs/notes/cdp-recovery-semantics-inventory.md` with the complete
   matrix and grouping proof.
-- [ ] Decide whether any recovery meaning should receive a later public-contract
-  ExecPlan; do not implement it here.
-- [ ] Synchronize stable planning documents with the reviewed result.
-- [ ] Run focused and full validation appropriate to the final diff.
-- [ ] Obtain focused independent inventory review and apply corrections.
-- [ ] Archive this plan and create only the separately approved follow-up plans.
+- [x] (2026-07-17) Defer a public recovery contract because existing execution
+  evidence cannot safely derive effect state or split method send from response
+  wait failure.
+- [x] (2026-07-17) Synchronize planning documents with the inventory result.
+- [x] (2026-07-17) Run documentation-slice validation and focused contract
+  checks. CDP diagnostics, CLI output, output subprocess, and 99 Desktop
+  contract tests passed; metadata, public hygiene, package-script syntax,
+  guide parity, production-diff, and diff hygiene checks are green.
+- [x] (2026-07-18) Obtain focused independent inventory review and add the
+  final shared-boundary inclusion rule. Review is green.
+- [x] (2026-07-18) Archive this plan with outcome
+  `contract_candidate_deferred`; no public metadata or retry plan is promoted.
 
 ## Surprises & Discoveries
 
-None yet. Record source-backed facts and concise deterministic evidence. Do not
-record raw target IDs, endpoints, Runtime payloads, credentials, account-local
-metadata, or machine-specific paths.
+- Observation: `failure_stage: method_call` covers both WebSocket send and
+  response-wait failures.
+  Evidence: `call_method_unobserved()` calls `send_message_until()` and then
+  `wait_for_response()` inside one observed `MethodCall` stage.
+- Observation: `Runtime.evaluate` exception details arrive in a CDP response,
+  so dispatch is known even when expression side effects are not.
+  Evidence: `RuntimeEvaluator::evaluate()` receives `call_method()` output and
+  then checks `exceptionDetails`.
+- Observation: operation-specific effect state is not available at the shared
+  error boundary.
+  Evidence: screenshot file writes, chart restoration, Replay attachments,
+  process launch, and target creation are owned above `CdpClient`.
 
 ## Decision Log
 
@@ -73,10 +88,14 @@ metadata, or machine-specific paths.
 
 ## Outcomes & Retrospective
 
-Not started. At completion, state which failure/workflow families were audited,
-which operator responses are distinguishable, and whether a later public
-contract is promoted, deferred, or declined. A reviewed conclusion that no
-public field is yet justified is a successful outcome.
+The inventory covers shared transport/output boundaries, all 75 dispatcher
+connection lines, three long-running runners, and direct Desktop lifecycle
+owners through eight workflow archetypes. Distinct operator responses are real,
+but a public field is `contract_candidate_deferred`: current shared evidence
+cannot distinguish method send from response wait or derive operation-specific
+effects safely. Focused independent review reproduced the inventory and found
+no blocker after the final inclusion-rule clarification. No retry or public
+metadata is implemented, and the plan is complete.
 
 ## Context and Orientation
 
@@ -354,3 +373,15 @@ not exhaustive public promises, and not valid input to ordinary commands.
 Revision note (2026-07-17): created after the reviewed transport measurement
 and topology audit slices. It inventories failure-specific recovery semantics
 without adding retry or public recovery metadata.
+
+Revision note (2026-07-17): focused plan review was green and clarified that a
+Runtime exception has a received method response while expression effects may
+remain uncertain. The completed source inventory defers a public contract
+because shared error evidence cannot yet derive dispatch and effect state
+safely.
+
+Revision note (2026-07-18): focused inventory review confirmed the deferred
+contract outcome. Clarified that pending-event overflow and invalid CDP JSON
+during response wait inherit the method-dispatch-unknown classification, while
+malformed screenshot data is a received-response payload-shape failure. The
+plan is archived without production changes.
