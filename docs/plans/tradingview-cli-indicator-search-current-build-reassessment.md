@@ -40,7 +40,8 @@ prototype stash is read-only research material and must not be applied.
 - [x] (2026-07-18) Applied the focused-review recommendations: explicit
   assignment readback and `dispatch_failed` restoration for both candidates,
   plus a distinct `unstable_sampled` aggregate outcome. Focused re-review is
-  pending. Focused and full non-live validation are green after correction.
+  complete and green. Focused and full non-live validation are green after
+  correction.
 - [ ] Run the bounded positive-readiness and restoration matrix on an
   owner-approved disposable target.
 - [ ] Record go/no-go evidence and obtain focused evidence review.
@@ -262,7 +263,7 @@ IDs, URLs, payloads, credentials, or machine-specific paths.
 
 The implemented harness is
 `crates/cli/tests/live_indicator_search_reassessment.rs`. Its ordinary run has
-three passing deterministic tests and one ignored live matrix. The live gate is
+four passing deterministic tests and one ignored live matrix. The live gate is
 `TV_LIVE_INDICATOR_SEARCH_REASSESSMENT=1`; an explicit disposable target is
 selected through `TV_LIVE_INDICATOR_SEARCH_TARGET_ID`. Do not retain either
 value in tracked evidence.
@@ -308,3 +309,7 @@ recommended finer no-go evidence. Added exact assignment readback for both
 dispatch candidates, one restoration path for known assignment failure,
 `dispatch_failed`, and `unstable_sampled`. Focused re-review is pending; the
 live scope and authorization boundary are unchanged.
+
+Revision note (2026-07-18): focused correction re-review was green with no
+finding. The next gate is explicit owner approval for the bounded live matrix;
+no live execution or production implementation is authorized by review alone.

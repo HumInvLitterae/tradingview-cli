@@ -65,6 +65,9 @@ package version omits the leading `v`.
 - Refined the reassessment evidence with exact post-dispatch assignment
   readback, public-safe `dispatch_failed` restoration, and a distinct
   `unstable_sampled` counter without changing the live trial bound.
+- Completed focused re-review of the corrected reassessment harness with no
+  finding. The bounded live matrix remains unrun and requires explicit owner
+  approval.
 
 ## v0.28.0 - 2026-07-16
 
