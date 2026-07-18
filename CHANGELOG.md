@@ -45,6 +45,19 @@ package version omits the leading `v`.
   distinctions but deferred a public contract because dispatch and effect state
   cannot yet be derived safely at shared error boundaries. Focused review
   confirmed the inventory without adding production behavior.
+- Started the v0.29 completion and architecture audit after transport
+  diagnostics and both source inventories completed focused review. The audit
+  freezes the candidate and keeps retry, reconnect, public recovery metadata,
+  shared sessions, brokers, and generalized waits deferred.
+- Completed the initial v0.29 audit and full non-live validation without a
+  local release blocker. Focused independent audit review reproduced the
+  evidence and found no required architecture refactor; the audit is archived.
+- Planned two bounded pre-release investigations after the initial audit:
+  current-build indicator-search readiness reassessment without applying the
+  preserved prototype, and consecutive production CLI read measurement across
+  explicit/heuristic selection and repeated/mixed cohorts. Neither investigation
+  adds retry or a public command; promoted implementation would require its own
+  plan and a refreshed completion audit.
 
 ## v0.28.0 - 2026-07-16
 
