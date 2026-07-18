@@ -24,8 +24,10 @@ prototype stash is read-only research material and must not be applied.
 - [x] (2026-07-18) Confirmed that the prior defer decision was caused by
   inconsistent positive-result readiness, not parser impossibility.
 - [x] (2026-07-18) Created this queued reassessment plan.
-- [ ] Start only after the v0.29 completion audit receives focused audit review.
-- [ ] Obtain focused independent review of this reassessment plan.
+- [x] (2026-07-18) Started after the v0.29 completion audit received focused
+  audit review with no finding and was archived.
+- [x] (2026-07-18) Obtained focused independent review of this reassessment
+  plan; the corrected maximum scope is 33 live trials.
 - [ ] Reconfirm current-build dialog ownership and semantic anchors without
   recording private result text or raw DOM.
 - [ ] Run the bounded positive-readiness and restoration matrix on an
@@ -231,3 +233,7 @@ candidates and the 27-trial count were ambiguous. Added a six-trial preflight
 that chooses one candidate before the 27-trial matrix, fixing the maximum live
 scope at 33 trials, and added the two missing standard documentation/package
 checks.
+
+Revision note (2026-07-18): the initial completion audit passed focused review
+and was archived. Marked this reassessment current and ready for deterministic
+preparation; live execution remains separately owner-authorized.
