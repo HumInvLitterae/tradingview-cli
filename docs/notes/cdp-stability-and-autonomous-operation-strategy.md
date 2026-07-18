@@ -138,6 +138,14 @@ ordinary re-discovery, the share that event subscription could detect before a
 command fails, and the operational cost of another process. If measurement
 shows little value, both shared-connection candidates are dropped.
 
+Renderer lifecycle is a separate measurement axis from connection persistence.
+Future feasibility work should compare active-target ownership, app-tab versus
+CDP-target identity, `Page.bringToFront` or equivalent visibility transitions
+and their side effects, and whether a nonvisual result event can expose
+materialization before a command fails. A persistent WebSocket alone is not
+evidence that hidden renderer content becomes ready, and indicator-search
+readiness by itself does not justify promoting a broker.
+
 ## Promotion rules
 
 The v0.29 roadmap may sequence measurement, pre-dispatch resilience, topology

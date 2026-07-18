@@ -36,16 +36,40 @@ prototype stash is read-only research material and must not be applied.
   are green.
 - [x] (2026-07-18) Completed the full non-live workspace baseline, metadata,
   hygiene, package-script syntax, guide parity, and diff checks. Live execution
-  remains unrun.
+  was still unrun at this checkpoint.
 - [x] (2026-07-18) Applied the focused-review recommendations: explicit
   assignment readback and `dispatch_failed` restoration for both candidates,
   plus a distinct `unstable_sampled` aggregate outcome. Focused re-review is
   complete and green. Focused and full non-live validation are green after
   correction.
-- [ ] Run the bounded positive-readiness and restoration matrix on an
-  owner-approved disposable target.
-- [ ] Record go/no-go evidence and obtain focused evidence review.
-- [ ] Archive this plan without applying the prototype stash.
+- [x] (2026-07-18) Ran the owner-approved harness once. It stopped before the
+  first preflight dispatch because the old launcher selector was absent and the
+  Electron chart document reported hidden visibility; zero search trials
+  completed.
+- [x] (2026-07-18) Confirmed read-only that the current build exposes the
+  semantic launcher as `open-indicators-dialog`. Foregrounding the visible
+  Desktop tab did not change the embedded document's hidden visibility, while
+  the launcher retained rendered geometry. Updated the harness to use that
+  single selector and rendered geometry rather than document visibility.
+- [x] (2026-07-19) Replaced page-timer polling with Rust-side 200 ms polling
+  after confirming that Electron throttles timers in the embedded chart
+  document. Kept the eight-second outer deadline and page-local signatures.
+- [x] (2026-07-19) Completed the six-trial owner-approved dispatch preflight.
+  Both candidates assigned all three fixed queries and all six restorations
+  passed, but no result rows materialized during any five-second ordinary CLI
+  observation window.
+- [x] (2026-07-19) Confirmed visually and through aggregate DOM attributes that
+  results do exist and expose current `data-title` row semantics after a render
+  stimulus. Continuous screenshot stimulation interfered with dialog focus and
+  is not an acceptable production readiness mechanism.
+- [x] (2026-07-19) Recorded a readiness-specific defer. The selected-candidate
+  27-trial matrix was not run because neither candidate qualified without
+  external render stimulation.
+- [x] (2026-07-19) Obtained focused evidence review with no finding. The review
+  confirmed the readiness-specific defer, the six-trial evidence, and omission
+  of the gated 27-trial matrix.
+- [x] (2026-07-19) Archived this plan without applying or dropping the
+  prototype stash.
 
 ## Surprises & Discoveries
 
@@ -66,6 +90,37 @@ prototype stash is read-only research material and must not be applied.
   Evidence: the harness computes query matching and two-sample signatures
   inside the page, then returns only fixed statuses, counts, latency, and
   restoration state.
+
+- Observation: the first owner-approved execution produced no search-readiness
+  evidence because it stopped before query dispatch.
+  Evidence: the current build no longer exposed the old dialog-launcher
+  selector, and Electron reported the embedded chart document as hidden even
+  while its Desktop tab was visibly foregrounded. A read-only aggregate
+  inspection found the replacement semantic launcher with rendered geometry;
+  no result title, target identifier, URL, or raw DOM was retained.
+
+- Observation: Electron throttled page timers enough for the original
+  page-side observation promise to overrun the eight-second outer deadline.
+  Evidence: moving the same 200 ms cadence to Tokio completed all six bounded
+  preflight trials while keeping signatures page-local and the outer deadline
+  unchanged.
+
+- Observation: query dispatch and parsing are not the current blockers.
+  Evidence: prototype input events and native CDP text insertion each assigned
+  all three fixed queries, and all six query restorations succeeded. A visual
+  capture and accessibility inspection showed positive rows, while aggregate
+  DOM inspection found one parent of query-matching `div[data-title]` rows.
+
+- Observation: positive rows do not materialize reliably during an ordinary
+  background CLI observation window.
+  Evidence: all six production-like preflight trials returned `host_missing`,
+  but a later CDP screenshot forced the rows into the DOM. Repeated screenshot
+  stimulation changed dialog focus/preparation and therefore cannot be treated
+  as a transparent readiness primitive.
+
+- Observation: app-tab order and CDP target order are not interchangeable.
+  Evidence: read-only per-target status identified the disposable active chart;
+  rerunning on that exact target produced the same six `host_missing` outcomes.
 
 ## Decision Log
 
@@ -112,12 +167,52 @@ prototype stash is read-only research material and must not be applied.
   never observed a structural host at all.
   Date/Author: 2026-07-18 / Codex
 
+- Decision: require the current launcher to have rendered geometry, but do not
+  use `document.visibilityState` as a Desktop-tab precondition.
+  Rationale: the foregrounded Electron tab still reports its embedded document
+  as hidden even though the launcher has a nonzero client rectangle. Geometry
+  preserves a bounded rendered-element check without rejecting the actual
+  visible Desktop target.
+  Date/Author: 2026-07-18 / Codex
+
+- Decision: defer production search after the
+  six-trial preflight rather than running the 27-trial matrix.
+  Rationale: the plan requires at least one candidate to pass all three
+  preflight queries without an external visual operation. Both candidates
+  assigned and restored correctly but produced three `host_missing` outcomes,
+  so no candidate qualified. Screenshot-driven rendering is observable,
+  interferes with focus, and is outside the intended search contract.
+  Date/Author: 2026-07-19 / Codex
+
 ## Outcomes & Retrospective
 
-Not yet executed. Record whether the current build provides a stable dispatch
-and positive-result readiness boundary across all required initial states,
-whether restoration is exact, and whether a separate implementation plan is
-justified.
+The reassessment defers production indicator search because the current build
+does not provide a stable background-CLI readiness boundary. Six of the maximum
+33 trials were required and completed: both dispatch candidates assigned the
+three fixed queries, all six restorations succeeded, and all six ordinary
+observations reported `host_missing`. Because neither candidate qualified, the
+plan's gate correctly prohibited the selected-candidate 27-trial matrix.
+
+This is not a parser or permanent-capability no-go. Positive rows were visible
+and the current `data-title` row boundary was class-free and query-sensitive
+after rendering. The unresolved gap is making those rows materialize without a
+screenshot, foreground-control side effect, or harness intervention. A future
+implementation plan would need a reviewed, nonvisual readiness trigger or an
+explicit product decision that foreground activation is acceptable.
+
+Focused evidence review found no blocker and confirmed that the evidence is
+sufficient to close this current-build reassessment. The retained `deadline`
+status is not emitted by the current Rust-side polling path: bounded sampling
+ends as `unstable_sampled`, while an outer trial timeout stops the harness.
+Therefore a zero `deadline_stops` count must not be read as proof that no
+deadline-related stop was possible.
+
+The result also does not promote a broker or shared connection. Persistent
+transport ownership alone does not cause hidden renderer content to
+materialize. Future shared-connection feasibility may measure foreground and
+renderer lifecycle ownership, but production indicator search remains deferred
+until that work establishes a reviewed nonvisual readiness boundary or an
+explicit foreground-control policy.
 
 ## Context and Orientation
 
@@ -179,11 +274,13 @@ selectors, coordinate clicks, multiple signatures, or increasing timeouts
 after a failure. A candidate that works only in one initial state is no-go.
 
 Require the disposable target to begin with the Indicators dialog closed. The
-harness checks this before any mutation. Each trial constructs and restores its
-declared state; a normal preflight no-go closes the dialog before returning,
-and a completed matrix verifies the same closed outer baseline. Unknown
-outcomes and restoration failures still stop without further automatic
-mutation.
+harness also requires the current semantic dialog launcher to have rendered
+geometry before any mutation. It does not use document visibility because the
+foregrounded Electron chart reports a hidden document. Each trial constructs
+and restores its declared state; a normal preflight no-go closes the dialog
+before returning, and a completed matrix verifies the same closed outer
+baseline. Unknown outcomes and restoration failures still stop without further
+automatic mutation.
 
 Finally, record one decision. Go requires one qualifying preflight candidate
 and all 27 selected-candidate trials to observe exactly one class-free host,
@@ -279,10 +376,13 @@ browser automation layer.
 
 - UNCONFIRMED: whether the current Desktop build now exposes a stable
   query-associated readiness or loading marker.
-- UNCONFIRMED: whether class-free host structure remains unique across all
-  required initial states.
+- Confirmed: current `data-title` rows are parseable after rendering, but no
+  reviewed nonvisual trigger makes them materialize within the ordinary CLI
+  observation window.
 - UNCONFIRMED: whether initially closed operation can be restored reliably
   without introducing a coordinate or generated-class dependency.
+- UNCONFIRMED: whether the corrected current-build launcher succeeds through
+  the full bounded matrix.
 
 Revision note (2026-07-18): created after the owner requested a more complete
 reassessment of the earlier defer decision. The plan treats the saved prototype
@@ -313,3 +413,19 @@ live scope and authorization boundary are unchanged.
 Revision note (2026-07-18): focused correction re-review was green with no
 finding. The next gate is explicit owner approval for the bounded live matrix;
 no live execution or production implementation is authorized by review alone.
+
+Revision note (2026-07-19): the owner-approved run stopped before query
+dispatch because the old launcher selector was absent and Electron reported
+the embedded chart document as hidden. Recorded zero completed search trials,
+updated the harness to the read-only-confirmed current semantic launcher, and
+used rendered geometry after confirming that the visibly foregrounded Desktop
+tab still reports hidden document visibility.
+
+Revision note (2026-07-19): Electron timer throttling prevented page-side
+polling from returning within the outer deadline, so the harness moved the same
+200 ms cadence to Tokio while retaining page-local signatures. The completed
+six-trial preflight assigned and restored every query for both dispatch
+candidates, but all six ordinary observations reported `host_missing`. Visual,
+accessibility, and aggregate DOM inspection then proved that current
+`data-title` rows appear after rendering. Reclassified the result from parser
+no-go to readiness-specific defer and did not run the gated 27-trial matrix.

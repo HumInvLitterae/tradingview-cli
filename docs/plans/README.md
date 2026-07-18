@@ -7,13 +7,13 @@ for release and next-phase planning.
 ## Current and future plans
 
 The current ExecPlan is
-`tradingview-cli-indicator-search-current-build-reassessment.md`. Its bounded
-current-build harness and deterministic fixtures are implemented and full
-non-live validation is green. Focused review corrections are applied and
-focused re-review is green. Explicit owner approval is now required before at
-most 33 live trials. The
-`tradingview-cli-consecutive-invocation-resilience.md` investigation is queued
-after it. Neither plan authorizes a production command or retry. The completed
+`tradingview-cli-consecutive-invocation-resilience.md`. It measures bounded
+production CLI read cohorts without adding retry or production behavior. The
+indicator-search current-build reassessment completed focused evidence review
+and is archived with a readiness-specific defer: both dispatch candidates
+assigned and restored all fixed queries, but ordinary CLI observation did not
+materialize result rows, so the gated 27-trial matrix was correctly not run.
+The completed
 v0.29 completion audit, recovery-semantics inventory, and connection/evaluation topology
 inventories are archived documentation evidence rather than implemented
 runtime features. The ordered `v0.29.0` inventory is maintained in
@@ -22,6 +22,13 @@ Pre-dispatch retry remains deferred until ordinary operation or a later bounded
 probe records a relevant failure.
 
 Completed current-cycle plans:
+
+- `tradingview-cli-indicator-search-current-build-reassessment.md`: confirmed
+  that current class-free result parsing remains feasible after rendering, but
+  ordinary background CLI observation lacks a stable result-materialization
+  boundary. Focused evidence review is green; production search remains
+  readiness-deferred and the completed plan now lives under
+  `docs/plans/archives/`.
 
 - `tradingview-cli-v0.29-pre-release-audit.md`: audited the frozen five-commit
   candidate, passed focused and full non-live validation, and completed

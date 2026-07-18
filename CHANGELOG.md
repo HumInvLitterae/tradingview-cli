@@ -66,8 +66,17 @@ package version omits the leading `v`.
   readback, public-safe `dispatch_failed` restoration, and a distinct
   `unstable_sampled` counter without changing the live trial bound.
 - Completed focused re-review of the corrected reassessment harness with no
-  finding. The bounded live matrix remains unrun and requires explicit owner
-  approval.
+  finding. The first owner-approved execution then stopped before query
+  dispatch with zero search trials completed because the current launcher
+  selector and Electron timer assumptions had drifted. Updated the test-only
+  harness to the current semantic launcher, rendered geometry, Rust-side
+  bounded polling, current `data-title` rows, and Escape restoration. The
+  completed six-trial preflight assigned and restored all fixed queries for
+  both dispatch candidates, but all ordinary observations reported
+  `host_missing`. Focused evidence review confirmed a readiness-specific defer:
+  current class-free rows exist after rendering, but no stable nonvisual
+  materialization boundary was established, so the gated 27-trial matrix was
+  not run and no production search command was added.
 
 ## v0.28.0 - 2026-07-16
 
