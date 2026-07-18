@@ -37,6 +37,10 @@ prototype stash is read-only research material and must not be applied.
 - [x] (2026-07-18) Completed the full non-live workspace baseline, metadata,
   hygiene, package-script syntax, guide parity, and diff checks. Live execution
   remains unrun.
+- [x] (2026-07-18) Applied the focused-review recommendations: explicit
+  assignment readback and `dispatch_failed` restoration for both candidates,
+  plus a distinct `unstable_sampled` aggregate outcome. Focused re-review is
+  pending. Focused and full non-live validation are green after correction.
 - [ ] Run the bounded positive-readiness and restoration matrix on an
   owner-approved disposable target.
 - [ ] Record go/no-go evidence and obtain focused evidence review.
@@ -92,6 +96,19 @@ prototype stash is read-only research material and must not be applied.
   Rationale: the investigation needs only proof of positive query-sensitive
   stable rows. Returning titles or derived signatures adds no acceptance value
   and could expose account-local entries.
+  Date/Author: 2026-07-18 / Codex
+
+- Decision: treat query assignment as a separate stage before positive-result
+  observation.
+  Rationale: a failed assignment must not be misclassified as host readiness or
+  stability timeout. Both dispatch candidates now require exact input-value
+  readback; a known failure restores once and returns `dispatch_failed`.
+  Date/Author: 2026-07-18 / Codex
+
+- Decision: classify a sampled but never stable observation as
+  `unstable_sampled`.
+  Rationale: this distinguishes the prior readiness problem from a trial that
+  never observed a structural host at all.
   Date/Author: 2026-07-18 / Codex
 
 ## Outcomes & Retrospective
@@ -285,3 +302,9 @@ Revision note (2026-07-18): added the test-only reassessment harness, fixed its
 queries and prior-query baseline, kept raw rows and stability signatures inside
 the page, and recorded green focused and full non-live validation. The live
 matrix remains unexecuted and separately owner-authorized.
+
+Revision note (2026-07-18): focused implementation review was green and
+recommended finer no-go evidence. Added exact assignment readback for both
+dispatch candidates, one restoration path for known assignment failure,
+`dispatch_failed`, and `unstable_sampled`. Focused re-review is pending; the
+live scope and authorization boundary are unchanged.
