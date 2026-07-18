@@ -58,6 +58,12 @@ package version omits the leading `v`.
   explicit/heuristic selection and repeated/mixed cohorts. Neither investigation
   adds retry or a public command; promoted implementation would require its own
   plan and a refreshed completion audit.
+- Added an ignored consecutive-invocation resilience harness for six bounded
+  production-subprocess cohorts across `readiness`, OHLCV summary, and study
+  values. Deterministic fixtures enforce the exact 120-invocation matrix,
+  fixed per-cohort and whole-run failure-stage and latency evidence,
+  malformed-output stops, and private-value rejection without adding retry or
+  production behavior.
 - Added an ignored, explicit-target indicator-search reassessment harness with
   a six-trial dispatch preflight, a selected-candidate 27-trial matrix,
   aggregate-only evidence, and deterministic public-safety fixtures. No live

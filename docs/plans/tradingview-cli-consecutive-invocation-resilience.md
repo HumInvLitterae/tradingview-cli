@@ -21,11 +21,19 @@ mutation-command repetition.
 
 - [x] (2026-07-18) Defined the investigation boundary and responsibility split.
 - [x] (2026-07-18) Created this queued investigation plan.
-- [ ] Start after the indicator-search reassessment closes.
-- [ ] Obtain focused independent review of this plan.
-- [ ] Inventory eligible read-only commands and freeze the exact matrix.
-- [ ] Add a deterministic subprocess fixture and aggregate-only ignored live
-  harness without production behavior changes.
+- [x] (2026-07-19) Started after the indicator-search reassessment received
+  focused evidence review and was archived.
+- [x] (2026-07-18) Obtained focused independent review of this plan with no
+  implementation blocker.
+- [x] (2026-07-19) Inventoried eligible commands and froze `readiness`, `ohlcv
+  --summary --count 20`, and `values` as the light, summary, and inventory
+  archetypes.
+- [x] (2026-07-19) Added deterministic aggregate fixtures and an ignored
+  production-subprocess live harness without production behavior changes.
+- [x] (2026-07-19) Completed formatting, strict Clippy, focused fixtures, full
+  workspace tests, metadata, hygiene, package-script syntax, guide parity, and
+  diff checks. Focused implementation review is pending.
+- [ ] Obtain focused implementation review before seeking live authorization.
 - [ ] Execute the owner-approved bounded matrix.
 - [ ] Classify evidence and record promote/defer/no-change decisions.
 - [ ] Obtain focused evidence review and archive this plan.
@@ -37,6 +45,12 @@ mutation-command repetition.
   Evidence: it requires one explicit target ID and exercises typed transport
   boundaries directly; it does not represent heuristic selection, independent
   CLI process startup, command mixing, or prior-operation state.
+
+- Observation: readiness and status expose target cardinality through different
+  public data paths.
+  Evidence: readiness uses `data.cdp.target_count`, while status uses
+  `data.desktop_readiness.target_count`. The harness accepts both public shapes,
+  retains only the numeric cardinality, and never retains a target identity.
 
 ## Decision Log
 
@@ -57,6 +71,22 @@ mutation-command repetition.
   by aggregate cardinality and ambiguity status.
   Date/Author: 2026-07-18 / Codex
 
+- Decision: use `readiness`, `ohlcv --summary --count 20`, and `values` as the
+  three read archetypes.
+  Rationale: source and CLI help identify all three as Desktop-backed reads.
+  `readiness` performs bounded readiness inspection, OHLCV summary reads current
+  bars and summarizes them without changing range or chart state, and `values`
+  reads the current study inventory. None dispatches input or changes symbol,
+  timeframe, viewport, target lifecycle, or account state.
+  Date/Author: 2026-07-19 / Codex
+
+- Decision: map unknown future failure stages to `transport_unknown` inside the
+  aggregate harness.
+  Rationale: retaining an unreviewed stage string would widen the evidence
+  surface. The fixed known vocabulary remains useful while an unknown value
+  stops short of exposing raw details.
+  Date/Author: 2026-07-19 / Codex
+
 ## Outcomes & Retrospective
 
 Not yet executed. Record whether failures cluster by transport stage, target
@@ -74,8 +104,9 @@ Use only commands confirmed by source and help to be read-only and not to
 change chart symbol, timeframe, viewport, replay, Pine, drawings, layout,
 tabs, Screener state, or account data. Candidate families include `readiness`,
 `status`, selected-chart values, selected-chart OHLCV summary, and read-only
-data inventories. Milestone 1 must record the exact command vector and explain
-why each is read-only before live execution.
+data inventories. This inventory selected `tv readiness`, `tv ohlcv --summary
+--count 20`, and `tv values`. Explicit cohorts prepend `--target-id <ID>`;
+heuristic cohorts use the same vectors without that option.
 
 An explicit-selection trial passes one target ID supplied through the existing
 CLI option. A heuristic-selection trial omits it and therefore exercises the
@@ -153,6 +184,13 @@ only one final aggregate object with:
     target_drift_count
     latency_p50_ms
     latency_p95_ms
+    cohort_summaries
+
+`cohort_summaries` contains the same count, stage, ambiguity, deadline,
+target-drift, and latency fields for each of the six fixed public cohort labels.
+It contains no command output or target identity. This per-cohort breakdown is
+required to distinguish explicit from heuristic selection and repeated from
+mixed reads; the top-level fields remain the whole-run totals.
 
 Run focused fixtures, then the complete baseline:
 
@@ -165,6 +203,13 @@ Run focused fixtures, then the complete baseline:
     bash -n scripts/stage-release-package-files.sh
     cmp -s AGENTS.md CLAUDE.md
     git diff --check
+
+The implementation is
+`crates/cli/tests/live_consecutive_invocation_resilience.rs`. Its ordinary test
+run executes deterministic aggregate, malformed-output, allowlist, and exact
+matrix fixtures while leaving the live matrix ignored. The live gate is
+`TV_LIVE_CONSECUTIVE_INVOCATION_RESILIENCE=1`, and the explicit target is read
+from `TV_LIVE_CONSECUTIVE_INVOCATION_TARGET_ID` without being printed or stored.
 
 ## Validation and Acceptance
 
@@ -216,3 +261,8 @@ Revision note (2026-07-18): created as a bounded post-audit investigation after
 the owner raised repeated agent/CLI use as a distinct failure surface. The plan
 uses production subprocesses, excludes mutations and retry, and routes evidence
 to CLI or harness ownership rather than assuming either in advance.
+
+Revision note (2026-07-19): started after the reviewed indicator reassessment,
+froze the three source-confirmed read vectors, and added the ignored 120-process
+harness plus deterministic aggregate-only fixtures. No live cohort, retry, or
+production behavior was added.
