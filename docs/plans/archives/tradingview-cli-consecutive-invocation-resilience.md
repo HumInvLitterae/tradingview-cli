@@ -45,7 +45,11 @@ mutation-command repetition.
   reads were stable, heuristic ambiguity was expected with four chart targets,
   and the two unclassified process timeouts require evidence review rather than
   automatic retry or a production change.
-- [ ] Obtain focused evidence review and archive this plan.
+- [x] (2026-07-19) Obtained focused evidence review with no finding. The review
+  confirmed no retry/session/broker promotion, routed slow-tail attribution to
+  a future narrow measurement candidate, and approved archive before release
+  readiness.
+- [x] (2026-07-19) Archived this plan without rerunning the live matrix.
 
 ## Surprises & Discoveries
 
@@ -145,6 +149,18 @@ one interrupted repeated heuristic values and one interrupted the explicit
 mixed rotation. Because a harness-enforced child timeout has no operation
 `failure_stage`, the safe outcome is focused evidence review and defer-or-narrow
 measurement routing, not a production change in this plan.
+
+Focused evidence review independently reconstructed all aggregate counters from
+the fixed rotations and confirmed the result. The recorded zero target drift is
+limited to total target cardinality sampled by readiness-bearing invocations;
+it does not prove that the chart-target subset was unchanged when total
+cardinality stayed constant.
+
+The only promoted follow-up is a future narrow chart-read latency attribution
+measurement candidate. It should separate operation-layer phases for OHLCV and
+study-value reads before changing timeout or wait policy. This plan adds no
+production timing contract and requires no completion-audit refresh because it
+changed no production behavior.
 
 ## Context and Orientation
 
@@ -335,3 +351,12 @@ run. It completed 104/120 invocations, reproduced expected multi-target
 ambiguity and `target_select` behavior, and stopped two cohorts on one child
 timeout each. No optional target-set mutation, retry, or compensating run was
 performed; focused evidence review is pending.
+
+Focused evidence review is now complete and green. The reviewed evidence does
+not promote retry, a shared connection, or production behavior; it routes the
+unattributed slow tail to a separate future measurement candidate.
+
+Revision note (2026-07-19): focused evidence review found no blocker, confirmed
+the aggregate reconstruction and no-retry decision, limited the meaning of
+zero target drift, and routed slow-tail attribution to a future narrow
+measurement candidate. The plan is archived without another live run.

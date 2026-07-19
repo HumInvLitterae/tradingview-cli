@@ -24,6 +24,9 @@ details, or unsupported-feature reminders. If command choice is unclear, check
    be started manually or with an explicit path.
 4. If multiple chart targets are open, run `tv tab list` and use the returned
    `target_cli_args`, for example `tv --target-id <ID> ...`.
+   Reuse that exact handoff for the rest of the workflow. Resolve again only
+   after selection failure, target-set change, or a user-requested chart change;
+   do not rerun readiness before every read by default.
 5. Use `tv state`, `tv range`, or `tv ohlcv --summary` when readiness says the
    selected chart or bar state still needs confirmation.
 

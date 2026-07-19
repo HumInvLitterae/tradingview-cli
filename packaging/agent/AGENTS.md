@@ -94,6 +94,11 @@ tv --target-id <ID> state
 tv --target-id <ID> ohlcv --count 1
 ```
 
+Resolve the intended target once near the start of the workflow and keep using
+those same arguments. Discover targets again when selection fails, the target
+set changes, or the user changes the intended chart; do not add a readiness
+call before every read merely as a precaution.
+
 Do not use `TV_CDP_TARGET_ID`; explicit target handoff is `--target-id`.
 
 ## Source Categories

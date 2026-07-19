@@ -169,6 +169,11 @@ tv --target-id <CDP_TARGET_ID> state
 tv --target-id <CDP_TARGET_ID> ohlcv --count 1
 ```
 
+Resolve the intended target once near the start of a workflow and reuse those
+same `target_cli_args` for later chart-dependent commands. Re-run target
+discovery when selection fails, the target set changes, or the user changes the
+intended chart; do not require a separate readiness call before every read.
+
 Common Desktop operations:
 
 ```bash

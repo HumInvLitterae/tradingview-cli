@@ -74,6 +74,11 @@ package version omits the leading `v`.
   completed 104/120 invocations, reproduced expected multi-target ambiguity and
   `target_select` failures, stopped two cohorts on child timeouts, and added no
   retry or production behavior. Focused evidence review is pending.
+- Completed focused evidence review of the consecutive-read matrix. The review
+  confirmed expected multi-target rejection, no transport-retry or broker
+  promotion, reusable target-handoff guidance, and a future narrow chart-read
+  latency-attribution candidate. The investigation is archived without another
+  live run.
 - Added an ignored, explicit-target indicator-search reassessment harness with
   a six-trial dispatch preflight, a selected-candidate 27-trial matrix,
   aggregate-only evidence, and deterministic public-safety fixtures. No live

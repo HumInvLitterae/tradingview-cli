@@ -51,7 +51,9 @@ the task needs them. If command choice is unclear, check
   `delay_seconds` when freshness matters.
 - Chart-backed reads depend on the selected TradingView Desktop chart. Run
   `tv readiness` and use `tv tab list` / `--target-id` when the active chart is
-  ambiguous.
+  ambiguous. Once resolved, reuse the same target handoff across consecutive
+  reads; rediscover only after selection failure, target-set change, or an
+  intentional chart change.
 - `tv chart compare` is Desktop-backed `chart_compare.v1` for a small finalist
   set. It may temporarily switch the selected chart. Do not describe it as
   scanner-backed compare or as ranking.
