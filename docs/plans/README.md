@@ -15,9 +15,10 @@ timeout, or a `method_call` failure stage. The current ExecPlan is
 `tradingview-cli-renderer-foreground-feasibility.md`. It compares HTTP target
 activation and `Page.bringToFront` as separate, bounded test-only transitions
 with limited target-side restore observation. Test-only implementation and full
-non-live validation are complete; focused implementation review corrections are
-applied, narrow re-review is pending, and live execution remains unapproved. The consecutive-invocation resilience
-investigation completed focused evidence review and is archived
+non-live validation are complete; focused implementation and correction review
+are green, exact two-target owner approval is pending, and live execution
+remains unrun. The consecutive-invocation resilience investigation completed
+focused evidence review and is archived
 without promoting retry or production behavior. Its stable-target matrix
 completed 104/120 invocations, reproduced expected multi-target refusal, and
 routed two child timeouts to a future narrow chart-read latency-attribution
