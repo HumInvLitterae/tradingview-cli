@@ -195,7 +195,7 @@ fn consecutive_invocation_resilience_live_matrix() {
             ..Summary::default()
         };
         for index in 0..INVOCATIONS_PER_COHORT {
-            if Instant::now() >= cohort_deadline || Instant::now() >= run_deadline {
+            if deadlines_reached(Instant::now(), cohort_deadline, run_deadline) {
                 summary.deadline_stop_count += 1;
                 cohort_summary.deadline_stop_count += 1;
                 completed = false;
@@ -269,16 +269,8 @@ fn run_tv(
     ));
     let started = Instant::now();
     let mut child = command.spawn().expect("test-built tv binary should start");
-    let status = loop {
-        if let Some(status) = child.try_wait().expect("child status should be readable") {
-            break status;
-        }
-        if started.elapsed() >= INVOCATION_TIMEOUT {
-            let _ = child.kill();
-            let _ = child.wait();
-            return Err(());
-        }
-        thread::sleep(Duration::from_millis(10));
+    let Some(status) = wait_for_child(&mut child, INVOCATION_TIMEOUT) else {
+        return Err(());
     };
     let bytes = if status.success() {
         read_file(stdout.as_file())
@@ -354,11 +346,33 @@ fn parse_envelope(bytes: &[u8]) -> Option<Value> {
 
 fn normalize_failure_stage(stage: &str) -> String {
     match stage {
-        "http_client" | "target_list" | "target_select" | "websocket_connect" | "method_call" => {
+        "target_list" | "target_select" | "websocket_connect" | "method_call" | "event_wait" => {
             stage.to_string()
         }
         _ => "transport_unknown".to_string(),
     }
+}
+
+fn wait_for_child(
+    child: &mut std::process::Child,
+    timeout: Duration,
+) -> Option<std::process::ExitStatus> {
+    let deadline = Instant::now() + timeout;
+    loop {
+        if let Some(status) = child.try_wait().expect("child status should be readable") {
+            return Some(status);
+        }
+        if Instant::now() >= deadline {
+            let _ = child.kill();
+            let _ = child.wait();
+            return None;
+        }
+        thread::sleep(Duration::from_millis(10));
+    }
+}
+
+fn deadlines_reached(now: Instant, cohort_deadline: Instant, run_deadline: Instant) -> bool {
+    now >= cohort_deadline || now >= run_deadline
 }
 
 fn percentile(values: &[u64], percentile: usize) -> u64 {
@@ -437,6 +451,52 @@ fn envelope_classification_is_allowlisted() {
     let serialized = serde_json::to_string(&Summary::requested()).unwrap();
     assert!(!serialized.contains(private));
     assert!(!serialized.contains("ws://"));
+}
+
+#[test]
+fn ambiguity_envelopes_cover_error_readiness_and_status_shapes() {
+    for value in [
+        serde_json::json!({"success": false, "error": {"kind": "target_ambiguous"}}),
+        serde_json::json!({"success": true, "data": {"target_selection": "ambiguous", "cdp": {"target_count": 2}}}),
+        serde_json::json!({"success": true, "data": {"desktop_readiness": {"target_selection": "ambiguous", "target_count": 2}}}),
+    ] {
+        let success = value["success"].as_bool().unwrap();
+        let result = classify_envelope(success, &value, 1);
+        assert!(result.ambiguous);
+        if success {
+            assert_eq!(result.target_count, Some(2));
+        }
+    }
+}
+
+#[test]
+fn child_timeout_kills_a_blocked_production_subprocess() {
+    let mut child = Command::new(env!("CARGO_BIN_EXE_tv"))
+        .args(["pine", "analyze"])
+        .stdin(Stdio::piped())
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .spawn()
+        .expect("test-built tv binary should start");
+    assert!(wait_for_child(&mut child, Duration::from_millis(50)).is_none());
+    assert!(
+        child
+            .try_wait()
+            .expect("child state should be readable")
+            .is_some()
+    );
+}
+
+#[test]
+fn cohort_and_run_deadlines_stop_without_extending_either_budget() {
+    let now = Instant::now();
+    assert!(!deadlines_reached(
+        now,
+        now + Duration::from_secs(1),
+        now + Duration::from_secs(2)
+    ));
+    assert!(deadlines_reached(now, now, now + Duration::from_secs(1)));
+    assert!(deadlines_reached(now, now + Duration::from_secs(1), now));
 }
 
 #[test]

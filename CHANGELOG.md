@@ -64,6 +64,9 @@ package version omits the leading `v`.
   fixed per-cohort and whole-run failure-stage and latency evidence,
   malformed-output stops, and private-value rejection without adding retry or
   production behavior.
+- Aligned the consecutive-invocation aggregate with the shipped
+  `failure_stage` vocabulary and added deterministic ambiguity-envelope,
+  blocked-child timeout, and cohort/run deadline-stop coverage.
 - Added an ignored, explicit-target indicator-search reassessment harness with
   a six-trial dispatch preflight, a selected-candidate 27-trial matrix,
   aggregate-only evidence, and deterministic public-safety fixtures. No live
