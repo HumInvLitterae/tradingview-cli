@@ -11,10 +11,12 @@ archived. Its owner-authorized matrix completed 40/40 trials without failure or
 deadline stop and did not reproduce the earlier subprocess tail. Public timing
 and a production correction remain unpromoted; a new subprocess-versus-process
 attribution plan is triggered only by a future chart read above one second, a
-timeout, or a `method_call` failure stage. The next current slice is renderer
-lifecycle and foreground feasibility; its ExecPlan is being prepared. The
-consecutive-invocation
-resilience investigation completed focused evidence review and is archived
+timeout, or a `method_call` failure stage. The current ExecPlan is
+`tradingview-cli-renderer-foreground-feasibility.md`. It compares HTTP target
+activation and `Page.bringToFront` as separate, bounded test-only transitions
+with limited target-side restore observation. Focused plan review is pending;
+no implementation or live transition is authorized. The consecutive-invocation resilience investigation
+completed focused evidence review and is archived
 without promoting retry or production behavior. Its stable-target matrix
 completed 104/120 invocations, reproduced expected multi-target refusal, and
 routed two child timeouts to a future narrow chart-read latency-attribution

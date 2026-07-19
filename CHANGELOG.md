@@ -14,6 +14,11 @@ package version omits the leading `v`.
   values without assuming an operation-side polling cause; public timing,
   timeout changes, retry, foreground transitions, and shared processes remain
   separately gated.
+- Added the v0.30 renderer foreground feasibility plan, separating HTTP target
+  activation, `Page.bringToFront`, and Desktop app-tab ownership behind a
+  bounded two-target test-only contract with limited target-side restore
+  observation. It does not authorize indicator search, automatic foregrounding,
+  a shared session, or a broker.
 
 ### Tests
 
