@@ -32,8 +32,11 @@ mutation-command repetition.
   production-subprocess live harness without production behavior changes.
 - [x] (2026-07-19) Completed formatting, strict Clippy, focused fixtures, full
   workspace tests, metadata, hygiene, package-script syntax, guide parity, and
-  diff checks. Focused implementation review is pending.
-- [ ] Obtain focused implementation review before seeking live authorization.
+  diff checks.
+- [x] (2026-07-19) Obtained focused implementation review with no blocker.
+  Corrected the public stage allowlist and added the recommended ambiguity,
+  child-timeout, and deadline fixtures; focused re-review is pending.
+- [ ] Obtain focused correction re-review before seeking live authorization.
 - [ ] Execute the owner-approved bounded matrix.
 - [ ] Classify evidence and record promote/defer/no-change decisions.
 - [ ] Obtain focused evidence review and archive this plan.
@@ -266,3 +269,9 @@ Revision note (2026-07-19): started after the reviewed indicator reassessment,
 froze the three source-confirmed read vectors, and added the ignored 120-process
 harness plus deterministic aggregate-only fixtures. No live cohort, retry, or
 production behavior was added.
+
+Revision note (2026-07-19): after focused implementation review, replaced the
+nonexistent `http_client` aggregate stage with the shipped `event_wait` stage
+and added deterministic fixtures for all three ambiguity envelope shapes, a
+blocked production child timeout, and cohort/run deadline stops. Matrix bounds
+and live authorization remain unchanged.
