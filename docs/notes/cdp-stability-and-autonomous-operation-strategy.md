@@ -165,6 +165,24 @@ broker implementation are not implied by roadmap placement.
 Documentation and runtime skills are updated in the same slice as any
 user-visible contract. They are not deferred to one final documentation phase.
 
+## v0.30 evidence program
+
+The first post-v0.29 slice attributes chart-read latency without assuming that
+readiness polling is present. Current OHLCV and study-values operations each
+perform one synchronous Runtime evaluation. Attribution therefore measures the
+combined Runtime request/response boundary, its enclosing operation, harness
+serialization, and the fresh in-process trial, while labeling normalization
+and remaining time as derived residuals. It does not claim to separate CDP send
+from response wait, remote expression execution, or process startup before
+naming a correction.
+
+Public timing is conditional on stable actionable phase semantics. Renderer
+lifecycle and foreground feasibility are a separate investigation covering app
+tab ownership, target identity, visibility, throttling, side effects, and
+restoration. Neither investigation promotes a session or broker. Connection
+latency remains insufficient justification after the reviewed 36 ms process
+median.
+
 ## Success criteria for the program
 
 The program is useful if it produces reproducible answers to these questions:
@@ -190,3 +208,7 @@ runs provide non-regression and operational evidence.
   recovery semantics, made broker adoption an explicit policy gate, removed
   silent fallback, and added stale-target detectability requirements. The
   transport measurement slice now has its own ExecPlan.
+- 2026-07-19: after v0.29 release, added chart-read attribution and renderer
+  lifecycle as separate v0.30 evidence lanes. Recorded that current OHLCV and
+  study-values reads have no explicit operation-side polling loop and kept
+  public timing, timeout changes, session, and broker work evidence-gated.
