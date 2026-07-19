@@ -22,7 +22,8 @@ package version omits the leading `v`.
   connections and reports only aggregate direct timings and labeled residuals;
   deterministic fixtures cover phase ownership, exactly-one evaluation,
   deadlines, malformed serialization, percentiles, saturation, and public-safe
-  output. No ordinary command emits timing metadata.
+  output. Focused implementation review is green; no ordinary command emits
+  timing metadata and the live matrix remains separately owner-gated.
 
 ## v0.29.0 - 2026-07-19
 
