@@ -11,19 +11,12 @@ archived. Its owner-authorized matrix completed 40/40 trials without failure or
 deadline stop and did not reproduce the earlier subprocess tail. Public timing
 and a production correction remain unpromoted; a new subprocess-versus-process
 attribution plan is triggered only by a future chart read above one second, a
-timeout, or a `method_call` failure stage. The current ExecPlan is
-`tradingview-cli-renderer-foreground-feasibility.md`. It compares HTTP target
-activation and `Page.bringToFront` as separate, bounded test-only transitions
-with limited target-side restore observation. Test-only implementation and full
-non-live validation are complete; focused implementation and correction review
-are green. One owner-authorized run stopped at the probe-baseline unknown-outcome
-boundary before either transition candidate. Separate read-only recovery found
-no residual marker and both callbacks incomplete. A harness deadline-budget
-correction and focused review are green; explicit approval for one exact-pair
-rerun was granted. Both candidates completed without failure and with matching
-restore observations, but neither improved the incomplete animation-frame
-signal. Focused evidence review is pending and no product behavior is promoted.
-The consecutive-invocation resilience investigation completed focused evidence
+timeout, or a `method_call` failure stage. Renderer foreground feasibility is
+reviewed and archived: HTTP activation and `Page.bringToFront` are current-build
+no-go candidates, renderer lifecycle remains deferred pending a concrete new
+mechanism, and no product behavior was promoted. The current ordered work is
+retained-backlog product selection; no implementation ExecPlan has been selected
+yet. The consecutive-invocation resilience investigation completed focused evidence
 review and is archived
 without promoting retry or production behavior. Its stable-target matrix
 completed 104/120 invocations, reproduced expected multi-target refusal, and

@@ -35,7 +35,9 @@ package version omits the leading `v`.
   verification instead of polling through the whole trial budget. A separately
   approved rerun completed both transition candidates without failure and with
   matching restore observations, but neither improved the incomplete animation-
-  frame signal; focused evidence review remains pending.
+  frame signal. Focused evidence review closed both declared transitions as
+  current-build no-go while retaining renderer lifecycle as a deferred strategy
+  candidate; no foreground behavior or indicator search was promoted.
 - Added test-only chart-read latency attribution for separate OHLCV summary and
   study-values cohorts. The ignored live matrix uses fresh explicit-target
   connections and reports only aggregate direct timings and labeled residuals;

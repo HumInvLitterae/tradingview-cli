@@ -53,7 +53,9 @@ search, a foreground command, a session, a broker, or automatic activation.
   candidates completed with one transition and one restore, no failure or
   unknown stop, and matching restore observations. Neither improved the
   incomplete animation-frame signal.
-- [ ] Obtain focused evidence review, record go/defer/no-go, and archive.
+- [x] (2026-07-19) Focused evidence review was green. Recorded current-build
+  no-go for both declared transitions, retained renderer lifecycle as a deferred
+  strategy candidate, and archived this plan.
 
 ## Milestones
 
@@ -151,6 +153,18 @@ Their probe observations were identical to the baseline categories: timeout
 completed and animation frame incomplete. The go condition was not met. Focused
 evidence review must decide current-build no-go or defer; no product behavior is
 promoted by the run itself.
+
+Focused evidence review confirmed a two-layer outcome. HTTP activation and
+`Page.bringToFront` are current-build no-go candidates because neither changed
+the incomplete animation-frame signal. Renderer lifecycle remains deferred at
+the strategy level rather than permanently impossible; reopen it only after a
+specific new transition mechanism or relevant Desktop build change is identified.
+The evidence also separates ordinary zero-delay timers from render/compositor
+callbacks for the first time: `setTimeout(0)` completed at baseline and after
+both transitions, while `requestAnimationFrame` remained incomplete. This
+narrows any future mechanism search to one that can cause actual rendering.
+Indicator search, automatic foregrounding, session, and broker behavior remain
+unpromoted.
 
 ## Context and Orientation
 
@@ -425,3 +439,8 @@ candidates without failure or unknown outcome. Each restore observation matched,
 but neither HTTP activation nor `Page.bringToFront` changed the incomplete
 animation-frame signal from its probe baseline. The evidence awaits focused
 review and does not authorize foreground behavior or indicator search.
+
+Revision note (2026-07-19): focused evidence review is green. Archived with
+current-build no-go for HTTP activation and `Page.bringToFront`, renderer
+lifecycle deferred until a concrete new mechanism exists, and no promoted
+product behavior.
