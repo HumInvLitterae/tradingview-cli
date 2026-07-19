@@ -6,11 +6,12 @@ for release and next-phase planning.
 
 ## Current and future plans
 
-The v0.29.0 release-readiness ExecPlan is complete, independently reviewed, and
-archived. The prepared local candidate freezes the additive transport-diagnostic
-change, aligns versioned artifacts, and passes the locked package gates. Tag,
-push, workflow, and GitHub Release mutation remain separately owner-controlled.
-The
+The current ExecPlan is
+`tradingview-cli-chart-read-latency-attribution.md`. It measures the separate
+OHLCV and study-values operation paths without assuming that polling or chart
+readiness caused the v0.29 slow tail. It adds no public timing contract, retry,
+timeout change, shared process, or ordinary-command behavior. Focused plan
+review is pending. The
 consecutive-invocation
 resilience investigation completed focused evidence review and is archived
 without promoting retry or production behavior. Its stable-target matrix
@@ -21,11 +22,11 @@ indicator-search current-build reassessment completed focused evidence review
 and is archived with a readiness-specific defer: both dispatch candidates
 assigned and restored all fixed queries, but ordinary CLI observation did not
 materialize result rows, so the gated 27-trial matrix was correctly not run.
-The completed
-v0.29 completion audit, recovery-semantics inventory, and connection/evaluation topology
-inventories are archived documentation evidence rather than implemented
-runtime features. The ordered `v0.29.0` inventory is maintained in
-`docs/v0.29-work-items.md`.
+The completed v0.29 release-readiness, completion audit, recovery-semantics
+inventory, and connection/evaluation topology inventories are archived
+documentation evidence rather than implemented runtime features. The current
+roadmap and ordered inventory are `docs/v0.30-roadmap.md` and
+`docs/v0.30-work-items.md`.
 Pre-dispatch retry remains deferred until ordinary operation or a later bounded
 probe records a relevant failure.
 

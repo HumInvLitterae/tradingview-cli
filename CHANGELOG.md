@@ -7,6 +7,14 @@ package version omits the leading `v`.
 
 ## Unreleased
 
+### Documentation
+
+- Started v0.30 planning around chart-read latency attribution and Desktop
+  renderer readiness. The first measurement plan separates OHLCV and study
+  values without assuming an operation-side polling cause; public timing,
+  timeout changes, retry, foreground transitions, and shared processes remain
+  separately gated.
+
 ## v0.29.0 - 2026-07-19
 
 ### Changed
