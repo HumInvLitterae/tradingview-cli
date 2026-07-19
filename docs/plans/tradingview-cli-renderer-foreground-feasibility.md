@@ -40,8 +40,14 @@ search, a foreground command, a session, a broker, or automatic activation.
   baseline `unknown_stop` before candidate transitions; no HTTP activation or
   `Page.bringToFront` call ran. Marker cleanup is unconfirmed and no automatic
   recovery action was taken.
-- [ ] Obtain separate owner approval for one read-only recovery observation of
-  marker presence before any cleanup or rerun decision.
+- [x] (2026-07-19) One separately approved read-only recovery observation found
+  the marker absent and both callbacks incomplete. It performed no cleanup or
+  transition.
+- [x] (2026-07-19) Corrected the timer-trial budget so the fixed two-second
+  observation window leaves one second inside the three-second trial for cleanup
+  and verification. Focused tests pass 8 with 1 ignored and strict Clippy is
+  green.
+- [ ] Obtain focused correction review before any rerun approval.
 - [ ] Obtain focused evidence review, record go/defer/no-go, and archive.
 
 ## Milestones
@@ -125,8 +131,11 @@ review are green. The owner-gated live test remains ignored and unrun; exact
 two-target owner approval was granted. The one authorized run stopped during
 the probe baseline with `status: unknown_stop`, one unknown stop, zero baseline
 responsive failures, and zero candidate results. No transition API ran. Marker
-state is `UNCONFIRMED`; a separately approved read-only recovery observation is
-the next gate.
+state was then observed once with separate approval: marker absent and both
+callbacks incomplete. This revealed that the implementation incorrectly used
+the whole three-second trial as its polling deadline instead of the planned
+two-second observation window, leaving no cleanup budget. The harness correction
+and focused review are the next gates.
 
 ## Context and Orientation
 
@@ -384,3 +393,9 @@ three-second outer bound during the initial probe-target baseline. It returned
 one aggregate `unknown_stop` before either transition candidate, performed no
 automatic cleanup or retry, and retained no target or raw payload. Marker state
 remains `UNCONFIRMED` pending separately approved read-only recovery evidence.
+
+Revision note (2026-07-19): the approved read-only recovery observation found
+the marker absent with both callbacks incomplete. Source inspection then found
+that Rust polling used the full three-second trial deadline rather than the
+planned two-second observation window. The correction separates those bounds,
+preserving one second for cleanup and final verification; no rerun is authorized.

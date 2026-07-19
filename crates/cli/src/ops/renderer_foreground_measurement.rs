@@ -10,6 +10,7 @@ const LIVE_GATE: &str = "TV_LIVE_RENDERER_FOREGROUND_FEASIBILITY";
 const RESTORE_TARGET_ENV: &str = "TV_LIVE_RENDERER_RESTORE_TARGET_ID";
 const PROBE_TARGET_ENV: &str = "TV_LIVE_RENDERER_PROBE_TARGET_ID";
 const TIMER_TIMEOUT: Duration = Duration::from_secs(3);
+const OBSERVATION_TIMEOUT: Duration = Duration::from_secs(2);
 const CANDIDATE_TIMEOUT: Duration = Duration::from_secs(12);
 const RUN_TIMEOUT: Duration = Duration::from_secs(60);
 const POLL_INTERVAL: Duration = Duration::from_millis(100);
@@ -118,6 +119,10 @@ trait ProbeBackend {
 
     fn poll_interval(&self) -> Duration {
         POLL_INTERVAL
+    }
+
+    fn observation_timeout(&self) -> Duration {
+        OBSERVATION_TIMEOUT
     }
 
     fn candidate_timeout(&self) -> Duration {
@@ -246,6 +251,7 @@ async fn timer_trial<B: ProbeBackend + Send>(
     role: TargetRole,
     deadline: Instant,
 ) -> Result<TimerTrial, AppError> {
+    let observation_deadline = (Instant::now() + backend.observation_timeout()).min(deadline);
     let initial = backend.snapshot(role).await?;
     if !initial.valid() || initial.marker_present {
         return Err(invalid("renderer probe baseline was malformed or occupied"));
@@ -265,11 +271,11 @@ async fn timer_trial<B: ProbeBackend + Send>(
             if !snapshot.valid() || !snapshot.marker_present {
                 return Err(invalid("renderer probe marker observation was malformed"));
             }
-            if snapshot.callbacks_complete() || Instant::now() >= deadline {
+            if snapshot.callbacks_complete() || Instant::now() >= observation_deadline {
                 break Ok(snapshot);
             }
-            sleep_until((Instant::now() + backend.poll_interval()).min(deadline)).await;
-            if Instant::now() >= deadline {
+            sleep_until((Instant::now() + backend.poll_interval()).min(observation_deadline)).await;
+            if Instant::now() >= observation_deadline {
                 break Ok(snapshot);
             }
         }
@@ -655,10 +661,14 @@ mod tests {
 
     impl ProbeBackend for FakeBackend {
         fn timer_timeout(&self) -> Duration {
-            Duration::from_millis(5)
+            Duration::from_millis(20)
         }
 
         fn poll_interval(&self) -> Duration {
+            Duration::from_millis(5)
+        }
+
+        fn observation_timeout(&self) -> Duration {
             Duration::from_millis(5)
         }
 
