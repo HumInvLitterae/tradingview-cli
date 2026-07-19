@@ -6,7 +6,11 @@ for release and next-phase planning.
 
 ## Current and future plans
 
-The next ExecPlan is v0.29.0 release readiness. The consecutive-invocation
+The current ExecPlan is `tradingview-cli-v0.29.0-release-readiness.md`. It
+freezes the reviewed additive transport-diagnostic candidate, aligns versioned
+release artifacts, and validates the locked package without authorizing tag,
+push, workflow, or GitHub Release mutation. Focused plan review is pending. The
+consecutive-invocation
 resilience investigation completed focused evidence review and is archived
 without promoting retry or production behavior. Its stable-target matrix
 completed 104/120 invocations, reproduced expected multi-target refusal, and

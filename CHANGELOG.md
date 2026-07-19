@@ -27,6 +27,11 @@ package version omits the leading `v`.
 
 ### Documentation
 
+- Started v0.29.0 release readiness after the completion audit and both bounded
+  investigations closed without promoting another production change. The plan
+  freezes the additive transport-diagnostic candidate and keeps tag, push,
+  workflow, and GitHub Release actions separately owner-controlled.
+
 - Started v0.29 planning around Desktop CDP transport resilience and
   diagnosability. Split the long-term stability and autonomous-operation
   strategy from the active transport measurement and failure-taxonomy
