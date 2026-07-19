@@ -7,6 +7,13 @@ package version omits the leading `v`.
 
 ## Unreleased
 
+### Planning
+
+- Selected explicit Replay chart-screenshot attachment as the v0.30 retained-
+  backlog product slice after comparing source ownership, workflow value, and
+  mutation risk. Added a self-contained implementation plan; no production
+  behavior is changed yet.
+
 ### Documentation
 
 - Started v0.30 planning around chart-read latency attribution and Desktop

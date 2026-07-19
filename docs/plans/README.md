@@ -14,10 +14,11 @@ attribution plan is triggered only by a future chart read above one second, a
 timeout, or a `method_call` failure stage. Renderer foreground feasibility is
 reviewed and archived: HTTP activation and `Page.bringToFront` are current-build
 no-go candidates, renderer lifecycle remains deferred pending a concrete new
-mechanism, and no product behavior was promoted. The current ordered work is
-retained-backlog product selection; no implementation ExecPlan has been selected
-yet. The consecutive-invocation resilience investigation completed focused evidence
-review and is archived
+mechanism, and no product behavior was promoted. Retained-backlog comparison
+selected Replay chart-screenshot attachment. The current ExecPlan is
+`tradingview-cli-replay-screenshot-attachment.md`; focused plan review is
+pending and implementation has not started. The consecutive-invocation
+resilience investigation completed focused evidence review and is archived
 without promoting retry or production behavior. Its stable-target matrix
 completed 104/120 invocations, reproduced expected multi-target refusal, and
 routed two child timeouts to a future narrow chart-read latency-attribution
