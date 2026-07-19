@@ -138,6 +138,13 @@ ordinary re-discovery, the share that event subscription could detect before a
 command fails, and the operational cost of another process. If measurement
 shows little value, both shared-connection candidates are dropped.
 
+The reviewed consecutive-invocation run measured 36 ms whole-process p50 with
+zero `target_list`, `websocket_connect`, or `method_call` transport failures
+across 104 completed invocations. Connection latency alone therefore cannot
+justify a shared session or broker. The 7,581 ms p95 and two outer child
+timeouts belong to a separate chart-read latency-attribution candidate because
+the outer harness could not assign them to an operation phase.
+
 Renderer lifecycle is a separate measurement axis from connection persistence.
 Future feasibility work should compare active-target ownership, app-tab versus
 CDP-target identity, `Page.bringToFront` or equivalent visibility transitions

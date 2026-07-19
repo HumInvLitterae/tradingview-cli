@@ -6,17 +6,12 @@ for release and next-phase planning.
 
 ## Current and future plans
 
-The current ExecPlan is
-`tradingview-cli-consecutive-invocation-resilience.md`. It measures bounded
-production CLI read cohorts without adding retry or production behavior. Its
-three exact read vectors, ignored 120-invocation harness, and deterministic
-aggregate fixtures are implemented and full non-live validation is green;
-focused implementation review found no blocker, its recommendations are
-applied, and focused correction re-review is green. Separate owner authorization
-was granted and the stable-target matrix completed 104/120 invocations. Expected
-multi-target ambiguity produced 24 `target_select` failures, while two child
-timeouts stopped their cohorts. Focused evidence review is the current gate;
-no retry or production change is promoted. The
+The next ExecPlan is v0.29.0 release readiness. The consecutive-invocation
+resilience investigation completed focused evidence review and is archived
+without promoting retry or production behavior. Its stable-target matrix
+completed 104/120 invocations, reproduced expected multi-target refusal, and
+routed two child timeouts to a future narrow chart-read latency-attribution
+candidate. The
 indicator-search current-build reassessment completed focused evidence review
 and is archived with a readiness-specific defer: both dispatch candidates
 assigned and restored all fixed queries, but ordinary CLI observation did not
@@ -30,6 +25,12 @@ Pre-dispatch retry remains deferred until ordinary operation or a later bounded
 probe records a relevant failure.
 
 Completed current-cycle plans:
+
+- `tradingview-cli-consecutive-invocation-resilience.md`: measured six bounded
+  production-subprocess read cohorts, confirmed reusable explicit target
+  handoff, found no transient transport failure, and deferred two unattributed
+  slow-tail timeouts to future narrow measurement. Focused evidence review is
+  green; the completed plan now lives under `docs/plans/archives/`.
 
 - `tradingview-cli-indicator-search-current-build-reassessment.md`: confirmed
   that current class-free result parsing remains feasible after rendering, but
