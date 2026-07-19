@@ -12,7 +12,8 @@ production CLI read cohorts without adding retry or production behavior. Its
 three exact read vectors, ignored 120-invocation harness, and deterministic
 aggregate fixtures are implemented and full non-live validation is green;
 focused implementation review found no blocker, its recommendations are
-applied, and focused correction re-review is the current gate. The
+applied, and focused correction re-review is green. Separate owner authorization
+for the 120-invocation live matrix is the current gate. The
 indicator-search current-build reassessment completed focused evidence review
 and is archived with a readiness-specific defer: both dispatch candidates
 assigned and restored all fixed queries, but ordinary CLI observation did not
