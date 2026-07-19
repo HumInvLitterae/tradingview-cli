@@ -11,3 +11,6 @@ mod watch;
 
 pub use output::startup_error;
 pub use runner::run_cli;
+
+#[cfg(test)]
+pub(crate) use runtime::connect_runtime;

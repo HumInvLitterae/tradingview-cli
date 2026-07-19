@@ -24,16 +24,19 @@ defer. It does not directly authorize public `--timing`.
   paths and corrected the earlier polling hypothesis.
 - [x] (2026-07-19) Created this attribution ExecPlan and synchronized v0.30
   roadmap, inventory, plan index, changelog, strategy, and local ledger.
-- [ ] Obtain focused independent review of the measurement contract.
+- [x] (2026-07-19) Focused independent plan review found no finding and
+  approved deterministic implementation.
 - [x] (2026-07-19) Froze the exact phase ownership matrix: fresh runtime
   connection, one Runtime evaluation, enclosing operation, harness payload
   serialization, whole in-process trial, and two explicitly derived residuals.
-- [ ] Implement internal/test-only observations and deterministic delayed and
-  malformed boundaries without changing ordinary construction.
-- [ ] Add an ignored, explicitly gated, aggregate-only live harness with fixed
-  explicit-target OHLCV and values cohorts.
-- [ ] Run focused tests, full baseline, metadata, hygiene, package syntax,
-  guide parity, and diff checks.
+- [x] (2026-07-19) Implemented `TimedRuntime`, the shared bounded trial runner,
+  direct/derived aggregation, and eight deterministic fixtures without
+  changing ordinary construction.
+- [x] (2026-07-19) Added an ignored, explicitly gated, aggregate-only live
+  harness with fixed explicit-target OHLCV and values cohorts. It has not run.
+- [x] (2026-07-19) Completed focused tests, full workspace baseline, metadata,
+  hygiene, package syntax, guide parity, formatting, strict Clippy, and diff
+  checks.
 - [ ] Obtain focused implementation review before seeking any live approval.
 - [ ] If separately authorized, run one bounded live matrix and record only
   aggregate public-safe evidence.
@@ -78,6 +81,12 @@ review and an explicit routing decision, not an automatic fix.
   because `CdpClient::call_method` does not expose those as separate public
   ownership boundaries.
 
+- Observation: Rust sibling-module privacy prevents `ops` from naming
+  `app::runtime::connect_runtime` directly.
+  Evidence: the first compile failed at the private `app::runtime` module; a
+  `#[cfg(test)] pub(crate)` re-export from `app.rs` lets the harness reuse the
+  production sequence without changing production visibility.
+
 ## Decision Log
 
 - Decision: call the first slice latency attribution, not readiness or polling
@@ -98,11 +107,23 @@ review and an explicit routing decision, not an automatic fix.
   without weakening normal fail-closed selection.
   Date/Author: 2026-07-19 / Codex
 
+- Decision: use one test-only crate-private re-export instead of copying the
+  connection sequence.
+  Rationale: duplicated discovery/connect code would no longer prove the real
+  operation boundary, while a `#[cfg(test)]` re-export creates no production
+  API or runtime behavior.
+  Date/Author: 2026-07-19 / Codex
+
 ## Outcomes & Retrospective
 
-No implementation or live measurement has started. Record final phase
-ownership, deterministic evidence, bounded live aggregate, and routing decision
-here as milestones complete.
+The deterministic implementation is complete. `TimedRuntime` delegates all six
+runtime methods and records only `evaluate`; the common runner measures five
+direct durations and derives two saturating residuals. Eight focused tests pass
+and one owner-gated live test remains ignored. The full workspace baseline is
+green, including 450 CLI unit tests with four ignored and 45 CDP tests with one
+ignored. No live measurement, public contract, timeout, retry, connection
+reuse, or ordinary-command behavior has been added. Focused implementation
+review is the next gate.
 
 ## Context and Orientation
 
@@ -169,6 +190,11 @@ The two residuals are always labeled derived. They are not independent clocks,
 and scheduler overhead may remain in them. Never subtract the v0.29 subprocess
 p50 or p95 from these in-process observations; that evidence is comparison
 context only.
+
+Rust module privacy keeps `app::runtime` private from its sibling `ops` module.
+Expose the existing `connect_runtime` from `app.rs` only as
+`#[cfg(test)] pub(crate)` so the harness reuses the production connection
+sequence without copying it or changing a production interface.
 
 Implement the test-only trial runner with replaceable connector and serializer
 closures plus a delayed fake `RuntimeEvaluator`. Deterministic fixtures inject
@@ -273,8 +299,9 @@ not retain one-off reviewer instructions in tracked files.
 
 ## Interfaces and Dependencies
 
-No production dependency or public interface is authorized. Add only the
-`#[cfg(test)]` CLI operation module described above. Reuse `RuntimeEvaluator`,
+No production dependency or public interface is authorized. Add the
+`#[cfg(test)]` CLI operation module and the test-only crate-private
+`connect_runtime` re-export described above. Reuse `RuntimeEvaluator`,
 `connect_runtime`, `ohlcv_summary`, `study_values`, and existing transport
 diagnostics. Do not change CDP observer visibility, create an alternate source,
 or add a fallback.
@@ -293,4 +320,6 @@ source, kept public timing conditional, and separated measurement from every
 latency correction. The initial planning pass was then tightened to a
 test-only `TimedRuntime` design with five direct durations, two explicitly
 derived residuals, exact fresh-connection cohorts, and no CDP observer
-visibility change.
+visibility change. Implementation then recorded the test-only
+`connect_runtime` re-export required by Rust sibling-module privacy; production
+visibility and behavior remain unchanged.
