@@ -34,7 +34,8 @@ search, a foreground command, a session, a broker, or automatic activation.
 - [x] (2026-07-19) Focused implementation review completed without a blocker.
   Canonicalized target IDs before distinctness validation and made unknown
   restore outcomes remain incomplete before the narrow correction re-review.
-- [ ] Obtain focused correction re-review before seeking live approval.
+- [x] (2026-07-19) Focused correction re-review confirmed both findings closed
+  with 8 focused tests passed and the live harness still ignored.
 - [ ] If separately authorized, run one bounded transition matrix and retain
   only aggregate public-safe evidence.
 - [ ] Obtain focused evidence review, record go/defer/no-go, and archive.
@@ -115,8 +116,9 @@ The test-only implementation now runs both candidates through one injected
 orchestration boundary. Deterministic tests cover the asymmetric ready-probe
 stop, exact transition/restore order, responsive cleanup and restoration,
 unknown-timeout no-restore precedence, expression anchors, aggregate wording,
-and malformed/private snapshot rejection. The owner-gated live test remains
-ignored and unrun. Focused implementation review is the next gate.
+and malformed/private snapshot rejection. Focused implementation and correction
+review are green. The owner-gated live test remains ignored and unrun; exact
+two-target owner approval is the next gate.
 
 ## Context and Orientation
 
@@ -364,3 +366,7 @@ Revision note (2026-07-19): after focused implementation review, trimmed both
 target IDs before non-empty and distinctness validation so whitespace variants
 cannot resolve to the same target. Unknown restore outcomes now retain
 `completed: 0`; the matrix and approval scope are unchanged.
+
+Revision note (2026-07-19): focused correction re-review is green with no new
+finding. The exact two-target live matrix may now be presented for separate
+owner approval; no live transition has run.
