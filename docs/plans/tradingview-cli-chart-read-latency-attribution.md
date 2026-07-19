@@ -39,8 +39,9 @@ defer. It does not directly authorize public `--timing`.
   checks.
 - [x] (2026-07-19) Focused implementation review found no finding and approved
   seeking separate owner authorization for the bounded live matrix.
-- [ ] If separately authorized, run one bounded live matrix and record only
-  aggregate public-safe evidence.
+- [x] (2026-07-19) With explicit owner authorization, ran the bounded live
+  matrix once on the current explicit chart target and retained only aggregate
+  public-safe evidence. All 40 trials succeeded.
 - [ ] Obtain focused evidence review, decide promote/defer/no-go, and archive.
 
 ## Milestones
@@ -122,9 +123,19 @@ runtime methods and records only `evaluate`; the common runner measures five
 direct durations and derives two saturating residuals. Eight focused tests pass
 and one owner-gated live test remains ignored. The full workspace baseline is
 green, including 450 CLI unit tests with four ignored and 45 CDP tests with one
-ignored. No live measurement, public contract, timeout, retry, connection
-reuse, or ordinary-command behavior has been added. Focused implementation
-review is green; explicit owner authorization is the next gate.
+ignored. Focused implementation review was green without adding a public
+contract, timeout, retry, connection reuse, or ordinary-command behavior.
+
+The owner-authorized matrix then completed 40/40 trials with no failure,
+deadline stop, invalid trial, or `failure_stage`. OHLCV summary reported trial
+p50/p95 of 3/7 ms, connect 1/3 ms, evaluate 1/5 ms, operation 1/5 ms,
+serialization 0/0 ms, normalization residual 0/1 ms, and unattributed residual
+1/1 ms. Study values reported trial 4/42 ms, connect 1/3 ms, evaluate 1/40 ms,
+operation 1/40 ms, serialization 0/0 ms, normalization residual 0/0 ms, and
+unattributed residual 1/1 ms. This one explicit-target in-process run did not
+reproduce the v0.29 subprocess tail and does not establish a repository-wide
+latency distribution. Focused evidence review must decide defer or another
+named investigation; no correction is promoted by the run itself.
 
 ## Context and Orientation
 
@@ -300,6 +311,12 @@ completed failed trial and one deadline stop so `success + failure == completed`
 The older consecutive-invocation harness counted a child timeout as incomplete;
 do not compare their `completed` fields without this semantic qualification.
 
+The only live artifact retained here is the aggregate 40/40 result and phase
+percentiles recorded in Outcomes. The run used one explicitly selected current
+chart target, did not exercise heuristic selection or process startup, and did
+not mutate chart state. Do not treat its zero failures as a reliability
+guarantee or rerun it automatically.
+
 Prepare a self-contained read-only reviewer prompt after implementation. Do
 not retain one-off reviewer instructions in tracked files.
 
@@ -334,3 +351,8 @@ Revision note (2026-07-19): focused implementation review was green with no
 required correction. It noted the test-only string classification as a future
 typed-error candidate and the completed-count difference from the older
 subprocess harness; neither changes the approved live scope.
+
+Revision note (2026-07-19): recorded one owner-authorized aggregate-only live
+matrix. It completed 40/40 trials without a stop or failure and did not
+reproduce the earlier subprocess tail. Focused evidence review remains the gate
+for routing this result.

@@ -12,8 +12,9 @@ OHLCV and study-values operation paths without assuming that polling or chart
 readiness caused the v0.29 slow tail. It adds no public timing contract, retry,
 timeout change, shared process, or ordinary-command behavior. The test-only
 implementation and full non-live validation are complete; focused
-implementation review is green. The exact bounded live matrix now awaits
-separate owner approval and remains unrun. The
+implementation review is green. The owner-authorized matrix completed 40/40
+trials without failure or deadline stop and now awaits focused evidence review;
+it did not reproduce the earlier subprocess tail or promote a correction. The
 consecutive-invocation
 resilience investigation completed focused evidence review and is archived
 without promoting retry or production behavior. Its stable-target matrix
