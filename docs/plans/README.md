@@ -17,8 +17,9 @@ activation and `Page.bringToFront` as separate, bounded test-only transitions
 with limited target-side restore observation. Test-only implementation and full
 non-live validation are complete; focused implementation and correction review
 are green. One owner-authorized run stopped at the probe-baseline unknown-outcome
-boundary before either transition candidate. Marker state is unconfirmed and
-separate read-only recovery approval is pending. The consecutive-invocation
+boundary before either transition candidate. Separate read-only recovery found
+no residual marker and both callbacks incomplete. A harness deadline-budget
+correction and focused review are pending before any rerun approval. The consecutive-invocation
 resilience investigation completed focused evidence review and is archived
 without promoting retry or production behavior. Its stable-target matrix
 completed 104/120 invocations, reproduced expected multi-target refusal, and

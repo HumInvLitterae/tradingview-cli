@@ -30,7 +30,9 @@ package version omits the leading `v`.
   validation, and unknown restore outcomes remain incomplete. No ordinary
   command foregrounds a target. One owner-authorized run stopped at the initial
   baseline unknown-outcome boundary before either transition and performed no
-  automatic cleanup or retry.
+  automatic cleanup or retry. A separate read-only observation found no residual
+  marker; the harness now reserves the planned final second for cleanup and
+  verification instead of polling through the whole trial budget.
 - Added test-only chart-read latency attribution for separate OHLCV summary and
   study-values cohorts. The ignored live matrix uses fresh explicit-target
   connections and reports only aggregate direct timings and labeled residuals;
