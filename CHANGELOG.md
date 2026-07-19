@@ -23,7 +23,9 @@ package version omits the leading `v`.
   deterministic fixtures cover phase ownership, exactly-one evaluation,
   deadlines, malformed serialization, percentiles, saturation, and public-safe
   output. Focused implementation review is green; no ordinary command emits
-  timing metadata and the live matrix remains separately owner-gated.
+  timing metadata. One owner-authorized 40-trial matrix completed without
+  failure or deadline stop and did not reproduce the earlier subprocess tail;
+  focused evidence review remains pending.
 
 ## v0.29.0 - 2026-07-19
 
