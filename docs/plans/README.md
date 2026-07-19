@@ -20,8 +20,11 @@ are green. One owner-authorized run stopped at the probe-baseline unknown-outcom
 boundary before either transition candidate. Separate read-only recovery found
 no residual marker and both callbacks incomplete. A harness deadline-budget
 correction and focused review are green; explicit approval for one exact-pair
-rerun is pending. The consecutive-invocation resilience investigation completed
-focused evidence review and is archived
+rerun was granted. Both candidates completed without failure and with matching
+restore observations, but neither improved the incomplete animation-frame
+signal. Focused evidence review is pending and no product behavior is promoted.
+The consecutive-invocation resilience investigation completed focused evidence
+review and is archived
 without promoting retry or production behavior. Its stable-target matrix
 completed 104/120 invocations, reproduced expected multi-target refusal, and
 routed two child timeouts to a future narrow chart-read latency-attribution
