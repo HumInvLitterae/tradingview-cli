@@ -24,6 +24,9 @@ mod tab;
 mod ui;
 
 #[cfg(test)]
+mod latency_measurement;
+
+#[cfg(test)]
 mod test_support;
 
 pub use alert::{

@@ -15,6 +15,15 @@ package version omits the leading `v`.
   timeout changes, retry, foreground transitions, and shared processes remain
   separately gated.
 
+### Tests
+
+- Added test-only chart-read latency attribution for separate OHLCV summary and
+  study-values cohorts. The ignored live matrix uses fresh explicit-target
+  connections and reports only aggregate direct timings and labeled residuals;
+  deterministic fixtures cover phase ownership, exactly-one evaluation,
+  deadlines, malformed serialization, percentiles, saturation, and public-safe
+  output. No ordinary command emits timing metadata.
+
 ## v0.29.0 - 2026-07-19
 
 ### Changed
