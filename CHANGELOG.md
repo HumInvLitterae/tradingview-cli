@@ -28,7 +28,9 @@ package version omits the leading `v`.
   limited restore observation, and stop without automatic restoration on an
   unknown transition timeout. Target IDs are canonicalized before distinctness
   validation, and unknown restore outcomes remain incomplete. No ordinary
-  command foregrounds a target.
+  command foregrounds a target. One owner-authorized run stopped at the initial
+  baseline unknown-outcome boundary before either transition and performed no
+  automatic cleanup or retry.
 - Added test-only chart-read latency attribution for separate OHLCV summary and
   study-values cohorts. The ignored live matrix uses fresh explicit-target
   connections and reports only aggregate direct timings and labeled residuals;
