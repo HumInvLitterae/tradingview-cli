@@ -47,7 +47,8 @@ search, a foreground command, a session, a broker, or automatic activation.
   observation window leaves one second inside the three-second trial for cleanup
   and verification. Focused tests pass 8 with 1 ignored and strict Clippy is
   green.
-- [ ] Obtain focused correction review before any rerun approval.
+- [x] (2026-07-19) Focused correction review confirmed the deadline-budget
+  defect closed with no new finding. Exact-pair rerun approval may be sought.
 - [ ] Obtain focused evidence review, record go/defer/no-go, and archive.
 
 ## Milestones
@@ -399,3 +400,8 @@ the marker absent with both callbacks incomplete. Source inspection then found
 that Rust polling used the full three-second trial deadline rather than the
 planned two-second observation window. The correction separates those bounds,
 preserving one second for cleanup and final verification; no rerun is authorized.
+
+Revision note (2026-07-19): focused correction review is green and confirmed
+the two-second observation/three-second trial split preserves responsive cleanup
+without changing hard-timeout precedence. The same exact target pair and matrix
+may be presented for separate rerun approval; no rerun has occurred.
