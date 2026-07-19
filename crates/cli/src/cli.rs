@@ -926,7 +926,7 @@ pub enum ReplayCommand {
     Trade { action: String },
     #[command(
         about = "Record a bounded Replay step log as JSONL",
-        long_about = "Record a bounded Replay step log as newline-delimited JSON.\n\nThis command requires an already-started TradingView Replay session, advances the selected chart by the requested number of steps, and emits readiness, step, and summary events with `contract_version: \"replay_step_log.v1\"`. Use `--attach-ohlcv-summary` to explicitly attach selected-chart OHLCV summary evidence after each successful step; `--ohlcv-count` controls that summary count and is only valid with the attachment flag. It does not start or stop Replay, export bars, capture screenshots, or use Desktop-free `tv bars` as a fallback."
+        long_about = "Record a bounded Replay step log as newline-delimited JSON.\n\nThis command requires an already-started TradingView Replay session, advances the selected chart by the requested number of steps, and emits readiness, step, and summary events with `contract_version: \"replay_step_log.v1\"`. Use `--attach-ohlcv-summary` to explicitly attach selected-chart OHLCV summary evidence after each successful step; `--ohlcv-count` controls that summary count and is only valid with the attachment flag. Use `--attach-chart-screenshot --screenshot-output-dir <DIR>` to write one deterministic, no-overwrite chart PNG after each successful step. Screenshot failure is reported separately and does not repeat or fail the Replay step. It does not start or stop Replay, export bars, or use Desktop-free `tv bars` as a fallback."
     )]
     Log {
         #[arg(long)]
@@ -935,6 +935,10 @@ pub enum ReplayCommand {
         attach_ohlcv_summary: bool,
         #[arg(long)]
         ohlcv_count: Option<usize>,
+        #[arg(long)]
+        attach_chart_screenshot: bool,
+        #[arg(long, value_name = "DIR")]
+        screenshot_output_dir: Option<std::path::PathBuf>,
     },
 }
 

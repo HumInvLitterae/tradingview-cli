@@ -92,8 +92,9 @@ pub use screener::{
 };
 pub use screenshot::{screenshot_chart, screenshot_full, screenshot_strategy};
 pub(crate) use screenshot::{
-    screenshot_chart_with_render_wait, screenshot_full_with_render_wait,
-    screenshot_strategy_with_render_wait, validate_screenshot_render_wait,
+    screenshot_chart_attachment, screenshot_chart_with_render_wait,
+    screenshot_full_with_render_wait, screenshot_strategy_with_render_wait,
+    validate_screenshot_render_wait,
 };
 pub use status::status;
 pub use stream::{

@@ -16,6 +16,7 @@ The original replay-practice skill automated TradingView bar replay: set up the 
 | Screenshots | `tv screenshot --region full|chart --output <PATH>` |
 | `replay_start`, `replay_step`, `replay_autoplay`, `replay_status`, `replay_trade`, `replay_stop` | `tv replay start`, `tv replay step`, `tv replay autoplay`, `tv replay status`, `tv replay trade`, `tv replay stop` |
 | Bounded step log with bars context | `tv replay log --steps <N> --attach-ohlcv-summary [--ohlcv-count <N>]` |
+| Bounded step log with chart PNGs | `tv replay log --steps <N> --attach-chart-screenshot --screenshot-output-dir <DIR>` |
 
 ## Working Pattern Today
 

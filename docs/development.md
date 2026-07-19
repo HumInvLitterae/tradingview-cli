@@ -435,8 +435,10 @@ reason, and failure details testable before any stable Replay export command is
 considered. `--attach-ohlcv-summary [--ohlcv-count <N>]` is the explicit
 selected-chart OHLCV summary attachment path and must report
 `replay_log_ohlcv_summary_attachment.v1` metadata plus attachment counters.
-Do not attach screenshots implicitly; screenshot evidence needs its own file
-and artifact contract.
+Use `--attach-chart-screenshot --screenshot-output-dir <DIR>` only when every
+successful step needs a local chart PNG. Filenames are deterministic and never
+overwrite existing files. Screenshot attachment failure is counted separately
+and does not turn an already successful Replay step into a step failure.
 
 Chart-backed compare uses `tv chart compare <SYMBOL>...`. Keep `tv compare`
 and `tv watch compare` Desktop-free and scanner-backed. `tv chart compare`

@@ -1,4 +1,8 @@
-use std::time::{Instant, SystemTime, UNIX_EPOCH};
+use std::{
+    fs,
+    path::{Path, PathBuf},
+    time::{Instant, SystemTime, UNIX_EPOCH},
+};
 
 use serde_json::{Value, json};
 use tradingview_cdp::TransportConfig;
@@ -19,6 +23,8 @@ const REPLAY_STEP_LOG_SOURCE_CATEGORY: &str = "desktop_backed_operation";
 const REPLAY_STEP_LOG_LABEL: &str = "log";
 const REPLAY_LOG_OHLCV_ATTACHMENT_CONTRACT_VERSION: &str = "replay_log_ohlcv_summary_attachment.v1";
 const REPLAY_LOG_OHLCV_ATTACHMENT_SOURCE: &str = "selected_chart_cdp";
+const REPLAY_LOG_SCREENSHOT_ATTACHMENT_CONTRACT_VERSION: &str =
+    "replay_log_chart_screenshot_attachment.v1";
 const DEFAULT_REPLAY_LOG_OHLCV_COUNT: usize = 100;
 const MAX_REPLAY_LOG_OHLCV_COUNT: usize = 500;
 
@@ -79,6 +85,75 @@ struct ReplayLogAttachmentCounters {
     error: u64,
 }
 
+#[derive(Debug, Default, Clone, Copy)]
+struct ReplayLogScreenshotCounters {
+    requested: u64,
+    ok: u64,
+    error: u64,
+}
+
+#[derive(Debug)]
+struct ReplayLogScreenshotPlan {
+    paths: Vec<PathBuf>,
+}
+
+impl ReplayLogScreenshotPlan {
+    fn new(
+        steps: u64,
+        attach: bool,
+        output_dir: Option<PathBuf>,
+    ) -> Result<Option<Self>, AppError> {
+        match (attach, output_dir) {
+            (false, None) => Ok(None),
+            (false, Some(_)) => Err(replay_screenshot_validation_error(
+                "screenshot_output_dir",
+                "replay log --screenshot-output-dir requires --attach-chart-screenshot",
+            )),
+            (true, None) => Err(replay_screenshot_validation_error(
+                "attach_chart_screenshot",
+                "replay log --attach-chart-screenshot requires --screenshot-output-dir",
+            )),
+            (true, Some(output_dir)) => {
+                if output_dir.exists() && !output_dir.is_dir() {
+                    return Err(replay_screenshot_validation_error(
+                        "screenshot_output_dir",
+                        "Replay screenshot output path must be a directory",
+                    ));
+                }
+                let paths = (1..=steps)
+                    .map(|index| output_dir.join(format!("replay-step-{index:04}.png")))
+                    .collect::<Vec<_>>();
+                if paths.iter().any(|path| path.exists()) {
+                    return Err(replay_screenshot_validation_error(
+                        "screenshot_output_dir",
+                        "Replay screenshot destination already exists",
+                    ));
+                }
+                fs::create_dir_all(&output_dir).map_err(|_| {
+                    replay_screenshot_validation_error(
+                        "screenshot_output_dir",
+                        "Could not create Replay screenshot output directory",
+                    )
+                })?;
+                Ok(Some(Self { paths }))
+            }
+        }
+    }
+
+    fn path(&self, step_index: u64) -> &Path {
+        &self.paths[(step_index - 1) as usize]
+    }
+}
+
+fn replay_screenshot_validation_error(field: &str, message: &str) -> AppError {
+    AppError::new(ErrorKind::Validation, message).with_details(json!({
+        "field": field,
+        "source_category": REPLAY_STEP_LOG_SOURCE_CATEGORY,
+        "requires_desktop": true,
+        "non_mutating": false
+    }))
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum ReplayLogEndReason {
     StepLimitReached,
@@ -104,17 +179,26 @@ pub async fn run_replay_log_command(
     steps: u64,
     attach_ohlcv_summary: bool,
     ohlcv_count: Option<usize>,
+    attach_chart_screenshot: bool,
+    screenshot_output_dir: Option<PathBuf>,
     config: &TransportConfig,
 ) -> Result<(), JsonlRunError> {
     validate_replay_log_steps(steps)?;
     let attachment_controls = ReplayLogAttachmentControls::new(attach_ohlcv_summary, ohlcv_count)?;
+    let screenshot_plan =
+        ReplayLogScreenshotPlan::new(steps, attach_chart_screenshot, screenshot_output_dir)?;
     let stdout = std::io::stdout();
     let mut stdout = JsonlOutput::new(stdout.lock());
     let started_at = Instant::now();
     let mut runtime = connect_runtime(config).await?;
 
     let initial_status = ops::replay_status(&mut runtime).await?;
-    let readiness = replay_log_readiness(steps, attachment_controls, &initial_status)?;
+    let readiness = replay_log_readiness(
+        steps,
+        attachment_controls,
+        screenshot_plan.is_some(),
+        &initial_status,
+    )?;
     let envelope = SuccessEnvelope::new("replay", readiness);
     if emit_jsonl_stdout(&mut stdout, &envelope)? == OutputDisposition::BrokenPipe {
         return Ok(());
@@ -130,6 +214,7 @@ pub async fn run_replay_log_command(
     let mut failure_count = 0_u64;
     let mut failure_details = None;
     let mut attachment_counters = ReplayLogAttachmentCounters::default();
+    let mut screenshot_counters = ReplayLogScreenshotCounters::default();
 
     let end_reason = if !replay_available(&initial_status) {
         ReplayLogEndReason::ReplayUnavailable
@@ -165,7 +250,33 @@ pub async fn run_replay_log_command(
                     } else {
                         None
                     };
-                    let payload = replay_log_step(step_index, step, attachment)?;
+                    let screenshot_attachment = if let Some(plan) = &screenshot_plan {
+                        screenshot_counters.requested += 1;
+                        Some(
+                            match replay_log_chart_screenshot_attachment(
+                                &mut runtime,
+                                step_index,
+                                plan.path(step_index),
+                            )
+                            .await
+                            {
+                                Ok(attachment) => {
+                                    screenshot_counters.ok += 1;
+                                    attachment
+                                }
+                                Err(error) => {
+                                    screenshot_counters.error += 1;
+                                    replay_log_chart_screenshot_attachment_error(
+                                        step_index, &error,
+                                    )?
+                                }
+                            },
+                        )
+                    } else {
+                        None
+                    };
+                    let payload =
+                        replay_log_step(step_index, step, attachment, screenshot_attachment)?;
                     let envelope = SuccessEnvelope::new("replay", payload);
                     if emit_jsonl_stdout(&mut stdout, &envelope)? == OutputDisposition::BrokenPipe {
                         return Ok(());
@@ -195,6 +306,7 @@ pub async fn run_replay_log_command(
         last_context,
         failure_details,
         attachment_counters,
+        screenshot_counters,
         started_at.elapsed().as_millis() as u64,
         end_reason,
     )?;
@@ -206,13 +318,15 @@ pub async fn run_replay_log_command(
 fn replay_log_readiness(
     steps: u64,
     attachment_controls: ReplayLogAttachmentControls,
+    attach_chart_screenshot: bool,
     status: &Value,
 ) -> Result<Value, AppError> {
     let mut payload = json!({
         "requested_steps": steps,
         "max_steps": MAX_REPLAY_LOG_STEPS,
-        "attachments_requested": attachment_controls.attachments_requested(),
+        "attachments_requested": attachment_controls.attachments_requested() || attach_chart_screenshot,
         "attach_ohlcv_summary": attachment_controls.attach_ohlcv_summary,
+        "attach_chart_screenshot": attach_chart_screenshot,
         "ohlcv_count": attachment_controls.ohlcv_count,
         "is_replay_available": status.get("is_replay_available").cloned().unwrap_or(Value::Null),
         "is_replay_started": status.get("is_replay_started").cloned().unwrap_or(Value::Null),
@@ -233,6 +347,7 @@ fn replay_log_step(
     step_index: u64,
     step: Value,
     ohlcv_attachment: Option<Value>,
+    screenshot_attachment: Option<Value>,
 ) -> Result<Value, AppError> {
     let mut payload = json!({
         "step_index": step_index,
@@ -246,6 +361,12 @@ fn replay_log_step(
         payload["attachments"] = json!({
             "ohlcv_summary": attachment
         });
+    }
+    if let Some(attachment) = screenshot_attachment {
+        if payload.get("attachments").is_none() {
+            payload["attachments"] = json!({});
+        }
+        payload["attachments"]["chart_screenshot"] = attachment;
     }
     let Some(object) = payload.as_object_mut() else {
         return Err(AppError::new(
@@ -267,6 +388,7 @@ fn replay_log_summary(
     replay_context: Value,
     failure_details: Option<Value>,
     attachment_counters: ReplayLogAttachmentCounters,
+    screenshot_counters: ReplayLogScreenshotCounters,
     elapsed_ms: u64,
     end_reason: ReplayLogEndReason,
 ) -> Result<Value, AppError> {
@@ -282,6 +404,9 @@ fn replay_log_summary(
         "attachment_requested_count": attachment_counters.requested,
         "attachment_ok_count": attachment_counters.ok,
         "attachment_error_count": attachment_counters.error,
+        "screenshot_attachment_requested_count": screenshot_counters.requested,
+        "screenshot_attachment_ok_count": screenshot_counters.ok,
+        "screenshot_attachment_error_count": screenshot_counters.error,
         "end_reason": end_reason.label(),
     });
     if let Some(failure_details) = failure_details {
@@ -368,6 +493,64 @@ async fn replay_log_ohlcv_summary_attachment(
 ) -> Result<Value, AppError> {
     let summary = ops::ohlcv_summary(runtime, Some(count)).await?;
     replay_log_ohlcv_summary_attachment_ok(summary)
+}
+
+async fn replay_log_chart_screenshot_attachment(
+    runtime: &mut impl tradingview_cdp::RuntimeEvaluator,
+    step_index: u64,
+    output_path: &Path,
+) -> Result<Value, AppError> {
+    let screenshot = ops::screenshot_chart_attachment(runtime, output_path).await?;
+    Ok(json!({
+        "contract_version": REPLAY_LOG_SCREENSHOT_ATTACHMENT_CONTRACT_VERSION,
+        "source": "desktop_screenshot",
+        "source_category": "desktop_backed_read",
+        "requires_desktop": true,
+        "non_mutating": true,
+        "writes_file": true,
+        "status": "ok",
+        "step_index": step_index,
+        "output_path": screenshot.get("output_path").cloned().unwrap_or(Value::Null),
+        "region": screenshot.get("region").cloned().unwrap_or(Value::Null),
+        "capture_mode": screenshot.get("capture_mode").cloned().unwrap_or(Value::Null),
+        "size_bytes": screenshot.get("size_bytes").cloned().unwrap_or(Value::Null)
+    }))
+}
+
+fn replay_log_chart_screenshot_attachment_error(
+    step_index: u64,
+    error: &AppError,
+) -> Result<Value, AppError> {
+    let phase = error
+        .details
+        .as_ref()
+        .and_then(|details| details.get("phase"))
+        .and_then(Value::as_str)
+        .map(|phase| {
+            if phase.contains("bounds") {
+                "bounds"
+            } else if phase.contains("write") {
+                "write"
+            } else {
+                "capture"
+            }
+        })
+        .unwrap_or("capture");
+    Ok(json!({
+        "contract_version": REPLAY_LOG_SCREENSHOT_ATTACHMENT_CONTRACT_VERSION,
+        "source": "desktop_screenshot",
+        "source_category": "desktop_backed_read",
+        "requires_desktop": true,
+        "non_mutating": true,
+        "writes_file": false,
+        "status": "error",
+        "step_index": step_index,
+        "failure_details": {
+            "kind": error.kind,
+            "message": "Replay chart screenshot attachment failed",
+            "phase": phase
+        }
+    }))
 }
 
 fn replay_log_ohlcv_summary_attachment_ok(summary: Value) -> Result<Value, AppError> {
@@ -458,6 +641,7 @@ fn sanitize_value_object(object: &mut serde_json::Map<String, Value>) {
 #[cfg(test)]
 mod tests {
     use serde_json::json;
+    use tempfile::tempdir;
 
     use super::*;
 
@@ -481,7 +665,7 @@ mod tests {
     #[test]
     fn readiness_uses_replay_step_log_contract_metadata() {
         let controls = ReplayLogAttachmentControls::new(false, None).unwrap();
-        let readiness = replay_log_readiness(3, controls, &started_status()).unwrap();
+        let readiness = replay_log_readiness(3, controls, false, &started_status()).unwrap();
         assert_eq!(readiness["contract_version"], "replay_step_log.v1");
         assert_eq!(readiness["_replay"], "log");
         assert_eq!(readiness["_event"], "readiness");
@@ -518,6 +702,7 @@ mod tests {
                 }
             }),
             None,
+            None,
         )
         .unwrap();
 
@@ -541,6 +726,7 @@ mod tests {
             json!({"is_replay_started": true, "current_date": 1775260800000_i64}),
             None,
             ReplayLogAttachmentCounters::default(),
+            ReplayLogScreenshotCounters::default(),
             1250,
             ReplayLogEndReason::StepLimitReached,
         )
@@ -572,6 +758,7 @@ mod tests {
             json!({"is_replay_started": true}),
             Some(replay_failure_details(&error)),
             ReplayLogAttachmentCounters::default(),
+            ReplayLogScreenshotCounters::default(),
             500,
             ReplayLogEndReason::StepFailed,
         )
@@ -611,10 +798,46 @@ mod tests {
     #[test]
     fn readiness_reports_attachment_controls() {
         let controls = ReplayLogAttachmentControls::new(true, Some(42)).unwrap();
-        let readiness = replay_log_readiness(3, controls, &started_status()).unwrap();
+        let readiness = replay_log_readiness(3, controls, false, &started_status()).unwrap();
         assert_eq!(readiness["attachments_requested"], true);
         assert_eq!(readiness["attach_ohlcv_summary"], true);
         assert_eq!(readiness["ohlcv_count"], 42);
+    }
+
+    #[test]
+    fn screenshot_plan_requires_both_options_and_refuses_existing_files() {
+        let missing_dir = ReplayLogScreenshotPlan::new(1, true, None).unwrap_err();
+        assert_eq!(missing_dir.kind, ErrorKind::Validation);
+
+        let dir_without_flag = tempdir().unwrap();
+        let missing_flag =
+            ReplayLogScreenshotPlan::new(1, false, Some(dir_without_flag.path().to_path_buf()))
+                .unwrap_err();
+        assert_eq!(missing_flag.kind, ErrorKind::Validation);
+
+        let output = tempdir().unwrap();
+        fs::write(output.path().join("replay-step-0001.png"), b"existing").unwrap();
+        let existing =
+            ReplayLogScreenshotPlan::new(2, true, Some(output.path().to_path_buf())).unwrap_err();
+        assert_eq!(existing.kind, ErrorKind::Validation);
+        assert_eq!(
+            fs::read(output.path().join("replay-step-0001.png")).unwrap(),
+            b"existing"
+        );
+    }
+
+    #[test]
+    fn screenshot_plan_uses_deterministic_widening_names() {
+        let root = tempdir().unwrap();
+        let output = root.path().join("screenshots");
+        let plan = ReplayLogScreenshotPlan::new(10_000, true, Some(output))
+            .unwrap()
+            .unwrap();
+        assert_eq!(plan.path(1).file_name().unwrap(), "replay-step-0001.png");
+        assert_eq!(
+            plan.path(10_000).file_name().unwrap(),
+            "replay-step-10000.png"
+        );
     }
 
     #[test]
@@ -637,6 +860,7 @@ mod tests {
                 }
             }),
             Some(attachment),
+            None,
         )
         .unwrap();
 
@@ -684,6 +908,44 @@ mod tests {
     }
 
     #[test]
+    fn screenshot_error_is_fixed_and_public_safe() {
+        let error = AppError::new(ErrorKind::InternalApiUnavailable, "private exception")
+            .with_details(json!({
+                "phase": "chart_bounds_invalid",
+                "target_id": "private-target",
+                "raw_payload": "private-source"
+            }));
+        let attachment = replay_log_chart_screenshot_attachment_error(2, &error).unwrap();
+        assert_eq!(attachment["status"], "error");
+        assert_eq!(attachment["step_index"], 2);
+        assert_eq!(attachment["failure_details"]["phase"], "bounds");
+        assert_eq!(
+            attachment["failure_details"]["message"],
+            "Replay chart screenshot attachment failed"
+        );
+        let encoded = serde_json::to_string(&attachment).unwrap();
+        assert!(!encoded.contains("private"));
+        assert!(!encoded.contains("target_id"));
+        assert!(!encoded.contains("raw_payload"));
+    }
+
+    #[test]
+    fn step_event_composes_ohlcv_and_screenshot_attachments() {
+        let step = replay_log_step(
+            1,
+            json!({"operation": "replay_step"}),
+            Some(json!({"status": "ok", "kind": "ohlcv"})),
+            Some(json!({"status": "ok", "kind": "screenshot"})),
+        )
+        .unwrap();
+        assert_eq!(step["attachments"]["ohlcv_summary"]["kind"], "ohlcv");
+        assert_eq!(
+            step["attachments"]["chart_screenshot"]["kind"],
+            "screenshot"
+        );
+    }
+
+    #[test]
     fn summary_reports_attachment_counters() {
         let summary = replay_log_summary(
             3,
@@ -698,6 +960,7 @@ mod tests {
                 ok: 2,
                 error: 1,
             },
+            ReplayLogScreenshotCounters::default(),
             1250,
             ReplayLogEndReason::StepLimitReached,
         )
@@ -706,7 +969,33 @@ mod tests {
         assert_eq!(summary["attachment_requested_count"], 3);
         assert_eq!(summary["attachment_ok_count"], 2);
         assert_eq!(summary["attachment_error_count"], 1);
+        assert_eq!(summary["screenshot_attachment_requested_count"], 0);
         assert_eq!(summary["end_reason"], "step_limit_reached");
+    }
+
+    #[test]
+    fn summary_reports_screenshot_attachment_counters() {
+        let summary = replay_log_summary(
+            3,
+            3,
+            0,
+            Value::Null,
+            Value::Null,
+            json!({"is_replay_started": true}),
+            None,
+            ReplayLogAttachmentCounters::default(),
+            ReplayLogScreenshotCounters {
+                requested: 3,
+                ok: 2,
+                error: 1,
+            },
+            50,
+            ReplayLogEndReason::StepLimitReached,
+        )
+        .unwrap();
+        assert_eq!(summary["screenshot_attachment_requested_count"], 3);
+        assert_eq!(summary["screenshot_attachment_ok_count"], 2);
+        assert_eq!(summary["screenshot_attachment_error_count"], 1);
     }
 
     #[test]

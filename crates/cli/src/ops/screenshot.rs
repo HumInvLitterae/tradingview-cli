@@ -1,4 +1,8 @@
-use std::{fs, io::Cursor, path::Path};
+use std::{
+    fs::{self, OpenOptions},
+    io::{Cursor, Write},
+    path::Path,
+};
 
 use image::ImageFormat;
 use serde_json::{Value, json};
@@ -45,6 +49,33 @@ pub async fn screenshot_chart(
     output_path: &str,
 ) -> Result<Value, AppError> {
     screenshot_chart_with_render_wait(runtime, output_path, None).await
+}
+
+pub(crate) async fn screenshot_chart_attachment(
+    runtime: &mut impl RuntimeEvaluator,
+    output_path: &Path,
+) -> Result<Value, AppError> {
+    let bounds = runtime.evaluate(chart_bounds_expression(), false).await?;
+    let bounds = screenshot_bounds_from_value(&bounds, "chart")?;
+    let (bytes, capture_mode) = match runtime.capture_screenshot_clip(bounds.clip).await {
+        Ok(bytes) => (bytes, "cdp_clip"),
+        Err(_) => {
+            let full_bytes = runtime.capture_screenshot().await?;
+            (
+                crop_screenshot_to_bounds(&full_bytes, &bounds, "chart")?,
+                "full_page_crop",
+            )
+        }
+    };
+    write_screenshot_create_new(output_path, &bytes)?;
+    Ok(with_screenshot_metadata(json!({
+        "capture_mode": capture_mode,
+        "output_path": output_path,
+        "file_path": output_path,
+        "method": "cdp",
+        "region": "chart",
+        "size_bytes": bytes.len(),
+    })))
 }
 
 pub(crate) async fn screenshot_chart_with_render_wait(
@@ -271,6 +302,39 @@ fn write_screenshot(output_path: &str, bytes: &[u8], region: &str) -> Result<(),
     })?;
     Ok(())
 }
+
+fn write_screenshot_create_new(output_path: &Path, bytes: &[u8]) -> Result<(), AppError> {
+    let file = OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .open(output_path)
+        .map_err(|_| {
+            AppError::new(
+                ErrorKind::Internal,
+                "Could not create Replay screenshot attachment",
+            )
+            .with_details(screenshot_error_details("write", "chart"))
+        })?;
+    write_created_screenshot(file, output_path, bytes)
+}
+
+fn write_created_screenshot(
+    mut writer: impl Write,
+    output_path: &Path,
+    bytes: &[u8],
+) -> Result<(), AppError> {
+    if writer.write_all(bytes).is_err() {
+        drop(writer);
+        let _ = fs::remove_file(output_path);
+        Err(AppError::new(
+            ErrorKind::Internal,
+            "Could not write Replay screenshot attachment",
+        )
+        .with_details(screenshot_error_details("write", "chart")))
+    } else {
+        Ok(())
+    }
+}
 struct ScreenshotBounds {
     clip: ScreenshotClip,
     viewport_width: f64,
@@ -417,7 +481,7 @@ fn scaled_ceil(value: f64, scale: f64, max: u32, min: u32) -> u32 {
 
 #[cfg(test)]
 mod tests {
-    use std::fs;
+    use std::{fs, io};
 
     use serde_json::json;
     use tempfile::tempdir;
@@ -615,6 +679,70 @@ mod tests {
         let cropped = image::load_from_memory(&fs::read(output).unwrap()).unwrap();
         assert_eq!(cropped.width(), 640);
         assert_eq!(cropped.height(), 360);
+    }
+
+    #[tokio::test]
+    async fn replay_attachment_writes_once_without_overwriting() {
+        let dir = tempdir().unwrap();
+        let output = dir.path().join("replay-step-0001.png");
+        let clipped = png_fixture(320, 180);
+        let mut runtime = FakeRuntime::new([json!({
+            "x": 0.0,
+            "y": 0.0,
+            "width": 320.0,
+            "height": 180.0,
+            "viewport_width": 320.0,
+            "viewport_height": 180.0
+        })])
+        .with_clipped_screenshot(clipped.clone());
+
+        let result = screenshot_chart_attachment(&mut runtime, &output)
+            .await
+            .unwrap();
+        assert_eq!(result["capture_mode"], "cdp_clip");
+        assert_eq!(result["size_bytes"], clipped.len());
+        assert_eq!(fs::read(&output).unwrap(), clipped);
+
+        let mut second = FakeRuntime::new([json!({
+            "x": 0.0,
+            "y": 0.0,
+            "width": 320.0,
+            "height": 180.0,
+            "viewport_width": 320.0,
+            "viewport_height": 180.0
+        })])
+        .with_clipped_screenshot(png_fixture(10, 10));
+        let error = screenshot_chart_attachment(&mut second, &output)
+            .await
+            .unwrap_err();
+        assert_eq!(error.kind, ErrorKind::Internal);
+        assert_eq!(fs::read(&output).unwrap(), clipped);
+    }
+
+    #[test]
+    fn replay_attachment_removes_only_its_partial_file_after_write_failure() {
+        struct FailingWriter;
+
+        impl io::Write for FailingWriter {
+            fn write(&mut self, _buf: &[u8]) -> io::Result<usize> {
+                Err(io::Error::other("simulated write failure"))
+            }
+
+            fn flush(&mut self) -> io::Result<()> {
+                Ok(())
+            }
+        }
+
+        let dir = tempdir().unwrap();
+        let partial = dir.path().join("replay-step-0001.png");
+        let existing = dir.path().join("keep.png");
+        fs::write(&partial, b"partial").unwrap();
+        fs::write(&existing, b"keep").unwrap();
+
+        let error = write_created_screenshot(FailingWriter, &partial, b"png").unwrap_err();
+        assert_eq!(error.kind, ErrorKind::Internal);
+        assert!(!partial.exists());
+        assert_eq!(fs::read(existing).unwrap(), b"keep");
     }
 
     #[tokio::test(start_paused = true)]

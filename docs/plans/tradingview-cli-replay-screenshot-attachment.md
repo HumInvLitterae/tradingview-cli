@@ -18,9 +18,12 @@ Replay, or become a general Replay export.
 - [x] (2026-07-19) Compared retained candidates and selected Replay screenshot
   attachment.
 - [x] (2026-07-19) Created this ExecPlan and synchronized durable state.
-- [ ] Obtain focused plan review before production implementation.
-- [ ] Implement controls, no-overwrite capture, attachment envelopes, and tests.
-- [ ] Complete focused and full non-live validation.
+- [x] (2026-07-19) Completed focused plan verification against current CLI,
+  Replay JSONL, screenshot, and test ownership with no blocker.
+- [x] (2026-07-19) Implemented controls, deterministic path preflight,
+  no-overwrite capture, independent attachment envelopes/counters, and tests.
+- [x] (2026-07-19) Completed focused tests, strict Clippy, full workspace
+  validation, metadata, hygiene, package syntax, guide parity, and diff checks.
 - [ ] Obtain implementation review, update guidance, and archive.
 
 ## Milestones
@@ -80,8 +83,11 @@ attachments. Update public and packaged guidance and run the full baseline.
 
 ## Outcomes & Retrospective
 
-Implementation has not started. The design composes existing Replay and chart
-screenshot ownership while adding a stricter local-file policy for this workflow.
+Implementation is complete. Replay log now validates and creates its artifact
+directory before Desktop connection, attempts one no-overwrite chart capture
+after each successful step, reports screenshot results independently from OHLCV
+attachments and Replay failures, and preserves standalone screenshot behavior.
+Focused implementation review remains pending; no live Replay smoke has run.
 
 ## Context and Orientation
 
@@ -201,3 +207,7 @@ separate owner approval after focused implementation review.
 
 Revision note (2026-07-19): initial plan created from the retained-backlog
 comparison. Other candidates remain unpromoted.
+
+Revision note (2026-07-19): implemented the reviewed contract with no new
+dependency. Full non-live validation is green; focused implementation review is
+the current gate and no live Replay mutation is authorized.
