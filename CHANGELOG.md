@@ -70,6 +70,10 @@ package version omits the leading `v`.
 - Completed focused correction re-review of the consecutive-invocation harness
   with no finding. The bounded live matrix remains unrun and separately
   owner-controlled.
+- Ran the owner-approved stable-target consecutive-read matrix once. It
+  completed 104/120 invocations, reproduced expected multi-target ambiguity and
+  `target_select` failures, stopped two cohorts on child timeouts, and added no
+  retry or production behavior. Focused evidence review is pending.
 - Added an ignored, explicit-target indicator-search reassessment harness with
   a six-trial dispatch preflight, a selected-candidate 27-trial matrix,
   aggregate-only evidence, and deterministic public-safety fixtures. No live

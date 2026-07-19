@@ -38,8 +38,13 @@ mutation-command repetition.
   child-timeout, and deadline fixtures.
 - [x] (2026-07-19) Obtained focused correction re-review with no finding. The
   bounded 120-invocation live matrix now awaits separate owner authorization.
-- [ ] Execute the owner-approved bounded matrix.
-- [ ] Classify evidence and record promote/defer/no-change decisions.
+- [x] (2026-07-19) Executed the owner-approved stable-target matrix once without
+  optional target-set mutation. Four cohorts completed; two stopped on one
+  invocation timeout each. No compensating invocation or retry was run.
+- [x] (2026-07-19) Recorded a preliminary classification: repeated explicit
+  reads were stable, heuristic ambiguity was expected with four chart targets,
+  and the two unclassified process timeouts require evidence review rather than
+  automatic retry or a production change.
 - [ ] Obtain focused evidence review and archive this plan.
 
 ## Surprises & Discoveries
@@ -55,6 +60,23 @@ mutation-command repetition.
   Evidence: readiness uses `data.cdp.target_count`, while status uses
   `data.desktop_readiness.target_count`. The harness accepts both public shapes,
   retains only the numeric cardinality, and never retains a target identity.
+
+- Observation: repeated explicit reads did not reproduce a transport or target
+  selection failure, but the mixed explicit cohort stopped on one invocation
+  timeout.
+  Evidence: the explicit light and explicit large cohorts completed 20/20 each
+  with no failure or ambiguity. The mixed explicit cohort completed 13/20 with
+  13 successes, then the next fixed rotation entry exceeded the 12-second child
+  deadline. No `failure_stage` was available because the harness terminated the
+  child at its outer process boundary.
+
+- Observation: heuristic behavior depended on each command's existing
+  ambiguity contract rather than silently selecting among four chart targets.
+  Evidence: heuristic readiness completed 20/20 as successful diagnostic
+  envelopes while reporting ambiguity 20 times. Heuristic values and the
+  corresponding entries in the mixed cohort returned `target_select` failures;
+  one values invocation also exceeded the child deadline. No target-cardinality
+  drift occurred during the run.
 
 ## Decision Log
 
@@ -91,11 +113,38 @@ mutation-command repetition.
   stops short of exposing raw details.
   Date/Author: 2026-07-19 / Codex
 
+- Decision: do not promote pre-dispatch retry from this run.
+  Rationale: the 24 classified failures were expected `target_select` outcomes
+  under a deliberately ambiguous four-chart environment, not transient target
+  listing or WebSocket failures. The two process timeouts had no stage evidence
+  and therefore cannot safely authorize a transport retry.
+  Date/Author: 2026-07-19 / Codex
+
+- Decision: route the timeout evidence to focused review of command latency and
+  Desktop state ownership before deciding whether another plan is warranted.
+  Rationale: one timeout occurred in the fixed heuristic values cohort and one
+  at the next entry of the explicit mixed rotation. Repeating or compensating
+  those invocations would violate the predeclared matrix. The existing evidence
+  can determine whether to defer, create a narrower measurement plan, or adjust
+  harness guidance without changing production here.
+  Date/Author: 2026-07-19 / Codex
+
 ## Outcomes & Retrospective
 
-Not yet executed. Record whether failures cluster by transport stage, target
-selection mode, command mix, interval, or target-set state, and whether the
-correct next owner is CLI production code or the agent harness.
+The owner-approved stable-target matrix completed 104 of 120 requested
+invocations across four fully completed cohorts and two timeout-stopped cohorts.
+It recorded 80 successes, 24 failures, 24 `target_select` stages, 51 ambiguity
+observations, two deadline stops, and zero target-cardinality drift. Whole-run
+latency was 36 ms at p50 and 7,581 ms at p95.
+
+The evidence does not justify retry. Explicit repeated readiness and values
+reads completed 40/40 without failure. Heuristic readiness correctly returned
+successful diagnostic ambiguity, while heuristic chart-dependent reads refused
+to select silently. The two child timeouts remain the only unexpected evidence:
+one interrupted repeated heuristic values and one interrupted the explicit
+mixed rotation. Because a harness-enforced child timeout has no operation
+`failure_stage`, the safe outcome is focused evidence review and defer-or-narrow
+measurement routing, not a production change in this plan.
 
 ## Context and Orientation
 
@@ -280,3 +329,9 @@ and live authorization remain unchanged.
 Revision note (2026-07-19): focused correction re-review confirmed the shipped
 stage vocabulary, all promised deterministic fixtures, unchanged matrix bounds,
 and the separate owner-authorization gate. No live invocation was run.
+
+Revision note (2026-07-19): recorded the single owner-approved stable-target
+run. It completed 104/120 invocations, reproduced expected multi-target
+ambiguity and `target_select` behavior, and stopped two cohorts on one child
+timeout each. No optional target-set mutation, retry, or compensating run was
+performed; focused evidence review is pending.
