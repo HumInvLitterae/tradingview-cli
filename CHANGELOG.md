@@ -26,7 +26,9 @@ package version omits the leading `v`.
   Deterministic fixtures keep HTTP activation and `Page.bringToFront` separate,
   verify the asymmetric no-transition baseline, exact marker cleanup and
   limited restore observation, and stop without automatic restoration on an
-  unknown transition timeout. No ordinary command foregrounds a target.
+  unknown transition timeout. Target IDs are canonicalized before distinctness
+  validation, and unknown restore outcomes remain incomplete. No ordinary
+  command foregrounds a target.
 - Added test-only chart-read latency attribution for separate OHLCV summary and
   study-values cohorts. The ignored live matrix uses fresh explicit-target
   connections and reports only aggregate direct timings and labeled residuals;

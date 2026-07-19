@@ -364,10 +364,10 @@ async fn candidate_inner<B: ProbeBackend + Send>(
         Err(()) => result.unknown_stops += 1,
         Ok(Err(error)) => result.record_error(&error),
         Ok(Ok(trial)) => {
-            result.restore_observation_matched = trial.restore_matches(restore_baseline)
+            result.restore_observation_matched = trial.restore_matches(restore_baseline);
+            result.completed = 1;
         }
     }
-    result.completed = 1;
 }
 
 async fn run_matrix<B: ProbeBackend + Send>(backend: &mut B) -> MatrixSummary {
@@ -575,8 +575,13 @@ async fn live_renderer_foreground_feasibility() {
 fn required_target(name: &str) -> String {
     std::env::var(name)
         .ok()
-        .filter(|value| !value.trim().is_empty())
+        .and_then(normalize_target)
         .unwrap_or_else(|| panic!("{name} must be a non-empty explicit target id"))
+}
+
+fn normalize_target(value: String) -> Option<String> {
+    let value = value.trim();
+    (!value.is_empty()).then(|| value.to_string())
 }
 
 fn assert_public_safe_summary(encoded: &str) {
@@ -824,6 +829,7 @@ mod tests {
 
         assert_eq!(summary.candidates.len(), 1);
         assert_eq!(summary.candidates[0].unknown_stops, 1);
+        assert_eq!(summary.candidates[0].completed, 0);
         assert_eq!(summary.candidates[0].restoration_calls, 0);
         assert_eq!(
             backend
@@ -832,6 +838,19 @@ mod tests {
                 .filter(|call| matches!(call, Call::Transition(..)))
                 .count(),
             1
+        );
+    }
+
+    #[test]
+    fn target_ids_are_trimmed_before_distinctness_validation() {
+        assert_eq!(
+            normalize_target(" target ".into()).as_deref(),
+            Some("target")
+        );
+        assert_eq!(normalize_target("\t\n".into()), None);
+        assert_eq!(
+            normalize_target("target".into()),
+            normalize_target("target ".into())
         );
     }
 

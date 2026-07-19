@@ -28,10 +28,13 @@ search, a foreground command, a session, a broker, or automatic activation.
 - [x] (2026-07-19) Implemented test-only snapshots, collision-checked timer
   markers, shared transition orchestration, deterministic fixtures, and an
   ignored two-target harness without changing ordinary command behavior.
-- [x] (2026-07-19) Completed focused tests (7 passed, 1 ignored), strict Clippy,
+- [x] (2026-07-19) Completed focused tests (8 passed, 1 ignored), strict Clippy,
   the full workspace baseline, metadata, hygiene, package syntax, guide parity,
   and diff checks.
-- [ ] Obtain focused implementation review before seeking live approval.
+- [x] (2026-07-19) Focused implementation review completed without a blocker.
+  Canonicalized target IDs before distinctness validation and made unknown
+  restore outcomes remain incomplete before the narrow correction re-review.
+- [ ] Obtain focused correction re-review before seeking live approval.
 - [ ] If separately authorized, run one bounded transition matrix and retain
   only aggregate public-safe evidence.
 - [ ] Obtain focused evidence review, record go/defer/no-go, and archive.
@@ -356,3 +359,8 @@ Responsive marker failures now pass through one total cleanup-and-verification
 boundary before candidate restoration, while cancellation by an outer timeout
 performs neither cleanup nor restoration. Focused and full non-live validation
 are green; live execution remains unapproved and unrun.
+
+Revision note (2026-07-19): after focused implementation review, trimmed both
+target IDs before non-empty and distinctness validation so whitespace variants
+cannot resolve to the same target. Unknown restore outcomes now retain
+`completed: 0`; the matrix and approval scope are unchanged.
