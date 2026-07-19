@@ -37,7 +37,8 @@ defer. It does not directly authorize public `--timing`.
 - [x] (2026-07-19) Completed focused tests, full workspace baseline, metadata,
   hygiene, package syntax, guide parity, formatting, strict Clippy, and diff
   checks.
-- [ ] Obtain focused implementation review before seeking any live approval.
+- [x] (2026-07-19) Focused implementation review found no finding and approved
+  seeking separate owner authorization for the bounded live matrix.
 - [ ] If separately authorized, run one bounded live matrix and record only
   aggregate public-safe evidence.
 - [ ] Obtain focused evidence review, decide promote/defer/no-go, and archive.
@@ -123,7 +124,7 @@ and one owner-gated live test remains ignored. The full workspace baseline is
 green, including 450 CLI unit tests with four ignored and 45 CDP tests with one
 ignored. No live measurement, public contract, timeout, retry, connection
 reuse, or ordinary-command behavior has been added. Focused implementation
-review is the next gate.
+review is green; explicit owner authorization is the next gate.
 
 ## Context and Orientation
 
@@ -294,6 +295,11 @@ and the final routing decision. Never store raw payloads, bar values, study
 values, symbols, target IDs, endpoints, account metadata, environment values,
 credentials, or machine paths.
 
+For this harness, a trial that reaches its absolute deadline is counted as one
+completed failed trial and one deadline stop so `success + failure == completed`.
+The older consecutive-invocation harness counted a child timeout as incomplete;
+do not compare their `completed` fields without this semantic qualification.
+
 Prepare a self-contained read-only reviewer prompt after implementation. Do
 not retain one-off reviewer instructions in tracked files.
 
@@ -323,3 +329,8 @@ derived residuals, exact fresh-connection cohorts, and no CDP observer
 visibility change. Implementation then recorded the test-only
 `connect_runtime` re-export required by Rust sibling-module privacy; production
 visibility and behavior remain unchanged.
+
+Revision note (2026-07-19): focused implementation review was green with no
+required correction. It noted the test-only string classification as a future
+typed-error candidate and the completed-count difference from the older
+subprocess harness; neither changes the approved live scope.
