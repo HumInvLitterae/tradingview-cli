@@ -67,6 +67,9 @@ package version omits the leading `v`.
 - Aligned the consecutive-invocation aggregate with the shipped
   `failure_stage` vocabulary and added deterministic ambiguity-envelope,
   blocked-child timeout, and cohort/run deadline-stop coverage.
+- Completed focused correction re-review of the consecutive-invocation harness
+  with no finding. The bounded live matrix remains unrun and separately
+  owner-controlled.
 - Added an ignored, explicit-target indicator-search reassessment harness with
   a six-trial dispatch preflight, a selected-candidate 27-trial matrix,
   aggregate-only evidence, and deterministic public-safety fixtures. No live

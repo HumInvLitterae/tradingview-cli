@@ -35,8 +35,9 @@ mutation-command repetition.
   diff checks.
 - [x] (2026-07-19) Obtained focused implementation review with no blocker.
   Corrected the public stage allowlist and added the recommended ambiguity,
-  child-timeout, and deadline fixtures; focused re-review is pending.
-- [ ] Obtain focused correction re-review before seeking live authorization.
+  child-timeout, and deadline fixtures.
+- [x] (2026-07-19) Obtained focused correction re-review with no finding. The
+  bounded 120-invocation live matrix now awaits separate owner authorization.
 - [ ] Execute the owner-approved bounded matrix.
 - [ ] Classify evidence and record promote/defer/no-change decisions.
 - [ ] Obtain focused evidence review and archive this plan.
@@ -275,3 +276,7 @@ nonexistent `http_client` aggregate stage with the shipped `event_wait` stage
 and added deterministic fixtures for all three ambiguity envelope shapes, a
 blocked production child timeout, and cohort/run deadline stops. Matrix bounds
 and live authorization remain unchanged.
+
+Revision note (2026-07-19): focused correction re-review confirmed the shipped
+stage vocabulary, all promised deterministic fixtures, unchanged matrix bounds,
+and the separate owner-authorization gate. No live invocation was run.
