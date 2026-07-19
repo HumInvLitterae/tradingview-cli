@@ -36,8 +36,12 @@ search, a foreground command, a session, a broker, or automatic activation.
   restore outcomes remain incomplete before the narrow correction re-review.
 - [x] (2026-07-19) Focused correction re-review confirmed both findings closed
   with 8 focused tests passed and the live harness still ignored.
-- [ ] If separately authorized, run one bounded transition matrix and retain
-  only aggregate public-safe evidence.
+- [x] (2026-07-19) Ran the owner-authorized matrix once. It stopped with one
+  baseline `unknown_stop` before candidate transitions; no HTTP activation or
+  `Page.bringToFront` call ran. Marker cleanup is unconfirmed and no automatic
+  recovery action was taken.
+- [ ] Obtain separate owner approval for one read-only recovery observation of
+  marker presence before any cleanup or rerun decision.
 - [ ] Obtain focused evidence review, record go/defer/no-go, and archive.
 
 ## Milestones
@@ -112,13 +116,17 @@ implementation.
 
 ## Outcomes & Retrospective
 
-The test-only implementation now runs both candidates through one injected
+The test-only implementation runs both candidates through one injected
 orchestration boundary. Deterministic tests cover the asymmetric ready-probe
 stop, exact transition/restore order, responsive cleanup and restoration,
 unknown-timeout no-restore precedence, expression anchors, aggregate wording,
 and malformed/private snapshot rejection. Focused implementation and correction
 review are green. The owner-gated live test remains ignored and unrun; exact
-two-target owner approval is the next gate.
+two-target owner approval was granted. The one authorized run stopped during
+the probe baseline with `status: unknown_stop`, one unknown stop, zero baseline
+responsive failures, and zero candidate results. No transition API ran. Marker
+state is `UNCONFIRMED`; a separately approved read-only recovery observation is
+the next gate.
 
 ## Context and Orientation
 
@@ -370,3 +378,9 @@ cannot resolve to the same target. Unknown restore outcomes now retain
 Revision note (2026-07-19): focused correction re-review is green with no new
 finding. The exact two-target live matrix may now be presented for separate
 owner approval; no live transition has run.
+
+Revision note (2026-07-19): the owner-approved matrix ran once and reached the
+three-second outer bound during the initial probe-target baseline. It returned
+one aggregate `unknown_stop` before either transition candidate, performed no
+automatic cleanup or retry, and retained no target or raw payload. Marker state
+remains `UNCONFIRMED` pending separately approved read-only recovery evidence.
