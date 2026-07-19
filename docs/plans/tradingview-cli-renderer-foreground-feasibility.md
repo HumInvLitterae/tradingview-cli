@@ -49,6 +49,10 @@ search, a foreground command, a session, a broker, or automatic activation.
   green.
 - [x] (2026-07-19) Focused correction review confirmed the deadline-budget
   defect closed with no new finding. Exact-pair rerun approval may be sought.
+- [x] (2026-07-19) Ran the separately approved exact-pair matrix once. Both
+  candidates completed with one transition and one restore, no failure or
+  unknown stop, and matching restore observations. Neither improved the
+  incomplete animation-frame signal.
 - [ ] Obtain focused evidence review, record go/defer/no-go, and archive.
 
 ## Milestones
@@ -128,15 +132,25 @@ orchestration boundary. Deterministic tests cover the asymmetric ready-probe
 stop, exact transition/restore order, responsive cleanup and restoration,
 unknown-timeout no-restore precedence, expression anchors, aggregate wording,
 and malformed/private snapshot rejection. Focused implementation and correction
-review are green. The owner-gated live test remains ignored and unrun; exact
-two-target owner approval was granted. The one authorized run stopped during
+review are green. The live test remains ignored for ordinary suites and ran only
+with owner approval. The first authorized run stopped during
 the probe baseline with `status: unknown_stop`, one unknown stop, zero baseline
 responsive failures, and zero candidate results. No transition API ran. Marker
 state was then observed once with separate approval: marker absent and both
 callbacks incomplete. This revealed that the implementation incorrectly used
 the whole three-second trial as its polling deadline instead of the planned
 two-second observation window, leaving no cleanup budget. The harness correction
-and focused review are the next gates.
+and focused review are green.
+
+The separately approved rerun completed both candidates. The probe baseline was
+hidden, unfocused, viewport-positive, with the zero-delay timeout completed and
+the animation frame incomplete. HTTP activation and `Page.bringToFront` each
+performed one probe transition and one restore transition, produced no
+responsive failure or unknown stop, and matched the limited restore observation.
+Their probe observations were identical to the baseline categories: timeout
+completed and animation frame incomplete. The go condition was not met. Focused
+evidence review must decide current-build no-go or defer; no product behavior is
+promoted by the run itself.
 
 ## Context and Orientation
 
@@ -405,3 +419,9 @@ Revision note (2026-07-19): focused correction review is green and confirmed
 the two-second observation/three-second trial split preserves responsive cleanup
 without changing hard-timeout precedence. The same exact target pair and matrix
 may be presented for separate rerun approval; no rerun has occurred.
+
+Revision note (2026-07-19): the separately approved rerun completed both exact
+candidates without failure or unknown outcome. Each restore observation matched,
+but neither HTTP activation nor `Page.bringToFront` changed the incomplete
+animation-frame signal from its probe baseline. The evidence awaits focused
+review and does not authorize foreground behavior or indicator search.

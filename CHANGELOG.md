@@ -32,7 +32,10 @@ package version omits the leading `v`.
   baseline unknown-outcome boundary before either transition and performed no
   automatic cleanup or retry. A separate read-only observation found no residual
   marker; the harness now reserves the planned final second for cleanup and
-  verification instead of polling through the whole trial budget.
+  verification instead of polling through the whole trial budget. A separately
+  approved rerun completed both transition candidates without failure and with
+  matching restore observations, but neither improved the incomplete animation-
+  frame signal; focused evidence review remains pending.
 - Added test-only chart-read latency attribution for separate OHLCV summary and
   study-values cohorts. The ignored live matrix uses fresh explicit-target
   connections and reports only aggregate direct timings and labeled residuals;
