@@ -23,12 +23,14 @@ search, a foreground command, a session, a broker, or automatic activation.
   and current CDP target, app-tab, HTTP activation, and method-call ownership.
 - [x] (2026-07-19) Created this ExecPlan and synchronized the v0.30 roadmap,
   ordered inventory, plan index, changelog, and local ledger.
-- [ ] Obtain focused independent review of the transition and restoration
-  contract.
-- [ ] Implement test-only snapshots, timer markers, transition fixtures, and an
-  ignored two-target harness without changing production behavior.
-- [ ] Complete focused tests, full baseline, metadata, hygiene, package syntax,
-  guide parity, and diff checks.
+- [x] (2026-07-19) Focused plan review completed without a blocker. Tightened
+  `no_observable_need` so a ready probe baseline prevents every transition.
+- [x] (2026-07-19) Implemented test-only snapshots, collision-checked timer
+  markers, shared transition orchestration, deterministic fixtures, and an
+  ignored two-target harness without changing ordinary command behavior.
+- [x] (2026-07-19) Completed focused tests (7 passed, 1 ignored), strict Clippy,
+  the full workspace baseline, metadata, hygiene, package syntax, guide parity,
+  and diff checks.
 - [ ] Obtain focused implementation review before seeking live approval.
 - [ ] If separately authorized, run one bounded transition matrix and retain
   only aggregate public-safe evidence.
@@ -106,9 +108,12 @@ implementation.
 
 ## Outcomes & Retrospective
 
-No implementation or live transition has started. Record deterministic test
-counts, exact transition/restoration calls, aggregate observations, and final
-policy routing here.
+The test-only implementation now runs both candidates through one injected
+orchestration boundary. Deterministic tests cover the asymmetric ready-probe
+stop, exact transition/restore order, responsive cleanup and restoration,
+unknown-timeout no-restore precedence, expression anchors, aggregate wording,
+and malformed/private snapshot rejection. The owner-gated live test remains
+ignored and unrun. Focused implementation review is the next gate.
 
 ## Context and Orientation
 
@@ -172,9 +177,11 @@ Freeze these page expressions before live execution:
 5. A final snapshot must confirm marker absence. Cleanup setter and verification
    getter each run exactly once on every responsive path after installation.
 
-If both baseline target trials complete both callbacks within their own bounds,
-stop before any transition with `no_observable_need`. A transition cannot prove
-an improvement when the candidate signal is already ready.
+If the probe target baseline trial completes both callbacks within its own
+bound, stop before any transition with `no_observable_need`, regardless of the
+restore target baseline. The restore baseline is used only for later restore
+comparison. A transition cannot prove an improvement when the candidate signal
+is already ready.
 
 Use two explicit, distinct chart targets named only in environment variables:
 `TV_LIVE_RENDERER_RESTORE_TARGET_ID` and
@@ -269,8 +276,9 @@ callback inability to recreate cleaned state, responsive restoration,
 unknown-timeout precedence, fixed deadlines, aggregate schema, and private-value
 rejection.
 
-Tests must also prove that an all-ready baseline produces zero transition and
-restoration calls, and that aggregate wording never upgrades
+Tests must also prove that a ready probe baseline produces zero transition and
+restoration calls even when the restore baseline is incomplete, and that
+aggregate wording never upgrades
 `restore_observation_matched` into Desktop tab or OS-focus restoration.
 
 Ordinary `tv tab` and Desktop-backed command behavior, target selection,
@@ -337,3 +345,14 @@ Revision note (2026-07-19): created after chart-read attribution closeout from
 the archived indicator-search renderer evidence. It separates HTTP activation,
 DevTools foreground, and Desktop app-tab ownership; fixes exact marker cleanup,
 deadline, restoration, and public-safe aggregate contracts before code changes.
+
+Revision note (2026-07-19): after focused plan review, changed the early-stop
+condition from both baselines ready to the probe baseline ready. A transition
+cannot produce qualifying improvement when its own probe signal is already
+complete, so the asymmetric case must not issue a live mutation.
+
+Revision note (2026-07-19): implemented the reviewed test-only state machine.
+Responsive marker failures now pass through one total cleanup-and-verification
+boundary before candidate restoration, while cancellation by an outer timeout
+performs neither cleanup nor restoration. Focused and full non-live validation
+are green; live execution remains unapproved and unrun.
