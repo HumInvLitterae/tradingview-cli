@@ -73,10 +73,20 @@ async fn async_main() -> ExitCode {
                     steps,
                     attach_ohlcv_summary,
                     ohlcv_count,
+                    attach_chart_screenshot,
+                    screenshot_output_dir,
                 },
         } => jsonl_exit_code(
             "replay",
-            run_replay_log_command(steps, attach_ohlcv_summary, ohlcv_count, &config).await,
+            run_replay_log_command(
+                steps,
+                attach_ohlcv_summary,
+                ohlcv_count,
+                attach_chart_screenshot,
+                screenshot_output_dir,
+                &config,
+            )
+            .await,
         ),
         command => {
             let command_name = command.name();

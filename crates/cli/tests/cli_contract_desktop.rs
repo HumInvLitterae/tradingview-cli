@@ -935,6 +935,9 @@ fn replay_help_lists_basic_lifecycle_subcommands() {
         .stdout(predicate::str::contains("--steps"))
         .stdout(predicate::str::contains("--attach-ohlcv-summary"))
         .stdout(predicate::str::contains("--ohlcv-count"))
+        .stdout(predicate::str::contains("--attach-chart-screenshot"))
+        .stdout(predicate::str::contains("--screenshot-output-dir"))
+        .stdout(predicate::str::contains("no-overwrite"))
         .stdout(predicate::str::contains("bounded Replay step log"))
         .stdout(predicate::str::contains("OHLCV summary"))
         .stdout(predicate::str::contains("replay_step_log.v1"));
@@ -1780,6 +1783,31 @@ fn replay_log_rejects_invalid_ohlcv_attachment_controls_before_connecting() {
         assert_eq!(value["command"], "replay");
         assert_eq!(value["error"]["kind"], "validation");
         assert_eq!(value["error"]["details"]["field"], "ohlcv_count");
+    }
+}
+
+#[test]
+fn replay_log_rejects_invalid_screenshot_attachment_controls_before_connecting() {
+    let output = tempfile::tempdir().unwrap();
+    for args in [
+        vec!["replay", "log", "--steps", "1", "--attach-chart-screenshot"],
+        vec![
+            "replay",
+            "log",
+            "--steps",
+            "1",
+            "--screenshot-output-dir",
+            output.path().to_str().unwrap(),
+        ],
+    ] {
+        let assert = tv()
+            .env("TV_CDP_PORT", "9")
+            .args(args)
+            .assert()
+            .failure()
+            .code(1);
+        let value = stderr_json(&assert);
+        assert_eq!(value["error"]["kind"], "validation");
     }
 }
 

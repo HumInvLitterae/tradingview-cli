@@ -173,7 +173,10 @@ Do not use `TV_CDP_TARGET_ID`; explicit target handoff is `--target-id`.
   JSONL record of Replay state transitions, not as source-prepared OHLCV. Keep
   that evidence separate from `tv bars`. Use
   `--attach-ohlcv-summary [--ohlcv-count <N>]` only when selected-chart OHLCV
-  summary evidence should be explicitly attached to each Replay step.
+  summary evidence should be explicitly attached to each Replay step. Use
+  `--attach-chart-screenshot --screenshot-output-dir <DIR>` only when each
+  successful step needs a deterministic local chart PNG. Existing files are
+  never overwritten; screenshot failure is separate from Replay step failure.
 - Selected-chart JSONL observations use `tv observe chart` and lower-level
   `tv stream ...`. Read readiness, sample, heartbeat, and final summary events
   by `contract_version` (`observe_chart.v1` or `stream.v1`), `_event`, and
