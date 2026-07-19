@@ -33,23 +33,25 @@ GitHub Release creation. Those actions remain separately owner-controlled.
   and consecutive-invocation investigation after focused review.
 - [x] (2026-07-19) Created this release-readiness ExecPlan and synchronized the
   plan index, roadmap, work inventory, changelog, and local ledger.
-- [ ] Obtain focused independent review of this plan.
-- [ ] Ground the frozen candidate from `v0.28.0..HEAD`, manifests, lockfile,
+- [x] (2026-07-19) Obtained focused independent plan review with no finding.
+- [x] (2026-07-19) Grounded the frozen candidate at `7956726` from
+  `v0.28.0..HEAD`, manifests, lockfile,
   workflows, package allowlist, and current worktree.
-- [ ] Bump `[workspace.package].version` from `0.28.0` to `0.29.0` and
+- [x] (2026-07-19) Bumped `[workspace.package].version` from `0.28.0` to `0.29.0` and
   synchronize only the seven workspace package versions in `Cargo.lock`.
-- [ ] Move `Unreleased` entries into a dated `v0.29.0` section while retaining
+- [x] (2026-07-19) Moved `Unreleased` entries into a dated `v0.29.0` section while retaining
   a fresh empty `Unreleased` section.
-- [ ] Add curated notes at `docs/releases/v0.29.0.md` without a redundant
+- [x] (2026-07-19) Added curated notes at `docs/releases/v0.29.0.md` without a redundant
   top-level version heading, and update the README asset example.
-- [ ] Run four pinned JavaScript gates, the complete Rust baseline, metadata,
+- [x] (2026-07-19) Ran four pinned JavaScript gates, the complete Rust baseline, metadata,
   and the locked release build.
-- [ ] Stage and inspect the explicit package; verify source and staged binary
+- [x] (2026-07-19) Staged and inspected the explicit package; verified source and staged binary
   versions and both eight-skill roots.
-- [ ] Run hygiene, workflow parsing, package syntax, guide parity,
+- [x] (2026-07-19) Ran hygiene, workflow parsing, package syntax, guide parity,
   stale-version, and diff checks.
-- [ ] Record public-safe evidence and obtain focused release-readiness review.
-- [ ] Stop before tag, push, workflow, or GitHub Release mutation.
+- [x] (2026-07-19) Obtained focused release-readiness review with no finding or
+  remaining local blocker.
+- [x] (2026-07-19) Stopped before tag, push, workflow, or GitHub Release mutation.
 
 ## Milestones
 
@@ -77,8 +79,18 @@ unsupported claim may remain. Remote publication is outside this plan.
 
 ## Surprises & Discoveries
 
-- Observation: none yet.
-  Evidence: release preparation has not started beyond plan creation.
+- Observation: the version bump changed only the root workspace version and
+  seven local package entries in `Cargo.lock`.
+  Evidence: the manifest/lockfile diff contains no third-party package change.
+
+- Observation: the package allowlist remains identical in size to v0.28.
+  Evidence: staging produced 46 files and eight runtime skills under each of
+  `.agents/skills` and `.claude/skills`; development-only material was absent.
+
+- Observation: all deterministic gates remain green at workspace version
+  `0.29.0`.
+  Evidence: four pinned JavaScript contracts, formatting, strict Clippy,
+  workspace tests, metadata, and the locked release build returned success.
 
 ## Decision Log
 
@@ -104,10 +116,23 @@ unsupported claim may remain. Remote publication is outside this plan.
 
 ## Outcomes & Retrospective
 
-Release preparation has not yet modified versioned artifacts. At completion,
-record the workspace-package version diff, release claims, validation counts,
-package contents, review result, and remaining owner-controlled publication
-step.
+Local release preparation is complete pending independent review. Candidate
+commit `7956726` is 18 commits and 31 paths after `v0.28.0`; completion-audit
+follow-up added no production Rust beyond two ignored live harnesses. All seven
+workspace packages and source and staged binaries report `0.29.0`.
+
+The changelog, curated notes, README example, and packaged guidance describe
+additive `failure_stage` diagnostics without claiming retry, timing, indicator
+search, or autonomous operation. Four pinned JavaScript gates passed. Formatting,
+strict Clippy, the workspace suite, metadata, locked build, hygiene, workflow
+parsing, package syntax, guide parity, stale-version, and diff checks are green.
+CLI unit tests reported 442 passed and 3 ignored; Desktop contracts reported 99
+passed; CDP reported 45 passed and 1 ignored.
+
+The staged package contains 46 files and eight runtime skills under each skill
+root. No tag, push, workflow mutation, or GitHub Release publication occurred.
+Independent release-readiness review found no finding. Local release readiness
+is complete and ready to commit; publication remains owner-controlled.
 
 ## Context and Orientation
 
@@ -272,6 +297,29 @@ changelog and notes before tagging.
 Record commit and path counts, version diff, gate and test counts, binary
 versions, package file count, and skill counts. Keep evidence aggregate and
 public-safe. Do not retain a one-off reviewer prompt in the repository.
+
+Local evidence:
+
+- Frozen candidate: `7956726`; 18 commits and 31 changed paths after `v0.28.0`.
+- Workspace packages: seven at `0.29.0`; no third-party lockfile drift.
+- Binary readback: source and staged binaries both `tv 0.29.0`.
+- Package: 46 files, eight `.agents` skills, eight `.claude` skills.
+- JavaScript contracts: four passed with pinned Node.js `24.18.0`.
+- Rust baseline: CDP 45 passed/1 ignored, CLI 442 passed/3 ignored,
+  Desktop contracts 99 passed, and all workspace/doc tests green.
+- Public hygiene: self-test and 613 tracked files passed; the untracked release
+  note was scanned directly before review.
+- Remote and live mutations: none.
+
+Revision note (2026-07-19): focused plan review was green. Prepared versioned
+artifacts, ran the complete local release baseline, inspected the staged
+package, and stopped for focused release-readiness review.
+
+Revision note (2026-07-19): focused release-readiness review independently
+confirmed the version-only Cargo diff, release claims, binary and package
+contents, validation evidence, public hygiene, and owner-controlled publication
+boundary. No local blocker remains; the plan is archived with no remote
+mutation performed.
 
 ## Interfaces and Dependencies
 

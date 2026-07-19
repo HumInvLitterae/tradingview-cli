@@ -6,10 +6,11 @@ for release and next-phase planning.
 
 ## Current and future plans
 
-The current ExecPlan is `tradingview-cli-v0.29.0-release-readiness.md`. It
-freezes the reviewed additive transport-diagnostic candidate, aligns versioned
-release artifacts, and validates the locked package without authorizing tag,
-push, workflow, or GitHub Release mutation. Focused plan review is pending. The
+The v0.29.0 release-readiness ExecPlan is complete, independently reviewed, and
+archived. The prepared local candidate freezes the additive transport-diagnostic
+change, aligns versioned artifacts, and passes the locked package gates. Tag,
+push, workflow, and GitHub Release mutation remain separately owner-controlled.
+The
 consecutive-invocation
 resilience investigation completed focused evidence review and is archived
 without promoting retry or production behavior. Its stable-target matrix
@@ -29,6 +30,11 @@ Pre-dispatch retry remains deferred until ordinary operation or a later bounded
 probe records a relevant failure.
 
 Completed current-cycle plans:
+
+- `tradingview-cli-v0.29.0-release-readiness.md`: prepared workspace version
+  `0.29.0`, curated release artifacts, and the explicit 46-file package. Full
+  local validation and focused review are green; the completed plan now lives
+  under `docs/plans/archives/`.
 
 - `tradingview-cli-consecutive-invocation-resilience.md`: measured six bounded
   production-subprocess read cohorts, confirmed reusable explicit target
