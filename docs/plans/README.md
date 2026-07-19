@@ -6,15 +6,13 @@ for release and next-phase planning.
 
 ## Current and future plans
 
-The current ExecPlan is
-`tradingview-cli-chart-read-latency-attribution.md`. It measures the separate
-OHLCV and study-values operation paths without assuming that polling or chart
-readiness caused the v0.29 slow tail. It adds no public timing contract, retry,
-timeout change, shared process, or ordinary-command behavior. The test-only
-implementation and full non-live validation are complete; focused
-implementation review is green. The owner-authorized matrix completed 40/40
-trials without failure or deadline stop and now awaits focused evidence review;
-it did not reproduce the earlier subprocess tail or promote a correction. The
+Chart-read latency attribution completed focused evidence review and is
+archived. Its owner-authorized matrix completed 40/40 trials without failure or
+deadline stop and did not reproduce the earlier subprocess tail. Public timing
+and a production correction remain unpromoted; a new subprocess-versus-process
+attribution plan is triggered only by a future chart read above one second, a
+timeout, or a `method_call` failure stage. The next current slice is renderer
+lifecycle and foreground feasibility; its ExecPlan is being prepared. The
 consecutive-invocation
 resilience investigation completed focused evidence review and is archived
 without promoting retry or production behavior. Its stable-target matrix

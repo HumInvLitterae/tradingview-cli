@@ -25,7 +25,8 @@ package version omits the leading `v`.
   output. Focused implementation review is green; no ordinary command emits
   timing metadata. One owner-authorized 40-trial matrix completed without
   failure or deadline stop and did not reproduce the earlier subprocess tail;
-  focused evidence review remains pending.
+  focused evidence review closed the plan with a one-second/timeout/method-call
+  re-evaluation trigger and no production or public timing promotion.
 
 ## v0.29.0 - 2026-07-19
 

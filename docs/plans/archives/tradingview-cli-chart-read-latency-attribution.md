@@ -42,7 +42,9 @@ defer. It does not directly authorize public `--timing`.
 - [x] (2026-07-19) With explicit owner authorization, ran the bounded live
   matrix once on the current explicit chart target and retained only aggregate
   public-safe evidence. All 40 trials succeeded.
-- [ ] Obtain focused evidence review, decide promote/defer/no-go, and archive.
+- [x] (2026-07-19) Focused evidence review found no finding, selected an
+  explicit-trigger defer, and approved archive without public timing or a
+  production correction.
 
 ## Milestones
 
@@ -136,6 +138,15 @@ unattributed residual 1/1 ms. This one explicit-target in-process run did not
 reproduce the v0.29 subprocess tail and does not establish a repository-wide
 latency distribution. Focused evidence review must decide defer or another
 named investigation; no correction is promoted by the run itself.
+
+Focused evidence review confirmed the aggregate is internally consistent and
+closed this slice as deferred. Reopen only if ordinary operation or a future
+bounded run records a chart read above one second, a chart-read timeout, or a
+`method_call` failure stage. The named follow-up is a separate bounded plan
+that compares a production subprocess invocation with an in-process attributed
+trial in the same session, so process startup and environmental delay can be
+isolated. A trigger authorizes creation and review of that plan only. It does
+not authorize retry, a timeout change, public `--timing`, or a shared process.
 
 ## Context and Orientation
 
@@ -356,3 +367,7 @@ Revision note (2026-07-19): recorded one owner-authorized aggregate-only live
 matrix. It completed 40/40 trials without a stop or failure and did not
 reproduce the earlier subprocess tail. Focused evidence review remains the gate
 for routing this result.
+
+Revision note (2026-07-19): focused evidence review was green and selected an
+explicit-trigger defer. The plan is archived without further measurement or a
+production/public-contract promotion.
