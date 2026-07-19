@@ -27,6 +27,9 @@ mod ui;
 mod latency_measurement;
 
 #[cfg(test)]
+mod renderer_foreground_measurement;
+
+#[cfg(test)]
 mod test_support;
 
 pub use alert::{
