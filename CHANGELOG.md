@@ -7,6 +7,8 @@ package version omits the leading `v`.
 
 ## Unreleased
 
+## v0.29.0 - 2026-07-19
+
 ### Changed
 
 - Added public-safe `failure_stage` details to Desktop CDP transport errors for
@@ -27,10 +29,11 @@ package version omits the leading `v`.
 
 ### Documentation
 
-- Started v0.29.0 release readiness after the completion audit and both bounded
-  investigations closed without promoting another production change. The plan
-  freezes the additive transport-diagnostic candidate and keeps tag, push,
-  workflow, and GitHub Release actions separately owner-controlled.
+- Completed v0.29.0 local release readiness after the completion audit and both
+  bounded investigations closed without promoting another production change.
+  Versioned artifacts, the locked package, full local validation, and focused
+  review are green; tag, push, workflow, and GitHub Release actions remain
+  separately owner-controlled.
 
 - Started v0.29 planning around Desktop CDP transport resilience and
   diagnosability. Split the long-term stability and autonomous-operation
