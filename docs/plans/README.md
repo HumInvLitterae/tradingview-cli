@@ -18,7 +18,10 @@ mechanism, and no product behavior was promoted. Retained-backlog comparison
 selected Replay chart-screenshot attachment. The current ExecPlan is
 `tradingview-cli-replay-screenshot-attachment.md`; focused plan verification,
 implementation, and full non-live validation are complete, and focused
-implementation review is pending. The consecutive-invocation
+implementation review is green. One approved two-step smoke produced two valid
+attachments and stopped Replay afterward. A narrow correction to the existing
+`replay_left_running` input is applied; focused correction/evidence review is
+pending. The consecutive-invocation
 resilience investigation completed focused evidence review and is archived
 without promoting retry or production behavior. Its stable-target matrix
 completed 104/120 invocations, reproduced expected multi-target refusal, and

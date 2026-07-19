@@ -24,7 +24,14 @@ Replay, or become a general Replay export.
   no-overwrite capture, independent attachment envelopes/counters, and tests.
 - [x] (2026-07-19) Completed focused tests, strict Clippy, full workspace
   validation, metadata, hygiene, package syntax, guide parity, and diff checks.
-- [ ] Obtain implementation review, update guidance, and archive.
+- [x] (2026-07-20) Focused implementation review was green and recommended one
+  owner-approved two-step live smoke before archive.
+- [x] (2026-07-20) Ran the approved smoke once. Both steps and both PNG
+  attachments succeeded, file sizes matched JSONL, and Replay was stopped.
+- [x] (2026-07-20) Corrected an existing `replay_left_running` false report
+  exposed by the smoke by returning the post-step started boolean from the
+  existing Replay expression. Focused correction review is pending.
+- [ ] Obtain focused correction/evidence review and archive.
 
 ## Milestones
 
@@ -87,7 +94,23 @@ Implementation is complete. Replay log now validates and creates its artifact
 directory before Desktop connection, attempts one no-overwrite chart capture
 after each successful step, reports screenshot results independently from OHLCV
 attachments and Replay failures, and preserves standalone screenshot behavior.
-Focused implementation review remains pending; no live Replay smoke has run.
+Focused implementation review completed without a blocker and required the
+bounded smoke described below before archive.
+
+Focused implementation review was green. The separately approved smoke started
+Replay on one explicit target, logged exactly two steps, and wrote exactly two
+chart PNG attachments. Both attachment objects reported `status: "ok"`, each
+file was a valid PNG, and each on-disk size matched `size_bytes`. Summary counts
+were requested 2, ok 2, error 0, with two successful steps and no Replay
+failure. Replay was then stopped and read back as stopped.
+
+The smoke also exposed a pre-existing summary defect: `replay_left_running` was
+false even though Replay remained active until the explicit stop. The step
+expression verified `isReplayStarted()` before mutation but did not include its
+post-step boolean in the normalized payload, so the summary treated null as
+false. The correction returns that boolean from the same expression without an
+extra evaluation. Deterministic review is required before closeout; no automatic
+live rerun is authorized.
 
 ## Context and Orientation
 
@@ -211,3 +234,9 @@ comparison. Other candidates remain unpromoted.
 Revision note (2026-07-19): implemented the reviewed contract with no new
 dependency. Full non-live validation is green; focused implementation review is
 the current gate and no live Replay mutation is authorized.
+
+Revision note (2026-07-20): focused implementation review was green. One
+owner-approved two-step smoke verified two attachment PNGs and successful
+cleanup of Replay state. It also exposed and prompted a narrow correction to
+the existing `replay_left_running` summary input. Focused correction/evidence
+review is pending; no rerun is authorized.

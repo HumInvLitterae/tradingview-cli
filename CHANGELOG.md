@@ -19,7 +19,8 @@ package version omits the leading `v`.
 - Added opt-in chart screenshot attachments to bounded `tv replay log` runs.
   Successful Replay steps can write deterministic no-overwrite PNG files to an
   explicit directory; screenshot failures remain separate from Replay step and
-  OHLCV attachment failures.
+  OHLCV attachment failures. A two-step live smoke produced two valid PNGs and
+  also corrected the existing summary's post-step Replay-running readback.
 
 ### Documentation
 

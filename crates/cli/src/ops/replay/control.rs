@@ -207,6 +207,7 @@ pub async fn replay_step(runtime: &mut impl RuntimeEvaluator) -> Result<Value, A
                         operation: 'replay_step',
                         previous_date: previousDate,
                         current_date: currentDate,
+                        is_replay_started: !!unwrap(replay.isReplayStarted()),
                         chart_context: chartContext(),
                         source: 'internal_api'
                     };
@@ -365,13 +366,14 @@ mod tests {
     #[tokio::test]
     async fn replay_step_returns_previous_and_current_date() {
         let mut runtime = FakeRuntime::new([
-            json!({"ok": true, "action": "step", "previous_date": 1775001600000i64, "current_date": 1775088000000i64, "source": "internal_api"}),
+            json!({"ok": true, "action": "step", "previous_date": 1775001600000i64, "current_date": 1775088000000i64, "is_replay_started": true, "source": "internal_api"}),
         ]);
         let result = replay_step(&mut runtime).await.unwrap();
         assert_eq!(result["action"], "step");
         assert_eq!(result["operation"], "replay_step");
         assert_eq!(result["source_category"], "desktop_backed_operation");
         assert_eq!(result["previous_date"], 1775001600000i64);
+        assert_eq!(result["replay_context"]["is_replay_started"], true);
         assert_eq!(result["current_date"], 1775088000000i64);
         assert_eq!(result["replay_context"]["current_date"], 1775088000000i64);
         assert!(runtime.evaluated[0].0.contains("chartContext"));
