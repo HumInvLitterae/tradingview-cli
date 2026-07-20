@@ -18,7 +18,8 @@ mechanism, and no product behavior was promoted. Retained-backlog comparison
 selected Replay chart-screenshot attachment. Its implementation, approved
 two-step smoke, narrow `replay_left_running` correction, and focused
 correction/evidence review are complete, and the plan is archived. The current
-ExecPlan is the v0.30 completion and architecture audit. The consecutive-invocation
+ExecPlan is `tradingview-cli-v0.30-pre-release-audit.md`; focused plan review is
+pending. The consecutive-invocation
 resilience investigation completed focused evidence review and is archived
 without promoting retry or production behavior. Its stable-target matrix
 completed 104/120 invocations, reproduced expected multi-target refusal, and
