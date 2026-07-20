@@ -16,6 +16,8 @@ package version omits the leading `v`.
 - Started the v0.30 completion and architecture audit after all promoted
   investigations and the Replay product slice closed. The audit freezes the
   candidate and separates shipped Replay behavior from test-only evidence.
+- Completed focused review of the v0.30 audit plan with no blocker; frozen-
+  candidate audit execution is now the current gate.
 
 ### Added
 
