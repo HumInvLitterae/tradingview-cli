@@ -15,13 +15,10 @@ timeout, or a `method_call` failure stage. Renderer foreground feasibility is
 reviewed and archived: HTTP activation and `Page.bringToFront` are current-build
 no-go candidates, renderer lifecycle remains deferred pending a concrete new
 mechanism, and no product behavior was promoted. Retained-backlog comparison
-selected Replay chart-screenshot attachment. The current ExecPlan is
-`tradingview-cli-replay-screenshot-attachment.md`; focused plan verification,
-implementation, and full non-live validation are complete, and focused
-implementation review is green. One approved two-step smoke produced two valid
-attachments and stopped Replay afterward. A narrow correction to the existing
-`replay_left_running` input is applied; focused correction/evidence review is
-pending. The consecutive-invocation
+selected Replay chart-screenshot attachment. Its implementation, approved
+two-step smoke, narrow `replay_left_running` correction, and focused
+correction/evidence review are complete, and the plan is archived. The current
+ExecPlan is the v0.30 completion and architecture audit. The consecutive-invocation
 resilience investigation completed focused evidence review and is archived
 without promoting retry or production behavior. Its stable-target matrix
 completed 104/120 invocations, reproduced expected multi-target refusal, and
@@ -40,6 +37,12 @@ Pre-dispatch retry remains deferred until ordinary operation or a later bounded
 probe records a relevant failure.
 
 Completed current-cycle plans:
+
+- `tradingview-cli-replay-screenshot-attachment.md`: added explicit bounded
+  Replay step screenshot attachments with deterministic no-overwrite files,
+  verified two successful PNGs in one owner-approved smoke, and corrected the
+  existing post-step Replay-running summary. Focused correction/evidence review
+  is green; the completed plan now lives under `docs/plans/archives/`.
 
 - `tradingview-cli-v0.29.0-release-readiness.md`: prepared workspace version
   `0.29.0`, curated release artifacts, and the explicit 46-file package. Full

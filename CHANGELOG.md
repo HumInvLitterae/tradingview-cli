@@ -21,6 +21,9 @@ package version omits the leading `v`.
   explicit directory; screenshot failures remain separate from Replay step and
   OHLCV attachment failures. A two-step live smoke produced two valid PNGs and
   also corrected the existing summary's post-step Replay-running readback.
+- Completed focused correction/evidence review of Replay screenshot
+  attachment and archived its ExecPlan. No repeat live run was required; v0.30
+  work now proceeds to the frozen-candidate completion audit.
 
 ### Documentation
 
