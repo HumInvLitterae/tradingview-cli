@@ -34,6 +34,9 @@ creation, branch or tag push, workflow mutation, or GitHub Release publication.
   architecture audit after independent review with no release blocker.
 - [x] (2026-07-20) Created this release-readiness ExecPlan and synchronized
   current planning state without changing versioned artifacts.
+- [x] (2026-07-20) Classified the post-audit `6c0a1bd` lockfile-only dependency
+  update and reran the full deterministic baseline on the dependency-bearing
+  candidate; all gates are green.
 - [ ] Obtain focused independent plan review.
 - [ ] Ground the exact release candidate and verify version, dependency,
   workflow, package, and stash state.
@@ -71,7 +74,18 @@ drift, or local release blocker remains. Publication stays owner-controlled.
 
 ## Surprises & Discoveries
 
-Pending execution.
+- `6c0a1bd` landed after the independently reviewed completion audit and before
+  this plan was committed. It changes only `Cargo.lock`: `bytemuck` `1.25.1` to
+  `1.25.2` through `image`, `fastrand` `2.4.1` to `2.5.0` through the existing
+  `tempfile` development dependency, and `syn` `3.0.0` to `3.0.2` through
+  existing procedural macros. No manifest, feature, production source,
+  workflow, or `mise.toml` change accompanied it.
+- The dependency-bearing candidate passed formatting, strict workspace Clippy,
+  the full workspace suite and doctests, Cargo metadata, public-hygiene
+  self-test and the 624-file tracked scan, release-package syntax, contributor-
+  guide parity, workflow YAML parsing, and diff hygiene. This is a narrow audit
+  refresh for the new lockfile state, not a substitute for release-readiness
+  review.
 
 ## Decision Log
 
@@ -98,6 +112,15 @@ Pending execution.
   runtime-user artifacts.
   Date/Author: 2026-07-20 / Codex
 
+- Decision: retain the reviewed compatible dependency patches and require the
+  release-readiness review to cover the dependency-bearing candidate.
+  Rationale: silently treating a post-audit lockfile update as part of the
+  earlier frozen candidate would make that audit evidence stale. The update is
+  narrow enough to refresh through exact lockfile classification plus the full
+  deterministic baseline; reopening feature implementation or live evidence
+  would not prove an additional property.
+  Date/Author: 2026-07-20 / Codex
+
 ## Outcomes & Retrospective
 
 Pending artifact preparation, validation, and focused review.
@@ -107,11 +130,14 @@ Pending artifact preparation, validation, and focused review.
 The latest public release is `v0.29.0` at commit `a774142`. The reviewed v0.30
 completion audit is archived at
 `docs/plans/archives/tradingview-cli-v0.30-pre-release-audit.md`. Record the
-exact release-prep HEAD before mutating artifacts.
+exact release-prep HEAD before mutating artifacts. The current candidate also
+contains the classified post-audit lockfile-only dependency update `6c0a1bd`;
+the full deterministic baseline is green on that exact dependency state.
 
 Root `Cargo.toml` defines version `0.29.0` under `[workspace.package]`. Seven
 workspace crates inherit it, and `Cargo.lock` records seven corresponding local
-package versions. No third-party dependency version should change.
+package versions. Preserve the reviewed third-party versions from `6c0a1bd`;
+release preparation may change only the seven local workspace package versions.
 
 `CHANGELOG.md` has an `Unreleased` section containing v0.30 changes. Move those
 entries under `## v0.30.0 - 2026-07-20` and retain a fresh empty `Unreleased`
@@ -140,12 +166,14 @@ Preserve both local stashes. Do not apply, drop, rewrite, or package them.
 First, inspect the worktree, exact HEAD, `v0.29.0..HEAD` inventory, root
 manifest, lockfile, workflows, package script, changelog, README, prior release
 notes, and stashes. Confirm the completion audit is the final feature boundary.
-Stop if production, dependency, or workflow changes appeared after its frozen
-candidate without review.
+Stop if production, dependency, or workflow changes appeared after the archived
+audit other than the classified `6c0a1bd` lockfile update, or if any further
+candidate drift appears before focused plan review.
 
 Second, change `[workspace.package].version` from `0.29.0` to `0.30.0` and use
 Cargo tooling to synchronize the seven workspace package entries in
-`Cargo.lock`. Inspect the diff and reject third-party drift.
+`Cargo.lock`. Inspect the release-prep diff against its grounded HEAD: preserve
+the reviewed third-party versions and reject any additional dependency drift.
 
 Third, move all current Unreleased entries into the dated v0.30.0 section and
 leave a fresh empty Unreleased section. Write curated release notes covering
