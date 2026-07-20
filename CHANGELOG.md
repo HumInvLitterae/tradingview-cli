@@ -23,6 +23,8 @@ package version omits the leading `v`.
 - Completed focused independent review of the v0.30 audit with no finding,
   release blocker, required refactor, or live rerun. The audit is archived and
   release readiness is the current gate.
+- Created the v0.30.0 release-readiness plan. Versioned artifacts, locked build,
+  package staging, tag, push, and publication have not started.
 
 ### Added
 
