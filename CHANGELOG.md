@@ -25,6 +25,10 @@ package version omits the leading `v`.
   release readiness is the current gate.
 - Created the v0.30.0 release-readiness plan. Versioned artifacts, locked build,
   package staging, tag, push, and publication have not started.
+- Classified a compatible lockfile-only dependency update that landed after
+  the completion audit and reran the full deterministic baseline successfully.
+  Focused release-readiness plan review must include this narrow audit refresh
+  before versioned artifacts change.
 
 ### Added
 
