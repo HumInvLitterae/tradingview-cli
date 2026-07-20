@@ -20,6 +20,9 @@ package version omits the leading `v`.
   candidate audit execution is now the current gate.
 - Completed the frozen v0.30 candidate audit and full non-live validation
   without a local release blocker. Focused independent audit review is pending.
+- Completed focused independent review of the v0.30 audit with no finding,
+  release blocker, required refactor, or live rerun. The audit is archived and
+  release readiness is the current gate.
 
 ### Added
 
