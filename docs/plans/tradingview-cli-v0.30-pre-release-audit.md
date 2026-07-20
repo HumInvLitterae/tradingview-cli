@@ -37,13 +37,17 @@ requires its own ExecPlan.
   synchronized current planning state.
 - [x] (2026-07-20) Obtained focused independent plan review with no blocking
   finding. The execution-time candidate counts must be refreshed from HEAD.
-- [ ] Freeze and classify the exact `v0.29.0..HEAD` candidate.
-- [ ] Audit Replay screenshot attachment and post-step running-state contracts
+- [x] (2026-07-20) Froze candidate `62ea01c`: 20 commits, 26 changed
+  paths, no manifest, lockfile, workflow, or `mise.toml` change.
+- [x] (2026-07-20) Audited Replay screenshot attachment and post-step
+  running-state contracts
   end to end.
-- [ ] Prove test-only investigation boundaries and maintained defers.
-- [ ] Audit public docs, packaged guidance, release-package inclusion, and
+- [x] (2026-07-20) Proved test-only investigation boundaries and maintained
+  defers without rerunning ignored live tests.
+- [x] (2026-07-20) Audited public docs, packaged guidance, release-package inclusion, and
   architecture ownership.
-- [ ] Run focused tests and the complete non-live validation baseline.
+- [x] (2026-07-20) Ran focused tests and the complete non-live validation
+  baseline; every gate was green.
 - [ ] Obtain focused independent audit review, record the final outcome, and
   archive before release readiness.
 
@@ -89,6 +93,11 @@ remaining local work item.
   emitting the step event. On a broken pipe, that step's PNG may remain even
   though its JSONL event was not delivered; no subsequent step runs.
 
+- Observation: the final candidate contains 20 commits and 26 changed paths,
+  one commit and one path more than the plan-creation snapshot.
+  Evidence: `git rev-list --count v0.29.0..HEAD` returned 20 and the refreshed
+  name-only inventory contained 26 paths at reviewed HEAD `62ea01c`.
+
 ## Decision Log
 
 - Decision: freeze the v0.30 candidate after one product slice and two reviewed
@@ -118,14 +127,42 @@ remaining local work item.
 
 ## Outcomes & Retrospective
 
-Pending execution and focused audit review.
+The frozen candidate at `62ea01c` contains 20 commits and 26 changed paths.
+Production behavior changes are limited to Replay screenshot attachment and
+the post-step running-state correction. Cargo manifests, `Cargo.lock`, GitHub
+workflows, and `mise.toml` are unchanged. The two large measurement modules are
+included only under `#[cfg(test)]` and add no ordinary command or runtime
+policy.
+
+Replay controls were traced from CLI parsing through pre-connect validation,
+deterministic path planning, successful step handling, one capture attempt,
+create-new persistence, attachment composition, counters, JSONL emission, and
+summary. Existing destinations remain untouched, partial writes remove only
+their newly created file, screenshot errors are sanitized and independent from
+Replay failure, and standalone screenshot overwrite behavior is unchanged.
+The `replay_left_running` correction reaches the summary through the existing
+normalizer without adding evaluate, polling, retry, or timeout behavior.
+
+Focused tests passed: Replay log 15, Replay operations 19, screenshot 24,
+Desktop Replay contracts 7, chart-read latency fixtures 8 with one ignored live
+test, and renderer foreground fixtures 8 with one ignored live test. The full
+workspace baseline passed with CDP 45 passed and one ignored, CLI unit 465
+passed and five ignored, Desktop CLI contracts 100 passed, and all remaining
+suites and doc tests green. Formatting, strict workspace Clippy, metadata,
+public hygiene over 623 tracked files, package-script syntax, contributor-guide
+parity, workflow YAML parsing, and diff hygiene passed.
+
+Staging the current debug binary produced 46 files with exactly eight runtime
+skills under each agent skill root. Plans, notes, the local ledger,
+development-only skills, and live artifacts were absent. No release-blocking
+architecture refactor or contract defect was found locally. Focused independent
+audit review is the remaining gate before archive and release readiness.
 
 ## Context and Orientation
 
 The latest release is `v0.29.0`, tagged at commit `a774142`. The workspace
-version remains `0.29.0` until release readiness. At plan creation,
-`v0.29.0..HEAD` contains 18 commits and 25 changed paths. The exact numbers are
-evidence to refresh at audit execution, not permanent assumptions.
+version remains `0.29.0` until release readiness. The frozen audit candidate is
+`62ea01c` and `v0.29.0..62ea01c` contains 20 commits and 26 changed paths.
 
 `crates/cli/src/cli.rs` defines Replay CLI options. `crates/cli/src/app/runner.rs`
 forwards them to `crates/cli/src/app/replay_log.rs`, which validates artifact
@@ -280,3 +317,7 @@ until release readiness.
 
 2026-07-20: Initial plan created after Replay screenshot attachment focused
 correction/evidence review completed green and all promoted v0.30 work closed.
+
+2026-07-20: Focused plan review was green. Audit execution refreshed the
+candidate to `62ea01c`, 20 commits, and 26 paths; all focused, full non-live,
+package, hygiene, and architecture gates completed without a local blocker.
