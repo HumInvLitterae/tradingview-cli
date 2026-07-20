@@ -7,6 +7,8 @@ package version omits the leading `v`.
 
 ## Unreleased
 
+## v0.30.0 - 2026-07-20
+
 ### Planning
 
 - Selected explicit Replay chart-screenshot attachment as the v0.30 retained-
@@ -29,6 +31,9 @@ package version omits the leading `v`.
   the completion audit and reran the full deterministic baseline successfully.
   Focused release-readiness plan review must include this narrow audit refresh
   before versioned artifacts change.
+- Completed focused plan review and prepared the v0.30.0 release artifacts,
+  locked build, and explicit 46-file package. Full local validation is green;
+  focused release-readiness review remains before owner-controlled publication.
 
 ### Added
 
