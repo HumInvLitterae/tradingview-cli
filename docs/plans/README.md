@@ -19,7 +19,9 @@ selected Replay chart-screenshot attachment. Its implementation, approved
 two-step smoke, narrow `replay_left_running` correction, and focused
 correction/evidence review are complete, and the plan is archived. The current
 ExecPlan is `tradingview-cli-v0.30.0-release-readiness.md`; focused plan review
-is pending. A post-audit compatible lockfile-only dependency update has been
+and local artifact preparation are complete. The locked build, 46-file package,
+and full validation are green; focused release-readiness review is pending. A
+post-audit compatible lockfile-only dependency update has been
 classified, and the full deterministic baseline is green on that refreshed
 candidate; the focused review must include this narrow dependency refresh. The
 v0.30 completion and architecture

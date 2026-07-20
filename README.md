@@ -24,7 +24,7 @@ non-developer walkthrough from download to first checks, read the
 [getting-started guide](docs/getting-started.md) or the
 [Japanese getting-started guide](docs/ja/getting-started.md).
 
-Version tags such as `v0.29.0` publish native archives like:
+Version tags such as `v0.30.0` publish native archives like:
 
 - `tv-<tag>-x86_64-unknown-linux-gnu.tar.gz`
 - `tv-<tag>-x86_64-apple-darwin.tar.gz`

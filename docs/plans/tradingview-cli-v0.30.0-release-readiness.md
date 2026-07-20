@@ -37,16 +37,17 @@ creation, branch or tag push, workflow mutation, or GitHub Release publication.
 - [x] (2026-07-20) Classified the post-audit `6c0a1bd` lockfile-only dependency
   update and reran the full deterministic baseline on the dependency-bearing
   candidate; all gates are green.
-- [ ] Obtain focused independent plan review.
-- [ ] Ground the exact release candidate and verify version, dependency,
+- [x] (2026-07-20) Completed focused independent plan review; the dependency
+  refresh and release artifact plan are green with no finding.
+- [x] (2026-07-20) Grounded the exact release candidate and verified version, dependency,
   workflow, package, and stash state.
-- [ ] Bump the workspace and seven local lockfile package versions to `0.30.0`.
-- [ ] Cut the changelog and add curated `docs/releases/v0.30.0.md` notes.
-- [ ] Update the README release asset example.
-- [ ] Run four pinned JavaScript gates, the complete Rust baseline, metadata,
+- [x] (2026-07-20) Bumped the workspace and seven local lockfile package versions to `0.30.0`.
+- [x] (2026-07-20) Cut the changelog and added curated `docs/releases/v0.30.0.md` notes.
+- [x] (2026-07-20) Updated the README release asset example.
+- [x] (2026-07-20) Ran four pinned JavaScript gates, the complete Rust baseline, metadata,
   and a locked release build.
-- [ ] Stage and inspect the package; verify source and staged binary versions.
-- [ ] Run hygiene, workflow, stale-version, package, parity, and diff checks.
+- [x] (2026-07-20) Staged and inspected the 46-file package; both source and staged binaries report `tv 0.30.0`.
+- [x] (2026-07-20) Ran hygiene, workflow, stale-version, package, parity, and diff checks.
 - [ ] Obtain focused release-readiness review and stop before remote release
   operations.
 
@@ -123,7 +124,23 @@ drift, or local release blocker remains. Publication stays owner-controlled.
 
 ## Outcomes & Retrospective
 
-Pending artifact preparation, validation, and focused review.
+Release artifacts are prepared locally. The workspace and all seven local
+packages report `0.30.0`; the reviewed third-party dependency patches remain
+unchanged. Four pinned Node.js contracts passed. Strict workspace Clippy, the
+full workspace suite and doctests, Cargo metadata, and the locked release build
+are green. The CLI unit suite recorded 465 passed and 5 ignored, Desktop CLI
+contracts recorded 100 passed, and CDP recorded 45 passed and 1 ignored.
+
+Both source and staged binaries report `tv 0.30.0`. The staged package contains
+exactly 46 files and eight runtime skills under each of `.agents/skills` and
+`.claude/skills`, with plans, notes, the continuity ledger, and development-only
+skills absent. Public hygiene passed its self-test and scanned 624 tracked
+files; package syntax, contributor-guide parity, workflow YAML, stale-version,
+and diff checks are green.
+
+Focused release-readiness review is the only remaining local gate. No tag,
+push, workflow execution, GitHub Release publication, live Desktop operation,
+or stash mutation occurred.
 
 ## Context and Orientation
 
@@ -298,3 +315,8 @@ from `0.29.0` to `0.30.0`; third-party dependency state remains fixed.
 
 2026-07-20: Initial release-readiness plan created after the independently
 reviewed v0.30 completion audit was archived with no release blocker.
+
+2026-07-20: Focused plan review accepted the narrow dependency refresh without
+reopening the completion audit. Release artifacts, the locked build, the
+46-file package, and all local validation gates are now complete; focused
+release-readiness review remains pending.
