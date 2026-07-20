@@ -30,8 +30,9 @@ Replay, or become a general Replay export.
   attachments succeeded, file sizes matched JSONL, and Replay was stopped.
 - [x] (2026-07-20) Corrected an existing `replay_left_running` false report
   exposed by the smoke by returning the post-step started boolean from the
-  existing Replay expression. Focused correction review is pending.
-- [ ] Obtain focused correction/evidence review and archive.
+  existing Replay expression.
+- [x] (2026-07-20) Completed focused correction/evidence review with no
+  finding. No additional live run was required, and this plan is archived.
 
 ## Milestones
 
@@ -109,8 +110,16 @@ false even though Replay remained active until the explicit stop. The step
 expression verified `isReplayStarted()` before mutation but did not include its
 post-step boolean in the normalized payload, so the summary treated null as
 false. The correction returns that boolean from the same expression without an
-extra evaluation. Deterministic review is required before closeout; no automatic
-live rerun is authorized.
+extra evaluation. Focused correction/evidence review traced the value through
+the model normalizer and summary, confirmed the smoke evidence, and found no
+remaining issue. A repeat live run would not establish an additional contract
+and was not performed.
+
+One artifact-consumption caveat remains intentional: a step screenshot is
+written before its JSONL event is emitted. If the consumer disconnects during
+that emit, the PNG for that step may remain and the PNG count may exceed the
+emitted step-event count by one. No later step or capture runs after the broken
+pipe.
 
 ## Context and Orientation
 
