@@ -13,6 +13,9 @@ package version omits the leading `v`.
   backlog product slice after comparing source ownership, workflow value, and
   mutation risk. Added a self-contained implementation plan; no production
   behavior is changed yet.
+- Started the v0.30 completion and architecture audit after all promoted
+  investigations and the Replay product slice closed. The audit freezes the
+  candidate and separates shipped Replay behavior from test-only evidence.
 
 ### Added
 
