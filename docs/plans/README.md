@@ -18,9 +18,9 @@ mechanism, and no product behavior was promoted. Retained-backlog comparison
 selected Replay chart-screenshot attachment. Its implementation, approved
 two-step smoke, narrow `replay_left_running` correction, and focused
 correction/evidence review are complete, and the plan is archived. The current
-ExecPlan is `tradingview-cli-v0.30-pre-release-audit.md`; focused plan review is
-green, frozen-candidate audit execution and full non-live validation are
-complete, and focused audit review is pending. The consecutive-invocation
+ordered work is v0.30.0 release readiness. The v0.30 completion and architecture
+audit completed independent review without a release blocker or required
+refactor and is archived. The consecutive-invocation
 resilience investigation completed focused evidence review and is archived
 without promoting retry or production behavior. Its stable-target matrix
 completed 104/120 invocations, reproduced expected multi-target refusal, and
@@ -39,6 +39,11 @@ Pre-dispatch retry remains deferred until ordinary operation or a later bounded
 probe records a relevant failure.
 
 Completed current-cycle plans:
+
+- `tradingview-cli-v0.30-pre-release-audit.md`: froze and classified the v0.30
+  candidate, audited Replay attachment and test-only evidence boundaries, and
+  passed the full non-live baseline and independent review without a release
+  blocker. The completed plan now lives under `docs/plans/archives/`.
 
 - `tradingview-cli-replay-screenshot-attachment.md`: added explicit bounded
   Replay step screenshot attachments with deterministic no-overwrite files,
