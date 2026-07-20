@@ -18,6 +18,8 @@ package version omits the leading `v`.
   candidate and separates shipped Replay behavior from test-only evidence.
 - Completed focused review of the v0.30 audit plan with no blocker; frozen-
   candidate audit execution is now the current gate.
+- Completed the frozen v0.30 candidate audit and full non-live validation
+  without a local release blocker. Focused independent audit review is pending.
 
 ### Added
 
