@@ -7,6 +7,23 @@ package version omits the leading `v`.
 
 ## Unreleased
 
+## v0.30.1 - 2026-07-21
+
+### Changed
+
+- Refreshed compatible dependency versions in the locked release graph:
+  `clap` `4.6.2` to `4.6.3`, `clap_derive` `4.6.1` to `4.6.3`, `hyper`
+  `1.10.1` to `1.11.0`, `libc` `0.2.186` to `0.2.187`, and `tokio` `1.53.0`
+  to `1.53.1`. Aligned the direct `clap`, `serde_json`, and `tokio` workspace
+  constraints with the selected compatible versions. No production source,
+  feature, command, output, workflow, or package-content behavior changed.
+
+### Documentation
+
+- Prepared the `v0.30.1` dependency-only release artifacts and explicit
+  46-file package. The complete deterministic release baseline is green;
+  focused release-readiness review is green with no local blocker.
+
 ## v0.30.0 - 2026-07-20
 
 ### Planning

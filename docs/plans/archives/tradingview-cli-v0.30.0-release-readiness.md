@@ -48,8 +48,10 @@ creation, branch or tag push, workflow mutation, or GitHub Release publication.
   and a locked release build.
 - [x] (2026-07-20) Staged and inspected the 46-file package; both source and staged binaries report `tv 0.30.0`.
 - [x] (2026-07-20) Ran hygiene, workflow, stale-version, package, parity, and diff checks.
-- [ ] Obtain focused release-readiness review and stop before remote release
-  operations.
+- [x] (2026-07-20) Obtained focused release-readiness review with no finding or
+  local blocker and stopped before remote release operations.
+- [x] (2026-07-20) Released `v0.30.0` from `afd1f9a`; branch, tag, workflow, and
+  GitHub Release publication were completed outside this local plan.
 
 ## Milestones
 
@@ -138,9 +140,9 @@ skills absent. Public hygiene passed its self-test and scanned 624 tracked
 files; package syntax, contributor-guide parity, workflow YAML, stale-version,
 and diff checks are green.
 
-Focused release-readiness review is the only remaining local gate. No tag,
-push, workflow execution, GitHub Release publication, live Desktop operation,
-or stash mutation occurred.
+Focused release-readiness review completed without a finding or local blocker.
+The prepared commit became the released `v0.30.0` tag. No live Desktop operation
+or stash mutation occurred during release preparation.
 
 ## Context and Orientation
 
