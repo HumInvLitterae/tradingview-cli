@@ -6,6 +6,12 @@ for release and next-phase planning.
 
 ## Current and future plans
 
+The v0.30.1 dependency-only patch is locally release-ready. Its committed
+candidate changes only compatible workspace dependency constraints and resolved
+lock selections. The locked build, 46-file package, full validation, and focused
+release-readiness review are green with no local blocker. Its completed plan and
+the v0.30.0 release-readiness plan are archived.
+
 Chart-read latency attribution completed focused evidence review and is
 archived. Its owner-authorized matrix completed 40/40 trials without failure or
 deadline stop and did not reproduce the earlier subprocess tail. Public timing
@@ -17,13 +23,7 @@ no-go candidates, renderer lifecycle remains deferred pending a concrete new
 mechanism, and no product behavior was promoted. Retained-backlog comparison
 selected Replay chart-screenshot attachment. Its implementation, approved
 two-step smoke, narrow `replay_left_running` correction, and focused
-correction/evidence review are complete, and the plan is archived. The current
-ExecPlan is `tradingview-cli-v0.30.0-release-readiness.md`; focused plan review
-and local artifact preparation are complete. The locked build, 46-file package,
-and full validation are green; focused release-readiness review is pending. A
-post-audit compatible lockfile-only dependency update has been
-classified, and the full deterministic baseline is green on that refreshed
-candidate; the focused review must include this narrow dependency refresh. The
+correction/evidence review are complete, and the plan is archived. The
 v0.30 completion and architecture
 audit completed independent review without a release blocker or required
 refactor and is archived. The consecutive-invocation
