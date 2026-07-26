@@ -19,7 +19,7 @@ publish = false
 
 [workspace.dependencies]
 assert_cmd = "2.2.2"
-base64 = "0.22.1"
+base64 = "0.23.0"
 clap = "4.6.3"
 futures-util = "0.3.33"
 image = { version = "0.25.10", default-features = false }
