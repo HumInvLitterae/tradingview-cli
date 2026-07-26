@@ -6,7 +6,7 @@ license.workspace = true
 publish.workspace = true
 
 [dependencies]
-base64 = { workspace = true }
+base64-simd = { workspace = true }
 futures-util = { workspace = true, features = ["sink"] }
 reqwest = { workspace = true, features = ["json"] }
 serde = { workspace = true, features = ["derive"] }

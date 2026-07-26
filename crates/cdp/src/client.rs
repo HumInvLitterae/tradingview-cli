@@ -4,7 +4,6 @@ use std::{
     time::{Duration, Instant},
 };
 
-use base64::{Engine, engine::general_purpose::STANDARD};
 use futures_util::{SinkExt, StreamExt};
 use serde_json::{Value, json};
 use tokio::net::TcpStream;
@@ -474,12 +473,14 @@ fn screenshot_bytes_from_response(response: &Value) -> Result<Vec<u8>, AppError>
                 "Page.captureScreenshot did not return data",
             )
         })?;
-    STANDARD.decode(data).map_err(|err| {
-        AppError::new(
-            ErrorKind::InternalApiUnavailable,
-            format!("Could not decode screenshot data: {err}"),
-        )
-    })
+    base64_simd::STANDARD
+        .decode_to_vec(data.as_bytes())
+        .map_err(|err| {
+            AppError::new(
+                ErrorKind::InternalApiUnavailable,
+                format!("Could not decode screenshot data: {err}"),
+            )
+        })
 }
 
 fn classify_message(message: Message) -> Result<IncomingMessage, AppError> {
@@ -581,6 +582,28 @@ mod tests {
 
     fn initial_domain_enable_methods() -> &'static [&'static str] {
         &[]
+    }
+
+    #[test]
+    fn screenshot_response_decodes_standard_base64() {
+        let response = json!({ "data": "iVBORw0KGgo=" });
+
+        assert_eq!(
+            screenshot_bytes_from_response(&response).unwrap(),
+            b"\x89PNG\r\n\x1a\n"
+        );
+    }
+
+    #[test]
+    fn screenshot_response_preserves_decode_error_contract() {
+        let error = screenshot_bytes_from_response(&json!({ "data": "not base64!" })).unwrap_err();
+
+        assert_eq!(error.kind, ErrorKind::InternalApiUnavailable);
+        assert!(
+            error
+                .message
+                .starts_with("Could not decode screenshot data:")
+        );
     }
 
     #[test]
