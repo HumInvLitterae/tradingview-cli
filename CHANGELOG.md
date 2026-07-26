@@ -7,6 +7,29 @@ package version omits the leading `v`.
 
 ## Unreleased
 
+## v0.30.2 - 2026-07-27
+
+### Performance
+
+- Replaced the sole direct scalar base64 decoder with `base64-simd` for CDP
+  screenshot payloads. Valid screenshot bytes and malformed-input error
+  classification remain unchanged; this does not claim an end-to-end
+  screenshot latency guarantee.
+
+### Changed
+
+- Refreshed compatible dependency versions in the locked graph, including
+  `cc`, `clap`/`clap_derive`, `libc`, `rustls-pki-types`, `syn`, and
+  `tokio-util`.
+
+### Planning
+
+- Prepared `v0.30.2` release artifacts for the committed dependency refresh
+  and screenshot decoding improvement. The complete local release baseline and
+  explicit 46-file package are green. Focused release-readiness review found no
+  substantive release finding or local blocker. No additional feature is
+  included.
+
 ## v0.30.1 - 2026-07-21
 
 ### Changed

@@ -6,11 +6,15 @@ for release and next-phase planning.
 
 ## Current and future plans
 
-The v0.30.1 dependency-only patch is locally release-ready. Its committed
-candidate changes only compatible workspace dependency constraints and resolved
-lock selections. The locked build, 46-file package, full validation, and focused
-release-readiness review are green with no local blocker. Its completed plan and
-the v0.30.0 release-readiness plan are archived.
+The v0.30.2 dependency and screenshot-decoding patch is locally release-ready.
+The candidate contains one compatible dependency refresh and one internal
+screenshot payload decoding improvement that replaces the sole direct
+`base64` use with `base64-simd`. Commands, JSON contracts, screenshot files,
+and package layout remain unchanged. Versioned artifacts, the locked build,
+the complete deterministic baseline, the inspected 46-file package, and
+focused release-readiness review are green with no local blocker. Its
+completed plan and the v0.30.1 and v0.30.0 release-readiness plans are
+archived.
 
 Chart-read latency attribution completed focused evidence review and is
 archived. Its owner-authorized matrix completed 40/40 trials without failure or
