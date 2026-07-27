@@ -39,6 +39,9 @@ timeout changes, shared sessions, or background work.
 - [x] (2026-07-27) Corrected the lifecycle and mapping, fixed the decorator
   contract, specified private production decomposition for deterministic
   tests, and synchronized roadmap and ledger state.
+- [x] (2026-07-28) Corrected the pagination stage spelling to the required
+  public contract, `pagination`, throughout the vocabulary, mapping, enum, and
+  fixture expectations.
 - [ ] Obtain focused plan re-review.
 - [ ] Implement the typed stage mapping and deterministic fixtures.
 - [ ] Synchronize public docs and runtime guidance.
@@ -77,7 +80,7 @@ timeout changes, shared sessions, or background work.
 - Decision: use a closed typed vocabulary:
   `symbol_search`, `request_prepare`, `websocket_connect`, `session_setup`,
   `series_setup`, `response_wait`, `protocol`, `heartbeat_send`,
-  `pagination_send`, `source_result`, and `source_unknown`.
+  `pagination`, `source_result`, and `source_unknown`.
   Rationale: each value corresponds to a materially different observed
   boundary while remaining free of endpoint, symbol, method-name, and payload
   data. `source_unknown` is a fail-closed fallback, not permission to retry.
@@ -168,7 +171,7 @@ The required mapping is:
 - malformed frame, protocol parse failure, or provider
   symbol/series/protocol error: `protocol`;
 - heartbeat pong send failure: `heartbeat_send`;
-- `request_more_data` send failure: `pagination_send`;
+- `request_more_data` send failure: `pagination`;
 - any `Ok(BarsResult)` that reaches the facade with zero bars:
   `source_result`, regardless of `BarsResult.completed`;
 - any genuinely unclassified source boundary: `source_unknown`.
@@ -309,8 +312,8 @@ does not authorize retry. Recommended interpretation is:
   failure and do not recommend changing the request;
 - `series_setup`: report a request-specific symbol/timeframe/series boundary,
   but do not infer invalid input or non-dispatch;
-- heartbeat or pagination send stages: preserve the failed outcome and any
-  partial bars because dispatch may be uncertain;
+- `heartbeat_send` or `pagination`: preserve the failed outcome and any partial
+  bars because dispatch may be uncertain;
 - `response_wait`: report timeout/close/read evidence and preserve any partial
   source details;
 - `protocol`: do not change symbol, timeframe, or source automatically;
@@ -407,7 +410,7 @@ Define a private bars-owned enum equivalent to:
         ResponseWait,
         Protocol,
         HeartbeatSend,
-        PaginationSend,
+        Pagination,
         SourceResult,
         SourceUnknown,
     }
@@ -444,3 +447,9 @@ lifecycle now matches source, `switch_timezone` and all zero-bar results have
 unique mappings, the decorator works before `BarsRequest` creation, private
 production helper seams make exact fault injection executable, and durable
 state is synchronized for re-review.
+
+Revision note (2026-07-28): corrected the remaining public vocabulary mismatch.
+The pagination send boundary is now named `pagination` / `Pagination`
+throughout the decision, mapping, implementation sketch, guidance, and
+deterministic fixture contract. No behavior, recovery policy, or implementation
+scope changed.

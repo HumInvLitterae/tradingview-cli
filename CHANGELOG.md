@@ -38,6 +38,8 @@ package version omits the leading `v`.
   vocabulary remains unchanged.
 - Corrected the diagnostics plan's facade lifecycle, stage mapping, private
   deterministic injection seams, and durable state before implementation.
+- Aligned the planned bars pagination failure stage on the reviewed public
+  vocabulary value `pagination`.
 
 ## v0.30.2 - 2026-07-27
 
