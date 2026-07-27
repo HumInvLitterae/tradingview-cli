@@ -36,6 +36,8 @@ package version omits the leading `v`.
 - Added the Desktop-free bars transport-diagnostics ExecPlan with a separate
   `source_failure_stage` contract so the existing Desktop CDP `failure_stage`
   vocabulary remains unchanged.
+- Corrected the diagnostics plan's facade lifecycle, stage mapping, private
+  deterministic injection seams, and durable state before implementation.
 
 ## v0.30.2 - 2026-07-27
 
