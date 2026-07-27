@@ -63,6 +63,13 @@ private package logic.
   once. The first child returned a structured `connection` failure after about
   two seconds; the harness stopped with one attempt, zero completed cases, and
   no retry, substitution, or remaining-case execution.
+- [x] (2026-07-27) Ran a bounded production-binary comparison to distinguish a
+  feature defect from the common WebSocket path. Existing five-minute recent
+  and date-range reads succeeded, as did one-minute single-window,
+  additional-window, and closure-boundary reads. The one-minute additional
+  range returned 780 bars with one `request_more_data` window; the
+  closure-boundary range returned 390 bars with explicit partial
+  `source_exhausted` classification.
 - [ ] Obtain focused evidence review and archive the plan.
 
 ## Surprises & Discoveries
@@ -124,12 +131,16 @@ preserving every existing transport and `bars.v1` payload boundary. A
 dedicated ignored harness now fixes the three bounded live cases and emits
 aggregate-only evidence. Its symbol gate and classification checks now fail
 closed on the contradictions found by focused review. Narrow re-review is
-green. The single authorized live run stopped on the first child's structured
-`connection` failure after about two seconds, before any range classification
-was available; the other two cases were not run. Focused evidence review must
-decide whether this limited result closes the current run or justifies a
-separately approved follow-up. No dependency, stash, version, tag, push,
-workflow, or GitHub Release has changed.
+green. The first authorized harness run stopped on a structured `connection`
+failure before range classification. A subsequent bounded production-binary
+comparison showed the common five-minute path and all three intended
+one-minute scenarios succeeding. The evidence supports current-build live
+feasibility: single-window retrieval, one additional 500-bar fetch window, and
+conservative closure-boundary classification all worked. The initial failure
+is therefore classified as a transient common WebSocket connection failure,
+not a one-minute date-range defect. Focused closeout review and archive remain.
+No dependency, stash, version, tag, push, workflow, or GitHub Release has
+changed.
 
 ## Context and Orientation
 

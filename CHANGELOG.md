@@ -17,9 +17,10 @@ package version omits the leading `v`.
 ### Tests
 
 - Added an explicitly gated, aggregate-only three-case live harness for
-  one-minute date ranges. Its single owner-authorized run stopped on the first
-  child with a structured connection failure and did not retry or execute
-  replacement cases; focused evidence review remains pending.
+  one-minute date ranges. Its first authorized run stopped on a structured
+  connection failure without retry. A bounded production-binary comparison
+  then confirmed single-window, additional-window, and closure-boundary
+  behavior without changing production code.
 
 ### Planning
 
