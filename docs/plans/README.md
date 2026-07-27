@@ -6,8 +6,9 @@ for release and next-phase planning.
 
 ## Current and future plans
 
-There is no active implementation ExecPlan. The next ordered v0.31 item is the
-downstream contract handoff for bounded one-minute date ranges.
+There is no active implementation ExecPlan. The bounded one-minute date-range
+downstream contract handoff is complete. The next ordered v0.31 item is a
+bounded Desktop-free bars transport-diagnostics investigation plan.
 
 The one-minute bars date-range plan is archived at
 `archives/tradingview-cli-one-minute-bars-date-range.md`. It added bounded

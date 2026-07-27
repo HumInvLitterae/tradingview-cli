@@ -124,6 +124,13 @@ tv bars NASDAQ:AAPL --timeframe 5 --from 2026-05-20 --to 2026-05-22 --count 1000
 tv bars NASDAQ:AAPL --timeframe 60 --from 2026-05-01 --to 2026-05-22 --count 1000
 ```
 
+The stable one-minute handoff form is:
+
+```bash
+tv bars EXCHANGE:SYMBOL --timeframe 1 \
+  --from YYYY-MM-DD --to YYYY-MM-DD --count 5000
+```
+
 `tv bars` can resolve a bare symbol such as `AAPL` through Desktop-free
 TradingView symbol search. If the exchange matters, use `EXCHANGE:SYMBOL`,
 such as `NASDAQ:AAPL`. Ask your agent to report `requested_symbol`,
@@ -141,6 +148,12 @@ and can be raised up to 5000. For recent count mode, the maximum stays 500.
 Read `range_fetch_summary` when you need to know whether the command used
 additional fetch windows, reached the returned-bar safety cap, or stopped
 because the source or bounded wait could not cover the full range.
+Treat a date range as complete from `range_coverage_status` and
+`range_fetch_summary.range_truncated`, not from
+`data_quality.partial_result` alone. The latter can be true when the date range
+is complete but fewer bars exist than the requested `--count`. If a corpus
+needs more than 5,000 bars, request explicit non-overlapping calendar windows
+and merge them downstream by period-start timestamp.
 
 ## 5. Start TradingView Desktop for chart workflows
 

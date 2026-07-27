@@ -124,6 +124,9 @@ Do not use `TV_CDP_TARGET_ID`; explicit target handoff is `--target-id`.
   for reproducible older intraday, daily, weekly, or monthly samples; other
   intraday timeframes remain guarded in date-range mode. `--to` is an
   inclusive calendar date.
+  For one-minute downstream preparation, prefer
+  `tv bars EXCHANGE:SYMBOL --timeframe 1 --from YYYY-MM-DD --to YYYY-MM-DD
+  --count 5000`.
   Read `summary` / `range`, `requested_range` / `returned_range`,
   `range_coverage_status`, and `range_alignment` before inspecting raw
   `bars[]`. In date-range mode, `--count` defaults to 500 and may be raised
@@ -132,6 +135,11 @@ Do not use `TV_CDP_TARGET_ID`; explicit target handoff is `--target-id`.
   `range_fetch_summary` for fetch-window count, `request_more_data` count,
   returned-count caps, and truncation reasons, and read
   `source_availability` / `wait_summary` when bars are partial or unavailable.
+  Determine date-range completeness from `range_coverage_status` and
+  `range_fetch_summary.range_truncated`, not from
+  `data_quality.partial_result` alone. For more than 5,000 bars, use explicit
+  non-overlapping calendar windows and merge them downstream by period-start
+  timestamp.
 - Bounded watch compare uses `tv watch compare <SYMBOL>...`. It is a
   Desktop-free scanner-backed JSONL workflow with `contract_version:
   "watch_compare.v1"`, not a daemon, selected-chart feed, ranking, or trading
