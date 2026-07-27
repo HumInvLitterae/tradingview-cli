@@ -807,6 +807,38 @@ mod tests {
     }
 
     #[test]
+    fn finalize_result_preserves_one_minute_range_boundaries_and_count_cap() {
+        let request =
+            validate_bars_range_request("NASDAQ:AAPL", "1m", "2020-01-01", "2020-01-01", 2)
+                .unwrap();
+        let from = 1_577_836_800;
+        let to_exclusive = from + 86_400;
+        let result = finalize_result(
+            &request,
+            vec![
+                bar(from - 60),
+                bar(from),
+                bar(from + 60),
+                bar(from + 120),
+                bar(to_exclusive),
+            ],
+            true,
+            BarsWaitSummary::new(&request),
+            1,
+        );
+
+        assert_eq!(request.timeframe, "1");
+        assert_eq!(result.bars.len(), 2);
+        assert_eq!(result.bars[0].time, from);
+        assert_eq!(result.bars[1].time, from + 60);
+        assert_eq!(result.fetch_summary.fetch_window_count, 2);
+        assert_eq!(result.fetch_summary.filtered_count, 3);
+        assert_eq!(result.fetch_summary.returned_count, 2);
+        assert!(result.fetch_summary.range_truncated);
+        assert_eq!(result.fetch_summary.range_truncation_reason, "count_cap");
+    }
+
+    #[test]
     fn finalize_result_reports_request_more_fetch_windows() {
         let request =
             validate_bars_range_request("NASDAQ:AAPL", "1W", "2020-01-01", "2020-12-31", 500)

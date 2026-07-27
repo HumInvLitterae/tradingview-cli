@@ -15,6 +15,7 @@ fn bars_help_explains_stable_desktop_free_boundary() {
         .stdout(predicate::str::contains("--from"))
         .stdout(predicate::str::contains("--to"))
         .stdout(predicate::str::contains("date-range"))
+        .stdout(predicate::str::contains("1m"))
         .stdout(predicate::str::contains("5"))
         .stdout(predicate::str::contains("15"))
         .stdout(predicate::str::contains("30"))
@@ -89,7 +90,7 @@ fn bars_rejects_invalid_inputs_before_network() {
 }
 
 #[test]
-fn bars_rejects_invalid_date_range_inputs_before_network() {
+fn bars_validates_date_range_inputs_before_network() {
     let missing_to = tv()
         .env("TV_CDP_PORT", "9")
         .args(["bars", "NASDAQ:AAPL", "--from", "2020-01-01"])
@@ -139,30 +140,6 @@ fn bars_rejects_invalid_date_range_inputs_before_network() {
     assert_eq!(value["error"]["details"]["from"], "2020-03-31");
     assert_eq!(value["error"]["details"]["to"], "2020-01-01");
 
-    let unsupported_intraday = tv()
-        .env("TV_CDP_PORT", "9")
-        .args([
-            "bars",
-            "NASDAQ:AAPL",
-            "--timeframe",
-            "1",
-            "--from",
-            "2020-01-01",
-            "--to",
-            "2020-03-31",
-        ])
-        .assert()
-        .failure()
-        .code(1);
-    let value = stderr_json(&unsupported_intraday);
-    assert_eq!(value["command"], "bars");
-    assert_eq!(value["error"]["kind"], "validation");
-    assert_eq!(value["error"]["details"]["requested_timeframe"], "1");
-    assert_eq!(
-        value["error"]["details"]["supported_timeframes"],
-        serde_json::json!(["5", "15", "30", "60", "1D", "1W", "1M"])
-    );
-
     for timeframe in ["3", "45", "120", "180", "240"] {
         let unsupported_intraday = tv()
             .env("TV_CDP_PORT", "9")
@@ -185,7 +162,7 @@ fn bars_rejects_invalid_date_range_inputs_before_network() {
         assert_eq!(value["error"]["details"]["requested_timeframe"], timeframe);
         assert_eq!(
             value["error"]["details"]["supported_timeframes"],
-            serde_json::json!(["5", "15", "30", "60", "1D", "1W", "1M"])
+            serde_json::json!(["1", "5", "15", "30", "60", "1D", "1W", "1M"])
         );
     }
 
@@ -211,7 +188,7 @@ fn bars_rejects_invalid_date_range_inputs_before_network() {
     assert_eq!(value["error"]["kind"], "validation");
     assert_eq!(value["error"]["details"]["maximum"], 5000);
 
-    for timeframe in ["5", "30"] {
+    for timeframe in ["1", "1m", "5", "30"] {
         let accepted_intraday_then_count_error = tv()
             .env("TV_CDP_PORT", "9")
             .args([

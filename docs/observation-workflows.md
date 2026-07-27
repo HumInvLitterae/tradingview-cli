@@ -318,6 +318,7 @@ or make a hidden strategy visible.
 ```bash
 tv bars AAPL --timeframe 1D --count 5
 tv bars NASDAQ:AAPL --timeframe 1D --count 5
+tv bars NASDAQ:AAPL --timeframe 1 --from 2026-05-20 --to 2026-05-20 --count 1000
 tv bars NASDAQ:AAPL --timeframe 5 --from 2026-05-20 --to 2026-05-22 --count 1000
 tv bars NASDAQ:AAPL --timeframe 60 --from 2026-05-01 --to 2026-05-22 --count 1000
 tv bars NASDAQ:CRUS --timeframe 1D --from 2010-01-01 --to 2010-12-31
@@ -334,9 +335,9 @@ symbol search, while explicit `EXCHANGE:SYMBOL` input is used as-is. Report
 the returned bars as evidence so an exchange mismatch is visible. `--count` is
 a safety cap and defaults to 500 in that mode. It can be
 raised up to 5000 for date ranges; recent count mode stays capped at 500.
-Date-range mode currently supports `5`, `15`, `30`, `60`, `1D`, `1W`, and
-`1M`; other intraday timeframes remain guarded. The `--to` value is an
-inclusive calendar date. Read
+Date-range mode currently supports `1` (and its `1m` alias), `5`, `15`, `30`,
+`60`, `1D`, `1W`, and `1M`; other intraday timeframes remain guarded. The
+`--to` value is an inclusive calendar date. Read
 `summary` / `range`,
 `requested_range` / `returned_range`, and `range_coverage_status` for
 requested-vs-returned count and time coverage, then use raw `bars[]` for exact

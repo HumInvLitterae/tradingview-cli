@@ -8,7 +8,7 @@ use super::types::{
     MAX_DATE_RANGE_BAR_COUNT, MAX_RECENT_BAR_COUNT,
 };
 
-const DATE_RANGE_TIMEFRAMES: &[&str] = &["5", "15", "30", "60", "1D", "1W", "1M"];
+const DATE_RANGE_TIMEFRAMES: &[&str] = &["1", "5", "15", "30", "60", "1D", "1W", "1M"];
 
 #[cfg(test)]
 pub(super) fn validate_bars_request(
@@ -77,7 +77,7 @@ pub(super) fn validate_bars_range_request_with_resolution(
     if !DATE_RANGE_TIMEFRAMES.contains(&timeframe.as_str()) {
         return Err(AppError::new(
             ErrorKind::Validation,
-            "bars date-range mode currently supports only 5-minute, 15-minute, 30-minute, 60-minute, daily, weekly, and monthly timeframes",
+            "bars date-range mode currently supports only 1-minute, 5-minute, 15-minute, 30-minute, 60-minute, daily, weekly, and monthly timeframes",
         )
         .with_details(json!({
             "requested_timeframe": timeframe,
@@ -305,6 +305,20 @@ mod tests {
 
     #[test]
     fn validate_range_accepts_intraday_daily_weekly_monthly_dates_and_count_cap() {
+        for timeframe in ["1", "1m"] {
+            let request = validate_bars_range_request(
+                "NASDAQ:AAPL",
+                timeframe,
+                "2020-01-01",
+                "2020-03-31",
+                5000,
+            )
+            .unwrap();
+            assert_eq!(request.timeframe, "1");
+            assert_eq!(request.count, 5000);
+            assert_eq!(request.request_mode_name(), "date_range");
+        }
+
         let request =
             validate_bars_range_request("NASDAQ:AAPL", "5", "2020-01-01", "2020-03-31", 1000)
                 .unwrap();
@@ -380,7 +394,7 @@ mod tests {
             .unwrap_err();
         assert_eq!(err.kind, ErrorKind::Validation);
 
-        for timeframe in ["1", "3", "45", "120", "180", "240"] {
+        for timeframe in ["3", "45", "120", "180", "240"] {
             let err = validate_bars_range_request(
                 "NASDAQ:AAPL",
                 timeframe,
@@ -395,7 +409,7 @@ mod tests {
                     .as_ref()
                     .and_then(|details| details.get("supported_timeframes")),
                 Some(&serde_json::json!([
-                    "5", "15", "30", "60", "1D", "1W", "1M"
+                    "1", "5", "15", "30", "60", "1D", "1W", "1M"
                 ]))
             );
         }

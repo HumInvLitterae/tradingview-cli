@@ -57,8 +57,9 @@ metadata before using it as a candidate universe.
 ## Bars And Events Notes
 
 - `tv bars` is Desktop-free historical bars evidence. Date-range mode supports
-  `5`, `15`, `30`, `60`, `1D`, `1W`, and `1M`; other intraday date-range
-  timeframes remain guarded. Date-range `--count` defaults to 500 and may be
+  `1` (and its `1m` alias), `5`, `15`, `30`, `60`, `1D`, `1W`, and `1M`;
+  other intraday date-range timeframes remain guarded. Date-range `--count`
+  defaults to 500 and may be
   raised to 5000 as a safety cap. Recent count mode remains capped at 500.
 - For `tv bars`, read `requested_symbol`, `resolved_symbol`,
   `symbol_resolution`, `range_coverage_status`, `range_alignment`,
