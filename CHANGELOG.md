@@ -14,6 +14,13 @@ package version omits the leading `v`.
   timestamps, the 5,000 returned-bar cap, existing coverage and truncation
   diagnostics, and guards for the other unsupported intraday timeframes.
 
+### Tests
+
+- Added an explicitly gated, aggregate-only three-case live harness for
+  one-minute date ranges. Its single owner-authorized run stopped on the first
+  child with a structured connection failure and did not retry or execute
+  replacement cases; focused evidence review remains pending.
+
 ### Planning
 
 - Started v0.31 planning around historical bar completeness and reproducible

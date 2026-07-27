@@ -59,8 +59,10 @@ private package logic.
 - [x] (2026-07-27) Focused correction re-review found no remaining findings,
   confirmed both harness blockers closed, and approved requesting owner
   authorization for the exact bounded live smoke.
-- [ ] Run one explicitly gated bounded Desktop-free smoke and record only
-  aggregate public-safe evidence.
+- [x] (2026-07-27) Ran the owner-authorized bounded Desktop-free smoke exactly
+  once. The first child returned a structured `connection` failure after about
+  two seconds; the harness stopped with one attempt, zero completed cases, and
+  no retry, substitution, or remaining-case execution.
 - [ ] Obtain focused evidence review and archive the plan.
 
 ## Surprises & Discoveries
@@ -121,10 +123,13 @@ Date-range validation accepts normalized `1` and the existing `1m` alias while
 preserving every existing transport and `bars.v1` payload boundary. A
 dedicated ignored harness now fixes the three bounded live cases and emits
 aggregate-only evidence. Its symbol gate and classification checks now fail
-closed on the contradictions found by focused review. Narrow re-review is green
-and the separately gated live smoke awaits explicit owner approval. No
-dependency, live source, stash, version, tag, push, workflow, or GitHub Release
-has changed.
+closed on the contradictions found by focused review. Narrow re-review is
+green. The single authorized live run stopped on the first child's structured
+`connection` failure after about two seconds, before any range classification
+was available; the other two cases were not run. Focused evidence review must
+decide whether this limited result closes the current run or justifies a
+separately approved follow-up. No dependency, stash, version, tag, push,
+workflow, or GitHub Release has changed.
 
 ## Context and Orientation
 
