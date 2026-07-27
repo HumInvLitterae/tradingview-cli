@@ -11,7 +11,8 @@ The current ExecPlan is
 date-range downstream contract handoff is complete. The active plan adds
 public-safe Desktop-free bars source-stage attribution without adding retry,
 reconnect, timeout changes, fallback, shared sessions, or background work.
-Focused plan-review corrections are applied and focused re-review is pending.
+Focused plan-review corrections, including the narrow pagination-stage naming
+correction, are applied and focused re-review is pending.
 
 The one-minute bars date-range plan is archived at
 `archives/tradingview-cli-one-minute-bars-date-range.md`. It added bounded
