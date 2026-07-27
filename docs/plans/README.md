@@ -15,9 +15,10 @@ timeout changes, fallback, shared sessions, or background work.
 The v0.31 retained-backlog comparison is complete with no additional product
 promotion. Its evidence is recorded in
 `docs/notes/v0.31-retained-backlog-product-selection.md`. The current plan is
-`tradingview-cli-v0.31-pre-release-audit.md`. Its commit-classification and
-repository-state corrections are applied; narrow focused re-review is pending
-before the frozen-candidate audit may run.
+`tradingview-cli-v0.31-pre-release-audit.md`. Narrow plan re-review is green;
+the 16-commit, 29-path audit and full deterministic validation are complete.
+Focused independent audit review is pending before archive and release
+readiness.
 
 The one-minute bars date-range plan is archived at
 `archives/tradingview-cli-one-minute-bars-date-range.md`. It added bounded

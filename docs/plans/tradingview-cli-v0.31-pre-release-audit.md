@@ -36,17 +36,21 @@ requires its own ExecPlan.
   additional promotion because none met its recorded trigger.
 - [x] (2026-07-28) Created this completion and architecture audit ExecPlan and
   synchronized current planning state.
-- [ ] Obtain focused independent plan review before auditing the candidate.
-  The first review found one reproducibility gap; commit-level classification
-  and start/end repository-state checks are now specified for narrow re-review.
-- [ ] Freeze the exact candidate commit, commit count, changed paths, Cargo
-  state, and production/test/docs classification.
-- [ ] Audit one-minute date-range behavior and downstream guidance end to end.
-- [ ] Audit Desktop-free bars failure-stage behavior and non-recovery
-  boundaries end to end.
-- [ ] Audit retained defers, public documentation, packaging, and architecture
-  ownership.
-- [ ] Run focused tests and the complete deterministic validation baseline.
+- [x] (2026-07-28) Obtained focused independent plan review. One
+  reproducibility gap was corrected by adding commit-level classification and
+  start/end repository-state checks; narrow re-review found no remaining
+  finding and authorized audit execution.
+- [x] (2026-07-28) Froze candidate `336d229`: 16 commits, 29 changed paths,
+  no Cargo manifest, lockfile, workflow, or `mise.toml` change, with clean
+  tracked and staged state and the ignored ledger read directly.
+- [x] (2026-07-28) Audited one-minute date-range behavior and downstream
+  guidance end to end without rerunning live evidence.
+- [x] (2026-07-28) Audited Desktop-free bars failure-stage behavior,
+  deterministic lifecycle fixtures, and non-recovery boundaries end to end.
+- [x] (2026-07-28) Audited retained defers, public documentation, packaging,
+  private-data hygiene, and architecture ownership.
+- [x] (2026-07-28) Ran focused tests and the complete deterministic validation
+  baseline; every gate was green and live tests remained ignored.
 - [ ] Obtain focused independent audit review, record the outcome, and archive
   this plan before release readiness.
 
@@ -70,6 +74,11 @@ requires its own ExecPlan.
   Evidence: explicit bounded windows cover the current historical workload,
   and event, Pine, Screener, and alert candidates still lack their required
   consumer or ownership boundary.
+
+- Observation: the candidate contains no dependency or release-tooling change.
+  Evidence: `git diff --quiet v0.30.2..336d229 -- Cargo.toml Cargo.lock .github
+  mise.toml` exited zero. The 16 commits change 29 paths across the two bars
+  slices and their public, test, evidence, and planning surfaces.
 
 ## Decision Log
 
@@ -102,11 +111,16 @@ requires its own ExecPlan.
 
 ## Outcomes & Retrospective
 
-The audit has not run yet. Completion requires an exact frozen-candidate
-inventory, end-to-end contract traces for both promoted bars slices, the full
-deterministic baseline, and green focused independent audit review. The final
-entry must state any corrections made, whether an architecture blocker remains,
-and whether release readiness is the only remaining local work item.
+The candidate audit and full deterministic baseline are complete. The exact
+16-commit, 29-path inventory is classified below. One-minute date ranges and
+Desktop-free bars source-stage diagnostics preserve their reviewed contracts,
+and no retry, fallback, shared ownership, dependency change, release operation,
+or private tracked evidence was found. No release-blocking defect or required
+architecture refactor was identified locally.
+
+Focused independent audit review remains the sole completion gate. This plan
+must not be archived and release readiness must not begin until that review is
+green.
 
 ## Context and Orientation
 
@@ -355,6 +369,54 @@ The owner-approved one-minute production-binary comparison is already reviewed
 evidence. Its three scenarios succeeded after the initial common-path
 connection failure, and it must not be rerun during this audit.
 
+The frozen start was `336d2295a0905e5f48c7ce44dba27c6c21e2edad`,
+16 commits and 29 changed paths after `v0.30.2`. The commit classification is:
+
+| Commit | Subject | Primary category | Secondary category and contract impact |
+| --- | --- | --- | --- |
+| `661be88` | Add v0.31 roadmap | docs/plan evidence | Creates roadmap, inventory, and one-minute ExecPlan; no runtime behavior. |
+| `922614a` | Add one-minute bars date ranges | one-minute production | Updates validation, transport, CLI contract, public docs, and runtime guidance for normalized `1`/`1m`. |
+| `d685faa` | Complete one-minute range evidence | one-minute test/live evidence | Adds deterministic range fixtures and bounded ignored harness; payload/transport edits are test and contract shaping for the same slice. |
+| `e1958f0` | Tighten one-minute smoke validation | one-minute test/live evidence | Strengthens public-safe gates and aggregate consistency; no production path. |
+| `72fe71a` | Record one-minute smoke review | docs/plan evidence | Records review gate only. |
+| `d38021b` | Record one-minute live smoke outcome | docs/plan evidence | Records the first bounded aggregate failure without changing code. |
+| `9ef84e6` | Record one-minute live validation | docs/plan evidence | Records successful bounded comparison and candidate interpretation. |
+| `a72bcd3` | Archive one-minute bars range plan | docs/plan evidence | Moves the completed ExecPlan and synchronizes state. |
+| `d832a84` | Complete one-minute bars handoff | public/runtime guidance | Fixes stable invocation, field precedence, and bounded multi-window downstream guidance. |
+| `2c19e67` | Add bars transport diagnostics plan | docs/plan evidence | Creates the diagnostics investigation; no runtime behavior. |
+| `781189a` | Correct bars diagnostics contract | docs/plan evidence | Corrects planned lifecycle and deterministic injection boundaries. |
+| `5ec444c` | Align bars pagination stage contract | docs/plan evidence | Fixes the planned public vocabulary to `pagination`. |
+| `0aaece7` | Add bars source failure stages | bars-diagnostics production | Adds the 11-value Desktop-free bars error stage mapping, deterministic transport fixtures, CLI contract, docs, and guidance. |
+| `bbdd2e9` | Cover bars source-result boundary | bars-diagnostics deterministic evidence | Adds direct zero-result facade coverage and durable-state correction. |
+| `b8ae52a` | Add v0.31 completion audit | docs/plan evidence | Archives diagnostics, records retained no-promotion, and creates this audit. |
+| `336d229` | Make v0.31 audit freeze reproducible | docs/plan evidence | Adds commit-level and start/end repository-state requirements after plan review. |
+
+The 29 changed paths divide into seven production/test paths under
+`crates/`, four runtime skill references, `packaging/agent/AGENTS.md`, public
+README and stable docs, two archived implementation plans, this active audit
+plan, the retained-selection note, roadmap/inventory state, and CHANGELOG.
+There are no unclassified paths.
+
+Focused validation produced:
+
+    tradingview-market bars: 38 passed, 1 ignored
+    cli_contract_bars: 4 passed
+    live_bars: 4 deterministic passed, 2 live ignored
+    tradingview-cdp: 47 passed, 1 ignored
+    tradingview-cli unit: 465 passed, 5 ignored
+    desktop CLI contracts: 100 passed
+    tradingview-market full: 103 passed, 2 ignored
+    tradingview-core: 1 passed
+    tradingview-model: 54 passed
+    tradingview-pine: 25 passed
+    tradingview-scanner: 36 passed
+    doctests: 4 passed
+
+Formatting, strict workspace Clippy, all workspace tests, metadata, public
+hygiene over 635 tracked files, package-script syntax, contributor-guide
+parity, both workflow YAML files, staged diff checks, and diff hygiene were
+green. No ignored live test was run.
+
 ## Interfaces and Dependencies
 
 This audit adds no interface or dependency. It verifies these existing
@@ -390,3 +452,8 @@ Revision note (2026-07-28): After focused plan review, added an explicit
 per-commit classification artifact and start/end checks for HEAD, tracked
 worktree state, staged state, and the ignored `CONTINUITY.md` ledger. This
 closes the review's reproducibility gap without changing audit scope.
+
+Revision note (2026-07-28): After green narrow re-review, executed the audit at
+frozen production/docs candidate `336d229`, classified all 16 commits and 29
+paths, traced both promoted contracts and exclusions, and recorded a green full
+deterministic baseline. Focused independent audit review is now the only gate.

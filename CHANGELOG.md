@@ -62,6 +62,10 @@ package version omits the leading `v`.
 - Added per-commit candidate classification and start/end HEAD, tracked,
   staged, and ignored-ledger checks after focused plan review. Narrow re-review
   is pending before audit execution.
+- Completed the frozen 16-commit, 29-path v0.31 candidate audit and full
+  deterministic baseline after green narrow plan re-review. No release blocker
+  or required architecture refactor was identified locally; focused independent
+  audit review is pending.
 
 ## v0.30.2 - 2026-07-27
 
