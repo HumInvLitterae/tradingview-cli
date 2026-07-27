@@ -355,7 +355,7 @@ pub(super) async fn fetch_bars_ws(request: &BarsRequest) -> Result<BarsResult, A
                         wait_summary.series_completed_seen = true;
                         if should_request_more(request, &bars) {
                             let oldest_time = bars.first().map(|bar| bar.time);
-                            if oldest_time.is_some() && oldest_time == last_more_oldest {
+                            if should_stop_for_no_progress(last_more_oldest, oldest_time) {
                                 break 'read_loop;
                             }
                             last_more_oldest = oldest_time;
@@ -607,6 +607,10 @@ fn should_request_more(request: &BarsRequest, bars: &[super::types::Bar]) -> boo
     oldest_time > from_time
 }
 
+fn should_stop_for_no_progress(previous_oldest: Option<i64>, oldest: Option<i64>) -> bool {
+    oldest.is_some() && oldest == previous_oldest
+}
+
 fn finalize_result(
     request: &BarsRequest,
     mut bars: Vec<super::types::Bar>,
@@ -807,9 +811,9 @@ mod tests {
     }
 
     #[test]
-    fn finalize_result_preserves_one_minute_range_boundaries_and_count_cap() {
+    fn finalize_result_preserves_one_minute_range_boundaries() {
         let request =
-            validate_bars_range_request("NASDAQ:AAPL", "1m", "2020-01-01", "2020-01-01", 2)
+            validate_bars_range_request("NASDAQ:AAPL", "1m", "2020-01-01", "2020-01-01", 5000)
                 .unwrap();
         let from = 1_577_836_800;
         let to_exclusive = from + 86_400;
@@ -819,7 +823,7 @@ mod tests {
                 bar(from - 60),
                 bar(from),
                 bar(from + 60),
-                bar(from + 120),
+                bar(to_exclusive - 60),
                 bar(to_exclusive),
             ],
             true,
@@ -828,14 +832,54 @@ mod tests {
         );
 
         assert_eq!(request.timeframe, "1");
-        assert_eq!(result.bars.len(), 2);
+        assert_eq!(result.bars.len(), 3);
         assert_eq!(result.bars[0].time, from);
         assert_eq!(result.bars[1].time, from + 60);
+        assert_eq!(result.bars[2].time, to_exclusive - 60);
         assert_eq!(result.fetch_summary.fetch_window_count, 2);
         assert_eq!(result.fetch_summary.filtered_count, 3);
-        assert_eq!(result.fetch_summary.returned_count, 2);
-        assert!(result.fetch_summary.range_truncated);
-        assert_eq!(result.fetch_summary.range_truncation_reason, "count_cap");
+        assert_eq!(result.fetch_summary.returned_count, 3);
+        assert!(!result.fetch_summary.range_truncated);
+        assert_eq!(result.fetch_summary.range_truncation_reason, "none");
+    }
+
+    #[test]
+    fn one_minute_range_reports_timeout_and_source_exhaustion_without_synthetic_bars() {
+        let request =
+            validate_bars_range_request("NASDAQ:AAPL", "1", "2020-01-04", "2020-01-05", 500)
+                .unwrap();
+
+        let timeout = finalize_result(
+            &request,
+            vec![bar(1_578_182_400)],
+            false,
+            BarsWaitSummary::new(&request),
+            1,
+        );
+        assert!(timeout.fetch_summary.range_truncated);
+        assert_eq!(timeout.fetch_summary.range_truncation_reason, "timeout");
+
+        let closure_shaped = finalize_result(
+            &request,
+            Vec::new(),
+            true,
+            BarsWaitSummary::new(&request),
+            1,
+        );
+        assert!(closure_shaped.bars.is_empty());
+        assert!(closure_shaped.fetch_summary.range_truncated);
+        assert_eq!(
+            closure_shaped.fetch_summary.range_truncation_reason,
+            "source_exhausted"
+        );
+    }
+
+    #[test]
+    fn repeated_oldest_timestamp_stops_request_more_without_resetting_progress() {
+        assert!(!should_stop_for_no_progress(None, Some(100)));
+        assert!(!should_stop_for_no_progress(Some(100), Some(99)));
+        assert!(should_stop_for_no_progress(Some(100), Some(100)));
+        assert!(!should_stop_for_no_progress(Some(100), None));
     }
 
     #[test]

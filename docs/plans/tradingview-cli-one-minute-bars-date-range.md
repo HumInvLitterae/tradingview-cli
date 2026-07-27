@@ -36,10 +36,16 @@ private package logic.
 - [x] (2026-07-27) Owner directed implementation after reviewing and
   correcting the roadmap/task inventory; no separate external plan-review
   turn was required.
-- [x] (2026-07-27) Implemented the exact validation, tests, help, docs, and runtime-skill
-  changes.
+- [x] (2026-07-27) Implemented the initial validation, range-boundary test,
+  help, docs, and runtime-skill changes.
 - [x] (2026-07-27) Ran focused bars validation/transport/payload/CLI contract
   tests, strict Clippy, and the complete workspace test baseline successfully.
+- [x] (2026-07-27) Focused implementation review found no production contract
+  defect but identified missing deterministic coverage, a missing date-range
+  live harness, and stale roadmap wording.
+- [x] (2026-07-27) Added exact end-boundary, timeout, source-exhaustion,
+  no-progress, closure-shaped, payload-success/error, and aggregate-only
+  three-case ignored-harness coverage; synchronized the roadmap.
 - [ ] Obtain focused implementation review.
 - [ ] Run one explicitly gated bounded Desktop-free smoke and record only
   aggregate public-safe evidence.
@@ -98,12 +104,13 @@ private package logic.
 
 ## Outcomes & Retrospective
 
-Implementation and complete non-live validation are complete. Date-range
-validation now accepts normalized `1` and the existing `1m` alias while
-preserving every existing transport and `bars.v1` payload boundary. Focused
-implementation review and the separately gated live smoke remain pending. No
-dependency, live source, stash, version, tag, push, workflow, or GitHub Release
-has changed.
+Implementation corrections and focused non-live validation are complete.
+Date-range validation accepts normalized `1` and the existing `1m` alias while
+preserving every existing transport and `bars.v1` payload boundary. A
+dedicated ignored harness now fixes the three bounded live cases and emits
+aggregate-only evidence. Focused correction review and the separately gated
+live smoke remain pending. No dependency, live source, stash, version, tag,
+push, workflow, or GitHub Release has changed.
 
 ## Context and Orientation
 
@@ -217,6 +224,13 @@ The live evidence should cover:
 - one boundary containing a known non-trading calendar day, interpreted only
   through returned aggregate fields rather than a built-in calendar claim.
 
+The ignored test is `one_minute_date_range_live_smoke`. It requires
+`TV_LIVE_BARS_RANGE_SMOKE=1`, one exchange-qualified
+`TV_LIVE_BARS_RANGE_SYMBOL`, and explicit `*_FROM` / `*_TO` values for
+`SINGLE`, `PAGED`, and `CLOSURE`. It performs exactly those three subprocess
+invocations, gives each child a 15-second outer deadline, and never retries or
+adds a replacement case.
+
 Print only aggregate fields: requested/completed counts, bar counts,
 coverage status, fetch-window/request-more counts, truncation boolean/reason,
 and elapsed milliseconds. Do not retain symbol, dates, bars, prices, raw
@@ -249,6 +263,17 @@ Run from the repository root:
 
 Run the ignored live command only after implementation review and with its
 documented explicit gate. Do not run unrelated ignored tests.
+
+    TV_LIVE_BARS_RANGE_SMOKE=1 \
+    TV_LIVE_BARS_RANGE_SYMBOL=<EXCHANGE:SYMBOL> \
+    TV_LIVE_BARS_RANGE_SINGLE_FROM=<YYYY-MM-DD> \
+    TV_LIVE_BARS_RANGE_SINGLE_TO=<YYYY-MM-DD> \
+    TV_LIVE_BARS_RANGE_PAGED_FROM=<YYYY-MM-DD> \
+    TV_LIVE_BARS_RANGE_PAGED_TO=<YYYY-MM-DD> \
+    TV_LIVE_BARS_RANGE_CLOSURE_FROM=<YYYY-MM-DD> \
+    TV_LIVE_BARS_RANGE_CLOSURE_TO=<YYYY-MM-DD> \
+    cargo test -p tradingview-cli --test live_bars \
+      one_minute_date_range_live_smoke -- --ignored --exact --nocapture
 
 ## Validation and Acceptance
 
