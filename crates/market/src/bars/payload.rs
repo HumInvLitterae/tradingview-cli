@@ -623,6 +623,60 @@ mod tests {
     }
 
     #[test]
+    fn one_minute_payload_preserves_alignment_and_explicit_count_cap_truncation() {
+        let request =
+            validate_bars_range_request("NASDAQ:AAPL", "1m", "2020-01-01", "2020-01-02", 1)
+                .unwrap();
+        let from = 1_577_836_800;
+        let result = BarsResult {
+            bars: vec![Bar {
+                time: from,
+                open: 10.0,
+                high: 12.0,
+                low: 9.0,
+                close: 11.0,
+                volume: 100.0,
+            }],
+            completed: true,
+            wait_summary: test_wait_summary(&request),
+            fetch_summary: BarsFetchSummary::new(
+                &request,
+                BarsFetchSummaryInput {
+                    request_more_count: 1,
+                    observed_count: 2,
+                    filtered_count: 2,
+                    returned_count: 1,
+                    completed: true,
+                    observed_first_time: Some(from),
+                    observed_last_time: Some(from + 60),
+                },
+            ),
+            observed_first_time: Some(from),
+            observed_last_time: Some(from + 60),
+        };
+        let payload = bars_payload(&request, result, 42);
+
+        assert_eq!(payload["contract_version"], BARS_CONTRACT_VERSION);
+        assert_eq!(payload["request_mode"], "date_range");
+        assert_eq!(payload["timeframe"], "1");
+        assert_eq!(payload["range_alignment"]["timeframe"], "1");
+        assert_eq!(
+            payload["range_alignment"]["bar_timestamp_semantics"],
+            "period_start"
+        );
+        assert_eq!(payload["range_coverage_status"], "partial");
+        assert_eq!(payload["range_fetch_summary"]["request_more_count"], 1);
+        assert_eq!(payload["range_fetch_summary"]["filtered_count"], 2);
+        assert_eq!(payload["range_fetch_summary"]["returned_count"], 1);
+        assert_eq!(payload["range_fetch_summary"]["range_truncated"], true);
+        assert_eq!(
+            payload["range_fetch_summary"]["range_truncation_reason"],
+            "count_cap"
+        );
+        assert_eq!(payload["source_availability"]["request_mode"], "date_range");
+    }
+
+    #[test]
     fn bars_payload_reports_weekly_monthly_range_alignment() {
         for timeframe in ["1W", "1M"] {
             let request = validate_bars_range_request(
@@ -717,15 +771,27 @@ mod tests {
     }
 
     #[test]
-    fn bars_error_details_contains_range_alignment_for_date_range() {
+    fn one_minute_error_details_preserve_range_alignment_and_fetch_contract() {
         let request =
-            validate_bars_range_request("NASDAQ:AAPL", "1W", "2020-01-01", "2020-03-31", 500)
+            validate_bars_range_request("NASDAQ:AAPL", "1m", "2020-01-01", "2020-03-31", 500)
                 .unwrap();
+        let wait_summary = test_wait_summary(&request);
         let details = bars_error_details(
             &request,
             json!({
                 "availability_status": "unavailable",
                 "completed": false,
+                "source_availability": bars_source_availability(
+                    &request,
+                    BarsAvailabilityState::unavailable(
+                        "timeout_no_bars",
+                        0,
+                        false,
+                        true,
+                    ),
+                    &wait_summary,
+                    42,
+                ),
             }),
         );
 
@@ -733,10 +799,10 @@ mod tests {
         assert_eq!(details["requested_symbol"], "NASDAQ:AAPL");
         assert_eq!(details["resolved_symbol"], "NASDAQ:AAPL");
         assert_eq!(details["symbol"], "NASDAQ:AAPL");
-        assert_eq!(details["requested_timeframe"], "1W");
+        assert_eq!(details["requested_timeframe"], "1");
         assert_eq!(details["request_mode"], "date_range");
         assert_eq!(details["requested_range"]["from"], "2020-01-01");
-        assert_eq!(details["range_alignment"]["timeframe"], "1W");
+        assert_eq!(details["range_alignment"]["timeframe"], "1");
         assert_eq!(
             details["range_alignment"]["bar_timestamp_semantics"],
             "period_start"
@@ -749,6 +815,9 @@ mod tests {
             details["range_alignment"]["requested_range_interpretation"],
             "inclusive_calendar_dates"
         );
+        assert_eq!(details["range_fetch_summary"]["requested_count_cap"], 500);
+        assert_eq!(details["range_fetch_summary"]["range_truncated"], false);
+        assert_eq!(details["source_availability"]["request_mode"], "date_range");
         assert!(details.get("raw_frame").is_none());
         assert!(details.get("raw_payload").is_none());
     }

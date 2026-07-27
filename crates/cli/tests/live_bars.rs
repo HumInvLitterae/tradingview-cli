@@ -1,13 +1,18 @@
 use std::{
-    process::Command,
+    io::Read,
+    process::{Command, Stdio},
+    thread,
     time::{Duration, Instant},
 };
 
+use serde::Serialize;
 use serde_json::Value;
+use tempfile::NamedTempFile;
 
 const DEFAULT_SYMBOLS: &str = "NASDAQ:AAPL,NYSE:IONQ";
 const DEFAULT_TIMEFRAME: &str = "1D";
 const DEFAULT_COUNT: usize = 5;
+const RANGE_CHILD_TIMEOUT: Duration = Duration::from_secs(15);
 
 #[test]
 #[ignore = "requires TradingView WebSocket availability and TV_LIVE_BARS_SMOKE=1"]
@@ -70,6 +75,338 @@ fn bars_live_smoke() {
             symbol,
             elapsed.as_millis()
         );
+    }
+}
+
+#[derive(Clone, Copy)]
+struct RangeCase {
+    label: &'static str,
+    from_env: &'static str,
+    to_env: &'static str,
+    count: usize,
+    minimum_request_more: u64,
+}
+
+const RANGE_CASES: [RangeCase; 3] = [
+    RangeCase {
+        label: "single_window",
+        from_env: "TV_LIVE_BARS_RANGE_SINGLE_FROM",
+        to_env: "TV_LIVE_BARS_RANGE_SINGLE_TO",
+        count: 500,
+        minimum_request_more: 0,
+    },
+    RangeCase {
+        label: "additional_window",
+        from_env: "TV_LIVE_BARS_RANGE_PAGED_FROM",
+        to_env: "TV_LIVE_BARS_RANGE_PAGED_TO",
+        count: 5000,
+        minimum_request_more: 1,
+    },
+    RangeCase {
+        label: "closure_boundary",
+        from_env: "TV_LIVE_BARS_RANGE_CLOSURE_FROM",
+        to_env: "TV_LIVE_BARS_RANGE_CLOSURE_TO",
+        count: 500,
+        minimum_request_more: 0,
+    },
+];
+
+#[derive(Serialize)]
+struct RangeCaseSummary {
+    case: &'static str,
+    requested: u64,
+    completed: bool,
+    bar_count: u64,
+    coverage_status: String,
+    fetch_window_count: u64,
+    request_more_count: u64,
+    range_truncated: bool,
+    truncation_reason: String,
+    elapsed_ms: u128,
+}
+
+#[derive(Serialize)]
+struct RangeSmokeSummary {
+    requested: usize,
+    completed: usize,
+    cases: Vec<RangeCaseSummary>,
+}
+
+#[test]
+#[ignore = "requires TradingView WebSocket availability, explicit range inputs, owner approval, and TV_LIVE_BARS_RANGE_SMOKE=1"]
+fn one_minute_date_range_live_smoke() {
+    if std::env::var("TV_LIVE_BARS_RANGE_SMOKE").ok().as_deref() != Some("1") {
+        panic!(
+            "one-minute range smoke is gated; set TV_LIVE_BARS_RANGE_SMOKE=1 and run with --ignored"
+        );
+    }
+
+    let symbol = required_env("TV_LIVE_BARS_RANGE_SYMBOL");
+    assert!(
+        symbol.contains(':'),
+        "TV_LIVE_BARS_RANGE_SYMBOL must be exchange-qualified"
+    );
+    let configured = RANGE_CASES
+        .iter()
+        .map(|case| {
+            (
+                *case,
+                required_env(case.from_env),
+                required_env(case.to_env),
+            )
+        })
+        .collect::<Vec<_>>();
+    let tv = env!("CARGO_BIN_EXE_tv");
+    let mut cases = Vec::with_capacity(configured.len());
+
+    for (case, from, to) in configured {
+        let started = Instant::now();
+        let output = run_bars_range(tv, &symbol, &from, &to, case.count);
+        let elapsed = started.elapsed();
+        let envelope = parse_range_output(output, elapsed);
+        cases.push(assert_range_success(case, &envelope, elapsed));
+    }
+
+    let summary = RangeSmokeSummary {
+        requested: RANGE_CASES.len(),
+        completed: cases.len(),
+        cases,
+    };
+    assert_eq!(summary.requested, summary.completed);
+    let serialized = serde_json::to_string(&summary).expect("range summary should serialize");
+    assert!(!serialized.contains(&symbol));
+    for case in RANGE_CASES {
+        assert!(!serialized.contains(&required_env(case.from_env)));
+        assert!(!serialized.contains(&required_env(case.to_env)));
+    }
+    println!("{serialized}");
+}
+
+fn run_bars_range(
+    tv: &str,
+    symbol: &str,
+    from: &str,
+    to: &str,
+    count: usize,
+) -> std::process::Output {
+    let mut stdout_file = NamedTempFile::new().expect("range smoke stdout file should open");
+    let mut stderr_file = NamedTempFile::new().expect("range smoke stderr file should open");
+    let mut child = Command::new(tv)
+        .args([
+            "bars",
+            symbol,
+            "--timeframe",
+            "1",
+            "--from",
+            from,
+            "--to",
+            to,
+            "--count",
+            &count.to_string(),
+        ])
+        .stdout(Stdio::from(
+            stdout_file
+                .reopen()
+                .expect("range smoke stdout should reopen"),
+        ))
+        .stderr(Stdio::from(
+            stderr_file
+                .reopen()
+                .expect("range smoke stderr should reopen"),
+        ))
+        .spawn()
+        .expect("test-built tv binary should execute");
+    let deadline = Instant::now() + RANGE_CHILD_TIMEOUT;
+    let status = loop {
+        if let Some(status) = child
+            .try_wait()
+            .expect("range smoke child should be readable")
+        {
+            break status;
+        }
+        if Instant::now() >= deadline {
+            let _ = child.kill();
+            let _ = child.wait();
+            panic!("one-minute range smoke child exceeded its fixed deadline");
+        }
+        thread::sleep(Duration::from_millis(25));
+    };
+
+    let mut stdout = Vec::new();
+    let mut stderr = Vec::new();
+    stdout_file
+        .read_to_end(&mut stdout)
+        .expect("range smoke stdout should be readable");
+    stderr_file
+        .read_to_end(&mut stderr)
+        .expect("range smoke stderr should be readable");
+    std::process::Output {
+        status,
+        stdout,
+        stderr,
+    }
+}
+
+fn parse_range_output(output: std::process::Output, elapsed: Duration) -> Value {
+    let parsed = serde_json::from_slice::<Value>(&output.stdout)
+        .or_else(|_| serde_json::from_slice::<Value>(&output.stderr))
+        .unwrap_or_else(|_| {
+            panic!(
+                "one-minute range smoke returned non-JSON output: status={} elapsed_ms={} stdout_bytes={} stderr_bytes={}",
+                output.status,
+                elapsed.as_millis(),
+                output.stdout.len(),
+                output.stderr.len()
+            )
+        });
+    assert!(
+        output.status.success(),
+        "one-minute range smoke command failed: status={} elapsed_ms={} kind={}",
+        output.status,
+        elapsed.as_millis(),
+        parsed
+            .pointer("/error/kind")
+            .and_then(Value::as_str)
+            .unwrap_or("invalid")
+    );
+    parsed
+}
+
+fn assert_range_success(case: RangeCase, envelope: &Value, elapsed: Duration) -> RangeCaseSummary {
+    let data = envelope.get("data").unwrap_or(&Value::Null);
+    let bar_count = required_u64(data, "/bar_count");
+    let fetch_window_count = required_u64(data, "/range_fetch_summary/fetch_window_count");
+    let request_more_count = required_u64(data, "/range_fetch_summary/request_more_count");
+    let filtered_count = required_u64(data, "/range_fetch_summary/filtered_count");
+    let returned_count = required_u64(data, "/range_fetch_summary/returned_count");
+    let range_truncated = required_bool(data, "/range_fetch_summary/range_truncated");
+    let truncation_reason = required_string(data, "/range_fetch_summary/range_truncation_reason");
+    let coverage_status = required_string(data, "/range_coverage_status");
+    let completed = required_bool(data, "/data_quality/completed");
+
+    assert_eq!(envelope.get("success").and_then(Value::as_bool), Some(true));
+    assert_eq!(
+        envelope.get("command").and_then(Value::as_str),
+        Some("bars")
+    );
+    assert_eq!(
+        data.get("contract_version").and_then(Value::as_str),
+        Some("bars.v1")
+    );
+    assert_eq!(
+        data.get("request_mode").and_then(Value::as_str),
+        Some("date_range")
+    );
+    assert_eq!(data.get("timeframe").and_then(Value::as_str), Some("1"));
+    assert_eq!(
+        data.pointer("/range_alignment/bar_timestamp_semantics")
+            .and_then(Value::as_str),
+        Some("period_start")
+    );
+    assert_eq!(fetch_window_count, request_more_count + 1);
+    assert!(request_more_count >= case.minimum_request_more);
+    if case.label == "single_window" {
+        assert_eq!(request_more_count, 0);
+    }
+    assert_eq!(bar_count, returned_count);
+    assert!(returned_count <= filtered_count);
+    assert!(matches!(coverage_status.as_str(), "complete" | "partial"));
+    assert!(matches!(
+        truncation_reason.as_str(),
+        "none" | "count_cap" | "timeout" | "source_exhausted"
+    ));
+    assert_eq!(range_truncated, truncation_reason != "none");
+
+    RangeCaseSummary {
+        case: case.label,
+        requested: 1,
+        completed,
+        bar_count,
+        coverage_status,
+        fetch_window_count,
+        request_more_count,
+        range_truncated,
+        truncation_reason,
+        elapsed_ms: elapsed.as_millis(),
+    }
+}
+
+fn required_env(key: &str) -> String {
+    let value = std::env::var(key)
+        .unwrap_or_else(|_| panic!("{key} must be set"))
+        .trim()
+        .to_string();
+    assert!(!value.is_empty(), "{key} must not be empty");
+    value
+}
+
+fn required_u64(value: &Value, pointer: &str) -> u64 {
+    value
+        .pointer(pointer)
+        .and_then(Value::as_u64)
+        .unwrap_or_else(|| panic!("range smoke missing aggregate integer at {pointer}"))
+}
+
+fn required_bool(value: &Value, pointer: &str) -> bool {
+    value
+        .pointer(pointer)
+        .and_then(Value::as_bool)
+        .unwrap_or_else(|| panic!("range smoke missing aggregate boolean at {pointer}"))
+}
+
+fn required_string(value: &Value, pointer: &str) -> String {
+    value
+        .pointer(pointer)
+        .and_then(Value::as_str)
+        .filter(|value| !value.is_empty())
+        .unwrap_or_else(|| panic!("range smoke missing aggregate string at {pointer}"))
+        .to_string()
+}
+
+#[test]
+fn one_minute_range_smoke_matrix_is_exactly_bounded() {
+    assert_eq!(RANGE_CASES.len(), 3);
+    assert_eq!(
+        RANGE_CASES
+            .iter()
+            .map(|case| case.label)
+            .collect::<Vec<_>>(),
+        ["single_window", "additional_window", "closure_boundary"]
+    );
+    assert_eq!(RANGE_CASES[0].count, 500);
+    assert_eq!(RANGE_CASES[1].count, 5000);
+    assert_eq!(RANGE_CASES[1].minimum_request_more, 1);
+    assert_eq!(RANGE_CHILD_TIMEOUT, Duration::from_secs(15));
+}
+
+#[test]
+fn one_minute_range_summary_is_aggregate_only() {
+    let summary = RangeSmokeSummary {
+        requested: 3,
+        completed: 3,
+        cases: vec![RangeCaseSummary {
+            case: "single_window",
+            requested: 1,
+            completed: true,
+            bar_count: 10,
+            coverage_status: "complete".to_string(),
+            fetch_window_count: 1,
+            request_more_count: 0,
+            range_truncated: false,
+            truncation_reason: "none".to_string(),
+            elapsed_ms: 42,
+        }],
+    };
+    let serialized = serde_json::to_string(&summary).unwrap();
+    for private in [
+        "NASDAQ:PRIVATE",
+        "2020-01-01",
+        "\"bars\"",
+        "\"prices\"",
+        "raw_payload",
+        "ws://",
+    ] {
+        assert!(!serialized.contains(private));
     }
 }
 
