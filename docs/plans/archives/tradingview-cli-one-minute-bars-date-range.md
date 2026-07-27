@@ -70,7 +70,9 @@ private package logic.
   range returned 780 bars with one `request_more_data` window; the
   closure-boundary range returned 390 bars with explicit partial
   `source_exhausted` classification.
-- [ ] Obtain focused evidence review and archive the plan.
+- [x] (2026-07-27) Focused evidence review found no implementation or evidence
+  defect beyond a stale local Git pointer. Corrected the ledger, confirmed the
+  feature through bounded production-binary comparison, and archived the plan.
 
 ## Surprises & Discoveries
 
@@ -138,9 +140,9 @@ one-minute scenarios succeeding. The evidence supports current-build live
 feasibility: single-window retrieval, one additional 500-bar fetch window, and
 conservative closure-boundary classification all worked. The initial failure
 is therefore classified as a transient common WebSocket connection failure,
-not a one-minute date-range defect. Focused closeout review and archive remain.
-No dependency, stash, version, tag, push, workflow, or GitHub Release has
-changed.
+not a one-minute date-range defect. The implementation, deterministic
+validation, bounded live verification, and closeout are complete. No
+dependency, stash, version, tag, push, workflow, or GitHub Release changed.
 
 ## Context and Orientation
 

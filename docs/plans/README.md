@@ -6,16 +6,16 @@ for release and next-phase planning.
 
 ## Current and future plans
 
-The current ExecPlan is
-`tradingview-cli-one-minute-bars-date-range.md`. The v0.31 roadmap promotes the
-concrete downstream blocker first: bounded Desktop-free `tv bars --from/--to`
-support for normalized one-minute timeframe `1`, preserving `bars.v1`, the
-5,000 returned-bar cap, existing source/coverage fields, and all other guarded
-intraday timeframes. The second harness correction, focused non-live
-validation, and narrow re-review are green. After an initial transient
-connection failure, bounded production-binary comparison confirmed the common
-five-minute path and all three intended one-minute scenarios; focused closeout
-review is pending.
+There is no active implementation ExecPlan. The next ordered v0.31 item is the
+downstream contract handoff for bounded one-minute date ranges.
+
+The one-minute bars date-range plan is archived at
+`archives/tradingview-cli-one-minute-bars-date-range.md`. It added bounded
+Desktop-free `tv bars --from/--to` support for normalized timeframe `1` while
+preserving `bars.v1`, the 5,000 returned-bar cap, existing source/coverage
+fields, and all other guarded intraday timeframes. Deterministic validation and
+bounded production-binary checks confirmed single-window, additional-window,
+and closure-boundary behavior.
 
 The v0.30.2 dependency and screenshot-decoding patch is released from
 `e8e480d`. Its completed plan and the v0.30.1 and v0.30.0 release-readiness
