@@ -7,6 +7,8 @@ package version omits the leading `v`.
 
 ## Unreleased
 
+## v0.31.0 - 2026-07-28
+
 ### Added
 
 - Added bounded one-minute date-range support to `tv bars` for `--timeframe 1`
@@ -41,7 +43,7 @@ package version omits the leading `v`.
 - Aligned the planned bars pagination failure stage on the reviewed public
   vocabulary value `pagination`.
 
-### Added
+### Diagnostics
 
 - Added public-safe Desktop-free bars `source_failure_stage` diagnostics for
   symbol search, request preparation, WebSocket connection, session and series
@@ -67,8 +69,11 @@ package version omits the leading `v`.
   or required architecture refactor was identified locally; focused independent
   audit review is pending.
 - Closed and archived the v0.31 completion audit and created the v0.31.0
-  release-readiness ExecPlan. Versioned artifact preparation has not begun;
-  tag, push, workflow, and publication remain owner-controlled.
+  release-readiness ExecPlan. Tag, push, workflow, and publication remain
+  owner-controlled.
+- Prepared and validated v0.31.0 version metadata, curated release notes,
+  locked release build, and the explicit 46-file package. Remote release
+  operations remain owner-controlled.
 
 ## v0.30.2 - 2026-07-27
 
