@@ -141,11 +141,7 @@ fn one_minute_date_range_live_smoke() {
         );
     }
 
-    let symbol = required_env("TV_LIVE_BARS_RANGE_SYMBOL");
-    assert!(
-        symbol.contains(':'),
-        "TV_LIVE_BARS_RANGE_SYMBOL must be exchange-qualified"
-    );
+    let symbol = required_exchange_qualified_symbol("TV_LIVE_BARS_RANGE_SYMBOL");
     let configured = RANGE_CASES
         .iter()
         .map(|case| {
@@ -283,6 +279,13 @@ fn assert_range_success(case: RangeCase, envelope: &Value, elapsed: Duration) ->
     let truncation_reason = required_string(data, "/range_fetch_summary/range_truncation_reason");
     let coverage_status = required_string(data, "/range_coverage_status");
     let completed = required_bool(data, "/data_quality/completed");
+    let partial_result = required_bool(data, "/data_quality/partial_result");
+    let timed_out = required_bool(data, "/source_availability/timed_out");
+    let wait_completed = required_bool(data, "/source_availability/wait_summary/completed");
+    let series_completed_seen = required_bool(
+        data,
+        "/source_availability/wait_summary/series_completed_seen",
+    );
 
     assert_eq!(envelope.get("success").and_then(Value::as_bool), Some(true));
     assert_eq!(
@@ -315,7 +318,21 @@ fn assert_range_success(case: RangeCase, envelope: &Value, elapsed: Duration) ->
         truncation_reason.as_str(),
         "none" | "count_cap" | "timeout" | "source_exhausted"
     ));
-    assert_eq!(range_truncated, truncation_reason != "none");
+    assert!(
+        range_classification_is_consistent(
+            case,
+            completed,
+            &coverage_status,
+            range_truncated,
+            &truncation_reason,
+            timed_out,
+            wait_completed,
+            series_completed_seen,
+            partial_result,
+            bar_count,
+        ),
+        "one-minute range smoke returned contradictory aggregate classification"
+    );
 
     RangeCaseSummary {
         case: case.label,
@@ -338,6 +355,51 @@ fn required_env(key: &str) -> String {
         .to_string();
     assert!(!value.is_empty(), "{key} must not be empty");
     value
+}
+
+fn required_exchange_qualified_symbol(key: &str) -> String {
+    let value = required_env(key);
+    assert!(
+        is_exchange_qualified_symbol(&value),
+        "{key} must contain exactly one colon with non-empty exchange and symbol"
+    );
+    value
+}
+
+fn is_exchange_qualified_symbol(value: &str) -> bool {
+    let Some((exchange, symbol)) = value.split_once(':') else {
+        return false;
+    };
+    !exchange.is_empty() && !symbol.is_empty() && !symbol.contains(':')
+}
+
+#[allow(clippy::too_many_arguments)]
+fn range_classification_is_consistent(
+    case: RangeCase,
+    completed: bool,
+    coverage_status: &str,
+    range_truncated: bool,
+    truncation_reason: &str,
+    timed_out: bool,
+    wait_completed: bool,
+    series_completed_seen: bool,
+    partial_result: bool,
+    bar_count: u64,
+) -> bool {
+    let truncation_consistent = match truncation_reason {
+        "none" => !range_truncated && coverage_status == "complete",
+        "count_cap" | "timeout" | "source_exhausted" => {
+            range_truncated && coverage_status == "partial"
+        }
+        _ => false,
+    };
+    let completion_consistent = timed_out == !completed
+        && wait_completed == completed
+        && (!completed || series_completed_seen)
+        && (completed || truncation_reason == "timeout");
+    let result_count_consistent = partial_result == (bar_count != case.count as u64);
+
+    truncation_consistent && completion_consistent && result_count_consistent
 }
 
 fn required_u64(value: &Value, pointer: &str) -> u64 {
@@ -377,6 +439,40 @@ fn one_minute_range_smoke_matrix_is_exactly_bounded() {
     assert_eq!(RANGE_CASES[1].count, 5000);
     assert_eq!(RANGE_CASES[1].minimum_request_more, 1);
     assert_eq!(RANGE_CHILD_TIMEOUT, Duration::from_secs(15));
+}
+
+#[test]
+fn one_minute_range_symbol_gate_requires_exact_exchange_qualification() {
+    for invalid in ["", "AAPL", ":", "NASDAQ:", ":AAPL", "NASDAQ:AAPL:EXTRA"] {
+        assert!(!is_exchange_qualified_symbol(invalid), "{invalid}");
+    }
+    assert!(is_exchange_qualified_symbol("NASDAQ:AAPL"));
+}
+
+#[test]
+fn one_minute_range_classification_rejects_contradictions() {
+    let closure = RANGE_CASES[2];
+    assert!(range_classification_is_consistent(
+        closure, true, "complete", false, "none", false, true, true, true, 10,
+    ));
+    assert!(range_classification_is_consistent(
+        closure, false, "partial", true, "timeout", true, false, false, true, 10,
+    ));
+    assert!(!range_classification_is_consistent(
+        closure, false, "complete", false, "none", false, false, false, true, 10,
+    ));
+    assert!(!range_classification_is_consistent(
+        closure,
+        true,
+        "complete",
+        true,
+        "source_exhausted",
+        false,
+        true,
+        true,
+        true,
+        10,
+    ));
 }
 
 #[test]
