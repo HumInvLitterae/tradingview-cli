@@ -11,9 +11,9 @@ The current ExecPlan is
 concrete downstream blocker first: bounded Desktop-free `tv bars --from/--to`
 support for normalized one-minute timeframe `1`, preserving `bars.v1`, the
 5,000 returned-bar cap, existing source/coverage fields, and all other guarded
-intraday timeframes. The second harness correction and focused non-live
-validation are complete; narrow re-review is pending and no live network run is
-authorized.
+intraday timeframes. The second harness correction, focused non-live
+validation, and narrow re-review are green; the bounded live smoke awaits
+explicit owner approval.
 
 The v0.30.2 dependency and screenshot-decoding patch is released from
 `e8e480d`. Its completed plan and the v0.30.1 and v0.30.0 release-readiness
