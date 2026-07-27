@@ -6,15 +6,17 @@ for release and next-phase planning.
 
 ## Current and future plans
 
-The v0.30.2 dependency and screenshot-decoding patch is locally release-ready.
-The candidate contains one compatible dependency refresh and one internal
-screenshot payload decoding improvement that replaces the sole direct
-`base64` use with `base64-simd`. Commands, JSON contracts, screenshot files,
-and package layout remain unchanged. Versioned artifacts, the locked build,
-the complete deterministic baseline, the inspected 46-file package, and
-focused release-readiness review are green with no local blocker. Its
-completed plan and the v0.30.1 and v0.30.0 release-readiness plans are
-archived.
+The current ExecPlan is
+`tradingview-cli-one-minute-bars-date-range.md`. The v0.31 roadmap promotes the
+concrete downstream blocker first: bounded Desktop-free `tv bars --from/--to`
+support for normalized one-minute timeframe `1`, preserving `bars.v1`, the
+5,000 returned-bar cap, existing source/coverage fields, and all other guarded
+intraday timeframes. Focused plan review is pending; no implementation or live
+network run is authorized.
+
+The v0.30.2 dependency and screenshot-decoding patch is released from
+`e8e480d`. Its completed plan and the v0.30.1 and v0.30.0 release-readiness
+plans are archived.
 
 Chart-read latency attribution completed focused evidence review and is
 archived. Its owner-authorized matrix completed 40/40 trials without failure or
@@ -43,8 +45,8 @@ materialize result rows, so the gated 27-trial matrix was correctly not run.
 The completed v0.29 release-readiness, completion audit, recovery-semantics
 inventory, and connection/evaluation topology inventories are archived
 documentation evidence rather than implemented runtime features. The current
-roadmap and ordered inventory are `docs/v0.30-roadmap.md` and
-`docs/v0.30-work-items.md`.
+roadmap and ordered inventory are `docs/v0.31-roadmap.md` and
+`docs/v0.31-work-items.md`.
 Pre-dispatch retry remains deferred until ordinary operation or a later bounded
 probe records a relevant failure.
 

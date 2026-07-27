@@ -7,6 +7,14 @@ package version omits the leading `v`.
 
 ## Unreleased
 
+### Planning
+
+- Started v0.31 planning around historical bar completeness and reproducible
+  downstream inputs. The first ExecPlan adds bounded one-minute
+  `tv bars --from/--to` support while preserving `bars.v1`, the 5,000 returned-
+  bar cap, and explicit truncation/coverage diagnostics. Other retained product
+  and evidence-triggered engineering candidates remain separately gated.
+
 ## v0.30.2 - 2026-07-27
 
 ### Performance
