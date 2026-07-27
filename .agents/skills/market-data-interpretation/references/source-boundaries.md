@@ -61,6 +61,13 @@ bars were returned than `--count`. Split larger corpora into explicit
 non-overlapping calendar windows and merge downstream by period-start
 timestamp.
 
+On error, `source_failure_stage` locates the bars-owned boundary. Use
+`symbol_search` to distinguish bare-symbol REST failure, `session_setup` versus
+`series_setup` to separate common bootstrap from request-specific setup, and
+the existing availability/range fields for `response_wait`, `protocol`,
+`pagination`, or `source_result`. The stage is diagnostic only and never
+authorizes retry or fallback.
+
 ## `tv events`
 
 `tv events <SYMBOL>` is a scanner fundamentals read shaped as `events.v1`. It

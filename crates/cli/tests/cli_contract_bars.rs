@@ -32,6 +32,8 @@ fn bars_help_explains_stable_desktop_free_boundary() {
         .stdout(predicate::str::contains("historical OHLCV bars"))
         .stdout(predicate::str::contains("bars.v1"))
         .stdout(predicate::str::contains("tradingview_bars_ws"))
+        .stdout(predicate::str::contains("source_failure_stage"))
+        .stdout(predicate::str::contains("does not authorize retry"))
         .stdout(predicate::str::contains("TV_EXPERIMENTAL_BARS").not())
         .stdout(predicate::str::contains("lab-gated").not())
         .stdout(predicate::str::contains("Desktop"))

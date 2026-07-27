@@ -409,6 +409,14 @@ larger CLI request. If `source_availability.status` is `unavailable`, read
 has no price or no history. Do not treat `tv bars` as realtime streaming,
 scanner quote, chart quote, or quote-data evidence.
 
+Bars source failures may add `source_failure_stage` with the closed
+bars-specific vocabulary `symbol_search`, `request_prepare`,
+`websocket_connect`, `session_setup`, `series_setup`, `response_wait`,
+`protocol`, `heartbeat_send`, `pagination`, `source_result`, or
+`source_unknown`. Preserve the existing error and availability details. The
+stage says where the failure surfaced, not whether a send reached TradingView
+or whether retry is safe.
+
 ## Agent Guidance
 
 Default to the narrowest source that answers the question:

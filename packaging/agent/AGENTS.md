@@ -140,6 +140,11 @@ Do not use `TV_CDP_TARGET_ID`; explicit target handoff is `--target-id`.
   `data_quality.partial_result` alone. For more than 5,000 bars, use explicit
   non-overlapping calendar windows and merge them downstream by period-start
   timestamp.
+  Failed bars reads may include `source_failure_stage`. Treat
+  `session_setup` as common bootstrap, `series_setup` as request-specific
+  setup, and `heartbeat_send` / `pagination` as send boundaries with unknown
+  remote receipt. Preserve the existing availability details; no stage
+  authorizes automatic retry, fallback, or a timeout change.
 - Bounded watch compare uses `tv watch compare <SYMBOL>...`. It is a
   Desktop-free scanner-backed JSONL workflow with `contract_version:
   "watch_compare.v1"`, not a daemon, selected-chart feed, ranking, or trading
