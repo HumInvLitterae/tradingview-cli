@@ -37,6 +37,8 @@ requires its own ExecPlan.
 - [x] (2026-07-28) Created this completion and architecture audit ExecPlan and
   synchronized current planning state.
 - [ ] Obtain focused independent plan review before auditing the candidate.
+  The first review found one reproducibility gap; commit-level classification
+  and start/end repository-state checks are now specified for narrow re-review.
 - [ ] Freeze the exact candidate commit, commit count, changed paths, Cargo
   state, and production/test/docs classification.
 - [ ] Audit one-minute date-range behavior and downstream guidance end to end.
@@ -139,13 +141,25 @@ remain the authority for shipped behavior.
 
 ## Plan of Work
 
-First freeze the candidate. Record the exact `HEAD`, commit count, commit list,
-and changed paths from `v0.30.2`. Classify every changed path as production,
-test, public documentation, runtime guidance, plan, note, or local ledger.
+First freeze the candidate. Record the exact starting `HEAD`, commit count,
+commit list, changed paths, tracked worktree state, staged state, and ignored
+local-ledger state. Classify every commit in `v0.30.2..HEAD` individually as
+one-minute production, one-minute test/live evidence, bars-diagnostics
+production, bars-diagnostics deterministic evidence, public/runtime guidance,
+or docs/plan evidence. For each commit record its subject, changed paths, and
+why it belongs to exactly one primary category; a mixed commit must name each
+secondary category explicitly. Separately classify every changed path as
+production, test, public documentation, runtime guidance, plan, or note.
+`CONTINUITY.md` is an ignored local ledger, not a candidate path, so read its
+State, Now, and Next sections directly at both boundaries instead of relying on
+Git diff output.
+
 Inspect `Cargo.toml`, `Cargo.lock`, `.github/`, and `mise.toml` separately so
 dependency, feature, workflow, or toolchain drift cannot hide inside the larger
-diff. If the tree changes after the freeze, stop and refresh the inventory
-before relying on it.
+diff. At closeout, compare `git rev-parse HEAD` with the recorded starting
+value, repeat tracked, staged, and ledger checks, and stop if anything moved.
+If a reviewed correction creates a new commit, record the new HEAD, classify
+that commit, and rerun the candidate inventory before relying on it.
 
 Second audit one-minute date ranges. Trace normalization and validation from
 `crates/cli/src/cli.rs` into `crates/market/src/bars/validation.rs`, then trace
@@ -196,14 +210,31 @@ Freeze and classify the candidate:
     git rev-parse HEAD
     git rev-list --count v0.30.2..HEAD
     git log --oneline --decorate v0.30.2..HEAD
+    git log --reverse --format='%H%x09%s' v0.30.2..HEAD
+    git log --reverse --format='%H' v0.30.2..HEAD |
+      while read commit; do
+        git show --format='commit %H%nsubject %s' --name-status --no-renames "$commit"
+      done
     git diff --name-status v0.30.2..HEAD
     git diff --stat v0.30.2..HEAD
+    git status --short --branch
+    git diff --check
+    git diff --cached --check
     git diff --check v0.30.2..HEAD
     git diff --quiet v0.30.2..HEAD -- Cargo.toml Cargo.lock .github mise.toml
+    git check-ignore -v CONTINUITY.md
+    sed -n '/^## State:/,/^## Done:/p' CONTINUITY.md
+    sed -n '/^## Now:/,/^## Working set/p' CONTINUITY.md
 
-The last command should exit zero when no dependency, workflow, or toolchain
-state changed. If it does not, classify every changed line and revise this plan
-before continuing.
+The per-commit output must become an artifact with one row per commit and these
+columns: abbreviated commit, subject, primary category, secondary category if
+mixed, changed paths, and contract impact. The current creation-time snapshot
+contains 15 commits; execution must refresh that number rather than assuming it
+is permanent. The Cargo/workflow command should exit zero when no dependency,
+workflow, or toolchain state changed. `git check-ignore` should identify
+`CONTINUITY.md` as ignored, after which its contents are still inspected
+directly. If any expectation differs, classify the difference and revise this
+living plan before continuing.
 
 Inspect the promoted contracts and exclusions:
 
@@ -239,6 +270,23 @@ Run the full deterministic baseline:
     ruby -e 'require "yaml"; Dir[".github/workflows/*.{yml,yaml}"].sort.each { |f| YAML.load_file(f); puts "parsed #{f}" }'
     git diff --check
 
+Close the audit by repeating repository-state checks:
+
+    git rev-parse HEAD
+    git status --short --branch
+    git diff --check
+    git diff --cached --check
+    git diff --quiet v0.30.2..HEAD -- Cargo.toml Cargo.lock .github mise.toml
+    git check-ignore -v CONTINUITY.md
+    sed -n '/^## State:/,/^## Done:/p' CONTINUITY.md
+    sed -n '/^## Now:/,/^## Working set/p' CONTINUITY.md
+
+The closing HEAD must equal the frozen starting HEAD unless a reviewed narrow
+correction was committed and added to the classification artifact. Tracked and
+staged state must match the state recorded at the start. The ignored ledger
+must describe the same audit/review gate as the ExecPlan, plan index, roadmap,
+work inventory, and CHANGELOG.
+
 Record exact test counts and any ignored tests in `Progress` and `Artifacts and
 Notes`. A zero-test focused filter is not evidence; correct the command in this
 living plan if any filter runs zero tests.
@@ -247,10 +295,15 @@ living plan if any filter runs zero tests.
 
 The audit is accepted only when all of the following are demonstrated.
 
-The exact candidate commit and every changed path are classified. There is no
-unexplained dependency, feature, workflow, toolchain, production, test, or
-documentation change. Any candidate movement after the freeze is explicitly
-refreshed.
+The exact candidate commit, every one of its commits, and every changed path
+are classified. Each commit is assigned to the two promoted slices,
+test/live-evidence support, or docs/plan evidence with mixed impact recorded
+explicitly. There is no unexplained dependency, feature, workflow, toolchain,
+production, test, or documentation change. Starting and closing HEAD values
+match unless a reviewed correction is added and reclassified. Tracked and
+staged state is checked at both boundaries. The ignored `CONTINUITY.md` ledger
+is read directly at both boundaries and agrees with all tracked durable-state
+sources. Any candidate movement after the freeze is explicitly refreshed.
 
 Normalized timeframe `1` and alias `1m` work only through the reviewed bounded
 date-range contract. Half-open date filtering includes the final minute before
@@ -332,3 +385,8 @@ promoted bars slices completed focused review and retained product selection
 closed with no additional promotion. The plan makes the two shipped contracts,
 non-recovery boundary, private-data rules, and independent review gate
 reproducible before release readiness.
+
+Revision note (2026-07-28): After focused plan review, added an explicit
+per-commit classification artifact and start/end checks for HEAD, tracked
+worktree state, staged state, and the ignored `CONTINUITY.md` ledger. This
+closes the review's reproducibility gap without changing audit scope.

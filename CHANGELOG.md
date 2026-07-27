@@ -59,6 +59,9 @@ package version omits the leading `v`.
 - Created the v0.31 frozen-candidate completion and architecture audit
   ExecPlan. Focused plan review is pending before audit execution; no new
   feature, version, or release operation is authorized.
+- Added per-commit candidate classification and start/end HEAD, tracked,
+  staged, and ignored-ledger checks after focused plan review. Narrow re-review
+  is pending before audit execution.
 
 ## v0.30.2 - 2026-07-27
 
