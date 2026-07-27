@@ -61,7 +61,9 @@ the task needs them. If command choice is unclear, check
   chart mutation. Do not describe it as a blended source.
 - `tv bars` is Desktop-free historical bars evidence. Bare symbols may resolve
   through symbol search; report `requested_symbol`, `resolved_symbol`, and
-  `symbol_resolution`.
+  `symbol_resolution`. On failure, preserve `source_failure_stage` and the
+  existing availability details; the stage locates the source boundary and
+  does not authorize retry.
 - `tv events` is scanner-backed event evidence for earnings and dividends.
   Use `events.v1` for one symbol and `events_compare.v1` for an ordered
   candidate set. It is not a complete event calendar and does not infer

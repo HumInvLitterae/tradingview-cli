@@ -370,6 +370,14 @@ bars` as a replacement for chart-backed `tv ohlcv`, which reads the selected
 Desktop chart through CDP. `tv range` moves the selected Desktop chart
 viewport only; it is not a historical export contract.
 
+On a failed bars request, read `source_failure_stage` before deciding what to
+report. `session_setup` is common chart-session bootstrap, while
+`series_setup` is the request-specific symbol/timeframe series boundary.
+`heartbeat_send` and `pagination` are send failures with unknown remote
+receipt; preserve partial diagnostics. `response_wait`, `protocol`, and
+`source_result` should be interpreted with the existing availability and range
+fields. None of these values authorizes an automatic repeat.
+
 ## Selected-Chart Historical Export
 
 Use `tv bars --from/--to` when the task needs reproducible historical OHLCV

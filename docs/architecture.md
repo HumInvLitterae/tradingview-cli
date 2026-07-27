@@ -46,6 +46,12 @@ is internal or opt-in probe evidence; it is not common success-envelope
 metadata. Classification does not retry, reconnect, switch targets, or promote
 a failed operation to success.
 
+Desktop-free bars owns a separate `source_failure_stage` vocabulary because
+its REST symbol-search and browserless WebSocket lifecycle are not CDP
+transport. Bars stage attribution preserves the existing error and
+source-availability details and does not add retry, fallback, or shared
+connection behavior.
+
 Each crate that owns HTTP creates a configured `reqwest::Client` for the
 top-level operation and passes it through sequential internal reads, allowing
 connection-pool reuse without a global client or cross-source cache. Public

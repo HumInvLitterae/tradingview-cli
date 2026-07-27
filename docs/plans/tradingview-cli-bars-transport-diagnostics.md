@@ -42,10 +42,15 @@ timeout changes, shared sessions, or background work.
 - [x] (2026-07-28) Corrected the pagination stage spelling to the required
   public contract, `pagination`, throughout the vocabulary, mapping, enum, and
   fixture expectations.
-- [ ] Obtain focused plan re-review.
-- [ ] Implement the typed stage mapping and deterministic fixtures.
-- [ ] Synchronize public docs and runtime guidance.
-- [ ] Run focused and complete non-live validation.
+- [x] (2026-07-28) Confirmed the narrow pagination vocabulary correction and
+  proceeded with the reviewed deterministic implementation boundary.
+- [x] (2026-07-28) Implemented the typed stage mapping, private initial-setup
+  and pagination helpers, and loopback/sink fault fixtures.
+- [x] (2026-07-28) Synchronized CLI help, public docs, packaged agent guidance,
+  and runtime skill interpretation.
+- [x] (2026-07-28) Passed formatting, strict workspace Clippy, focused bars and
+  CLI contracts, the full workspace suite and doctests, metadata, hygiene,
+  package syntax, guide parity, and diff hygiene.
 - [ ] Obtain focused implementation review and archive the plan.
 
 ## Surprises & Discoveries
@@ -100,9 +105,16 @@ timeout changes, shared sessions, or background work.
 
 ## Outcomes & Retrospective
 
-Planning is complete. No production implementation, public field, retry,
-network probe, dependency, version, workflow, tag, push, or release operation
-has been authorized or performed by this plan.
+Implementation and full non-live validation are complete. Desktop-free bars source
+failures now receive the additive `source_failure_stage` field without changing
+success payloads or adding recovery behavior. Focused implementation review
+remains before archive.
+
+The deterministic bars module suite completed with 37 passing tests and one
+ignored live heartbeat probe. CLI bars contracts completed 4/4. Strict
+workspace Clippy, the full workspace suite and doctests, metadata, public
+hygiene, packaging syntax, contributor-guide parity, and diff hygiene passed.
+No live TradingView request was run for this diagnostic slice.
 
 ## Context and Orientation
 
@@ -453,3 +465,9 @@ The pagination send boundary is now named `pagination` / `Pagination`
 throughout the decision, mapping, implementation sketch, guidance, and
 deterministic fixture contract. No behavior, recovery policy, or implementation
 scope changed.
+
+Revision note (2026-07-28): implemented the reviewed contract. Private
+production helpers preserve the five setup sends and pagination call, while
+sink and loopback fixtures exercise setup, connection, response, protocol,
+heartbeat, and pagination failures without live TradingView access. Public
+guidance treats stage attribution as diagnostic only.

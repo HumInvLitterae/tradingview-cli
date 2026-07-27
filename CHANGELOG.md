@@ -41,6 +41,14 @@ package version omits the leading `v`.
 - Aligned the planned bars pagination failure stage on the reviewed public
   vocabulary value `pagination`.
 
+### Added
+
+- Added public-safe Desktop-free bars `source_failure_stage` diagnostics for
+  symbol search, request preparation, WebSocket connection, session and series
+  setup, response wait, protocol, heartbeat send, pagination, and empty source
+  results. Existing errors and success payloads are preserved, and the stages
+  do not authorize retry or fallback.
+
 ## v0.30.2 - 2026-07-27
 
 ### Performance

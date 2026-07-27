@@ -21,6 +21,64 @@ use crate::{
     http::configured_client, search::search_symbols_typed_with_client, types::SymbolSearchResponse,
 };
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(super) enum BarsFailureStage {
+    SymbolSearch,
+    RequestPrepare,
+    WebSocketConnect,
+    SessionSetup,
+    SeriesSetup,
+    ResponseWait,
+    Protocol,
+    HeartbeatSend,
+    Pagination,
+    SourceResult,
+    #[cfg_attr(
+        not(test),
+        expect(
+            dead_code,
+            reason = "reviewed fail-closed vocabulary; normal production paths use a specific stage"
+        )
+    )]
+    SourceUnknown,
+}
+
+impl BarsFailureStage {
+    fn as_str(self) -> &'static str {
+        match self {
+            Self::SymbolSearch => "symbol_search",
+            Self::RequestPrepare => "request_prepare",
+            Self::WebSocketConnect => "websocket_connect",
+            Self::SessionSetup => "session_setup",
+            Self::SeriesSetup => "series_setup",
+            Self::ResponseWait => "response_wait",
+            Self::Protocol => "protocol",
+            Self::HeartbeatSend => "heartbeat_send",
+            Self::Pagination => "pagination",
+            Self::SourceResult => "source_result",
+            Self::SourceUnknown => "source_unknown",
+        }
+    }
+}
+
+pub(super) fn with_source_failure_stage(mut error: AppError, stage: BarsFailureStage) -> AppError {
+    let mut details = match error.details.take() {
+        Some(Value::Object(details)) => details,
+        Some(_) => {
+            let mut details = serde_json::Map::new();
+            details.insert("previous_details_omitted".to_string(), Value::Bool(true));
+            details
+        }
+        None => serde_json::Map::new(),
+    };
+    details.insert(
+        "source_failure_stage".to_string(),
+        Value::String(stage.as_str().to_string()),
+    );
+    error.details = Some(Value::Object(details));
+    error
+}
+
 pub async fn bars_symbol(symbol: &str, timeframe: &str, count: usize) -> Result<Value, AppError> {
     let client = configured_client()?;
     let symbol_resolution = resolve_bars_symbol(&client, symbol).await?;
@@ -63,7 +121,10 @@ async fn bars_for_request(request: self::types::BarsRequest) -> Result<Value, Ap
     let elapsed_ms = started.elapsed().as_millis() as u64;
 
     if result.bars.is_empty() {
-        return Err(no_bars_error(&request, &result, elapsed_ms));
+        return Err(with_source_failure_stage(
+            no_bars_error(&request, &result, elapsed_ms),
+            BarsFailureStage::SourceResult,
+        ));
     }
 
     Ok(bars_payload(&request, result, elapsed_ms))
@@ -85,7 +146,9 @@ async fn resolve_bars_symbol(
         return Ok(BarsSymbolResolution::input_exchange_qualified(input_symbol));
     }
 
-    let search = search_symbols_typed_with_client(client, input_symbol).await?;
+    let search = search_symbols_typed_with_client(client, input_symbol)
+        .await
+        .map_err(|error| with_source_failure_stage(error, BarsFailureStage::SymbolSearch))?;
     resolve_bars_symbol_from_search(input_symbol, &search)
 }
 
@@ -148,6 +211,60 @@ mod symbol_resolution_tests {
             symbol_type: "stock".to_string(),
             full_name: format!("{exchange}:{symbol}"),
         }
+    }
+
+    #[test]
+    fn source_failure_stages_use_the_closed_public_vocabulary() {
+        for (stage, expected) in [
+            (BarsFailureStage::SymbolSearch, "symbol_search"),
+            (BarsFailureStage::RequestPrepare, "request_prepare"),
+            (BarsFailureStage::WebSocketConnect, "websocket_connect"),
+            (BarsFailureStage::SessionSetup, "session_setup"),
+            (BarsFailureStage::SeriesSetup, "series_setup"),
+            (BarsFailureStage::ResponseWait, "response_wait"),
+            (BarsFailureStage::Protocol, "protocol"),
+            (BarsFailureStage::HeartbeatSend, "heartbeat_send"),
+            (BarsFailureStage::Pagination, "pagination"),
+            (BarsFailureStage::SourceResult, "source_result"),
+            (BarsFailureStage::SourceUnknown, "source_unknown"),
+        ] {
+            let error = with_source_failure_stage(
+                AppError::new(ErrorKind::Connection, "fixed message"),
+                stage,
+            );
+            assert_eq!(
+                error.details.unwrap()["source_failure_stage"],
+                expected,
+                "{stage:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn source_failure_stage_preserves_object_details_and_omits_non_objects() {
+        let error = with_source_failure_stage(
+            AppError::new(ErrorKind::Timeout, "fixed message")
+                .with_details(json!({"existing": "safe"})),
+            BarsFailureStage::ResponseWait,
+        );
+        assert_eq!(error.kind, ErrorKind::Timeout);
+        assert_eq!(error.message, "fixed message");
+        assert_eq!(error.exit_code(), 4);
+        assert_eq!(error.details.as_ref().unwrap()["existing"], "safe");
+        assert_eq!(
+            error.details.as_ref().unwrap()["source_failure_stage"],
+            "response_wait"
+        );
+
+        let error = with_source_failure_stage(
+            AppError::new(ErrorKind::Connection, "fixed message")
+                .with_details(json!("private transport value")),
+            BarsFailureStage::SourceUnknown,
+        );
+        let details = error.details.unwrap();
+        assert_eq!(details["previous_details_omitted"], true);
+        assert_eq!(details["source_failure_stage"], "source_unknown");
+        assert!(!details.to_string().contains("private transport value"));
     }
 
     #[test]

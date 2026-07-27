@@ -389,6 +389,13 @@ Desktop CDP transport errors may include `failure_stage` with one of
 it does not mean the command is safe to retry. Existing error kind, message,
 and exit-code semantics remain authoritative.
 
+Desktop-free `tv bars` source failures use the separate
+`source_failure_stage` field. Its bars-specific values distinguish symbol
+search, request preparation, WebSocket connection, session or series setup,
+response wait, protocol, heartbeat send, pagination, and empty source result
+boundaries. The value locates the observed failure only; it does not authorize
+retry, source substitution, or a timeout change.
+
 `tv stream ...` commands print newline-delimited JSON envelopes. Stream samples
 use `_event: "sample"`, optional heartbeats use `_event: "heartbeat"`, and
 bounded normal exits emit a final `_event: "summary"` line. `tv observe chart`
