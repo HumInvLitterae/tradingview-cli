@@ -48,6 +48,9 @@ package version omits the leading `v`.
   setup, response wait, protocol, heartbeat send, pagination, and empty source
   results. Existing errors and success payloads are preserved, and the stages
   do not authorize retry or fallback.
+- Completed implementation and the full non-live baseline. Focused review found
+  no production mapping defect; a zero-result facade fixture and durable-state
+  correction are applied for narrow re-review.
 
 ## v0.30.2 - 2026-07-27
 

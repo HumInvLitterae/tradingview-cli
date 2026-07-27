@@ -51,7 +51,12 @@ timeout changes, shared sessions, or background work.
 - [x] (2026-07-28) Passed formatting, strict workspace Clippy, focused bars and
   CLI contracts, the full workspace suite and doctests, metadata, hygiene,
   package syntax, guide parity, and diff hygiene.
-- [ ] Obtain focused implementation review and archive the plan.
+- [x] (2026-07-28) Focused implementation review confirmed the production
+  mapping and found two acceptance gaps: no direct zero-result facade fixture
+  and incomplete CHANGELOG state.
+- [x] (2026-07-28) Added a production-shared result-shaping fixture for
+  `source_result` and synchronized the CHANGELOG and current-state documents.
+- [ ] Obtain narrow focused re-review and archive the plan.
 
 ## Surprises & Discoveries
 
@@ -105,10 +110,10 @@ timeout changes, shared sessions, or background work.
 
 ## Outcomes & Retrospective
 
-Implementation and full non-live validation are complete. Desktop-free bars source
-failures now receive the additive `source_failure_stage` field without changing
-success payloads or adding recovery behavior. Focused implementation review
-remains before archive.
+Implementation and full non-live validation are complete. Desktop-free bars
+source failures now receive the additive `source_failure_stage` field without
+changing success payloads or adding recovery behavior. Focused-review
+corrections are applied and narrow re-review remains before archive.
 
 The deterministic bars module suite completed with 37 passing tests and one
 ignored live heartbeat probe. CLI bars contracts completed 4/4. Strict
@@ -471,3 +476,9 @@ production helpers preserve the five setup sends and pagination call, while
 sink and loopback fixtures exercise setup, connection, response, protocol,
 heartbeat, and pagination failures without live TradingView access. Public
 guidance treats stage attribution as diagnostic only.
+
+Revision note (2026-07-28): corrected two focused implementation-review gaps.
+The production facade and deterministic fixture now share `bars_result`, which
+proves that an empty `BarsResult` preserves no-bars diagnostics and gains
+`source_result`. CHANGELOG and durable state now record full validation and the
+narrow re-review gate.

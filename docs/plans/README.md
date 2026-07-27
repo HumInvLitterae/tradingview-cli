@@ -12,7 +12,8 @@ date-range downstream contract handoff is complete. The active plan adds
 public-safe Desktop-free bars source-stage attribution without adding retry,
 reconnect, timeout changes, fallback, shared sessions, or background work.
 Implementation, deterministic fixtures, public guidance, and full non-live
-validation are complete. Focused implementation review is pending.
+validation are complete. The zero-result fixture and durable-state corrections
+are applied; narrow focused re-review is pending.
 
 The one-minute bars date-range plan is archived at
 `archives/tradingview-cli-one-minute-bars-date-range.md`. It added bounded

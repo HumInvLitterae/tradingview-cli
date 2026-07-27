@@ -119,15 +119,22 @@ async fn bars_for_request(request: self::types::BarsRequest) -> Result<Value, Ap
     let started = Instant::now();
     let result = fetch_bars_ws(&request).await?;
     let elapsed_ms = started.elapsed().as_millis() as u64;
+    bars_result(&request, result, elapsed_ms)
+}
 
+fn bars_result(
+    request: &self::types::BarsRequest,
+    result: self::types::BarsResult,
+    elapsed_ms: u64,
+) -> Result<Value, AppError> {
     if result.bars.is_empty() {
         return Err(with_source_failure_stage(
-            no_bars_error(&request, &result, elapsed_ms),
+            no_bars_error(request, &result, elapsed_ms),
             BarsFailureStage::SourceResult,
         ));
     }
 
-    Ok(bars_payload(&request, result, elapsed_ms))
+    Ok(bars_payload(request, result, elapsed_ms))
 }
 
 async fn resolve_bars_symbol(
@@ -189,7 +196,13 @@ mod symbol_resolution_tests {
     use tradingview_core::ErrorKind;
 
     use super::*;
-    use crate::types::SymbolSearchResult;
+    use crate::{
+        bars::{
+            types::{BarsFetchSummary, BarsFetchSummaryInput, BarsResult, BarsWaitSummary},
+            validation::validate_bars_request,
+        },
+        types::SymbolSearchResult,
+    };
 
     fn search(results: Vec<SymbolSearchResult>) -> SymbolSearchResponse {
         SymbolSearchResponse {
@@ -265,6 +278,45 @@ mod symbol_resolution_tests {
         assert_eq!(details["previous_details_omitted"], true);
         assert_eq!(details["source_failure_stage"], "source_unknown");
         assert!(!details.to_string().contains("private transport value"));
+    }
+
+    #[test]
+    fn zero_bar_result_uses_the_production_source_result_boundary() {
+        let request = validate_bars_request("NASDAQ:AAPL", "1D", 5).unwrap();
+        let result = BarsResult {
+            bars: Vec::new(),
+            completed: true,
+            wait_summary: BarsWaitSummary::new(&request),
+            fetch_summary: BarsFetchSummary::new(
+                &request,
+                BarsFetchSummaryInput {
+                    request_more_count: 0,
+                    observed_count: 0,
+                    filtered_count: 0,
+                    returned_count: 0,
+                    completed: true,
+                    observed_first_time: None,
+                    observed_last_time: None,
+                },
+            ),
+            observed_first_time: None,
+            observed_last_time: None,
+        };
+
+        let error = bars_result(&request, result, 42).unwrap_err();
+
+        assert_eq!(error.kind, ErrorKind::InternalApiUnavailable);
+        assert_eq!(
+            error.message,
+            "Bars request completed without returning bars"
+        );
+        let details = error.details.unwrap();
+        assert_eq!(details["source_failure_stage"], "source_result");
+        assert_eq!(details["source"], "tradingview_bars_ws");
+        assert_eq!(details["completed"], true);
+        assert_eq!(details["elapsed_ms"], 42);
+        assert_eq!(details["source_availability"]["bar_count"], 0);
+        assert_eq!(details["range_fetch_summary"]["returned_count"], 0);
     }
 
     #[test]
