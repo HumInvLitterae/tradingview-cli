@@ -38,11 +38,11 @@ Report `contract_version: "bars.v1"`, `source: "tradingview_bars_ws"`,
 Bare symbols such as `AAPL` may resolve through Desktop-free symbol search. If
 the exchange matters, retry with `EXCHANGE:SYMBOL`.
 
-Use `--from YYYY-MM-DD --to YYYY-MM-DD` with `--timeframe 5`, `15`, `30`,
-`60`, `1D`, `1W`, or `1M` for reproducible date-range samples. In date-range
-mode, `--count` is a returned-bar safety cap that defaults to 500 and can be
-raised to 5000. Recent count mode remains capped at 500. `--to` is an
-inclusive calendar date.
+Use `--from YYYY-MM-DD --to YYYY-MM-DD` with `--timeframe 1` (or `1m`), `5`,
+`15`, `30`, `60`, `1D`, `1W`, or `1M` for reproducible date-range samples.
+In date-range mode, `--count` is a returned-bar safety cap that defaults to
+500 and can be raised to 5000. Recent count mode remains capped at 500.
+`--to` is an inclusive calendar date.
 
 `range_coverage_status` is the primary date-range coverage readback.
 `range_alignment` explains timestamp anchoring and

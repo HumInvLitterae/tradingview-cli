@@ -373,12 +373,13 @@ Safety boundary:
   before the bars WebSocket request. Exchange-qualified input is used as-is.
   Payloads report `requested_symbol`, `resolved_symbol`, `symbol`, and
   `symbol_resolution` so callers can detect which TradingView symbol was used.
-- `tv bars --from YYYY-MM-DD --to YYYY-MM-DD --timeframe 5|15|30|60|1D|1W|1M` is
+- `tv bars --from YYYY-MM-DD --to YYYY-MM-DD --timeframe 1|5|15|30|60|1D|1W|1M` is
   the reproducible historical-source preparation path for supported intraday,
   daily, and higher-timeframe samples. The `--to` value is an inclusive
   calendar date. In date-range mode, `--count` defaults to 500 and may be
   raised up to 5000 as a returned-bar safety cap. Recent count mode remains
-  capped at 500. Other intraday timeframes remain guarded in date-range mode.
+  capped at 500. `1m` aliases to `1`; other intraday timeframes remain guarded
+  in date-range mode.
   `tv range` only changes the selected Desktop chart viewport and must not be
   treated as a hidden input to `tv ohlcv`.
 - `tv bars` reports `summary` / `range` for requested-vs-returned count and

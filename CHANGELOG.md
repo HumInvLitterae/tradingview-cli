@@ -7,6 +7,13 @@ package version omits the leading `v`.
 
 ## Unreleased
 
+### Added
+
+- Added bounded one-minute date-range support to `tv bars` for `--timeframe 1`
+  and its existing `1m` alias. The change preserves `bars.v1`, period-start
+  timestamps, the 5,000 returned-bar cap, existing coverage and truncation
+  diagnostics, and guards for the other unsupported intraday timeframes.
+
 ### Planning
 
 - Started v0.31 planning around historical bar completeness and reproducible

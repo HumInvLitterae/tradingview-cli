@@ -33,10 +33,13 @@ private package logic.
   bounded WebSocket series, 500-bar `request_more_data` windows, no-progress
   detection, one 10-second request deadline, and explicit fetch/coverage
   summaries.
-- [ ] Obtain focused plan review.
-- [ ] Implement the exact validation, tests, help, docs, and runtime-skill
+- [x] (2026-07-27) Owner directed implementation after reviewing and
+  correcting the roadmap/task inventory; no separate external plan-review
+  turn was required.
+- [x] (2026-07-27) Implemented the exact validation, tests, help, docs, and runtime-skill
   changes.
-- [ ] Run focused and complete non-live validation.
+- [x] (2026-07-27) Ran focused bars validation/transport/payload/CLI contract
+  tests, strict Clippy, and the complete workspace test baseline successfully.
 - [ ] Obtain focused implementation review.
 - [ ] Run one explicitly gated bounded Desktop-free smoke and record only
   aggregate public-safe evidence.
@@ -95,19 +98,22 @@ private package logic.
 
 ## Outcomes & Retrospective
 
-Planning is complete and focused plan review is pending. No production file,
-dependency, public command, live source, stash, version, tag, push, workflow,
-or GitHub Release has changed.
+Implementation and complete non-live validation are complete. Date-range
+validation now accepts normalized `1` and the existing `1m` alias while
+preserving every existing transport and `bars.v1` payload boundary. Focused
+implementation review and the separately gated live smoke remain pending. No
+dependency, live source, stash, version, tag, push, workflow, or GitHub Release
+has changed.
 
 ## Context and Orientation
 
 `crates/market/src/bars/validation.rs` normalizes `1m` to `1` and accepts `1`
 in count-only mode. `validate_bars_range_request_with_resolution` then checks
-the normalized value against `DATE_RANGE_TIMEFRAMES`, currently:
+the normalized value against `DATE_RANGE_TIMEFRAMES`, now:
 
-    ["5", "15", "30", "60", "1D", "1W", "1M"]
+    ["1", "5", "15", "30", "60", "1D", "1W", "1M"]
 
-That allowlist and its error text are the immediate blocker.
+The implementation widens only that allowlist and its error/help contract.
 
 `crates/market/src/bars/types.rs` defines:
 

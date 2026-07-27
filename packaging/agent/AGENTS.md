@@ -120,9 +120,10 @@ Do not use `TV_CDP_TARGET_ID`; explicit target handoff is `--target-id`.
   `EXCHANGE:SYMBOL` form when the exchange must be fixed. Report
   `requested_symbol`, `resolved_symbol`, and `symbol_resolution` before using
   returned bars. Use `--from YYYY-MM-DD --to YYYY-MM-DD`
-  with `--timeframe 5`, `15`, `30`, `60`, `1D`, `1W`, or `1M` for reproducible older
-  intraday, daily, weekly, or monthly samples; other intraday timeframes
-  remain guarded in date-range mode. `--to` is an inclusive calendar date.
+  with `--timeframe 1` (or `1m`), `5`, `15`, `30`, `60`, `1D`, `1W`, or `1M`
+  for reproducible older intraday, daily, weekly, or monthly samples; other
+  intraday timeframes remain guarded in date-range mode. `--to` is an
+  inclusive calendar date.
   Read `summary` / `range`, `requested_range` / `returned_range`,
   `range_coverage_status`, and `range_alignment` before inspecting raw
   `bars[]`. In date-range mode, `--count` defaults to 500 and may be raised

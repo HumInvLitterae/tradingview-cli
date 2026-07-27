@@ -57,8 +57,9 @@ sample, not a mutation request.
   `delay_seconds`, and extended-hours fields when TradingView returns them.
   They are not a realtime entitlement guarantee.
 - `tv bars` is the reproducible historical bars entry point. Date-range mode
-  supports `5`, `15`, `30`, `60`, `1D`, `1W`, and `1M`; other intraday
-  date-range timeframes remain guarded. Date-range `--count` defaults to 500
+  supports `1` (and its `1m` alias), `5`, `15`, `30`, `60`, `1D`, `1W`, and
+  `1M`; other intraday date-range timeframes remain guarded. Date-range
+  `--count` defaults to 500
   and may be raised to 5000 as a safety cap. Recent count mode remains capped
   at 500. Use `range_coverage_status`, `range_alignment`, and
   `range_fetch_summary` for coverage and truncation diagnostics.

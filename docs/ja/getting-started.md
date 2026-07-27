@@ -124,6 +124,7 @@ tv watch compare NASDAQ:AAPL NASDAQ:MSFT --duration-ms 10000 --interval 2000
 tv bars NASDAQ:CRUS --timeframe 1D --from 2010-01-01 --to 2010-12-31
 tv bars NASDAQ:CRUS --timeframe 1W --from 2010-01-01 --to 2010-12-31
 tv bars NASDAQ:CRUS --timeframe 1M --from 2010-01-01 --to 2010-12-31
+tv bars NASDAQ:AAPL --timeframe 1 --from 2026-05-20 --to 2026-05-20 --count 1000
 tv bars NASDAQ:AAPL --timeframe 5 --from 2026-05-20 --to 2026-05-22 --count 1000
 tv bars NASDAQ:AAPL --timeframe 60 --from 2026-05-01 --to 2026-05-22 --count 1000
 ```
@@ -136,8 +137,9 @@ tv bars NASDAQ:AAPL --timeframe 60 --from 2026-05-01 --to 2026-05-22 --count 100
 
 日付範囲を指定した場合は、まず `range_coverage_status` と
 `range_alignment` を確認してください。日付範囲指定で使える時間軸は、現時点
-では 5 分足、15 分足、30 分足、60 分足、日足、週足、月足です。1 分足、3 分足、
-45 分足、120 分足、180 分足、240 分足は、日付範囲指定ではまだ使えません。
+では 1 分足（`1` または `1m`）、5 分足、15 分足、30 分足、60 分足、日足、
+週足、月足です。3 分足、45 分足、120 分足、180 分足、240 分足は、
+日付範囲指定ではまだ使えません。
 分足、週足、月足では、足の時刻はその期間の開始時刻や
 開始日を表します。指定した開始日から終了日までの範囲に、その時刻が入っている
 足だけが返ります。日付範囲を指定した場合の `--count` は返す足の最大本数で、
