@@ -56,7 +56,9 @@ private package logic.
 - [x] (2026-07-27) Re-ran formatting, strict workspace Clippy, the complete
   workspace test baseline, public hygiene, package-script syntax, guide
   parity, and diff hygiene successfully after the second harness correction.
-- [ ] Obtain focused implementation review.
+- [x] (2026-07-27) Focused correction re-review found no remaining findings,
+  confirmed both harness blockers closed, and approved requesting owner
+  authorization for the exact bounded live smoke.
 - [ ] Run one explicitly gated bounded Desktop-free smoke and record only
   aggregate public-safe evidence.
 - [ ] Obtain focused evidence review and archive the plan.
@@ -119,9 +121,10 @@ Date-range validation accepts normalized `1` and the existing `1m` alias while
 preserving every existing transport and `bars.v1` payload boundary. A
 dedicated ignored harness now fixes the three bounded live cases and emits
 aggregate-only evidence. Its symbol gate and classification checks now fail
-closed on the contradictions found by focused review. Narrow re-review and the
-separately gated live smoke remain pending. No dependency, live source, stash,
-version, tag, push, workflow, or GitHub Release has changed.
+closed on the contradictions found by focused review. Narrow re-review is green
+and the separately gated live smoke awaits explicit owner approval. No
+dependency, live source, stash, version, tag, push, workflow, or GitHub Release
+has changed.
 
 ## Context and Orientation
 
