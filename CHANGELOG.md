@@ -66,6 +66,9 @@ package version omits the leading `v`.
   deterministic baseline after green narrow plan re-review. No release blocker
   or required architecture refactor was identified locally; focused independent
   audit review is pending.
+- Closed and archived the v0.31 completion audit and created the v0.31.0
+  release-readiness ExecPlan. Versioned artifact preparation has not begun;
+  tag, push, workflow, and publication remain owner-controlled.
 
 ## v0.30.2 - 2026-07-27
 
