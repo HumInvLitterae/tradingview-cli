@@ -325,6 +325,13 @@ tv bars NASDAQ:CRUS --timeframe 1D --from 2010-01-01 --to 2010-12-31
 tv bars NASDAQ:CRUS --timeframe 1W --from 2010-01-01 --to 2010-12-31
 ```
 
+Use this stable form for one-minute downstream preparation:
+
+```bash
+tv bars EXCHANGE:SYMBOL --timeframe 1 \
+  --from YYYY-MM-DD --to YYYY-MM-DD --count 5000
+```
+
 It uses an undocumented TradingView WebSocket chart-session path and reports
 `contract_version: "bars.v1"`, `source: "tradingview_bars_ws"`, and
 `source_category: "desktop_free_read"`. Date-range mode is the reproducible
@@ -352,10 +359,16 @@ count cap, source exhaustion, or timeout. Read `source_availability` when the re
 unavailable; its `wait_summary` explains bounded historical-source behavior
 without raw WebSocket frames. Read `data_quality` before using the result: it
 does not guarantee realtime or entitlement status. Do not treat unavailable
-bars as proof that a symbol has no history, and do not treat `tv bars` as a
-replacement for chart-backed `tv ohlcv`, which reads the selected Desktop
-chart through CDP. `tv range` moves the selected Desktop chart viewport only;
-it is not a historical export contract.
+bars as proof that a symbol has no history. Determine date-range completeness
+from `range_coverage_status` and
+`range_fetch_summary.range_truncated` /
+`range_fetch_summary.range_truncation_reason`; `data_quality.partial_result`
+alone is not a range-coverage decision because it can reflect only a shortfall
+against `--count`. Split larger corpora into explicit non-overlapping calendar
+windows and merge downstream on period-start timestamps. Do not treat `tv
+bars` as a replacement for chart-backed `tv ohlcv`, which reads the selected
+Desktop chart through CDP. `tv range` moves the selected Desktop chart
+viewport only; it is not a historical export contract.
 
 ## Selected-Chart Historical Export
 

@@ -372,6 +372,9 @@ reproducible older intraday, daily, weekly, or monthly samples, for example
 `tv bars NASDAQ:AAPL --timeframe 5 --from 2026-05-20 --to 2026-05-22`,
 `tv bars NASDAQ:AAPL --timeframe 60 --from 2026-05-01 --to 2026-05-22`, or
 `tv bars NASDAQ:CRUS --timeframe 1D --from 2010-01-01 --to 2010-12-31`.
+The stable one-minute downstream form is
+`tv bars EXCHANGE:SYMBOL --timeframe 1 --from YYYY-MM-DD --to YYYY-MM-DD
+--count 5000`.
 In date-range mode, `--count` is a safety cap on returned bars and defaults to
 500. It can be raised up to 5000 in date-range mode; recent count mode stays
 capped at 500. Date-range mode currently supports `1` (and its `1m` alias),
@@ -396,7 +399,12 @@ truncation reasons. Read
 `summary.coverage_status`, `summary.requested_count_fulfilled`, and
 `source_availability.wait_summary` before raw `bars[]`; they are historical
 coverage and bounded-source diagnostics, not ranking, scoring, or trading
-recommendations. If `source_availability.status` is `unavailable`, read
+recommendations. Date-range completeness is determined by
+`range_coverage_status` and `range_fetch_summary.range_truncated`; do not use
+`data_quality.partial_result` alone because it also records returned-count
+shortfall against `--count`. A larger corpus uses explicit non-overlapping
+calendar windows and downstream period-start timestamp merging rather than a
+larger CLI request. If `source_availability.status` is `unavailable`, read
 `unavailable_reason` as a source diagnostic rather than proof that the symbol
 has no price or no history. Do not treat `tv bars` as realtime streaming,
 scanner quote, chart quote, or quote-data evidence.

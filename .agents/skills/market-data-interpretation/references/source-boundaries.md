@@ -44,10 +44,22 @@ In date-range mode, `--count` is a returned-bar safety cap that defaults to
 500 and can be raised to 5000. Recent count mode remains capped at 500.
 `--to` is an inclusive calendar date.
 
+For one-minute downstream preparation, use:
+
+```bash
+tv bars EXCHANGE:SYMBOL --timeframe 1 \
+  --from YYYY-MM-DD --to YYYY-MM-DD --count 5000
+```
+
 `range_coverage_status` is the primary date-range coverage readback.
 `range_alignment` explains timestamp anchoring and
 `timestamp_within_requested_range` filtering. `range_fetch_summary` explains
 fetch windows, observed / filtered / returned counts, and truncation reason.
+Use `range_coverage_status` and `range_fetch_summary.range_truncated` together
+for completeness. `data_quality.partial_result` alone can mean only that fewer
+bars were returned than `--count`. Split larger corpora into explicit
+non-overlapping calendar windows and merge downstream by period-start
+timestamp.
 
 ## `tv events`
 

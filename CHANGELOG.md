@@ -29,6 +29,10 @@ package version omits the leading `v`.
   `tv bars --from/--to` support while preserving `bars.v1`, the 5,000 returned-
   bar cap, and explicit truncation/coverage diagnostics. Other retained product
   and evidence-triggered engineering candidates remain separately gated.
+- Completed the one-minute downstream contract handoff and queued a bounded
+  Desktop-free bars transport-diagnostics investigation. The investigation
+  will improve public-safe failure-stage attribution before considering retry
+  or other recovery behavior.
 
 ## v0.30.2 - 2026-07-27
 

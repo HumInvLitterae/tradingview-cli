@@ -245,6 +245,14 @@ tv bars NASDAQ:CRUS --timeframe 1D --from 2010-01-01 --to 2010-12-31
 tv bars NASDAQ:CRUS --timeframe 1W --from 2010-01-01 --to 2010-12-31
 ```
 
+For one-minute downstream preparation, use an exchange-qualified symbol and an
+explicit returned-bar cap:
+
+```bash
+tv bars EXCHANGE:SYMBOL --timeframe 1 \
+  --from YYYY-MM-DD --to YYYY-MM-DD --count 5000
+```
+
 Bare symbols such as `AAPL` are resolved through Desktop-free TradingView
 symbol search before bars are read. Use `NASDAQ:AAPL` or another
 `EXCHANGE:SYMBOL` form when the exchange matters. Read `requested_symbol`,
@@ -266,6 +274,15 @@ uses timestamps within the requested range. Read
 Read `source_availability` and its `wait_summary` when bars are partial or
 unavailable; those fields describe bounded historical-source behavior, not a
 trading recommendation or proof that a symbol has no history. Use
+`range_coverage_status` plus
+`range_fetch_summary.range_truncated` /
+`range_fetch_summary.range_truncation_reason` to decide range completeness.
+Do not use `data_quality.partial_result` alone for that decision: it also
+reports that fewer bars were returned than the requested `--count`, even when
+the requested date range is complete. For more than 5,000 bars, issue explicit
+non-overlapping calendar windows and merge them downstream by period-start
+timestamp; the CLI does not merge or seal a multi-request corpus.
+Use
 `tv range` only for selected Desktop chart viewport movement; it is not a
 historical export contract for `tv ohlcv`. Bounded
 `tv range --from <UNIX_SECONDS> --to <UNIX_SECONDS>` requests older history
