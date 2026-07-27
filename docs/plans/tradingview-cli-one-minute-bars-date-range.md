@@ -46,6 +46,16 @@ private package logic.
 - [x] (2026-07-27) Added exact end-boundary, timeout, source-exhaustion,
   no-progress, closure-shaped, payload-success/error, and aggregate-only
   three-case ignored-harness coverage; synchronized the roadmap.
+- [x] (2026-07-27) Focused correction review confirmed the earlier findings
+  closed and identified two remaining harness blockers: permissive symbol
+  qualification and incomplete closure-classification consistency checks.
+- [x] (2026-07-27) Required exactly one symbol separator with non-empty sides
+  and added fail-closed aggregate consistency checks across coverage,
+  truncation, timeout, wait completion, series completion, and partial-result
+  fields.
+- [x] (2026-07-27) Re-ran formatting, strict workspace Clippy, the complete
+  workspace test baseline, public hygiene, package-script syntax, guide
+  parity, and diff hygiene successfully after the second harness correction.
 - [ ] Obtain focused implementation review.
 - [ ] Run one explicitly gated bounded Desktop-free smoke and record only
   aggregate public-safe evidence.
@@ -108,9 +118,10 @@ Implementation corrections and focused non-live validation are complete.
 Date-range validation accepts normalized `1` and the existing `1m` alias while
 preserving every existing transport and `bars.v1` payload boundary. A
 dedicated ignored harness now fixes the three bounded live cases and emits
-aggregate-only evidence. Focused correction review and the separately gated
-live smoke remain pending. No dependency, live source, stash, version, tag,
-push, workflow, or GitHub Release has changed.
+aggregate-only evidence. Its symbol gate and classification checks now fail
+closed on the contradictions found by focused review. Narrow re-review and the
+separately gated live smoke remain pending. No dependency, live source, stash,
+version, tag, push, workflow, or GitHub Release has changed.
 
 ## Context and Orientation
 
