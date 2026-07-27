@@ -6,9 +6,12 @@ for release and next-phase planning.
 
 ## Current and future plans
 
-There is no active implementation ExecPlan. The bounded one-minute date-range
-downstream contract handoff is complete. The next ordered v0.31 item is a
-bounded Desktop-free bars transport-diagnostics investigation plan.
+The current ExecPlan is
+`tradingview-cli-bars-transport-diagnostics.md`. The bounded one-minute
+date-range downstream contract handoff is complete. The active plan adds
+public-safe Desktop-free bars source-stage attribution without adding retry,
+reconnect, timeout changes, fallback, shared sessions, or background work.
+Focused plan review is pending.
 
 The one-minute bars date-range plan is archived at
 `archives/tradingview-cli-one-minute-bars-date-range.md`. It added bounded

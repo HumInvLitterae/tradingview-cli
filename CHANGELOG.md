@@ -33,6 +33,9 @@ package version omits the leading `v`.
   Desktop-free bars transport-diagnostics investigation. The investigation
   will improve public-safe failure-stage attribution before considering retry
   or other recovery behavior.
+- Added the Desktop-free bars transport-diagnostics ExecPlan with a separate
+  `source_failure_stage` contract so the existing Desktop CDP `failure_stage`
+  vocabulary remains unchanged.
 
 ## v0.30.2 - 2026-07-27
 
