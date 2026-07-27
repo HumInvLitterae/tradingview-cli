@@ -33,7 +33,13 @@ timeout changes, shared sessions, or background work.
   heartbeat, source-availability details, and existing CDP diagnostics.
 - [x] (2026-07-27) Created this self-contained ExecPlan with a closed
   source-stage vocabulary and deterministic acceptance boundary.
-- [ ] Obtain focused plan review.
+- [x] (2026-07-27) Focused plan review identified four blockers: incorrect
+  facade lifecycle ordering, two incomplete stage mappings, an unspecified
+  deterministic injection seam, and stale durable state.
+- [x] (2026-07-27) Corrected the lifecycle and mapping, fixed the decorator
+  contract, specified private production decomposition for deterministic
+  tests, and synchronized roadmap and ledger state.
+- [ ] Obtain focused plan re-review.
 - [ ] Implement the typed stage mapping and deterministic fixtures.
 - [ ] Synchronize public docs and runtime guidance.
 - [ ] Run focused and complete non-live validation.
@@ -99,10 +105,20 @@ has been authorized or performed by this plan.
 
 `tv bars` is a Desktop-free bounded historical-bars command. Public facade
 functions `bars_symbol` and `bars_symbol_range` live in
-`crates/market/src/bars.rs`. They validate input, optionally resolve a bare
-symbol through Desktop-free search, build a `BarsRequest`, call
-`fetch_bars_ws`, reject an empty result through `no_bars_error`, and shape a
-`bars.v1` success payload.
+`crates/market/src/bars.rs`. Their current lifecycle is: prepare the configured
+HTTP client, optionally resolve a bare symbol through Desktop-free REST search,
+validate the bars request, call `fetch_bars_ws`, reject an empty result through
+`no_bars_error`, and shape a `bars.v1` success payload. This ordering means a
+bare-symbol source failure can occur before a `BarsRequest` exists, and
+validation can occur after a successful REST search.
+
+`configured_client()` is local generic HTTP-client preparation. Its failure
+does not contact a source and receives no `source_failure_stage`. A validation
+error also receives no stage because it is not itself a source failure, not
+because validation necessarily precedes source access. A bare-symbol REST
+transport or response failure is a source failure and receives
+`symbol_search`; a responsive search result that cannot resolve the requested
+identity remains the existing validation outcome without a source stage.
 
 `crates/market/src/bars/transport.rs` owns the undocumented TradingView
 WebSocket lifecycle. It prepares the request, connects, sends chart-session
@@ -143,19 +159,30 @@ The required mapping is:
 - bare-symbol search transport or response failure: `symbol_search`;
 - WebSocket request conversion before network access: `request_prepare`;
 - connection or handshake timeout/failure: `websocket_connect`;
-- authentication and chart-session setup sends: `session_setup`;
+- authentication, chart-session creation, and `switch_timezone` sends:
+  `session_setup`;
 - in-session symbol resolution and initial series creation sends:
   `series_setup`;
-- WebSocket read error, close, bounded wait timeout, or no-message/no-bars
-  result: `response_wait`;
+- WebSocket read error, close, or bounded timeout error generated inside the
+  read loop: `response_wait`;
 - malformed frame, protocol parse failure, or provider
   symbol/series/protocol error: `protocol`;
 - heartbeat pong send failure: `heartbeat_send`;
 - `request_more_data` send failure: `pagination_send`;
-- a responsive completed result that contains no bars: `source_result`;
+- any `Ok(BarsResult)` that reaches the facade with zero bars:
+  `source_result`, regardless of `BarsResult.completed`;
 - any genuinely unclassified source boundary: `source_unknown`.
 
-Do not classify validation errors because they occur before source access.
+The existing `completed`, `source_availability`, `wait_summary`, and
+`range_fetch_summary` fields explain why a zero-bar `source_result` was
+complete, timed out, source-exhausted, or stopped for no progress. Do not
+duplicate that reason in the stage.
+
+Do not classify validation errors because they are not source failures.
+`configured_client()` failure is also unstaged local preparation. Explicitly
+include `switch_timezone` in the inventory even though it is sent after series
+creation; its role is chart-session configuration and its stage is
+`session_setup`.
 Cleanup failures remain intentionally ignored by the existing best-effort
 cleanup contract and do not replace the primary outcome.
 
@@ -169,11 +196,25 @@ existing module layout shows a more coherent private location. Implement an
 `as_str()` mapping for the exact closed vocabulary above. Do not serialize the
 enum directly and do not expose a new public Rust type.
 
-Add one helper that merges
-`"source_failure_stage": stage.as_str()` into a bars details object while
-preserving every existing key. It must fail closed to `source_unknown` only
-when a caller has no reviewed stage; normal production call sites must pass an
-explicit variant.
+Add one private decorator with the exact ownership shape:
+
+    fn with_source_failure_stage(
+        error: AppError,
+        stage: BarsFailureStage,
+    ) -> AppError
+
+The decorator inserts `"source_failure_stage": stage.as_str()` last into
+existing object details. With no details it creates an object containing only
+the stage. A non-object details value is not expected at reviewed call sites;
+if encountered, omit that prior value and add a fixed
+`"previous_details_omitted": true` marker rather than serializing unknown raw
+content. This mirrors the repository's fail-closed diagnostic policy.
+
+Transport call sites first construct their existing `bars_error_details`, then
+apply the decorator. Bare-symbol REST failures apply the decorator directly to
+the existing HTTP `AppError`, preserving its `operation`,
+`http_failure_class`, and optional `status` without requiring a `BarsRequest`.
+Normal production call sites always pass an explicit stage.
 
 Apply the helper at the owning boundary, before a higher layer loses the
 location information. Preserve the original `AppError.kind`,
@@ -203,9 +244,30 @@ fixed sanitized messages and must not retain a live dependency error suffix.
 
 ### Milestone 3: prove preservation and sanitization deterministically
 
-Add deterministic tests close to the owning code. Reuse existing fake sink,
-protocol, payload, and facade fixtures rather than creating a test-only
-production API.
+Add deterministic tests close to the owning code. The current lifecycle is too
+monolithic to prove each call-site mapping with the existing sink alone.
+Decompose it into private production helpers that are called by
+`fetch_bars_ws` in ordinary builds:
+
+- a private generic initial-setup helper that performs exactly five sends in
+  existing order: `set_auth_token`, `chart_create_session`, `resolve_symbol`,
+  `create_series`, and `switch_timezone`;
+- a private pagination helper for the single `request_more_data` send;
+- the existing private heartbeat helper;
+- a private generic response-loop runner, or a scripted local WebSocket fixture
+  against the production response-loop code, for read error, close, timeout,
+  protocol, heartbeat, and pagination paths.
+
+Use a fake sink that fails on the configured Nth send to prove the initial five
+call sites. The first, second, and fifth failures map to `session_setup`; the
+third and fourth map to `series_setup`. The helper extraction must preserve
+send order, arguments, one setup deadline, response deadline, call counts, and
+existing return behavior. These are private production boundaries, not public
+or test-only production APIs.
+
+Bare-symbol search needs no transport seam in this slice: test the pure stage
+decorator with representative existing HTTP object details and preserve the
+existing HTTP transport tests.
 
 Tests must prove:
 
@@ -215,6 +277,7 @@ Tests must prove:
 - kind, message, and exit code are unchanged;
 - connection, setup-send, series-send, read/close, timeout, protocol,
   heartbeat, pagination, and no-bars fixtures receive the intended stage;
+- all five initial sends retain their existing order and exact stage mapping;
 - a failure after bars were observed preserves existing bar count,
   wait-summary, and range-fetch details;
 - validation errors contain no `source_failure_stage`;
@@ -222,6 +285,8 @@ Tests must prove:
 - CDP `failure_stage` vocabulary and tests remain unchanged;
 - no fixture retries, reconnects, extends deadlines, substitutes a source, or
   promotes failure to success.
+- `source_unknown` is covered as the decorator fallback but no reviewed normal
+  production call site intentionally uses it.
 
 If an exact transport boundary cannot be injected without a production-only
 hook, stop and revise this plan. Do not add a public or ordinary-build API only
@@ -240,8 +305,12 @@ does not authorize retry. Recommended interpretation is:
 - `request_prepare`: report an internal source-request preparation problem;
 - `websocket_connect`: re-observe source availability before considering a
   separately approved repeat;
-- setup, series, heartbeat, or pagination send stages: preserve the failed
-  outcome because dispatch may be uncertain;
+- `session_setup`: report a common authentication/chart-session bootstrap
+  failure and do not recommend changing the request;
+- `series_setup`: report a request-specific symbol/timeframe/series boundary,
+  but do not infer invalid input or non-dispatch;
+- heartbeat or pagination send stages: preserve the failed outcome and any
+  partial bars because dispatch may be uncertain;
 - `response_wait`: report timeout/close/read evidence and preserve any partial
   source details;
 - `protocol`: do not change symbol, timeframe, or source automatically;
@@ -249,6 +318,13 @@ does not authorize retry. Recommended interpretation is:
 - `source_unknown`: stop and surface the original error.
 
 These are explanations, not automatic actions implemented by the CLI.
+For every send stage, the value identifies only where the local send operation
+returned an error. Remote receipt, processing, and effect are all unknown.
+
+Document that `source_failure_stage` is a field name available for
+source-owned diagnostics, but its closed vocabulary is command/source
+specific. A future Desktop-free source may use the same field only with its
+own reviewed vocabulary; it must not silently inherit the bars values.
 
 ## Concrete Steps
 
@@ -336,17 +412,23 @@ Define a private bars-owned enum equivalent to:
         SourceUnknown,
     }
 
-The exact helper signature may follow existing bars module ownership, but it
-must accept an `AppError`, a `BarsFailureStage`, and existing bars details, and
-return an `AppError` with preserved semantics plus the additive
-`source_failure_stage` field.
+Define the decorator exactly as:
+
+    fn with_source_failure_stage(
+        error: AppError,
+        stage: BarsFailureStage,
+    ) -> AppError
+
+It returns an `AppError` with preserved kind, message, and existing object
+details plus the additive `source_failure_stage` field. It does not accept a
+`BarsRequest` or a separately supplied details object.
 
 Do not change `ErrorKind`, `AppError::exit_code`, CDP `PublicFailureStage`,
 `bars.v1` success types, request timeouts, fetch sizes, or Cargo manifests.
 
 ## Open Questions
 
-There are no unresolved questions blocking focused plan review.
+There are no unresolved questions blocking focused plan re-review.
 
 The future recovery question remains deliberately open: which stages, if any,
 justify a bounded repeat after repeated evidence? This plan must not answer it
@@ -356,3 +438,9 @@ Revision note (2026-07-27): created after the v0.31 one-minute bars handoff.
 The plan separates Desktop-free source attribution from Desktop CDP
 `failure_stage`, fixes a closed public-safe vocabulary, and explicitly defers
 all recovery behavior.
+
+Revision note (2026-07-27): corrected four focused-review findings. The facade
+lifecycle now matches source, `switch_timezone` and all zero-bar results have
+unique mappings, the decorator works before `BarsRequest` creation, private
+production helper seams make exact fault injection executable, and durable
+state is synchronized for re-review.
