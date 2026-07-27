@@ -35,17 +35,20 @@ publication.
   architecture audit with no local release blocker or required refactor.
 - [x] (2026-07-28) Created this release-readiness ExecPlan and synchronized
   current planning state without changing versioned artifacts.
-- [ ] Ground the exact release candidate, package contract, dependency state,
-  and local stashes.
-- [ ] Bump the workspace and seven local lockfile package versions to `0.31.0`.
-- [ ] Cut the changelog, add curated `docs/releases/v0.31.0.md`, and update the
-  README release asset example.
-- [ ] Run four pinned JavaScript gates and the complete Rust release baseline.
-- [ ] Build `--release --locked`, stage and inspect the package, and verify both
-  binaries report `tv 0.31.0`.
-- [ ] Run hygiene, workflow, stale-version, package, parity, and diff checks.
-- [ ] Record release-readiness evidence and stop before owner-controlled remote
-  release operations.
+- [x] (2026-07-28) Grounded the exact release candidate, package contract,
+  dependency state, and two protected local stashes.
+- [x] (2026-07-28) Bumped the workspace and seven local lockfile package
+  versions to `0.31.0` without third-party version or checksum drift.
+- [x] (2026-07-28) Cut the changelog, added curated
+  `docs/releases/v0.31.0.md`, and updated the README release asset example.
+- [x] (2026-07-28) Ran four pinned JavaScript gates and the complete Rust
+  release baseline successfully.
+- [x] (2026-07-28) Built `--release --locked`, staged and inspected the
+  46-file package, and verified both binaries report `tv 0.31.0`.
+- [x] (2026-07-28) Ran hygiene, workflow, stale-version, package, parity, and
+  diff checks; every gate was green.
+- [x] (2026-07-28) Recorded local release-readiness evidence and stopped before
+  owner-controlled tag, push, workflow, and publication operations.
 
 ## Surprises & Discoveries
 
@@ -88,11 +91,17 @@ publication.
 
 ## Outcomes & Retrospective
 
-Release artifacts are not prepared yet. Completion requires aligned `0.31.0`
-version surfaces, curated release notes, four pinned JavaScript gates, the full
-Rust baseline, locked release build, explicit package inspection, public
-hygiene, and clean local state. Tag, push, workflow, and publication operations
-remain owner-controlled.
+Release artifacts are prepared locally. The workspace and seven local packages
+report `0.31.0` with no third-party dependency drift. Four pinned JavaScript
+contracts, strict workspace Clippy, the complete workspace suite and doctests,
+metadata, locked build, hygiene, workflow parsing, package syntax, guide parity,
+stale-version, and diff checks are green.
+
+Both source and staged binaries report `tv 0.31.0`. The staged package contains
+46 files and exactly eight runtime skills under each of `.agents/skills` and
+`.claude/skills`, with plans, notes, the continuity ledger, and
+development-only skills absent. No live operation or stash mutation occurred.
+Tag, push, workflow, and publication operations remain owner-controlled.
 
 ## Context and Orientation
 
@@ -262,6 +271,19 @@ The owner-approved one-minute live evidence is already reviewed and is not
 rerun here. Release evidence consists of deterministic tests, locked build,
 version readback, and package inspection.
 
+The release validation recorded these principal counts:
+
+    pinned JavaScript gates: 4 passed
+    tradingview-cdp: 47 passed, 1 ignored
+    tradingview-cli unit: 465 passed, 5 ignored
+    desktop CLI contracts: 100 passed
+    tradingview-market: 103 passed, 2 ignored
+    tradingview-model: 54 passed
+    tradingview-pine: 25 passed
+    tradingview-scanner: 36 passed
+    doctests: 4 passed
+    staged package: 46 files, 8 runtime skills per skill root
+
 ## Interfaces and Dependencies
 
 This plan introduces no interface or dependency. It verifies the reviewed
@@ -281,3 +303,8 @@ Revision note (2026-07-28): Created the v0.31.0 release-readiness plan after
 closing the audited two-slice candidate. The plan preserves the reviewed
 dependency graph and package allowlist, distinguishes product and diagnostics
 claims, and stops before remote release operations.
+
+Revision note (2026-07-28): Prepared and validated all local v0.31.0 artifacts.
+The locked build, source/staged version readback, explicit package, Rust and
+JavaScript gates, hygiene, and workflow checks are green. Remote release
+operations remain outside this plan.

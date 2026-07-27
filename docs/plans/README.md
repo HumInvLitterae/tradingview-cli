@@ -17,8 +17,9 @@ promotion. Its evidence is recorded in
 `docs/notes/v0.31-retained-backlog-product-selection.md`. The 16-commit,
 29-path completion audit and full deterministic validation are complete, and
 the audit plan is archived. The current plan is
-`tradingview-cli-v0.31.0-release-readiness.md`; versioned artifact preparation
-has not begun.
+`tradingview-cli-v0.31.0-release-readiness.md`; local versioned artifacts,
+locked build, and explicit package validation are green. Remote release
+operations remain owner-controlled.
 
 The one-minute bars date-range plan is archived at
 `archives/tradingview-cli-one-minute-bars-date-range.md`. It added bounded
