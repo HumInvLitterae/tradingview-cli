@@ -56,7 +56,8 @@ timeout changes, shared sessions, or background work.
   and incomplete CHANGELOG state.
 - [x] (2026-07-28) Added a production-shared result-shaping fixture for
   `source_result` and synchronized the CHANGELOG and current-state documents.
-- [ ] Obtain narrow focused re-review and archive the plan.
+- [x] (2026-07-28) Narrow focused re-review found no remaining issue; archived
+  the completed plan.
 
 ## Surprises & Discoveries
 
@@ -110,13 +111,14 @@ timeout changes, shared sessions, or background work.
 
 ## Outcomes & Retrospective
 
-Implementation and full non-live validation are complete. Desktop-free bars
+Implementation, full non-live validation, and focused review are complete.
+Desktop-free bars
 source failures now receive the additive `source_failure_stage` field without
-changing success payloads or adding recovery behavior. Focused-review
-corrections are applied and narrow re-review remains before archive.
+changing success payloads or adding recovery behavior. Both focused-review
+acceptance gaps were corrected and independently confirmed closed.
 
-The deterministic bars module suite completed with 37 passing tests and one
-ignored live heartbeat probe. CLI bars contracts completed 4/4. Strict
+The corrected deterministic bars module suite completed with 38 passing tests
+and one ignored live heartbeat probe. CLI bars contracts completed 4/4. Strict
 workspace Clippy, the full workspace suite and doctests, metadata, public
 hygiene, packaging syntax, contributor-guide parity, and diff hygiene passed.
 No live TradingView request was run for this diagnostic slice.

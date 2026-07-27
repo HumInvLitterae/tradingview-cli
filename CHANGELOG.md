@@ -51,6 +51,14 @@ package version omits the leading `v`.
 - Completed implementation and the full non-live baseline. Focused review found
   no production mapping defect; a zero-result facade fixture and durable-state
   correction are applied for narrow re-review.
+- Completed narrow focused re-review with no remaining finding and archived the
+  Desktop-free bars transport-diagnostics ExecPlan.
+- Completed v0.31 retained-backlog selection with no additional promotion.
+  Event ranges, larger single-request history, Pine named save, Screener reset,
+  and alert lifecycle work retain their existing evidence triggers.
+- Created the v0.31 frozen-candidate completion and architecture audit
+  ExecPlan. Focused plan review is pending before audit execution; no new
+  feature, version, or release operation is authorized.
 
 ## v0.30.2 - 2026-07-27
 

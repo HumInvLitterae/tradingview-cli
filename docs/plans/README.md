@@ -6,14 +6,17 @@ for release and next-phase planning.
 
 ## Current and future plans
 
-The current ExecPlan is
-`tradingview-cli-bars-transport-diagnostics.md`. The bounded one-minute
-date-range downstream contract handoff is complete. The active plan adds
-public-safe Desktop-free bars source-stage attribution without adding retry,
-reconnect, timeout changes, fallback, shared sessions, or background work.
-Implementation, deterministic fixtures, public guidance, and full non-live
-validation are complete. The zero-result fixture and durable-state corrections
-are applied; narrow focused re-review is pending.
+The bars transport-diagnostics plan passed narrow focused re-review and is
+archived at
+`archives/tradingview-cli-bars-transport-diagnostics.md`. It added public-safe
+Desktop-free bars source-stage attribution without adding retry, reconnect,
+timeout changes, fallback, shared sessions, or background work.
+
+The v0.31 retained-backlog comparison is complete with no additional product
+promotion. Its evidence is recorded in
+`docs/notes/v0.31-retained-backlog-product-selection.md`. The current plan is
+`tradingview-cli-v0.31-pre-release-audit.md`; focused plan review is pending
+before the frozen-candidate audit may run.
 
 The one-minute bars date-range plan is archived at
 `archives/tradingview-cli-one-minute-bars-date-range.md`. It added bounded

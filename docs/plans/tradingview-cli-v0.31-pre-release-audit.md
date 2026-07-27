@@ -1,0 +1,334 @@
+# Audit the frozen v0.31 candidate before release preparation
+
+This ExecPlan is a living document. Keep `Progress`, `Surprises & Discoveries`,
+`Decision Log`, and `Outcomes & Retrospective` current while work proceeds.
+Maintain it according to `.agents/PLANS.md`.
+
+## Purpose / Big Picture
+
+This slice freezes v0.31 feature work and determines whether the final
+candidate is coherent, correctly documented, fully tested, and ready for a
+separate release-readiness plan. A contributor should be able to reproduce the
+exact `v0.30.2..HEAD` inventory, distinguish shipped behavior from test and
+planning evidence, trace the one-minute range and bars diagnostic contracts end
+to end, run the complete deterministic baseline, and state whether any
+release-blocking defect or architecture correction remains.
+
+The promoted user-facing changes are bounded one-minute Desktop-free
+`tv bars --from/--to` support and additive public-safe
+`source_failure_stage` diagnostics for Desktop-free bars failures. The
+one-minute change preserves `bars.v1`, period-start timestamps, the 5,000
+returned-bar cap, and the existing coverage vocabulary. The diagnostic change
+preserves existing error kinds, messages, details, and exit codes. The
+retained-backlog comparison is release evidence rather than another runtime
+feature.
+
+No new feature, dependency, source, fallback, live operation, version bump, or
+release operation belongs in this audit. Small contract-preserving corrections
+may be made here. A larger behavior change or refactor stops the audit and
+requires its own ExecPlan.
+
+## Progress
+
+- [x] (2026-07-28) Closed and archived the one-minute date-range and
+  Desktop-free bars transport-diagnostics plans.
+- [x] (2026-07-28) Compared retained product candidates and selected no
+  additional promotion because none met its recorded trigger.
+- [x] (2026-07-28) Created this completion and architecture audit ExecPlan and
+  synchronized current planning state.
+- [ ] Obtain focused independent plan review before auditing the candidate.
+- [ ] Freeze the exact candidate commit, commit count, changed paths, Cargo
+  state, and production/test/docs classification.
+- [ ] Audit one-minute date-range behavior and downstream guidance end to end.
+- [ ] Audit Desktop-free bars failure-stage behavior and non-recovery
+  boundaries end to end.
+- [ ] Audit retained defers, public documentation, packaging, and architecture
+  ownership.
+- [ ] Run focused tests and the complete deterministic validation baseline.
+- [ ] Obtain focused independent audit review, record the outcome, and archive
+  this plan before release readiness.
+
+## Surprises & Discoveries
+
+- Observation: the first owner-authorized one-minute live smoke stopped on a
+  common-path connection failure before range classification.
+  Evidence: a later bounded production-binary comparison succeeded for the
+  existing five-minute path and all three intended one-minute cases, so the
+  timeframe implementation was not the cause.
+
+- Observation: the transient failure exposed insufficient Desktop-free bars
+  attribution even though the feature itself was valid.
+  Evidence: prior errors could not distinguish WebSocket connection, setup,
+  response wait, protocol, heartbeat, pagination, or empty-result boundaries.
+  The reviewed `source_failure_stage` contract now provides that distinction
+  without adding recovery behavior.
+
+- Observation: no retained product candidate currently meets its promotion
+  trigger.
+  Evidence: explicit bounded windows cover the current historical workload,
+  and event, Pine, Screener, and alert candidates still lack their required
+  consumer or ownership boundary.
+
+## Decision Log
+
+- Decision: freeze v0.31 after the two promoted bars slices.
+  Rationale: the concrete downstream one-minute blocker is closed, failure
+  attribution now reduces unnecessary diagnosis exchanges, and another feature
+  without its trigger would weaken the evidence-first release boundary.
+  Date/Author: 2026-07-28 / Codex
+
+- Decision: audit `source_failure_stage` separately from the Desktop CDP
+  `failure_stage` contract.
+  Rationale: Desktop-free bars and Desktop-backed CDP operations have different
+  transports and lifecycle boundaries. Reusing one field or vocabulary would
+  obscure ownership rather than improve diagnostics.
+  Date/Author: 2026-07-28 / Codex
+
+- Decision: do not rerun the one-minute live comparison during this audit.
+  Rationale: the bounded owner-approved run already proved the production
+  binary scenarios. The audit verifies deterministic contracts and recorded
+  aggregate evidence; another network run would not establish a new release
+  property.
+  Date/Author: 2026-07-28 / Codex
+
+- Decision: keep retry, reconnect, timeout changes, fallback, shared sessions,
+  and broker behavior unpromoted.
+  Rationale: stage attribution identifies where a failure occurred but does not
+  prove that replaying an operation is safe. Recovery requires repeated
+  evidence and a separate reviewed plan.
+  Date/Author: 2026-07-28 / Codex
+
+## Outcomes & Retrospective
+
+The audit has not run yet. Completion requires an exact frozen-candidate
+inventory, end-to-end contract traces for both promoted bars slices, the full
+deterministic baseline, and green focused independent audit review. The final
+entry must state any corrections made, whether an architecture blocker remains,
+and whether release readiness is the only remaining local work item.
+
+## Context and Orientation
+
+The repository is a Rust workspace that builds one `tv` binary. Desktop-free
+historical bars are implemented in `crates/market/src/bars.rs` and its
+`bars/validation.rs`, `bars/transport.rs`, and `bars/payload.rs` modules. CLI
+argument parsing and help live in `crates/cli/src/cli.rs`; public command
+contracts are exercised by `crates/cli/tests/cli_contract_bars.rs`.
+
+Date-range mode accepts inclusive calendar dates from the user and converts the
+end date to an exclusive timestamp at the next day boundary. Returned bars use
+period-start timestamps and are filtered to the half-open interval
+`from <= time < to_exclusive`. A fetch window requests at most 500 bars, while
+one command returns at most 5,000. Incomplete coverage is represented by the
+existing `range_coverage_status`, `range_truncated`, and
+`range_truncation_reason` fields rather than by silent success.
+
+`source_failure_stage` is an additive string in Desktop-free bars error details.
+Its closed vocabulary is `symbol_search`, `request_prepare`,
+`websocket_connect`, `session_setup`, `series_setup`, `response_wait`,
+`protocol`, `heartbeat_send`, `pagination`, `source_result`, and
+`source_unknown`. It is distinct from the Desktop-backed CDP `failure_stage`
+field. The new field classifies evidence only; it does not authorize retry.
+
+The completed implementation plans are
+`docs/plans/archives/tradingview-cli-one-minute-bars-date-range.md` and
+`docs/plans/archives/tradingview-cli-bars-transport-diagnostics.md`. The
+retained candidate decision is
+`docs/notes/v0.31-retained-backlog-product-selection.md`. These documents are
+evidence and rationale, while production source and public contract tests
+remain the authority for shipped behavior.
+
+## Plan of Work
+
+First freeze the candidate. Record the exact `HEAD`, commit count, commit list,
+and changed paths from `v0.30.2`. Classify every changed path as production,
+test, public documentation, runtime guidance, plan, note, or local ledger.
+Inspect `Cargo.toml`, `Cargo.lock`, `.github/`, and `mise.toml` separately so
+dependency, feature, workflow, or toolchain drift cannot hide inside the larger
+diff. If the tree changes after the freeze, stop and refresh the inventory
+before relying on it.
+
+Second audit one-minute date ranges. Trace normalization and validation from
+`crates/cli/src/cli.rs` into `crates/market/src/bars/validation.rs`, then trace
+transport filtering and payload shaping through `bars/transport.rs`,
+`bars.rs`, and `bars/payload.rs`. Prove that normalized `1` is accepted only in
+bounded date-range mode, that `1m` remains its alias, and that `3`, `45`, `120`,
+`180`, and `240` remain rejected. Verify half-open end-date filtering,
+period-start semantics, the 500-bar fetch window, 5,000 returned-bar cap,
+single absolute deadline, no-progress stop, source-exhausted and timeout
+classification, and the absence of synthetic closure bars. Confirm recent
+count mode, weekly/monthly behavior, `tv ohlcv`, `tv range`, and selected-chart
+sources did not change.
+
+Third audit Desktop-free bars diagnostics. Follow every transport lifecycle
+boundary through `crates/market/src/bars.rs` and
+`crates/market/src/bars/transport.rs`. Confirm the initial five setup sends,
+connection and response failures, malformed protocol data, heartbeat,
+pagination, bare-symbol search, and zero-result facade mapping use the reviewed
+closed vocabulary. Prove `Message::Close` remains `response_wait`, pagination
+uses `pagination`, and zero bars become `source_result`. Verify existing
+`ErrorKind`, message, exit code, object details, availability summaries, range
+summaries, and partial-bar diagnostics are preserved. Details without an
+object may be converted to an object; non-object details must use
+`previous_details_omitted: true`. Unknown stage inputs must fail closed to
+`source_unknown`.
+
+Fourth audit what did not ship. Search production source for new retry,
+reconnect, timeout extension, fallback, alternate source, shared session,
+broker, or background work. Confirm the Desktop CDP `failure_stage` contract is
+unchanged. Confirm the retained-backlog note does not describe its no-promotion
+comparison as a runtime capability. Public docs and packaged runtime guidance
+must explain one-minute ranges and bars source stages without exposing private
+symbols, dates, target IDs, endpoints, payloads, credentials, or account-local
+metadata.
+
+Finally run focused and full validation, record concise counts, and request an
+independent read-only audit review. The reviewer must check production behavior,
+test realism, architecture ownership, public claims, package boundaries,
+private-data hygiene, and durable-state synchronization. Archive only after
+that review is green.
+
+## Concrete Steps
+
+Run from the repository root.
+
+Freeze and classify the candidate:
+
+    git rev-parse HEAD
+    git rev-list --count v0.30.2..HEAD
+    git log --oneline --decorate v0.30.2..HEAD
+    git diff --name-status v0.30.2..HEAD
+    git diff --stat v0.30.2..HEAD
+    git diff --check v0.30.2..HEAD
+    git diff --quiet v0.30.2..HEAD -- Cargo.toml Cargo.lock .github mise.toml
+
+The last command should exit zero when no dependency, workflow, or toolchain
+state changed. If it does not, classify every changed line and revise this plan
+before continuing.
+
+Inspect the promoted contracts and exclusions:
+
+    rg -n 'timeframe|from|to|5_000|500|period_start|range_coverage_status|range_truncated' \
+      crates/cli/src/cli.rs crates/market/src/bars.rs crates/market/src/bars \
+      crates/cli/tests/cli_contract_bars.rs
+    rg -n 'source_failure_stage|BarsFailureStage|with_source_failure_stage|source_result|pagination' \
+      crates/market/src/bars.rs crates/market/src/bars/transport.rs \
+      crates/cli/tests/cli_contract_bars.rs
+    rg -n 'retry|reconnect|fallback|broker|shared session|timeout extension' \
+      crates/market crates/cli/src
+
+Run focused tests:
+
+    cargo test -p tradingview-market bars -- --nocapture
+    cargo test -p tradingview-cli --test cli_contract_bars -- --nocapture
+    cargo test -p tradingview-cli --test live_bars -- --nocapture
+
+The ordinary `live_bars` command must run deterministic fixtures and leave the
+network tests ignored. Do not pass `--ignored` and do not set live environment
+gates during this audit.
+
+Run the full deterministic baseline:
+
+    cargo fmt --check
+    cargo clippy --workspace --all-targets --all-features -- -D warnings
+    cargo test --workspace
+    cargo metadata --no-deps --format-version 1
+    python3 scripts/check-public-hygiene.py --self-test
+    python3 scripts/check-public-hygiene.py
+    bash -n scripts/stage-release-package-files.sh
+    cmp -s AGENTS.md CLAUDE.md
+    ruby -e 'require "yaml"; Dir[".github/workflows/*.{yml,yaml}"].sort.each { |f| YAML.load_file(f); puts "parsed #{f}" }'
+    git diff --check
+
+Record exact test counts and any ignored tests in `Progress` and `Artifacts and
+Notes`. A zero-test focused filter is not evidence; correct the command in this
+living plan if any filter runs zero tests.
+
+## Validation and Acceptance
+
+The audit is accepted only when all of the following are demonstrated.
+
+The exact candidate commit and every changed path are classified. There is no
+unexplained dependency, feature, workflow, toolchain, production, test, or
+documentation change. Any candidate movement after the freeze is explicitly
+refreshed.
+
+Normalized timeframe `1` and alias `1m` work only through the reviewed bounded
+date-range contract. Half-open date filtering includes the final minute before
+the exclusive boundary and excludes the boundary itself. Range output
+preserves `bars.v1`, `period_start`, existing requested/returned/observed
+ranges, coverage and truncation fields, the 500-bar fetch window, 5,000-bar
+return cap, one deadline, and no-progress stop. Closures do not produce
+synthetic bars or an unjustified complete status.
+
+Every Desktop-free bars failure boundary maps to the reviewed
+`source_failure_stage` vocabulary. The zero-result production facade is covered
+directly. Existing error kinds, messages, exit codes, object details, source
+availability, wait summaries, range summaries, and partial-result diagnostics
+remain intact. Private transport data never enters the public error.
+
+No retry, reconnect, fallback, timeout extension, source substitution, shared
+session, broker, or failure-to-success promotion exists. Desktop CDP
+`failure_stage` remains unchanged. The retained selection note is not presented
+as shipped functionality.
+
+Focused tests, strict Clippy, the full workspace suite and doctests, metadata,
+public hygiene, package syntax, contributor-guide parity, workflow YAML
+parsing, and diff hygiene are green. Independent focused audit review finds no
+release blocker or required architecture refactor. Only then may the plan be
+archived and release readiness become current.
+
+## Idempotence and Recovery
+
+All audit commands are read-only or generate ordinary build artifacts and may
+be rerun. Do not run ignored live tests, connect to TradingView, alter Desktop
+state, apply or drop stashes, change versions, tag, push, execute workflows, or
+publish a release.
+
+If a deterministic test fails, preserve the failure, identify whether it is a
+candidate defect or environment problem, and make only a narrow
+contract-preserving correction. If a larger behavior or architecture change is
+needed, stop this audit and create a separate ExecPlan. If unrelated work
+appears, do not revert it; refresh the frozen inventory or wait for the owner to
+resolve the overlap.
+
+## Artifacts and Notes
+
+Keep only public-safe aggregate evidence: commit and path counts, test counts,
+fixed stage names, and validation status. Do not retain live symbols, dates,
+bars, prices, endpoint strings, WebSocket frames, credentials, target IDs,
+environment values, local paths, or raw error payloads.
+
+The owner-approved one-minute production-binary comparison is already reviewed
+evidence. Its three scenarios succeeded after the initial common-path
+connection failure, and it must not be rerun during this audit.
+
+## Interfaces and Dependencies
+
+This audit adds no interface or dependency. It verifies these existing
+contracts:
+
+- `crates/market/src/bars/validation.rs` accepts normalized `1` in bounded
+  date-range mode while retaining other guards.
+- `crates/market/src/bars/transport.rs` owns one WebSocket series, setup,
+  pagination, response processing, and the existing absolute deadline.
+- `crates/market/src/bars/payload.rs` shapes `bars.v1` success output and range
+  coverage diagnostics.
+- `crates/market/src/bars.rs` adds the Desktop-free
+  `source_failure_stage` error detail without replacing existing errors.
+- `crates/cli/tests/cli_contract_bars.rs` protects the public CLI contract.
+
+No new crate, feature flag, test-only production API, public command, output
+envelope, or source provider may be introduced.
+
+## Open Questions
+
+There are no unresolved questions that block audit execution. Recovery behavior
+remains conditional on future repeated stage evidence. Retained product
+candidates keep their documented triggers and are not reconsidered inside this
+audit.
+
+Revision note (2026-07-28): Created the frozen-candidate audit after both
+promoted bars slices completed focused review and retained product selection
+closed with no additional promotion. The plan makes the two shipped contracts,
+non-recovery boundary, private-data rules, and independent review gate
+reproducible before release readiness.
