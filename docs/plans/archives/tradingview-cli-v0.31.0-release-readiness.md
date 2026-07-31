@@ -103,6 +103,11 @@ Both source and staged binaries report `tv 0.31.0`. The staged package contains
 development-only skills absent. No live operation or stash mutation occurred.
 Tag, push, workflow, and publication operations remain owner-controlled.
 
+The owner subsequently published `v0.31.0` from release commit `c76546d`.
+The tag, `main`, and `origin/main` now identify the same release commit, so this
+plan is complete and archived. A later lockfile-only dependency refresh is
+separate patch-release input and does not reopen this release plan.
+
 ## Context and Orientation
 
 The latest public release is `v0.30.2` at commit `e8e480d`. The completed v0.31

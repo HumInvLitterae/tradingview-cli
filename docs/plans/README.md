@@ -16,10 +16,12 @@ The v0.31 retained-backlog comparison is complete with no additional product
 promotion. Its evidence is recorded in
 `docs/notes/v0.31-retained-backlog-product-selection.md`. The 16-commit,
 29-path completion audit and full deterministic validation are complete, and
-the audit plan is archived. The current plan is
-`tradingview-cli-v0.31.0-release-readiness.md`; local versioned artifacts,
-locked build, and explicit package validation are green. Remote release
-operations remain owner-controlled.
+the audit plan is archived. `v0.31.0` is released from `c76546d`; its completed
+release-readiness plan is archived. Commit `eceaa18` is a compatible
+lockfile-only post-release refresh and is candidate input for a separate
+`v0.31.1` release-readiness plan. The current roadmap and ordered inventory
+remain `docs/v0.31-roadmap.md` and `docs/v0.31-work-items.md` until next-version
+planning begins.
 
 The one-minute bars date-range plan is archived at
 `archives/tradingview-cli-one-minute-bars-date-range.md`. It added bounded
