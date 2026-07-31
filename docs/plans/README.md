@@ -21,6 +21,8 @@ release-readiness plan is archived. Commit `eceaa18` is a compatible
 lockfile-only post-release refresh. The current plan is
 `tradingview-cli-v0.31.1-release-readiness.md`; it freezes that dependency
 refresh and the docs-only release closeout without authorizing feature work.
+Local versioned artifacts, all deterministic gates, the locked build, and the
+explicit package are green; focused release-readiness review is pending.
 The current roadmap and ordered inventory
 remain `docs/v0.31-roadmap.md` and `docs/v0.31-work-items.md` until next-version
 planning begins.

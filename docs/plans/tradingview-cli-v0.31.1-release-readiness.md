@@ -27,13 +27,18 @@ execution, or GitHub Release publication.
   corrected contributor source-of-truth routing in docs-only commit `73c79e1`.
 - [x] (2026-08-01) Created this release-readiness ExecPlan and synchronized
   durable state without changing versioned artifacts.
-- [ ] Bump the workspace and seven local lockfile package versions to `0.31.1`.
-- [ ] Cut the changelog, add curated release notes, and update the README
-  archive example.
-- [ ] Run four pinned JavaScript gates and the complete Rust release baseline.
-- [ ] Build `--release --locked`, stage and inspect the explicit package, and
-  verify source and staged binary versions.
-- [ ] Record aggregate evidence and obtain focused release-readiness review.
+- [x] (2026-08-01) Bumped the workspace and seven local lockfile package
+  versions to `0.31.1` without additional third-party drift.
+- [x] (2026-08-01) Cut the changelog, added curated release notes, and updated
+  the README archive example.
+- [x] (2026-08-01) Ran four pinned JavaScript gates and the complete Rust
+  release baseline successfully.
+- [x] (2026-08-01) Built `--release --locked`, staged and inspected the explicit
+  package, and verified source and staged binary versions.
+- [x] (2026-08-01) Recorded aggregate local release evidence and stopped before
+  remote release operations.
+- [ ] Obtain focused release-readiness review before committing a tag or
+  performing remote release operations.
 
 ## Surprises & Discoveries
 
@@ -47,6 +52,11 @@ execution, or GitHub Release publication.
   Evidence: docs-only closeout `73c79e1` now resolves the current roadmap and
   inventory through `docs/plans/README.md` instead of a fixed historical
   version.
+
+- Observation: running all four Cargo-backed JavaScript gates concurrently
+  caused build-directory lock contention but no test failure.
+  Evidence: sequential TTY-backed reruns completed all four pinned contracts
+  successfully; release validation therefore records the sequential results.
 
 ## Decision Log
 
@@ -70,10 +80,19 @@ execution, or GitHub Release publication.
 
 ## Outcomes & Retrospective
 
-Preparation is in progress. The exact dependency and documentation candidate
-is frozen, but versioned artifacts and the release baseline are not yet
-complete. No tag, push, workflow, GitHub Release, live network operation,
-Desktop mutation, or stash operation is authorized by this plan.
+Local preparation is complete. All seven workspace packages and both source
+and staged binaries report `0.31.1`. The four pinned JavaScript contracts,
+formatting, strict workspace Clippy, the complete workspace suite and doctests,
+metadata, public hygiene, workflow parsing, package syntax, guide parity,
+locked build, and diff checks are green.
+
+The staged package contains 46 files and exactly eight runtime skills under
+each of `.agents/skills` and `.claude/skills`; plans, notes, the local ledger,
+and development-only skills are absent. The release-preparation diff changes
+only root/local package versions, changelog, release notes, and the current
+README example. Focused release-readiness review remains the only local gate.
+No tag, push, workflow, GitHub Release, live network operation, Desktop
+mutation, or stash operation occurred.
 
 ## Context and Orientation
 
