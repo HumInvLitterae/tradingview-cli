@@ -18,8 +18,10 @@ promotion. Its evidence is recorded in
 29-path completion audit and full deterministic validation are complete, and
 the audit plan is archived. `v0.31.0` is released from `c76546d`; its completed
 release-readiness plan is archived. Commit `eceaa18` is a compatible
-lockfile-only post-release refresh and is candidate input for a separate
-`v0.31.1` release-readiness plan. The current roadmap and ordered inventory
+lockfile-only post-release refresh. The current plan is
+`tradingview-cli-v0.31.1-release-readiness.md`; it freezes that dependency
+refresh and the docs-only release closeout without authorizing feature work.
+The current roadmap and ordered inventory
 remain `docs/v0.31-roadmap.md` and `docs/v0.31-work-items.md` until next-version
 planning begins.
 
