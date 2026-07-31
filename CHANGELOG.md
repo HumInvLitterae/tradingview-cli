@@ -13,6 +13,12 @@ package version omits the leading `v`.
   resolve the current roadmap and work inventory through the plan index rather
   than a fixed historical version.
 
+### Planning
+
+- Started `v0.31.1` release readiness for the compatible lockfile refresh and
+  post-release documentation corrections. No feature or recovery behavior is
+  included.
+
 ## v0.31.0 - 2026-07-28
 
 ### Added
