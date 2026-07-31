@@ -7,6 +7,15 @@ package version omits the leading `v`.
 
 ## Unreleased
 
+## v0.31.1 - 2026-08-01
+
+### Changed
+
+- Refreshed compatible locked versions of `displaydoc`, `http`,
+  `hybrid-array`, `rustls`, and `tokio-macros`. Direct dependency constraints,
+  production source, commands, contracts, workflows, and package contents are
+  unchanged.
+
 ### Documentation
 
 - Closed the published `v0.31.0` planning state and made contributor guidance
@@ -18,6 +27,9 @@ package version omits the leading `v`.
 - Started `v0.31.1` release readiness for the compatible lockfile refresh and
   post-release documentation corrections. No feature or recovery behavior is
   included.
+- Prepared and validated `v0.31.1` version metadata, curated release notes,
+  locked build, and the explicit 46-file package. Focused release-readiness
+  review is pending before owner-controlled remote operations.
 
 ## v0.31.0 - 2026-07-28
 
