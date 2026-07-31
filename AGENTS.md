@@ -19,8 +19,8 @@ durable project decision explicitly excludes them.
 Read current sources before historical notes:
 
 1. `README.md`
-2. `docs/v0.28-roadmap.md`
-3. `docs/v0.28-work-items.md`
+2. The current roadmap named by `docs/plans/README.md`
+3. The current ordered work inventory named by `docs/plans/README.md`
 4. `docs/plans/README.md`
 5. `docs/command-source-taxonomy.md`
 6. `docs/architecture.md`

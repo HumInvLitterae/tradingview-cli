@@ -7,6 +7,12 @@ package version omits the leading `v`.
 
 ## Unreleased
 
+### Documentation
+
+- Closed the published `v0.31.0` planning state and made contributor guidance
+  resolve the current roadmap and work inventory through the plan index rather
+  than a fixed historical version.
+
 ## v0.31.0 - 2026-07-28
 
 ### Added
