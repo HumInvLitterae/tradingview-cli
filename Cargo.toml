@@ -21,7 +21,7 @@ publish = false
 assert_cmd = "2.2.2"
 base64-simd = "0.8.0"
 clap = "4.6.6"
-futures-util = "0.3.33"
+futures-util = "0.3.34"
 image = { version = "0.25.10", default-features = false }
 predicates = "3.1.4"
 reqwest = "0.13.4"
