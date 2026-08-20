@@ -7,6 +7,28 @@ package version omits the leading `v`.
 
 ## Unreleased
 
+## v0.31.2 - 2026-08-20
+
+### Changed
+
+- Refreshed compatible direct and transitive dependencies used by existing CLI
+  parsing, asynchronous execution, HTTP/2, TLS, WebSocket, Unicode URL parsing,
+  procedural-macro, Wasm support, and native build paths. Production source,
+  commands, contracts, workflows, and package contents are unchanged.
+
+### Documentation
+
+- Closed the published `v0.31.1` release state and queued the later compatible
+  dependency updates as isolated `v0.31.2` patch input.
+
+### Planning
+
+- Started `v0.31.2` release readiness for nine compatible dependency-update
+  commits. No feature, production correction, or recovery behavior is included.
+- Prepared and validated `v0.31.2` version metadata, curated release notes,
+  locked build, and the explicit 46-file package. Focused release-readiness
+  review is pending before owner-controlled remote operations.
+
 ## v0.31.1 - 2026-08-01
 
 ### Changed

@@ -37,8 +37,8 @@ execution, or GitHub Release publication.
   package, and verified source and staged binary versions.
 - [x] (2026-08-01) Recorded aggregate local release evidence and stopped before
   remote release operations.
-- [ ] Obtain focused release-readiness review before committing a tag or
-  performing remote release operations.
+- [x] (2026-08-01) Completed focused release-readiness review and published
+  `v0.31.1` from commit `720098d` under owner control.
 
 ## Surprises & Discoveries
 
@@ -93,6 +93,10 @@ only root/local package versions, changelog, release notes, and the current
 README example. Focused release-readiness review remains the only local gate.
 No tag, push, workflow, GitHub Release, live network operation, Desktop
 mutation, or stash operation occurred.
+
+The owner subsequently published `v0.31.1` from release commit `720098d`.
+The release plan is complete and archived. Nine later dependency-update
+commits are separate `v0.31.2` patch input and do not reopen this plan.
 
 ## Context and Orientation
 
