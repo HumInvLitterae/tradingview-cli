@@ -192,6 +192,38 @@ This project uses Rust 2024.
   modules when needed.
 - Avoid unrelated cleanup while migrating commands or fixing behavior.
 
+## Build provenance stamp
+
+`tv --version` prints the `cargo`/`rustc` shape:
+
+```text
+tv <version> (<commit> <date>)
+```
+
+`crates/cli/build.rs` derives the two provenance fields from `git` at build
+time and passes them to clap through `TV_BUILD_COMMIT` and `TV_BUILD_DATE`.
+
+- A clean build prints the short commit hash and that commit's date, so one
+  commit always produces one identical string.
+- A build with uncommitted executable-source changes prints
+  `<commit>-dirty` and the build date, because the commit date no longer
+  describes the binary. Treat `-dirty` as "this binary cannot be identified by
+  a commit".
+- Both dates are local dates. The build date reuses the time-zone offset that
+  `git` reports for this machine, so it cannot drift a day away from the commit
+  dates `git` renders.
+- Dirty detection is limited to paths that can change the executable:
+  `crates/`, `Cargo.toml`, `Cargo.lock`, and `rust-toolchain*`. Documentation
+  edits must never set the marker, otherwise local builds are always `-dirty`
+  and the marker stops carrying information.
+- Without `git` or a repository, such as a build from an unpacked source
+  archive, both fields fall back to `UNKNOWN`. The build still succeeds.
+
+The build script watches those same paths plus `HEAD`, `packed-refs`, and the
+checked-out branch ref, so committing refreshes the stamp even when no file
+content changes. Downstream consumers parse this line, so keep the package
+version first and keep the parenthesized suffix stable.
+
 ## Integration test organization
 
 Large CLI contract suites should be split by command family. Keep shared

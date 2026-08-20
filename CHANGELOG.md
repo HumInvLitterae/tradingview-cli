@@ -7,6 +7,16 @@ package version omits the leading `v`.
 
 ## Unreleased
 
+### Added
+
+- `tv --version` now reports build provenance in the `cargo`/`rustc` shape
+  `tv <version> (<commit> <date>)`. A clean build reports the short commit and
+  that commit's local date; a build containing uncommitted executable-source
+  changes reports `<commit>-dirty` and the local build date. Dirty detection is
+  limited to `crates/`, `Cargo.toml`, `Cargo.lock`, and `rust-toolchain*`, so
+  documentation edits do not set the marker. Builds without `git` or a
+  repository report `UNKNOWN` for both fields instead of failing.
+
 ## v0.31.2 - 2026-08-20
 
 ### Changed
