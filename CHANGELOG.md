@@ -18,7 +18,8 @@ package version omits the leading `v`.
   repository report `UNKNOWN` for both fields instead of failing.
 - `tv --version --verbose` reports detailed build provenance in the
   `rustc --version --verbose` shape: `binary`, `release`, `commit-hash` (full),
-  `commit-date`, `build-date`, `dirty`, and `host`. The root command now owns
+  `commit-date`, `built-at`, `dirty`, and `host`. `built-at` is an RFC 3339
+  local timestamp with its UTC offset, and honors `SOURCE_DATE_EPOCH`. The root command now owns
   `-V`/`--version` instead of clap's automatic flag; `tv --version` output,
   exit codes, and the existing per-subcommand `--verbose` flags are unchanged.
   With neither a version flag nor a subcommand, `tv` still reports rendered

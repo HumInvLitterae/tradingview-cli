@@ -17,8 +17,9 @@ pub const VERSION: &str = concat!(
 
 /// Detailed provenance, in the `rustc --version --verbose` shape.
 ///
-/// `commit-date` and `build-date` are both reported, unreduced: the short line
-/// picks one of them depending on whether the build was dirty.
+/// `commit-date` and `built-at` are both reported, unreduced: the short line
+/// picks one of them depending on whether the build was dirty, and reduces
+/// `built-at` to its date.
 pub fn verbose_report() -> String {
     format!(
         "tv {VERSION}\n\
@@ -26,13 +27,13 @@ pub fn verbose_report() -> String {
          release: {release}\n\
          commit-hash: {commit_hash}\n\
          commit-date: {commit_date}\n\
-         build-date: {build_date}\n\
+         built-at: {built_at}\n\
          dirty: {dirty}\n\
          host: {host}\n",
         release = env!("CARGO_PKG_VERSION"),
         commit_hash = env!("TV_BUILD_COMMIT_HASH"),
         commit_date = env!("TV_BUILD_COMMIT_DATE"),
-        build_date = env!("TV_BUILD_DATE"),
+        built_at = env!("TV_BUILD_BUILT_AT"),
         dirty = env!("TV_BUILD_DIRTY"),
         host = env!("TV_BUILD_HOST"),
     )

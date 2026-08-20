@@ -35,6 +35,36 @@ fn assert_date_field(label: &str, value: &str) {
     );
 }
 
+/// `built-at` is an RFC 3339 local timestamp such as `2026-08-21T07:15:01+09:00`.
+fn assert_timestamp_field(value: &str) {
+    assert_eq!(value.len(), 25, "unexpected built-at: {value}");
+    assert_date_field("built-at date", &value[..10]);
+    assert_eq!(&value[10..11], "T", "unexpected built-at: {value}");
+
+    let (clock, offset) = value[11..].split_at(8);
+    let clock_parts: Vec<&str> = clock.split(':').collect();
+    assert_eq!(clock_parts.len(), 3, "unexpected built-at: {value}");
+    assert!(
+        clock_parts
+            .iter()
+            .all(|part| part.len() == 2 && part.bytes().all(|b| b.is_ascii_digit())),
+        "unexpected built-at: {value}"
+    );
+
+    assert!(
+        matches!(&offset[..1], "+" | "-"),
+        "unexpected built-at: {value}"
+    );
+    assert_eq!(&offset[3..4], ":", "unexpected built-at: {value}");
+    assert!(
+        offset[1..3]
+            .bytes()
+            .chain(offset[4..].bytes())
+            .all(|b| b.is_ascii_digit()),
+        "unexpected built-at: {value}"
+    );
+}
+
 fn version_stdout(args: &[&str]) -> String {
     let output = tv()
         .args(args)
@@ -79,7 +109,7 @@ fn verbose_version_flag_prints_detailed_build_provenance() {
                 format!("release: {}", env!("CARGO_PKG_VERSION")),
                 format!("commit-hash: {}", env!("TV_BUILD_COMMIT_HASH")),
                 format!("commit-date: {}", env!("TV_BUILD_COMMIT_DATE")),
-                format!("build-date: {}", env!("TV_BUILD_DATE")),
+                format!("built-at: {}", env!("TV_BUILD_BUILT_AT")),
                 format!("dirty: {}", env!("TV_BUILD_DIRTY")),
                 format!("host: {}", env!("TV_BUILD_HOST")),
             ]
@@ -141,7 +171,7 @@ fn build_stamp_uses_expected_shape() {
 
     assert_date_field("version date", env!("TV_VERSION_DATE"));
     assert_date_field("commit-date", env!("TV_BUILD_COMMIT_DATE"));
-    assert_date_field("build-date", env!("TV_BUILD_DATE"));
+    assert_timestamp_field(env!("TV_BUILD_BUILT_AT"));
 
     assert!(
         matches!(env!("TV_BUILD_DIRTY"), "true" | "false" | "UNKNOWN"),
@@ -150,9 +180,13 @@ fn build_stamp_uses_expected_shape() {
     );
     assert!(!env!("TV_BUILD_HOST").is_empty());
 
-    // The short line reduces the two dates to the one that describes the binary.
+    // The short line reduces the two to the one that describes the binary.
     match env!("TV_BUILD_DIRTY") {
-        "true" => assert_eq!(env!("TV_VERSION_DATE"), env!("TV_BUILD_DATE")),
+        "true" => assert_eq!(
+            env!("TV_VERSION_DATE"),
+            &env!("TV_BUILD_BUILT_AT")[..10],
+            "a dirty build dates the version line by its build time"
+        ),
         "false" => assert_eq!(env!("TV_VERSION_DATE"), env!("TV_BUILD_COMMIT_DATE")),
         _ => assert_eq!(env!("TV_VERSION_DATE"), "UNKNOWN"),
     }
