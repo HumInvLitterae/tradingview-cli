@@ -1,18 +1,16 @@
 use std::path::PathBuf;
 
-use clap::{Args, Parser, Subcommand, ValueEnum};
+use clap::{ArgAction, Args, Parser, Subcommand, ValueEnum};
+
+use crate::build_info;
 
 #[derive(Debug, Parser)]
 #[command(name = "tv")]
-#[command(version = concat!(
-    env!("CARGO_PKG_VERSION"),
-    " (",
-    env!("TV_BUILD_COMMIT"),
-    " ",
-    env!("TV_BUILD_DATE"),
-    ")"
-))]
+#[command(version = build_info::VERSION)]
 #[command(about = "Rust-native TradingView Desktop CLI via Chrome DevTools Protocol")]
+// The version flag is handled by the CLI itself so that `--version --verbose`
+// can report detailed build provenance. `--version` alone keeps clap's output.
+#[command(disable_version_flag = true)]
 pub struct Cli {
     #[arg(
         long,
@@ -21,8 +19,24 @@ pub struct Cli {
         help = "Select a specific TradingView CDP target id"
     )]
     pub target_id: Option<String>,
+    #[arg(
+        short = 'V',
+        long,
+        action = ArgAction::SetTrue,
+        help = "Print version and build provenance"
+    )]
+    pub version: bool,
+    // Deliberately not global: `tv data lines --verbose` and its siblings own
+    // their own `--verbose` flag.
+    #[arg(
+        long,
+        action = ArgAction::SetTrue,
+        requires = "version",
+        help = "With --version, print detailed build provenance"
+    )]
+    pub verbose: bool,
     #[command(subcommand)]
-    pub command: Command,
+    pub command: Option<Command>,
 }
 
 #[derive(Debug, Subcommand)]

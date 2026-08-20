@@ -6,8 +6,11 @@
 //! uncommitted changes to executable sources reports `<commit>-dirty` and the
 //! build date, because the commit date no longer describes the binary.
 //!
-//! Everything is derived from `git`. When `git` or the repository is
-//! unavailable, both fields fall back to `UNKNOWN` instead of failing the
+//! `TV_VERSION_*` holds the two fields of that line. `TV_BUILD_*` holds the
+//! unreduced fields behind it, which `tv --version --verbose` prints.
+//!
+//! Commit provenance is derived from `git`. When `git` or the repository is
+//! unavailable, those fields fall back to `UNKNOWN` instead of failing the
 //! build.
 
 use std::env;
@@ -32,9 +35,26 @@ fn main() {
 
     emit_rerun_directives(&root);
 
-    let (commit, date) = build_stamp(&root);
-    println!("cargo::rustc-env=TV_BUILD_COMMIT={commit}");
-    println!("cargo::rustc-env=TV_BUILD_DATE={date}");
+    let stamp = Stamp::read(&root);
+    println!(
+        "cargo::rustc-env=TV_VERSION_COMMIT={}",
+        stamp.version_commit
+    );
+    println!("cargo::rustc-env=TV_VERSION_DATE={}", stamp.version_date);
+    println!(
+        "cargo::rustc-env=TV_BUILD_COMMIT_HASH={}",
+        stamp.commit_hash
+    );
+    println!(
+        "cargo::rustc-env=TV_BUILD_COMMIT_DATE={}",
+        stamp.commit_date
+    );
+    println!("cargo::rustc-env=TV_BUILD_DATE={}", stamp.build_date);
+    println!("cargo::rustc-env=TV_BUILD_DIRTY={}", stamp.dirty);
+    println!(
+        "cargo::rustc-env=TV_BUILD_HOST={}",
+        env::var("TARGET").unwrap_or_else(|_| UNKNOWN.to_string())
+    );
 }
 
 fn workspace_root() -> PathBuf {
@@ -48,18 +68,56 @@ fn workspace_root() -> PathBuf {
         .unwrap_or(manifest_dir)
 }
 
-/// Returns the displayed commit and date fields.
-fn build_stamp(root: &Path) -> (String, String) {
-    let Some(commit) = git(root, &["rev-parse", "--short", "HEAD"]) else {
-        return (UNKNOWN.to_string(), UNKNOWN.to_string());
-    };
+struct Stamp {
+    /// Commit field of the `tv --version` line, including any `-dirty` marker.
+    version_commit: String,
+    /// Date field of the `tv --version` line.
+    version_date: String,
+    commit_hash: String,
+    commit_date: String,
+    build_date: String,
+    /// `true`, `false`, or `UNKNOWN` when there is no commit to compare against.
+    dirty: String,
+}
 
-    if is_dirty(root) {
-        (format!("{commit}-dirty"), build_date(root))
-    } else {
-        let date = git(root, &["log", "-1", "--date=short", "--format=%cd"])
+impl Stamp {
+    fn read(root: &Path) -> Self {
+        let build_date = build_date(root);
+
+        let Some(short_commit) = git(root, &["rev-parse", "--short", "HEAD"]) else {
+            return Self {
+                version_commit: UNKNOWN.to_string(),
+                version_date: UNKNOWN.to_string(),
+                commit_hash: UNKNOWN.to_string(),
+                commit_date: UNKNOWN.to_string(),
+                build_date,
+                dirty: UNKNOWN.to_string(),
+            };
+        };
+
+        let commit_hash = git(root, &["rev-parse", "HEAD"]).unwrap_or_else(|| short_commit.clone());
+        let commit_date = git(root, &["log", "-1", "--date=short", "--format=%cd"])
             .unwrap_or_else(|| UNKNOWN.to_string());
-        (commit, date)
+        let dirty = is_dirty(root);
+
+        Self {
+            version_commit: if dirty {
+                format!("{short_commit}-dirty")
+            } else {
+                short_commit
+            },
+            // A dirty binary is no longer described by its commit date, so the
+            // version line falls back to when it was actually built.
+            version_date: if dirty {
+                build_date.clone()
+            } else {
+                commit_date.clone()
+            },
+            commit_hash,
+            commit_date,
+            build_date,
+            dirty: dirty.to_string(),
+        }
     }
 }
 
@@ -74,7 +132,8 @@ fn is_dirty(root: &Path) -> bool {
 }
 
 /// Local build date, rendered in the machine's own time zone so it lines up
-/// with the local dates `git` prints for commits.
+/// with the local dates `git` prints for commits. Without `git` the offset is
+/// unknown and the date falls back to UTC.
 fn build_date(root: &Path) -> String {
     let Ok(now) = SystemTime::now().duration_since(UNIX_EPOCH) else {
         return UNKNOWN.to_string();

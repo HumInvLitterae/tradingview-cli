@@ -16,6 +16,14 @@ package version omits the leading `v`.
   limited to `crates/`, `Cargo.toml`, `Cargo.lock`, and `rust-toolchain*`, so
   documentation edits do not set the marker. Builds without `git` or a
   repository report `UNKNOWN` for both fields instead of failing.
+- `tv --version --verbose` reports detailed build provenance in the
+  `rustc --version --verbose` shape: `binary`, `release`, `commit-hash` (full),
+  `commit-date`, `build-date`, `dirty`, and `host`. The root command now owns
+  `-V`/`--version` instead of clap's automatic flag; `tv --version` output,
+  exit codes, and the existing per-subcommand `--verbose` flags are unchanged.
+  With neither a version flag nor a subcommand, `tv` still reports rendered
+  help as a validation error, now with `[COMMAND]` in its usage line because a
+  subcommand is no longer required.
 
 ## v0.31.2 - 2026-08-20
 
