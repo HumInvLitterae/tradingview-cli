@@ -49,7 +49,7 @@ fn main() {
         "cargo::rustc-env=TV_BUILD_COMMIT_DATE={}",
         stamp.commit_date
     );
-    println!("cargo::rustc-env=TV_BUILD_DATE={}", stamp.build_date);
+    println!("cargo::rustc-env=TV_BUILD_BUILT_AT={}", stamp.built_at);
     println!("cargo::rustc-env=TV_BUILD_DIRTY={}", stamp.dirty);
     println!(
         "cargo::rustc-env=TV_BUILD_HOST={}",
@@ -75,14 +75,15 @@ struct Stamp {
     version_date: String,
     commit_hash: String,
     commit_date: String,
-    build_date: String,
+    built_at: String,
     /// `true`, `false`, or `UNKNOWN` when there is no commit to compare against.
     dirty: String,
 }
 
 impl Stamp {
     fn read(root: &Path) -> Self {
-        let build_date = build_date(root);
+        let built_at = built_at(root);
+        let build_date = built_at.get(..10).unwrap_or(UNKNOWN).to_string();
 
         let Some(short_commit) = git(root, &["rev-parse", "--short", "HEAD"]) else {
             return Self {
@@ -90,7 +91,7 @@ impl Stamp {
                 version_date: UNKNOWN.to_string(),
                 commit_hash: UNKNOWN.to_string(),
                 commit_date: UNKNOWN.to_string(),
-                build_date,
+                built_at,
                 dirty: UNKNOWN.to_string(),
             };
         };
@@ -107,15 +108,15 @@ impl Stamp {
                 short_commit
             },
             // A dirty binary is no longer described by its commit date, so the
-            // version line falls back to when it was actually built.
+            // version line falls back to the day it was actually built.
             version_date: if dirty {
-                build_date.clone()
+                build_date
             } else {
                 commit_date.clone()
             },
             commit_hash,
             commit_date,
-            build_date,
+            built_at,
             dirty: dirty.to_string(),
         }
     }
@@ -131,16 +132,49 @@ fn is_dirty(root: &Path) -> bool {
     git(root, &args).is_none_or(|status| !status.is_empty())
 }
 
-/// Local build date, rendered in the machine's own time zone so it lines up
+/// Build time as an RFC 3339 local timestamp such as
+/// `2026-08-21T07:15:01+09:00`.
+///
+/// The wall clock is rendered in the machine's own time zone so it lines up
 /// with the local dates `git` prints for commits. Without `git` the offset is
-/// unknown and the date falls back to UTC.
-fn build_date(root: &Path) -> String {
-    let Ok(now) = SystemTime::now().duration_since(UNIX_EPOCH) else {
-        return UNKNOWN.to_string();
+/// unknown and the timestamp falls back to UTC, which the printed `+00:00`
+/// states explicitly, so the instant stays correct either way.
+///
+/// `SOURCE_DATE_EPOCH` overrides the clock for reproducible builds and is
+/// rendered as UTC, as that convention requires.
+fn built_at(root: &Path) -> String {
+    let (epoch_seconds, offset_seconds) = match reproducible_epoch() {
+        Some(epoch_seconds) => (epoch_seconds, 0),
+        None => {
+            let Ok(now) = SystemTime::now().duration_since(UNIX_EPOCH) else {
+                return UNKNOWN.to_string();
+            };
+            (now.as_secs() as i64, local_utc_offset_seconds(root))
+        }
     };
-    let local_seconds = now.as_secs() as i64 + local_utc_offset_seconds(root);
+
+    let local_seconds = epoch_seconds + offset_seconds;
     let (year, month, day) = civil_from_days(local_seconds.div_euclid(86_400));
-    format!("{year:04}-{month:02}-{day:02}")
+    let second_of_day = local_seconds.rem_euclid(86_400);
+    let (hour, minute, second) = (
+        second_of_day / 3600,
+        (second_of_day % 3600) / 60,
+        second_of_day % 60,
+    );
+
+    let sign = if offset_seconds < 0 { '-' } else { '+' };
+    let offset_minutes = offset_seconds.abs() / 60;
+
+    format!(
+        "{year:04}-{month:02}-{day:02}T{hour:02}:{minute:02}:{second:02}{sign}{:02}:{:02}",
+        offset_minutes / 60,
+        offset_minutes % 60
+    )
+}
+
+/// Honors the `SOURCE_DATE_EPOCH` reproducible-build convention.
+fn reproducible_epoch() -> Option<i64> {
+    env::var("SOURCE_DATE_EPOCH").ok()?.trim().parse().ok()
 }
 
 /// Local UTC offset in seconds, taken from `git` so the build date and commit
@@ -192,6 +226,8 @@ fn civil_from_days(days: i64) -> (i64, i64, i64) {
 /// Watches the inputs that can change the stamp: executable sources for the
 /// dirty marker, and the `git` refs that change on commit or checkout.
 fn emit_rerun_directives(root: &Path) {
+    println!("cargo::rerun-if-env-changed=SOURCE_DATE_EPOCH");
+
     for path in BUILD_INPUT_PATHS {
         watch(&root.join(path));
     }

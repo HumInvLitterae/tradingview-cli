@@ -227,7 +227,8 @@ version first and keep the parenthesized suffix stable.
 
 `tv --version --verbose` prints the unreduced fields in the
 `rustc --version --verbose` shape, from `TV_BUILD_COMMIT_HASH`,
-`TV_BUILD_COMMIT_DATE`, `TV_BUILD_DATE`, `TV_BUILD_DIRTY`, and `TV_BUILD_HOST`:
+`TV_BUILD_COMMIT_DATE`, `TV_BUILD_BUILT_AT`, `TV_BUILD_DIRTY`, and
+`TV_BUILD_HOST`:
 
 ```text
 tv <version> (<commit> <date>)
@@ -235,18 +236,25 @@ binary: tv
 release: <version>
 commit-hash: <full hash>
 commit-date: <YYYY-MM-DD>
-build-date: <YYYY-MM-DD>
+built-at: <RFC 3339 local timestamp>
 dirty: true|false
 host: <target triple>
 ```
 
-- `commit-date` and `build-date` are both always reported. The short line picks
-  `commit-date` for a clean build and `build-date` for a dirty one; the verbose
-  report does not reduce them, so a clean build can still show when it was
-  built.
+- `commit-date` and `built-at` are both always reported. The short line picks
+  `commit-date` for a clean build and the date of `built-at` for a dirty one;
+  the verbose report does not reduce them, so a clean build can still show when
+  it was built.
+- `built-at` carries the time of day and the UTC offset, such as
+  `2026-08-21T07:15:01+09:00`, because two builds of the same dirty tree on one
+  day are otherwise indistinguishable. `commit-date` stays a plain date, which
+  matches `rustc` and the version line.
 - `dirty` is `UNKNOWN` when there is no commit to compare against.
-- `build-date` is reported even without `git`, but the local time-zone offset
-  is then unknown and the date falls back to UTC.
+- `built-at` is reported even without `git`, but the local offset is then
+  unknown and the timestamp falls back to UTC. The printed `+00:00` says so, so
+  the instant is correct either way.
+- `SOURCE_DATE_EPOCH` overrides the clock and is rendered as UTC, so a
+  reproducible build can pin `built-at` instead of stamping wall-clock time.
 
 The root command owns `-V`/`--version` instead of clap's automatic flag
 (`disable_version_flag`), because clap prints its version string during parsing
