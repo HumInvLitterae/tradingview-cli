@@ -19,50 +19,142 @@ fn version_flag_prints_package_version() {
         .stdout(predicate::str::contains(env!("CARGO_PKG_VERSION")));
 }
 
+fn assert_date_field(label: &str, value: &str) {
+    if value == "UNKNOWN" {
+        return;
+    }
+    let parts: Vec<&str> = value.split('-').collect();
+    assert_eq!(parts.len(), 3, "unexpected {label}: {value}");
+    assert!(
+        parts[0].len() == 4 && parts[1].len() == 2 && parts[2].len() == 2,
+        "unexpected {label}: {value}"
+    );
+    assert!(
+        parts.iter().all(|p| p.bytes().all(|b| b.is_ascii_digit())),
+        "unexpected {label}: {value}"
+    );
+}
+
+fn version_stdout(args: &[&str]) -> String {
+    let output = tv()
+        .args(args)
+        .assert()
+        .success()
+        .get_output()
+        .stdout
+        .clone();
+    String::from_utf8(output).expect("version output is UTF-8")
+}
+
 #[test]
 fn version_flag_prints_build_provenance() {
     let expected = format!(
         "tv {} ({} {})",
         env!("CARGO_PKG_VERSION"),
-        env!("TV_BUILD_COMMIT"),
-        env!("TV_BUILD_DATE")
+        env!("TV_VERSION_COMMIT"),
+        env!("TV_VERSION_DATE")
     );
 
     for flag in ["--version", "-V"] {
-        let output = tv()
-            .arg(flag)
-            .assert()
-            .success()
-            .get_output()
-            .stdout
-            .clone();
-        let stdout = String::from_utf8(output).expect("version output is UTF-8");
-        assert_eq!(stdout.trim_end(), expected);
+        assert_eq!(version_stdout(&[flag]).trim_end(), expected);
     }
 }
 
 #[test]
-fn build_stamp_uses_expected_shape() {
-    let commit = env!("TV_BUILD_COMMIT");
-    let date = env!("TV_BUILD_DATE");
+fn verbose_version_flag_prints_detailed_build_provenance() {
+    let short = version_stdout(&["--version"]);
 
-    let hash = commit.strip_suffix("-dirty").unwrap_or(commit);
+    for args in [
+        ["--version", "--verbose"].as_slice(),
+        ["-V", "--verbose"].as_slice(),
+    ] {
+        let stdout = version_stdout(args);
+        let mut lines = stdout.lines();
+
+        assert_eq!(lines.next(), Some(short.trim_end()));
+        assert_eq!(
+            lines.collect::<Vec<_>>(),
+            vec![
+                "binary: tv".to_string(),
+                format!("release: {}", env!("CARGO_PKG_VERSION")),
+                format!("commit-hash: {}", env!("TV_BUILD_COMMIT_HASH")),
+                format!("commit-date: {}", env!("TV_BUILD_COMMIT_DATE")),
+                format!("build-date: {}", env!("TV_BUILD_DATE")),
+                format!("dirty: {}", env!("TV_BUILD_DIRTY")),
+                format!("host: {}", env!("TV_BUILD_HOST")),
+            ]
+        );
+    }
+}
+
+#[test]
+fn verbose_flag_requires_version_flag() {
+    let error = stderr_json(&tv().arg("--verbose").assert().failure());
+
+    assert_eq!(error["error"]["kind"], "validation");
+    assert!(
+        error["error"]["message"]
+            .as_str()
+            .expect("message is a string")
+            .contains("--version"),
+        "unexpected message: {error}"
+    );
+}
+
+#[test]
+fn missing_subcommand_reports_help_as_validation_error() {
+    let error = stderr_json(&tv().assert().failure());
+
+    assert_eq!(error["error"]["kind"], "validation");
+    let message = error["error"]["message"]
+        .as_str()
+        .expect("message is a string")
+        .to_string();
+    assert!(
+        message.contains("Usage: tv"),
+        "unexpected message: {message}"
+    );
+    assert!(
+        message.contains("Commands:"),
+        "unexpected message: {message}"
+    );
+}
+
+#[test]
+fn build_stamp_uses_expected_shape() {
+    let version_commit = env!("TV_VERSION_COMMIT");
+    let hash = version_commit
+        .strip_suffix("-dirty")
+        .unwrap_or(version_commit);
     assert!(
         hash == "UNKNOWN" || (!hash.is_empty() && hash.bytes().all(|b| b.is_ascii_hexdigit())),
-        "unexpected commit field: {commit}"
+        "unexpected commit field: {version_commit}"
     );
 
-    if date != "UNKNOWN" {
-        let parts: Vec<&str> = date.split('-').collect();
-        assert_eq!(parts.len(), 3, "unexpected date field: {date}");
-        assert!(
-            parts[0].len() == 4 && parts[1].len() == 2 && parts[2].len() == 2,
-            "unexpected date field: {date}"
-        );
-        assert!(
-            parts.iter().all(|p| p.bytes().all(|b| b.is_ascii_digit())),
-            "unexpected date field: {date}"
-        );
+    let commit_hash = env!("TV_BUILD_COMMIT_HASH");
+    assert!(
+        commit_hash == "UNKNOWN"
+            || (commit_hash.len() >= hash.len()
+                && commit_hash.bytes().all(|b| b.is_ascii_hexdigit())),
+        "unexpected commit-hash field: {commit_hash}"
+    );
+
+    assert_date_field("version date", env!("TV_VERSION_DATE"));
+    assert_date_field("commit-date", env!("TV_BUILD_COMMIT_DATE"));
+    assert_date_field("build-date", env!("TV_BUILD_DATE"));
+
+    assert!(
+        matches!(env!("TV_BUILD_DIRTY"), "true" | "false" | "UNKNOWN"),
+        "unexpected dirty field: {}",
+        env!("TV_BUILD_DIRTY")
+    );
+    assert!(!env!("TV_BUILD_HOST").is_empty());
+
+    // The short line reduces the two dates to the one that describes the binary.
+    match env!("TV_BUILD_DIRTY") {
+        "true" => assert_eq!(env!("TV_VERSION_DATE"), env!("TV_BUILD_DATE")),
+        "false" => assert_eq!(env!("TV_VERSION_DATE"), env!("TV_BUILD_COMMIT_DATE")),
+        _ => assert_eq!(env!("TV_VERSION_DATE"), "UNKNOWN"),
     }
 }
 

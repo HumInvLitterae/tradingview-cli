@@ -200,8 +200,9 @@ This project uses Rust 2024.
 tv <version> (<commit> <date>)
 ```
 
-`crates/cli/build.rs` derives the two provenance fields from `git` at build
-time and passes them to clap through `TV_BUILD_COMMIT` and `TV_BUILD_DATE`.
+`crates/cli/build.rs` derives the provenance fields from `git` at build time.
+The two fields of that line are passed through `TV_VERSION_COMMIT` and
+`TV_VERSION_DATE`, and `crates/cli/src/build_info.rs` renders them.
 
 - A clean build prints the short commit hash and that commit's date, so one
   commit always produces one identical string.
@@ -223,6 +224,41 @@ The build script watches those same paths plus `HEAD`, `packed-refs`, and the
 checked-out branch ref, so committing refreshes the stamp even when no file
 content changes. Downstream consumers parse this line, so keep the package
 version first and keep the parenthesized suffix stable.
+
+`tv --version --verbose` prints the unreduced fields in the
+`rustc --version --verbose` shape, from `TV_BUILD_COMMIT_HASH`,
+`TV_BUILD_COMMIT_DATE`, `TV_BUILD_DATE`, `TV_BUILD_DIRTY`, and `TV_BUILD_HOST`:
+
+```text
+tv <version> (<commit> <date>)
+binary: tv
+release: <version>
+commit-hash: <full hash>
+commit-date: <YYYY-MM-DD>
+build-date: <YYYY-MM-DD>
+dirty: true|false
+host: <target triple>
+```
+
+- `commit-date` and `build-date` are both always reported. The short line picks
+  `commit-date` for a clean build and `build-date` for a dirty one; the verbose
+  report does not reduce them, so a clean build can still show when it was
+  built.
+- `dirty` is `UNKNOWN` when there is no commit to compare against.
+- `build-date` is reported even without `git`, but the local time-zone offset
+  is then unknown and the date falls back to UTC.
+
+The root command owns `-V`/`--version` instead of clap's automatic flag
+(`disable_version_flag`), because clap prints its version string during parsing
+and cannot see `--verbose`. Two consequences are load-bearing:
+
+- `Cli::command` is `Option<Command>`, so `tv --version` parses without a
+  subcommand. When both the version flag and the subcommand are absent, the
+  runner reports clap's rendered help as a validation error, which is what
+  clap's own parse failure produced before.
+- Root `--verbose` is not `global` and `requires` the version flag, so the
+  existing per-subcommand `--verbose` flags such as `tv data lines --verbose`
+  keep their own meaning.
 
 ## Integration test organization
 

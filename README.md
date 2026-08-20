@@ -47,6 +47,13 @@ was built from and that commit's date. A `-dirty` suffix on the commit means the
 binary was built from uncommitted changes and cannot be identified by a commit.
 Without `git` at build time, both fields read `UNKNOWN`.
 
+For the full picture, including the complete commit hash, both the commit date
+and the build date, the dirty flag, and the host target triple:
+
+```bash
+tv --version --verbose
+```
+
 During local development, build or install from the workspace root:
 
 ```bash

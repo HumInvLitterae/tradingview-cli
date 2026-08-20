@@ -1,6 +1,6 @@
 use std::process::ExitCode;
 
-use clap::{Parser, error::ErrorKind as ClapErrorKind};
+use clap::{CommandFactory, Parser, error::ErrorKind as ClapErrorKind};
 use tradingview_core::{AppError, ErrorBody, ErrorEnvelope, ErrorKind, SuccessEnvelope};
 
 use crate::{
@@ -15,6 +15,7 @@ use crate::{
         stream::run_stream_command,
         watch::run_watch_command,
     },
+    build_info,
     cli::{Cli, Command, ReplayCommand},
 };
 use tradingview_cdp::TransportConfig;
@@ -51,6 +52,28 @@ async fn async_main() -> ExitCode {
         }
     };
 
+    if cli.version {
+        print!(
+            "{}",
+            if cli.verbose {
+                build_info::verbose_report()
+            } else {
+                format!("tv {}\n", build_info::VERSION)
+            }
+        );
+        return ExitCode::SUCCESS;
+    }
+
+    // Without a subcommand clap itself renders help as the parse failure, so the
+    // same help text is reported here to keep that contract unchanged.
+    let Some(command) = cli.command else {
+        let app_error = AppError::new(
+            ErrorKind::Validation,
+            Cli::command().render_help().to_string(),
+        );
+        return terminal_error("tv", app_error);
+    };
+
     let config = match TransportConfig::from_env_with_target_id(cli.target_id.as_deref()) {
         Ok(config) => config,
         Err(err) => {
@@ -58,7 +81,6 @@ async fn async_main() -> ExitCode {
         }
     };
 
-    let command = cli.command;
     match command {
         Command::Stream { command } => {
             jsonl_exit_code("stream", run_stream_command(command, &config).await)

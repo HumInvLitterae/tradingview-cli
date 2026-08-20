@@ -1,0 +1,39 @@
+//! Build provenance reported by `tv --version` and `tv --version --verbose`.
+//!
+//! `crates/cli/build.rs` derives these values from `git` at build time. Fields
+//! it cannot determine are `UNKNOWN` rather than absent, so the shape of the
+//! output never depends on the build environment.
+
+/// Version field of the short line, without the leading binary name that clap
+/// prints: `<version> (<commit> <date>)`.
+pub const VERSION: &str = concat!(
+    env!("CARGO_PKG_VERSION"),
+    " (",
+    env!("TV_VERSION_COMMIT"),
+    " ",
+    env!("TV_VERSION_DATE"),
+    ")"
+);
+
+/// Detailed provenance, in the `rustc --version --verbose` shape.
+///
+/// `commit-date` and `build-date` are both reported, unreduced: the short line
+/// picks one of them depending on whether the build was dirty.
+pub fn verbose_report() -> String {
+    format!(
+        "tv {VERSION}\n\
+         binary: tv\n\
+         release: {release}\n\
+         commit-hash: {commit_hash}\n\
+         commit-date: {commit_date}\n\
+         build-date: {build_date}\n\
+         dirty: {dirty}\n\
+         host: {host}\n",
+        release = env!("CARGO_PKG_VERSION"),
+        commit_hash = env!("TV_BUILD_COMMIT_HASH"),
+        commit_date = env!("TV_BUILD_COMMIT_DATE"),
+        build_date = env!("TV_BUILD_DATE"),
+        dirty = env!("TV_BUILD_DIRTY"),
+        host = env!("TV_BUILD_HOST"),
+    )
+}
