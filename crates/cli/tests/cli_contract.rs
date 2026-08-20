@@ -20,6 +20,53 @@ fn version_flag_prints_package_version() {
 }
 
 #[test]
+fn version_flag_prints_build_provenance() {
+    let expected = format!(
+        "tv {} ({} {})",
+        env!("CARGO_PKG_VERSION"),
+        env!("TV_BUILD_COMMIT"),
+        env!("TV_BUILD_DATE")
+    );
+
+    for flag in ["--version", "-V"] {
+        let output = tv()
+            .arg(flag)
+            .assert()
+            .success()
+            .get_output()
+            .stdout
+            .clone();
+        let stdout = String::from_utf8(output).expect("version output is UTF-8");
+        assert_eq!(stdout.trim_end(), expected);
+    }
+}
+
+#[test]
+fn build_stamp_uses_expected_shape() {
+    let commit = env!("TV_BUILD_COMMIT");
+    let date = env!("TV_BUILD_DATE");
+
+    let hash = commit.strip_suffix("-dirty").unwrap_or(commit);
+    assert!(
+        hash == "UNKNOWN" || (!hash.is_empty() && hash.bytes().all(|b| b.is_ascii_hexdigit())),
+        "unexpected commit field: {commit}"
+    );
+
+    if date != "UNKNOWN" {
+        let parts: Vec<&str> = date.split('-').collect();
+        assert_eq!(parts.len(), 3, "unexpected date field: {date}");
+        assert!(
+            parts[0].len() == 4 && parts[1].len() == 2 && parts[2].len() == 2,
+            "unexpected date field: {date}"
+        );
+        assert!(
+            parts.iter().all(|p| p.bytes().all(|b| b.is_ascii_digit())),
+            "unexpected date field: {date}"
+        );
+    }
+}
+
+#[test]
 fn help_lists_v1_commands() {
     tv().arg("--help")
         .assert()

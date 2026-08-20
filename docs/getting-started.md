@@ -37,7 +37,10 @@ agent can run commands as `tv ...`:
 tv --version
 ```
 
-If the command prints the expected version, the binary is reachable.
+If the command prints the expected version, the binary is reachable. The
+output looks like `tv <version> (<commit> <date>)`; the commit and date
+identify the build. A `-dirty` suffix means the binary was built from
+uncommitted changes, which should not happen for a released archive.
 
 ## 3. Use `tv` with an AI agent
 

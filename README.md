@@ -41,6 +41,12 @@ your `PATH`, and confirm the binary:
 tv --version
 ```
 
+The output carries build provenance in the `cargo`/`rustc` shape
+`tv <version> (<commit> <date>)`. A released binary reports the short commit it
+was built from and that commit's date. A `-dirty` suffix on the commit means the
+binary was built from uncommitted changes and cannot be identified by a commit.
+Without `git` at build time, both fields read `UNKNOWN`.
+
 During local development, build or install from the workspace root:
 
 ```bash

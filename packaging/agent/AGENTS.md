@@ -24,9 +24,11 @@ installed, use the local executable in the unpacked directory:
 - macOS/Linux: `./tv`
 - Windows: `.\tv.exe`
 
-Run `tv --version` to confirm which binary is available. When reporting
-commands to the user, write them as `tv ...` unless the local executable path
-matters.
+Run `tv --version` to confirm which binary is available. It prints
+`tv <version> (<commit> <date>)`. A `-dirty` suffix on the commit means the
+binary was built from uncommitted changes and cannot be identified by a commit,
+so report the whole line when build identity matters. When reporting commands to
+the user, write them as `tv ...` unless the local executable path matters.
 
 For a user-first setup walkthrough, read `docs/getting-started.md` from the
 release archive. Japanese user guidance is available at
