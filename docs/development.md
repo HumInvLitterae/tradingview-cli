@@ -220,10 +220,21 @@ The two fields of that line are passed through `TV_VERSION_COMMIT` and
 - Without `git` or a repository, such as a build from an unpacked source
   archive, both fields fall back to `UNKNOWN`. The build still succeeds.
 
-The build script watches those same paths plus `HEAD`, `packed-refs`, and the
-checked-out branch ref, so committing refreshes the stamp even when no file
-content changes. Downstream consumers parse this line, so keep the package
-version first and keep the parenthesized suffix stable.
+The build script watches those same paths plus `HEAD`, the whole `refs`
+directory, `packed-refs`, and the `git` index, so committing refreshes the
+stamp even when no file content changes. Watching the checked-out branch ref by
+name is not enough: on a branch whose ref is packed the loose ref does not exist
+yet, so the watch would cover nothing and the commit that creates it would leave
+a stale `-dirty` stamp behind. Downstream consumers parse this line, so keep the
+package version first and keep the parenthesized suffix stable.
+
+The derivation lives in `crates/cli/build/provenance.rs`, which both
+`crates/cli/build.rs` and `crates/cli/tests/build_provenance.rs` include. A
+build script cannot be imported as a library, and comparing the binary's output
+against the same environment variables the build script emitted only proves the
+rendering, not the derivation. The included tests therefore drive the
+derivation against temporary repositories, including the packed-ref lifecycle,
+and check the date arithmetic against known dates.
 
 `tv --version --verbose` prints the unreduced fields in the
 `rustc --version --verbose` shape, from `TV_BUILD_COMMIT_HASH`,
@@ -254,7 +265,14 @@ host: <target triple>
   unknown and the timestamp falls back to UTC. The printed `+00:00` says so, so
   the instant is correct either way.
 - `SOURCE_DATE_EPOCH` overrides the clock and is rendered as UTC, so a
-  reproducible build can pin `built-at` instead of stamping wall-clock time.
+  reproducible build can pin `built-at` instead of stamping wall-clock time. A
+  malformed value fails the build rather than falling back to the wall clock,
+  which would make a build that asked to be reproducible silently
+  non-deterministic.
+- `host` carries Cargo's `TARGET`, the platform the produced binary runs on,
+  which is what the `host` field of `rustc --version --verbose` reports for a
+  binary. Cargo's `HOST`, the machine that compiled it, is deliberately not
+  reported; it would need its own field.
 
 The root command owns `-V`/`--version` instead of clap's automatic flag
 (`disable_version_flag`), because clap prints its version string during parsing
