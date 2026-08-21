@@ -43,6 +43,8 @@ package version omits the leading `v`.
 
 - Closed the published `v0.31.2` release state and queued the reviewed build
   provenance candidate and compatible dependency updates for `v0.31.3`.
+- Started `v0.31.3` release readiness for the reviewed provenance surface,
+  corrections, dependency updates, and behavior-preserving Clippy refactor.
 
 ## v0.31.2 - 2026-08-20
 
