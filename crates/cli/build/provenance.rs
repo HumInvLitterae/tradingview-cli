@@ -194,11 +194,13 @@ fn civil_from_days(days: i64) -> (i64, i64, i64) {
 /// The whole `refs` directory is watched rather than the checked-out branch
 /// ref. On a branch whose ref is packed, the loose ref does not exist yet, so
 /// watching it by name would watch nothing and the commit that creates it would
-/// leave a stale `-dirty` stamp in place.
+/// leave a stale `-dirty` stamp in place. `logs/HEAD` covers the same move as
+/// an existing file that is appended to, rather than as a new file appearing
+/// inside a watched directory, so the two do not share a failure mode.
 fn rerun_paths(root: &Path) -> Vec<PathBuf> {
     let mut paths: Vec<PathBuf> = BUILD_INPUT_PATHS.iter().map(|path| root.join(path)).collect();
 
-    for git_path in ["HEAD", "refs", "packed-refs", "index"] {
+    for git_path in ["HEAD", "refs", "packed-refs", "index", "logs/HEAD"] {
         if let Some(resolved) = git(root, &["rev-parse", "--git-path", git_path]) {
             paths.push(root.join(resolved));
         }
