@@ -18,11 +18,11 @@ promotion. Its evidence is recorded in
 29-path completion audit and full deterministic validation are complete, and
 the audit plan is archived. `v0.31.0` is released from `c76546d` and `v0.31.1`
 is released from `720098d`; both completed release-readiness plans are
-archived. Nine later compatible dependency-update commits are frozen by the
-current `tradingview-cli-v0.31.2-release-readiness.md` plan without feature or
-recovery work. Local versioned artifacts, all deterministic gates, the locked
-build, and the explicit package are green; focused release-readiness review is
-pending.
+archived. `v0.31.2` is released from `03e9c24`; its completed release-readiness
+plan is archived. Ten later commits add build provenance and reviewed
+corrections, two compatible dependency updates, and one behavior-preserving
+Clippy baseline refactor. They are candidate input for a separate `v0.31.3`
+patch without retained feature or recovery work.
 The current roadmap and ordered inventory remain `docs/v0.31-roadmap.md` and
 `docs/v0.31-work-items.md` until next-version planning begins.
 

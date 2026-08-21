@@ -37,8 +37,8 @@ execution, or GitHub Release publication.
   package, and verified source and staged binary versions.
 - [x] (2026-08-20) Recorded aggregate local release evidence and stopped before
   remote release operations.
-- [ ] Obtain focused release-readiness review before owner-controlled remote
-  release operations.
+- [x] (2026-08-20) Completed focused release-readiness review and published
+  `v0.31.2` from commit `03e9c24` under owner control.
 
 ## Surprises & Discoveries
 
@@ -88,6 +88,10 @@ only the root/local package versions and release documents after the reviewed
 dependency candidate. Focused release-readiness review remains the local gate.
 No tag, push, workflow execution, GitHub Release publication, live network
 operation, Desktop mutation, or stash operation occurred.
+
+The owner subsequently published `v0.31.2` from release commit `03e9c24`.
+This plan is complete and archived. Later build-provenance and dependency work
+is separate `v0.31.3` patch input and does not reopen this plan.
 
 ## Context and Orientation
 

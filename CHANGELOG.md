@@ -39,6 +39,11 @@ package version omits the leading `v`.
   --all-targets --all-features -- -D warnings`, a required CI gate, is clean
   again. Command behavior, envelopes, and diagnostics are unchanged.
 
+### Planning
+
+- Closed the published `v0.31.2` release state and queued the reviewed build
+  provenance candidate and compatible dependency updates for `v0.31.3`.
+
 ## v0.31.2 - 2026-08-20
 
 ### Changed
