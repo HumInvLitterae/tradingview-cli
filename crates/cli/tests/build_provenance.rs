@@ -14,10 +14,18 @@ use tempfile::TempDir;
 
 include!(concat!(env!("CARGO_MANIFEST_DIR"), "/build/provenance.rs"));
 
-/// Commit timestamps are fixed so that the commit date can never coincide with
-/// the build date, which is what separates a clean stamp from a dirty one.
+/// Commit and build timestamps are fixed so that a commit date can never
+/// coincide with the build date, which is what separates a clean stamp from a
+/// dirty one. The build time is passed in rather than read from the clock,
+/// because `SOURCE_DATE_EPOCH` can pin the clock to any day, including a
+/// commit's.
 const FIRST_COMMIT: &str = "2024-03-04T10:00:00+09:00";
 const SECOND_COMMIT: &str = "2024-03-05T10:00:00+09:00";
+const BUILT_AT: &str = "2026-08-21T07:15:01+09:00";
+
+fn stamp(root: &Path) -> Stamp {
+    Stamp::read_built_at(root, BUILT_AT.to_string())
+}
 
 fn run_git(root: &Path, args: &[&str]) -> String {
     git(root, args).unwrap_or_else(|| panic!("git {args:?} failed in {}", root.display()))
@@ -69,7 +77,7 @@ fn clean_repository_is_stamped_by_its_commit() {
     let repository = repository();
     let root = repository.path();
 
-    let stamp = Stamp::read(root);
+    let stamp = stamp(root);
 
     assert_eq!(stamp.dirty, "false");
     assert_eq!(
@@ -91,19 +99,19 @@ fn changed_source_marks_the_stamp_dirty_and_dates_it_by_the_build() {
     let root = repository.path();
 
     fs::write(root.join("crates/cli/src/main.rs"), "fn main() { }\n").expect("edit source");
-    let stamp = Stamp::read(root);
+    let stamp = stamp(root);
 
     assert_eq!(stamp.dirty, "true");
     assert_eq!(
         stamp.version_commit,
         format!("{}-dirty", run_git(root, &["rev-parse", "--short", "HEAD"]))
     );
-    assert_eq!(stamp.version_date, stamp.built_at[..10]);
     assert_eq!(stamp.commit_date, "2024-03-04");
-    assert_ne!(
-        stamp.version_date, stamp.commit_date,
+    assert_eq!(
+        stamp.version_date, "2026-08-21",
         "a dirty stamp is dated by its build, not by its commit"
     );
+    assert_eq!(stamp.version_date, stamp.built_at[..10]);
 }
 
 #[test]
@@ -113,7 +121,7 @@ fn untracked_source_marks_the_stamp_dirty() {
 
     fs::write(root.join("crates/cli/src/added.rs"), "\n").expect("add source");
 
-    assert_eq!(Stamp::read(root).dirty, "true");
+    assert_eq!(stamp(root).dirty, "true");
 }
 
 #[test]
@@ -124,7 +132,7 @@ fn changed_documentation_leaves_the_stamp_clean() {
     fs::write(root.join("README.md"), "# docs, edited\n").expect("edit docs");
     fs::write(root.join("NOTES.md"), "untracked\n").expect("add docs");
 
-    let stamp = Stamp::read(root);
+    let stamp = stamp(root);
 
     assert_eq!(stamp.dirty, "false");
     assert_eq!(stamp.version_date, "2024-03-04");
@@ -136,6 +144,8 @@ fn repository_without_commits_falls_back_to_unknown() {
     let root = repository.path();
     run_git(root, &["init", "--quiet", "--initial-branch", "main"]);
 
+    // The clock path, so this also covers the build time being independent of
+    // the repository. Its value cannot be asserted, only its shape.
     let stamp = Stamp::read(root);
 
     assert_eq!(stamp.version_commit, "UNKNOWN");
@@ -143,8 +153,7 @@ fn repository_without_commits_falls_back_to_unknown() {
     assert_eq!(stamp.commit_hash, "UNKNOWN");
     assert_eq!(stamp.commit_date, "UNKNOWN");
     assert_eq!(stamp.dirty, "UNKNOWN");
-    // The build time does not depend on the repository.
-    assert_ne!(stamp.built_at, "UNKNOWN");
+    assert_eq!(stamp.built_at.len(), BUILT_AT.len());
 }
 
 /// A commit on a branch whose ref is packed creates the loose ref for the first
@@ -161,7 +170,7 @@ fn packed_branch_ref_is_watched_before_its_loose_ref_exists() {
     let loose_ref = root.join(".git/refs/heads/main");
     assert!(!loose_ref.exists(), "the branch ref should be packed");
     let watched = rerun_paths(root);
-    let before = Stamp::read(root);
+    let before = stamp(root);
     assert_eq!(before.dirty, "true");
 
     commit(
@@ -182,7 +191,7 @@ fn packed_branch_ref_is_watched_before_its_loose_ref_exists() {
         "the reflog did not record the move: {watched:?}"
     );
 
-    let after = Stamp::read(root);
+    let after = stamp(root);
     assert_eq!(after.dirty, "false");
     assert_eq!(after.version_date, "2024-03-05");
     assert_ne!(after.version_commit, before.version_commit);
