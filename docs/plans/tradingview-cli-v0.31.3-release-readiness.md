@@ -28,13 +28,17 @@ or GitHub Release publication.
   re-review are green, including ten deterministic provenance tests.
 - [x] (2026-08-21) Created this release-readiness ExecPlan and synchronized
   durable state without changing versioned artifacts.
-- [ ] Bump the workspace and seven local lockfile package versions to `0.31.3`.
-- [ ] Cut the changelog, add curated release notes, and update the README
+- [x] (2026-08-21) Bumped the workspace and seven local lockfile package
+  versions to `0.31.3` without additional third-party drift.
+- [x] (2026-08-21) Cut the changelog, added curated release notes, and updated the README
   archive example.
-- [ ] Run focused provenance and CLI contracts, four pinned JavaScript gates,
+- [x] (2026-08-21) Ran focused provenance and CLI contracts, four pinned JavaScript gates,
   and the complete Rust release baseline.
-- [ ] Build `--release --locked`, stage and inspect the explicit package, and
-  verify short and verbose source/staged version output.
+- [x] (2026-08-21) Built `--release --locked`, staged and inspected the explicit
+  46-file package with eight runtime skills under each skill root, and verified
+  short and verbose source/staged version output. The pre-commit build correctly
+  reports `dirty: true`; a clean-HEAD rebuild is required after this preparation
+  commit.
 - [ ] Record aggregate evidence and obtain focused release-readiness review.
 
 ## Surprises & Discoveries
@@ -82,8 +86,13 @@ or GitHub Release publication.
 
 ## Outcomes & Retrospective
 
-Preparation is in progress. The candidate and output contract are frozen, but
-versioned artifacts and the complete release baseline are not yet recorded.
+Local release preparation and deterministic validation are green. The focused
+provenance and CLI suites passed 10 tests each, all four pinned JavaScript gates
+passed, strict workspace Clippy and the complete workspace suite and doctests
+passed, and the locked package contains 46 files with eight runtime skills under
+each skill root. The only remaining local gate is focused release-readiness
+review after confirming a clean-HEAD source and staged binary report
+`dirty: false`.
 No tag, push, workflow execution, GitHub Release publication, live network
 operation, Desktop mutation, or stash operation is authorized by this plan.
 

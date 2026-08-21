@@ -23,7 +23,8 @@ plan is archived. Ten later commits add build provenance and reviewed
 corrections, two compatible dependency updates, and one behavior-preserving
 Clippy baseline refactor. The current plan is
 `tradingview-cli-v0.31.3-release-readiness.md`; versioned artifacts and the
-release baseline remain pending. No retained feature or recovery work is in
+complete deterministic release baseline are green. Focused release-readiness
+review is the remaining local gate. No retained feature or recovery work is in
 scope.
 The current roadmap and ordered inventory remain `docs/v0.31-roadmap.md` and
 `docs/v0.31-work-items.md` until next-version planning begins.

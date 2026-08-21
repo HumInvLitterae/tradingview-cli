@@ -7,6 +7,8 @@ package version omits the leading `v`.
 
 ## Unreleased
 
+## v0.31.3 - 2026-08-21
+
 ### Added
 
 - `tv --version` now reports build provenance in the `cargo`/`rustc` shape
@@ -45,6 +47,9 @@ package version omits the leading `v`.
   provenance candidate and compatible dependency updates for `v0.31.3`.
 - Started `v0.31.3` release readiness for the reviewed provenance surface,
   corrections, dependency updates, and behavior-preserving Clippy refactor.
+- Prepared and validated `v0.31.3` version metadata, curated release notes,
+  locked build, and the explicit 46-file package. Focused release-readiness
+  review is pending before owner-controlled remote operations.
 
 ## v0.31.2 - 2026-08-20
 
