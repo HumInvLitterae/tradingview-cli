@@ -34,7 +34,13 @@ struct Stamp {
 
 impl Stamp {
     fn read(root: &Path) -> Self {
-        let built_at = built_at(root);
+        Self::read_built_at(root, built_at(root))
+    }
+
+    /// The build time is a parameter so that tests can fix it. Reading the
+    /// clock inside would make them depend on the day they run on, and on
+    /// `SOURCE_DATE_EPOCH`, which this build script itself honors.
+    fn read_built_at(root: &Path, built_at: String) -> Self {
         let build_date = built_at.get(..10).unwrap_or(UNKNOWN).to_string();
 
         let Some(short_commit) = git(root, &["rev-parse", "--short", "HEAD"]) else {
