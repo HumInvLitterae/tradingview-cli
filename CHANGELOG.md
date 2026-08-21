@@ -18,7 +18,7 @@ package version omits the leading `v`.
   repository report `UNKNOWN` for both fields instead of failing.
 - `tv --version --verbose` reports detailed build provenance in the
   `rustc --version --verbose` shape: `binary`, `release`, `commit-hash` (full),
-  `commit-date`, `built-at`, `dirty`, and `host`. `built-at` is an RFC 3339
+  `commit-date`, `built-at`, `dirty`, and `target`. `built-at` is an RFC 3339
   local timestamp with its UTC offset. `SOURCE_DATE_EPOCH` pins it for
   reproducible builds and is rendered as UTC; a malformed value fails the build
   rather than silently falling back to the wall clock.

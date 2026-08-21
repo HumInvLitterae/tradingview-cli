@@ -241,7 +241,7 @@ and check the date arithmetic against known dates.
 `tv --version --verbose` prints the unreduced fields in the
 `rustc --version --verbose` shape, from `TV_BUILD_COMMIT_HASH`,
 `TV_BUILD_COMMIT_DATE`, `TV_BUILD_BUILT_AT`, `TV_BUILD_DIRTY`, and
-`TV_BUILD_HOST`:
+`TV_BUILD_TARGET`:
 
 ```text
 tv <version> (<commit> <date>)
@@ -251,7 +251,7 @@ commit-hash: <full hash>
 commit-date: <YYYY-MM-DD>
 built-at: <RFC 3339 local timestamp>
 dirty: true|false
-host: <target triple>
+target: <target triple>
 ```
 
 - `commit-date` and `built-at` are both always reported. The short line picks
@@ -271,10 +271,12 @@ host: <target triple>
   malformed value fails the build rather than falling back to the wall clock,
   which would make a build that asked to be reproducible silently
   non-deterministic.
-- `host` carries Cargo's `TARGET`, the platform the produced binary runs on,
-  which is what the `host` field of `rustc --version --verbose` reports for a
-  binary. Cargo's `HOST`, the machine that compiled it, is deliberately not
-  reported; it would need its own field.
+- `target` carries Cargo's `TARGET`, the platform the produced binary runs on.
+  `rustc --version --verbose` calls the same thing `host`, because a compiler
+  distinguishes the platform it runs on from the one it compiles for. `tv` has
+  no such pair, so borrowing `host` would import the distinction without its
+  context. Cargo's `HOST`, the host platform of the Rust compiler running the
+  build, is deliberately not reported; it would need its own field.
 
 The root command owns `-V`/`--version` instead of clap's automatic flag
 (`disable_version_flag`), because clap prints its version string during parsing

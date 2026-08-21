@@ -43,11 +43,11 @@ fn main() {
     );
     println!("cargo::rustc-env=TV_BUILD_BUILT_AT={}", stamp.built_at);
     println!("cargo::rustc-env=TV_BUILD_DIRTY={}", stamp.dirty);
-    // Cargo's `TARGET` is the platform the produced binary runs on, which is
-    // what the `host` field of `rustc --version --verbose` reports. Cargo's
-    // `HOST` is the machine that compiled it and would be a different field.
+    // Cargo's `TARGET` is the platform the produced binary runs on. Cargo's
+    // `HOST`, the host platform of the Rust compiler running this build, would
+    // be a different field and is deliberately not reported.
     println!(
-        "cargo::rustc-env=TV_BUILD_HOST={}",
+        "cargo::rustc-env=TV_BUILD_TARGET={}",
         env::var("TARGET").unwrap_or_else(|_| UNKNOWN.to_string())
     );
 }

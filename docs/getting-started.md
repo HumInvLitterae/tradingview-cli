@@ -41,7 +41,7 @@ If the command prints the expected version, the binary is reachable. The
 output looks like `tv <version> (<commit> <date>)`; the commit and date
 identify the build. A `-dirty` suffix means the binary was built from
 uncommitted changes, which should not happen for a released archive. Run
-`tv --version --verbose` when you need the full commit hash and host target.
+`tv --version --verbose` when you need the full commit hash and target triple.
 
 ## 3. Use `tv` with an AI agent
 
