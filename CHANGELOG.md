@@ -32,6 +32,13 @@ package version omits the leading `v`.
   validation error, now with `[COMMAND]` in its usage line because a subcommand
   is no longer required.
 
+### Internal
+
+- Boxed the bar signature carried by the chart-quote readiness timeout, which
+  dominated an error type returned by value. `cargo clippy --workspace
+  --all-targets --all-features -- -D warnings`, a required CI gate, is clean
+  again. Command behavior, envelopes, and diagnostics are unchanged.
+
 ## v0.31.2 - 2026-08-20
 
 ### Changed
