@@ -21,8 +21,10 @@ is released from `720098d`; both completed release-readiness plans are
 archived. `v0.31.2` is released from `03e9c24`; its completed release-readiness
 plan is archived. Ten later commits add build provenance and reviewed
 corrections, two compatible dependency updates, and one behavior-preserving
-Clippy baseline refactor. They are candidate input for a separate `v0.31.3`
-patch without retained feature or recovery work.
+Clippy baseline refactor. The current plan is
+`tradingview-cli-v0.31.3-release-readiness.md`; versioned artifacts and the
+release baseline remain pending. No retained feature or recovery work is in
+scope.
 The current roadmap and ordered inventory remain `docs/v0.31-roadmap.md` and
 `docs/v0.31-work-items.md` until next-version planning begins.
 
