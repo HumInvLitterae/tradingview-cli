@@ -175,6 +175,12 @@ fn packed_branch_ref_is_watched_before_its_loose_ref_exists() {
         watched.iter().any(|path| loose_ref.starts_with(path)),
         "the new ref is not under a watched path: {watched:?}"
     );
+    assert!(
+        watched
+            .iter()
+            .any(|path| path.ends_with(".git/logs/HEAD") && was_appended_to(path)),
+        "the reflog did not record the move: {watched:?}"
+    );
 
     let after = Stamp::read(root);
     assert_eq!(after.dirty, "false");
@@ -186,13 +192,23 @@ fn packed_branch_ref_is_watched_before_its_loose_ref_exists() {
     );
 }
 
+/// The reflog is an existing file that grows, so a commit changes it without
+/// relying on a new file being noticed inside a watched directory.
+fn was_appended_to(path: &Path) -> bool {
+    fs::read_to_string(path)
+        .expect("read reflog")
+        .lines()
+        .count()
+        > 1
+}
+
 #[test]
 fn staging_and_source_state_are_watched() {
     let repository = repository();
     let root = repository.path();
     let watched = rerun_paths(root);
 
-    for expected in [".git/HEAD", ".git/refs", ".git/index"] {
+    for expected in [".git/HEAD", ".git/refs", ".git/index", ".git/logs/HEAD"] {
         assert!(
             watched.iter().any(|path| path.ends_with(expected)),
             "{expected} is not watched: {watched:?}"

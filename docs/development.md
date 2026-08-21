@@ -221,11 +221,13 @@ The two fields of that line are passed through `TV_VERSION_COMMIT` and
   archive, both fields fall back to `UNKNOWN`. The build still succeeds.
 
 The build script watches those same paths plus `HEAD`, the whole `refs`
-directory, `packed-refs`, and the `git` index, so committing refreshes the
-stamp even when no file content changes. Watching the checked-out branch ref by
-name is not enough: on a branch whose ref is packed the loose ref does not exist
-yet, so the watch would cover nothing and the commit that creates it would leave
-a stale `-dirty` stamp behind. Downstream consumers parse this line, so keep the
+directory, `packed-refs`, the `git` index, and `logs/HEAD`, so committing
+refreshes the stamp even when no file content changes. Watching the checked-out
+branch ref by name is not enough: on a branch whose ref is packed the loose ref
+does not exist yet, so the watch would cover nothing and the commit that creates
+it would leave a stale `-dirty` stamp behind. `logs/HEAD` is watched as well
+because it is an existing file that a commit appends to, which does not share a
+failure mode with noticing a new file inside a watched directory. Downstream consumers parse this line, so keep the
 package version first and keep the parenthesized suffix stable.
 
 The derivation lives in `crates/cli/build/provenance.rs`, which both
