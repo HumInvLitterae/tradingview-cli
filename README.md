@@ -48,8 +48,8 @@ binary was built from uncommitted changes and cannot be identified by a commit.
 Without `git` at build time, both fields read `UNKNOWN`.
 
 For the full picture, including the complete commit hash, the commit date, the
-build timestamp with its UTC offset, the dirty flag, and the host target
-triple:
+build timestamp with its UTC offset, the dirty flag, and the target triple the
+binary runs on:
 
 ```bash
 tv --version --verbose

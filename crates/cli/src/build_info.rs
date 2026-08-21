@@ -29,12 +29,12 @@ pub fn verbose_report() -> String {
          commit-date: {commit_date}\n\
          built-at: {built_at}\n\
          dirty: {dirty}\n\
-         host: {host}\n",
+         target: {target}\n",
         release = env!("CARGO_PKG_VERSION"),
         commit_hash = env!("TV_BUILD_COMMIT_HASH"),
         commit_date = env!("TV_BUILD_COMMIT_DATE"),
         built_at = env!("TV_BUILD_BUILT_AT"),
         dirty = env!("TV_BUILD_DIRTY"),
-        host = env!("TV_BUILD_HOST"),
+        target = env!("TV_BUILD_TARGET"),
     )
 }

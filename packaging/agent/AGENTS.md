@@ -29,7 +29,8 @@ Run `tv --version` to confirm which binary is available. It prints
 binary was built from uncommitted changes and cannot be identified by a commit,
 so report the whole line when build identity matters. `tv --version --verbose`
 adds the full commit hash, the commit date, the build timestamp, the dirty
-flag, and the host target triple. When reporting commands to the user, write them as
+flag, and the target triple the binary runs on. When reporting commands to the
+user, write them as
 `tv ...` unless the local executable path matters.
 
 For a user-first setup walkthrough, read `docs/getting-started.md` from the

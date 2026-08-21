@@ -111,7 +111,7 @@ fn verbose_version_flag_prints_detailed_build_provenance() {
                 format!("commit-date: {}", env!("TV_BUILD_COMMIT_DATE")),
                 format!("built-at: {}", env!("TV_BUILD_BUILT_AT")),
                 format!("dirty: {}", env!("TV_BUILD_DIRTY")),
-                format!("host: {}", env!("TV_BUILD_HOST")),
+                format!("target: {}", env!("TV_BUILD_TARGET")),
             ]
         );
     }
@@ -178,7 +178,7 @@ fn build_stamp_uses_expected_shape() {
         "unexpected dirty field: {}",
         env!("TV_BUILD_DIRTY")
     );
-    assert!(!env!("TV_BUILD_HOST").is_empty());
+    assert!(!env!("TV_BUILD_TARGET").is_empty());
 
     // The short line reduces the two to the one that describes the binary.
     match env!("TV_BUILD_DIRTY") {
