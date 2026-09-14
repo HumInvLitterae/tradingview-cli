@@ -33,7 +33,9 @@ Version tags such as `v0.31.3` publish native archives like:
 - `SHA256SUMS`
 
 Each archive contains the binary, README, changelog, license, getting-started
-docs, user-facing agent guides, and runtime-oriented TradingView CLI skills.
+docs, user-facing agent guides, and six runtime-oriented TradingView CLI skills
+with their references (`market-data`, `chart-analysis`, `pine-develop`,
+`replay-practice`, `screener-workflow`, and `strategy-report`).
 Verify the archive against `SHA256SUMS`, unpack it, place the executable on
 your `PATH`, and confirm the binary:
 

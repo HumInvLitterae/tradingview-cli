@@ -7,6 +7,17 @@ package version omits the leading `v`.
 
 ## Unreleased
 
+### Changed
+
+- Consolidated `market-data-interpretation`, `multi-symbol-scan`, and
+  `screener-result-analysis` into the `market-data` runtime skill, with direct
+  purpose-to-command selection and conditional references. Update explicit skill
+  invocations to the new name; CLI commands and JSON contracts are unchanged.
+- Reorganized runtime guides around six workflows with self-contained packaged
+  references. Contributor guidance uses task-specific documentation; `continuity`
+  is an explicit-only handoff, and the generic commit/discovery skills are retired.
+
+
 ## v0.31.3 - 2026-08-21
 
 ### Added

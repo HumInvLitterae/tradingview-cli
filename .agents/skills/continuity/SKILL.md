@@ -1,45 +1,25 @@
 ---
 name: continuity
-description: Maintain a single Continuity Ledger for this workspace.
-argument-hint: "[startup-instruction]"
+description: Prepare or refresh a project handoff when the user explicitly requests continuity work.
 disable-model-invocation: true
 ---
 
-# Continuity Ledger (compaction-safe)
+# Continuity handoff
 
-Maintain a single Continuity Ledger for this workspace in `CONTINUITY.md`. The ledger is the canonical session briefing designed to survive context compaction; do not rely on earlier chat text unless it’s reflected in the ledger.
+Run only when explicitly requested. Complete the requested handoff, then return
+to normal task handling; this skill does not remain active across future turns.
+It assigns no PM role, delegation permission, or commit authority.
 
-Perform your role as project manager to the best of your ability on the projects currently underway in this workspace.
+Use the existing plan or work record as the detailed source. Confirm the
+relevant current files and Git state, preserving staged work, stashes, running
+services, and other tasks. Keep older observations labeled as historical until
+verified; a ledger does not override later user instructions.
 
-Create a comprehensive task list that covers every aspect of the plan so that it keeps you focused across compactions - at least 20 items or more if appropriate.
+Include the outcome, agreed constraints and approvals, protected work, current
+state, next action, and unresolved questions that affect that action. Link to
+supporting records rather than copying their history. Choose the length from
+what the next executor needs; no minimum task count or fixed output is required.
 
-## How it works
-- At the start of every assistant turn: read `CONTINUITY.md`, update it to reflect the latest goal/constraints/decisions/state, then proceed with the work.
-- Update `CONTINUITY.md` again whenever any of these change: goal, constraints/assumptions, key decisions, progress state (Done/Now/Next), or important tool outcomes.
-- Keep it short and stable: facts only, no transcripts. Prefer bullets. Mark uncertainty as `UNCONFIRMED` (never guess).
-- If you notice missing recall or a compaction/summary event: refresh/rebuild the ledger from visible context, mark gaps `UNCONFIRMED`, ask up to 1–3 targeted questions, then continue.
-
-## Constraints
-- **Continuous application**: Once you start using this skill, please continue to follow the instructions provided in this skill until the user explicitly instructs you to stop.
-- **Clean up as needed**: To prevent `CONTINUITY.md` from becoming too bloated, regularly organize and delete unnecessary information.
-- **As project coordinator**: Avoid taking on too many complex tasks or contexts at once. If subagents (alias: "agent teams", "muti-agents", etc.) functionality is enabled, consider delegating tasks to other agents at an appropriate level of granularity as needed.
-
-## `functions.update_plan` vs the Ledger
-- `functions.update_plan` is for short-term execution scaffolding while you work (a small 3–7 step plan with pending/in_progress/completed).
-- `CONTINUITY.md` is for long-running continuity across compaction (the “what/why/current state”), not a step-by-step task list.
-- Keep them consistent: when the plan or state changes, update the ledger at the intent/progress level (not every micro-step).
-
-## In replies
-- Default: Include a brief “Ledger Snapshot” (Goal + Now/Next + Open Questions) in the response to the user.
-- Print the full ledger only when it materially changes or when the user asks.
-
-## `CONTINUITY.md` format (keep headings)
-- Goal (incl. success criteria):
-- Constraints/Assumptions:
-- Key decisions:
-- State:
-- Done:
-- Now:
-- Next:
-- Open questions (UNCONFIRMED if needed):
-- Working set (files/ids/commands):
+If the user requests a saved local brief, update untracked `CONTINUITY.md` with
+those facts. Otherwise provide the handoff in the response. Update the existing
+work record when useful; do not add a second plan or an every-turn update rule.

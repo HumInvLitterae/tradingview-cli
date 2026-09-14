@@ -1,0 +1,4 @@
+interface:
+  display_name: "Market Data"
+  short_description: "Choose and interpret TradingView data reads."
+  default_prompt: "Use $market-data to choose the right tv reads for my market-data question."

@@ -1,93 +1,38 @@
-# Chart Analysis Workflow Reference
+# Chart range, export, and visual evidence
 
-This reference holds details that are useful for chart work but should not be
-loaded every time the skill triggers.
+## Range and export
 
-## Current Rust CLI Mapping
+No-argument `tv range` reads the selected viewport. Bounded `tv range --from
+<UNIX_SECONDS> --to <UNIX_SECONDS>` may request older main-series history and
+move the viewport. Read `history_paging.coverage_status`, `stop_reason`, and
+`request_count` separately from `viewport_application.status`,
+`matching_bar_count`, and `applied_range`. Endpoint coverage alone does not prove
+that a weekend/session-gap interval has a bar or that the viewport moved.
 
-| Need | Rust CLI |
-| --- | --- |
-| Read selected chart state | `tv state` |
-| Set selected chart symbol | `tv symbol <SYMBOL>` |
-| Set selected chart timeframe | `tv timeframe <RESOLUTION>` |
-| Read or set chart type | `tv type [CHART_TYPE]` |
-| Scroll to a date | `tv scroll <DATE>` |
-| Read visible range | `tv range` |
-| Set visible range | `tv range --from <UNIX_SECONDS> --to <UNIX_SECONDS>` |
-| Desktop-free quote | `tv quote <SYMBOL>` |
-| Selected-chart quote | `tv quote <SYMBOL> --source chart` |
-| Explicit quote-data readback | `tv quote <SYMBOL> --source quote-data` |
-| Symbol metadata | `tv info <SYMBOL>` |
-| Current-chart metadata | `tv info` |
-| Selected-chart bars | `tv ohlcv --summary` or `tv ohlcv --count <N>` |
-| Desktop-free historical bars | `tv bars <SYMBOL> --from ... --to ...` |
-| Selected-chart export | `tv export chart-bars --from ... --to ...` |
-| Study values | `tv values` |
-| Pine drawing data | `tv data lines`, `tv data labels`, `tv data tables`, `tv data boxes` |
-| Strategy metrics, trades, equity | `tv data strategy`, `tv data trades --max <N>`, `tv data equity` |
-| Indicator lifecycle | `tv indicator add/remove/toggle/set` |
-| Drawing lifecycle | `tv draw shape/list/get/remove/clear`; native `parallel_channel` accepts paired `--price3` / `--time3` as a point-1-time width point |
-| Replay controls | `tv replay status/start/step/autoplay/trade/stop` |
-| Replay step log | `tv replay log --steps <N>` |
-| Screenshot | `tv screenshot --region full|chart|strategy --output <PATH> [--wait-for-render]` |
+`tv ohlcv` can return `chart_context`, `returned_bars_range`, and
+`selected_chart_range_match`. Those diagnostics do not make it an independent
+historical export. Use `tv export chart-bars` when this chart's range is the
+intended source and moving its viewport is authorized. Report
+`export_chart_bars.v1`, requested visible range, range operation, chart context,
+returned bars range, and range-match status. For reproducible Desktop-free
+historical input, use [historical bars](../../market-data/references/historical-bars.md).
+Do not silently substitute one source for another.
 
-For bounded range changes, report `history_paging.coverage_status`,
-`stop_reason`, and `request_count`, then report
-`viewport_application.status`, `matching_bar_count`, and `applied_range`.
-Do not infer that the viewport moved from endpoint coverage alone.
+## Screenshots and study identity
 
-`--wait-for-render` is an opt-in bounded readiness check for screenshots taken
-after selected-chart state changes. Success includes
-`screenshot_render_wait.v1`; timeout captures nothing and leaves the requested
-file untouched. Use `--wait-timeout-ms <500..30000>` only with the wait flag.
+Use `tv screenshot --region chart` for the chart, `full` for the page, and
+`strategy` for the detectable visible Strategy Tester panel, with an explicit
+`--output <PATH>`. After changing chart/panel state, `--wait-for-render` opts
+into bounded stable-context checks. Timeout captures nothing and leaves the
+requested file untouched. `--wait-timeout-ms <500..30000>` requires the wait flag.
 
-`tv values` rows preserve formatted `name` and `values` and add
-`entity_id`, `short_name`, `study_kind`, compact `inputs`, and `visible`.
-When names repeat, distinguish instances with `entity_id` and inputs rather
-than row order. `tv stream values` uses the same identity fields for its
-existing visible-only numeric samples; an identity or input change is a new
-sample, not a mutation request.
+`tv values` preserves `name` and `values` and adds `entity_id`, `short_name`,
+`study_kind`, compact `inputs`, and `visible`. Distinguish same-name instances
+by identity and inputs, not ordering. Unknown identity fields remain unknown.
+Arbitrary historical indicator-series computation is not implemented.
 
-## Source Notes
-
-- `tv snapshot <SYMBOL>` is a good one-symbol Desktop-free context read before
-  chart mutation. Its follow-up hints are advisory; they are not ranking or
-  automatic follow-up execution.
-- Scanner-backed quote fields can include `time`, `update_mode`,
-  `delay_seconds`, and extended-hours fields when TradingView returns them.
-  They are not a realtime entitlement guarantee.
-- `tv bars` is the reproducible historical bars entry point. Date-range mode
-  supports `1` (and its `1m` alias), `5`, `15`, `30`, `60`, `1D`, `1W`, and
-  `1M`; other intraday date-range timeframes remain guarded. Date-range
-  `--count` defaults to 500
-  and may be raised to 5000 as a safety cap. Recent count mode remains capped
-  at 500. Use `range_coverage_status`, `range_alignment`, and
-  `range_fetch_summary` for coverage and truncation diagnostics.
-- `tv ohlcv` reads the selected chart. `chart_context`,
-  `returned_bars_range`, and `selected_chart_range_match` are diagnostics;
-  they do not prove a reproducible historical export by themselves.
-- `tv export chart-bars` is an explicit Desktop-backed selected-chart export
-  workflow. Keep it separate from `tv bars`.
-- Replay commands depend on and mutate selected-chart Replay state, except
-  status reads. `tv replay log` records bounded Replay step evidence; it is not
-  historical bars input.
-- Strategy data reads share `strategy_context`. Hidden, unready, missing, and
-  ambiguous states are diagnostics and never trigger automatic panel opening
-  or visibility changes.
-- `tv quote <SYMBOL> --source quote-data` is explicit Desktop-backed
-  quote-data readback such as `qsd.rtc`. If unavailable, report
-  `source_availability`; do not treat unavailability as proof that a symbol has
-  no price.
-- `tv diagnose quote-data <SYMBOL>` can inspect sanitized target state,
-  quote-data availability, public-safe WebSocket/qsd counters, and scanner
-  freshness reference without blending sources.
-
-## Remaining Gaps
-
-Arbitrary historical indicator-series computation is not implemented in the
-Rust CLI. For a small finalist set that needs selected-chart evidence, use
-`tv chart compare <SYMBOL>...`; for broad first-pass comparison, prefer
-Desktop-free `tv compare` or `tv watch compare`. Prefer implemented high-level
-commands before generic UI automation.
-
-The MCP server itself is not planned.
+For an explicitly requested drawing operation, prefer high-level `tv draw`
+commands. Native three-point `parallel_channel` needs paired `--price3` and
+`--time3`, with the third time equal to the first point's time. Preserve the
+verified returned entity ID for inspection/removal. Do not infer authority to
+change studies or drawings from their appearance in a read result.

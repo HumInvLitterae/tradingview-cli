@@ -1,54 +1,31 @@
 ---
 name: release-prep
-description: Prepare a tradingview-cli release by updating versioned release notes, changelog, packaging expectations, validation evidence, and release workflow guardrails. Use when the user asks for release prep, version bump readiness, GitHub Release notes, release archive contents, or pre-tag release checks. "リリース準備", "release prep", "CHANGELOG", "GitHub Release", "tag release", "配布", "v0.1".
-allowed-tools: Read, Grep, Glob, Bash
+description: Prepare tv release versions, notes, archives, and validation when a release or distribution change is requested.
 ---
 
-# Release Prep
+# Release preparation
 
-Use this skill for repository release preparation. It is a development-only skill and must not be packaged into release archives.
+This is a contributor skill, excluded from runtime archives. Use the
+[release packaging contract](../../../docs/release-packaging.md) and the current
+release work record. A notes-only edit does not require a new release plan.
 
-## Core Rule
+Confirm the requested version/scope, current diff, relevant commits, and existing
+notes before editing. Inspect remote CI/release status only when it matters to
+the task; local preparation does not establish publication.
 
-The user pushes tags and branches. Do not push or create remote releases unless explicitly asked in the current turn.
+| Work | Completion evidence |
+| --- | --- |
+| Version preparation | Cargo metadata and versioned artifacts agree on the requested version. |
+| Changelog and curated notes | Explain user-visible changes; omit a redundant top-level tag heading from the release body. |
+| Archive changes | Explicit runtime allowlist, complete references, matching agent guides, no development skills. Stage locally and inspect the result. |
+| Release validation | Use the [development gates](../../../docs/development.md#validation-baseline) required by the candidate; distinguish the full release baseline from focused notes/package checks. |
 
-Release archives must include only runtime-oriented skills. Before changing packaging, verify `scripts/stage-release-package-files.sh` still copies skills from an explicit allowlist and does not copy every folder under `.agents/skills`.
+Keep feature work, CI fixes, and release preparation in coherent separate
+changes. Use the [commit convention](../../../docs/development.md#commit-messages)
+within the assigned commit authority. Reuse valid verification; explain new
+candidate drift before choosing which checks need to run again.
 
-## Workflow
-
-1. **Ground the release state.**
-   - Read `Cargo.toml`, `CHANGELOG.md`, `README.md`, `.github/workflows/release.yml`, `scripts/stage-release-package-files.sh`, and any `docs/releases/<tag>.md`.
-   - Check `git status --short` and recent commits.
-   - If CI or GitHub Release status matters, inspect it with `gh run list` / `gh run view`; do not assume current status.
-
-2. **Prepare versioned notes.**
-   - Update `CHANGELOG.md` with a dated section for the release tag.
-   - Add or update `docs/releases/<tag>.md` for the GitHub Release body.
-   - Do not put a top-level `# <tag>` heading in the release body; the GitHub Release title already contains the tag.
-   - Keep release notes user-facing: Added / Changed / Fixed / Security / Tests and docs are usually enough.
-
-3. **Check package contents.**
-   - Confirm release archives contain the binary, `README.md`, `CHANGELOG.md`, `LICENSE`, user-facing `AGENTS.md` and `CLAUDE.md`, and runtime skills under `.agents/skills/` and `.claude/skills/`.
-   - Confirm development-only skills such as `continuity`, `conventional-commits`, `discovering-skills`, and `release-prep` are not copied.
-   - If packaging changes, run the staging script locally against an existing built binary and inspect the staged tree.
-
-4. **Validate before commit.**
-   - Run the normal baseline when code or workflow behavior changes:
-     - `cargo fmt --check`
-     - `cargo clippy --workspace --all-targets --all-features -- -D warnings`
-     - `cargo test --workspace`
-     - `git diff --check`
-   - For docs-only release note changes, `git diff --check` plus tracked-doc hygiene scans may be enough.
-   - Always scan tracked docs and skills for machine-local paths and account-local metadata before public release.
-
-5. **Commit intentionally.**
-   - Use the conventional-commits skill for the final message.
-   - Keep release prep, CI workflow fixes, and feature work in separate commits unless the change is inseparable.
-   - Do not tag or push; tell the user the exact commit and remaining manual tag/push step.
-
-## Guardrails
-
-- Do not include raw live smoke payloads, account-local TradingView IDs, local paths, usernames, emails, or secrets in release notes.
-- Do not make release notes depend on generated GitHub notes when a curated `docs/releases/<tag>.md` exists.
-- Do not remove runtime skills from release archives without explicitly updating user-facing package docs.
-- Do not package development-only skills by using broad copies such as `cp -R .agents/skills`.
+The user owns publication. Do not create tags, push, or create remote releases
+unless explicitly requested in the current turn. Prepare the concrete local
+result before a remaining publication decision. Keep account-local identifiers,
+raw live payloads, credentials, and machine paths out of public artifacts.

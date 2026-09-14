@@ -270,4 +270,4 @@ scanner-backed quote reads, not the selected Desktop chart.
 - `AGENTS.md` / `CLAUDE.md`: runtime guide for agents using a release archive.
 - `docs/command-source-taxonomy.md`: detailed command source categories in the
   repository.
-- `docs/observation-workflows.md`: practical read sequences in the repository.
+- [market-data](../.agents/skills/market-data/SKILL.md): purpose-to-command selection and references included in the archive.

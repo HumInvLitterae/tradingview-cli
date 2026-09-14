@@ -1,40 +1,17 @@
-# Strategy Report Workflow Reference
+# Strategy identity and availability
 
-## Original MCP Intent
+The three structured strategy commands share `strategy_context`. Confirm
+`selected_entity_id`, `selection_reason`, visibility, and report availability
+before combining their results. Multiple equally plausible strategies yield
+`ambiguous`; resolving the intended report may require an explicitly requested
+visibility change. A hidden strategy is not a zero-result strategy.
 
-The original strategy-report skill collected strategy tester results, trade lists, equity curves, drawdown data, symbol/chart context, screenshots, and then produced a strategy report.
+`panel_status: "unknown"` means the current Desktop build did not expose a
+deterministic panel-state signal; it does not by itself make structured data
+unavailable. Do not open the panel or change studies merely to remove that label.
 
-## Current Rust CLI Mapping
-
-| Original MCP capability | Rust CLI status |
-| --- | --- |
-| `chart_get_state` | `tv state` |
-| `symbol_info` | `tv info` |
-| `quote_get` | `tv quote` |
-| `data_get_ohlcv` | `tv ohlcv --summary` or `tv ohlcv --count <N>` |
-| Visible values | `tv values` when available on chart |
-| Chart screenshot | `tv screenshot --region full|chart --output <PATH> [--wait-for-render]` |
-| `data_get_strategy_results` | `tv data strategy` |
-| `data_get_trades` | `tv data trades --max <N>` |
-| `data_get_equity` | `tv data equity` |
-| Strategy tester screenshot | `tv screenshot --region strategy --output <PATH> [--wait-for-render]` |
-
-## Working Pattern Today
-
-Use the CLI for chart, market, and strategy context. If the strategy commands return empty metrics or an `error`, report that as an observation rather than filling the gap with guesses.
-
-All three structured strategy commands return an additive `strategy_context`.
-Confirm matching `selected_entity_id`, `selection_reason`, visibility, and
-report availability before combining their evidence. A hidden strategy must be
-made visible explicitly. Multiple equally plausible strategies return
-`ambiguous` rather than selecting chart order; leave one intended
-report-bearing strategy before retrying. `panel_status: "unknown"` means the
-current Desktop build did not expose a deterministic panel-state signal and
-does not by itself make structured data unavailable.
-
-Strategy Tester panel screenshots are visual evidence only. Use `tv data strategy`, `tv data trades`, and `tv data equity` for structured fields when available. The MCP server itself is not planned.
-
-When a screenshot follows an explicit chart or panel change, opt into
-`--wait-for-render` if stable selected-chart context is required. A timeout
-does not capture or overwrite an image; it is not evidence that strategy
-metrics are unavailable.
+Strategy Tester screenshots are visual evidence. After a requested panel/chart
+change, add `--wait-for-render` if stable context is needed. Timeout does not
+capture/overwrite an image and does not prove structured metrics are missing.
+TradingView may expose metrics without a full equity curve; keep this gap in the
+report instead of inferring a curve or claiming a complete backtest artifact.

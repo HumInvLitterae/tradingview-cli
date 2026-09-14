@@ -1,4 +1,4 @@
 interface:
   display_name: "Replay Practice"
-  short_description: "Practice replay with the Rust tv CLI."
-  default_prompt: "Use replay-practice to support TradingView replay practice with the current Rust tv CLI."
+  short_description: "Run bounded TradingView Replay practice."
+  default_prompt: "Use $replay-practice for a bounded practice session with an explicit end state."
