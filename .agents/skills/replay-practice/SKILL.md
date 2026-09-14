@@ -1,30 +1,31 @@
 ---
 name: replay-practice
-description: Prepare or assist TradingView replay practice with the Rust `tv` CLI. Use when the user asks for replay setup, bar-by-bar drills, trade journal practice, or migration notes from the old MCP replay workflow.
+description: Run or review bounded TradingView Replay practice with tv when Replay state and bar-by-bar observations are the task.
 ---
 
-# Replay Practice
+# Replay practice
 
-Use this skill to support replay-style practice with the Rust `tv` CLI, while keeping replay state mutation explicit and recoverable.
+Use Replay for practice or investigation of the selected Desktop chart.
+For historical datasets, use [historical bars](../market-data/references/historical-bars.md).
+Resolve the [Desktop session](../chart-analysis/references/desktop-session.md)
+only when needed. Inspect `tv replay status` and chart context before mutation.
 
-## Current Reality
+| Requested action | Command |
+| --- | --- |
+| Inspect Replay | `tv replay status` |
+| Start at a date | `tv replay start --date <YYYY-MM-DD>` |
+| Advance one step | `tv replay step` |
+| Record a bounded sequence | `tv replay log --steps <N>` |
+| Autoplay at a chosen speed | `tv replay autoplay [--speed <MS>]` |
+| Record an approved practice trade | `tv replay trade buy`, `sell`, or `close` |
+| Stop Replay | `tv replay stop` |
 
-The Rust `tv` CLI can read and control TradingView replay with `tv replay status`, `tv replay start`, `tv replay step`, `tv replay autoplay`, `tv replay trade`, and `tv replay stop`. `tv replay status` is a Desktop-backed read. Replay start, step, stop, autoplay, and trade mutate chart replay state or replay trade state, so use them only when the user is practicing replay or has explicitly approved the mutation.
+Start/step/log/autoplay/trade/stop change Replay or Replay-trade state. Keep the
+requested bounds and end state explicit. Reuse an already agreed practice scope;
+do not close a pre-existing practice position or stop Replay as automatic cleanup.
+Use symbol/timeframe/range changes only when the requested setup needs them.
 
-Replay is not a replacement for reproducible historical bars. Use `tv bars --from/--to` for source-prepared OHLCV input. Use Replay when the selected Desktop chart and Replay state are themselves the thing being practiced or investigated. `tv replay log --steps <N>` is bounded workflow evidence, not a stable historical export artifact; add `--attach-ohlcv-summary` only when each step needs explicit selected-chart OHLCV summary evidence. Add `--attach-chart-screenshot --screenshot-output-dir <DIR>` only when every successful step needs a deterministic local chart PNG; existing files are not overwritten and screenshot failure remains separate from step failure.
-
-## Useful CLI Workflow
-
-1. Set up the chart with `tv symbol <SYMBOL>` and `tv timeframe <RESOLUTION>`.
-2. Move near the practice area with `tv scroll <DATE>` or `tv range --from <UNIX_SECONDS> --to <UNIX_SECONDS>`.
-3. Gather context with `tv state`, `tv quote`, `tv ohlcv --summary`, and `tv replay status`. Read `replay_context` and, when present, `chart_context`.
-4. Start replay with `tv replay start --date <YYYY-MM-DD>` when the user wants CLI-controlled replay.
-5. Step with `tv replay step`, optionally use `tv replay log --steps <N>` for a bounded JSONL step record, add `--attach-ohlcv-summary [--ohlcv-count <N>]` for step-level OHLCV context, and add `--attach-chart-screenshot --screenshot-output-dir <DIR>` for one no-overwrite chart PNG per successful step. Optionally use `tv replay autoplay [--speed <MS>]`, and record practice actions with `tv replay trade buy|sell|close` only after user approval. Report Replay failures and attachment failures separately.
-6. Capture a one-off chart image with `tv screenshot --region chart --output <PATH>` when visual evidence outside the bounded log helps.
-7. Clean up with `tv replay trade close` when needed, then `tv replay stop`.
-
-## Reporting
-
-Frame the output as a practice plan, observation log, or debrief. Separate observed replay state from analysis, and record whether replay was stopped or intentionally left running. Do not present Replay output or a Replay step log as a stable export artifact, ranking, recommendation, or replacement for `tv bars`.
-
-Read `references/workflow.md` when the task needs old MCP replay command mapping or future migration notes.
+For per-step bars or images, read [attachments and end-state checks](references/workflow.md).
+Report the observations, Replay outcome, attachment outcome, and whether the
+requested end state was confirmed. Replay logs are workflow evidence, not a
+stable historical export or a trading recommendation.

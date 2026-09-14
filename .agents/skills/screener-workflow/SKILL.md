@@ -1,91 +1,50 @@
 ---
 name: screener-workflow
-description: Operate TradingView Stock Screener with the Rust `tv` CLI. Use when the user wants Screener reads, scanner-to-screener workflow, saved screen switching, test screen setup, filter or column changes, or cleanup of disposable Screener state.
+description: Inspect or change TradingView Desktop Screener screens, filters, and columns with tv.
 ---
 
-# Screener Workflow
+# Desktop Screener workflow
 
-Use this skill for TradingView Stock Screener work through the Rust `tv` CLI.
-Screener work spans two source categories: `tv scanner ...` commands are
-Desktop-free reads, while `tv screener ...` commands are Desktop-backed reads
-or operations against the visible/full-page TradingView Screener target.
+Use this skill for a visible or saved Desktop Screener. Desktop-free scanner
+queries and result interpretation belong to [market-data](../market-data/SKILL.md).
 
-For follow-up chart observation after a screen, use
-`docs/observation-workflows.md` rather than expanding this skill with chart
-analysis steps.
+## Target and first read
 
-## Start With The Target
+Reuse a confirmed Screener target. Otherwise use `tv tab list` and its
+`screener_targets`, then pass the intended target's `target_cli_args` to later
+commands. If connection is unclear, consult
+[Desktop session guidance](../chart-analysis/references/desktop-session.md).
+If no target exists, `tv screener open --full-page` opens one; use it only when
+opening a Screener is part of the requested workflow.
 
-1. Run `tv readiness` for Desktop/CDP health and chart target ambiguity.
-2. Run `tv tab list` and prefer a full-page Screener target from
-   `screener_targets`. Preserve `source_category`, `requires_desktop`, and
-   `non_mutating` when reporting Desktop-backed target evidence.
-3. Use the returned `target_cli_args`, for example
-   `tv --target-id <ID> screener ...`, for follow-up commands.
-4. If no full-page Screener target is available, run
-   `tv screener open --full-page` and then use the returned `target_cli_args`.
+| Need | First command | Read next when needed |
+| --- | --- | --- |
+| Current rows | `tv screener get --limit <N>` | `tv screener status` for unclear context |
+| Current/saved screen | `tv screener screens active` / `tv screener screens list` | Add `--catalog` for catalog screens |
+| Filters | `tv screener filters list` | `tv screener filters actions` for supported actions |
+| Columns | `tv screener columns list` | `tv screener columns config` / `actions` before editing |
+| Visual evidence | `tv screenshot --region full --output <PATH>` | Only when structured state does not answer the question |
 
-## Read First
+Report source, screen/filters, columns, sort, and coverage relevant to the task.
+For why rows matched, use the
+[screen interpretation reference](../market-data/references/screening-and-comparison.md).
 
-Start with read-only commands before changing saved state:
+## Saved-state changes
 
-- `tv screener status`
-- `tv screener get --limit <N>`
-- `tv screener screens active`
-- `tv screener screens list`
-- `tv screener screens list --catalog`
-- `tv screener filters list`
-- `tv screener filters actions`
-- `tv screener columns list`
-- `tv screener columns config`
-- `tv screener columns actions`
+Get the concrete target and requested effect clear, reuse existing authorization,
+and use `--dry-run` where supported before applying the change. A read request
+alone does not authorize changing screens, filters, columns, or watchlists.
 
-Use `tv scanner hotlist` and `tv scanner scan` for broad Desktop-free market
-discovery. Preserve their `source_category: "desktop_free_read"`,
-`requires_desktop: false`, and `non_mutating: true` metadata when comparing
-them with Desktop-backed Screener rows. Use `tv screener get` when the user
-needs the currently visible Screener rows.
-Use `tv scanner metainfo --field <FIELD>` when you need to confirm whether a
-scanner field exists before building a scan.
-If visible Screener state remains unclear after structured reads, use
-`tv screenshot --region full --output <PATH>` as portable visual evidence.
-Screenshots do not mutate TradingView state, but they do write a local file.
+- `screens switch --name <NAME> [--catalog] --dry-run` previews selection.
+- For implementation/testing, use disposable names containing `CLI-Test` or
+  `テスト`. Real saved-screen create/rename/save-as/delete/save needs explicit
+  intent to change that account state. Save only to the verified intended screen.
+- Use filter add/modify/remove/clear with target checks. Broad multi-option and
+  free-text editing are not genericized.
+- Inspect column config before add/remove/reorder. Add requires a known storage
+  column ID and optional JSON-object params, not display-name search.
+  `columns reset` remains deferred because a reliable default source is unknown.
 
-## Interpreting Results
-
-For result explanation, use `screener-result-analysis`. Keep this skill focused
-on operating the Screener target and saved state. A compact first pass is
-usually enough: source, filters or screen name, columns, sort key, result count,
-top rows, and any intended next read.
-
-## Mutations
-
-Use `--dry-run` first whenever the command supports it. Explain the expected
-saved-state change and get user approval before normal mutation.
-
-- Screen switching: `tv screener screens switch --name <NAME> [--catalog] --dry-run`.
-- Screen lifecycle: use disposable names containing `CLI-Test` or `テスト` for
-  create, rename, save-as, and delete.
-- Screen save: use only on prepared test or disposable screens.
-- Filters: use `filters add`, `modify`, `remove`, and `clear` with dry-run
-  target checks first.
-- Columns: use `columns config` before `columns add`, `remove`, or `reorder`.
-  `columns add` requires a known storage column id and optional JSON-object
-  params; it is not display-name search.
-
-## Boundaries
-
-- `columns reset` is deferred because no reliable default source is confirmed.
-- Broad multi-option and free-text filter editing are not genericized.
-- Normal screen lifecycle, storage-backed filter cleanup, and column mutations
-  should stay on test or disposable screens unless the user explicitly accepts
-  account-state changes.
-- Do not record real screen ids, account-local names, raw storage payloads, or
-  target ids in shared notes.
-
-## Reporting
-
-Report which target was used, which commands were read-only or dry-run, what
-mutated, and whether post-checks confirmed the requested after-state. If any
-test screen, filter, or column remains changed, name only the visible disposable
-object and the intended cleanup command.
+Read back the requested after-state. Report remaining changed state and any
+agreed cleanup. Keep real screen IDs, account-local names, storage payloads, and
+target IDs out of shared artifacts.

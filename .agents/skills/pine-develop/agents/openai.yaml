@@ -1,4 +1,4 @@
 interface:
   display_name: "Pine Develop"
-  short_description: "Work with Pine using the Rust tv CLI."
-  default_prompt: "Use pine-develop to support Pine Script work with the current Rust tv CLI."
+  short_description: "Edit and validate Pine Script with tv."
+  default_prompt: "Use $pine-develop to edit and validate my Pine Script at the requested level."

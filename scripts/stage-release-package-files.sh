@@ -30,14 +30,11 @@ cp docs/getting-started.md "$package_dir/docs/getting-started.md"
 cp docs/ja/getting-started.md "$package_dir/docs/ja/getting-started.md"
 
 skills=(
-  # Runtime user-facing skills only. Do not copy development-only skills such as
-  # continuity, conventional-commits, discovering-skills, or release-prep.
+  # Explicit runtime allowlist; contributor skills stay in the source repository.
   chart-analysis
-  market-data-interpretation
-  multi-symbol-scan
+  market-data
   pine-develop
   replay-practice
-  screener-result-analysis
   screener-workflow
   strategy-report
 )
@@ -50,3 +47,9 @@ for root in "$package_dir/.agents/skills" "$package_dir/.claude/skills"; do
 done
 
 find "$package_dir" -name .DS_Store -delete
+
+if command -v python3 >/dev/null 2>&1; then
+  python3 scripts/check-runtime-package.py "$package_dir" --skills "${skills[@]}"
+else
+  python scripts/check-runtime-package.py "$package_dir" --skills "${skills[@]}"
+fi

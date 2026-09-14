@@ -63,41 +63,51 @@ project reference and is not broadly packaged.
 
 Runtime skills currently included:
 
+- `market-data`
 - `chart-analysis`
-- `market-data-interpretation`
-- `multi-symbol-scan`
 - `pine-develop`
 - `replay-practice`
-- `screener-result-analysis`
 - `screener-workflow`
 - `strategy-report`
 
-Development-only skills must stay out of release archives. Examples:
+`market-data` replaces `market-data-interpretation`, `multi-symbol-scan`, and
+`screener-result-analysis`; update prompts that name those former skills.
+Development-only `continuity` and `release-prep` stay out of archives. The
+former `conventional-commits` and `discovering-skills` wrappers are retired;
+commit rules live in development guidance.
 
-- `continuity`
-- `conventional-commits`
-- `discovering-skills`
-- `release-prep`
-
-When adding a runtime skill, update the staging script, the packaged agent
-guide, and README release archive description. Validate the changed skill with
-the repo-local skill validator when available.
+When changing runtime guidance, update affected entrypoints and references,
+the staging allowlist, the packaged guide, and user-facing package docs together.
+Keep links relative to their containing document, except the packaged guide
+source, whose links are authored relative to the archive root. Shared references
+must be included under both skill roots. Do not link runtime skills to
+repository-only docs; use the included skill references instead.
 
 ## Packaging validation
 
-For release packaging changes, run:
+Staging runs `scripts/check-runtime-package.py` with the same allowlist. It
+checks guide/resource parity, exact skill membership, and local Markdown links
+transitively from the guides and skills, including document paths written as
+inline code in skills. A missing or escaping reference fails
+staging. Online links are not fetched. CI also exercises the checker and stages
+a disposable placeholder binary, proving guidance packaging without claiming a
+working CLI build.
+
+For guidance or staging-only changes, use an existing binary and a fresh
+disposable output directory:
 
 ```bash
 bash -n scripts/stage-release-package-files.sh
-cargo build --release --locked
-rm -rf target/release-package-smoke
+python scripts/check-runtime-package.py --self-test
 scripts/stage-release-package-files.sh target/release-package-smoke target/release/tv
-find target/release-package-smoke -maxdepth 4 -print | sort
 git diff --check
 ```
 
-Confirm the archive staging directory includes runtime skills and the two
-getting-started docs, and excludes development-only skills and docs.
+The staging script replaces its output directory; use only disposable staging
+paths. For a real release, first build `cargo build --release --locked` and use
+that candidate's binary. Check binary provenance separately: resource checks do
+not prove Rust behavior, platform execution, or remote publication. A guidance
+edit alone does not require rebuilding an unchanged executable.
 
 For release workflow changes, also inspect `.github/workflows/release.yml` and
 ensure the tag-triggered asset names remain stable:

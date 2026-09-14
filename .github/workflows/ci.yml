@@ -31,12 +31,21 @@ jobs:
         run: |
           python scripts/check-public-hygiene.py --self-test
           python scripts/check-public-hygiene.py
+      - name: Check runtime package reference validator
+        run: python scripts/check-runtime-package.py --self-test
+      - name: Stage runtime guidance fixture
+        shell: bash
+        run: |
+          mkdir -p target
+          touch target/package-fixture-binary
+          bash scripts/stage-release-package-files.sh target/package-guidance-check target/package-fixture-binary
       - name: Check shell scripts
         if: runner.os != 'Windows'
         run: |
           bash -n scripts/git-hooks/pre-commit-fast.sh
           bash -n scripts/git-hooks/pre-push-baseline.sh
           bash -n scripts/install-config-hooks.sh
+          bash -n scripts/stage-release-package-files.sh
       - name: Check PowerShell scripts
         if: runner.os == 'Windows'
         shell: pwsh

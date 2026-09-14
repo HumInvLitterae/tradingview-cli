@@ -657,7 +657,13 @@ user-home value in an allowed file, is rejected.
 
 ## Validation baseline
 
-For code changes, run:
+Select checks for the changed properties. For a Rust implementation change or
+a complete release candidate, run the baseline below. For documentation and
+agent-resource changes, use the focused checks below and the
+[package checks](release-packaging.md#packaging-validation); an unchanged Rust
+binary does not need a rebuild or full suite merely because its guidance changed.
+
+For the Rust baseline, run:
 
 ```bash
 cargo fmt --check
@@ -723,6 +729,44 @@ git grep -nE '(USER;|sessionid|cookie|authorization|bearer)' -- README.md CHANGE
 If the credential grep finds only validation-command examples or public-safe
 policy language, record that as acceptable. Remove any new local path, account
 id, credential, or raw live payload before committing.
+
+## Commit messages
+
+Use Conventional Commits: `<type>(<scope>): <Subject>` or `<type>: <Subject>`.
+Keep the type lowercase, use an imperative sentence-case subject with no final
+period, and choose a scope that names the actual affected area. For example,
+`docs(agents): Clarify runtime command selection` or
+`fix(cli): Verify the selected script before saving`.
+
+A message request needs a message, not a fixed type/scope/subject breakdown.
+A request to commit authorizes the agreed changes, not unrelated staged work or
+history rewriting. Preserve the task's PM/implementer and remote-operation
+boundaries. Resolve rewrite impact and explicit authority before changing history.
+
+## Agent guidance maintenance
+
+[AGENTS.md](../AGENTS.md) routes contributor tasks; [PLANS.md](../.agents/PLANS.md)
+defines proportional planning. Runtime skills own practical command selection
+and conditional workflow references; [source taxonomy](command-source-taxonomy.md)
+owns source contracts. Link to those owners instead of repeating their content.
+Add a feature to a skill entrypoint only if it changes the initial command
+choice or an essential workflow constraint. Put detailed mode-specific knowledge
+in its relevant reference, and move closed migration history out of runtime steps.
+
+The runtime skills are `market-data`, `chart-analysis`, `pine-develop`,
+`replay-practice`, `screener-workflow`, and `strategy-report`. The first replaces
+`market-data-interpretation`, `multi-symbol-scan`, and `screener-result-analysis`.
+Update explicit invocations; historical plans remain records of their old names.
+`continuity` is explicit-only, one-shot handoff work; `release-prep` is contributor
+release work. The former commit/discovery wrappers are removed in favor of this
+commit convention and the skill-creation facilities available to the contributor.
+
+Validate changed metadata, descriptions, and reference routing, then stage the
+runtime resources using [packaging validation](release-packaging.md#packaging-validation).
+Keep Codex/Claude guide and resource parity. A metadata validator or link check
+does not demonstrate good model decisions; evaluate improvements from actual
+usage, including unnecessary reads, confirmation stops, task completion, and
+preservation of source/effect boundaries.
 
 ## Optional local hooks
 

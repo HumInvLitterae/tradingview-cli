@@ -1,27 +1,27 @@
 ---
 name: strategy-report
-description: Build or review TradingView strategy reports with current Rust `tv` CLI evidence and explicit gaps. Use when the user asks for strategy tester summaries, trade/equity analysis, report drafting, or migration notes from the old MCP strategy workflow.
+description: Read and explain TradingView strategy metrics, trades, and equity with tv when the user requests a Strategy Tester report.
 ---
 
-# Strategy Report
+# Strategy report
 
-Use this skill for TradingView strategy-report work that combines Rust CLI chart evidence with strategy metrics, trades, and equity data when those are available from the active chart.
+Resolve the [Desktop session](../chart-analysis/references/desktop-session.md)
+if the intended chart is not already known. Gather only the requested evidence:
 
-## Current Reality
+| Need | Command |
+| --- | --- |
+| Metrics | `tv data strategy` |
+| Trade list | `tv data trades --max <N>` |
+| Equity data | `tv data equity` |
+| Visible Strategy Tester image | `tv screenshot --region strategy --output <PATH>` |
 
-The Rust `tv` CLI can read strategy metrics, trades, equity-style data, and Strategy Tester panel screenshots when TradingView exposes them. It still cannot guarantee full equity-curve availability when TradingView only exposes summary metrics.
+Check that structured results identify the same strategy through
+`strategy_context` before combining them. `strategy_hidden`, `report_not_ready`,
+`ambiguous`, and `not_found` are diagnostics, not zero performance. These reads
+do not open Strategy Tester or unhide studies.
 
-## Useful CLI Evidence
-
-1. Confirm the active context with `tv status` and `tv state`.
-2. Gather market context with `tv info`, `tv quote`, and `tv ohlcv --summary`.
-3. Read strategy evidence with `tv data strategy`, `tv data trades --max <N>`, and `tv data equity`; confirm that their `strategy_context` identifies the same strategy before interpreting values.
-4. Use `tv values` when visible strategy-related studies expose useful values on the chart.
-5. Capture chart context with `tv screenshot --region chart --output <PATH>`.
-6. Capture Strategy Tester panel context with `tv screenshot --region strategy --output <PATH>` when the visible panel image matters.
-
-## Reporting
-
-Do not infer missing strategy metrics. Treat `strategy_hidden`, `report_not_ready`, `ambiguous`, and `not_found` as source diagnostics, not performance results. Follow explicit next actions only with user intent; these read commands do not open Strategy Tester or unhide studies.
-
-Read `references/workflow.md` when the task needs old MCP strategy command mapping or future migration notes.
+Read [strategy identity and availability](references/workflow.md) for incomplete
+or conflicting results. Fetch chart, price, or study context only when it helps
+answer the report question. Separate metrics, visual evidence, and analysis;
+leave missing trades or equity unavailable rather than reconstructing them from
+summary metrics. Follow-up state changes require the user's intent.

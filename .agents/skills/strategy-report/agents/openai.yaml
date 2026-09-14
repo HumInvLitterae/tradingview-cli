@@ -1,4 +1,4 @@
 interface:
   display_name: "Strategy Report"
-  short_description: "Review strategy data with the CLI."
-  default_prompt: "Use strategy-report to review TradingView strategy metrics, trades, equity context, and remaining CLI gaps."
+  short_description: "Read TradingView strategy results."
+  default_prompt: "Use $strategy-report to explain the available TradingView strategy results."

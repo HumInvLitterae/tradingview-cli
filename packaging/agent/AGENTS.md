@@ -1,268 +1,64 @@
 # TradingView CLI Agent Guide
 
-This guide is bundled in release archives for users and agents operating the
-`tv` binary. It is not a contributor guide.
+Use `tv` to read TradingView data and operate the user's Desktop session.
+This guide and its relative links are authored for the release archive root.
+The project is not affiliated with TradingView and does not bypass account,
+subscription, exchange-data, or script-ownership requirements.
 
-## Purpose
+## Find the binary and choose the task
 
-Use `tv` as the command-line interface for TradingView reads and automation.
-Some commands run without TradingView Desktop. Commands that read or operate
-the live chart, UI, Pine Editor, Replay, Screener, alerts, layouts, watchlists,
-or drawings use the user's own local TradingView Desktop session through Chrome
-DevTools Protocol.
+Use `tv` on PATH, or `./tv` (macOS/Linux) / `.\tv.exe` (Windows) from the unpacked
+archive. Run `tv --version` when first identifying a binary. Use
+`tv --version --verbose` when commit, build time, dirty state, or platform
+matters. Check `tv <family> --help` for uncertain arguments.
 
-This project is not affiliated with TradingView Inc. It does not bypass
-TradingView access controls, subscriptions, paywalls, exchange data agreements,
-or script ownership rules. Market data, Pine scripts, alerts, layouts, and
-account state remain subject to TradingView and data-provider terms.
+| Task | Start here |
+| --- | --- |
+| Price, symbol discovery, comparison, historical bars, freshness | [market-data](.agents/skills/market-data/SKILL.md): purpose-to-command table |
+| Selected Desktop chart, studies, viewport, images | [chart-analysis](.agents/skills/chart-analysis/SKILL.md) |
+| Pine source and validation | [pine-develop](.agents/skills/pine-develop/SKILL.md) |
+| Replay practice and step records | [replay-practice](.agents/skills/replay-practice/SKILL.md) |
+| Visible/saved Screener screens, filters, columns | [screener-workflow](.agents/skills/screener-workflow/SKILL.md) |
+| Strategy metrics, trades, equity | [strategy-report](.agents/skills/strategy-report/SKILL.md) |
 
-## Finding the CLI
+The same skills are supplied under `.claude/skills`. Read the matching entrypoint
+and only the references needed for the current question. Setup walkthroughs are
+available in [English](docs/getting-started.md) and
+[Japanese](docs/ja/getting-started.md).
 
-Prefer `tv` when it is on `PATH`. If the archive was unpacked but not
-installed, use the local executable in the unpacked directory:
+## Authority and evidence
 
-- macOS/Linux: `./tv`
-- Windows: `.\tv.exe`
+Prefer Desktop-free reads when they answer the question. For Desktop work,
+resolve and reuse the intended target using
+[Desktop session guidance](.agents/skills/chart-analysis/references/desktop-session.md).
+Do not run readiness before each read once the target is confirmed.
 
-Run `tv --version` to confirm which binary is available. It prints
-`tv <version> (<commit> <date>)`. A `-dirty` suffix on the commit means the
-binary was built from uncommitted changes and cannot be identified by a commit,
-so report the whole line when build identity matters. `tv --version --verbose`
-adds the full commit hash, the commit date, the build timestamp, the dirty
-flag, and the target triple the binary runs on. When reporting commands to the
-user, write them as
-`tv ...` unless the local executable path matters.
+A concrete request to change a named target authorizes that effect. Reuse
+approval for the same target, scope, and effects, including necessary readback
+and fixes within approved limits. A read/analysis request alone does not
+authorize changing chart, Pine, Replay, screen, alert, watchlist, layout, tab,
+drawing, or other saved state. Explain uncovered effects and obtain approval
+before performing them. Use dry-run modes where supported. `--kill-existing`
+requires explicit approval; it can terminate the user's Desktop session.
 
-For a user-first setup walkthrough, read `docs/getting-started.md` from the
-release archive. Japanese user guidance is available at
-`docs/ja/getting-started.md`.
+Inspect readback rather than assuming a successful dispatch proves the intended
+state. A transport failure can leave a mutation outcome unknown; do not repeat
+it until the outcome and remaining permission are resolved. Preserve the
+original error and source diagnostics. No diagnostic or follow-up hint by itself
+authorizes retry, timeout changes, source substitution, or another mutation.
 
-## First Checks
+Keep scanner, historical bars, chart, Replay, quote-data, and screenshots
+identified by their actual sources. Null is unknown, not zero. Summaries and
+follow-up hints are coverage/routing metadata, not automatic rankings, trades,
+or recommendations. Report the observations and their limits without inventing
+missing values. Screenshots write local files; they are visual evidence, not
+proof of persistence or historical completeness.
 
-Use Desktop-free reads when they are enough:
+Never print secrets, cookies, session data, or private credentials. Keep real
+account-local identifiers and raw live payloads out of shared artifacts.
 
-```bash
-tv quote AAPL
-tv quotes AAPL MSFT NYSE:IONQ
-tv info NASDAQ:AAPL
-tv fundamentals NYSE:IONQ --group earnings
-tv events NASDAQ:AAPL --event-type earnings
-tv scanner scan --limit 10
-tv scanner scan --sort name --asc --max-results 500 --page-size 100
-```
+## Skill names
 
-Use scanner aggregate mode only when one page is insufficient. It keeps a
-100-row request cap and reports sequential-page drift and duplicate metadata;
-do not interpret the combined rows as an atomic market snapshot. A page error
-produces no partial successful aggregate.
-
-Before chart-dependent reads or operations, check Desktop readiness:
-
-```bash
-tv readiness
-```
-
-If TradingView Desktop is not connected, run:
-
-```bash
-tv launch
-```
-
-Desktop CDP errors can include a public-safe `failure_stage` detail such as
-`target_list`, `target_select`, `websocket_connect`, `method_call`, or
-`event_wait`. Use it to describe where the failure surfaced, not as automatic
-retry permission. A method may have been dispatched before a `method_call`
-failure, so preserve the original command outcome and ask before repeating a
-mutation.
-
-On macOS, normal `tv launch` uses the system app launcher and then checks CDP
-readiness. Use `tv launch --path <PATH>` only when the user intentionally wants
-to start a specific executable. Use `--kill-existing` only with explicit user
-approval because it can terminate an existing TradingView Desktop session.
-
-Both direct spawn and the normal macOS system launch remove an incompatible
-inherited Electron mode before starting TradingView. If launch returns a
-warning with `cdp_ready: false`, run `tv readiness` before retrying because the
-app may still be loading. Treat a structured connection error after direct
-spawn as evidence that the child exited or could not be verified; ask the user
-to start the app manually or correct the explicit path. Do not add
-`--kill-existing` without explicit user approval.
-
-If `tv launch` cannot find TradingView Desktop, ask the user for the executable
-path and use `tv launch --path <PATH>`.
-
-If more than one chart target is open, run `tv tab list`, choose the intended
-target with the user, and reuse that target's `target_cli_args`, for example:
-
-```bash
-tv --target-id <ID> state
-tv --target-id <ID> ohlcv --count 1
-```
-
-Resolve the intended target once near the start of the workflow and keep using
-those same arguments. Discover targets again when selection fails, the target
-set changes, or the user changes the intended chart; do not add a readiness
-call before every read merely as a precaution.
-
-Do not use `TV_CDP_TARGET_ID`; explicit target handoff is `--target-id`.
-
-## Source Categories
-
-`tv` is one binary with different source categories:
-
-- Desktop-free reads do not need TradingView Desktop. Prefer them for broad
-  market data and symbol discovery.
-- Desktop-backed reads depend on the selected Desktop target or visible chart
-  state. Use `tv readiness` first when target or chart state may be unclear.
-- Desktop-backed operations may change chart, account, editor, Replay,
-  Screener, layout, drawing, alert, watchlist, or UI state.
-- Hybrid commands choose between sources explicitly, such as
-  `tv quote <SYMBOL> --source auto`.
-- Browserless historical bars use `tv bars <SYMBOL>` as a bounded
-  Desktop-free read with `contract_version: "bars.v1"`. They do not guarantee
-  realtime or entitlement status. Bare symbols such as `AAPL` are resolved
-  through Desktop-free symbol search; use `NASDAQ:AAPL` or another
-  `EXCHANGE:SYMBOL` form when the exchange must be fixed. Report
-  `requested_symbol`, `resolved_symbol`, and `symbol_resolution` before using
-  returned bars. Use `--from YYYY-MM-DD --to YYYY-MM-DD`
-  with `--timeframe 1` (or `1m`), `5`, `15`, `30`, `60`, `1D`, `1W`, or `1M`
-  for reproducible older intraday, daily, weekly, or monthly samples; other
-  intraday timeframes remain guarded in date-range mode. `--to` is an
-  inclusive calendar date.
-  For one-minute downstream preparation, prefer
-  `tv bars EXCHANGE:SYMBOL --timeframe 1 --from YYYY-MM-DD --to YYYY-MM-DD
-  --count 5000`.
-  Read `summary` / `range`, `requested_range` / `returned_range`,
-  `range_coverage_status`, and `range_alignment` before inspecting raw
-  `bars[]`. In date-range mode, `--count` defaults to 500 and may be raised
-  up to 5000 as a returned-bar safety cap; recent count mode remains capped at
-  500. Read
-  `range_fetch_summary` for fetch-window count, `request_more_data` count,
-  returned-count caps, and truncation reasons, and read
-  `source_availability` / `wait_summary` when bars are partial or unavailable.
-  Determine date-range completeness from `range_coverage_status` and
-  `range_fetch_summary.range_truncated`, not from
-  `data_quality.partial_result` alone. For more than 5,000 bars, use explicit
-  non-overlapping calendar windows and merge them downstream by period-start
-  timestamp.
-  Failed bars reads may include `source_failure_stage`. Treat
-  `session_setup` as common bootstrap, `series_setup` as request-specific
-  setup, and `heartbeat_send` / `pagination` as send boundaries with unknown
-  remote receipt. Preserve the existing availability details; no stage
-  authorizes automatic retry, fallback, or a timeout change.
-- Bounded watch compare uses `tv watch compare <SYMBOL>...`. It is a
-  Desktop-free scanner-backed JSONL workflow with `contract_version:
-  "watch_compare.v1"`, not a daemon, selected-chart feed, ranking, or trading
-  recommendation. Read readiness, sample, heartbeat, and summary events by
-  `_event` and preserve `source: "scanner_scan_rest"` when reporting it.
-- `tv snapshot` and `tv compare` may return `follow_up_hints[]`. These are
-  advisory evidence checks, not automatic actions. Read `kind`, `command`,
-  `requires_desktop`, `source_category`, `non_mutating`, `evidence_role`, and
-  `auto_execute: false` before deciding whether to run a separate follow-up.
-- `tv events <SYMBOL>` returns scanner-backed earnings and dividends readback
-  with `contract_version: "events.v1"`. `tv events compare <SYMBOL>...`
-  returns ordered multi-symbol `events_compare.v1` readback from the same
-  source. These are event-shaped field evidence, not complete event calendars.
-  Do not use event-like fields as ranking, recommendation, trading judgment,
-  or hidden fallback evidence.
-- `tv quotes`, Desktop-free `tv compare`, and `tv events compare` accept at
-  most 25 symbols and preserve input order. Batch quote items include a
-  zero-based `requested_index`; it is ordering metadata, not ranking.
-- Use `tv chart compare <SYMBOL>...` only for a small finalist set where the
-  selected TradingView Desktop chart feed itself is the source under review.
-  It is Desktop-backed, may temporarily switch the selected chart, and returns
-  `chart_compare.v1` with ordered item status and restore readback. Use
-  `tv compare` and `tv watch compare` for Desktop-free first-pass comparison.
-- Selected-chart historical export is explicit: use `tv export chart-bars
-  --from <UNIX_SECONDS> --to <UNIX_SECONDS>` only when the selected TradingView
-  Desktop chart itself is the intended source. It moves the visible Desktop
-  chart range, reads selected-chart bars, and returns
-  `export_chart_bars.v1` diagnostics. It is not a fallback for Desktop-free
-  `tv bars --from/--to`.
-- `tv range` without bounds reads the selected-chart viewport. Bounded
-  `tv range --from/--to` may load older selected-chart main-series history and
-  move the viewport. Inspect `history_paging` and `viewport_application` for
-  coverage, stop reason, matching bars, and clamp status; do not treat it as a
-  fallback to `tv bars` or as historical export completeness.
-- Replay-based extraction is not a stable historical export. `tv replay
-  status` is a Desktop-backed read with `replay_context`; `tv replay start`,
-  `step`, `stop`, `autoplay`, and `trade` are Desktop-backed operations that
-  change Replay state or Replay trade state. Use them only when Replay state is
-  the evidence under review. Use `tv replay log --steps <N>` as a bounded
-  JSONL record of Replay state transitions, not as source-prepared OHLCV. Keep
-  that evidence separate from `tv bars`. Use
-  `--attach-ohlcv-summary [--ohlcv-count <N>]` only when selected-chart OHLCV
-  summary evidence should be explicitly attached to each Replay step. Use
-  `--attach-chart-screenshot --screenshot-output-dir <DIR>` only when each
-  successful step needs a deterministic local chart PNG. Existing files are
-  never overwritten; screenshot failure is separate from Replay step failure.
-- Selected-chart JSONL observations use `tv observe chart` and lower-level
-  `tv stream ...`. Read readiness, sample, heartbeat, and final summary events
-  by `contract_version` (`observe_chart.v1` or `stream.v1`), `_event`, and
-  source metadata. Summary events describe the bounded observation window; they
-  are not market-data samples.
-- `tv values` and `tv stream values` study rows expose public-safe
-  `entity_id`, `short_name`, `study_kind`, compact `inputs`, and `visible`.
-  Use `entity_id` plus inputs to distinguish same-name studies. Do not infer
-  identity from row order, and do not mutate a study merely because its
-  identity appears in readback.
-
-## Safety Rules
-
-- Prefer read-only commands first: `readiness`, `status`, `tab list`, `state`,
-  `info`, `fundamentals`, `quote`, `quotes`, `ohlcv`, `values`,
-  `scanner scan`, `scanner metainfo`, `watchlist get`, `pane list`,
-  `layout list`, `alert list`, `pine get`, and `screenshot`.
-- Use `tv screenshot --region chart|full|strategy --output <PATH>` when visual
-  evidence is needed. `strategy` captures the visible Strategy Tester panel
-  when detectable. Screenshots do not mutate TradingView state but do write the
-  requested local file. After changing chart or panel state, add
-  `--wait-for-render` when capture must wait for stable selected-chart context;
-  a timeout writes no image.
-- For `tv data strategy|trades|equity`, inspect `strategy_context` before using
-  returned counts. Hidden, unready, missing, or ambiguous strategy state is a
-  source diagnostic; the commands do not open Strategy Tester or unhide a
-  study.
-- Before mutating chart, account, Pine, Replay, layout, tab, drawing, alert,
-  watchlist, Screener, or generic UI state, explain the expected effect and get
-  explicit user approval.
-- For native three-point `parallel_channel` creation, pass paired `--price3`
-  and `--time3` to `tv draw shape`; `--time3` must equal the first point's
-  time. Keep the verified returned entity ID for exact inspection or removal.
-- `tv pine open <NAME...>` changes Pine Editor's active saved-script binding
-  but does not save or compile. Treat success as valid only when
-  `slot_rebound` and `binding_verified` are true; on failure, do not proceed to
-  `tv pine save` from an unverified editor state. `switch_performed: false`
-  means the requested script was already active and still passed the same
-  identity/version/name verification. If a non-active script is absent from
-  the popup semantically linked to the Pine-owned saved-script trigger,
-  `pine open` fails closed; do not replace that failure with source injection
-  followed by save.
-- Use dry-run modes when available, especially for broad actions such as
-  `alert delete --all --dry-run`, `draw clear --dry-run`,
-  `layout switch --dry-run`, and Screener mutations.
-- Do not record real account-local identifiers in shared notes unless the user
-  explicitly asks. Scrub saved-script ids, saved-script names, alert ids,
-  layout ids, chart target ids, usernames, emails, account names, and
-  machine-local paths.
-- Never print secrets, cookies, session data, or private credentials. The CLI
-  should operate through the user's own local TradingView session.
-
-## Useful Skills
-
-The release archive includes CLI-oriented skills under `.agents/skills/` and
-`.claude/skills/`:
-
-- `chart-analysis`: live chart review and screenshot-backed context.
-- `market-data-interpretation`: quote, scanner, chart, OHLCV, freshness, and
-  extended-hours interpretation.
-- `multi-symbol-scan`: bounded symbol scans and comparisons.
-- `pine-develop`: Pine Script read/edit/check/compile workflows.
-- `replay-practice`: bounded TradingView replay practice.
-- `screener-result-analysis`: scanner and Screener result explanation without
-  turning rows into buy or sell recommendations.
-- `screener-workflow`: Stock Screener reads, target selection, dry-run-first
-  operations, and disposable test-screen cleanup.
-- `strategy-report`: strategy metrics, trades, and equity review.
-
-Use those skills when the user's request matches their descriptions.
+`market-data` replaces `market-data-interpretation`, `multi-symbol-scan`, and
+`screener-result-analysis`. Update prompts that explicitly invoked those names.
+The binary's commands and JSON contracts are unchanged by this skill reorganization.

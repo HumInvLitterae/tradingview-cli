@@ -265,4 +265,4 @@ tv watch compare NASDAQ:AAPL NASDAQ:MSFT --duration-ms 10000 --interval 2000 --h
 - `README.md`: プロジェクト概要と主要コマンド例。
 - `AGENTS.md` / `CLAUDE.md`: 配布アーカイブ内でエージェントに読ませる実行時ガイド。
 - `docs/command-source-taxonomy.md`: リポジトリ内の詳しいコマンド分類。
-- `docs/observation-workflows.md`: リポジトリ内の実用的な読み取り手順。
+- [market-data](../../.agents/skills/market-data/SKILL.md): 目的からコマンドを選ぶ表と、配布物に同梱された参照資料。

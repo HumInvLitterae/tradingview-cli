@@ -1,501 +1,75 @@
 # Observation Workflows
 
-This guide shows how to choose `tv` commands when an agent or human needs to
-observe TradingView state before deciding what to do next. It complements the
-source taxonomy in `docs/command-source-taxonomy.md`; it does not define new
-commands.
+Choose the command from the maintained runtime tables below. The same skills
+and references ship with the binary. [Source taxonomy](command-source-taxonomy.md)
+defines source and side-effect contracts; this page routes practical usage.
 
 ## Desktop-Free Screening
 
-Use Desktop-free reads when the task is broad discovery, quote comparison,
-symbol metadata, fundamentals, or scanner-style filtering. These commands do
-not require TradingView Desktop or CDP:
-
-```bash
-tv snapshot NASDAQ:AAPL
-tv compare NASDAQ:AAPL NYSE:IONQ
-tv quotes AAPL MSFT NYSE:IONQ
-tv scanner scan --type stock --columns name,close,volume --limit 10
-tv scanner scan --type stock --sort name --asc --max-results 500 --page-size 100
-tv fundamentals NYSE:IONQ --group earnings
-tv scanner metainfo --market america --field close
-```
+Use [market-data](../.agents/skills/market-data/SKILL.md) for discovery, prices,
+known-symbol comparison, fundamentals, and historical bars. Its table pairs the
+first command with the condition for a further read; do not execute all rows.
 
 ## Which Read To Use
 
-| Need | Prefer | Use when |
-| --- | --- | --- |
-| Several symbols, quote fields only | `tv quotes <SYMBOL>...` | You need ordered scanner-backed quote rows and do not need info or fundamentals sections. Inspect `time`, `update_mode`, and `delay_seconds` when freshness matters. |
-| Several known symbols, first-pass evidence | `tv compare <SYMBOL>...` | You need quote, info, and default fundamentals side by side. Read `summary` for scanability and `items[]` for evidence. |
-| Several known symbols over a short window | `tv watch compare <SYMBOL>...` | You need bounded scanner-backed quote polling as JSONL. Read readiness, sample, heartbeat, and summary events; do not treat it as ranking or a Desktop chart feed. |
-| One symbol, Desktop-free detail | `tv snapshot <SYMBOL>` | You need quote, info, and fundamentals for one symbol before chart follow-up. |
-| Small finalist set, selected-chart quote evidence | `tv chart compare <SYMBOL>...` | You need chart-source quote evidence for 2 to 10 symbols and can accept temporary selected-chart symbol switching. |
-| Selected chart over a short window | `tv observe chart --duration-ms ...` | You need readiness plus selected-chart last-bar samples, heartbeats, and final bounded-window summary. |
-| Finalist chart-feed quote | `tv quote <SYMBOL> --source chart` | The selected TradingView Desktop chart feed for one symbol is the source that matters. |
-| Visible-state evidence gap | `tv screenshot --region chart|full --output <PATH>` | Structured reads do not explain the visible chart or Screener state. |
-| Strategy Tester panel image | `tv screenshot --region strategy --output <PATH>` | A strategy report needs visual evidence of the visible Strategy Tester panel. |
-
-Use `tv snapshot <SYMBOL>` for a first-pass packet on one symbol. It combines
-scanner quote, symbol info, and scanner-backed fundamentals without connecting
-to TradingView Desktop. Use `tv compare <SYMBOL>...` when the task is a
-Desktop-free comparison across several known symbols. Use the lower-level
-commands when you need just one section, ordered quotes only, or a scanner row
-set.
-
-For a provider population larger than one page, use explicit aggregate mode
-with `--max-results`. The CLI keeps each request at 100 rows or fewer, publishes
-no partial success after a page failure, and exposes page totals, duplicates,
-timing, and drift. Treat the result as a bounded sequential observation rather
-than a point-in-time snapshot. Use `--offset` only to inspect one page.
-
-`tv snapshot` also includes compare-style contract readback for a single
-symbol. Use `contract_version`, `summary.coverage_status`,
-`summary.field_coverage`, `missing_evidence[]`, and `follow_up_hints[]` to
-understand whether quote, info, or fundamentals evidence is complete and which
-follow-up surface is available. Treat those fields as coverage and routing
-metadata; the raw `sections.quote`, `sections.info`, and
-`sections.fundamentals` remain the evidence. Snapshot metadata does not rank,
-score, recommend, call chart-source quote, start observation, or capture a
-screenshot.
-
-`tv compare` includes a top-level `summary` for scanability. Use it to read
-resolution counts, section success counts, missing counts, and requested to
-resolved symbol mappings. Treat `summary` as readback only; inspect raw
-`items[]` before drawing substantive conclusions or choosing follow-up
-actions. Compare payloads also include `contract_version`,
-`requested_index`, per-item `follow_up_hints`, and `summary.field_coverage`
-as downstream readback helpers. `summary.coverage_status` is a compact
-evidence-coverage readback: `complete` means every requested item has quote,
-info, and fundamentals sections with no missing fields; `partial` means some
-evidence exists but section errors or missing fields remain; `blocked` means
-the structured compare payload has no usable per-item evidence.
-`items[].missing_evidence[]` names the section with missing evidence, known
-missing fields, the missing reason, and a stable follow-up kind such as
-`snapshot` or `chart_quote`. These fields make ordering, schema guards,
-follow-up surfaces, and evidence gaps easier to consume, but they do not rank
-symbols or replace raw evidence.
-
-For regular-session movement evidence, use
-`items[].movement.regular_change_percent` as the stable compare-level readback.
-It is derived from the scanner quote section's
-`items[].sections.quote.data.change`, which remains the raw source evidence.
-`movement.regular_change_abs` is `null` until the scanner quote source exposes
-or this project defines a normalized absolute regular-change field. Do not
-derive ranking, scoring, or trade action from `movement`; it is only a
-machine-readable evidence path for downstream tools.
-
-Use `tv watch compare <SYMBOL>...` when the same known candidate set needs a
-short bounded scanner-backed watch window:
-
-```bash
-tv watch compare NASDAQ:AAPL NASDAQ:MSFT --duration-ms 10000 --interval 2000 --heartbeat-ms 3000
-```
-
-It emits JSONL events with `contract_version: "watch_compare.v1"` and `_watch:
-"compare"`. The readiness event describes validated symbols and controls,
-sample events contain ordered scanner-backed quote batch evidence, heartbeat
-events report counters when no changed sample is emitted, and the final summary
-reports sample, heartbeat, poll, error, control, and end-reason readback. This
-is still Desktop-free scanner evidence; it is not selected-chart observation,
-not `tv compare` replacement, not a daemon, and not a recommendation engine.
-
-Use `tv chart compare <SYMBOL>...` only after candidates are already narrow
-enough that selected-chart quote evidence matters. It emits a normal JSON
-payload with `contract_version: "chart_compare.v1"`, ordered item status,
-before/after chart context, and restore readback. It is Desktop-backed and may
-temporarily change the selected chart, so use Desktop-free `tv compare` or
-`tv watch compare` for broad multi-symbol evidence. Do not fold chart-backed
-results back into `tv compare`.
+The [market command table](../.agents/skills/market-data/SKILL.md#choose-the-first-command-and-the-next-step)
+distinguishes quote-only reads, richer packets, scanner discovery, events,
+historical bars, and bounded watches. The
+[chart table](../.agents/skills/chart-analysis/SKILL.md#choose-the-evidence)
+covers selected-chart evidence and operations. Visible/saved Screener work uses
+[screener-workflow](../.agents/skills/screener-workflow/SKILL.md).
 
 ## Follow-up Vocabulary
 
-`compare` and `snapshot` use the same stable follow-up vocabulary. These
-values describe evidence surfaces an agent may choose next; they are not
-recommendations and they are not executed automatically.
-
-| Kind | Meaning | Desktop |
-| --- | --- | --- |
-| `snapshot` | One-symbol Desktop-free detail or retry surface for quote, info, and fundamentals sections. | No |
-| `chart_quote` | Selected-chart single-symbol chart-feed quote follow-up. This is not scanner-style premarket or postmarket evidence. | Yes |
-| `observe_chart` | Selected-chart time-window observation with readiness, samples, heartbeats, and final summary. | Yes |
-| `screenshot` | Visual evidence when structured reads do not explain the visible state. | Yes |
-
-Use these same meanings in `compare.items[].follow_up_hints[]`,
-`compare.items[].missing_evidence[].suggested_follow_up`,
-`snapshot.follow_up_hints[]`, and
-`snapshot.missing_evidence[].suggested_follow_up`. The canonical chart-feed
-quote kind is `chart_quote`; do not introduce or infer a `quote_chart` alias.
-
-For `follow_up_hints[]`, also read `requires_desktop`, `source_category`,
-`non_mutating`, `evidence_role`, and `auto_execute`. These fields make the
-candidate follow-up explicit enough for an agent to report what it would check
-next before running a separate command. `auto_execute` is always false in this
-contract. `next_action_hints[]` are human-facing guidance strings; use them for
-explanation, not for automatic command dispatch.
-
-Treat scanner-backed price reads as screening evidence, not as a realtime
-entitlement guarantee. Preserve `source_category`, `requires_desktop`,
-`non_mutating`, and freshness fields such as `time`, `update_mode`, or
-`delay_seconds` when they are present.
+Read [screening and comparison](../.agents/skills/market-data/references/screening-and-comparison.md)
+for packet coverage, missing evidence, stable follow-up kinds, and why rows
+matched. Hints do not run commands or authorize new effects.
 
 ## Desktop-Backed Chart Observation
 
-Use Desktop-backed reads when the selected TradingView Desktop chart or visible
-chart feed is the source of truth. If `tv snapshot` gives enough static
-symbol context, do not start chart observation just to re-read quote, info, or
-fundamentals. When chart state over time matters, start with readiness:
-
-```bash
-tv readiness
-```
-
-If the readiness payload is clear and you need a short observation window, use:
-
-```bash
-tv observe chart --duration-ms 10000 --heartbeat-ms 2000
-```
-
-`tv observe chart` emits newline-delimited JSON. The first event is readiness;
-later events are selected-chart bar samples or heartbeats, and bounded normal
-exits emit a final summary event. Use this when the workflow needs readiness
-plus last-bar observation in one bounded command. Read `contract_version`,
-`_event`, `_observe`, source metadata, sample counts, heartbeat counts, and
-summary `end_reason` before interpreting the events. `tv observe chart` uses
-`contract_version: "observe_chart.v1"` for readiness, sample, heartbeat, and
-summary events. This is additive metadata for existing selected-chart events,
-not new realtime batching or source mixing.
-
-Use lower-level stream commands only when you already know which chart sample
-type you need:
-
-```bash
-tv stream quote --duration-ms 10000 --heartbeat-ms 2000
-tv stream bars --max-events 5
-```
-
-Lower-level stream events are also selected-chart Desktop-backed observations.
-They use `contract_version: "stream.v1"` on sample, heartbeat, and summary
-events. The final summary line reports the bounded observation window's
-counts, elapsed time, controls, and end reason; it is not itself a chart
-sample. These commands are not browserless historical bars, scanner quote
-evidence, quote-data readback, or a multi-symbol realtime feed.
-
-For selected-chart study evidence, `tv values` returns formatted values and
-public-safe instance identity. `tv stream values` keeps the existing
-visible-only numeric sample boundary and carries the same identity fields.
-Report `entity_id` and compact `inputs` when same-name studies must be
-distinguished; do not infer identity from row order. Optional identity can be
-null without making the underlying value unavailable.
-
-Do not add manual sleeps or double-call loops around chart-source quote reads.
-The CLI performs its own readiness checks and returns structured errors when
-chart data is not ready.
-
-Avoid building multi-symbol realtime loops on
-`tv quote <SYMBOL> --source chart`. Chart-source quote is a serial,
-correctness-first read for the selected TradingView chart feed, and it may
-switch and restore the visible chart. For broad comparison, use Desktop-free
-reads such as `tv compare`, `tv quotes`, `scanner scan`, or `snapshot`; move
-to chart-source quote only for a finalist where the selected chart feed itself
-matters.
-
-Do not use chart-source quote as premarket or postmarket evidence.
-Chart-source quote reports `session_boundary` to make this explicit: the price
-comes from the selected chart main-series last bar, the price session is
-`unknown`, and scanner-style extended-hours fields are not included or
-guaranteed. If a workflow needs `extended_hours.premarket` or
-`extended_hours.postmarket`, use scanner-backed `tv quote`, `tv quotes`,
-`tv snapshot`, or `tv compare` and preserve that Desktop-free source boundary.
-
-Desktop page quote-session probes can expose `premarket_*`, `postmarket_*`,
-and `market-status` field names, but they are not yet a stable public evidence
-surface. During regular session, those fields may not mean the same thing as
-scanner-backed extended-hours values. Treat them as opt-in live evidence for
-source research until postmarket and premarket behavior is confirmed.
-Postmarket probing has shown `market-status.phase=post-market` can appear, but
-the selected quote-session pre/post close fields matched each other and
-remained tied to quote-session streaming values in the public-safe summary, so
-this is still not scanner-style `extended_hours` evidence.
-
-The Desktop right-side symbol detail panel can also show a visible
-after-market price that differs from scanner REST, chart main-series quote, and
-the current quote-session selected fields. That value is useful for source
-discovery, but it is not yet part of a stable public `tv quote` payload. When
-the visible panel matters, use the dedicated opt-in smoke or screenshot-backed
-inspection rather than assuming `quote --source chart` contains the same
-after-hours value. The current postmarket source discovery narrowed the RKLB
-visible value to the right-side detail widget's status/price nodes, with React
-metadata present on the matched node; treat that as a visible UI source until a
-separate contract exposes it. A bounded CDP Network/WebSocket smoke observed
-symbol-related WebSocket traffic while that visible value was present, but did
-not find the visible after-hours price token in captured communication
-candidates. A later scoped in-page widget inspection found the right-panel
-detail widget React chain and regular quote-like props, including current
-session and regular last-price fields, but did not expose the visible
-after-hours price token in compact prop/state hits. A later bounded WebSocket
-correlation smoke sampled visible after-market prices during the same capture
-window and found exact numeric matches in received WebSocket frame summaries,
-supporting a push/WebSocket-backed source hypothesis without making it a stable
-payload source yet. A follow-up HAR/live pass made `qsd.rtc` the strongest
-current field-level candidate for that visible after-market value, while
-`lp`/`regular_close` remain regular close-like readbacks. Use
-`tv quote <SYMBOL> --source quote-data` when that explicit Desktop-backed
-quote-data readback is needed. It is not an implicit extension of
-`tv quote --source chart` and does not merge scanner REST `extended_hours`.
-If no matching `qsd.rtc` frame arrives during the bounded wait, treat the
-structured unavailable result as source availability rather than as a reason
-to guess a price. Quote-data success payloads and unavailable details expose
-`contract_version: "quote_data.v1"` and `source_availability` so agents can
-distinguish an available source readback from a bounded-wait source
-unavailable result without adding automatic fallback or source mixing.
-`source_availability.unavailable_reason` is a source diagnostic such as
-`no_websocket_events`, `no_qsd_messages`, `no_matching_symbol`, or `no_rtc`.
-Use it to decide whether to retry quote-data, verify the Desktop streaming
-symbol, or use scanner REST if delayed data is acceptable. Do not treat it as
-price absence or a trading signal. Success payloads include
-`quote_data.session_readback` for normalized spellings of TradingView-provided
-session fields without inferring a session that TradingView did not report.
-Success payloads also include `quote_data.price_readback`, which distinguishes
-`qsd.v.rtc` from regular quote-data `qsd.v.lp` as separate source-labeled
-readbacks. During regular session, matching non-null `lp` can succeed as
-`price_readback.kind: "regular_last"` when `rtc` is absent. `regular_close`
-is supporting quote-data context, not a standalone success condition. Keep
-scanner freshness metadata, chart main-series quote, and quote-data readback
-separate when comparing them.
-If an agent needs to explain why quote-data is unavailable, use
-`tv diagnose quote-data <SYMBOL>`. The diagnostic reports sanitized Desktop
-target state, quote-data availability, public-safe WebSocket/qsd counters, and
-a separate scanner freshness reference in one packet. It is troubleshooting
-metadata, not a blended price read, and it does not switch symbols or add
-quote-data to `--source auto`.
+Use [Desktop session guidance](../.agents/skills/chart-analysis/references/desktop-session.md)
+for connection and target reuse, and
+[bounded observations](../.agents/skills/market-data/references/observations.md)
+for observe/stream event semantics.
 
 ### Verified native parallel channels
 
-`tv draw shape --type parallel_channel` supports three explicit point pairs.
-Point 3 is the native width point and must use point 1's time. The first two
-times should be loaded bar anchors because the stable contract does not infer
-or normalize arbitrary timestamps. Success requires exactly one new native
-entity and verified three-point readback; retain its `entity_id` for `tv draw
-get` or exact cleanup with `tv draw remove`. Do not use `tv draw clear` for
-disposable cleanup when other drawings may exist.
+See [drawing and chart evidence](../.agents/skills/chart-analysis/references/workflow.md)
+for paired third-point parameters and verified entity identity.
 
 ## Visual Evidence Recovery
 
-Structured fields should come first. Use screenshots only when readiness,
-state, OHLCV, stream, observe output, or Strategy Tester structured data does
-not explain the visible chart, panel, or Screener state:
-
-```bash
-tv screenshot --region chart --output target/tv-chart.png
-tv screenshot --region strategy --output target/tv-strategy.png
-tv screenshot --region full --output target/tv-full.png
-```
-
-Screenshots are Desktop-backed visual evidence. They do not mutate
-TradingView state, but they write a local file, so screenshot payloads report
-`writes_file: true`. `--region strategy` is Strategy Tester panel visual
-evidence only; it does not replace `tv data strategy`, `tv data trades`, or
-`tv data equity`.
-
-After an explicit symbol, timeframe, visible-range, or panel change, add
-`--wait-for-render` when the image must wait for a stable selected-chart
-signature. The wait is opt-in; ordinary screenshots remain immediate. A
-successful wait reports `screenshot_render_wait.v1` under `render_wait`.
-`--wait-timeout-ms` defaults to 5000 and accepts 500 through 30000 only with
-`--wait-for-render`. A wait timeout returns a structured timeout error and does
-not capture, create, or overwrite the requested file.
-
-For structured strategy reads, compare `strategy_context` across all three
-commands before interpreting counts or values. `strategy_hidden`,
-`report_not_ready`, `ambiguous`, and `not_found` are selected-chart source
-diagnostics. Resolve them explicitly; the read commands do not open the panel
-or make a hidden strategy visible.
+Use [chart screenshot guidance](../.agents/skills/chart-analysis/references/workflow.md)
+when structured reads do not explain the visible state. Computer-control tools
+are optional and environment-dependent; the packaged workflow does not require them.
+For Strategy Tester evidence, use [strategy-report](../.agents/skills/strategy-report/SKILL.md).
 
 ## Browserless Historical Bars
 
-`tv bars` is a bounded Desktop-free historical bars read:
-
-```bash
-tv bars AAPL --timeframe 1D --count 5
-tv bars NASDAQ:AAPL --timeframe 1D --count 5
-tv bars NASDAQ:AAPL --timeframe 1 --from 2026-05-20 --to 2026-05-20 --count 1000
-tv bars NASDAQ:AAPL --timeframe 5 --from 2026-05-20 --to 2026-05-22 --count 1000
-tv bars NASDAQ:AAPL --timeframe 60 --from 2026-05-01 --to 2026-05-22 --count 1000
-tv bars NASDAQ:CRUS --timeframe 1D --from 2010-01-01 --to 2010-12-31
-tv bars NASDAQ:CRUS --timeframe 1W --from 2010-01-01 --to 2010-12-31
-```
-
-Use this stable form for one-minute downstream preparation:
-
-```bash
-tv bars EXCHANGE:SYMBOL --timeframe 1 \
-  --from YYYY-MM-DD --to YYYY-MM-DD --count 5000
-```
-
-It uses an undocumented TradingView WebSocket chart-session path and reports
-`contract_version: "bars.v1"`, `source: "tradingview_bars_ws"`, and
-`source_category: "desktop_free_read"`. Date-range mode is the reproducible
-source-preparation path for supported intraday, daily, weekly, and monthly
-samples. Bare symbols such as `AAPL` are resolved through Desktop-free
-symbol search, while explicit `EXCHANGE:SYMBOL` input is used as-is. Report
-`requested_symbol`, `resolved_symbol`, and `symbol_resolution` before treating
-the returned bars as evidence so an exchange mismatch is visible. `--count` is
-a safety cap and defaults to 500 in that mode. It can be
-raised up to 5000 for date ranges; recent count mode stays capped at 500.
-Date-range mode currently supports `1` (and its `1m` alias), `5`, `15`, `30`,
-`60`, `1D`, `1W`, and `1M`; other intraday timeframes remain guarded. The
-`--to` value is an inclusive calendar date. Read
-`summary` / `range`,
-`requested_range` / `returned_range`, and `range_coverage_status` for
-requested-vs-returned count and time coverage, then use raw `bars[]` for exact
-OHLCV evidence. For intraday, weekly, and monthly ranges, read
-`range_alignment` before interpreting coverage; TradingView bar timestamps are
-period-start anchors and this command filters by timestamps inside the
-requested calendar range. Read
-`range_fetch_summary` to see how many bounded fetch windows were used, how
-many `request_more_data` calls were sent, how many bars were observed,
-filtered, and returned, and whether the requested range was truncated by the
-count cap, source exhaustion, or timeout. Read `source_availability` when the result is partial or
-unavailable; its `wait_summary` explains bounded historical-source behavior
-without raw WebSocket frames. Read `data_quality` before using the result: it
-does not guarantee realtime or entitlement status. Do not treat unavailable
-bars as proof that a symbol has no history. Determine date-range completeness
-from `range_coverage_status` and
-`range_fetch_summary.range_truncated` /
-`range_fetch_summary.range_truncation_reason`; `data_quality.partial_result`
-alone is not a range-coverage decision because it can reflect only a shortfall
-against `--count`. Split larger corpora into explicit non-overlapping calendar
-windows and merge downstream on period-start timestamps. Do not treat `tv
-bars` as a replacement for chart-backed `tv ohlcv`, which reads the selected
-Desktop chart through CDP. `tv range` moves the selected Desktop chart
-viewport only; it is not a historical export contract.
-
-On a failed bars request, read `source_failure_stage` before deciding what to
-report. `session_setup` is common chart-session bootstrap, while
-`series_setup` is the request-specific symbol/timeframe series boundary.
-`heartbeat_send` and `pagination` are send failures with unknown remote
-receipt; preserve partial diagnostics. `response_wait`, `protocol`, and
-`source_result` should be interpreted with the existing availability and range
-fields. None of these values authorizes an automatic repeat.
+Use [historical bars](../.agents/skills/market-data/references/historical-bars.md)
+for supported date-range timeframes, count limits, timestamp boundaries,
+completeness, and downstream window splitting.
 
 ## Selected-Chart Historical Export
 
-Use `tv bars --from/--to` when the task needs reproducible historical OHLCV
-input for a symbol and date range. Use selected-chart export only when the
-selected TradingView Desktop chart itself is the source under review.
-
-```bash
-tv export chart-bars --from 1704067200 --to 1706745600 --count 500
-tv export chart-bars --from 1704067200 --to 1706745600 --summary
-```
-
-`tv export chart-bars` first moves the selected chart's visible range, then
-reads selected-chart bars. The success payload uses
-`contract_version: "export_chart_bars.v1"` and reports
-`requested_visible_range`, `range_operation`, `chart_context`,
-`returned_bars_range`, and `selected_chart_range_match`. If those facts do not
-line up, treat the result as a Desktop-backed source diagnostic. Do not use
-selected-chart export as a fallback for `tv bars`, and do not use raw target ids
-or raw chart payloads in tracked notes.
-
-When debugging the selected chart before export, inspect:
-
-- `tv state` for selected chart symbol, timeframe, visible range, and chart
-  readiness;
-- `tv range` for `operation: "visible_range"` plus requested and actual
-  viewport values;
-- `tv ohlcv` for `chart_context`, `returned_bars_range`, and
-  `selected_chart_range_match`.
-
-Treat `selected_chart_range_match: "overlaps_visible_range"` as evidence that
-the returned bars and observed visible range intersect. It is not a guarantee
-that a reproducible historical export was produced.
-
-For bounded `tv range --from/--to`, inspect `history_paging.coverage_status`
-and `stop_reason` before `actual`. Then inspect
-`viewport_application.status`, `matching_bar_count`, and `applied_range`.
-`complete` endpoint coverage can coexist with
-`unchanged_no_matching_bars` when the requested interval is a weekend or
-session gap. `unchanged_no_overlap` and `unchanged_no_matching_bars` preserve
-the prior viewport rather than zooming to unrelated loaded bars.
+Read [range and export evidence](../.agents/skills/chart-analysis/references/workflow.md)
+when the selected chart itself is the required source and viewport movement is
+in scope. A successful viewport change alone is not export completeness.
 
 ## Replay Extraction Feasibility
 
-Replay-based extraction is still feasibility work, not a stable export
-workflow. Use `tv bars --from/--to` when the task needs reproducible
-historical OHLCV input. Use Replay only when the selected TradingView Desktop
-chart and Replay mode itself are the evidence under review.
-
-Replay commands are stateful. `tv replay status` is a Desktop-backed read and
-reports `replay_context` plus selected-chart `chart_context` when available.
-`tv replay start`, `tv replay step`, `tv replay stop`, `tv replay autoplay`,
-and `tv replay trade` are Desktop-backed operations. They report `operation`,
-`source_category: "desktop_backed_operation"`, `non_mutating: false`, and a
-post-operation `replay_context`.
-
-For feasibility checks, keep the sequence explicit:
-
-- inspect `tv readiness` and `tv state`;
-- read `tv replay status`;
-- start Replay only after the user agrees to mutate chart state;
-- use `tv replay step` to observe `previous_date`, `current_date`,
-  `replay_context`, and selected-chart context;
-- use `tv replay log --attach-ohlcv-summary` when each step should carry
-  explicit selected-chart OHLCV summary evidence;
-- use a screenshot only as separate visual evidence;
-- stop Replay when the practice or feasibility check is complete.
-
-Use `tv replay log --steps <N>` when the task needs a bounded record of Replay
-steps. It emits JSONL readiness, step, and summary events with
-`contract_version: "replay_step_log.v1"`. It records initial Replay state,
-per-step `previous_date` / `current_date`, `replay_context`, selected-chart
-context, and a final end reason. It does not start or stop Replay
-automatically. `--attach-ohlcv-summary [--ohlcv-count <N>]` explicitly adds
-selected-chart OHLCV summary attachment evidence to step events with
-`contract_version: "replay_log_ohlcv_summary_attachment.v1"`. Screenshot
-evidence remains a separate command and is not attached automatically.
-
-Do not treat Replay output as a replacement for `tv bars`, and do not write
-raw DOM, raw payloads, target ids, or account-local metadata into tracked
-notes.
+Use [replay-practice](../.agents/skills/replay-practice/SKILL.md) for bounded
+Replay state transitions and optional per-step attachments. Replay is practice
+and workflow evidence, not a stable historical data export.
 
 ## Fundamentals And Event-Like Fields
 
-Use `tv fundamentals` for scanner-backed fundamentals and event-like fields:
-
-```bash
-tv fundamentals NYSE:IONQ --group earnings
-tv fundamentals AAPL --group dividends
-tv events NASDAQ:AAPL --event-type earnings
-tv events NASDAQ:AAPL --event-type dividends
-tv events compare NASDAQ:AAPL NASDAQ:MSFT --event-type earnings
-```
-
-The earnings and dividend groups are scanner field bundles, not a complete
-TradingView event calendar or news feed. The groups include scanner-confirmed
-earnings date/publication fields and dividend yield/date/amount/frequency
-fields. Treat `field_values` as the source of truth and avoid inferring
-timezone, before/after-market meaning, publication-code meaning, or investment
-significance unless another source supplies that interpretation.
-
-Use `tv events <SYMBOL>` when a symbol-scoped event-shaped readback is easier
-to consume than raw fundamentals fields. It returns `events.v1` from the same
-scanner fundamentals source, with event type, source metadata, event count,
-field availability, and missing/unavailable field readback. It is not a full
-event calendar and does not infer timezone, before/after-market, ranking,
-recommendation, or buy/sell meaning.
-
-Use `tv events compare <SYMBOL>...` when several known candidates need the
-same earnings / dividends readback side by side. It returns
-`events_compare.v1`, preserves input order, and keeps per-symbol failures as
-item-level diagnostics. It is still scanner fundamentals evidence, not a full
-calendar or ranking workflow.
+Use [quote and event semantics](../.agents/skills/market-data/references/quotes-and-events.md)
+for earnings, dividends, extended hours, and source availability. Event fields
+are not a complete calendar.
 
 ## Deferred Surfaces
 
-The following are not normal observation workflow steps today:
-
-- browserless streaming;
-- binary split such as separate Desktop-free and Desktop-backed executables;
-- MCP server, daemon, dashboard, or trading-bot behavior;
-- Computer Use-specific workflow skills.
+Current priorities and conditions for further work belong to the
+[planning index](plans/README.md). A runtime limitation does not itself authorize
+new fallback behavior, a daemon, a different provider, or new product scope.
