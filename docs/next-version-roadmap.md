@@ -89,7 +89,8 @@ The first expansion implements `tv mcp search`, `tv mcp columns` and
 and acceptance. Multi-symbol data is implemented as `tv mcp symbols`, with
 per-symbol returned/missing/unreported outcomes. `tv mcp screener` now provides
 one bounded official screen with honest total/returned counts. Recent-count
-intraday OHLCV is the next slice. Reuse connection and credential handling; keep tool-specific
+intraday OHLCV now supports six official intervals with native read verification.
+Watchlists and alerts are next. Reuse connection and credential handling; keep tool-specific
 schema checks and interpretation explicit. No arbitrary tool passthrough.
 
 Watchlist/alert work includes both reads and explicit management operations;

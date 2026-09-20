@@ -23,6 +23,9 @@ package version omits the leading `v`.
 - `tv mcp screener` for bounded official queries with filters, sorting, presets
   and selected columns. `mcp_screener.v1` separates returned rows from reported
   totals and preserves empty, limited and unconfirmed coverage outcomes.
+- Recent intraday `tv mcp bars` for `1m`, `5m`, `15m`, `30m`, `1h`
+  and `4h`, retaining `mcp_bars.v1`, explicit count coverage and unknown data
+  conditions without date-range or resampling claims.
 
 ## v0.31.4 - 2026-09-20
 

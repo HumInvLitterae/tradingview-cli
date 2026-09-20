@@ -53,7 +53,7 @@ fn invalid_mcp_requests_fail_before_cdp_state_store_or_provider_access() {
             "close,close",
         ],
         vec!["mcp", "bars", "AAPL"],
-        vec!["mcp", "bars", "NASDAQ:EXAMPLE", "--timeframe", "5m"],
+        vec!["mcp", "bars", "NASDAQ:EXAMPLE", "--timeframe", "2h"],
         vec!["mcp", "bars", "NASDAQ:EXAMPLE", "--count", "0"],
         vec!["mcp", "bars", "NASDAQ:EXAMPLE", "--count", "5001"],
         vec!["mcp", "bars", "NASDAQ:EXAMPLE", "--from", "2024-01-01"],
@@ -132,4 +132,22 @@ fn mcp_symbols_rejects_oversized_request_without_authentication() {
     let error: Value = serde_json::from_slice(&output.stderr).unwrap();
     assert_eq!(error["error"]["details"]["reason"], "symbols_count");
     assert_eq!(error["error"]["details"]["tool_attempts"], 0);
+}
+
+#[test]
+fn supported_mcp_bar_intervals_reach_local_state_validation_without_provider_access() {
+    for timeframe in ["1m", "5m", "15m", "30m", "1h", "4h", "1D", "1W", "1M"] {
+        let output = tv()
+            .args(["mcp", "bars", "NASDAQ:EXAMPLE", "--timeframe", timeframe])
+            .env("HOME", "relative-home")
+            .env("LOCALAPPDATA", "relative-state")
+            .env("XDG_STATE_HOME", "relative-state")
+            .assert()
+            .code(1)
+            .get_output()
+            .clone();
+        assert!(output.stdout.is_empty());
+        let error: Value = serde_json::from_slice(&output.stderr).unwrap();
+        assert_eq!(error["error"]["details"]["code"], "local_state_unavailable");
+    }
 }

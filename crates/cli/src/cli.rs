@@ -1244,9 +1244,9 @@ pub enum McpCommand {
         symbolset: Vec<String>,
     },
     #[command(
-        about = "Read recent daily, weekly or monthly OHLCV",
+        about = "Read recent intraday, daily, weekly or monthly OHLCV",
         long_about = "Read recent bars through the official TradingView MCP service as mcp_bars.v1. \
-                      Requires an exchange-qualified symbol, timeframe 1D/1W/1M, and count 1..5000. \
+                      Requires an exchange-qualified symbol, timeframe 1m/5m/15m/30m/1h/4h/1D/1W/1M, and count 1..5000. \
                       Count satisfaction is distinct from historical/calendar completeness. \
                       Adjustment, delay, session and finality may be unknown. \
                       Date ranges and automatic source fallback are unsupported."

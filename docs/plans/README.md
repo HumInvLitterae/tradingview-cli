@@ -6,7 +6,7 @@ provider integration.
 
 | Purpose | Record |
 | --- | --- |
-| Active feature: official MCP client | [MCP ExecPlan](tradingview-cli-official-mcp-client.md) — initial OHLCV plus search/columns/symbol implemented; batch symbol reads and screener implemented; intraday next, Windows qualification open |
+| Active feature: official MCP client | [MCP ExecPlan](tradingview-cli-official-mcp-client.md) — initial OHLCV plus search/columns/symbol implemented; batch symbol reads and screener implemented; intraday implemented; watchlists/alerts next, Windows qualification open |
 | v0.32.0 candidate direction | [Roadmap](../next-version-roadmap.md) |
 | Ordered work, ownership and next return point | [Inventory](../next-version-work-items.md) |
 | Released baseline | [v0.31.4 closeout](archives/tradingview-cli-v0.31.4-release-readiness.md) |
@@ -26,9 +26,8 @@ Symbol search, column discovery and single-symbol data passed deterministic
 checks and macOS public CLI smoke. Batch symbol reads passed parser/fixture and
 native public-service checks using the existing authorized credential worker;
 screener limited/empty queries also passed native public-service verification.
-Recent-count intraday OHLCV is next. The roadmap records the agreed
-expansion order, with watchlists/alerts after intraday
-bars and before financial data. Windows execution
+Recent-count intraday OHLCV is implemented. The roadmap records the agreed
+expansion order, with watchlists/alerts next, before financial data. Windows execution
 is deferred by the owner. The former count/time approval gates were withdrawn; request counters remain evidence.
 No Codex MCP setup is required. The work record owns the concrete execution
 live observations and remaining acceptance gates.

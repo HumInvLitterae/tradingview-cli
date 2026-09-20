@@ -42,8 +42,8 @@ The owner agreed to the expansion sequence in the
 watchlists and alerts immediately after intraday bars and before financial data.
 The earlier exclusions below describe the first delivered slice, not a permanent
 ban on this agreed follow-up. Symbol discovery, single/batch symbol reads and
-screener queries are implemented using the shared authenticated service. The next
-slice is recent-count intraday OHLCV. Existing commands remain intact.
+screener queries and recent-count intraday OHLCV are implemented using the shared
+authenticated service. Watchlists and alerts are next. Existing commands remain intact.
 
 Source inspection supports the watchlist/alert substitution rationale:
 
@@ -67,6 +67,42 @@ Agree on actual OAuth scope and disposable test targets before live mutations;
 the priority decision does not authorize changes to existing account objects.
 No additional dependency, executor, publication or default-backend change is
 implied. Keep this as the single MCP work record.
+
+## Recent-count intraday slice (2026-09-21)
+
+The owner requested the next ordered feature and authorized necessary same-account
+read verification without another generic confirmation. Extend `tv mcp bars`
+with `1m`, `5m`, `15m`, `30m`, `1h` and `4h`, as documented by
+[official get_ohlcv](https://www.tradingview.com/mcp/docs). Keep `1D/1W/1M`,
+default daily/300, the 5000 cap, and `mcp_bars.v1`. This is an additional
+recent-count capability, not the deferred legacy WebSocket date-range expansion.
+No dependency, credential, transport, persisted-state or fallback change is needed.
+
+Before: `tv mcp bars NASDAQ:EXAMPLE --timeframe 5m --count 20` failed with
+`unsupported_capability`. After: the same command requests wire interval `5m`
+once, with `summary:false`; twenty valid rows yield `count_status:met`, fewer
+yield `short`, and zero yield `empty`. The normalized request retains `5m`.
+All remain `calendar_coverage:unconfirmed`, with unknown session, adjustment,
+delay, timestamp semantics and finality. A gap does not cause insertion of rows
+or zero volume. `1m` is distinct from monthly `1M` (wire `M`); numeric aliases,
+`2h` and date ranges still fail before credential/provider I/O. Existing
+authentication, rate-limit, timeout and invalid-response errors remain intact.
+
+Implementation uses the existing model request validation and public service.
+Fixtures cover the six exact wire intervals, a single dispatch per read, short
+results and null volume, gaps without completeness claims, mismatched monthly
+echo rejection, unsupported aliases, and CLI routing before external I/O.
+
+Native macOS verification through the public application service returned twenty
+bars for each of the six intervals, with matching symbol/interval and one tool
+attempt per read. The development harness reused an explicitly selected,
+already-authorized immutable credential worker; this is not new executable OS
+consent evidence. No raw values or account identifiers were added to tracked
+records. Windows native qualification remains deferred and required for release.
+Validation passed: 989 workspace tests, 27 ignored, zero failures; strict
+workspace Clippy, formatting, public/diff hygiene and runtime resource staging
+(48 files, six skills per root). Native read evidence and Windows limits remain
+as described above. No release version bump or publication was performed.
 
 ## Symbol discovery and single-symbol slice (2026-09-21)
 
