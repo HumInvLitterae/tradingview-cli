@@ -265,7 +265,7 @@ tv mcp logout
 
 These use OAuth and separate MCP contracts, preserving the existing commands.
 They support symbol/column discovery, single/batch symbol fields, screener queries and recent
-daily/weekly/monthly bars, preserve unknown data conditions, and require
+intraday/daily/weekly/monthly bars, preserve unknown data conditions, and require
 an eligible paid account. Read [MCP usage and platform status](docs/official-mcp.md)
 before using this unreleased path; Windows runtime qualification remains open.
 

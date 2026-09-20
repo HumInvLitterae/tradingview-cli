@@ -215,10 +215,19 @@ contradictory totals, excess rows, duplicate symbols and malformed rows fail wit
 
 ## Read contract
 
-Use an exchange-qualified symbol, `1D`, `1W` or `1M`, and count 1..5000 (default
-300). Monthly requests map to provider interval `M`; no local resampling occurs.
-Date ranges, intraday requests, Desktop targets, batch requests and automatic
-fallback are unsupported. Invalid requests fail before credential/provider I/O.
+Use an exchange-qualified symbol and one of `1m`, `5m`, `15m`, `30m`, `1h`,
+`4h`, `1D`, `1W` or `1M`, with count 1..5000 (default 300). For example:
+
+```sh
+tv mcp bars NASDAQ:AAPL --timeframe 5m --count 20
+```
+
+`1m` means one minute; `1M` means one month and maps to provider interval `M`.
+No local resampling occurs. Numeric interval aliases and `2h` are unsupported.
+Date ranges, Desktop targets, batch bars requests and automatic fallback are
+unsupported. Invalid requests fail before credential/provider I/O. Intraday
+count satisfaction does not establish calendar completeness or regular spacing;
+session boundaries, delay, timestamp anchoring and finality remain unconfirmed.
 
 The normal JSON envelope has `command:"mcp"`. Successful reads contain
 `data.contract_version:"mcp_bars.v1"`, `source:"tradingview_mcp"`, the request,

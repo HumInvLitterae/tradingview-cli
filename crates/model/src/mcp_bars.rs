@@ -13,7 +13,10 @@ pub struct Request {
 impl Request {
     pub fn new(symbol: &str, timeframe: &str, count: u32) -> Result<Self, AppError> {
         validate_symbol(symbol)?;
-        if !matches!(timeframe, "1D" | "1W" | "1M") {
+        if !matches!(
+            timeframe,
+            "1m" | "5m" | "15m" | "30m" | "1h" | "4h" | "1D" | "1W" | "1M"
+        ) {
             return Err(unsupported("timeframe"));
         }
         if !(1..=5000).contains(&count) {
@@ -376,10 +379,44 @@ mod tests {
     }
 
     #[test]
+    fn intraday_intervals_preserve_identity_and_do_not_imply_calendar_coverage() {
+        for timeframe in ["1m", "5m", "15m", "30m", "1h", "4h"] {
+            let request = Request::new("NASDAQ:EXAMPLE", timeframe, 2).unwrap();
+            assert_eq!(request.arguments()["interval"], timeframe);
+            let mut later = row();
+            later["t"] = json!(1704326400);
+            let output = normalize(
+                &request,
+                json!({
+                    "symbol": "NASDAQ:EXAMPLE",
+                    "interval": timeframe,
+                    "bars": [row(), later]
+                }),
+                1704369600000,
+            )
+            .unwrap();
+
+            assert_eq!(output["request"]["timeframe"], timeframe);
+            assert_eq!(output["client_observation"]["count_status"], "met");
+            assert_eq!(
+                output["client_observation"]["calendar_coverage"],
+                "unconfirmed"
+            );
+            assert_eq!(output["bars"][1]["finality"], "unconfirmed");
+            assert!(output["provider_observation"]["session"]["value"].is_null());
+            assert!(normalize(&request, json!({"interval": "M", "bars": [row()]}), 0).is_err());
+        }
+
+        for unsupported in ["1", "5", "60", "2m", "2h", "1H", "M"] {
+            assert!(Request::new("NASDAQ:EXAMPLE", unsupported, 2).is_err());
+        }
+    }
+
+    #[test]
     fn validates_request_and_retains_real_zero_volume() {
         for (symbol, timeframe, count) in [
             ("AAPL", "1D", 1),
-            ("NASDAQ:EXAMPLE", "5m", 1),
+            ("NASDAQ:EXAMPLE", "2h", 1),
             ("NASDAQ:EXAMPLE", "1D", 0),
             ("NASDAQ:EXAMPLE", "1D", 5001),
             ("NASDAQ:EXAMPLE:OTHER", "1D", 1),

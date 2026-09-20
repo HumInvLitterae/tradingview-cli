@@ -774,6 +774,67 @@ async fn rejected_tool_refreshes_once_without_replaying_and_prepares_next_invoca
 }
 
 #[tokio::test]
+async fn intraday_service_sends_exact_intervals_once_and_preserves_partiality() {
+    use crate::client::{Operation, execute};
+    use tradingview_model::mcp_bars::Request as BarsRequest;
+
+    for timeframe in ["1m", "5m", "15m", "30m", "1h", "4h"] {
+        let server = Server::start("json").await;
+        let (_root, mut guard, budget, http, store) = context(&server, 5).await;
+        let mut auth = Auth::discover(http.clone(), store.clone(), budget.clone())
+            .await
+            .unwrap();
+        let url = auth
+            .register("http://127.0.0.1:12345/callback")
+            .await
+            .unwrap();
+        let state = reqwest::Url::parse(&url)
+            .unwrap()
+            .query_pairs()
+            .find(|(key, _)| key == "state")
+            .unwrap()
+            .1
+            .into_owned();
+        auth.exchange("synthetic-code", &state, None).await.unwrap();
+
+        let data = execute(
+            Operation::Bars(BarsRequest::new("NASDAQ:EXAMPLE", timeframe, 20).unwrap()),
+            &mut guard,
+            store,
+            http,
+            budget,
+            true,
+        )
+        .await
+        .unwrap();
+        assert_eq!(data["request"]["timeframe"], timeframe);
+        assert_eq!(data["client_observation"]["count_status"], "short");
+        assert_eq!(
+            data["client_observation"]["calendar_coverage"],
+            "unconfirmed"
+        );
+        assert!(data["bars"][0]["volume"].is_null());
+        assert_eq!(server.calls("tools/call"), 1);
+
+        let requests = server.requests.lock().unwrap();
+        let call = requests
+            .iter()
+            .filter_map(|request| serde_json::from_slice::<Value>(&request.body).ok())
+            .find(|value| value["method"] == "tools/call")
+            .unwrap();
+        assert_eq!(
+            call["params"]["arguments"],
+            json!({
+                "symbol": "NASDAQ:EXAMPLE",
+                "interval": timeframe,
+                "count": 20,
+                "summary": false
+            })
+        );
+    }
+}
+
+#[tokio::test]
 async fn public_service_shapes_wire_data_and_preserves_typed_failures() {
     use crate::client::{Operation, execute};
     use tradingview_model::mcp_bars::Request as BarsRequest;

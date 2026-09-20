@@ -28,6 +28,7 @@ pub enum ProofOperation {
     ReadAll,
     ReadWeekly,
     ReadMonthly,
+    IntradayCommand,
     Refresh,
     Search,
     Columns,
@@ -52,6 +53,9 @@ pub async fn run_proof_with_worker(
     operation: ProofOperation,
     worker: Option<&Path>,
 ) -> Result<Value> {
+    if matches!(operation, ProofOperation::IntradayCommand) {
+        return verify_intraday_command(directory, worker).await;
+    }
     if matches!(
         operation,
         ProofOperation::SymbolsCommand
@@ -523,4 +527,41 @@ async fn verify_data_command(
             }))
         }
     }
+}
+
+async fn verify_intraday_command(directory: &Path, worker: Option<&Path>) -> Result<Value> {
+    let worker = worker.ok_or(Failure::UnsupportedCapability)?;
+    let mut observations = Vec::new();
+    for timeframe in ["1m", "5m", "15m", "30m", "1h", "4h"] {
+        let request = tradingview_model::mcp_bars::Request::new("NASDAQ:AAPL", timeframe, 20)
+            .map_err(|_| Failure::UnsupportedCapability)?;
+        let result = crate::Client::with_paths(directory.to_owned(), worker.to_owned())
+            .run(crate::Operation::Bars(request))
+            .await;
+        let data = match result {
+            Ok(data) => data,
+            Err(error) => {
+                let details = error.details.unwrap_or(Value::Null);
+                return Ok(json!({
+                    "success": false,
+                    "timeframe": timeframe,
+                    "code": details["code"],
+                    "reason": details["reason"],
+                    "tool_attempts": details["tool_attempts"],
+                    "completed": observations
+                }));
+            }
+        };
+        observations.push(json!({
+            "timeframe": timeframe,
+            "contract_version": data["contract_version"],
+            "bar_count": data["client_observation"]["bar_count"],
+            "count_status": data["client_observation"]["count_status"],
+            "identity_match": data["client_observation"]["identity_match"],
+            "interval_match": data["client_observation"]["interval_match"],
+            "calendar_coverage": data["client_observation"]["calendar_coverage"],
+            "tool_attempts": data["transport"]["tool_attempts"]
+        }));
+    }
+    Ok(json!({"success": true, "observations": observations}))
 }
