@@ -45,8 +45,9 @@ The local harness and macOS connection proof are complete. The independent
 CLI is implemented; deterministic checks and the macOS public-command smoke
 pass, and the initial implementation is committed. The credential-read and
 worker-diagnostics follow-up preserves the public error code and adds optional
-reason detail; the corrected binary macOS smoke has passed. Next: symbol search, column discovery and single-symbol data,
-then the agreed expansion order below.
+reason detail; the corrected binary macOS smoke has passed. Symbol search, column discovery and single-symbol data are
+implemented and passed deterministic checks and macOS public CLI smoke.
+Multi-symbol data follows this slice in the agreed expansion order below.
 Windows
 qualification is deferred to a later stage and remains a release requirement. A successful read
 still leaves delay/adjustment/session/finality/anchoring unconfirmed. No new
@@ -60,7 +61,7 @@ contracts and acceptance. These are not all mandatory v0.32.0 release contents.
 
 | Priority | Slice | Next completion condition |
 | --- | --- | --- |
-| 1 | Symbol search, column discovery, single-symbol data | Explicit MCP commands with agreed examples; candidates, missing fields and source/time evidence preserved. |
+| 1 | Symbol search, column discovery, single-symbol data | Implemented with separate contracts, preserved candidates/missing fields and explicit unknown identity/freshness. Complete: workspace tests, Clippy and macOS public CLI smoke passed. Windows remains a release gate. |
 | 2 | Multi-symbol data | Per-symbol results and missing symbols remain distinct, with bounded dispatch. |
 | 3 | Screener | Filters/columns and result limits are explicit; returned rows do not imply complete coverage. |
 | 4 | Recent-count intraday OHLCV | Supported intervals are validated without adding date-range or completeness claims. |

@@ -254,12 +254,16 @@ The development checkout also provides independent **official MCP** commands:
 ```sh
 tv mcp login
 tv mcp status
+tv mcp search Apple
+tv mcp columns --search volume
+tv mcp symbol NASDAQ:AAPL --columns close,volume
 tv mcp bars NASDAQ:AAPL --timeframe 1D --count 20
 tv mcp logout
 ```
 
-These use OAuth and `mcp_bars.v1`, and do not replace `tv bars`. They support
-recent daily/weekly/monthly bars, preserve unknown data conditions, and require
+These use OAuth and separate MCP contracts, preserving the existing commands.
+They support symbol/column discovery, single-symbol fields and recent
+daily/weekly/monthly bars, preserve unknown data conditions, and require
 an eligible paid account. Read [MCP usage and platform status](docs/official-mcp.md)
 before using this unreleased path; Windows runtime qualification remains open.
 

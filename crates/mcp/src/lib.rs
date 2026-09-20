@@ -10,6 +10,7 @@ mod error;
 mod http;
 mod proof;
 mod sse;
+mod tools;
 mod transport;
 #[cfg(windows)]
 mod windows_state;

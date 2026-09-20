@@ -6,7 +6,7 @@ provider integration.
 
 | Purpose | Record |
 | --- | --- |
-| Active feature: official MCP client | [MCP ExecPlan](tradingview-cli-official-mcp-client.md) — initial `tv mcp` path and downstream observation acceptance complete; ordered expansion next, Windows qualification open |
+| Active feature: official MCP client | [MCP ExecPlan](tradingview-cli-official-mcp-client.md) — initial OHLCV plus search/columns/symbol implemented; multi-symbol data next, Windows qualification open |
 | v0.32.0 candidate direction | [Roadmap](../next-version-roadmap.md) |
 | Ordered work, ownership and next return point | [Inventory](../next-version-work-items.md) |
 | Released baseline | [v0.31.4 closeout](archives/tradingview-cli-v0.31.4-release-readiness.md) |
@@ -21,8 +21,9 @@ OAuth login, native storage, cross-process reuse, refresh and OHLCV proof have
 succeeded on macOS. The independent `tv mcp` command group is implemented.
 The public commands also passed a macOS live smoke. Required Windows runtime acceptance
 remains open. The implementation and credential correction are committed.
-The next slice is symbol search, column discovery and single-symbol data; the
-roadmap records the agreed expansion order, with watchlists/alerts after intraday
+Symbol search, column discovery and single-symbol data passed deterministic
+checks and macOS public CLI smoke; multi-symbol data is next. The roadmap records the agreed
+expansion order, with watchlists/alerts after intraday
 bars and before financial data. Windows execution
 is deferred by the owner. The former count/time approval gates were withdrawn; request counters remain evidence.
 No Codex MCP setup is required. The work record owns the concrete execution

@@ -1188,6 +1188,28 @@ pub enum McpCommand {
     Status,
     #[command(about = "Remove this CLI's local credentials; does not revoke remote access")]
     Logout,
+    #[command(about = "Search official MCP symbol candidates without selecting one")]
+    Search {
+        #[arg(required = true, num_args = 1..)]
+        query: Vec<String>,
+        #[arg(long = "type")]
+        type_filter: Option<String>,
+    },
+    #[command(about = "Discover official MCP screener columns")]
+    Columns {
+        #[arg(long)]
+        market: Option<String>,
+        #[arg(long)]
+        group: Option<String>,
+        #[arg(long)]
+        search: Option<String>,
+    },
+    #[command(about = "Read official MCP fields for one exchange-qualified symbol")]
+    Symbol {
+        symbol: String,
+        #[arg(long, value_delimiter = ',')]
+        columns: Vec<String>,
+    },
     #[command(
         about = "Read recent daily, weekly or monthly OHLCV",
         long_about = "Read recent bars through the official TradingView MCP service as mcp_bars.v1. \

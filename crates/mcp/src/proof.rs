@@ -29,6 +29,10 @@ pub enum ProofOperation {
     ReadWeekly,
     ReadMonthly,
     Refresh,
+    Search,
+    Columns,
+    ColumnsOverview,
+    Symbol,
     Logout,
 }
 
@@ -113,6 +117,29 @@ pub async fn run_proof_with_worker(
                     "server_refresh_succeeded": true,
                     "rotated_record_saved": true,
                     "subsequent_read": "pending"
+                }))
+            }
+            ProofOperation::Search
+            | ProofOperation::Columns
+            | ProofOperation::ColumnsOverview
+            | ProofOperation::Symbol => {
+                use tradingview_model::mcp_data::Request;
+                let request = match operation {
+                    ProofOperation::Search => Request::search("Apple", None),
+                    ProofOperation::Columns => Request::columns(None, None, Some("volume")),
+                    ProofOperation::ColumnsOverview => Request::columns(None, None, None),
+                    _ => Request::symbol("NASDAQ:AAPL", &["close".into(), "volume".into(), "market_cap_basic".into()]),
+                }.map_err(|_| Failure::UnsupportedCapability)?;
+                auth.restore().await?;
+                let token = auth.token().await?;
+                let mut results = crate::transport::call(
+                    &http, token, request.kind().into(), &[request.arguments()], Some(&mut admission),
+                ).await?;
+                let value = crate::transport::result_value(results.pop().ok_or(Failure::InvalidResponse)??)?;
+                Ok(json!({
+                    "response_shape": response_shape(&value, 0),
+                    "provider_success": value.get("success").and_then(Value::as_bool),
+                    "symbol_echo_matches": value.get("symbol").and_then(Value::as_str).map(|v| v == "NASDAQ:AAPL")
                 }))
             }
             ProofOperation::ReadAll => {
@@ -334,4 +361,38 @@ fn observe_result(result: CallToolResult, interval: &str) -> Result<Value> {
         });
     }
     Ok(observation)
+}
+
+// Shape only: never persist provider values, prices, descriptions or raw payloads.
+fn response_shape(value: &Value, depth: usize) -> Value {
+    if depth > 6 {
+        return json!("nested");
+    }
+    match value {
+        Value::Object(fields) => Value::Object(
+            fields
+                .iter()
+                .take(40)
+                .filter(|(name, _)| {
+                    name.len() <= 128
+                        && name
+                            .bytes()
+                            .all(|b| b.is_ascii_alphabetic() || b"_-.|".contains(&b))
+                })
+                .map(|(name, value)| (name.clone(), response_shape(value, depth + 1)))
+                .collect(),
+        ),
+        Value::Array(items) => {
+            json!({
+                "array_length": items.len(),
+                "sample_shapes": items.iter().take(2)
+                    .map(|item| response_shape(item, depth + 1))
+                    .collect::<Vec<_>>()
+            })
+        }
+        Value::Null => json!("null"),
+        Value::Bool(_) => json!("boolean"),
+        Value::Number(_) => json!("number"),
+        Value::String(_) => json!("string"),
+    }
 }

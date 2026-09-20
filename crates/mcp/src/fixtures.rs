@@ -270,16 +270,38 @@ fn respond(ep: &Endpoints, r: &Request, mode: &str) -> Response {
                 schema["properties"]["interval"] =
                     json!({"anyOf": [{"type": "string"}, {"type": "null"}]});
             }
-            json!({
-                "tools": [{
-                    "name": if mode == "numeric-nullable-schema" {
-                        "mcp-tv-get-ohlcv"
-                    } else {
-                        "get_ohlcv"
-                    },
-                    "inputSchema": schema
-                }]
-            })
+            let mut tools = vec![json!({
+                "name": if mode == "numeric-nullable-schema" { "mcp-tv-get-ohlcv" } else { "get_ohlcv" },
+                "inputSchema": schema
+            })];
+            for tool in [
+                crate::tools::Tool::Search,
+                crate::tools::Tool::Columns,
+                crate::tools::Tool::Symbol,
+            ] {
+                let properties: serde_json::Map<_, _> = tool
+                    .fields()
+                    .iter()
+                    .map(|(name, kind)| {
+                        (
+                            (*name).into(),
+                            if *kind == "array" {
+                                json!({"type": ["null", "array"], "items": {"type": "string"}})
+                            } else {
+                                json!({"type": kind})
+                            },
+                        )
+                    })
+                    .collect();
+                tools.push(json!({
+                    "name": tool.names()[0],
+                    "inputSchema": {
+                        "type": "object", "properties": properties,
+                        "required": if mode == "schema-change" { vec!["new_required"] } else { vec![] }
+                    }
+                }));
+            }
+            json!({"tools": tools})
         }
         "tools/call" => {
             assert_eq!(
@@ -326,7 +348,7 @@ fn respond(ep: &Endpoints, r: &Request, mode: &str) -> Response {
                     }
                 }));
             }
-            let result = json!({
+            let mut result = json!({
                 "content": [],
                 "structuredContent": {
                     "bars": [{
@@ -340,6 +362,48 @@ fn respond(ep: &Endpoints, r: &Request, mode: &str) -> Response {
                 },
                 "isError": mode == "tool-error"
             });
+            let args = &request["params"]["arguments"];
+            match request["params"]["name"].as_str() {
+                Some("mcp-tv-search-symbols") => {
+                    result["structuredContent"] = json!({
+                        "data": {
+                            "count": 1,
+                            "symbols": [{
+                                "symbol": "NASDAQ:EXAMPLE",
+                                "description": "Example Corp",
+                                "type": "stock",
+                                "exchange": "NASDAQ"
+                            }]
+                        }
+                    })
+                }
+                Some("mcp-tv-get-screener-columns") => {
+                    result["structuredContent"] =
+                        if args.get("search").is_none() && args.get("group").is_none() {
+                            json!({
+                                "count": 1,
+                                "groups": [{"group": "market", "count": 1, "columns": ["volume"]}]
+                            })
+                        } else {
+                            json!({
+                                "count": 1,
+                                "columns": [{
+                                    "name": "volume",
+                                    "description": "Volume",
+                                    "group": "market",
+                                    "markets": ["stock"],
+                                    "variants": ["volume|5"]
+                                }]
+                            })
+                        };
+                }
+                Some("mcp-tv-get-symbol-data") => {
+                    result["structuredContent"] = json!({
+                        "symbol": args["symbol"], "data": {"close": 10.0, "volume": null}
+                    })
+                }
+                _ => {}
+            }
             let rpc = json!({"jsonrpc": "2.0", "id": id, "result": result});
             if mode == "sse" {
                 let mut reply = Response::json(json!({}));
@@ -799,4 +863,90 @@ async fn authenticated_read_reuses_the_validated_record_without_reopening_storag
         reader.next_operation().load_record().await.unwrap_err(),
         Failure::CredentialRead
     );
+}
+
+#[tokio::test]
+async fn symbol_data_commands_share_authentication_and_preserve_faults_without_replay() {
+    use crate::client::{Operation, execute};
+    use tradingview_model::mcp_data::Request as DataRequest;
+
+    for mode in [
+        "json",
+        "sse",
+        "429",
+        "401",
+        "malformed",
+        "tool-error",
+        "schema-change",
+    ] {
+        for request in [
+            DataRequest::search("Example", None).unwrap(),
+            DataRequest::columns(None, None, Some("volume")).unwrap(),
+            DataRequest::columns(None, None, None).unwrap(),
+            DataRequest::symbol(
+                "NASDAQ:EXAMPLE",
+                &["close".into(), "volume".into(), "market_cap_basic".into()],
+            )
+            .unwrap(),
+        ] {
+            let server = Server::start(mode).await;
+            let (_root, mut guard, budget, http, store) = context(&server, 30).await;
+            let mut auth = Auth::discover(http.clone(), store.clone(), budget.clone())
+                .await
+                .unwrap();
+            let url = auth
+                .register("http://127.0.0.1:12345/callback")
+                .await
+                .unwrap();
+            let state = reqwest::Url::parse(&url)
+                .unwrap()
+                .query_pairs()
+                .find(|(key, _)| key == "state")
+                .unwrap()
+                .1
+                .into_owned();
+            auth.exchange("synthetic-code", &state, None).await.unwrap();
+            let result = execute(
+                Operation::Data(request.clone()),
+                &mut guard,
+                store,
+                http,
+                budget,
+                true,
+            )
+            .await;
+            assert_eq!(
+                server.calls("tools/call"),
+                if mode == "schema-change" { 0 } else { 1 }
+            );
+            if matches!(mode, "json" | "sse") {
+                let data = result.unwrap();
+                assert_eq!(data["source"], "tradingview_mcp");
+                assert_eq!(data["request"], request.arguments());
+                assert_eq!(data["transport"]["tool_attempts"], 1);
+                if request.kind() == tradingview_model::mcp_data::Kind::Symbol {
+                    assert_eq!(data["client_observation"]["fields_status"], "incomplete");
+                    assert!(data["fields"]["volume"].is_null());
+                    assert_eq!(
+                        data["client_observation"]["missing_fields"]
+                            .as_array()
+                            .unwrap()
+                            .len(),
+                        2
+                    );
+                }
+            } else {
+                let details = result.unwrap_err().details.unwrap();
+                assert_eq!(details["contract_version"], "mcp_error.v1");
+                assert_eq!(
+                    details["tool_attempts"],
+                    if mode == "schema-change" { 0 } else { 1 }
+                );
+                assert!(!details.to_string().contains("synthetic-access"));
+                if mode == "401" {
+                    assert_eq!(details["code"], "auth_refreshed_retry_required");
+                }
+            }
+        }
+    }
 }

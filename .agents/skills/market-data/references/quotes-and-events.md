@@ -18,6 +18,24 @@ For unavailable quote-data, report `source_availability.unavailable_reason`.
 `tv diagnose quote-data <SYMBOL>` is a separate bounded troubleshooting read,
 not a blended quote. An unavailable source does not prove that no price exists.
 
+## Official MCP discovery and fields
+
+`tv mcp search` returns `mcp_search.v1` candidates; choose the intended listing
+explicitly instead of treating the first candidate as resolved identity.
+`tv mcp columns` returns `mcp_columns.v1`: grouped overview without group/search,
+detailed entries with them. Preserve markets and variant names when selecting
+columns; catalog categories differ from regional scanner markets.
+
+`tv mcp symbol <EXCHANGE:SYMBOL> --columns close,volume` returns `mcp_symbol.v1`
+from `tradingview_mcp`. `fields` preserves requested values and JSON types;
+`missing_fields` distinguishes absent from null, and zero remains zero.
+`fields_status:present` means the requested values are present, not realtime,
+complete, comparable or suitable for a particular analysis. Client receipt time
+is not market-data time. Missing provider symbol echoes, delay and session
+conditions stay unconfirmed; never relabel these results as scanner quotes.
+These commands do not replace existing search/quote commands or automatically
+fall back to them. Login is explicit and interactive, not an automatic read step.
+
 ## Earnings and dividends
 
 `tv events <SYMBOL>` shapes `scanner_fundamentals_rest` fields as `events.v1`;

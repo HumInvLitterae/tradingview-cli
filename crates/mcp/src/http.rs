@@ -25,8 +25,6 @@ use std::{
 };
 use tokio::time::{Instant, timeout_at};
 
-pub(crate) const OHLCV_TOOL_NAMES: [&str; 2] = ["mcp-tv-get-ohlcv", "get_ohlcv"];
-
 #[derive(Clone)]
 pub(crate) struct Endpoints {
     pub resource: String,
@@ -393,42 +391,17 @@ impl Http {
                 | "notifications/cancelled",
             ) => RequestClass::Protocol,
             Some("tools/call") => {
-                if !value
+                let name = value
                     .pointer("/params/name")
                     .and_then(Value::as_str)
-                    .is_some_and(|name| OHLCV_TOOL_NAMES.contains(&name))
-                {
-                    return Err(Failure::UnsupportedCapability);
-                }
-                let mut sent = self.tool_sent.lock().map_err(|_| Failure::LocalState)?;
+                    .ok_or(Failure::UnsupportedCapability)?;
+                let tool = crate::tools::Tool::from_name(name)?;
                 let args = value
                     .pointer("/params/arguments")
                     .ok_or(Failure::InvalidResponse)?;
-                let interval = args
-                    .get("interval")
-                    .and_then(Value::as_str)
-                    .ok_or(Failure::InvalidResponse)?;
-                let symbol = args
-                    .get("symbol")
-                    .and_then(Value::as_str)
-                    .ok_or(Failure::InvalidResponse)?;
-                let count = args
-                    .get("count")
-                    .and_then(Value::as_u64)
-                    .and_then(|v| u32::try_from(v).ok())
-                    .ok_or(Failure::InvalidResponse)?;
-                if args.as_object().is_none_or(|v| v.len() != 4)
-                    || args.get("summary").and_then(Value::as_bool) != Some(false)
-                    || tradingview_model::mcp_bars::Request::new(
-                        symbol,
-                        if interval == "M" { "1M" } else { interval },
-                        count,
-                    )
-                    .is_err()
-                {
-                    return Err(Failure::UnsupportedCapability);
-                }
-                if !sent.insert(args.to_string()) {
+                tool.validate_arguments(args)?;
+                let mut sent = self.tool_sent.lock().map_err(|_| Failure::LocalState)?;
+                if !sent.insert(format!("{tool:?}:{args}")) {
                     return Err(self.remember(Failure::BudgetExhausted));
                 }
                 RequestClass::Tool
