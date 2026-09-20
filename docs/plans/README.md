@@ -1,24 +1,24 @@
 # Current work
 
-Use this index to choose the relevant work record. Read that record's current
-state and the affected files when resuming; historical validation is not proof
-of today's checkout or remote release status.
+Use this index to choose the relevant record. Dated validation is not proof of
+current checkout, publication, or provider behavior. Read affected code and
+recheck mutable state before resuming.
 
 | Purpose | Record |
 | --- | --- |
-| Closed published release | [v0.31.3 release record](archives/tradingview-cli-v0.31.3-release-readiness.md) |
-| Product direction | [v0.31 roadmap](../v0.31-roadmap.md) |
-| Work priority and remaining candidates | [v0.31 inventory](../v0.31-work-items.md) |
+| Next release direction and patch/minor comparison | [Next-version roadmap](../next-version-roadmap.md) |
+| Ordered work and verified maintenance candidate | [Next-version inventory](../next-version-work-items.md) |
+| Official MCP client design, contracts and acceptance | [MCP ExecPlan](tradingview-cli-official-mcp-client.md) — approved concrete scope; queued after v0.31.4 |
+| Completed v0.31 product direction and inventory | [Roadmap](../v0.31-roadmap.md), [inventory](../v0.31-work-items.md) |
 | CDP stability research and promotion conditions | [Strategy note](../notes/cdp-stability-and-autonomous-operation-strategy.md) |
 | Completed plans and older context | [Historical catalog](archives/README.md) |
 
-v0.31.3 publication was verified on 2026-09-20 and its record archived.
-Historical preparation evidence applies to its declared candidate, not a later
-checkout. Select new release work separately from this completed record.
+Recently closed: [published v0.31.3](archives/tradingview-cli-v0.31.3-release-readiness.md)
+and [agent guidance/runtime skill reorganization](archives/tradingview-cli-agent-guidance.md).
+The new MCP work is an accepted client direction; the MCP server exclusion remains intact.
 
 Planning and state ownership follow [PLANS.md](../../.agents/PLANS.md).
-Keep detailed decisions and acceptance in the work record. When closing a plan,
-move it to `archives/` and update its entry here instead of copying its history
-into this index, the roadmap, and a local ledger.
-
-Recently completed: [agent guidance and runtime skill reorganization](archives/tradingview-cli-agent-guidance.md).
+The roadmap owns direction, inventory owns order, and each work record owns
+its decisions and acceptance. Prepare v0.31.4 first, then proceed with the
+approved MCP scope. Keep release artifacts separate from planning. Local
+commits are authorized; publication is not authorized.
