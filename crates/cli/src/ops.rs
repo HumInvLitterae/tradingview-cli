@@ -10,6 +10,7 @@ mod indicator;
 mod launch;
 mod layout;
 mod market;
+mod mcp;
 mod observe;
 mod pine;
 mod readiness;
@@ -64,6 +65,7 @@ pub use market::{
     fundamentals_symbol, ohlcv_bars, ohlcv_summary, quote, quote_data, quote_symbol, quote_symbols,
     snapshot_symbol, symbol_info_direct, symbol_search, validate_export_chart_bars_request,
 };
+pub use mcp::run_mcp;
 pub use observe::{observe_chart_event, observe_readiness_event};
 pub use pine::{
     pine_alertconditions, pine_analyze, pine_check, pine_compile, pine_console, pine_errors,

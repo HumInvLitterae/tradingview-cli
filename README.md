@@ -249,6 +249,20 @@ This source reports TradingView quote-data readbacks such as `qsd.rtc` or
 regular quote-data `qsd.v.lp` separately from chart main-series quotes and
 scanner `extended_hours`.
 
+The development checkout also provides independent **official MCP** commands:
+
+```sh
+tv mcp login
+tv mcp status
+tv mcp bars NASDAQ:AAPL --timeframe 1D --count 20
+tv mcp logout
+```
+
+These use OAuth and `mcp_bars.v1`, and do not replace `tv bars`. They support
+recent daily/weekly/monthly bars, preserve unknown data conditions, and require
+an eligible paid account. Read [MCP usage and platform status](docs/official-mcp.md)
+before using this unreleased path; Windows runtime qualification remains open.
+
 Browserless historical bars are Desktop-free and bounded:
 
 ```bash

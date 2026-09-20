@@ -14,6 +14,17 @@ downstream use.
 
 ## Categories
 
+### Authenticated official MCP
+
+`tv mcp bars` is an explicit Desktop-free, non-mutating official-service read,
+with `source: tradingview_mcp`, `source_category: desktop_free_read`, and
+`requires_desktop: false`. It emits `mcp_bars.v1` and never uses CDP, legacy
+WebSocket, or scanner fallback. OAuth renewal and the dedicated OS credential
+record are separate local/authentication effects. `login` performs browser
+consent, `status` is local-only, and `logout` deletes local authorization only.
+See [MCP usage and contracts](official-mcp.md). Existing `tv bars` remains an
+independent command and contract; no implicit source migration occurs.
+
 ### Desktop-free read
 
 `requires_desktop`: no. `may_mutate`: no. `fallback_allowed`: no Desktop

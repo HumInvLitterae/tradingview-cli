@@ -26,6 +26,9 @@ excludes them.
 This project uses Rust 2024.
 
 - Do not introduce `mod.rs`.
+- Use conventional multiline layout for control flow, nested JSON and embedded
+  scripts. Separate functions and logical phases with blank lines; review
+  readability manually because rustfmt does not format every macro body.
 - Keep shared package metadata such as version, edition, license, and publish
   policy in the workspace root `[workspace.package]` table.
 - Keep dependency versions and internal crate paths in the workspace root
@@ -638,6 +641,30 @@ non-empty bars, `summary`, `range`, `symbol_resolution`,
 `range_alignment`, `range_fetch_summary`,
 `source_availability`, public-safe `wait_summary`, and `data_quality`. Do not
 paste raw WebSocket output or live response payloads into tracked docs.
+
+## Official MCP client development checks
+
+The internal client has loopback-only OAuth/MCP fixtures and synthetic credential
+stores. Run them without provider access or native Keychain reads:
+
+```bash
+cargo test -p tradingview-mcp -p tradingview-model
+cargo test -p tradingview-cli --test cli_contract_mcp
+cargo run -p tradingview-mcp --example connection_proof -- --local-admission
+```
+
+The example's other operations are explicit live proof actions. The development
+CLI also exposes `tv mcp`; its service shares the same bounded transport and
+validates `mcp_bars.v1` with JSON/SSE, 401/429, schema and invalid-response fixtures.
+Their account, credential-record and provider authority belong
+to the [MCP work record](plans/tradingview-cli-official-mcp-client.md). The
+example installs no logging subscriber and emits sanitized observations only;
+never enable SDK wire/debug logging around real authorization. macOS and Windows
+credential calls run in a killable same-binary worker. The explicit
+`authorize-store` action permits an OS access check after an executable update;
+normal reads never prompt. Windows native qualification and Linux implementation
+remain open; no plaintext fallback exists. On Windows, the native store test
+uses a disposable synthetic entry and deletes it afterward.
 
 ## Public hygiene guard
 

@@ -271,3 +271,13 @@ scanner-backed quote reads, not the selected Desktop chart.
 - `docs/command-source-taxonomy.md`: detailed command source categories in the
   repository.
 - [market-data](../.agents/skills/market-data/SKILL.md): purpose-to-command selection and references included in the archive.
+
+## Official MCP (development checkout)
+
+Use `tv mcp login`, then `tv mcp bars NASDAQ:AAPL --timeframe 1D --count 20`
+for the explicitly selected official source. This does not change `tv bars`.
+On macOS, verify the dedicated Keychain item and choose **Always Allow** for
+later noninteractive reads. Windows uses Credential Manager; native acceptance
+remains open. Linux credentials are not implemented yet. These commands are
+unreleased. See the packaged [historical-bars reference](../.agents/skills/market-data/references/historical-bars.md#official-mcp)
+for output conditions; full developer guidance is available from the repository README.

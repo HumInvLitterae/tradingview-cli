@@ -4,6 +4,7 @@ members = [
     "crates/core",
     "crates/model",
     "crates/market",
+    "crates/mcp",
     "crates/scanner",
     "crates/pine",
     "crates/cdp",
@@ -22,11 +23,18 @@ assert_cmd = "2.2.2"
 base64-simd = "0.8.0"
 clap = "4.6.7"
 futures-util = "0.3.34"
+http = "1.5.0"
 image = { version = "0.25.10", default-features = false }
 predicates = "3.1.4"
 reqwest = "0.13.5"
+rmcp = { version = "=3.4.0", default-features = false, features = ["client", "auth", "transport-streamable-http-client-reqwest", "reqwest"] }
+security-framework = { version = "=3.7.0", default-features = false }
+keyring-core = { version = "=1.0.0", default-features = false }
+windows-native-keyring-store = { version = "=1.1.0", default-features = false }
+secret-service = { version = "=5.2.0", default-features = false, features = ["rt-tokio-crypto-rust"] }
 serde = "1.0.229"
 serde_json = "1.0.151"
+sse-stream = { version = "0.3.0", default-features = false }
 tempfile = "3.27.0"
 thiserror = "2.0.20"
 tokio = "1.53.1"
@@ -38,6 +46,7 @@ tradingview-cdp = { path = "crates/cdp" }
 tradingview-cli = { path = "crates/cli" }
 tradingview-core = { path = "crates/core" }
 tradingview-market = { path = "crates/market" }
+tradingview-mcp = { path = "crates/mcp" }
 tradingview-model = { path = "crates/model" }
 tradingview-pine = { path = "crates/pine" }
 tradingview-scanner = { path = "crates/scanner" }

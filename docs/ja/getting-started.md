@@ -266,3 +266,13 @@ tv watch compare NASDAQ:AAPL NASDAQ:MSFT --duration-ms 10000 --interval 2000 --h
 - `AGENTS.md` / `CLAUDE.md`: 配布アーカイブ内でエージェントに読ませる実行時ガイド。
 - `docs/command-source-taxonomy.md`: リポジトリ内の詳しいコマンド分類。
 - [market-data](../../.agents/skills/market-data/SKILL.md): 目的からコマンドを選ぶ表と、配布物に同梱された参照資料。
+
+## 公式MCP（開発版）
+
+`tv mcp login`で認証し、`tv mcp bars NASDAQ:AAPL --timeframe 1D --count 20`
+で公式経路を明示して取得できます。既存の`tv bars`は変更しません。
+macOSでKeychain確認が出たら、専用項目と実行ファイルを確認して「常に許可」を
+選ぶと、以後の非対話取得で利用できます。WindowsはCredential Managerを使いますが、
+実機での受け入れ検証は引き続き必要です。Linuxの資格情報保存は未実装です。
+未リリースの機能です。取得条件は同梱の[履歴足リファレンス](../../.agents/skills/market-data/references/historical-bars.md#official-mcp)を、
+開発用の詳しいガイドはリポジトリのREADMEから確認してください。

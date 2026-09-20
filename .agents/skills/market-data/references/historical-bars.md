@@ -51,3 +51,14 @@ later stages. `heartbeat_send` and `pagination` are send boundaries with unknown
 remote receipt. A stage alone does not authorize retry, a longer timeout, or a
 fallback to another provider, chart, or Replay. Report the failed attempt and
 choose any further action from the user's approved scope.
+
+## Official MCP
+
+`tv mcp bars` is separate from the existing WebSocket `tv bars`. Check help for
+binary support. It requires explicit OAuth login and supports only recent-count
+1D/1W/1M reads. Read `mcp_bars.v1` provider/client observations: count satisfaction
+is not calendar completeness; null volume and unknown delay, adjustment, session
+and finality must remain unknown. Symbol/interval echoes are not independent
+listing proof. Never substitute it automatically for date-range requests or
+fall back to the old source on failure. `tv mcp status` is local-only; login and
+OS consent require explaining the user's action before opening a dialog.

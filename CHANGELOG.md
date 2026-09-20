@@ -7,6 +7,15 @@ package version omits the leading `v`.
 
 ## Unreleased
 
+### Added
+
+- Independent `tv mcp login/status/bars/logout` commands for the official
+  TradingView MCP service. Recent daily/weekly/monthly OHLCV uses `mcp_bars.v1`
+  and source-specific errors; existing `tv bars` and `bars.v1` are unchanged.
+  OAuth/store/transport validation is separate from remaining platform release
+  qualification. Windows native adapters are implemented; Linux credentials
+  currently fail explicitly without a plaintext fallback.
+
 ## v0.31.4 - 2026-09-20
 
 ### Changed
