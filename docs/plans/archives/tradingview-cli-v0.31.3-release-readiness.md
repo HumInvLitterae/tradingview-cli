@@ -1,5 +1,25 @@
 # Prepare the v0.31.3 build-provenance patch
 
+## Closure verified on 2026-09-20
+
+Status: **complete / released; archived**. The local and remote `v0.31.3`
+tag resolve to `fb23eb852efb27de15e310fe9f27024ee59b8a40`.
+[GitHub Release](https://github.com/HumInvLitterae/tradingview-cli/releases/tag/v0.31.3)
+reports publication at `2026-08-21T02:17:22Z`, neither draft nor prerelease,
+with four platform archives and SHA256SUMS. The latest-release API agrees.
+The former focused-review/clean-build pending gate no longer describes active
+release work. Its eventual review and binary-validation evidence was not
+reconstructed in this closure; publication alone does not prove those checks.
+
+The historical preparation record below is preserved for its declared candidate.
+Its local/remote state, pending wording, 46-file/8-skill package and validation
+counts are dated observations, not current checkout requirements or proof.
+Subsequent work is selected from the
+[current work index](../README.md). No release operation
+was performed during this read-only publication check and documentation closeout.
+
+## Historical preparation record (2026-08-21)
+
 This ExecPlan is a living document maintained according to `.agents/PLANS.md`.
 Keep `Progress`, `Surprises & Discoveries`, `Decision Log`, and `Outcomes &
 Retrospective` current while work proceeds.

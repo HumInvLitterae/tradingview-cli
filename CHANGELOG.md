@@ -59,8 +59,9 @@ package version omits the leading `v`.
 - Started `v0.31.3` release readiness for the reviewed provenance surface,
   corrections, dependency updates, and behavior-preserving Clippy refactor.
 - Prepared and validated `v0.31.3` version metadata, curated release notes,
-  locked build, and the explicit 46-file package. Focused release-readiness
-  review is pending before owner-controlled remote operations.
+  locked build, and the explicit 46-file package at that release candidate.
+  Published on 2026-08-21; publication was rechecked and the historical record
+  archived on 2026-09-20. These package counts do not describe later guidance.
 
 ## v0.31.2 - 2026-08-20
 

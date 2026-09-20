@@ -6,15 +6,15 @@ of today's checkout or remote release status.
 
 | Purpose | Record |
 | --- | --- |
-| Release preparation retained from the prior work session | [v0.31.3 release record](tradingview-cli-v0.31.3-release-readiness.md) |
+| Closed published release | [v0.31.3 release record](archives/tradingview-cli-v0.31.3-release-readiness.md) |
 | Product direction | [v0.31 roadmap](../v0.31-roadmap.md) |
 | Work priority and remaining candidates | [v0.31 inventory](../v0.31-work-items.md) |
 | CDP stability research and promotion conditions | [Strategy note](../notes/cdp-stability-and-autonomous-operation-strategy.md) |
 | Completed plans and older context | [Historical catalog](archives/README.md) |
 
-The release record contains evidence from its declared candidate; later commits
-and remote status must be checked for any new release action. This guidance
-change does not reopen that candidate or authorize publication.
+v0.31.3 publication was verified on 2026-09-20 and its record archived.
+Historical preparation evidence applies to its declared candidate, not a later
+checkout. Select new release work separately from this completed record.
 
 Planning and state ownership follow [PLANS.md](../../.agents/PLANS.md).
 Keep detailed decisions and acceptance in the work record. When closing a plan,
