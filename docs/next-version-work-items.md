@@ -10,14 +10,14 @@ Direction: [roadmap](next-version-roadmap.md). Detailed MCP decisions:
 | 1 | Reconcile released v0.31.3 and current checkout | Publication verified; prior record closed with historical evidence preserved. |
 | 2 | Classify maintenance candidate | Ten commits classified below; no Rust source diff. Current lockfile inspected, not runtime-qualified. |
 | 3 | Review MCP proposal and concrete contracts | Direction accepted on 2026-09-20; dependency and account/store effects now concretized in the same plan. |
-| 4 | Prepare v0.31.4 maintenance release | Selected next; align versions and release artifacts in a separate release-preparation commit. |
+| 4 | Prepare v0.31.4 maintenance release | [Local preparation complete](plans/tradingview-cli-v0.31.4-release-readiness.md); publication remains owner-controlled. |
 | 5 | Prove and build bounded official MCP client | Concrete dependency/local-proof and bounded live scope approved, queued after v0.31.4 closeout; follow the existing MCP plan, including early OAuth/restart/refresh proof and downstream acceptance. |
 | 6 | Qualify v0.32.0 candidate | Only after the complete initial user journey and accepted downstream artifact; no expansion to unrelated MCP tools. |
 
 The owner confirmed that v0.31.4 comes first. Prepare and close out the patch
 before starting MCP dependencies or live proof. The MCP approval remains valid
 for its specified targets and effects; sequencing does not require reapproval.
-Create the release-readiness record with the patch preparation, not this plan.
+The release-readiness record is included with the patch preparation.
 
 ## Verified baseline (2026-09-20)
 
@@ -76,7 +76,7 @@ flatten the graph into a single version per name.
 
 The initial planning-only full metadata attempt was blocked while unpacking
 windows-registry into the global cache. Subsequent authorized candidate checks
-resolved it. Record the complete candidate validation with release preparation;
+resolved it. The release record contains the complete candidate validation;
 static graph inspection alone is not native platform proof.
 
 Release preparation owns version alignment, validation evidence and packaging.

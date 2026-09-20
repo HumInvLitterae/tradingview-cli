@@ -7,8 +7,13 @@ package version omits the leading `v`.
 
 ## Unreleased
 
+## v0.31.4 - 2026-09-20
+
 ### Changed
 
+- Refreshed compatible CLI/HTTP dependency constraints (`clap` 4.6.7 and
+  `reqwest` 0.13.5) and the locked transitive graph. No Rust command source or
+  JSON contract changes are included in this maintenance input.
 - Consolidated `market-data-interpretation`, `multi-symbol-scan`, and
   `screener-result-analysis` into the `market-data` runtime skill, with direct
   purpose-to-command selection and conditional references. Update explicit skill
