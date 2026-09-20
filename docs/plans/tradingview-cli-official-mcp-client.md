@@ -1,16 +1,29 @@
 # Official TradingView MCP client: bounded historical reads
 
-Status: **active v0.32.0 candidate plan; first local proof slice ready**,
-2026-09-20. [v0.31.4 is released](archives/tradingview-cli-v0.31.4-release-readiness.md),
-so the sequencing prerequisite is satisfied. The previously approved exact
-dependencies, account/store effects and read budget remain authorized; do not
-request that approval again. This request prepares the next work from the
-released baseline; no implementation or live operation is performed by the
-planning update. Broader actual consent, changed scope or new dependencies
-remain specific decision points.
+Status: **active v0.32.0 candidate; independent CLI implemented, qualification open**,
+2026-09-21. [v0.31.4 is released](archives/tradingview-cli-v0.31.4-release-readiness.md).
+The approved dependencies are settled: no direct async-trait; http 1.5.0 and
+sse-stream 0.3.0 accompany the existing SDK/store selections. No Codex MCP setup
+is needed. Live proof now covers OAuth, protected storage, cross-process reuse,
+refresh/save, and twenty daily/weekly/monthly bars for the selected symbol.
+The actual wire tool is `mcp-tv-get-ohlcv`; both that exact name and the public
+`get_ohlcv` spelling are supported, without arbitrary tool forwarding.
+
+The owner explicitly withdrew the assistant-imposed total request/time limits
+and asked to finish the same verification without repeated count approvals.
+Those numerical limits and the pending extra-window question are superseded.
+Continue respecting real rate limits, Retry-After, per-operation deadlines,
+body bounds, single dispatch/no replay, and the same account/scope/data targets.
+Keep request counters and their original start time as evidence; never reset
+history to disguise requests. Windows remains a required delivery platform;
+its full build/native-runtime acceptance remains open. The independent CLI is
+implemented locally; command acceptance is recorded in the latest checkpoint.
+Broader actual consent, changed scope or new dependencies remain specific
+decision points.
 No additional agent/session, downstream write or remote publication is authorized.
-Local planning/closeout commits are covered by existing authority; this does not
-yet include later MCP implementation commits. Follow [PLANS.md](../../.agents/PLANS.md);
+The owner now authorizes implementation commits after minimal readability
+corrections. Windows runtime verification is deferred until after this local
+checkpoint, and remains required for release qualification. Follow [PLANS.md](../../.agents/PLANS.md);
 this is the single feature work record.
 
 ## First executable slice from v0.31.4
@@ -21,7 +34,7 @@ a separate prototype product or background service.
 
 | Area | First-slice change | Acceptance |
 | --- | --- | --- |
-| Cargo/service boundary | Add the internal `crates/mcp` member and the five approved dependencies with target-specific minimal features. Keep common request/data interpretation I/O-free and reuse core errors. | Resolved versions/features/license/MSRV report; no unintended dependency refresh, server features or runtime proxy. |
+| Cargo/service boundary | Add the internal `crates/mcp` member and the approved dependencies with target-specific minimal features. Keep common request/data interpretation I/O-free and reuse core errors. | Resolved versions/features/license/MSRV report; no unintended dependency refresh, server features or runtime proxy. |
 | Protocol/HTTP | Use the selected SDK with the private bounded HTTP adapter, no AuthClient replay, no session reinit/SSE retry, and cumulative response limits. | Local JSON/SSE/OAuth fake endpoints prove one tool dispatch, 401/429/timeout/invalid response, origin binding and cancellation. |
 | Credential/admission state | Implement the dedicated profile/store and cross-process lock, refresh/save ordering and noninteractive failures. | Synthetic store/concurrent-process tests; no real OS credential access during fixtures. Cover Windows record size and macOS/Linux UI restrictions. |
 | Development harness | Add a narrow opt-in example such as `crates/mcp/examples/connection_proof.rs`, using the same service code that the CLI will later call. | A second process can reuse synthetic credentials; startup has no implicit registration/login/tool call. Live commands are explicit and bounded. |
@@ -125,11 +138,11 @@ Changing that policy remains entirely downstream; no private artifacts were read
 
 | Decision | Recommendation | Alternative and tradeoff |
 | --- | --- | --- |
-| Backend choice | `tv bars --backend tradingview-mcp`; omit the flag to retain existing WebSocket behavior. Explicit legacy value: `tradingview-ws`. | `tv mcp bars` separates semantics more visibly but duplicates the bars entrypoint. Alternative not selected; keep one explicit bars entrypoint. |
+| Command entry | Independent `tv mcp login/status/bars/logout`, approved by the owner after connection proof. Existing `tv bars` remains unchanged. | A future `tv bars --backend tradingview-mcp` may share the service, but is not part of this implementation or its completion criteria. |
 | Output | New `mcp_bars.v1` for the new backend, existing envelope/error kinds unchanged. | Reuse `bars.v1` only after a reviewed optional-evidence evolution; current consumers can mistake absent legacy checks for completeness. Global `bars.v2` would impose unnecessary migration on unchanged consumers. |
 | Authenticated service | One internal `tradingview-mcp` workspace crate (`crates/mcp`), with private auth, credentials, transport, and TradingView tool modules. | CLI-only service modules reduce manifest changes but mix reusable authenticated service ownership with command adaptation. Putting OAuth in market/scanner would broaden their credential-free responsibility. |
 | Protocol | Prefer official `rmcp` client/HTTP/auth facilities behind the service's small private boundary. | Handwritten MCP/OAuth increases protocol/security maintenance; a permanent Node/Python proxy adds packaging/process ownership. Neither is preferred. |
-| Pure interpretation | Proposed `crates/model/src/mcp_bars.rs` validates typed request and normalized observations; the service maps actual TradingView wire results into those types. | No generalized multi-provider registry or abstract backend framework until a second real consumer needs it. |
+| Pure interpretation | `crates/model/src/mcp_bars.rs` validates typed request and normalized observations; the service maps actual TradingView wire results into those types. | No generalized multi-provider registry or abstract backend framework until a second real consumer needs it. |
 | Credentials | OS credential store; macOS Keychain, Windows Credential Manager, and a tested Linux secret-service facility. | Plaintext tokens are easier for headless use but add exposure; encrypted files require separate key ownership. No silent fallback. |
 
 The CLI owns parsing, auth command UX, one-shot JSON/error output and exit status.
@@ -232,18 +245,18 @@ unpack their Cargo dependencies into the normal Cargo cache, or an explicitly
 configured disposable cache, without modifying the protected stashes or downstream.
 No library may silently add a runtime proxy or general MCP server.
 
-The approved bounded live scope additionally covers one public-client registration at
-`https://www.tradingview.com/mcp/oauth/register`, token exchange and one refresh
-at `https://www.tradingview.com/mcp/oauth/token`, and the previously bounded MCP
-read budget. Proposed registration fields are client name `tv`,
-`token_endpoint_auth_method:none`, `response_types:[code]`, grants
-`[authorization_code,refresh_token]`, and one exact loopback redirect
-`http://127.0.0.1:<ephemeral-port>/callback` matching the running listener. Request
-`mcp:read` initially; inspect registration and actual consent before authorizing
-broader scopes. The user selects their paid account and completes browser
-consent. Do not select an account from cached credentials or infer what
-`mcp:tools` permits from its name. If required scope is broader, return the actual
-consent requirement for review before granting it.
+The approved live effects cover the selected account's official OAuth flow and
+normal credential renewal, using the endpoints and registration fields below.
+Earlier one-registration/one-refresh/count/time budgets were verification choices,
+not provider restrictions; the owner later withdrew the numerical stop gates.
+No additional registration is needed for the completed proof. The implementation
+uses client name `tv`, `token_endpoint_auth_method:none`, `response_types:[code]`,
+grants `[authorization_code,refresh_token]`, and the running listener's exact
+loopback redirect `http://127.0.0.1:<ephemeral-port>/callback`. Use `mcp:read`.
+The owner chooses the account and handles browser/OS consent. Explain the
+required operation before opening a dialog, and wait for explicit completion
+before the next dependent step. Broader scopes or a different account remain
+specific decision points, not inferred from tool names or cached credentials.
 
 Use one dedicated credential record, service `tradingview-cli.mcp`, local profile
 `default`, only in the current user's OS store. Creation, read, refresh update,
@@ -251,21 +264,21 @@ and deletion of that record for verification are the proposed store effects;
 never enumerate or modify other clients' entries. Store no token in ordinary
 files. Local coordination state and a private, sanitized observation summary
 use a newly created task-specific ignored directory under `target/`; raw payloads
-and credentials must not be put in the summary. Proof uses NASDAQ:AAPL,
-1D/1W/1M, count 20, at most eight OHLCV dispatches and twelve authenticated MCP
-requests in a 30-minute session, one login and one refresh. No remote revocation,
-subscription change, watchlist/alert mutation or Desktop operation is proposed.
-The 30-minute session is a budget, not authorization to wake later automatically.
+and credentials must not be put in the summary. Proof uses NASDAQ:AAPL, 1D/1W/1M, count 20. Necessary verification retries and
+credential refresh stay within this task's approved purpose; do not treat the
+retired proof counters as reasons to ask again. No remote revocation,
+subscription change, watchlist/alert mutation or Desktop operation is included.
+No automatic future wake-up or continued collection is implied.
 
 A real consent screen or a server rejection can still reveal an uncovered
 requirement. All fixture/local work continues independently; do not treat a
 metadata field as completed browser consent.
 
-## Accepted contract direction (not implemented)
+## Accepted CLI and JSON contract
 
 ### Invocation and compatibility
 
-Before, still unchanged after this proposal:
+Existing invocation, unchanged:
 
 ```sh
 tv bars NASDAQ:AAPL --timeframe 1D --from 2024-01-01 --to 2024-03-31 --count 500
@@ -277,15 +290,15 @@ Existing output projection (other fields omitted here):
 {"success":true,"command":"bars","data":{"contract_version":"bars.v1","source":"tradingview_bars_ws","request_mode":"date_range"}}
 ```
 
-Proposed explicit path:
+Independent explicit path:
 
 ```sh
-tv auth tradingview login
-tv auth tradingview status
-tv bars NASDAQ:AAPL --backend tradingview-mcp --timeframe 1D --count 300
-tv bars NASDAQ:AAPL --backend tradingview-mcp --timeframe 1W --count 100
-tv bars NASDAQ:AAPL --backend tradingview-mcp --timeframe 1M --count 60
-tv auth tradingview logout
+tv mcp login
+tv mcp status
+tv mcp bars NASDAQ:AAPL --timeframe 1D --count 300
+tv mcp bars NASDAQ:AAPL --timeframe 1W --count 100
+tv mcp bars NASDAQ:AAPL --timeframe 1M --count 60
+tv mcp logout
 ```
 
 One profile per OS user/service in the first slice. Require qualified symbols,
@@ -297,7 +310,7 @@ avoid a misleading selection claim. No default changes, fallback, or `auto`.
 
 ### Successful read with count met
 
-This full synthetic result is a **proposed normalized contract**, not a sample
+This full synthetic result illustrates the **normalized CLI contract**, not a sample
 of the actual MCP wrapper. The fixture assumes provider identity/interval fields
 exist; when absent, their values/evidence must be null/unconfirmed. Public
 examples use synthetic prices and identity.
@@ -305,7 +318,7 @@ examples use synthetic prices and identity.
 ```json
 {
   "success": true,
-  "command": "bars",
+  "command": "mcp",
   "data": {
     "contract_version": "mcp_bars.v1",
     "source": "tradingview_mcp",
@@ -322,7 +335,7 @@ examples use synthetic prices and identity.
       "timestamp_semantics": {"value":null,"evidence":"unconfirmed"}
     },
     "client_observation": {
-      "received_at":"2024-01-04T12:00:00Z",
+      "received_at":"2024-01-04T12:00:00.000Z",
       "bar_count":2,
       "returned_range":{"first_time":1704153600,"last_time":1704240000},
       "time_order":"ascending",
@@ -378,34 +391,34 @@ follow the documented field mapping; period-start anchoring still needs evidence
 Concrete short-result projection:
 
 ```json
-{"success":true,"command":"bars","data":{"contract_version":"mcp_bars.v1","source":"tradingview_mcp","transport":{"status":"succeeded","tool_attempts":1},"client_observation":{"bar_count":1,"count_status":"short","calendar_coverage":"unconfirmed"}}}
+{"success":true,"command":"mcp","data":{"contract_version":"mcp_bars.v1","source":"tradingview_mcp","transport":{"status":"succeeded","tool_attempts":1},"client_observation":{"bar_count":1,"count_status":"short","calendar_coverage":"unconfirmed"}}}
 ```
 
 ### Error contract and examples
 
-Proposed `error.details.contract_version:mcp_error.v1`, scoped to MCP operations;
+`error.details.contract_version:mcp_error.v1`, scoped to MCP operations;
 no new common ErrorKind or generalized recovery/timing contract. The following
 complete error examples use existing kinds/codes. `tool_attempts` counts every
 dispatched `get_ohlcv`, including rejected calls; it excludes OAuth/discovery.
 
 ```json
-{"success":false,"command":"bars","error":{"kind":"validation","message":"Date ranges are unsupported by this backend","details":{"contract_version":"mcp_error.v1","source":"tradingview_mcp","code":"unsupported_capability","feature":"date_range","tool_attempts":0}}}
+{"success":false,"command":"mcp","error":{"kind":"validation","message":"Date ranges are unsupported by this backend","details":{"contract_version":"mcp_error.v1","source":"tradingview_mcp","code":"unsupported_capability","feature":"date_range","tool_attempts":0}}}
 ```
 
 ```json
-{"success":false,"command":"bars","error":{"kind":"internal_api_unavailable","message":"TradingView authorization is required","details":{"contract_version":"mcp_error.v1","source":"tradingview_mcp","code":"auth_required","tool_attempts":0,"next_action":"tv auth tradingview login"}}}
+{"success":false,"command":"mcp","error":{"kind":"internal_api_unavailable","message":"TradingView authorization is required","details":{"contract_version":"mcp_error.v1","source":"tradingview_mcp","code":"auth_required","tool_attempts":0,"next_action":"tv mcp login"}}}
 ```
 
 ```json
-{"success":false,"command":"bars","error":{"kind":"internal_api_unavailable","message":"TradingView request limit reached","details":{"contract_version":"mcp_error.v1","source":"tradingview_mcp","code":"rate_limited","tool_attempts":1,"retry_after_seconds":60,"retry_after_evidence":"http_header"}}}
+{"success":false,"command":"mcp","error":{"kind":"internal_api_unavailable","message":"TradingView request limit reached","details":{"contract_version":"mcp_error.v1","source":"tradingview_mcp","code":"rate_limited","tool_attempts":1,"retry_after_seconds":60,"retry_after_evidence":"http_header"}}}
 ```
 
 ```json
-{"success":false,"command":"bars","error":{"kind":"timeout","message":"TradingView MCP request deadline exceeded","details":{"contract_version":"mcp_error.v1","source":"tradingview_mcp","code":"deadline_exceeded","stage":"tool_response","tool_attempts":1}}}
+{"success":false,"command":"mcp","error":{"kind":"timeout","message":"TradingView MCP request deadline exceeded","details":{"contract_version":"mcp_error.v1","source":"tradingview_mcp","code":"deadline_exceeded","stage":"tool_response","tool_attempts":1}}}
 ```
 
 ```json
-{"success":false,"command":"bars","error":{"kind":"internal_api_unavailable","message":"TradingView MCP response is invalid","details":{"contract_version":"mcp_error.v1","source":"tradingview_mcp","code":"invalid_response","reason":"invalid_bar_shape","tool_attempts":1}}}
+{"success":false,"command":"mcp","error":{"kind":"internal_api_unavailable","message":"TradingView MCP response is invalid","details":{"contract_version":"mcp_error.v1","source":"tradingview_mcp","code":"invalid_response","reason":"invalid_bar_shape","tool_attempts":1}}}
 ```
 
 Validation exits 1; connection failure exits 2; provider/auth/rate/schema failure
@@ -509,9 +522,9 @@ promotion of recent samples into date-range/backtest coverage. If semantic
 unknowns remain, a downstream observation artifact or quarantine can be useful;
 an accepted backtest-ready `prepared_bars.v1` artifact is a separate stronger gate.
 
-### Deterministic verification (proposed, not run)
+### Complete-slice verification (remaining acceptance matrix)
 
-- CLI snapshots: old invocations/`bars.v1` unchanged; explicit backend dispatch;
+- CLI snapshots: old invocations/`bars.v1` unchanged; independent MCP dispatch;
   no Desktop connection; invalid inputs rejected before any I/O; stdout/stderr,
   exit codes and broken-pipe behavior follow existing application conventions.
 - Local fake OAuth/MCP endpoints with synthetic secrets: metadata/issuer/resource
@@ -541,20 +554,13 @@ an accepted backtest-ready `prepared_bars.v1` artifact is a separate stronger ga
 
 ### Real connection and platform verification (approved bounded scope)
 
-Approved first budget: one owner-selected paid account, NASDAQ:AAPL,
-1D/1W/1M, count 20 each, at most eight
-`get_ohlcv` dispatches and twelve authenticated MCP protocol requests in one
-30-minute observation session. Discovery/auth flow requests are separately
-recorded and bounded by one login attempt plus one refresh; no blind retries.
-Track setup/discovery/cleanup traffic as well as tool dispatches so the protocol
-budget cannot be bypassed by hidden SDK work. Stop with partial proof if the
-remaining budget cannot cover the next operation; do not silently expand it.
-The approved budget below and dedicated storage effects above apply. The user
-selects the paid account and completes browser consent at execution; any broader
-consent or changed targets/effects require a new decision. No subscription purchase or
-plan upgrade is proposed. If token lifetime exceeds the observation window,
-record refresh as pending and arrange an explicitly approved later check.
-
+The original numerical proof budgets are historical and were explicitly
+withdrawn by the owner. Keep the same selected account, symbol, timeframes and
+read-only purpose. Count setup, discovery, cleanup and tool traffic for evidence,
+while applying actual server limits, cooldowns, deadlines and no automatic
+replay. Do not ask again merely because a local proof counter exceeds a former
+threshold. New scopes, accounts, purchases or provider mutations still require
+specific authorization.
 Inspect negotiated tool schema, actual wrapper and nulls, identity/timeframe,
 OHLCV, returned timestamps/count, observed delay/adjustment/session/finality
 fields, empty/error representation if naturally observed, restart, and genuine
@@ -602,10 +608,17 @@ page-session APIs. Do not document draft commands as currently available.
 - Completed: current Git/publication audit, affected implementation and actual
   consumer inspection, public TradingView/MCP/SDK source research, release
   comparison, this single draft and concrete success/failure proposals.
-- Not performed: implementation, dependency installation, OAuth, live data,
-  platform/runtime acceptance, downstream modifications or MCP implementation
-  commits/publication.
-- Accepted: recommended release separation, explicit backend/new contract,
+- Implemented: bounded HTTP/MCP transport, OAuth/credential integration,
+  macOS/Windows native adapters, an opt-in proof harness, and independent
+  `tv mcp login/status/bars/logout` with `mcp_bars.v1`; evidence below.
+- Live progress: approved retry completed OAuth exchange, native save and
+  cross-process MCP discovery and token refresh/save. After explicit Always
+  Allow, background Keychain access works with the fixed helper. OHLCV remains
+  observed for all three requested timeframes. Windows
+  runtime qualification is mandatory and remains open.
+- Downstream modifications and publication remain outside this execution.
+  Local implementation commits are now authorized after readability corrections.
+- Accepted: recommended release separation, independent subcommands/new contract,
   source-evidence/null handling, OS-store direction and one-attempt policy.
 - Completed follow-up: released dependency/source inspection and two public
   discovery GETs. No credentials accessed. Exact additions, SDK controls and
@@ -618,8 +631,417 @@ page-session APIs. Do not document draft commands as currently available.
 - Planning validation: four changed plan documents, 24 local links and eight
   JSON examples passed, along with public/diff hygiene. Cargo inputs and Rust
   sources are unchanged; no rebuild or functional-test rerun was performed.
-- Next: implement the first local service/proof slice above, then use the
-  existing bounded live approval. No dependency installation or tool call ran
-  during this plan preparation. Do not reopen settled choices without evidence.
+- Current checkpoint: implementation and readability review ready for the
+  authorized local commit. Subsequent work is downstream acceptance feedback
+  and deferred Windows runtime qualification. The downstream PM was contacted
+  by the owner. The macOS public-command smoke passed. Reuse the
+  settled dependency and same-target live authority; numerical caps are retired.
 - Authentication settings, schema/semantics and live results may require a
   revised proposal. Keep those findings here rather than creating a second plan.
+
+
+### 2026-09-21 local implementation checkpoint
+
+Started from clean main at 96c8d81, two local documentation commits above the
+published baseline. Added the internal `tradingview-mcp` member at workspace
+version 0.31.4 and resolved the five approved exact dependencies. Cargo.lock
+retains every prior package version: 81 new external package versions and one
+workspace package, 341 total packages / eight workspace members. reqwest stays
+0.13.5. rmcp enables client/auth/HTTP only, with no server/macros feature;
+Windows search remains disabled. security-framework's resolved default/ALPN
+features are unified with the existing TLS dependency path, not introduced by
+our minimal direct declaration. This is resolved-source evidence on macOS,
+not native Windows/Linux build or credential-store acceptance. Windows directory
+ACL enforcement/qualification remains open before native use.
+
+The first implemented property is local admission: a Unix user-private directory,
+OS-released file lock, one-second dispatch spacing, timestamp-only atomic state
+replacement, persisted cooldown, bounded lock wait and rejection of corrupt
+state/clock rollback. Synthetic tests cover contention, process kill/reacquire,
+state reopening and error cases. The opt-in development example currently
+supports only `--local-admission`; it explicitly reports connection proof as
+pending and performs no network or credential operations. It is not an OAuth
+or OHLCV harness yet. The follow-up below adds a bounded SSE decoder check. Existing `tv` behavior and public contracts are unchanged.
+
+The initial request for three direct references was corrected following owner
+review. Calling async-trait a required direct dependency was too strong, and the
+SDK-resolved sse-stream 0.2.6 was not the current release. On 2026-09-21 the
+[crates.io registry](https://crates.io/api/v1/crates/sse-stream) reported
+sse-stream 0.3.0 (published 2026-09-18, not yanked); the
+[http registry](https://crates.io/api/v1/crates/http) reported 1.5.0 (published
+2026-07-29, not yanked), and the [rmcp registry](https://crates.io/api/v1/crates/rmcp)
+reported 3.4.0 as the latest stable SDK. Released source archives, rather than
+search-engine snippets, were inspected for compatibility.
+
+| Direct reference | Selected version / license | Decision and concrete evidence |
+| --- | --- | --- |
+| `http` | 1.5.0 / MIT OR Apache-2.0; Rust 1.57 | Added. A fake HTTP client returns `http::Response` through SDK `OAuthHttpClient` and exercises a synthetic registration without network. |
+| `sse-stream` | 0.3.0 / MIT OR Apache-2.0; no declared MSRV | Added with optional features disabled; the Rust 1.98.1 build and decoder fixtures pass. Decode using 0.3, then transfer the four event fields into the SDK stream item. |
+| `async-trait` | No direct dependency | SDK `CredentialStore` uses an erased future signature. Explicit `Pin<Box<dyn Future<Output = Result<...>> + Send + 'a>>` methods implement it without a macro; dynamic load/save/clear/default refresh-guard calls and the manager setter compile and pass. |
+
+The SDK still depends on async-trait internally; removing that transitive
+package would require changing the SDK. Native async code is suitable for our
+internal methods, with boxed-future adaptation confined to this SDK boundary.
+This is a signature compatibility requirement, not a need to support an older
+Rust compiler. See the [macro's documented expansion](https://docs.rs/async-trait/0.1.92/async_trait/#explanation).
+
+rmcp 3.4.0 requires sse-stream `^0.2.4`, so Cargo cannot unify it with 0.3.0.
+The SDK's 0.2.6 remains transitive; our decoder uses 0.3.0 only. The small private
+adapter names the SDK's public `BoxedSseResponse::Item` through `Stream::Item`
+and moves event/data/id/retry fields without serialization or reparsing. There
+is no direct 0.2 dependency, fork, patch override or copied parser. When the SDK
+updates to 0.3, remove the conversion if its public types unify.
+
+The published 0.3 changelog changes unknown-field and repeated-metadata parsing,
+terminal error behavior, encoder APIs and incomplete-EOF handling. Fixtures
+cover fragmented CRLF, repeated metadata/unknown extensions, metadata-only versus
+empty-data blocks, malformed UTF-8, terminal errors, and cumulative byte limits
+including comments/completed events. Incomplete final events are discarded by
+the parser; the future MCP response lifecycle must reject a missing final RPC
+result, not infer a successful empty response. Full HTTP/lifecycle testing remains
+open. The local harness now exercises both admission and the bounded decoder.
+
+The resolved graph now has 342 packages, adding only sse-stream 0.3.0 to the
+previous checkpoint; no prior package version was replaced. http stays at the
+already resolved 1.5.0, and our direct dependency list contains no async-trait.
+
+Native store source review also found `secret-service::Item::delete` can invoke
+an unlock/delete prompt. A prior unlocked check cannot remove the race. Keep
+Linux noninteractive deletion unqualified until a no-prompt path is implemented
+and tested; do not claim full Linux parity from macOS compilation. A short-lived
+same-binary credential worker is the proposed way to kill/reap stalled native
+calls at the deadline. No native worker implementation or store operation is
+included in this checkpoint.
+
+Validation results for the initial partial checkpoint are recorded below; the complete
+acceptance matrix above remains open. No credentials, public CLI, provider calls,
+Codex settings, downstream files or commits were changed.
+
+Checkpoint validation: workspace strict Clippy and `cargo test --workspace`
+passed (927 passed, 27 ignored). Two later admission fixtures and the narrowed
+local-error enum were checked with a final crate Clippy/test run (six unit tests
+passed plus doctests); unchanged workspace suites were not repeated. `cargo fmt
+--check`, locked/offline metadata, the local-only example, tracked public hygiene
+plus a separate scan of all five new MCP files, 24 local document links, eight
+JSON examples and `git diff --check` passed. No JavaScript source changed; the
+separate JS gates and release builds were not run. Work remains uncommitted.
+
+Dependency-review validation: `cargo test --workspace --locked` passed with
+936 passed / 27 ignored, including 11 MCP unit tests and two SDK interface
+integration tests. Workspace strict Clippy, formatting, locked/offline metadata,
+the updated local example (admission and SSE passed, zero provider requests),
+public hygiene with a separate scan of all eight new files, 24 document links,
+eight JSON examples and diff hygiene passed. No native store, real OAuth or
+MCP request was made. The full connection-proof slice remains incomplete; this
+follow-up resolves dependency selection and decoder/SDK-boundary compatibility.
+
+
+### Integrated macOS proof harness and local verification (2026-09-21)
+
+The example now supports explicit `login`, `status`, `daily`, `weekly`,
+`monthly`, `refresh`, and `logout` operations with a proof-directory argument.
+`--local-admission` remains entirely local. These are development operations;
+there are still no new public `tv` commands, stable Rust APIs, version bump or
+normalized `mcp_bars.v1` output.
+
+- HTTP fixes the approved resource/issuer/endpoints, disables redirects and
+  reqwest retries, bounds every body/stream to cumulative 8 MiB, and uses one
+  absolute deadline. SDK reinitialization/reconnect and automatic tool follow-up
+  rounds are disabled; the adapter also refuses a second tool dispatch. Protocol
+  setup/GET/cleanup are counted, not just OHLCV calls.
+- OAuth uses the SDK's PKCE/state machinery and our HTTP boundary. Resource,
+  issuer, endpoint, grant and scope checks happen before tokens can reach the
+  wrong target. Broader scopes, foreign redirects, malformed callbacks and
+  unsupported tool schemas fail closed. Only login opens a browser; `status`
+  and `logout` are local. OAuth/SDK body-bearing errors are not forwarded.
+- The credential record binds schema version, resource, issuer, registered
+  loopback redirect and SDK credential state in one OS record. Explicit boxed
+  futures implement the SDK trait without a direct async-trait dependency.
+  The operation lock is held through refresh and durable save. A token request
+  without its matching successful save marker prevents stale-credential reuse
+  on the next invocation; it does not trigger another uncertain refresh.
+- macOS uses only `tradingview-cli.mcp` / `default` via Keychain with interaction
+  disabled. Native calls run in a short-lived same-binary worker with piped IPC;
+  timeout kills and reaps the worker. No plaintext credential file, browser or
+  Codex credential import, or native-store access occurs in fixture tests.
+  Windows size checks are synthetic; Windows/Linux native operations remain
+  explicitly unavailable until their implementation/qualification gates pass.
+- Timestamp/counter state is private and atomically replaced under the operation
+  lock. A proof directory cannot reset an existing budget. The 30-minute budget
+  allows one registration, exchange and refresh, eight tool dispatches and
+  twelve authenticated protocol requests. Public metadata GETs have a separate
+  twelve-attempt cap. A server-requested session/cleanup can spend the protocol
+  budget before every desired observation; stop partial rather than expand it.
+- Delta-seconds and IMF-fixdate Retry-After are supported. An absent hint uses
+  the declared 60-second client policy. An unrecognized nonempty server hint
+  prevents more reads within this proof, avoiding an earlier-than-permitted
+  retry. The full CLI can add broader HTTP-date compatibility when needed.
+- Proof observations expose transport success, requested conditions and safe
+  shape/count/range summaries only. Known row candidates are not a frozen wire
+  contract; unknown wrappers/identity/delay/adjustment/session/finality remain
+  unconfirmed. No raw response or token is written to the observation file.
+
+Local evidence: workspace tests passed with 948 passed / 27 ignored. A final
+401-refresh/no-replay extraction and fixture then passed the affected 24-unit
+suite; the two SDK-interface tests were already covered by the workspace run.
+Workspace strict Clippy and final crate Clippy, formatting, public hygiene and
+diff checks passed. The rebuilt example passes local admission/SSE checks with
+`RUST_LOG=trace`, emits no SDK logs and makes zero provider requests.
+
+Fixtures exercise JSON/SSE success and short/null-volume observations, 401/429/
+404/5xx, redirects, malformed/oversized responses, stalls, schema drift, session
+setup/cleanup counting, PKCE/state/issuer rejection, broader grants, token
+rotation and fresh-manager reuse, successful server rotation with failed local
+save, uncertain-refresh rejection, persisted budget exhaustion, cross-process
+admission release and a killed/reaped stalled credential worker. This is not
+proof of a native record surviving a real application restart or server refresh.
+
+### Live checkpoint: 2026-09-21
+
+The initial automatic execution review rejected login before process creation.
+The owner then explicitly approved the concrete registration, browser, dedicated
+Keychain and bounded read effects. Retrying through the normal mechanism was
+allowed; that review rejection is resolved and is not a new approval gate.
+
+The first actual login read the dedicated native store and found no existing
+record, then stopped at HTTP 403 from authorization-server metadata. It did not
+reach registration or browser launch. Adding the honest `tv/<version>` User-Agent
+and `Accept: application/json` for metadata permitted both discovery documents
+to validate. This observation does not establish which header or external
+condition caused the earlier denial. No challenge/cookie bypass was attempted.
+The read-only `discover` harness operation and sanitized stage/status/challenge
+booleans make this distinction observable without logging response bodies.
+
+Login resumed with the original persisted start time and counters, without a
+new budget. One client registration succeeded and the browser handoff command
+returned success. The user reported HTTP 403 with a CloudFront-generated
+"Request blocked" page at browser authorization. This is user-observed browser
+evidence, separate from the earlier adapter-observed metadata 403. It does not
+establish a plan/scope rejection or distinguish edge access controls, origin
+configuration and service availability. The authorization wait was terminated;
+no callback, token exchange, token save, refresh or OHLCV call occurred. Resuming
+login preserves even exhausted counters, as verified by the affected 24-unit
+suite. The dedicated proof directory and exact timestamps stay in the ignored
+local ledger; raw credentials and provider payloads are never tracked.
+
+Final dispatched counts: six public metadata GETs, one client registration,
+zero token exchanges, zero refreshes, zero authenticated MCP requests and zero
+OHLCV calls. The initial dedicated Keychain reads found no existing record; no
+record was created, updated or deleted. The browser error request identifier is
+not copied into tracked evidence. The 30-minute window was not extended.
+
+The current proof harness retains registration/PKCE state only in memory until
+exchange, so terminating this login does not provide a resumable authorization
+flow. No registration deletion/revocation was attempted, and no remote cleanup
+is claimed. Do not rerun login with a fresh directory to bypass the spent
+registration allowance. A later attempt that registers again requires a
+concrete renewal of that one-registration/time-window scope. Before that attempt,
+review whether interrupted-login recovery belongs in the continuing client and
+retain the no-token/no-market-data outcome. Public fixtures cannot establish
+that the external browser 403 has been resolved.
+
+Remaining gates: native macOS login/restart/refresh/OHLCV evidence; provider wire
+mapping and data semantics; Windows/Linux store/build/runtime acceptance; complete
+CLI/JSON integration and downstream acceptance. macOS proof-worker boundaries
+must also be preserved when the public CLI installs its normal tracing subscriber.
+
+### Sign-in recovery and Windows follow-up: 2026-09-21
+
+The owner clarified that the browser 403 URL was `/accounts/signin/`, after
+OAuth redirected to sign-in. Normal homepage sign-in worked. With explicit
+approval for one additional client registration and a new 30-minute proof
+window, the next OAuth attempt completed. One token exchange and native macOS
+record save succeeded; the encoded record is 1,288 bytes, below the Windows
+2,560-byte limit. A new process loaded the record and completed MCP initialization
+and tool discovery, then stopped before a tool call at the input-schema gate.
+This establishes recovery for this attempt, not the exact CloudFront rule or
+general service availability. Client registration and account authorization are
+distinct; earlier wording that only said "registration" was misleading.
+
+After rebuilding the development executable for schema diagnostics, ordinary
+Keychain reads required OS interaction. A dedicated `authorize-store` harness
+action permits only an explicit user-mediated read of the same item; it changes
+no ACL programmatically and performs no OAuth/MCP request. Normal reads keep
+interaction disabled and return `storage_interaction_required`. Preserve this
+distinction for unsigned/development updates and qualify signed release upgrades.
+
+Windows now uses the already-approved native store, exact dedicated target,
+local-machine persistence, byte-preserving atomic record updates, typed size
+failures, and missing-record handling. The Windows-only synthetic test uses a
+unique disposable target and verifies create/read/update/delete plus preservation
+of the previous value after an oversize save. The existing Windows CI test job
+will run this test; no workflow has been dispatched by this session. Browser
+launch uses PowerShell's normal default-browser action with the URL passed on
+stdin, never interpolated into script text or logs, and the launcher is bounded
+by the operation deadline on both macOS and Windows.
+
+Local Windows compilation of the actual store/browser modules passed using an
+isolated, ignored check manifest with the approved versions. Full
+`cargo check --target x86_64-pc-windows-msvc --all-targets` is blocked on this
+Mac by aws-lc's C build lacking Windows SDK headers (`windows.h`). Module
+compilation is not a substitute for the required full Windows build/tests,
+native store/process-restart/browser verification, coordination-directory ACL
+qualification and packaged execution. Windows completion remains mandatory.
+
+The workspace baseline passed with 949 tests / 27 ignored and strict workspace
+Clippy. The subsequent shared-connection harness change passed 25 unit tests
+and both SDK tests, plus strict crate Clippy and formatting. Its `all` operation
+uses one MCP setup for the three approved timeframes, spaces their dispatches,
+and rejects a duplicate interval rather than replaying a request. Partial
+observations survive a later failure. It remains a private proof operation,
+not a new public batch API. JSON Schema `number` accepts the integer count 20;
+ordinary nullable field variants are handled without inventing provider schema.
+
+A workspace test rebuilt the example while its OS permission check was pending.
+The proof procedure now freezes the credential worker outside Cargo outputs and
+never overwrites it during the attempt. The user clarified that they had selected
+Allow before the instructions explained Always Allow. On the next attempt,
+instructions were delivered before opening the OS dialog and execution waited
+for the user's explicit completion reply. A new noninteractive process then
+read the same item successfully. Token refresh and durable save also succeeded,
+and a later MCP connection used the updated credentials. The harness permits an
+explicit absolute `--credential-worker-path` for this known immutable executable;
+it never discovers or executes a helper from provider data or state files. A
+rebuilt driver reused that worker successfully without another OS prompt.
+
+The real catalog contains 35 tools. The wire identifier is
+`mcp-tv-get-ohlcv`, whereas the public documentation uses `get_ohlcv`. This was
+the remaining dispatch blocker, not an empty catalog or demonstrated scope
+failure. The client now accepts those two exact identifiers, uses the advertised
+one, and rejects ambiguous matches and arbitrary tool names. The fixture checks
+actual dispatch of the observed wire name. No broader OAuth scope was requested.
+
+The owner subsequently withdrew the assistant's artificial count/time gates.
+The private `read-proof` mode and its extra-window restriction were removed.
+Counters remain durable; normal refresh is allowed again, and uncertain refresh
+or failed credential persistence still prevents unsafe continuation. Fixed-worker
+reuse, actual cooldowns, deadlines and one-dispatch behavior remain enforced.
+
+### Completed macOS acquisition evidence
+
+The corrected harness obtained 20 rows each for 1D, 1W, M. A second explicit read
+confirmed matching provider symbol/interval echoes in all three responses. Both
+runs completed; all rows had finite OHLC values with valid high/low bounds,
+strictly increasing integer timestamps, and non-null numeric volume. This is
+count satisfaction for a recent sample, not date-range completeness or proof
+against omitted sessions. Token renewal and protected save succeeded, and the
+next process reused the updated record. No additional account registration was
+needed. The original retry-directory cumulative totals are now registration 1,
+exchange 1, refresh 2, public metadata 20, authenticated MCP requests 24 and tool
+calls 6. The earlier abandoned pre-login registration is separate historical
+activity; it is not hidden by these totals.
+
+The actual result uses structuredContent with root fields `bars`, `count`,
+`interval`, `notice`, `success`, `summary`, `symbol`; rows use `t,o,h,l,c,v`.
+The proof validates row values and records the symbol/interval echoes without
+claiming independently resolved listing identity. `notice` and `summary` need
+interpretation during public-contract mapping; their presence is not evidence
+of delay, adjustment, session or finality semantics. Those conditions and period
+anchoring remain unconfirmed. No raw bars, token, account-local identifiers or
+machine paths are tracked. This proof output is not released `mcp_bars.v1`.
+
+The credentials remain in the dedicated OS item for continuing development;
+local deletion/revocation was not needed or claimed. Do not discard working
+credentials merely to restart a verification window. Windows full build, native
+store/restart/refresh/browser checks and directory ACL qualification remain
+mandatory. Complete the public CLI/JSON slice and downstream acceptance before
+calling the feature or release ready.
+
+Final validation after retiring the artificial caps: 950 workspace tests passed,
+27 ignored, zero failures; strict workspace Clippy and formatting passed. Public
+hygiene passed for tracked files and all 16 new MCP files; 24 local Markdown
+links and diff hygiene passed. Windows native execution remains unverified.
+### Independent command implementation (owner approved)
+
+Expose `tv mcp login`, `status`, `bars SYMBOL --timeframe 1D|1W|1M --count N`,
+and `logout`. The envelope command is `mcp`, matching other command groups.
+Auth/status results identify their operation; bars use `mcp_bars.v1` above.
+Do not modify `tv bars`, add a backend flag, or make later unification a release
+criterion. Reuse the service/transport proven by the development harness.
+The CLI must handle credential-worker IPC before installing any logger and
+suppress SDK/wire tracing for MCP commands regardless of RUST_LOG. Normal reads
+validate before any local/provider I/O and remain noninteractive. Windows native
+storage/browser support, private coordination state, and clear platform limits
+are part of this slice. Runtime Windows acceptance remains an explicit gate.
+
+
+### Independent CLI verification checkpoint (2026-09-21)
+
+Implemented the four standalone subcommands, shared service transport and pure
+`model::mcp_bars` normalization. Existing `tv bars` arguments, defaults and
+`bars.v1` remain unchanged. No backend flag or automatic fallback was added.
+Validation precedes CDP configuration, credentials and provider I/O. Normal MCP
+commands and the same-binary credential worker install no tracing subscriber.
+
+The observed wrapper supports `bars`, `count`, `interval`, `symbol` and `success`.
+False success, malformed rows, count disagreement, symbol/interval mismatch and
+nonascending timestamps fail closed. Freeform notice/summary text supplies no
+machine-readable guarantee, so adjustment/session/delay/finality/anchoring remain
+unconfirmed. Missing/null volume remains null; short and empty results retain
+successful transport with separate count status.
+
+Checks on this uncommitted implementation:
+
+- Locked workspace tests: 958 passed, 27 ignored, zero failures. The new CLI tests
+  cover independent help, pre-I/O validation, CDP independence and silent invalid
+  credential IPC. Public-service fixtures cover JSON/SSE, short/null data,
+  401 without replay, 429 evidence, malformed responses, tool errors and schema
+  changes; existing transport fixtures cover deadlines and body bounds.
+- Strict workspace Clippy (all targets/features) and formatting passed.
+- Windows MSVC compilation passed for the actual native credential, browser and
+  coordination-directory ACL modules in an isolated development check. This is
+  not a full Windows build or native execution. Full Windows SDK/build, browser,
+  credential lifecycle, restart/refresh and ACL runtime acceptance remain open.
+- Public hygiene passed for tracked files and 23 new files. Runtime package
+  self-tests, staged references/parity and diff hygiene passed; staging retains
+  48 files and six skills in each root. Package docs reference bundled material.
+- No existing Cargo.lock package version was removed/replaced. This feature's
+  approved dependency graph adds 83 package identities compared with HEAD; it
+  is not a new general dependency refresh.
+
+A fixed development `tv` binary was prepared outside Cargo's output location.
+Its initial `mcp status` returned the safe credential-interaction error with no
+provider calls. After advance instructions and the user's explicit Always Allow
+completion reply, `mcp login` reused the existing credentials. A new process
+successfully ran local `mcp status`; three further processes each ran
+`tv mcp bars NASDAQ:AAPL --timeframe 1D|1W|1M --count 20` with `RUST_LOG=trace`.
+All three emitted valid `mcp_bars.v1`, twenty rows, `count_status:met`, matched
+symbol/interval observations and exactly one tool attempt. Unknown data
+conditions remained unconfirmed; stderr stayed empty. No raw responses, prices,
+credentials or account-local IDs were saved in the verification summary.
+
+This verifies the public command on macOS, in addition to the earlier actual
+OAuth refresh proof through the shared service. Logout is implemented and
+synthetic store deletion is tested; the live working credential was retained,
+so public-command native deletion is not claimed. The previous trusted proof
+executable was preserved. Required Windows native/runtime and downstream
+acceptance remain open; Linux credentials remain unimplemented. The CLI is not
+yet a qualified cross-platform release. Local document targets (77) and eight
+JSON examples also passed checks. No implementation commit, push, tag, workflow
+or release was performed.
+
+
+### Readability review and local commit authority (2026-09-21)
+
+The owner requested conventional source layout beyond rustfmt and authorized
+local implementation commits after minimal corrections. Expanded compressed
+OAuth control flow, the proof harness, HTTP fixtures and nested JSON objects;
+separated functions and logical phases; wrapped long messages without changing
+their text; and expanded the embedded Windows ACL script into statements.
+No formatter settings, dependency versions or public contracts changed during
+this correction. The trusted live-test executables remain untouched.
+
+The owner has contacted the downstream PM. Windows runtime verification is
+explicitly deferred, not waived or required before this local implementation
+commit. Push, workflow execution and release are still outside this authority.
+Record the resulting commit hash in the local ledger/report, not in a separate
+tracked evidence-only commit. Preserve the earlier live evidence and its
+platform limits; no new provider/credential operation is needed for layout edits.
+
+Validation after the layout review: 958 workspace tests passed, 27 ignored,
+zero failures; strict workspace Clippy and formatting passed. Source/literal
+comparison and manual review confirmed unchanged logic and wire/message text;
+the embedded ACL script changed only whitespace and statement separators.
+Public hygiene passed for all 677 staged repository files, and 77 local document
+targets, eight JSON examples and diff hygiene passed. Existing runtime-package
+and macOS live evidence remains applicable. No new live or Windows execution ran.

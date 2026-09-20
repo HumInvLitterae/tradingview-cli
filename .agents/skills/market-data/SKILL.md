@@ -24,6 +24,7 @@ matters; use `tv <family> --help` when arguments are uncertain.
 | Discover available scanner fields | `tv scanner metainfo --field <FIELD>` | Use the returned definition to construct the intended scan. |
 | Fundamentals only | `tv fundamentals <SYMBOL> --group <GROUP>` | A missing field changes the answer; do not fetch an entire packet by default. |
 | Earnings or dividends | `tv events <SYMBOL> --event-type earnings` (or `dividends`); `tv events compare <SYMBOL>...` for several | Read [event semantics](references/quotes-and-events.md) when dates or missing fields matter. |
+| Explicit official MCP recent bars | `tv mcp status`, then `tv mcp bars <EXCHANGE:SYMBOL> --timeframe <1D/1W/1M> --count <N>` | The binary supports `tv mcp --help` and the user explicitly selected this source. Login is interactive; do not run it silently. See [MCP semantics](references/historical-bars.md#official-mcp). |
 | Recent OHLCV / a historical date interval | `tv bars <SYMBOL> --timeframe <TF> --count <N>` / add `--from <YYYY-MM-DD> --to <YYYY-MM-DD>` | Read [bars coverage](references/historical-bars.md) before claiming completeness or splitting requests. |
 | Observe a known set over a short window | `tv watch compare <SYMBOL>... --duration-ms <MS> --interval <MS>` | Interpret event types using [bounded observations](references/observations.md); stop at the requested bound. |
 | The Desktop chart, its studies, or an image | [chart-analysis](../chart-analysis/SKILL.md) | The selected chart is required evidence; resolve its target before using it. |

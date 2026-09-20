@@ -42,6 +42,17 @@ pub struct Cli {
 #[derive(Debug, Subcommand)]
 #[allow(clippy::large_enum_variant)]
 pub enum Command {
+    #[command(
+        about = "Use the official TradingView MCP service",
+        long_about = "Explicit official MCP commands, separate from tv bars. \
+                      Requires a paid TradingView account and protected OS credentials. \
+                      No Desktop connection or fallback. macOS and Windows adapters are provided; \
+                      Linux credential support remains unavailable."
+    )]
+    Mcp {
+        #[command(subcommand)]
+        command: McpCommand,
+    },
     #[command(about = "Check CDP connection to TradingView")]
     Status,
     #[command(
@@ -1163,9 +1174,45 @@ pub enum UiCommand {
     },
 }
 
+#[derive(Debug, Subcommand)]
+pub enum McpCommand {
+    #[command(
+        about = "Authorize this CLI using the browser and OS credential store",
+        long_about = "Authorize this CLI using TradingView OAuth and the dedicated OS credential store. \
+                      A normal TradingView browser sign-in may be required first. \
+                      On macOS, choose Always Allow for this executable when Keychain asks, \
+                      so later reads can run noninteractively. Existing usable credentials are reused."
+    )]
+    Login,
+    #[command(about = "Inspect local authorization without provider access")]
+    Status,
+    #[command(about = "Remove this CLI's local credentials; does not revoke remote access")]
+    Logout,
+    #[command(
+        about = "Read recent daily, weekly or monthly OHLCV",
+        long_about = "Read recent bars through the official TradingView MCP service as mcp_bars.v1. \
+                      Requires an exchange-qualified symbol, timeframe 1D/1W/1M, and count 1..5000. \
+                      Count satisfaction is distinct from historical/calendar completeness. \
+                      Adjustment, delay, session and finality may be unknown. \
+                      Date ranges and automatic source fallback are unsupported."
+    )]
+    Bars {
+        symbol: String,
+        #[arg(long, default_value = "1D")]
+        timeframe: String,
+        #[arg(long, default_value_t = 300)]
+        count: u32,
+        #[arg(long, hide = true)]
+        from: Option<String>,
+        #[arg(long, hide = true)]
+        to: Option<String>,
+    },
+}
+
 impl Command {
     pub fn name(&self) -> &'static str {
         match self {
+            Self::Mcp { .. } => "mcp",
             Self::Status => "status",
             Self::Readiness => "readiness",
             Self::Launch { .. } => "launch",

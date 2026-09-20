@@ -23,6 +23,15 @@ Desktop-free means the crate does not connect to the locally running
 TradingView Desktop app and does not use chart state, UI automation, cookies,
 session export, or account mutation.
 
+## Authenticated official MCP boundary
+
+`tradingview-mcp` is an internal workspace service for `tv mcp`, not a stable
+external Rust API. Its client owns OAuth, native credentials, admission and
+transport; `tradingview-model::mcp_bars` owns pure request/response shaping.
+Consumers should use the separate CLI and `mcp_bars.v1` contract described in
+[Official MCP commands](official-mcp.md). This does not change the credential-free
+market/scanner APIs or the existing `tv bars` contract.
+
 ## Market reads
 
 Prefer the typed functions from `tradingview-market` for Rust callers:

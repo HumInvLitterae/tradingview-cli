@@ -115,6 +115,15 @@ installed binary remains `tv`.
   JSON-returning wrappers for CLI payload contracts such as `bars.v1`. It uses
   credential-free TradingView endpoints and does not depend on CDP, chart
   state, or UI automation.
+- `crates/mcp/src/lib.rs` owns the internal authenticated official-MCP client:
+  resource-bound OAuth, protected credential lifecycle, local admission and
+  bounded HTTP/SSE transport, shared by the independent `tv mcp` command group
+  and its opt-in proof harness. CLI adapters live in `ops/mcp.rs`; I/O-free
+  request validation and `mcp_bars.v1` shaping live in `model::mcp_bars`.
+  Native worker adapters exist for macOS and Windows; Windows native acceptance
+  and Linux implementation remain open. It does not broaden the
+  credential-free responsibilities of `market` or `scanner`. Scope and proof
+  gates live in the [MCP work record](plans/tradingview-cli-official-mcp-client.md).
 - `crates/scanner/src/lib.rs` owns Desktop-free scanner reads for hotlists and
   basic scanner scans. It exposes typed read results as the reusable Rust API
   and keeps JSON-returning wrappers for the CLI payload contract. It uses

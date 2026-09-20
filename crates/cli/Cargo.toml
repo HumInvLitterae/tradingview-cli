@@ -20,6 +20,7 @@ tokio = { workspace = true, features = ["macros", "rt-multi-thread", "time", "ne
 tradingview-cdp = { workspace = true }
 tradingview-core = { workspace = true }
 tradingview-market = { workspace = true }
+tradingview-mcp = { workspace = true }
 tradingview-model = { workspace = true }
 tradingview-pine = { workspace = true }
 tradingview-scanner = { workspace = true }

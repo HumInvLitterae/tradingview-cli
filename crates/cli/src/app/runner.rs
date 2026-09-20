@@ -33,7 +33,18 @@ pub fn run_cli() -> ExitCode {
 }
 
 async fn async_main() -> ExitCode {
-    init_tracing();
+    // Worker IPC is handled before parsing and logging; it never emits a normal
+    // CLI envelope or SDK debug logs containing credential material.
+    if std::env::args_os()
+        .skip(1)
+        .eq([std::ffi::OsString::from("--credential-worker")])
+    {
+        return if tradingview_mcp::credential_worker().await.is_ok() {
+            ExitCode::SUCCESS
+        } else {
+            ExitCode::from(1)
+        };
+    }
 
     let cli = match Cli::try_parse() {
         Ok(cli) => cli,
@@ -74,6 +85,19 @@ async fn async_main() -> ExitCode {
         return terminal_error("tv", app_error);
     };
 
+    if let Command::Mcp { command } = command {
+        if cli.target_id.is_some() {
+            return terminal_error(
+                "mcp",
+                tradingview_model::mcp_bars::unsupported("desktop_target"),
+            );
+        }
+        // No tracing subscriber for account-bearing MCP flows, even with
+        // RUST_LOG=trace. Other command groups retain their existing logging.
+        return standard_exit("mcp", crate::ops::run_mcp(command).await);
+    }
+    init_tracing();
+
     let config = match TransportConfig::from_env_with_target_id(cli.target_id.as_deref()) {
         Ok(config) => config,
         Err(err) => {
@@ -112,19 +136,21 @@ async fn async_main() -> ExitCode {
         ),
         command => {
             let command_name = command.name();
-            match dispatch(command, &config).await {
-                Ok(data) => {
-                    let envelope = SuccessEnvelope::new(command_name, data);
-                    match print_json_stdout(&envelope) {
-                        Ok(OutputDisposition::Written | OutputDisposition::BrokenPipe) => {
-                            ExitCode::SUCCESS
-                        }
-                        Err(error) => stdout_failure(command_name, error),
-                    }
-                }
-                Err(err) => terminal_error(command_name, err),
+            standard_exit(command_name, dispatch(command, &config).await)
+        }
+    }
+}
+
+fn standard_exit(command: &'static str, result: Result<serde_json::Value, AppError>) -> ExitCode {
+    match result {
+        Ok(data) => {
+            let envelope = SuccessEnvelope::new(command, data);
+            match print_json_stdout(&envelope) {
+                Ok(OutputDisposition::Written | OutputDisposition::BrokenPipe) => ExitCode::SUCCESS,
+                Err(error) => stdout_failure(command, error),
             }
         }
+        Err(error) => terminal_error(command, error),
     }
 }
 

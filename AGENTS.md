@@ -62,7 +62,8 @@ or a source of new PM, commit, or delegation authority.
 
 - `crates/cli` owns the binary and operation adapters; `core` owns envelopes and
   errors; `model` owns I/O-free interpretation and shaping. `market`, `scanner`,
-  and `pine` own Desktop-free services; `cdp` owns Desktop transport.
+  and `pine` own credential-free Desktop-free services; `mcp` owns the internal
+  authenticated official-MCP client; `cdp` owns Desktop transport.
 - Prefer English for repository docs. Use descriptive work names rather than
   ordinal aliases. Public docs explain usage, reproduction, and maintenance.
 - Commit related authorized changes in coherent batches using the
