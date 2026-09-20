@@ -8,6 +8,10 @@ remain at their original paths. Use [current work](../README.md) to resume.
 
 Recently completed:
 
+- [v0.31.3 release](tradingview-cli-v0.31.3-release-readiness.md): publication
+  verified on 2026-09-20 and the historical preparation record archived. Old
+  package counts and pending gates are candidate-scoped history.
+
 - `tradingview-cli-recovery-semantics-inventory.md`: classified shared failure
   boundaries and Desktop workflow effects, confirmed that operator responses
   differ, and deferred a public recovery contract because dispatch/effect state
