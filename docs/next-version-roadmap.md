@@ -1,6 +1,6 @@
 # v0.32.0 candidate roadmap
 
-Status: independent CLI implemented and macOS command smoke passed; Windows/downstream qualification open, 2026-09-21.
+Status: initial CLI and downstream observation intake complete; expansion order agreed, Windows qualification open, 2026-09-21.
 [Work order](next-version-work-items.md) and the
 [existing MCP ExecPlan](plans/tradingview-cli-official-mcp-client.md) own execution
 and detailed contracts. No second feature plan is needed.
@@ -20,7 +20,7 @@ next feature is a **v0.32.0 candidate**, conditional on connection and downstrea
 acceptance. Keep the workspace at 0.31.4 during implementation; bump the version
 when the accepted minor candidate enters release preparation.
 
-## Settled scope
+## Initial delivered scope
 
 - Independent `tv mcp login/status/bars/logout`; the existing default, WebSocket
   `bars.v1`, Desktop/Pine observation paths and error envelope remain intact.
@@ -67,6 +67,35 @@ A beta-service or storage incompatibility may produce a precise no-go or narrowe
 useful observation capability. Do not manufacture schema evidence or convert a
 recent sample into historical range coverage to satisfy a milestone.
 
+## Agreed expansion order
+
+After the initial OHLCV path, the owner agreed to the following order on
+2026-09-21. Add explicit commands under `tv mcp`; existing commands retain their
+behavior. This is a development sequence, not a requirement to include every
+item in v0.32.0. Release only the completed and qualified slices.
+
+1. Symbol search, column discovery and single-symbol data.
+2. Multi-symbol data retrieval.
+3. Screener queries.
+4. Recent-count intraday OHLCV, without historical date-range guarantees.
+5. Watchlists and alerts, promoted ahead of financial and research data because
+   they are promising alternatives to existing Desktop/internal-API operations.
+6. Earnings dates, financial snapshots and financial history.
+7. News, documents, economic series and calendars.
+
+The next slice is symbol search, column discovery and single-symbol data. The
+proposed entries are `tv mcp search`, `tv mcp columns` and `tv mcp symbol`.
+The existing work record owns concrete CLI/JSON examples and acceptance before
+implementation. Reuse connection and credential handling; keep tool-specific
+schema checks and interpretation explicit. No arbitrary tool passthrough.
+
+Watchlist/alert work includes both reads and explicit management operations;
+it is not limited to adding another read-only inspection layer. First establish
+listing and ID-specific readback, then implement changes with observable
+postconditions and unknown-outcome handling. Inspect actual scope requirements
+and agree on disposable live targets before mutation tests. The current OHLCV
+live authorization does not authorize account changes.
+
 ## Maintained defers
 
 The [v0.31 engineering triggers](v0.31-roadmap.md#evidence-triggered-engineering-candidates)
@@ -76,4 +105,6 @@ public timing/recovery fields, foreground/indicator search, a higher bar cap,
 additional intraday ranges, fractional-offset/width-derived geometry and Windows
 MSIX activation are not prerequisites or promoted tasks. MCP OAuth refresh does
 not authorize retries of Desktop operations. Screener/news/financials/watchlists/
-alerts are outside the first MCP implementation.
+alerts were outside the first MCP implementation and now follow the expansion
+order above. Intraday MCP recent-count reads are distinct from the deferred
+legacy date-range expansion.
