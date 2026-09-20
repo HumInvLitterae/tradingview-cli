@@ -16,7 +16,7 @@ fn independent_mcp_help_does_not_change_bars_entry() {
         .clone();
     let help = String::from_utf8(output).unwrap();
     for command in [
-        "login", "status", "bars", "logout", "search", "columns", "symbol",
+        "login", "status", "bars", "logout", "search", "columns", "symbol", "symbols",
     ] {
         assert!(help.contains(command));
     }
@@ -33,6 +33,8 @@ fn independent_mcp_help_does_not_change_bars_entry() {
 #[test]
 fn invalid_mcp_requests_fail_before_cdp_state_store_or_provider_access() {
     for args in [
+        vec!["mcp", "symbols", "EXAMPLE"],
+        vec!["mcp", "symbols", "NASDAQ:EXAMPLE", "NASDAQ:EXAMPLE"],
         vec!["mcp", "search", " "],
         vec!["mcp", "search", "Example", "--type", "unsupported"],
         vec!["mcp", "columns", "--market", "america"],
@@ -104,4 +106,24 @@ fn credential_worker_rejects_invalid_ipc_without_normal_logs_or_envelope() {
         .clone();
     assert!(output.stdout.is_empty());
     assert!(output.stderr.is_empty());
+}
+
+#[test]
+fn mcp_symbols_rejects_oversized_request_without_authentication() {
+    let symbols: Vec<_> = (0..51)
+        .map(|index| format!("NASDAQ:EXAMPLE{index}"))
+        .collect();
+    let output = tv()
+        .args(["mcp", "symbols"])
+        .args(symbols)
+        .env("HOME", "relative-home")
+        .env("LOCALAPPDATA", "relative-state")
+        .assert()
+        .code(1)
+        .get_output()
+        .clone();
+    assert!(output.stdout.is_empty());
+    let error: Value = serde_json::from_slice(&output.stderr).unwrap();
+    assert_eq!(error["error"]["details"]["reason"], "symbols_count");
+    assert_eq!(error["error"]["details"]["tool_attempts"], 0);
 }

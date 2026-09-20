@@ -36,6 +36,14 @@ conditions stay unconfirmed; never relabel these results as scanner quotes.
 These commands do not replace existing search/quote commands or automatically
 fall back to them. Login is explicit and interactive, not an automatic read step.
 
+`tv mcp symbols <EXCHANGE:SYMBOL>... --columns close,volume` uses one official
+batch request for up to 50 distinct symbols. Read `mcp_symbols.v1` items in request
+order: `returned` may still have missing fields, `missing` is provider-declared,
+and `unreported` means neither result nor missing declaration arrived. Never
+convert either unavailable state to zeros or infer its cause. `success:true`
+and `symbols_status:partial` can occur together. More than 50 symbols or duplicate
+input fails locally; the command does not split, retry or fall back automatically.
+
 ## Earnings and dividends
 
 `tv events <SYMBOL>` shapes `scanner_fundamentals_rest` fields as `events.v1`;

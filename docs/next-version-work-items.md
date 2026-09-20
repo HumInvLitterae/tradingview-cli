@@ -47,7 +47,8 @@ pass, and the initial implementation is committed. The credential-read and
 worker-diagnostics follow-up preserves the public error code and adds optional
 reason detail; the corrected binary macOS smoke has passed. Symbol search, column discovery and single-symbol data are
 implemented and passed deterministic checks and macOS public CLI smoke.
-Multi-symbol data follows this slice in the agreed expansion order below.
+Multi-symbol data is also implemented and verified through the public service;
+screener queries are the next slice in the agreed expansion order below.
 Windows
 qualification is deferred to a later stage and remains a release requirement. A successful read
 still leaves delay/adjustment/session/finality/anchoring unconfirmed. No new
@@ -62,7 +63,7 @@ contracts and acceptance. These are not all mandatory v0.32.0 release contents.
 | Priority | Slice | Next completion condition |
 | --- | --- | --- |
 | 1 | Symbol search, column discovery, single-symbol data | Implemented with separate contracts, preserved candidates/missing fields and explicit unknown identity/freshness. Complete: workspace tests, Clippy and macOS public CLI smoke passed. Windows remains a release gate. |
-| 2 | Multi-symbol data | Per-symbol results and missing symbols remain distinct, with bounded dispatch. |
+| 2 | Multi-symbol data | Implemented as `tv mcp symbols` / `mcp_symbols.v1`, one request for up to 50 distinct symbols. Input order, partial results and missing fields covered by fixtures and native public-service verification; no new native credential executable was required. |
 | 3 | Screener | Filters/columns and result limits are explicit; returned rows do not imply complete coverage. |
 | 4 | Recent-count intraday OHLCV | Supported intervals are validated without adding date-range or completeness claims. |
 | 5 | Watchlists and alerts | Read/list foundation, then explicit management with readback; compare existing behavior and retain unsupported Pine/Desktop capabilities. |

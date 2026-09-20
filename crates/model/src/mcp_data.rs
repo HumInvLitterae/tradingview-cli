@@ -1,5 +1,7 @@
 //! I/O-free requests and interpretation for official MCP symbol data.
 
+mod batch;
+
 use serde_json::{Value, json};
 use tradingview_core::{AppError, ErrorKind};
 
@@ -8,6 +10,7 @@ pub enum Kind {
     Search,
     Columns,
     Symbol,
+    Symbols,
 }
 
 #[derive(Clone, Debug)]
@@ -60,36 +63,27 @@ impl Request {
 
     pub fn symbol(symbol: &str, columns: &[String]) -> Result<Self, AppError> {
         crate::mcp_bars::validate_symbol(symbol)?;
-        if columns.len() > 50 {
-            return Err(invalid_request("columns"));
-        }
-        let mut unique = std::collections::HashSet::new();
-        for column in columns {
-            text(column, 128, "columns")?;
-            if !unique.insert(column) {
-                return Err(invalid_request("duplicate_column"));
-            }
-        }
-        let mut arguments = json!({"symbol": symbol});
-        arguments["columns"] = if columns.is_empty() {
-            json!([
-                "name",
-                "description",
-                "close",
-                "change",
-                "change_abs",
-                "volume",
-                "market_cap_basic",
-                "price_earnings_ttm",
-                "sector",
-                "industry"
-            ])
-        } else {
-            json!(columns)
-        };
+        let arguments = json!({"symbol": symbol, "columns": column_arguments(columns)?});
         Ok(Self {
             kind: Kind::Symbol,
             arguments,
+        })
+    }
+
+    pub fn symbols(symbols: &[String], columns: &[String]) -> Result<Self, AppError> {
+        if symbols.is_empty() || symbols.len() > 50 {
+            return Err(invalid_request("symbols_count"));
+        }
+        let mut unique = std::collections::HashSet::new();
+        for symbol in symbols {
+            crate::mcp_bars::validate_symbol(symbol)?;
+            if !unique.insert(symbol) {
+                return Err(invalid_request("duplicate_symbol"));
+            }
+        }
+        Ok(Self {
+            kind: Kind::Symbols,
+            arguments: json!({"symbols": symbols, "columns": column_arguments(columns)?}),
         })
     }
 
@@ -100,6 +94,35 @@ impl Request {
     pub fn arguments(&self) -> Value {
         self.arguments.clone()
     }
+}
+
+fn column_arguments(columns: &[String]) -> Result<Value, AppError> {
+    if columns.len() > 50 {
+        return Err(invalid_request("columns"));
+    }
+    let mut unique = std::collections::HashSet::new();
+    for column in columns {
+        text(column, 128, "columns")?;
+        if !unique.insert(column) {
+            return Err(invalid_request("duplicate_column"));
+        }
+    }
+    Ok(if columns.is_empty() {
+        json!([
+            "name",
+            "description",
+            "close",
+            "change",
+            "change_abs",
+            "volume",
+            "market_cap_basic",
+            "price_earnings_ttm",
+            "sector",
+            "industry"
+        ])
+    } else {
+        json!(columns)
+    })
 }
 
 fn text(value: &str, max: usize, field: &str) -> Result<(), AppError> {
@@ -142,6 +165,7 @@ pub fn normalize(request: &Request, value: Value, received_ms: u64) -> Result<Va
         Kind::Search => "mcp_search.v1",
         Kind::Columns => "mcp_columns.v1",
         Kind::Symbol => "mcp_symbol.v1",
+        Kind::Symbols => "mcp_symbols.v1",
     };
     let mut data = json!({
         "contract_version": contract,
@@ -155,7 +179,8 @@ pub fn normalize(request: &Request, value: Value, received_ms: u64) -> Result<Va
     match request.kind {
         Kind::Search => normalize_search(&mut data, &value)?,
         Kind::Columns => normalize_columns(&mut data, &value)?,
-        Kind::Symbol => normalize_symbol(&mut data, &value)?,
+        Kind::Symbol => normalize_symbol(&request.arguments, &mut data, &value)?,
+        Kind::Symbols => batch::normalize(request, &mut data, &value)?,
     }
     Ok(data)
 }
@@ -289,16 +314,16 @@ fn normalize_columns(data: &mut Value, value: &Value) -> Result<(), AppError> {
     Ok(())
 }
 
-fn normalize_symbol(data: &mut Value, value: &Value) -> Result<(), AppError> {
+fn normalize_symbol(request: &Value, data: &mut Value, value: &Value) -> Result<(), AppError> {
     let symbol = optional_string(value.get("symbol"))?;
-    if !symbol.is_null() && symbol != data["request"]["symbol"] {
+    if !symbol.is_null() && symbol != request["symbol"] {
         return Err(invalid_response("symbol_mismatch"));
     }
     let fields = value
         .get("data")
         .and_then(Value::as_object)
         .ok_or_else(|| invalid_response("missing_symbol_data"))?;
-    let requested: Vec<String> = match data["request"].get("columns") {
+    let requested: Vec<String> = match request.get("columns") {
         Some(columns) => serde_json::from_value(columns.clone())
             .map_err(|_| invalid_response("invalid_columns"))?,
         None => fields.keys().cloned().collect(),
@@ -374,6 +399,26 @@ mod tests {
         assert!(Request::symbol("EXAMPLE", &[]).is_err());
         assert!(Request::symbol("NASDAQ:EXAMPLE", &["close".into(), "close".into()]).is_err());
         assert!(Request::symbol("NASDAQ:EXAMPLE", &["".into()]).is_err());
+    }
+
+    #[test]
+    fn batch_requests_bound_distinct_symbols_and_share_column_defaults() {
+        assert!(Request::symbols(&[], &[]).is_err());
+        assert!(
+            Request::symbols(&["NASDAQ:EXAMPLE".into(), "NASDAQ:EXAMPLE".into()], &[]).is_err()
+        );
+        let symbols: Vec<_> = (0..50)
+            .map(|index| format!("NASDAQ:EXAMPLE{index}"))
+            .collect();
+        let request = Request::symbols(&symbols, &[]).unwrap();
+        assert_eq!(request.arguments()["symbols"], json!(symbols));
+        assert_eq!(
+            request.arguments()["columns"],
+            Request::symbol("NASDAQ:EXAMPLE", &[]).unwrap().arguments()["columns"]
+        );
+        let mut oversized = symbols;
+        oversized.push("NASDAQ:EXAMPLE50".into());
+        assert!(Request::symbols(&oversized, &[]).is_err());
     }
 
     #[test]

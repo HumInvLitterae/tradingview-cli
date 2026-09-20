@@ -125,6 +125,44 @@ row counts and incompatible input schemas fail with `mcp_error.v1`. Authenticati
 429, timeout and invalid-response handling is shared with bars; no read is
 silently retried or redirected to the old scanner/market path.
 
+## Multi-symbol data
+
+```sh
+tv mcp symbols NASDAQ:AAPL NASDAQ:MSFT --columns close,volume
+```
+
+`symbols` calls the official batch tool once for 1..50 distinct,
+exchange-qualified symbols. It shares the explicit column defaults and validation
+of `symbol`. Duplicate symbols and more than 50 inputs fail before authentication
+or network access. There is no automatic splitting, individual-symbol fallback
+or retry.
+
+The `mcp_symbols.v1` result contains `items[]` in input order, with zero-based
+`requested_index`, `requested_symbol` and a per-symbol status:
+
+| Status | Meaning |
+| --- | --- |
+| `returned` | The provider identified this requested symbol and returned its field map. The item's fields, missing-field reasons and unknown freshness follow the single-symbol rules. |
+| `missing` | The provider explicitly included this symbol in its missing list. `fields` is null, not fabricated zero values. |
+| `unreported` | Neither data nor an explicit missing declaration was returned for this requested symbol. `fields` is null; do not infer why. |
+
+`client_observation` counts requested, returned, missing and unreported symbols;
+`symbols_status` is `all_returned`, `partial` or `none_returned`. These counts do
+not establish field completeness. For example, a returned row with `volume:null`
+is still a returned symbol with incomplete fields. Envelope success means a valid
+response was interpreted; it does not require every symbol or field to exist.
+
+Before: separate `tv mcp symbol` processes each make their own request. After:
+`tv mcp symbols NASDAQ:FIRST NASDAQ:SECOND NASDAQ:THIRD --columns close,volume`
+makes one tool call and can report FIRST as returned (with a missing volume),
+SECOND as explicitly missing and THIRD as unreported, without changing order.
+Unexpected provider symbols, duplicate missing entries, contradictory data
+and missing entries, or
+malformed rows fail the whole response with `mcp_error.v1`; positions are never
+used to guess which requested symbol a row belongs to. Freeform provider missing reasons are not
+interpreted as proof that a symbol does not exist or that a particular permission
+is missing. Transport/authentication failure also fails the operation rather than fabricating individual missing rows.
+
 ## Read contract
 
 Use an exchange-qualified symbol, `1D`, `1W` or `1M`, and count 1..5000 (default
