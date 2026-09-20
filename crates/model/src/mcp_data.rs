@@ -1,6 +1,8 @@
 //! I/O-free requests and interpretation for official MCP symbol data.
 
 mod batch;
+mod screener;
+pub use screener::ScreenerOptions;
 
 use serde_json::{Value, json};
 use tradingview_core::{AppError, ErrorKind};
@@ -11,6 +13,7 @@ pub enum Kind {
     Columns,
     Symbol,
     Symbols,
+    Screener,
 }
 
 #[derive(Clone, Debug)]
@@ -166,6 +169,7 @@ pub fn normalize(request: &Request, value: Value, received_ms: u64) -> Result<Va
         Kind::Columns => "mcp_columns.v1",
         Kind::Symbol => "mcp_symbol.v1",
         Kind::Symbols => "mcp_symbols.v1",
+        Kind::Screener => "mcp_screener.v1",
     };
     let mut data = json!({
         "contract_version": contract,
@@ -181,6 +185,7 @@ pub fn normalize(request: &Request, value: Value, received_ms: u64) -> Result<Va
         Kind::Columns => normalize_columns(&mut data, &value)?,
         Kind::Symbol => normalize_symbol(&request.arguments, &mut data, &value)?,
         Kind::Symbols => batch::normalize(request, &mut data, &value)?,
+        Kind::Screener => screener::normalize(request, &mut data, &value)?,
     }
     Ok(data)
 }
@@ -323,22 +328,7 @@ fn normalize_symbol(request: &Value, data: &mut Value, value: &Value) -> Result<
         .get("data")
         .and_then(Value::as_object)
         .ok_or_else(|| invalid_response("missing_symbol_data"))?;
-    let requested: Vec<String> = match request.get("columns") {
-        Some(columns) => serde_json::from_value(columns.clone())
-            .map_err(|_| invalid_response("invalid_columns"))?,
-        None => fields.keys().cloned().collect(),
-    };
-    let mut output = serde_json::Map::new();
-    let mut missing = Vec::new();
-    for name in requested {
-        let field = fields.get(&name);
-        output.insert(name.clone(), field.cloned().unwrap_or(Value::Null));
-        if field.is_none_or(Value::is_null) {
-            missing.push(
-                json!({"field": name, "reason": if field.is_none() { "absent" } else { "null" }}),
-            );
-        }
-    }
+    let (output, missing) = select_fields(request.get("columns"), fields)?;
     let unknown = json!({"value": null, "evidence": "unconfirmed"});
     data["fields"] = json!(output);
     data["provider_observation"] = json!({
@@ -359,6 +349,29 @@ fn normalize_symbol(request: &Value, data: &mut Value, value: &Value) -> Result<
     });
     data["client_observation"]["missing_fields"] = json!(missing);
     Ok(())
+}
+
+fn select_fields(
+    columns: Option<&Value>,
+    fields: &serde_json::Map<String, Value>,
+) -> Result<(serde_json::Map<String, Value>, Vec<Value>), AppError> {
+    let requested: Vec<String> = match columns {
+        Some(columns) => serde_json::from_value(columns.clone())
+            .map_err(|_| invalid_response("invalid_columns"))?,
+        None => fields.keys().cloned().collect(),
+    };
+    let mut output = serde_json::Map::new();
+    let mut missing = Vec::new();
+    for name in requested {
+        let field = fields.get(&name);
+        output.insert(name.clone(), field.cloned().unwrap_or(Value::Null));
+        if field.is_none_or(Value::is_null) {
+            missing.push(
+                json!({"field": name, "reason": if field.is_none() { "absent" } else { "null" }}),
+            );
+        }
+    }
+    Ok((output, missing))
 }
 
 fn validate_count(count: Option<&Value>, length: usize) -> Result<(), AppError> {

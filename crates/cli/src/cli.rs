@@ -1222,6 +1222,27 @@ pub enum McpCommand {
         #[arg(long, value_delimiter = ',')]
         columns: Vec<String>,
     },
+    #[command(about = "Run one official MCP screener query; returns up to 1000 rows")]
+    Screener {
+        #[arg(long, default_value = "america")]
+        market: String,
+        #[arg(long, default_value = "{}")]
+        filters: String,
+        #[arg(long, default_value = "volume")]
+        sort_by: String,
+        #[arg(long, default_value = "desc")]
+        sort_order: String,
+        #[arg(long, default_value_t = 100)]
+        limit: u32,
+        #[arg(long, value_delimiter = ',')]
+        columns: Vec<String>,
+        #[arg(long = "types", value_delimiter = ',')]
+        symbol_types: Vec<String>,
+        #[arg(long = "preset")]
+        filter_preset: Option<String>,
+        #[arg(long, value_delimiter = ',')]
+        symbolset: Vec<String>,
+    },
     #[command(
         about = "Read recent daily, weekly or monthly OHLCV",
         long_about = "Read recent bars through the official TradingView MCP service as mcp_bars.v1. \

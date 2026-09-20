@@ -16,11 +16,12 @@ downstream use.
 
 ### Authenticated official MCP
 
-`tv mcp bars`, `search`, `columns`, `symbol` and `symbols` are explicit Desktop-free,
+`tv mcp bars`, `search`, `columns`, `symbol`, `symbols` and `screener` are explicit
+Desktop-free,
 non-mutating official-service reads,
 with `source: tradingview_mcp`, `source_category: desktop_free_read`, and
 `requires_desktop: false`. They emit `mcp_bars.v1`, `mcp_search.v1`,
-`mcp_columns.v1`, `mcp_symbol.v1` and `mcp_symbols.v1`, respectively, and never
+`mcp_columns.v1`, `mcp_symbol.v1`, `mcp_symbols.v1` and `mcp_screener.v1`, respectively, and never
 use CDP, legacy
 WebSocket, or scanner fallback. OAuth renewal and the dedicated OS credential
 record are separate local/authentication effects. `login` performs browser

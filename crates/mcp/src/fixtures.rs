@@ -279,6 +279,7 @@ fn respond(ep: &Endpoints, r: &Request, mode: &str) -> Response {
                 crate::tools::Tool::Columns,
                 crate::tools::Tool::Symbol,
                 crate::tools::Tool::Symbols,
+                crate::tools::Tool::Screener,
             ] {
                 let properties: serde_json::Map<_, _> = tool
                     .fields()
@@ -397,6 +398,15 @@ fn respond(ep: &Endpoints, r: &Request, mode: &str) -> Response {
                                 }]
                             })
                         };
+                }
+                Some("mcp-tv-run-screener") => {
+                    result["structuredContent"] = json!({
+                        "success": true,
+                        "data": {
+                            "rows": [{"symbol": "NASDAQ:EXAMPLE", "close": 0, "volume": null}],
+                            "totalCount": 10
+                        }
+                    });
                 }
                 Some("mcp-tv-get-symbol-data-batch") => {
                     let symbols = args["symbols"].as_array().unwrap();
@@ -896,6 +906,12 @@ async fn symbol_data_commands_share_authentication_and_preserve_faults_without_r
         "schema-change",
     ] {
         for request in [
+            DataRequest::screener(tradingview_model::mcp_data::ScreenerOptions {
+                limit: 3,
+                columns: vec!["close".into(), "volume".into()],
+                ..Default::default()
+            })
+            .unwrap(),
             DataRequest::search("Example", None).unwrap(),
             DataRequest::columns(None, None, Some("volume")).unwrap(),
             DataRequest::columns(None, None, None).unwrap(),
@@ -945,6 +961,12 @@ async fn symbol_data_commands_share_authentication_and_preserve_faults_without_r
                 assert_eq!(data["source"], "tradingview_mcp");
                 assert_eq!(data["request"], request.arguments());
                 assert_eq!(data["transport"]["tool_attempts"], 1);
+                if request.kind() == tradingview_model::mcp_data::Kind::Screener {
+                    assert_eq!(data["contract_version"], "mcp_screener.v1");
+                    assert_eq!(data["client_observation"]["coverage_status"], "limited");
+                    assert_eq!(data["items"][0]["fields"]["close"], 0);
+                    assert!(data["items"][0]["fields"]["volume"].is_null());
+                }
                 if request.kind() == tradingview_model::mcp_data::Kind::Symbols {
                     assert_eq!(data["contract_version"], "mcp_symbols.v1");
                     assert_eq!(data["items"][0]["status"], "returned");

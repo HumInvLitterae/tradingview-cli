@@ -15,6 +15,14 @@ package version omits the leading `v`.
   OAuth/store/transport validation is separate from remaining platform release
   qualification. Windows native adapters are implemented; Linux credentials
   currently fail explicitly without a plaintext fallback.
+- Official MCP symbol search, column discovery and single-symbol reads through
+  `tv mcp search/columns/symbol`, with separate versioned contracts and explicit
+  missing-field and unknown-freshness information.
+- `tv mcp symbols` for one-call reads of up to 50 distinct symbols, retaining
+  input order and distinguishing returned, missing and unreported results.
+- `tv mcp screener` for bounded official queries with filters, sorting, presets
+  and selected columns. `mcp_screener.v1` separates returned rows from reported
+  totals and preserves empty, limited and unconfirmed coverage outcomes.
 
 ## v0.31.4 - 2026-09-20
 
