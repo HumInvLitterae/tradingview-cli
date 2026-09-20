@@ -26,6 +26,48 @@ corrections. Windows runtime verification is deferred until after this local
 checkpoint, and remains required for release qualification. Follow [PLANS.md](../../.agents/PLANS.md);
 this is the single feature work record.
 
+## Current next slice and expansion decision (2026-09-21)
+
+The initial OHLCV implementation and credential correction are committed.
+The correction passed a subsequent macOS smoke: existing credentials reused,
+new-process status succeeded, and daily/weekly/monthly reads each returned twenty
+rows with one tool attempt and matching identity/interval. Unknown conditions
+remained unknown. This does not establish the cause of the earlier transient
+credential failures or long-running reliability. Downstream reports observation
+storage/readback and optional error-reason compatibility complete; analysis and
+scheduled collection adoption remain separate. Windows runtime remains deferred.
+
+The owner agreed to the expansion sequence in the
+[roadmap](../next-version-roadmap.md#agreed-expansion-order), specifically promoting
+watchlists and alerts immediately after intraday bars and before financial data.
+The earlier exclusions below describe the first delivered slice, not a permanent
+ban on this agreed follow-up. Next, specify the concrete public CLI/JSON examples
+for symbol search, column discovery and single-symbol data, then implement that
+slice using the existing authenticated service. Keep existing commands intact.
+
+Source inspection supports the watchlist/alert substitution rationale:
+
+- `crates/cli/src/ops/layout/watchlist.rs` reads visible panel DOM and uses
+  internal API/UI paths for changes. Official list and ID-specific reads could
+  remove that visible-panel dependency for the MCP path.
+- `crates/cli/src/ops/alert/create.rs` uses logged-in internal endpoints and chart
+  metadata. Official explicit-symbol price alerts are a candidate alternative.
+- `crates/cli/src/ops/alert/indicator.rs` also supports saved Pine
+  `alertcondition()` workflows. Do not claim that simple official price alerts
+  replace this capability or remove the existing route without equivalence.
+
+The [official tool documentation](https://www.tradingview.com/mcp/docs) also
+requires operation-level side-effect review: `get_active_watchlist` is labelled
+read-only but can activate a list or create a default list; it must not be an
+implicit read fallback. Adding an existing symbol can move it to the end.
+Alert settings updates cannot change conditions/symbol/timeframe; deletion also
+removes fire history. Management contracts must expose these effects, avoid
+blind replay after an uncertain response, and verify the requested after-state.
+Agree on actual OAuth scope and disposable test targets before live mutations;
+the priority decision does not authorize changes to existing account objects.
+No additional dependency, executor, publication or default-backend change is
+implied. Keep this as the single MCP work record.
+
 ## First executable slice from v0.31.4
 
 Start with an internal service and opt-in development harness before exposing
