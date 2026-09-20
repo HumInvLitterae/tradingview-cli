@@ -73,7 +73,7 @@ for CDP reconnect, replaying Desktop mutations, or shared process ownership.
 
 ## Next action
 
-Prepare v0.31.4 first and keep its release artifacts in one final release
-preparation commit. Preserve the approved MCP dependency and bounded-proof
-scope for the following stage. The actual consent screen or changed scope can
-still require a new decision; publication remains owner-controlled.
+The [v0.31.4 release preparation](plans/tradingview-cli-v0.31.4-release-readiness.md)
+is complete locally; publication remains owner-controlled. Keep final binary
+hash readback in the local handoff/report without another evidence-only commit.
+Proceed with the approved MCP scope after patch closeout.
