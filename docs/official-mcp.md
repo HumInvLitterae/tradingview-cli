@@ -10,6 +10,9 @@ for remaining platform/release qualification; these commands are not in v0.31.4.
 ```sh
 tv mcp login
 tv mcp status
+tv mcp search Apple --type stock
+tv mcp columns --search volume
+tv mcp symbol NASDAQ:AAPL --columns close,volume,market_cap_basic
 tv mcp bars NASDAQ:AAPL --timeframe 1D --count 20
 tv mcp bars NASDAQ:AAPL --timeframe 1W --count 20
 tv mcp bars NASDAQ:AAPL --timeframe 1M --count 20
@@ -45,6 +48,82 @@ They live under `~/Library/Application Support/tradingview-cli/mcp` on macOS,
 Linux. Windows validates the directory's owner/access rules and rejects reparse
 points; it does not weaken an existing ACL. SDK/wire tracing is suppressed for
 MCP commands even when `RUST_LOG=trace` is set.
+
+## Symbol discovery and data
+
+These explicit MCP commands complement existing `tv search`, `tv quote` and
+scanner commands. They do not select a different backend for those commands.
+
+```sh
+tv mcp search "Example Corp" --type stock
+tv mcp columns
+tv mcp columns --search volume
+tv mcp columns --market stock --group technicals
+tv mcp symbol NASDAQ:EXAMPLE --columns close,volume,market_cap_basic
+```
+
+`search` returns candidates without choosing a listing or making another request.
+The optional `--type` accepts all, stock, etf, bond, forex, index, futures or crypto.
+`columns` without a group/search returns a grouped overview; group/search returns
+detailed column entries, including provider-supplied markets and variants.
+`--market` accepts all, stock, etf, crypto or bond (these are catalog categories,
+not the separate screener query's regional markets).
+
+`symbol` requires an exchange-qualified symbol. `--columns` is a comma-separated
+list of distinct column names. Without it, the client explicitly requests name,
+description, close, change, change_abs, volume, market_cap_basic,
+price_earnings_ttm, sector and industry. Column names come from `columns`, not
+from guessed aliases. The client bounds lists to 50 columns and each name to
+128 bytes; these are local input bounds, not claimed provider limits. Search,
+group and filter text is bounded to 256 bytes. Blank/control-character input,
+invalid filters and duplicate columns fail before credential or provider I/O.
+
+The shared success envelope still has `command:"mcp"`. Data contracts are:
+
+| Contract | Result | Interpretation |
+| --- | --- | --- |
+| `mcp_search.v1` | `symbols[]` with symbol, description, type, exchange and logo identifiers | Provider candidates; absent optional fields remain null. `returned_count` is measured; search coverage is unconfirmed. |
+| `mcp_columns.v1` | `mode:overview` with `groups[]`, or `mode:details` with `columns[]`; the unused array is empty | Group/column counts are client observations. Provider-reported counts stay separate, and overview counts do not imply complete market coverage. |
+| `mcp_symbol.v1` | `fields` keyed by the requested columns | Values retain JSON types. Null and absent fields are identified separately in `missing_fields`; zero remains zero. Extra unrequested fields are not forwarded. |
+
+Each includes the actual request, explicit MCP source, client receipt time and
+transport outcome. `symbol` returns `fields_status:present|incomplete`; successful
+communication does not guarantee every field is available. Missing symbol echoes
+remain `identity_match:unconfirmed`. An explicit mismatching echo fails. Current
+responses do not establish data-as-of, delay or session semantics; these stay
+null/unconfirmed even when a request explicitly includes similarly named data
+columns. The client does not infer units, realtime entitlement or financial
+meaning from a column name. `fields_status:present` establishes presence only.
+
+For example, the existing `tv quote NASDAQ:EXAMPLE` retains its existing scanner
+contract. The new `tv mcp symbol NASDAQ:EXAMPLE --columns close,volume` instead
+uses `mcp_symbol.v1`. If the response has `close:0` and `volume:null`, its data
+contains the following excerpt (synthetic values; other envelope fields omitted):
+
+```json
+{
+  "contract_version": "mcp_symbol.v1",
+  "source": "tradingview_mcp",
+  "fields": {
+    "close": 0,
+    "volume": null
+  },
+  "client_observation": {
+    "identity_match": "unconfirmed",
+    "fields_status": "incomplete",
+    "missing_fields": [
+      {"field": "volume", "reason": "null"}
+    ]
+  }
+}
+```
+
+If volume is absent rather than null, `fields.volume` remains null and the reason
+is `absent`. An empty search returns an empty candidate array, not an invented
+symbol or an automatic lookup elsewhere. Invalid provider wrappers, inconsistent
+row counts and incompatible input schemas fail with `mcp_error.v1`. Authentication,
+429, timeout and invalid-response handling is shared with bars; no read is
+silently retried or redirected to the old scanner/market path.
 
 ## Read contract
 

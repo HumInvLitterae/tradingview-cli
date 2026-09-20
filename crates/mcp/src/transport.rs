@@ -1,11 +1,6 @@
 //! SDK connection lifecycle shared by public commands and the proof harness.
 
-use crate::{
-    Failure, Result,
-    admission::Admission,
-    http::{Http, OHLCV_TOOL_NAMES},
-    sse,
-};
+use crate::{Failure, Result, admission::Admission, http::Http, sse, tools::Tool};
 use rmcp::{
     ServiceExt,
     model::{CallToolRequestParams, CallToolResponse, CallToolResult, PaginatedRequestParams},
@@ -23,8 +18,22 @@ pub(crate) async fn read(
     http: &Http,
     token: String,
     requests: &[Request],
+    admission: Option<&mut Admission>,
+) -> Result<Vec<Result<CallToolResult>>> {
+    let arguments: Vec<_> = requests.iter().map(Request::arguments).collect();
+    call(http, token, Tool::Bars, &arguments, admission).await
+}
+
+pub(crate) async fn call(
+    http: &Http,
+    token: String,
+    tool: Tool,
+    arguments: &[Value],
     mut admission: Option<&mut Admission>,
 ) -> Result<Vec<Result<CallToolResult>>> {
+    for args in arguments {
+        tool.validate_arguments(args)?;
+    }
     let mut config = StreamableHttpClientTransportConfig::with_uri(http.endpoints.resource.clone())
         .auth_header(token)
         .max_concurrent_requests(1)
@@ -49,14 +58,16 @@ pub(crate) async fn read(
                 .await
                 .map_err(|error| sdk_failure(error, http))?;
             http.describe_catalog(&page.tools);
-            for tool in page.tools {
-                if OHLCV_TOOL_NAMES.contains(&tool.name.as_ref()) {
+            for candidate in page.tools {
+                if tool.names().contains(&candidate.name.as_ref()) {
                     if tool_name.is_some() {
                         return Err(Failure::UnsupportedCapability);
                     }
-                    http.describe_ohlcv_schema(Some(&tool.input_schema));
-                    validate_schema(&tool.input_schema)?;
-                    tool_name = Some(tool.name.to_string());
+                    if tool == Tool::Bars {
+                        http.describe_ohlcv_schema(Some(&candidate.input_schema));
+                    }
+                    validate_schema(&candidate.input_schema, tool, arguments)?;
+                    tool_name = Some(candidate.name.to_string());
                 }
             }
             if tool_name.is_some() {
@@ -68,11 +79,13 @@ pub(crate) async fn read(
             }
         }
         if tool_name.is_none() {
-            http.describe_ohlcv_schema(None);
+            if tool == Tool::Bars {
+                http.describe_ohlcv_schema(None);
+            }
             return Err(Failure::UnsupportedCapability);
         }
         let mut results = Vec::new();
-        for (index, request) in requests.iter().enumerate() {
+        for (index, args) in arguments.iter().enumerate() {
             if let Some(admission) = admission.as_deref_mut() {
                 admission.before_tool(http.deadline).await?;
             } else if index > 0 {
@@ -83,7 +96,7 @@ pub(crate) async fn read(
                     CallToolRequestParams::new(
                         tool_name.clone().ok_or(Failure::UnsupportedCapability)?,
                     )
-                    .with_arguments(request.arguments().as_object().unwrap().clone()),
+                    .with_arguments(args.as_object().unwrap().clone()),
                 )
                 .await;
             let outcome = match outcome {
@@ -119,7 +132,11 @@ fn sdk_failure(error: rmcp::ServiceError, http: &Http) -> Failure {
     }
 }
 
-fn validate_schema(schema: &serde_json::Map<String, Value>) -> Result<()> {
+fn validate_schema(
+    schema: &serde_json::Map<String, Value>,
+    tool: Tool,
+    arguments: &[Value],
+) -> Result<()> {
     if schema.get("type").and_then(Value::as_str) != Some("object") {
         return Err(Failure::SchemaChanged);
     }
@@ -127,42 +144,61 @@ fn validate_schema(schema: &serde_json::Map<String, Value>) -> Result<()> {
         .get("properties")
         .and_then(Value::as_object)
         .ok_or(Failure::SchemaChanged)?;
-    for (name, kind) in [
-        ("symbol", "string"),
-        ("interval", "string"),
-        ("count", "integer"),
-        ("summary", "boolean"),
-    ] {
+    for &(name, kind) in tool.fields() {
         let field = properties.get(name).ok_or(Failure::SchemaChanged)?;
-        let accepts = |v: &Value| {
-            v.get("type")
-                .and_then(Value::as_str)
-                .is_some_and(|actual| actual == kind || (name == "count" && actual == "number"))
-        };
-        if !accepts(field)
-            && !field
-                .get("anyOf")
-                .and_then(Value::as_array)
-                .is_some_and(|variants| variants.iter().any(accepts))
-        {
+        if !accepts_type(field, kind) {
+            return Err(Failure::SchemaChanged);
+        }
+        if kind == "array" {
+            let array_schema = if accepts_direct_type(field, "array") {
+                Some(field)
+            } else {
+                field
+                    .get("anyOf")
+                    .and_then(Value::as_array)
+                    .and_then(|variants| variants.iter().find(|v| accepts_direct_type(v, "array")))
+            }
+            .ok_or(Failure::SchemaChanged)?;
+            if !array_schema
+                .get("items")
+                .is_some_and(|items| accepts_type(items, "string"))
+            {
+                return Err(Failure::SchemaChanged);
+            }
+        }
+    }
+    if let Some(required) = schema.get("required") {
+        let values = required.as_array().ok_or(Failure::SchemaChanged)?;
+        if values.iter().any(|v| {
+            v.as_str()
+                .is_none_or(|name| arguments.iter().any(|args| args.get(name).is_none()))
+        }) {
             return Err(Failure::SchemaChanged);
         }
     }
-    if schema
-        .get("required")
-        .and_then(Value::as_array)
-        .is_some_and(|values| {
-            values.iter().any(|v| {
-                !matches!(
-                    v.as_str(),
-                    Some("symbol" | "interval" | "count" | "summary")
-                )
-            })
-        })
-    {
-        return Err(Failure::SchemaChanged);
-    }
     Ok(())
+}
+
+fn accepts_direct_type(schema: &Value, kind: &str) -> bool {
+    let matches = |value: &Value| {
+        value
+            .as_str()
+            .is_some_and(|value| value == kind || (kind == "integer" && value == "number"))
+    };
+    schema.get("type").is_some_and(|value| {
+        matches(value)
+            || value
+                .as_array()
+                .is_some_and(|types| types.iter().any(matches))
+    })
+}
+
+fn accepts_type(schema: &Value, kind: &str) -> bool {
+    accepts_direct_type(schema, kind)
+        || schema
+            .get("anyOf")
+            .and_then(Value::as_array)
+            .is_some_and(|variants| variants.iter().any(|v| accepts_direct_type(v, kind)))
 }
 
 pub(crate) fn result_value(result: CallToolResult) -> Result<Value> {
@@ -181,4 +217,58 @@ pub(crate) fn result_value(result: CallToolResult) -> Result<Value> {
         .and_then(Value::as_str)
         .ok_or(Failure::InvalidResponse)?;
     serde_json::from_str(text).map_err(|_| Failure::InvalidResponse)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::json;
+
+    #[test]
+    fn incompatible_schema_prevents_dispatch() {
+        let mut schema = json!({
+            "type": "object",
+            "properties": {
+                "query": {"type": "string"},
+                "type_filter": {"anyOf": [{"type": "string"}, {"type": "null"}]}
+            },
+            "required": ["query"]
+        });
+        let args = [json!({"query": "Example"})];
+        validate_schema(schema.as_object().unwrap(), Tool::Search, &args).unwrap();
+        schema["required"] = json!(["query", "type_filter"]);
+        assert_eq!(
+            validate_schema(schema.as_object().unwrap(), Tool::Search, &args),
+            Err(Failure::SchemaChanged)
+        );
+        schema["required"] = json!("query");
+        assert_eq!(
+            validate_schema(schema.as_object().unwrap(), Tool::Search, &args),
+            Err(Failure::SchemaChanged)
+        );
+        schema["required"] = json!(["query"]);
+        schema["properties"]["query"] = json!({"type": "integer"});
+        assert_eq!(
+            validate_schema(schema.as_object().unwrap(), Tool::Search, &args),
+            Err(Failure::SchemaChanged)
+        );
+    }
+
+    #[test]
+    fn nullable_array_schema_still_requires_string_items() {
+        let args = [serde_json::json!({"symbol": "NASDAQ:EXAMPLE", "columns": ["close"]})];
+        let mut schema = serde_json::json!({
+            "type": "object", "required": ["symbol"],
+            "properties": {
+                "symbol": {"type": "string"},
+                "columns": {"type": ["null", "array"], "items": {"type": "string"}}
+            }
+        });
+        validate_schema(schema.as_object().unwrap(), Tool::Symbol, &args).unwrap();
+        schema["properties"]["columns"]["items"] = serde_json::json!({"type": "number"});
+        assert_eq!(
+            validate_schema(schema.as_object().unwrap(), Tool::Symbol, &args),
+            Err(Failure::SchemaChanged)
+        );
+    }
 }

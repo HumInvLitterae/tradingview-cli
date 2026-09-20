@@ -24,6 +24,7 @@ pub enum Operation {
     Status,
     Logout,
     Bars(Request),
+    Data(tradingview_model::mcp_data::Request),
 }
 
 /// Internal workspace service; no external stable Rust API is promised.
@@ -57,7 +58,7 @@ impl Client {
         let mut admission = Admission::acquire(&self.directory, deadline)
             .await
             .map_err(|e| failure(e, "local_admission", 0, None))?;
-        if matches!(operation, Operation::Bars(_)) {
+        if matches!(operation, Operation::Bars(_) | Operation::Data(_)) {
             admission
                 .check_cooldown()
                 .map_err(|e| failure(e, "local_admission", 0, None))?;
@@ -174,19 +175,16 @@ pub(crate) async fn execute(
         }
         auth.restore().await.map_err(AppError::from)?;
         let token = auth.token().await.map_err(AppError::from)?;
-        let Operation::Bars(request) = operation else {
-            return Err(Failure::UnsupportedCapability.into());
-        };
         stage = "tool_response";
-        let outcome = transport::read(
-            &http,
-            token,
-            std::slice::from_ref(&request),
-            Some(admission),
-        )
-        .await
-        .and_then(|mut values| values.pop().ok_or(Failure::InvalidResponse)?)
-        .and_then(transport::result_value);
+        let (tool, arguments) = match &operation {
+            Operation::Bars(request) => (crate::tools::Tool::Bars, request.arguments()),
+            Operation::Data(request) => (request.kind().into(), request.arguments()),
+            _ => return Err(Failure::UnsupportedCapability.into()),
+        };
+        let outcome = transport::call(&http, token, tool, &[arguments], Some(admission))
+            .await
+            .and_then(|mut values| values.pop().ok_or(Failure::InvalidResponse)?)
+            .and_then(transport::result_value);
         let value = match outcome {
             Err(Failure::AuthRequired) => {
                 return Err(match auth.refresh().await {
@@ -197,7 +195,14 @@ pub(crate) async fn execute(
             }
             result => result.map_err(AppError::from)?,
         };
-        mcp_bars::normalize(&request, value, now_ms().map_err(AppError::from)?)
+        let received_ms = now_ms().map_err(AppError::from)?;
+        match &operation {
+            Operation::Bars(request) => mcp_bars::normalize(request, value, received_ms),
+            Operation::Data(request) => {
+                tradingview_model::mcp_data::normalize(request, value, received_ms)
+            }
+            _ => Err(Failure::UnsupportedCapability.into()),
+        }
     }
     .await;
     if let Some(wait) = http.cooldown() {

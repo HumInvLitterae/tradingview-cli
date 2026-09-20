@@ -84,10 +84,9 @@ item in v0.32.0. Release only the completed and qualified slices.
 6. Earnings dates, financial snapshots and financial history.
 7. News, documents, economic series and calendars.
 
-The next slice is symbol search, column discovery and single-symbol data. The
-proposed entries are `tv mcp search`, `tv mcp columns` and `tv mcp symbol`.
-The existing work record owns concrete CLI/JSON examples and acceptance before
-implementation. Reuse connection and credential handling; keep tool-specific
+The first expansion implements `tv mcp search`, `tv mcp columns` and
+`tv mcp symbol`. The existing work record owns its concrete CLI/JSON examples
+and acceptance. Multi-symbol data is the next implementation slice. Reuse connection and credential handling; keep tool-specific
 schema checks and interpretation explicit. No arbitrary tool passthrough.
 
 Watchlist/alert work includes both reads and explicit management operations;

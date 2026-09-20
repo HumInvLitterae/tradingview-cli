@@ -12,31 +12,7 @@ pub struct Request {
 
 impl Request {
     pub fn new(symbol: &str, timeframe: &str, count: u32) -> Result<Self, AppError> {
-        let Some((exchange, ticker)) = symbol.split_once(':') else {
-            return Err(error(
-                ErrorKind::Validation,
-                "invalid_request",
-                "Use an exchange-qualified symbol",
-                "symbol",
-            ));
-        };
-        if exchange.is_empty()
-            || ticker.is_empty()
-            || symbol.len() > 128
-            || !exchange
-                .bytes()
-                .all(|b| b.is_ascii_alphanumeric() || b == b'_')
-            || !ticker
-                .bytes()
-                .all(|b| b.is_ascii_alphanumeric() || b"._!-".contains(&b))
-        {
-            return Err(error(
-                ErrorKind::Validation,
-                "invalid_request",
-                "Invalid exchange-qualified symbol",
-                "symbol",
-            ));
-        }
+        validate_symbol(symbol)?;
         if !matches!(timeframe, "1D" | "1W" | "1M") {
             return Err(unsupported("timeframe"));
         }
@@ -83,6 +59,35 @@ impl Request {
             "summary": false
         })
     }
+}
+
+pub(crate) fn validate_symbol(symbol: &str) -> Result<(), AppError> {
+    let Some((exchange, ticker)) = symbol.split_once(':') else {
+        return Err(error(
+            ErrorKind::Validation,
+            "invalid_request",
+            "Use an exchange-qualified symbol",
+            "symbol",
+        ));
+    };
+    if exchange.is_empty()
+        || ticker.is_empty()
+        || symbol.len() > 128
+        || !exchange
+            .bytes()
+            .all(|b| b.is_ascii_alphanumeric() || b == b'_')
+        || !ticker
+            .bytes()
+            .all(|b| b.is_ascii_alphanumeric() || b"._!-".contains(&b))
+    {
+        return Err(error(
+            ErrorKind::Validation,
+            "invalid_request",
+            "Invalid exchange-qualified symbol",
+            "symbol",
+        ));
+    }
+    Ok(())
 }
 
 pub fn unsupported(feature: &str) -> AppError {
@@ -260,7 +265,7 @@ fn optional_string(value: Option<&Value>) -> Result<Option<String>, AppError> {
     }
 }
 
-fn received_at(ms: u64) -> Result<String, AppError> {
+pub(crate) fn received_at(ms: u64) -> Result<String, AppError> {
     if ms > 253402300799999 {
         return Err(invalid("invalid_client_time"));
     }

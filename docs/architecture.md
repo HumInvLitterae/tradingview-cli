@@ -119,7 +119,9 @@ installed binary remains `tv`.
   resource-bound OAuth, protected credential lifecycle, local admission and
   bounded HTTP/SSE transport, shared by the independent `tv mcp` command group
   and its opt-in proof harness. CLI adapters live in `ops/mcp.rs`; I/O-free
-  request validation and `mcp_bars.v1` shaping live in `model::mcp_bars`.
+  request validation and response shaping live in `model::mcp_bars` and
+  `model::mcp_data`. The MCP service owns a closed tool allowlist; shared
+  transport does not expose arbitrary tool forwarding.
   Native worker adapters exist for macOS and Windows; Windows native acceptance
   and Linux implementation remain open. It does not broaden the
   credential-free responsibilities of `market` or `scanner`. Scope and proof

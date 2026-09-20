@@ -68,6 +68,62 @@ the priority decision does not authorize changes to existing account objects.
 No additional dependency, executor, publication or default-backend change is
 implied. Keep this as the single MCP work record.
 
+## Symbol discovery and single-symbol slice (2026-09-21)
+
+The owner approved implementing the first expansion: `tv mcp search`,
+`tv mcp columns` and `tv mcp symbol`. These preserve existing commands and add
+`mcp_search.v1`, `mcp_columns.v1` and `mcp_symbol.v1` to the existing MCP envelope.
+The concrete usage, synthetic before/after example, missing-field behavior and
+error handling are in [the public contract](../official-mcp.md#symbol-discovery-and-data).
+This agreement concerns the standalone commands, not changing legacy defaults.
+
+The owner separately authorized same-account read verification for Apple symbol
+search, volume-column discovery and three selected fields of the existing OHLCV
+proof symbol, including necessary verification of those three functions. No
+account mutation, new registration, wider OAuth scope or dependency was needed.
+Existing authenticated transport, credential snapshots and admission policy are
+shared. A closed tool enum owns exact public/observed names and arguments; it
+exposes no generic proxy. `model::mcp_data` owns request validation and shaping.
+
+Observed provider shapes inform the decoders:
+
+- Search wraps `symbols` and `count` under `data`. Preserve all candidates and
+  nullable descriptive fields; do not automatically select a candidate.
+- Filtered column discovery returns `columns` with names, descriptions, groups,
+  markets and optional variants. Unfiltered discovery returns `groups`, with
+  column names and reported counts. Output mode and measured counts distinguish
+  these forms without asserting complete market coverage.
+- Single-symbol results wrap selected values under `data`; the observed response
+  had no symbol echo or market-data timestamp. Identity, delay, session and as-of
+  remain unconfirmed. Requested keys bound the output; zero, null and absence
+  are distinct. Column values retain JSON types without guessed units.
+- The actual symbol input schema uses `type:["null","array"]` for columns,
+  with string items. The first probe stopped before tool dispatch because the
+  previous validator only understood scalar type declarations and `anyOf`.
+  The validator now accepts this standard union syntax and still rejects wrong
+  item types, missing properties and unsatisfied/new required fields.
+
+Deterministic checks cover candidate ambiguity/empty results, both catalog modes,
+variant preservation, zero/null/absence, unknown identity, mismatching echoes,
+invalid wrappers/counts and invalid requests before I/O. Synthetic SDK service
+checks exercise each new command through JSON/SSE, authentication refresh without
+replay, 429, malformed output, tool errors and schema drift before dispatch.
+The unchanged OHLCV path remains under the workspace baseline. No arbitrary
+forwarding, automatic source fallback, new platform dependency or Windows run.
+
+Validation checkpoint: workspace tests passed (975 passed, 27 ignored, zero
+failures); strict workspace Clippy passed. The fixed macOS CLI then passed
+same-account credential reuse, new-process status and each public command:
+search returned ten candidates; filtered columns returned twenty-three entries;
+overview returned seventeen groups; symbol returned all three requested fields.
+Each data invocation dispatched one tool call and emitted no stderr with
+RUST_LOG=trace. Symbol identity/freshness remained unconfirmed as required.
+These are dated observations, not fixed future result counts. No live response
+values or machine paths are tracked. Runtime package validation passed with six
+skills per root; public/diff hygiene passed. Windows runtime remains deferred
+and required for release; downstream consumption of these new data contracts is
+not claimed by the earlier OHLCV observation acceptance.
+
 ## First executable slice from v0.31.4
 
 Start with an internal service and opt-in development harness before exposing
