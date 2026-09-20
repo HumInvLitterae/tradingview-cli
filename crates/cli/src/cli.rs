@@ -1211,6 +1211,18 @@ pub enum McpCommand {
         columns: Vec<String>,
     },
     #[command(
+        about = "Read official MCP fields for 1 to 50 distinct symbols in one call",
+        long_about = "Read official MCP fields for 1 to 50 distinct exchange-qualified symbols. \
+                      Results retain input order and distinguish returned, missing and unreported symbols. \
+                      Null or absent fields remain unknown. No automatic chunking, retry or fallback."
+    )]
+    Symbols {
+        #[arg(required = true, num_args = 1..)]
+        symbols: Vec<String>,
+        #[arg(long, value_delimiter = ',')]
+        columns: Vec<String>,
+    },
+    #[command(
         about = "Read recent daily, weekly or monthly OHLCV",
         long_about = "Read recent bars through the official TradingView MCP service as mcp_bars.v1. \
                       Requires an exchange-qualified symbol, timeframe 1D/1W/1M, and count 1..5000. \

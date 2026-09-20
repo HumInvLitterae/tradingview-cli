@@ -10,6 +10,7 @@ pub(crate) enum Tool {
     Search,
     Columns,
     Symbol,
+    Symbols,
 }
 
 impl Tool {
@@ -19,6 +20,7 @@ impl Tool {
             Self::Search => &["mcp-tv-search-symbols", "search_symbols"],
             Self::Columns => &["mcp-tv-get-screener-columns", "get_screener_columns"],
             Self::Symbol => &["mcp-tv-get-symbol-data", "get_symbol_data"],
+            Self::Symbols => &["mcp-tv-get-symbol-data-batch", "get_symbol_data_batch"],
         }
     }
 
@@ -37,14 +39,21 @@ impl Tool {
                 ("search", "string"),
             ],
             Self::Symbol => &[("symbol", "string"), ("columns", "array")],
+            Self::Symbols => &[("symbols", "array"), ("columns", "array")],
         }
     }
 
     pub fn from_name(name: &str) -> Result<Self> {
-        [Self::Bars, Self::Search, Self::Columns, Self::Symbol]
-            .into_iter()
-            .find(|tool| tool.names().contains(&name))
-            .ok_or(Failure::UnsupportedCapability)
+        [
+            Self::Bars,
+            Self::Search,
+            Self::Columns,
+            Self::Symbol,
+            Self::Symbols,
+        ]
+        .into_iter()
+        .find(|tool| tool.names().contains(&name))
+        .ok_or(Failure::UnsupportedCapability)
     }
 
     pub fn validate_arguments(self, args: &Value) -> Result<()> {
@@ -91,13 +100,23 @@ impl Tool {
                 optional("search")?,
             )
             .map(|v| v.arguments()),
-            Self::Symbol => {
+            Self::Symbol | Self::Symbols => {
                 let columns = match args.get("columns") {
                     Some(value) => serde_json::from_value::<Vec<String>>(value.clone())
                         .map_err(|_| Failure::UnsupportedCapability)?,
                     None => Vec::new(),
                 };
-                mcp_data::Request::symbol(string("symbol")?, &columns).map(|v| v.arguments())
+                if self == Self::Symbols {
+                    let symbols = serde_json::from_value::<Vec<String>>(
+                        args.get("symbols")
+                            .cloned()
+                            .ok_or(Failure::UnsupportedCapability)?,
+                    )
+                    .map_err(|_| Failure::UnsupportedCapability)?;
+                    mcp_data::Request::symbols(&symbols, &columns).map(|v| v.arguments())
+                } else {
+                    mcp_data::Request::symbol(string("symbol")?, &columns).map(|v| v.arguments())
+                }
             }
         }
         .map_err(|_| Failure::UnsupportedCapability)?;
@@ -114,6 +133,7 @@ impl From<mcp_data::Kind> for Tool {
             mcp_data::Kind::Search => Self::Search,
             mcp_data::Kind::Columns => Self::Columns,
             mcp_data::Kind::Symbol => Self::Symbol,
+            mcp_data::Kind::Symbols => Self::Symbols,
         }
     }
 }
@@ -155,6 +175,11 @@ mod tests {
     fn documented_and_observed_names_share_validated_requests() {
         for request in [
             mcp_data::Request::search("Example", Some("stock")).unwrap(),
+            mcp_data::Request::symbols(
+                &["NASDAQ:EXAMPLE".into(), "NYSE:OTHER".into()],
+                &["close".into()],
+            )
+            .unwrap(),
             mcp_data::Request::columns(None, None, Some("volume")).unwrap(),
             mcp_data::Request::symbol("NASDAQ:EXAMPLE", &["close".into()]).unwrap(),
         ] {

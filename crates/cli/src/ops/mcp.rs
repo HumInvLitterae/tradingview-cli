@@ -27,6 +27,9 @@ pub async fn run_mcp(command: McpCommand) -> Result<Value, AppError> {
         McpCommand::Symbol { symbol, columns } => {
             Operation::Data(mcp_data::Request::symbol(&symbol, &columns)?)
         }
+        McpCommand::Symbols { symbols, columns } => {
+            Operation::Data(mcp_data::Request::symbols(&symbols, &columns)?)
+        }
         McpCommand::Bars {
             symbol,
             timeframe,

@@ -33,6 +33,8 @@ pub enum ProofOperation {
     Columns,
     ColumnsOverview,
     Symbol,
+    Symbols,
+    SymbolsCommand,
     Logout,
 }
 
@@ -47,6 +49,9 @@ pub async fn run_proof_with_worker(
     operation: ProofOperation,
     worker: Option<&Path>,
 ) -> Result<Value> {
+    if matches!(operation, ProofOperation::SymbolsCommand) {
+        return verify_symbols_command(directory, worker).await;
+    }
     let deadline = Instant::now()
         + if matches!(
             operation,
@@ -122,22 +127,52 @@ pub async fn run_proof_with_worker(
             ProofOperation::Search
             | ProofOperation::Columns
             | ProofOperation::ColumnsOverview
-            | ProofOperation::Symbol => {
+            | ProofOperation::Symbol
+            | ProofOperation::Symbols => {
                 use tradingview_model::mcp_data::Request;
                 let request = match operation {
                     ProofOperation::Search => Request::search("Apple", None),
                     ProofOperation::Columns => Request::columns(None, None, Some("volume")),
                     ProofOperation::ColumnsOverview => Request::columns(None, None, None),
-                    _ => Request::symbol("NASDAQ:AAPL", &["close".into(), "volume".into(), "market_cap_basic".into()]),
-                }.map_err(|_| Failure::UnsupportedCapability)?;
+                    ProofOperation::Symbols => Request::symbols(
+                        &["NASDAQ:AAPL".into(), "NASDAQ:MSFT".into(), "NASDAQ:TVCLIINVALID".into()],
+                        &["close".into(), "volume".into()],
+                    ),
+                    _ => Request::symbol(
+                        "NASDAQ:AAPL",
+                        &["close".into(), "volume".into(), "market_cap_basic".into()],
+                    ),
+                }
+                .map_err(|_| Failure::UnsupportedCapability)?;
                 auth.restore().await?;
                 let token = auth.token().await?;
                 let mut results = crate::transport::call(
-                    &http, token, request.kind().into(), &[request.arguments()], Some(&mut admission),
-                ).await?;
-                let value = crate::transport::result_value(results.pop().ok_or(Failure::InvalidResponse)??)?;
+                    &http,
+                    token,
+                    request.kind().into(),
+                    &[request.arguments()],
+                    Some(&mut admission),
+                )
+                .await?;
+                let value = crate::transport::result_value(
+                    results.pop().ok_or(Failure::InvalidResponse)??,
+                )?;
                 Ok(json!({
                     "response_shape": response_shape(&value, 0),
+                    "batch_data_value_shapes": if matches!(operation, ProofOperation::Symbols) {
+                        value.get("data").and_then(Value::as_object).map(|rows| {
+                            rows.values().take(2).map(|row| response_shape(row, 0)).collect::<Vec<_>>()
+                        })
+                    } else { None },
+                    "batch_data_keys_match_requested": if matches!(operation, ProofOperation::Symbols) {
+                        value.get("data").and_then(Value::as_object).map(|rows| rows.keys().all(|name| {
+                            request.arguments()["symbols"].as_array().is_some_and(|symbols| {
+                                symbols.iter().any(|symbol| symbol.as_str() == Some(name))
+                            })
+                        }))
+                    } else { None },
+                    "reported_count": value.get("count").and_then(Value::as_u64),
+                    "reported_missing_count": value.get("missing_count").and_then(Value::as_u64),
                     "provider_success": value.get("success").and_then(Value::as_bool),
                     "symbol_echo_matches": value.get("symbol").and_then(Value::as_str).map(|v| v == "NASDAQ:AAPL")
                 }))
@@ -394,5 +429,51 @@ fn response_shape(value: &Value, depth: usize) -> Value {
         Value::Bool(_) => json!("boolean"),
         Value::Number(_) => json!("number"),
         Value::String(_) => json!("string"),
+    }
+}
+
+// Use the public application service with a previously authorized immutable
+// worker. This proves the new read path without replacing a trusted executable.
+async fn verify_symbols_command(directory: &Path, worker: Option<&Path>) -> Result<Value> {
+    let worker = worker.ok_or(Failure::UnsupportedCapability)?;
+    let symbols = vec![
+        "NASDAQ:AAPL".into(),
+        "NASDAQ:MSFT".into(),
+        "NASDAQ:TVCLIINVALID".into(),
+    ];
+    let request =
+        tradingview_model::mcp_data::Request::symbols(&symbols, &["close".into(), "volume".into()])
+            .map_err(|_| Failure::UnsupportedCapability)?;
+    let result = crate::Client::with_paths(directory.to_owned(), worker.to_owned())
+        .run(crate::Operation::Data(request))
+        .await;
+    match result {
+        Ok(data) => {
+            let items = data["items"].as_array().ok_or(Failure::InvalidResponse)?;
+            Ok(json!({
+                "success": true,
+                "contract_version": data["contract_version"],
+                "source": data["source"],
+                "client_observation": data["client_observation"],
+                "tool_attempts": data["transport"]["tool_attempts"],
+                "input_order_preserved": items.len() == symbols.len()
+                    && items.iter().zip(&symbols)
+                        .all(|(item, symbol)| item["requested_symbol"] == *symbol),
+                "statuses": items.iter().map(|item| &item["status"]).collect::<Vec<_>>(),
+                "returned_fields_status": items.iter().filter(|item| item["status"] == "returned")
+                    .map(|item| &item["client_observation"]["fields_status"]).collect::<Vec<_>>(),
+                "missing_fields_are_null": items.iter().filter(|item| item["status"] != "returned")
+                    .all(|item| item["fields"].is_null())
+            }))
+        }
+        Err(error) => {
+            let details = error.details.unwrap_or(Value::Null);
+            Ok(json!({
+                "success": false,
+                "code": details["code"],
+                "stage": details["stage"],
+                "tool_attempts": details["tool_attempts"]
+            }))
+        }
     }
 }

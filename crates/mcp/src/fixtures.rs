@@ -278,6 +278,7 @@ fn respond(ep: &Endpoints, r: &Request, mode: &str) -> Response {
                 crate::tools::Tool::Search,
                 crate::tools::Tool::Columns,
                 crate::tools::Tool::Symbol,
+                crate::tools::Tool::Symbols,
             ] {
                 let properties: serde_json::Map<_, _> = tool
                     .fields()
@@ -396,6 +397,21 @@ fn respond(ep: &Endpoints, r: &Request, mode: &str) -> Response {
                                 }]
                             })
                         };
+                }
+                Some("mcp-tv-get-symbol-data-batch") => {
+                    let symbols = args["symbols"].as_array().unwrap();
+                    let mut rows = serde_json::Map::new();
+                    rows.insert(
+                        symbols[0].as_str().unwrap().into(),
+                        json!({"close": 0, "volume": null}),
+                    );
+                    result["structuredContent"] = json!({
+                        "success": true,
+                        "count": 1,
+                        "data": rows,
+                        "missing": [{"symbol": symbols[1], "reason": "synthetic unavailable"}],
+                        "missing_count": 1
+                    });
                 }
                 Some("mcp-tv-get-symbol-data") => {
                     result["structuredContent"] = json!({
@@ -883,6 +899,11 @@ async fn symbol_data_commands_share_authentication_and_preserve_faults_without_r
             DataRequest::search("Example", None).unwrap(),
             DataRequest::columns(None, None, Some("volume")).unwrap(),
             DataRequest::columns(None, None, None).unwrap(),
+            DataRequest::symbols(
+                &["NASDAQ:EXAMPLE".into(), "NYSE:MISSING".into()],
+                &["close".into(), "volume".into()],
+            )
+            .unwrap(),
             DataRequest::symbol(
                 "NASDAQ:EXAMPLE",
                 &["close".into(), "volume".into(), "market_cap_basic".into()],
@@ -924,6 +945,12 @@ async fn symbol_data_commands_share_authentication_and_preserve_faults_without_r
                 assert_eq!(data["source"], "tradingview_mcp");
                 assert_eq!(data["request"], request.arguments());
                 assert_eq!(data["transport"]["tool_attempts"], 1);
+                if request.kind() == tradingview_model::mcp_data::Kind::Symbols {
+                    assert_eq!(data["contract_version"], "mcp_symbols.v1");
+                    assert_eq!(data["items"][0]["status"], "returned");
+                    assert_eq!(data["items"][1]["status"], "missing");
+                    assert_eq!(data["client_observation"]["symbols_status"], "partial");
+                }
                 if request.kind() == tradingview_model::mcp_data::Kind::Symbol {
                     assert_eq!(data["client_observation"]["fields_status"], "incomplete");
                     assert!(data["fields"]["volume"].is_null());

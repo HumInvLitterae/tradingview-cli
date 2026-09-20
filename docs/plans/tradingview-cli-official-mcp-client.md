@@ -124,6 +124,50 @@ skills per root; public/diff hygiene passed. Windows runtime remains deferred
 and required for release; downstream consumption of these new data contracts is
 not claimed by the earlier OHLCV observation acceptance.
 
+## Multi-symbol slice (2026-09-21)
+
+The owner requested the next ordered slice. The public entry is
+`tv mcp symbols <EXCHANGE:SYMBOL>... --columns <FIELDS>`, with `mcp_symbols.v1`.
+The [concrete contract](../official-mcp.md#multi-symbol-data) distinguishes returned,
+explicitly missing and unreported symbols, retaining input order and per-field
+null/absence. The provider cap is 50 symbols; this CLI requires distinct inputs
+and makes one batch request without implicit splitting or individual fallback.
+Shared column defaults, credentials, deadlines, cooldown and no-replay semantics
+remain unchanged. Batch row identity must come from the response, never its order.
+
+The owner authorized proceeding with the same-account batch verification and
+asked not to repeat confirmations within this work. The observed response has
+`data` keyed by qualified symbol, with a field object per returned symbol;
+`missing` is an array of objects with symbol and freeform reason. Reported
+returned/missing counts are checked against the corresponding collections.
+Missing declarations stay separate from unreported symbols; freeform reasons
+are not promoted into classified causes. Request order is reconstructed from
+explicit identities, never response position. Malformed field maps, unexpected
+symbols, contradictory declarations and inconsistent counts fail closed.
+
+Fixtures cover reordered data, partial/all-missing/unreported results, zero/null/
+absence, duplicate and excessive input, malformed provider shapes and shared
+transport/authentication failures without replay. Native public-service validation
+uses the existing authorized immutable credential worker, avoiding another
+executable-consent cycle for unchanged credential code. This is separate from
+CLI parser tests and is not a new signed/installed binary acceptance claim.
+No account writes, scope upgrades, dependency additions or new executors are
+needed. Windows qualification remains deferred and required before release.
+
+Native service verification returned two requested symbols with present selected
+fields and one provider-declared missing symbol, in original request order.
+The result was `mcp_symbols.v1`, `symbols_status:partial`, `tool_attempts:1`, with
+missing fields represented by null rather than fabricated data. This verifies
+the public service with real transport/native credentials and the completed
+normalizer; it does not claim a new executable's OS-consent verification.
+The previous credential worker and installed executable were not replaced.
+
+Final baseline: 981 workspace tests passed, 27 ignored, zero failures; strict
+workspace Clippy and formatting passed. Runtime staging retained 48 files and
+six skills per root, with reference/parity and public/diff hygiene checks passing.
+CLI validation covers excessive and duplicate inputs before credential access;
+real native evidence uses the shared public service as described above.
+
 ## First executable slice from v0.31.4
 
 Start with an internal service and opt-in development harness before exposing
