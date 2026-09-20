@@ -1,8 +1,8 @@
 # Next-version roadmap
 
 Status: direction and order confirmed by the owner on 2026-09-20. v0.31.4
-maintenance preparation comes first; the concrete MCP dependency/proof scope is
-approved for the following stage. Do not mix MCP inputs into the patch.
+publication is verified; its prerequisite is complete. The concrete MCP
+dependency/proof scope remains approved for the next stage.
 Local planning/release commits are authorized after the passed Cargo consistency
 check. Reuse valid test evidence; version-only commits do not require repeated
 functional validation. Publication and additional agent sessions remain unauthorized.
@@ -12,9 +12,9 @@ and acceptance. This roadmap supersedes v0.31 direction for new work.
 
 ## Release recommendation
 
-Ship the already accumulated maintenance work as **v0.31.4**. Develop the official MCP client
+The maintenance release **v0.31.4** is published. Develop the official MCP client
 as an explicit, additive **v0.32.0 candidate**, with promotion conditional on
-connection proof and downstream acceptance. Prepare 0.31.4 now; do not bump to 0.32.0 during patch preparation.
+connection proof and downstream acceptance. Keep the workspace version unchanged until actual minor-release preparation.
 
 | Choice | Benefit | Cost / decision |
 | --- | --- | --- |
@@ -73,7 +73,6 @@ for CDP reconnect, replaying Desktop mutations, or shared process ownership.
 
 ## Next action
 
-The [v0.31.4 release preparation](plans/tradingview-cli-v0.31.4-release-readiness.md)
-is complete locally; publication remains owner-controlled. Keep final binary
-hash readback in the local handoff/report without another evidence-only commit.
-Proceed with the approved MCP scope after patch closeout.
+[v0.31.4 is published](plans/archives/tradingview-cli-v0.31.4-release-readiness.md).
+Prepare the approved MCP client work for the next version. Preserve the existing
+scope and approvals; do not reopen deferred unrelated features.
