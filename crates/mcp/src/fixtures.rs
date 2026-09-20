@@ -349,7 +349,7 @@ fn respond(ep: &Endpoints, r: &Request, mode: &str) -> Response {
             }
             if mode == "stall" {
                 let mut reply = Response::json(rpc);
-                reply.delay = Duration::from_secs(5);
+                reply.delay = Duration::from_secs(60);
                 return reply;
             }
             result
@@ -489,8 +489,28 @@ async fn real_sdk_transport_does_not_replay_faults_or_reinitialize_sessions() {
 async fn deadline_stops_stalled_response_and_schema_drift_prevents_tool_dispatch() {
     for mode in ["stall", "schema-change"] {
         let server = Server::start(mode).await;
-        let (_root, _guard, _budget, http, _store) = context(&server, 1).await;
-        let result = proof::read(&http, "synthetic-access".into(), "1D").await;
+        let (_root, _guard, _budget, http, _store) = context(&server, 30).await;
+        let result = if mode == "stall" {
+            let read =
+                tokio::spawn(
+                    async move { proof::read(&http, "synthetic-access".into(), "1D").await },
+                );
+            // Establish that this is a response wait, not a slow TCP/SDK setup.
+            tokio::time::timeout(Duration::from_secs(10), async {
+                while server.calls("tools/call") == 0 {
+                    sleep(Duration::from_millis(1)).await;
+                }
+            })
+            .await
+            .unwrap();
+            tokio::time::pause();
+            tokio::time::advance(Duration::from_secs(31)).await;
+            let result = read.await.unwrap();
+            tokio::time::resume();
+            result
+        } else {
+            proof::read(&http, "synthetic-access".into(), "1D").await
+        };
         assert_eq!(
             result.unwrap_err(),
             if mode == "stall" {
@@ -620,10 +640,7 @@ async fn successful_server_rotation_with_failed_save_requires_reauthorization() 
         .into_owned();
     auth.exchange("synthetic-code", &state, None).await.unwrap();
     store.fail_saves();
-    assert_eq!(
-        auth.refresh().await.unwrap_err(),
-        Failure::StorageUnavailable
-    );
+    assert_eq!(auth.refresh().await.unwrap_err(), Failure::CredentialWrite);
     let mut restarted = Auth::discover(http, store, budget.clone()).await.unwrap();
     assert_eq!(
         restarted.restore().await.unwrap_err(),
@@ -735,4 +752,51 @@ async fn public_service_shapes_wire_data_and_preserves_typed_failures() {
             }
         }
     }
+}
+
+#[tokio::test]
+async fn authenticated_read_reuses_the_validated_record_without_reopening_storage() {
+    use crate::client::{Operation, execute};
+    use tradingview_model::mcp_bars::Request as BarsRequest;
+
+    let server = Server::start("json").await;
+    let (_root, mut guard, budget, http, store) = context(&server, 5).await;
+    let mut auth = Auth::discover(http.clone(), store.clone(), budget.clone())
+        .await
+        .unwrap();
+    let url = auth
+        .register("http://127.0.0.1:12345/callback")
+        .await
+        .unwrap();
+    let state = reqwest::Url::parse(&url)
+        .unwrap()
+        .query_pairs()
+        .find(|(key, _)| key == "state")
+        .unwrap()
+        .1
+        .into_owned();
+    auth.exchange("synthetic-code", &state, None).await.unwrap();
+
+    // Match the public command: preflight reads storage, then SDK restore/token
+    // access the same operation snapshot. Reopening storage would fail here.
+    let reader = store.next_operation();
+    reader.fail_loads_after(1);
+    assert!(reader.load_record().await.unwrap().is_some());
+    let result = execute(
+        Operation::Bars(BarsRequest::new("NASDAQ:AAPL", "1D", 20).unwrap()),
+        &mut guard,
+        reader.clone(),
+        http,
+        budget,
+        true,
+    )
+    .await
+    .unwrap();
+    assert_eq!(result["contract_version"], "mcp_bars.v1");
+    assert_eq!(reader.storage_loads(), 1);
+    assert_eq!(server.calls("tools/call"), 1);
+    assert_eq!(
+        reader.next_operation().load_record().await.unwrap_err(),
+        Failure::CredentialRead
+    );
 }

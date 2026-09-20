@@ -15,6 +15,14 @@ pub enum Failure {
     AuthRequired,
     AccessDenied,
     StorageUnavailable,
+    CredentialWorkerSpawn,
+    CredentialWorkerWrite,
+    CredentialWorkerRead,
+    CredentialWorkerExit,
+    CredentialWorkerReply,
+    CredentialRecordDecode,
+    CredentialRead,
+    CredentialWrite,
     StorageInteractionRequired,
     StorageTooLarge,
     Connection,
@@ -25,12 +33,37 @@ pub enum Failure {
     AuthRefreshedRetryRequired,
 }
 
+impl Failure {
+    /// Closed diagnostic vocabulary: never native error text, paths or IPC bytes.
+    pub(crate) fn credential_reason(self) -> Option<&'static str> {
+        match self {
+            Self::CredentialWorkerSpawn => Some("credential_worker_spawn_failed"),
+            Self::CredentialWorkerWrite => Some("credential_worker_input_failed"),
+            Self::CredentialWorkerRead => Some("credential_worker_output_failed"),
+            Self::CredentialWorkerExit => Some("credential_worker_exit_failed"),
+            Self::CredentialWorkerReply => Some("credential_worker_reply_invalid"),
+            Self::CredentialRecordDecode => Some("credential_record_invalid"),
+            Self::CredentialRead => Some("credential_store_read_failed"),
+            Self::CredentialWrite => Some("credential_store_write_failed"),
+            _ => None,
+        }
+    }
+}
+
 impl std::fmt::Display for Failure {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_str(match self {
             Self::AuthRequired => "authorization required",
             Self::AccessDenied => "access or scope requires user review",
-            Self::StorageUnavailable => "credential store unavailable",
+            Self::StorageUnavailable
+            | Self::CredentialWorkerSpawn
+            | Self::CredentialWorkerWrite
+            | Self::CredentialWorkerRead
+            | Self::CredentialWorkerExit
+            | Self::CredentialWorkerReply
+            | Self::CredentialRecordDecode
+            | Self::CredentialRead
+            | Self::CredentialWrite => "credential store unavailable",
             Self::StorageInteractionRequired => {
                 "credential store needs explicit user authorization"
             }
@@ -62,6 +95,14 @@ impl From<Failure> for AppError {
             Failure::LocalState
             | Failure::Clock
             | Failure::StorageUnavailable
+            | Failure::CredentialWorkerSpawn
+            | Failure::CredentialWorkerWrite
+            | Failure::CredentialWorkerRead
+            | Failure::CredentialWorkerExit
+            | Failure::CredentialWorkerReply
+            | Failure::CredentialRecordDecode
+            | Failure::CredentialRead
+            | Failure::CredentialWrite
             | Failure::StorageInteractionRequired
             | Failure::StorageTooLarge => ErrorKind::Internal,
             Failure::BudgetExhausted | Failure::UnsupportedCapability => ErrorKind::Validation,

@@ -11,7 +11,7 @@ use std::{
     sync::{Arc, Mutex},
 };
 use tokio::{
-    io::{AsyncReadExt, AsyncWriteExt},
+    io::{AsyncReadExt, AsyncWrite, AsyncWriteExt},
     process::Command,
     time::{Instant, timeout_at},
 };
@@ -51,7 +51,16 @@ struct Reply {
 enum Backend {
     Native(PathBuf),
     #[cfg(test)]
-    Memory(Arc<Mutex<Option<Vec<u8>>>>, Arc<Mutex<bool>>),
+    Memory(Arc<Mutex<MemoryStore>>),
+}
+
+#[cfg(test)]
+#[derive(Default)]
+struct MemoryStore {
+    record: Option<Vec<u8>>,
+    fail_saves: bool,
+    load_calls: usize,
+    fail_loads_after: Option<usize>,
 }
 
 #[derive(Clone)]
@@ -61,10 +70,15 @@ pub(crate) struct Store {
     deadline: Instant,
     redirect: Arc<Mutex<String>>,
     fault: Arc<Mutex<Option<Failure>>>,
+    // One Store belongs to one operation under Admission. None means unread;
+    // Some(None) means the store was successfully read and no record exists.
+    loaded_record: Arc<Mutex<Option<Option<StoredCredentials>>>>,
     pub last_saved_bytes: Arc<Mutex<Option<usize>>>,
 }
+
 type StoreFuture<'a, T> =
     Pin<Box<dyn Future<Output = std::result::Result<T, AuthError>> + Send + 'a>>;
+
 impl Store {
     pub fn native(endpoints: Endpoints, deadline: Instant) -> Result<Self> {
         Self::native_worker(
@@ -92,23 +106,40 @@ impl Store {
             deadline,
             redirect: Arc::new(Mutex::new(String::new())),
             fault: Arc::new(Mutex::new(None)),
+            loaded_record: Arc::new(Mutex::new(None)),
             last_saved_bytes: Arc::new(Mutex::new(None)),
         }
     }
 
     #[cfg(test)]
     pub fn memory(endpoints: Endpoints, deadline: Instant) -> Self {
-        Self::new(
-            Backend::Memory(Default::default(), Default::default()),
-            endpoints,
-            deadline,
-        )
+        Self::new(Backend::Memory(Default::default()), endpoints, deadline)
     }
 
     #[cfg(test)]
     pub fn fail_saves(&self) {
-        if let Backend::Memory(_, fail) = &self.backend {
-            *fail.lock().unwrap() = true;
+        if let Backend::Memory(state) = &self.backend {
+            state.lock().unwrap().fail_saves = true;
+        }
+    }
+
+    #[cfg(test)]
+    pub fn next_operation(&self) -> Self {
+        Self::new(self.backend.clone(), self.endpoints.clone(), self.deadline)
+    }
+
+    #[cfg(test)]
+    pub fn fail_loads_after(&self, successful_loads: usize) {
+        if let Backend::Memory(state) = &self.backend {
+            state.lock().unwrap().fail_loads_after = Some(successful_loads);
+        }
+    }
+
+    #[cfg(test)]
+    pub fn storage_loads(&self) -> usize {
+        match &self.backend {
+            Backend::Memory(state) => state.lock().unwrap().load_calls,
+            Backend::Native(_) => panic!("fixture counter requires synthetic storage"),
         }
     }
 
@@ -155,39 +186,84 @@ impl Store {
         if Instant::now() >= self.deadline {
             return Err(Failure::Timeout);
         }
-        match &self.backend {
+        let native_failure = match &operation {
+            Operation::Load => Failure::CredentialRead,
+            Operation::Save(_) => Failure::CredentialWrite,
+            _ => Failure::StorageUnavailable,
+        };
+        let result = match &self.backend {
             Backend::Native(executable) => {
                 worker_request(executable, operation, self.deadline).await
             }
-
             #[cfg(test)]
-            Backend::Memory(state, fail_save) => match operation {
-                Operation::Load => Ok(state.lock().unwrap().clone()),
-                Operation::AuthorizeAccess => Ok(None),
-                Operation::Save(bytes) => {
-                    if *fail_save.lock().unwrap() {
-                        return Err(Failure::StorageUnavailable);
+            Backend::Memory(state) => {
+                let mut state = state.lock().unwrap();
+                match operation {
+                    Operation::Load => {
+                        state.load_calls += 1;
+                        if state
+                            .fail_loads_after
+                            .is_some_and(|limit| state.load_calls > limit)
+                        {
+                            Err(Failure::StorageUnavailable)
+                        } else {
+                            Ok(state.record.clone())
+                        }
                     }
-                    *state.lock().unwrap() = Some(bytes);
-                    Ok(None)
+                    Operation::AuthorizeAccess => Ok(None),
+                    Operation::Save(bytes) => {
+                        if state.fail_saves {
+                            Err(Failure::StorageUnavailable)
+                        } else {
+                            state.record = Some(bytes);
+                            Ok(None)
+                        }
+                    }
+                    Operation::Clear => {
+                        state.record = None;
+                        Ok(None)
+                    }
                 }
-                Operation::Clear => {
-                    *state.lock().unwrap() = None;
-                    Ok(None)
-                }
-            },
-        }
+            }
+        };
+        result.map_err(|error| {
+            if error == Failure::StorageUnavailable {
+                native_failure
+            } else {
+                error
+            }
+        })
+    }
+
+    fn cache_record(&self, record: Option<Option<StoredCredentials>>) -> Result<()> {
+        *self
+            .loaded_record
+            .lock()
+            .map_err(|_| Failure::StorageUnavailable)? = record;
+        Ok(())
     }
 
     pub async fn load_record(&self) -> Result<Option<StoredCredentials>> {
+        if Instant::now() >= self.deadline {
+            return Err(Failure::Timeout);
+        }
+        if let Some(record) = self
+            .loaded_record
+            .lock()
+            .map_err(|_| Failure::StorageUnavailable)?
+            .clone()
+        {
+            return Ok(record);
+        }
         let Some(bytes) = self.operation(Operation::Load).await? else {
+            self.cache_record(Some(None))?;
             return Ok(None);
         };
         if bytes.len() > MAX_RECORD {
             return Err(Failure::StorageTooLarge);
         }
         let record: Record =
-            serde_json::from_slice(&bytes).map_err(|_| Failure::StorageUnavailable)?;
+            serde_json::from_slice(&bytes).map_err(|_| Failure::CredentialRecordDecode)?;
         if record.version != 1
             || record.resource != self.endpoints.resource
             || record.issuer != self.endpoints.issuer
@@ -197,6 +273,7 @@ impl Store {
         }
         self.set_redirect(record.redirect_uri)?;
         validate_grant(&record.credentials)?;
+        self.cache_record(Some(Some(record.credentials.clone())))?;
         Ok(Some(record.credentials))
     }
 
@@ -214,7 +291,7 @@ impl Store {
                 .lock()
                 .map_err(|_| Failure::StorageUnavailable)?
                 .clone(),
-            credentials,
+            credentials: credentials.clone(),
         };
         self.set_redirect(record.redirect_uri.clone())?;
         let bytes = serde_json::to_vec(&record).map_err(|_| Failure::StorageUnavailable)?;
@@ -226,7 +303,11 @@ impl Store {
         if !windows_record_fits(size) {
             return Err(Failure::StorageTooLarge);
         }
+        // Invalidate first: a failed write must never publish the new token in
+        // memory or conceal uncertainty about the persistent store.
+        self.cache_record(None)?;
         self.operation(Operation::Save(bytes)).await?;
+        self.cache_record(Some(Some(credentials)))?;
         *self
             .last_saved_bytes
             .lock()
@@ -235,10 +316,13 @@ impl Store {
     }
 
     pub async fn clear_record(&self) -> Result<()> {
-        self.operation(Operation::Clear).await.map(|_| ())
+        self.cache_record(None)?;
+        self.operation(Operation::Clear).await?;
+        self.cache_record(Some(None))
     }
 
     pub async fn authorize_access(&self) -> Result<()> {
+        self.cache_record(None)?;
         self.operation(Operation::AuthorizeAccess).await.map(|_| ())
     }
 }
@@ -320,34 +404,34 @@ async fn worker_request(
         .stderr(Stdio::null())
         .kill_on_drop(true)
         .spawn()
-        .map_err(|_| Failure::StorageUnavailable)?;
-    let mut stdin = child.stdin.take().ok_or(Failure::StorageUnavailable)?;
-    let mut stdout = child.stdout.take().ok_or(Failure::StorageUnavailable)?;
+        .map_err(|_| Failure::CredentialWorkerSpawn)?;
+    let mut stdin = child.stdin.take().ok_or(Failure::CredentialWorkerWrite)?;
+    let mut stdout = child.stdout.take().ok_or(Failure::CredentialWorkerRead)?;
     let result = timeout_at(deadline, async {
         stdin
             .write_all(&input)
             .await
-            .map_err(|_| Failure::StorageUnavailable)?;
+            .map_err(|_| Failure::CredentialWorkerWrite)?;
         drop(stdin);
         let mut bytes = Vec::new();
         (&mut stdout)
             .take((MAX_IPC + 1) as u64)
             .read_to_end(&mut bytes)
             .await
-            .map_err(|_| Failure::StorageUnavailable)?;
+            .map_err(|_| Failure::CredentialWorkerRead)?;
         if bytes.len() > MAX_IPC {
             return Err(Failure::StorageTooLarge);
         }
         if !child
             .wait()
             .await
-            .map_err(|_| Failure::StorageUnavailable)?
+            .map_err(|_| Failure::CredentialWorkerExit)?
             .success()
         {
-            return Err(Failure::StorageUnavailable);
+            return Err(Failure::CredentialWorkerExit);
         }
         serde_json::from_slice::<Reply>(&bytes)
-            .map_err(|_| Failure::StorageUnavailable)?
+            .map_err(|_| Failure::CredentialWorkerReply)?
             .result
     })
     .await;
@@ -380,9 +464,19 @@ pub async fn credential_worker() -> Result<()> {
     }
     let operation = serde_json::from_slice(&bytes).map_err(|_| Failure::StorageUnavailable)?;
     let result = native_operation(operation).await;
-    let bytes = serde_json::to_vec(&Reply { result }).map_err(|_| Failure::StorageUnavailable)?;
-    tokio::io::stdout()
+    write_reply(&mut tokio::io::stdout(), Reply { result }).await
+}
+
+async fn write_reply(output: &mut (impl AsyncWrite + Unpin), reply: Reply) -> Result<()> {
+    let bytes = serde_json::to_vec(&reply).map_err(|_| Failure::StorageUnavailable)?;
+    output
         .write_all(&bytes)
+        .await
+        .map_err(|_| Failure::StorageUnavailable)?;
+    // Tokio's stdout is buffered. Await completion on this same handle before
+    // the worker returns; write_all alone does not establish reply delivery.
+    output
+        .flush()
         .await
         .map_err(|_| Failure::StorageUnavailable)
 }
@@ -440,6 +534,7 @@ mod tests {
     use super::*;
 
     use std::time::Duration;
+
     fn record() -> StoredCredentials {
         serde_json::from_value(serde_json::json!({
             "client_id": "synthetic-client",
@@ -478,17 +573,163 @@ mod tests {
             store.save_record(broad).await,
             Err(Failure::AccessDenied)
         ));
-        let Backend::Memory(_, fail) = &store.backend else {
-            unreachable!()
-        };
-        *fail.lock().unwrap() = true;
+        store.fail_saves();
         assert!(matches!(
             store.save_record(record()).await,
-            Err(Failure::StorageUnavailable)
+            Err(Failure::CredentialWrite)
         ));
         assert!(store.load_record().await.unwrap().is_some());
         store.clear_record().await.unwrap();
         assert!(store.load_record().await.unwrap().is_none());
+    }
+
+    #[tokio::test]
+    async fn record_snapshot_is_local_to_one_operation_and_tracks_durable_changes() {
+        let store = Store::memory(
+            Endpoints::tradingview(),
+            Instant::now() + Duration::from_secs(5),
+        );
+        store
+            .set_redirect("http://127.0.0.1:12345/callback".into())
+            .unwrap();
+        store.save_record(record()).await.unwrap();
+
+        let reader = store.next_operation();
+        let original = reader.load_record().await.unwrap().unwrap();
+        reader.clone().load_record().await.unwrap();
+        assert_eq!(reader.storage_loads(), 1);
+        let mut expired = reader.clone();
+        expired.deadline = Instant::now();
+        assert_eq!(expired.load_record().await.unwrap_err(), Failure::Timeout);
+        assert_eq!(reader.storage_loads(), 1);
+
+        let mut rotated = original.clone();
+        rotated.token_received_at = Some(2);
+        reader.save_record(rotated).await.unwrap();
+        assert_eq!(
+            reader
+                .load_record()
+                .await
+                .unwrap()
+                .unwrap()
+                .token_received_at,
+            Some(2)
+        );
+        assert_eq!(reader.storage_loads(), 1);
+
+        reader.fail_saves();
+        assert_eq!(
+            reader.save_record(original).await.unwrap_err(),
+            Failure::CredentialWrite
+        );
+        assert_eq!(
+            reader
+                .load_record()
+                .await
+                .unwrap()
+                .unwrap()
+                .token_received_at,
+            Some(2)
+        );
+        assert_eq!(reader.storage_loads(), 2);
+
+        reader.clear_record().await.unwrap();
+        assert!(reader.load_record().await.unwrap().is_none());
+        assert_eq!(reader.storage_loads(), 2);
+        assert!(
+            reader
+                .next_operation()
+                .load_record()
+                .await
+                .unwrap()
+                .is_none()
+        );
+        assert_eq!(reader.storage_loads(), 3);
+    }
+
+    #[tokio::test]
+    async fn failed_or_invalid_reads_are_not_cached_as_valid_credentials() {
+        let store = Store::memory(
+            Endpoints::tradingview(),
+            Instant::now() + Duration::from_secs(5),
+        );
+        store.fail_loads_after(0);
+        assert_eq!(
+            store.load_record().await.unwrap_err(),
+            Failure::CredentialRead
+        );
+        assert_eq!(store.storage_loads(), 1);
+
+        let Backend::Memory(state) = &store.backend else {
+            unreachable!()
+        };
+        {
+            let mut state = state.lock().unwrap();
+            state.fail_loads_after = None;
+            state.record = Some(b"synthetic-private-invalid-record".to_vec());
+        }
+        assert_eq!(
+            store.load_record().await.unwrap_err(),
+            Failure::CredentialRecordDecode
+        );
+        assert_eq!(store.storage_loads(), 2);
+
+        state.lock().unwrap().record = None;
+        assert!(store.load_record().await.unwrap().is_none());
+        assert_eq!(store.storage_loads(), 3);
+    }
+
+    #[tokio::test]
+    async fn worker_reply_is_flushed_before_success_is_reported() {
+        let mut output = tokio::io::BufWriter::new(Vec::new());
+        write_reply(
+            &mut output,
+            Reply {
+                result: Ok(Some(b"synthetic-record".to_vec())),
+            },
+        )
+        .await
+        .unwrap();
+        let reply: Reply = serde_json::from_slice(output.get_ref()).unwrap();
+        assert_eq!(reply.result.unwrap(), Some(b"synthetic-record".to_vec()));
+        assert!(output.buffer().is_empty());
+    }
+
+    #[cfg(unix)]
+    #[tokio::test]
+    async fn worker_exit_invalid_reply_and_native_failure_remain_distinguishable() {
+        use std::os::unix::fs::PermissionsExt;
+
+        let root = tempfile::tempdir().unwrap();
+        let script = root.path().join("synthetic-worker");
+        let deadline = Instant::now() + Duration::from_secs(5);
+        assert_eq!(
+            worker_request(&script, Operation::Load, deadline)
+                .await
+                .unwrap_err(),
+            Failure::CredentialWorkerSpawn
+        );
+
+        for (body, expected) in [
+            ("exit 7", Failure::CredentialWorkerExit),
+            (
+                "printf '%s' 'synthetic-private-invalid-reply'",
+                Failure::CredentialWorkerReply,
+            ),
+            (
+                "printf '%s' '{\"result\":{\"Err\":\"storage_unavailable\"}}'",
+                Failure::StorageUnavailable,
+            ),
+        ] {
+            std::fs::write(&script, format!("#!/bin/sh\ncat >/dev/null\n{body}\n")).unwrap();
+            std::fs::set_permissions(&script, std::fs::Permissions::from_mode(0o700)).unwrap();
+            assert_eq!(
+                worker_request(&script, Operation::Load, deadline)
+                    .await
+                    .unwrap_err(),
+                expected
+            );
+        }
     }
 
     #[test]

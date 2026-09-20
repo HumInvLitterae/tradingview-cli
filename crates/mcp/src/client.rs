@@ -235,7 +235,15 @@ fn failure(error: Failure, stage: &str, attempts: u32, http: Option<&Http>) -> A
         Failure::Timeout => "deadline_exceeded",
         Failure::Connection => "transport_error",
         Failure::SchemaChanged => "schema_changed",
-        Failure::StorageUnavailable => "credential_store_unavailable",
+        Failure::StorageUnavailable
+        | Failure::CredentialWorkerSpawn
+        | Failure::CredentialWorkerWrite
+        | Failure::CredentialWorkerRead
+        | Failure::CredentialWorkerExit
+        | Failure::CredentialWorkerReply
+        | Failure::CredentialRecordDecode
+        | Failure::CredentialRead
+        | Failure::CredentialWrite => "credential_store_unavailable",
         Failure::StorageInteractionRequired => "credential_store_interaction_required",
         Failure::StorageTooLarge => "credential_store_too_large",
         Failure::InvalidResponse | Failure::BindingMismatch | Failure::ResponseTooLarge => {
@@ -270,6 +278,9 @@ fn failure(error: Failure, stage: &str, attempts: u32, http: Option<&Http>) -> A
         "tool_attempts": attempts,
         "automatic_retry": false
     });
+    if let Some(reason) = error.credential_reason() {
+        details["reason"] = json!(reason);
+    }
     if matches!(
         error,
         Failure::AuthRequired | Failure::StorageInteractionRequired
@@ -315,4 +326,73 @@ fn state_directory() -> Result<PathBuf, Failure> {
         return Err(Failure::LocalState);
     }
     Ok(root.join("tradingview-cli/mcp"))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn credential_reasons_preserve_the_existing_public_error_contract() {
+        for (cause, reason) in [
+            (
+                Failure::CredentialWorkerSpawn,
+                "credential_worker_spawn_failed",
+            ),
+            (
+                Failure::CredentialWorkerWrite,
+                "credential_worker_input_failed",
+            ),
+            (
+                Failure::CredentialWorkerRead,
+                "credential_worker_output_failed",
+            ),
+            (
+                Failure::CredentialWorkerExit,
+                "credential_worker_exit_failed",
+            ),
+            (
+                Failure::CredentialWorkerReply,
+                "credential_worker_reply_invalid",
+            ),
+            (Failure::CredentialRecordDecode, "credential_record_invalid"),
+            (Failure::CredentialRead, "credential_store_read_failed"),
+            (Failure::CredentialWrite, "credential_store_write_failed"),
+        ] {
+            let error = failure(cause, "authentication", 0, None);
+            assert_eq!(error.kind, ErrorKind::Internal);
+            assert_eq!(error.exit_code(), 1);
+            assert_eq!(error.message, "credential store unavailable");
+            let details = error.details.unwrap();
+            assert_eq!(details["contract_version"], "mcp_error.v1");
+            assert_eq!(details["code"], "credential_store_unavailable");
+            assert_eq!(details["stage"], "authentication");
+            assert_eq!(details["tool_attempts"], 0);
+            assert_eq!(details["automatic_retry"], false);
+            assert_eq!(details["reason"], reason);
+        }
+    }
+
+    #[test]
+    fn downstream_credential_error_fixtures_match_the_public_envelope() {
+        use tradingview_core::{ErrorBody, ErrorEnvelope};
+
+        for (cause, fixture) in [
+            (
+                Failure::CredentialWorkerReply,
+                include_str!("../tests/fixtures/credential-worker-reply-error.json"),
+            ),
+            (
+                Failure::CredentialRead,
+                include_str!("../tests/fixtures/credential-store-read-error.json"),
+            ),
+        ] {
+            let error = failure(cause, "authentication", 0, None);
+            let envelope = ErrorEnvelope::new("mcp", ErrorBody::from(error));
+            assert_eq!(
+                serde_json::to_value(envelope).unwrap(),
+                serde_json::from_str::<Value>(fixture).unwrap()
+            );
+        }
+    }
 }
