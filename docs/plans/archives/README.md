@@ -8,6 +8,10 @@ remain at their original paths. Use [current work](../README.md) to resume.
 
 Recently completed:
 
+- [v0.31.4 release](tradingview-cli-v0.31.4-release-readiness.md): publication
+  and successful native release jobs verified on 2026-09-20 at 48e500b. The
+  record retains the maintenance-candidate classification and validation.
+
 - [v0.31.3 release](tradingview-cli-v0.31.3-release-readiness.md): publication
   verified on 2026-09-20 and the historical preparation record archived. Old
   package counts and pending gates are candidate-scoped history.
