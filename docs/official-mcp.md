@@ -85,6 +85,17 @@ MCP-specific code, stage and dispatched tool count. No raw OAuth/server error is
 copied into the envelope. General clap syntax errors retain the existing CLI
 parser envelope.
 
+Credential failures keep `code:"credential_store_unavailable"` and may include a
+closed `reason` identifying worker spawn/input/output/exit, invalid worker reply,
+invalid stored record, or native store read/write. These reasons contain no raw
+OS error text, credentials, paths or IPC bytes. They identify the failed boundary,
+not an instruction to retry or delete credentials. `status` proves only its own
+local read; a subsequent command starts a separate credential operation.
+
+Within one command's admission lock, validated credentials are reused in memory.
+A successful durable update replaces that snapshot; a failed update invalidates
+it. A new command reads the OS store again. There is no cross-process token cache.
+
 Reads have one 30-second deadline spanning lock wait, credential work, discovery,
 pacing and response. Login has a five-minute interaction deadline. Processes
 share an operation lock and persisted one-second spacing/cooldown. Server limits

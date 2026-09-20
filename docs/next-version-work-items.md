@@ -31,7 +31,7 @@ classification belongs to the archived release record, not this backlog.
 | 2 | Contract/dependency/live-scope preparation — upstream PM | Complete: prior approval retained; HTTP/SSE release review and macro-free SDK credential compatibility verified. |
 | 3 | Internal MCP service and deterministic proof harness — current upstream executor | Local macOS harness implemented and fixture-verified, including HTTP/OAuth/credential failure paths. Native and cross-platform acceptance remain open. The existing `tv bars` path remains unchanged. |
 | 4 | Bounded real connection proof — upstream executor with user browser consent | Approved retry passed OAuth exchange, native save and cross-process MCP discovery after homepage sign-in. macOS proof passed: fixed-worker reuse, refresh and 20 OHLCV rows per timeframe with matching symbol/interval echoes. Windows qualification remains mandatory and open. |
-| 5 | Complete first CLI read path — upstream executor | Independent `tv mcp login/status/bars/logout` implemented with `mcp_bars.v1`, typed errors and usage docs. Synthetic service/CLI checks and macOS public-command smoke pass, including three fresh-process timeframe reads. Readability corrections and local commit are authorized. Windows runtime qualification is deferred by the owner and remains required before release. |
+| 5 | Complete first CLI read path — upstream executor | Independent `tv mcp login/status/bars/logout` implemented with `mcp_bars.v1`, typed errors and usage docs. Synthetic service/CLI checks and macOS public-command smoke pass, including three fresh-process timeframe reads. The initial implementation is committed. A credential-read/worker-diagnostics follow-up is fixture-verified; historical transient failure cause remains unconfirmed. Windows runtime qualification is deferred by the owner and remains required before release. |
 | 6 | Artifact/cache/analysis acceptance — downstream owner | Handoff after a usable upstream read exists. Add source-aware adapter/cache isolation; preserve or quarantine unsupported prepared_bars.v1 semantics. No downstream write by this session. |
 | 7 | v0.32.0 qualification and release preparation — upstream PM | Conditional. Initial workflow and downstream acceptance, relevant platform checks, then version/release artifacts. Publication is not authorized. |
 
@@ -46,7 +46,9 @@ specific decision point. No additional agent or executor session is authorized.
 
 The local harness and macOS connection proof are complete. The independent
 CLI is implemented; deterministic checks and the macOS public-command smoke
-pass. Complete the minimal readability corrections and commit the implementation.
+pass, and the initial implementation is committed. The credential-read and
+worker-diagnostics follow-up preserves the public error code and adds optional
+reason detail; downstream fixture acceptance follows this correction.
 The owner has handed the separate `mcp_bars.v1` path to the downstream PM. Windows
 qualification is deferred to a later stage and remains a release requirement. A successful read
 still leaves delay/adjustment/session/finality/anchoring unconfirmed. No new

@@ -1045,3 +1045,67 @@ the embedded ACL script changed only whitespace and statement separators.
 Public hygiene passed for all 677 staged repository files, and 77 local document
 targets, eight JSON examples and diff hygiene passed. Existing runtime-package
 and macOS live evidence remains applicable. No new live or Windows execution ran.
+
+
+### Credential failure investigation and correction (2026-09-21)
+
+A downstream consumer reported two `credential_store_unavailable` failures at
+`stage:authentication`, `tool_attempts:0`, after local status had succeeded.
+Later explicit reads succeeded with the same executable. Read-only inspection
+confirmed the error envelopes, unchanged executable identity, and subsequent
+successful count results. The historical cause remains **UNCONFIRMED**: those
+errors discarded the native/worker boundary, and available OS logs did not
+supply a decisive error code. Successful later root-directory and piped-process
+runs do not establish a persistent cwd, environment-file or Keychain-permission
+cause. No downstream artifact or installed/trusted executable was modified.
+
+Source inspection found three native record loads in a normal unexpired-token
+read: CLI preflight, authentication restore, and SDK token retrieval. Token
+refresh can add another load. Repeated loads create avoidable failure points
+inside an operation already protected by the admission lock. The correction
+keeps one validated snapshot per Store/operation. Durable save precedes snapshot
+replacement; failed writes invalidate it; successful deletion records absence;
+new operations read storage afresh. Invalid or failed reads are never cached,
+and the original deadline still applies. No retry or source fallback was added.
+
+The credential worker now flushes its reply on the same output handle before
+reporting success. Parent-side spawn, input, output, exit and decode failures,
+stored-record decoding, and native read/write failures retain distinct internal
+causes. The public kind, message, code, stage and exit status remain unchanged;
+the existing optional `details.reason` carries a closed, public-safe explanation.
+The downstream PM confirmed that its current parser accepts optional reason and
+retains stderr bytes; execution against the new fixtures remains downstream work.
+
+Concrete example: an authentication-stage invalid worker reply still produces
+exit 1 and `code:credential_store_unavailable`, with `tool_attempts:0`; it now
+also reports `reason:credential_worker_reply_invalid`. A native read-path error
+instead uses `reason:credential_store_read_failed`. Raw worker bytes, system
+error text, account values and paths never enter these fields. Public synthetic
+fixtures are in `crates/mcp/tests/fixtures/credential-worker-reply-error.json`
+and `crates/mcp/tests/fixtures/credential-store-read-error.json`.
+
+Synthetic tests cover a preflight read followed by a failing hypothetical second
+storage access: the SDK read now succeeds with one storage load and one tool call.
+Other tests cover new-operation rereads, rotation/delete/failed-write state,
+invalid-record rejection, cached-operation deadlines, buffered reply delivery,
+worker exit versus malformed reply, and exact downstream error envelopes. These
+are fixture results, not a reproduction or resolution claim for the two past
+macOS failures. No real credential read/update or provider call was performed.
+Windows runtime validation remains deferred.
+
+
+The first full-suite run exposed an existing timing-dependent fixture: its
+one-second deadline could expire before the tool was dispatched, while the test
+asserted that it had reached a stalled response. The fixture now waits for the
+server to receive the tool call before advancing Tokio's test clock past the
+response deadline. This retains the exact one-dispatch assertion and avoids
+weakening the property to accept a setup timeout. Only the existing Tokio
+dev-dependency enables `test-util`; production versions and Cargo.lock are unchanged.
+
+
+Final validation for this correction: 965 workspace tests passed, 27 ignored,
+zero failures; strict workspace Clippy (all targets/features), formatting and
+public/diff hygiene passed. The two public error fixtures match the emitted
+ErrorEnvelope exactly. No live call, credential mutation, installed executable
+replacement, Windows execution, push or release was performed. Native recurrence
+and its historical root cause are not claimed resolved by these fixture results.
