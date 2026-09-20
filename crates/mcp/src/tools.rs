@@ -11,6 +11,7 @@ pub(crate) enum Tool {
     Columns,
     Symbol,
     Symbols,
+    Screener,
 }
 
 impl Tool {
@@ -21,6 +22,7 @@ impl Tool {
             Self::Columns => &["mcp-tv-get-screener-columns", "get_screener_columns"],
             Self::Symbol => &["mcp-tv-get-symbol-data", "get_symbol_data"],
             Self::Symbols => &["mcp-tv-get-symbol-data-batch", "get_symbol_data_batch"],
+            Self::Screener => &["mcp-tv-run-screener", "run_screener"],
         }
     }
 
@@ -40,6 +42,17 @@ impl Tool {
             ],
             Self::Symbol => &[("symbol", "string"), ("columns", "array")],
             Self::Symbols => &[("symbols", "array"), ("columns", "array")],
+            Self::Screener => &[
+                ("market", "string"),
+                ("filters", "object"),
+                ("sort_by", "string"),
+                ("sort_order", "string"),
+                ("limit", "integer"),
+                ("columns", "array"),
+                ("symbol_types", "array"),
+                ("filter_preset", "string"),
+                ("symbolset", "array"),
+            ],
         }
     }
 
@@ -50,6 +63,7 @@ impl Tool {
             Self::Columns,
             Self::Symbol,
             Self::Symbols,
+            Self::Screener,
         ]
         .into_iter()
         .find(|tool| tool.names().contains(&name))
@@ -75,6 +89,11 @@ impl Tool {
             _ => Err(Failure::UnsupportedCapability),
         };
         let validated = match self {
+            Self::Screener => {
+                let options = mcp_data::ScreenerOptions::from_arguments(args)
+                    .map_err(|_| Failure::UnsupportedCapability)?;
+                mcp_data::Request::screener(options).map(|v| v.arguments())
+            }
             Self::Bars => {
                 let interval = string("interval")?;
                 let count = args
@@ -134,6 +153,7 @@ impl From<mcp_data::Kind> for Tool {
             mcp_data::Kind::Columns => Self::Columns,
             mcp_data::Kind::Symbol => Self::Symbol,
             mcp_data::Kind::Symbols => Self::Symbols,
+            mcp_data::Kind::Screener => Self::Screener,
         }
     }
 }

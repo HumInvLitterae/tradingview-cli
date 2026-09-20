@@ -16,7 +16,7 @@ fn independent_mcp_help_does_not_change_bars_entry() {
         .clone();
     let help = String::from_utf8(output).unwrap();
     for command in [
-        "login", "status", "bars", "logout", "search", "columns", "symbol", "symbols",
+        "login", "status", "bars", "logout", "search", "columns", "symbol", "symbols", "screener",
     ] {
         assert!(help.contains(command));
     }
@@ -33,6 +33,12 @@ fn independent_mcp_help_does_not_change_bars_entry() {
 #[test]
 fn invalid_mcp_requests_fail_before_cdp_state_store_or_provider_access() {
     for args in [
+        vec!["mcp", "screener", "--limit", "1001"],
+        vec!["mcp", "screener", "--limit", "0"],
+        vec!["mcp", "screener", "--sort-order", "invalid"],
+        vec!["mcp", "screener", "--filters", "not-json"],
+        vec!["mcp", "screener", "--filters", "{\"close\":[10,1]}"],
+        vec!["mcp", "screener", "--preset", "unknown"],
         vec!["mcp", "symbols", "EXAMPLE"],
         vec!["mcp", "symbols", "NASDAQ:EXAMPLE", "NASDAQ:EXAMPLE"],
         vec!["mcp", "search", " "],

@@ -35,6 +35,9 @@ pub enum ProofOperation {
     Symbol,
     Symbols,
     SymbolsCommand,
+    Screener,
+    ScreenerCommand,
+    ScreenerEmptyCommand,
     Logout,
 }
 
@@ -49,8 +52,13 @@ pub async fn run_proof_with_worker(
     operation: ProofOperation,
     worker: Option<&Path>,
 ) -> Result<Value> {
-    if matches!(operation, ProofOperation::SymbolsCommand) {
-        return verify_symbols_command(directory, worker).await;
+    if matches!(
+        operation,
+        ProofOperation::SymbolsCommand
+            | ProofOperation::ScreenerCommand
+            | ProofOperation::ScreenerEmptyCommand
+    ) {
+        return verify_data_command(directory, worker, operation).await;
     }
     let deadline = Instant::now()
         + if matches!(
@@ -128,9 +136,16 @@ pub async fn run_proof_with_worker(
             | ProofOperation::Columns
             | ProofOperation::ColumnsOverview
             | ProofOperation::Symbol
-            | ProofOperation::Symbols => {
+            | ProofOperation::Symbols
+            | ProofOperation::Screener => {
                 use tradingview_model::mcp_data::Request;
                 let request = match operation {
+                    ProofOperation::Screener => Request::screener(tradingview_model::mcp_data::ScreenerOptions {
+                        limit: 3,
+                        columns: vec!["name".into(), "close".into(), "volume".into()],
+                        filters: json!({"close": [1, null]}),
+                        ..Default::default()
+                    }),
                     ProofOperation::Search => Request::search("Apple", None),
                     ProofOperation::Columns => Request::columns(None, None, Some("volume")),
                     ProofOperation::ColumnsOverview => Request::columns(None, None, None),
@@ -434,22 +449,54 @@ fn response_shape(value: &Value, depth: usize) -> Value {
 
 // Use the public application service with a previously authorized immutable
 // worker. This proves the new read path without replacing a trusted executable.
-async fn verify_symbols_command(directory: &Path, worker: Option<&Path>) -> Result<Value> {
+async fn verify_data_command(
+    directory: &Path,
+    worker: Option<&Path>,
+    operation: ProofOperation,
+) -> Result<Value> {
     let worker = worker.ok_or(Failure::UnsupportedCapability)?;
     let symbols = vec![
         "NASDAQ:AAPL".into(),
         "NASDAQ:MSFT".into(),
         "NASDAQ:TVCLIINVALID".into(),
     ];
-    let request =
-        tradingview_model::mcp_data::Request::symbols(&symbols, &["close".into(), "volume".into()])
-            .map_err(|_| Failure::UnsupportedCapability)?;
+    use tradingview_model::mcp_data::{Request, ScreenerOptions};
+    let request = match operation {
+        ProofOperation::SymbolsCommand => Request::symbols(&symbols, &["close".into(), "volume".into()]),
+        _ => Request::screener(ScreenerOptions {
+            limit: 3,
+            columns: vec!["name".into(), "close".into(), "volume".into()],
+            filters: json!({
+                "close": [
+                    if matches!(operation, ProofOperation::ScreenerEmptyCommand) { 1e15 } else { 1.0 },
+                    null
+                ]
+            }),
+            ..Default::default()
+        }),
+    }.map_err(|_| Failure::UnsupportedCapability)?;
     let result = crate::Client::with_paths(directory.to_owned(), worker.to_owned())
         .run(crate::Operation::Data(request))
         .await;
     match result {
         Ok(data) => {
             let items = data["items"].as_array().ok_or(Failure::InvalidResponse)?;
+            if !matches!(operation, ProofOperation::SymbolsCommand) {
+                return Ok(json!({
+                    "success": true,
+                    "contract_version": data["contract_version"],
+                    "source": data["source"],
+                    "client_observation": data["client_observation"],
+                    "total_count": data["provider_observation"]["total_count"],
+                    "tool_attempts": data["transport"]["tool_attempts"],
+                    "only_requested_fields": items.iter().all(|item| item["fields"].as_object()
+                        .is_some_and(|fields| {
+                            fields.len() == 3 && fields.keys().all(|key| {
+                                ["name", "close", "volume"].contains(&key.as_str())
+                            })
+                        }))
+                }));
+            }
             Ok(json!({
                 "success": true,
                 "contract_version": data["contract_version"],

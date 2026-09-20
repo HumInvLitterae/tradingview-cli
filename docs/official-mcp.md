@@ -163,6 +163,56 @@ used to guess which requested symbol a row belongs to. Freeform provider missing
 interpreted as proof that a symbol does not exist or that a particular permission
 is missing. Transport/authentication failure also fails the operation rather than fabricating individual missing rows.
 
+## Screener queries
+
+```sh
+tv mcp screener --market america --filters '{"close":[10,100]}' --sort-by volume --sort-order desc --limit 20 --columns name,close,volume
+tv mcp screener --preset new_highs --types stock --limit 20
+tv mcp screener --symbolset 'SYML:SP;SPX' --limit 20
+```
+
+This is an independent official MCP query; existing `tv scanner scan` and
+Desktop `tv screener` commands retain their sources and behavior. The command
+makes one `run_screener` call. Defaults are market america, empty filters, sort
+by volume descending, limit 100 and the same explicit columns as `mcp symbol`.
+The official maximum is 1000 rows. No offset, automatic pagination, retry or
+fallback is added.
+
+`--filters` is a JSON object mapping columns to `[minimum,maximum]`; null means
+an unbounded side. The special index, sector, industry and analyst_rating keys
+also accept string values. Inverted ranges, malformed JSON, invalid limits and
+sort directions fail before credentials or network access. Local input bounds
+are 50 filters, 50 column/selection entries and 16 KiB filter JSON. These local
+bounds are not claims about additional server capabilities. Use `mcp columns`
+for column names; screener regional `--market` names are different from catalog
+market categories. `--types` and `--symbolset` are comma-separated lists.
+
+Supported `--preset` names are pullback_with_reversal, breakout_with_volume,
+oversold_healthy, earnings_runup, relative_strength and new_highs. Filters,
+presets and selections are forwarded as explicit request conditions; the CLI
+does not reinterpret a preset as a trading recommendation or assert independent
+verification that each provider result satisfies every condition.
+
+`mcp_screener.v1` keeps the request and `items[]` in provider order. Each item
+contains its zero-based index, provider symbol, requested `fields` and per-field
+absence/null information. Extra unrequested columns are not forwarded. Symbols
+are provider observations, not matches to an independently requested listing.
+Receipt time remains separate from unknown market-data time, delay and session.
+
+`provider_observation.total_count` preserves the reported `totalCount`, if given.
+`client_observation.returned_count` measures returned rows; `coverage_status` is:
+
+- `limited`: the reported total exceeds the returned row count.
+- `all_reported`: the returned count equals the provider-reported total. This is
+  not independent proof of full-market coverage or a realtime snapshot.
+- `unconfirmed`: no usable total was supplied.
+
+For example, three rows and `totalCount:120` produce `returned_count:3` and
+`coverage_status:limited`, even though the envelope is successful. Zero rows and
+`totalCount:0` are a valid empty result. Missing total stays null/unconfirmed;
+contradictory totals, excess rows, duplicate symbols and malformed rows fail with
+`mcp_error.v1`. Transport failure does not become an empty successful screen.
+
 ## Read contract
 
 Use an exchange-qualified symbol, `1D`, `1W` or `1M`, and count 1..5000 (default

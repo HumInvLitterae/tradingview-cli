@@ -49,3 +49,21 @@ is needed. `tv chart compare` serially uses the selected Desktop chart and may
 temporarily switch it; it is not a broad scanner comparison loop. Watchlist
 writes, including `tv watchlist add-bulk`, require intent to change that saved
 state. Do not add them as a routine final step of analysis.
+
+
+## Official MCP screens
+
+When the user selects the official source, `tv mcp screener` performs one query
+and returns `mcp_screener.v1`, independent of scanner REST and Desktop Screener.
+Use `tv mcp columns` to find field names. Supply numeric filters as a JSON object
+of `[min,max]` bounds (null is unbounded); optional presets are provider-defined
+selection rules, not trading recommendations. Never treat a preset label as an
+independent assessment of the returned companies.
+
+Keep provider row order, requested fields and their missing/null distinctions.
+Report `client_observation.returned_count` alongside the provider's `total_count`.
+`coverage_status:limited` means the reported total exceeds returned rows;
+`all_reported` only means those counts agree; missing totals remain unconfirmed.
+Neither status proves exhaustive market coverage or realtime data. Empty success
+is distinct from a failed request. No pagination, retry or source fallback is
+performed; the maximum per request is 1000 rows.

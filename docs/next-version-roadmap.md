@@ -87,7 +87,9 @@ item in v0.32.0. Release only the completed and qualified slices.
 The first expansion implements `tv mcp search`, `tv mcp columns` and
 `tv mcp symbol`. The existing work record owns its concrete CLI/JSON examples
 and acceptance. Multi-symbol data is implemented as `tv mcp symbols`, with
-per-symbol returned/missing/unreported outcomes. Screener queries are next. Reuse connection and credential handling; keep tool-specific
+per-symbol returned/missing/unreported outcomes. `tv mcp screener` now provides
+one bounded official screen with honest total/returned counts. Recent-count
+intraday OHLCV is the next slice. Reuse connection and credential handling; keep tool-specific
 schema checks and interpretation explicit. No arbitrary tool passthrough.
 
 Watchlist/alert work includes both reads and explicit management operations;

@@ -30,6 +30,27 @@ pub async fn run_mcp(command: McpCommand) -> Result<Value, AppError> {
         McpCommand::Symbols { symbols, columns } => {
             Operation::Data(mcp_data::Request::symbols(&symbols, &columns)?)
         }
+        McpCommand::Screener {
+            market,
+            filters,
+            sort_by,
+            sort_order,
+            limit,
+            columns,
+            symbol_types,
+            filter_preset,
+            symbolset,
+        } => Operation::Data(mcp_data::Request::screener(mcp_data::ScreenerOptions {
+            market,
+            filters: mcp_data::ScreenerOptions::parse_filters(&filters)?,
+            sort_by,
+            sort_order,
+            limit,
+            columns,
+            symbol_types: (!symbol_types.is_empty()).then_some(symbol_types),
+            filter_preset,
+            symbolset: (!symbolset.is_empty()).then_some(symbolset),
+        })?),
         McpCommand::Bars {
             symbol,
             timeframe,

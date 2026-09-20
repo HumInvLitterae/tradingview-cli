@@ -41,9 +41,9 @@ The owner agreed to the expansion sequence in the
 [roadmap](../next-version-roadmap.md#agreed-expansion-order), specifically promoting
 watchlists and alerts immediately after intraday bars and before financial data.
 The earlier exclusions below describe the first delivered slice, not a permanent
-ban on this agreed follow-up. Next, specify the concrete public CLI/JSON examples
-for symbol search, column discovery and single-symbol data, then implement that
-slice using the existing authenticated service. Keep existing commands intact.
+ban on this agreed follow-up. Symbol discovery, single/batch symbol reads and
+screener queries are implemented using the shared authenticated service. The next
+slice is recent-count intraday OHLCV. Existing commands remain intact.
 
 Source inspection supports the watchlist/alert substitution rationale:
 
@@ -167,6 +167,39 @@ workspace Clippy and formatting passed. Runtime staging retained 48 files and
 six skills per root, with reference/parity and public/diff hygiene checks passing.
 CLI validation covers excessive and duplicate inputs before credential access;
 real native evidence uses the shared public service as described above.
+
+## Official screener slice (2026-09-21)
+
+The owner requested the next ordered feature, carrying forward the instruction
+to complete necessary same-account read verification without repeating routine
+confirmation questions. Implement `tv mcp screener` with explicit market, JSON
+filters, sort field/direction, limit, columns, symbol types, preset and symbolset.
+The before/after use and partial/empty/error outcomes are in the
+[public contract](../official-mcp.md#screener-queries). No legacy command changes.
+
+The observed wire uses `data.rows` with flat symbol/field objects and
+`data.totalCount`. Preserve provider row order and selected JSON field values;
+reuse the same field absence/null rules as symbol reads. Additional unrequested
+provider fields are omitted. Report measured rows separately from the observed
+total: limited/all_reported/unconfirmed does not assert independent market
+coverage, timestamp meaning or filter verification. Duplicates, bad identities,
+excess rows and totals below the observed rows fail closed.
+
+The closed allowlist adds only `run_screener` / `mcp-tv-run-screener`.
+Credentials, shared admission/deadlines and no-replay/fallback behavior are reused.
+No dependency addition or account mutation. The native verification uses the
+already-authorized worker and the public service, with a three-row market query
+and a high minimum-price query expected to return no matches. Windows runtime remains deferred.
+
+Validation: 986 workspace tests passed, 27 ignored, zero failures; strict
+workspace Clippy and formatting passed. Runtime package reference/parity checks
+passed with six skills per root (48 files), as did public/diff hygiene. Native
+public-service reads returned three rows against a reported 15,861 matches and
+zero rows against zero matches, respectively, with one tool attempt each and only
+requested fields. These are dated observations, not expected future counts.
+No new executable credential consent, installed-binary replacement or Windows
+runtime validation is claimed. Preset/selection options are fixture-validated;
+the live checks cover the numeric-filter limited and empty result paths.
 
 ## First executable slice from v0.31.4
 
