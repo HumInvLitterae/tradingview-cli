@@ -1,25 +1,25 @@
 # Current work
 
-Use this index to choose the relevant record. Dated validation is not proof of
-current checkout, publication, or provider behavior. Read affected code and
-recheck mutable state before resuming.
+Use the relevant work record and current code when resuming. A released patch's
+validation does not establish the behavior of a proposed new dependency or
+provider integration.
 
 | Purpose | Record |
 | --- | --- |
-| Released maintenance baseline | [v0.31.4 closed record](archives/tradingview-cli-v0.31.4-release-readiness.md) |
-| Next release direction and patch/minor comparison | [Next-version roadmap](../next-version-roadmap.md) |
-| Ordered work and verified maintenance candidate | [Next-version inventory](../next-version-work-items.md) |
-| Official MCP client design, contracts and acceptance | [MCP ExecPlan](tradingview-cli-official-mcp-client.md) — approved concrete scope; release prerequisite satisfied |
-| Completed v0.31 product direction and inventory | [Roadmap](../v0.31-roadmap.md), [inventory](../v0.31-work-items.md) |
-| CDP stability research and promotion conditions | [Strategy note](../notes/cdp-stability-and-autonomous-operation-strategy.md) |
+| Active feature: official MCP client, first local proof slice | [MCP ExecPlan](tradingview-cli-official-mcp-client.md) — approved scope, ready for implementation |
+| v0.32.0 candidate direction | [Roadmap](../next-version-roadmap.md) |
+| Ordered work, ownership and next return point | [Inventory](../next-version-work-items.md) |
+| Released baseline | [v0.31.4 closeout](archives/tradingview-cli-v0.31.4-release-readiness.md) |
+| CDP stability triggers | [Strategy note](../notes/cdp-stability-and-autonomous-operation-strategy.md) |
 | Completed plans and older context | [Historical catalog](archives/README.md) |
 
-Recently closed: [published v0.31.4](archives/tradingview-cli-v0.31.4-release-readiness.md),
-[published v0.31.3](archives/tradingview-cli-v0.31.3-release-readiness.md)
-and [agent guidance/runtime skill reorganization](archives/tradingview-cli-agent-guidance.md).
-The new MCP work is an accepted client direction; the MCP server exclusion remains intact.
+The v0.31.4 release prerequisite is satisfied. The existing MCP dependency and
+bounded live scope stays approved; normal browser consent and genuinely new
+effects are handled at their concrete boundary. The current request prepares
+the plan; implementation starts with the local service/proof harness.
 
-Planning and state ownership follow [PLANS.md](../../.agents/PLANS.md).
-The roadmap owns direction, inventory owns order, and each work record owns
-its decisions and acceptance. v0.31.4 publication is verified; the approved MCP scope is next. Keep release artifacts separate from planning. Local
-commits are authorized; publication is not authorized.
+State ownership follows [PLANS.md](../../.agents/PLANS.md): direction in the
+roadmap, order in the inventory, and detailed acceptance in the existing plan.
+Keep publication closeout, next-version planning and implementation changes in
+coherent separate commits. Do not add a tracked evidence commit solely to record
+its own hash, or rerun functional tests merely because plan documents changed.
