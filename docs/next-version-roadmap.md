@@ -1,78 +1,69 @@
-# Next-version roadmap
+# v0.32.0 candidate roadmap
 
-Status: direction and order confirmed by the owner on 2026-09-20. v0.31.4
-publication is verified; its prerequisite is complete. The concrete MCP
-dependency/proof scope remains approved for the next stage.
-Local planning/release commits are authorized after the passed Cargo consistency
-check. Reuse valid test evidence; version-only commits do not require repeated
-functional validation. Publication and additional agent sessions remain unauthorized.
-Order and candidate evidence live in the [inventory](next-version-work-items.md);
-the [MCP client plan](plans/tradingview-cli-official-mcp-client.md) owns contracts
-and acceptance. This roadmap supersedes v0.31 direction for new work.
+Status: planning ready after the published v0.31.4 baseline, 2026-09-20.
+[Work order](next-version-work-items.md) and the
+[existing MCP ExecPlan](plans/tradingview-cli-official-mcp-client.md) own execution
+and detailed contracts. No second feature plan is needed.
 
-## Release recommendation
+## Outcome
 
-The maintenance release **v0.31.4** is published. Develop the official MCP client
-as an explicit, additive **v0.32.0 candidate**, with promotion conditional on
-connection proof and downstream acceptance. Keep the workspace version unchanged until actual minor-release preparation.
+Add one explicitly selected official TradingView MCP read path to `tv`: authorize
+once, reuse credentials across processes, and obtain recent daily/weekly/monthly
+OHLCV for one exchange-qualified symbol with honest source and uncertainty
+information. The downstream receives structured JSON and owns acceptance for its
+analysis and storage. The first implementation target is connection proof, not
+a wholesale replacement of existing data sources.
 
-| Choice | Benefit | Cost / decision |
-| --- | --- | --- |
-| v0.31.4 first; v0.32.0 MCP later (recommended) | Deliver dependency and runtime-guidance maintenance independently of beta-service uncertainty. | Two release cycles; an additional release-readiness record is needed only when patch preparation starts. |
-| One v0.32.0 including MCP and maintenance | One release cycle and a visible new capability. | Delays maintenance for OAuth, data semantics, and platform validation; requires explicit combined scope approval. |
-| v0.31.4 only; defer MCP implementation | Smallest immediate maintenance commitment. | Leaves the newly demonstrated official-source opportunity untested. |
+v0.31.4 is [released and archived](plans/archives/tradingview-cli-v0.31.4-release-readiness.md).
+Its dependency/runtime-guidance changes are complete maintenance history. The
+next feature is a **v0.32.0 candidate**, conditional on connection and downstream
+acceptance. Keep the workspace at 0.31.4 during implementation; bump the version
+when the accepted minor candidate enters release preparation.
 
-The ten commits after v0.31.3 contain nine dependency refreshes and one agent
-guidance/package reorganization, with no `crates/` diff. That supports a patch
-classification, but dependency changes can still affect executable behavior.
-There is no newly evidenced small Rust fix to add from the inspected bars
-paths, downstream consumers, and current CI. This is a scoped assessment, not
-a repository-wide defect audit.
+## Settled scope
 
-## Official-source direction
+- Explicit `tv bars --backend tradingview-mcp`; the existing default, WebSocket
+  `bars.v1`, Desktop/Pine observation paths and error envelope remain intact.
+- One qualified symbol and recent count for `1D`, `1W`, `1M`; no date-range or
+  pagination claim, intraday expansion, automatic source fallback, or batch API.
+- Separate `mcp_bars.v1` and MCP-specific error details. Communication success,
+  count sufficiency and data-condition knowledge are independent. Missing
+  volume, unknown identity/delay/adjustment/session/finality remain explicit.
+- Upstream owns connection, OAuth, protected credential reuse, bounded transport
+  and response interpretation. Downstream owns use-specific acceptance, artifact
+  conversion, provider-aware caching and changes to its fixed source/latency
+  assumptions. No private downstream collection policy moves upstream.
 
-Prefer investigating a supported upstream source where it serves the workload.
-Keep chart observations, custom Pine studies, and existing historical retrieval
-available. A successful official read alone does not justify deleting the
-WebSocket implementation or changing any default.
+The exact dependency additions and bounded live scope in the MCP plan are
+already approved. Reuse that approval; browser consent still belongs to the
+user, and broader actual consent or materially changed effects need a decision.
+No additional agents, downstream writes or remote publication are authorized.
+This preparation updates plans; it does not itself run OAuth or implement code.
 
-The first useful MCP increment is one exchange-qualified symbol, recent N bars,
-and daily/weekly/monthly intervals, with durable OAuth reuse and explicit
-uncertainty. The upstream owns connection/authentication, bounded requests,
-response validation, and its CLI/JSON contract. The downstream owns selection,
-acceptance for a particular use, storage transformation, research and backtests.
-The integration boundary stays process invocation plus JSON.
+## Delivery order
 
-The existing exclusion is **MCP server development**. An official-service MCP
-client is an approved later-stage client scope. No daemon,
-cookie import, account-login automation, source mixing, or trading authority is
-introduced by this direction.
+1. Implement the internal service/proof harness with synthetic OAuth/MCP and
+   credential-store tests. Validate dependency features and platform boundaries.
+2. Use the approved bounded session to prove actual authentication, restart,
+   refresh and daily/weekly/monthly responses. Refine wire decoding from evidence.
+3. Complete the initial CLI path, stable output mapping and usage documentation.
+4. Have the downstream owner accept or explicitly quarantine saved observations,
+   including negative cases and unknown semantics; assess backtest readiness
+   separately from successful acquisition.
+5. Qualify the minor candidate across the supported platforms and prepare its
+   release only after the initial user journey is complete.
+
+A beta-service or storage incompatibility may produce a precise no-go or narrower
+useful observation capability. Do not manufacture schema evidence or convert a
+recent sample into historical range coverage to satisfy a milestone.
 
 ## Maintained defers
 
-The [v0.31 trigger table](v0.31-roadmap.md#evidence-triggered-engineering-candidates)
+The [v0.31 engineering triggers](v0.31-roadmap.md#evidence-triggered-engineering-candidates)
 and [CDP strategy](notes/cdp-stability-and-autonomous-operation-strategy.md)
-remain in force. No new ordinary-operation failure evidence was supplied or
-collected here. OAuth refresh for the proposed official client is not a trigger
-for CDP reconnect, replaying Desktop mutations, or shared process ownership.
-
-- Pre-dispatch resilience needs observed/reproducible target-list or WebSocket
-  connection failure; shared session/broker needs lifecycle/stale-event evidence
-  and an explicit background-process policy decision.
-- Common public timing or recovery metadata needs a concrete consumer and
-  evidence that the advertised timing or dispatch/effect state is derivable.
-- Renderer foreground/indicator search needs a concrete render-linked mechanism
-  or relevant Desktop build change; current no-go evidence remains intact.
-- Raising the 5,000-bar cap needs a workload that cannot use bounded windows;
-  extra intraday date ranges need a named timeframe and actual demand.
-- Finite-f64 right-offset restoration needs a reviewed fractional contract and
-  reversible runtime proof; width-derived drawing geometry needs an explicit
-  sign, time-anchor and readback contract before a convenience command;
-  Windows MSIX/AUMID activation needs a concrete installation/activation target
-  and platform evidence. These are separate proposals, not MCP prerequisites.
-
-## Next action
-
-[v0.31.4 is published](plans/archives/tradingview-cli-v0.31.4-release-readiness.md).
-Prepare the approved MCP client work for the next version. Preserve the existing
-scope and approvals; do not reopen deferred unrelated features.
+remain unchanged: CDP retry/reconnect, shared session/broker/daemon, common
+public timing/recovery fields, foreground/indicator search, a higher bar cap,
+additional intraday ranges, fractional-offset/width-derived geometry and Windows
+MSIX activation are not prerequisites or promoted tasks. MCP OAuth refresh does
+not authorize retries of Desktop operations. Screener/news/financials/watchlists/
+alerts are outside the first MCP implementation.

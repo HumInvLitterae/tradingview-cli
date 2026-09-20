@@ -1,16 +1,43 @@
 # Official TradingView MCP client: bounded historical reads
 
-Status: **concrete dependency/local-proof and bounded live scope approved;
-queued after v0.31.4**, 2026-09-20. The owner approved the previous turn's exact
-proposal and corrected execution order: complete the
-[v0.31.4 patch](../next-version-work-items.md) first. Preserve this
-approval across that stage boundary; do not request it again for the same
-versions, targets, record effects and budgets. Broader actual consent, changed
-scope or new dependencies still require an explicit decision.
-No additional agent/session, downstream write or publication is authorized.
-Local planning/release commits are separately authorized for v0.31.4 closeout;
-this does not yet include later MCP implementation commits.
-Follow [PLANS.md](../../.agents/PLANS.md); this record remains the single MCP plan.
+Status: **active v0.32.0 candidate plan; first local proof slice ready**,
+2026-09-20. [v0.31.4 is released](archives/tradingview-cli-v0.31.4-release-readiness.md),
+so the sequencing prerequisite is satisfied. The previously approved exact
+dependencies, account/store effects and read budget remain authorized; do not
+request that approval again. This request prepares the next work from the
+released baseline; no implementation or live operation is performed by the
+planning update. Broader actual consent, changed scope or new dependencies
+remain specific decision points.
+No additional agent/session, downstream write or remote publication is authorized.
+Local planning/closeout commits are covered by existing authority; this does not
+yet include later MCP implementation commits. Follow [PLANS.md](../../.agents/PLANS.md);
+this is the single feature work record.
+
+## First executable slice from v0.31.4
+
+Start with an internal service and opt-in development harness before exposing
+new public commands. This is the already-approved connection-proof stage, not
+a separate prototype product or background service.
+
+| Area | First-slice change | Acceptance |
+| --- | --- | --- |
+| Cargo/service boundary | Add the internal `crates/mcp` member and the five approved dependencies with target-specific minimal features. Keep common request/data interpretation I/O-free and reuse core errors. | Resolved versions/features/license/MSRV report; no unintended dependency refresh, server features or runtime proxy. |
+| Protocol/HTTP | Use the selected SDK with the private bounded HTTP adapter, no AuthClient replay, no session reinit/SSE retry, and cumulative response limits. | Local JSON/SSE/OAuth fake endpoints prove one tool dispatch, 401/429/timeout/invalid response, origin binding and cancellation. |
+| Credential/admission state | Implement the dedicated profile/store and cross-process lock, refresh/save ordering and noninteractive failures. | Synthetic store/concurrent-process tests; no real OS credential access during fixtures. Cover Windows record size and macOS/Linux UI restrictions. |
+| Development harness | Add a narrow opt-in example such as `crates/mcp/examples/connection_proof.rs`, using the same service code that the CLI will later call. | A second process can reuse synthetic credentials; startup has no implicit registration/login/tool call. Live commands are explicit and bounded. |
+| Proof output | Emit only a private sanitized observation summary and useful typed outcomes; wire decoding follows actual supported schema. | Distinguish requested conditions, returned facts and unknowns; no raw tokens/account IDs/payload dumps or guessed normalized success. |
+
+The first slice does not alter `tv bars`, its parser/defaults, existing public
+contracts or the released version. It returns the harness, fixture evidence and
+resolved dependency report. Continue into the approved live session after local
+checks pass and the user is available for browser consent; do not create a new
+plan or generic reapproval step. If real behavior contradicts the contract,
+record the concrete difference here before changing the public design.
+
+A first macOS proof does not qualify Windows/Linux credential behavior. Retain
+those platform gates for the complete CLI slice, including an explicit result
+if the actual OAuth record exceeds Windows storage limits. Do not solve an
+unobserved incompatibility by silently changing persisted storage.
 
 ## Outcome and scope
 
@@ -66,7 +93,8 @@ OAuth success, or historical availability from the bar timestamp alone.
 
 ### Current code and consumers
 
-Upstream baseline: `7a7b883`. [CLI parsing](../../crates/cli/src/cli.rs) and
+Released upstream baseline: `v0.31.4` / `48e500b`. The Rust-source inspection
+originally made at 7a7b883 was revalidated: there is no `crates/` diff. [CLI parsing](../../crates/cli/src/cli.rs) and
 [dispatch](../../crates/cli/src/app/dispatch.rs) route `bars` into
 [market bars](../../crates/market/src/bars.rs). Its
 [transport](../../crates/market/src/bars/transport.rs) sends an unauthenticated
@@ -93,11 +121,11 @@ A narrow additional source inspection confirmed existing source and zero-latency
 constants in `crates/backtest-cli/src/operate/support_research_collect.rs`.
 Changing that policy remains entirely downstream; no private artifacts were read.
 
-## Recommended design and alternatives
+## Accepted design and considered alternatives
 
 | Decision | Recommendation | Alternative and tradeoff |
 | --- | --- | --- |
-| Backend choice | `tv bars --backend tradingview-mcp`; omit the flag to retain existing WebSocket behavior. Explicit legacy value: `tradingview-ws`. | `tv mcp bars` separates semantics more visibly but duplicates the bars entrypoint. Either is viable; choose before implementation. |
+| Backend choice | `tv bars --backend tradingview-mcp`; omit the flag to retain existing WebSocket behavior. Explicit legacy value: `tradingview-ws`. | `tv mcp bars` separates semantics more visibly but duplicates the bars entrypoint. Alternative not selected; keep one explicit bars entrypoint. |
 | Output | New `mcp_bars.v1` for the new backend, existing envelope/error kinds unchanged. | Reuse `bars.v1` only after a reviewed optional-evidence evolution; current consumers can mistake absent legacy checks for completeness. Global `bars.v2` would impose unnecessary migration on unchanged consumers. |
 | Authenticated service | One internal `tradingview-mcp` workspace crate (`crates/mcp`), with private auth, credentials, transport, and TradingView tool modules. | CLI-only service modules reduce manifest changes but mix reusable authenticated service ownership with command adaptation. Putting OAuth in market/scanner would broaden their credential-free responsibility. |
 | Protocol | Prefer official `rmcp` client/HTTP/auth facilities behind the service's small private boundary. | Handwritten MCP/OAuth increases protocol/security maintenance; a permanent Node/Python proxy adds packaging/process ownership. Neither is preferred. |
@@ -129,7 +157,8 @@ The four credential-related crates are MIT OR Apache-2.0. Reuse the workspace's
 reqwest 0.13.5, tokio, serde and error infrastructure. SDK reqwest constraint
 0.13.2 permits 0.13.5, so a second reqwest major is not required by these
 manifests. Resolved features/transitive versions and build/link behavior remain
-unverified until dependency installation is approved. SDK defaults would enable
+unverified until the first resolved build; the listed additions are approved.
+SDK defaults would enable
 server/macros; keep them off. JWT/client-credentials, enterprise auth, subprocess,
 server, and general elicitation features are not selected. Linux uses Rust
 crypto rather than introducing OpenSSL or native libdbus via this choice; a
@@ -230,7 +259,7 @@ The 30-minute session is a budget, not authorization to wake later automatically
 
 A real consent screen or a server rejection can still reveal an uncovered
 requirement. All fixture/local work continues independently; do not treat a
-metadata field or this proposal as the user's consent.
+metadata field as completed browser consent.
 
 ## Accepted contract direction (not implemented)
 
@@ -469,8 +498,8 @@ CDP/WS retry policy is changed by this design.
 
 | Stage | Usable result and work | Acceptance / return condition |
 | --- | --- | --- |
-| Contract direction review | Source audit and contract direction accepted by the owner on 2026-09-20. | Direction and concrete dependency/account effects approved; execution follows v0.31.4 closeout. |
-| Bounded connection proof (after specific approval) | A private, opt-in development harness using the intended client path: OAuth, restart, refresh, and one-symbol 1D/1W/1M actual responses. Reuse its service logic in the CLI; no permanent proxy. | Demonstrate fresh-process reuse and an actual refresh followed by a successful read; record safe shape/condition observations, or a precise no-go. Forced local expiry alone is not proof of server refresh. Do not freeze the wire adapter from documentation alone. |
+| Contract direction review | Source audit, contract direction and concrete dependencies/live effects accepted. | Complete; the published v0.31.4 prerequisite is satisfied. |
+| Approved local and real connection proof | A private, opt-in development harness using the intended client path: OAuth, restart, refresh, and one-symbol 1D/1W/1M actual responses. Reuse its service logic in the CLI; no permanent proxy. | Demonstrate fresh-process reuse and an actual refresh followed by a successful read; record safe shape/condition observations, or a precise no-go. Forced local expiry alone is not proof of server refresh. Do not freeze the wire adapter from documentation alone. |
 | Complete initial CLI slice | Implement service/model/CLI adapters, protected credential reuse, bounded admission/error paths and proposed output mapping. No released half-finished login-only feature. | All deterministic tests below; actual response shape mapped; a user can authorize once and obtain validated JSON after restart on supported platforms. If proof changes the public proposal materially, return for contract review before implementation. |
 | Downstream acceptance | Downstream owner adds explicit MCP reader/adapter and stores a distinct observation, without treating it as legacy bars/provider data. | Matched and unknown evidence survives persistence; short/empty/unsupported/errors are distinct; nullable volume/unknown timestamp/finality/latency cannot enter prepared_bars.v1 as invented values. |
 | Minor release qualification | Update public usage, source taxonomy, runtime resources, architecture and release record for v0.32.0 if accepted. | Full baseline, platform/build/package verification and bounded live matrix. Do not publish until separately authorized. |
@@ -512,11 +541,14 @@ an accepted backtest-ready `prepared_bars.v1` artifact is a separate stronger ga
 
 ### Real connection and platform verification (approved bounded scope)
 
-Proposed first budget: one owner-selected paid account, one qualified public
-symbol (example candidate NASDAQ:AAPL), 1D/1W/1M, count 20 each, at most eight
+Approved first budget: one owner-selected paid account, NASDAQ:AAPL,
+1D/1W/1M, count 20 each, at most eight
 `get_ohlcv` dispatches and twelve authenticated MCP protocol requests in one
 30-minute observation session. Discovery/auth flow requests are separately
 recorded and bounded by one login attempt plus one refresh; no blind retries.
+Track setup/discovery/cleanup traffic as well as tool dispatches so the protocol
+budget cannot be bypassed by hidden SDK work. Stop with partial proof if the
+remaining budget cannot cover the next operation; do not silently expand it.
 The approved budget below and dedicated storage effects above apply. The user
 selects the paid account and completes browser consent at execution; any broader
 consent or changed targets/effects require a new decision. No subscription purchase or
@@ -554,7 +586,7 @@ Before accepting MCP data into the normal corpus, the downstream owner must:
 5. Demonstrate one accepted or explicitly quarantined daily/weekly/monthly
    observation artifact, negative cases and no unintended Desktop-provider change.
 
-## Guide updates when implementation is approved
+## Guide updates with implementation
 
 Current AGENTS.md and architecture already exclude an MCP **server**, so that
 boundary needs no reversal. Update crate ownership for the authenticated client,
@@ -571,7 +603,8 @@ page-session APIs. Do not document draft commands as currently available.
   consumer inspection, public TradingView/MCP/SDK source research, release
   comparison, this single draft and concrete success/failure proposals.
 - Not performed: implementation, dependency installation, OAuth, live data,
-  platform/runtime acceptance, downstream modifications, commits/publication.
+  platform/runtime acceptance, downstream modifications or MCP implementation
+  commits/publication.
 - Accepted: recommended release separation, explicit backend/new contract,
   source-evidence/null handling, OS-store direction and one-attempt policy.
 - Completed follow-up: released dependency/source inspection and two public
@@ -579,7 +612,14 @@ page-session APIs. Do not document draft commands as currently available.
   bounded registration/store/data effects are now specified above.
 - Approved on 2026-09-20: the exact dependency/local-proof and bounded live
   proposal above. Owner sequence correction: v0.31.4 first.
-- Next: resume service/proof implementation after patch closeout. Reuse approval
-  for the named scope; do not reopen settled choices without material evidence.
+- 2026-09-20 follow-up: v0.31.4 publication/tag/release jobs verified; baseline
+  is now 48e500b. Downstream HEAD/consumer paths remain unchanged. The official
+  public tool documentation still has the same bounded get_ohlcv interface.
+- Planning validation: four changed plan documents, 24 local links and eight
+  JSON examples passed, along with public/diff hygiene. Cargo inputs and Rust
+  sources are unchanged; no rebuild or functional-test rerun was performed.
+- Next: implement the first local service/proof slice above, then use the
+  existing bounded live approval. No dependency installation or tool call ran
+  during this plan preparation. Do not reopen settled choices without evidence.
 - Authentication settings, schema/semantics and live results may require a
   revised proposal. Keep those findings here rather than creating a second plan.
