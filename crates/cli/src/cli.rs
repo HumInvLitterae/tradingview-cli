@@ -1176,6 +1176,42 @@ pub enum UiCommand {
 
 #[derive(Debug, Subcommand)]
 pub enum McpCommand {
+    #[command(about = "Read one page of official news; retain access flags and next offset")]
+    News {
+        symbol: String,
+        #[arg(long, default_value = "en")]
+        lang: String,
+        #[arg(long, default_value = "25")]
+        limit: u32,
+        #[arg(long, default_value = "0")]
+        offset: u32,
+    },
+    #[command(about = "Read an unchanged story ID returned by news; no link fallback")]
+    NewsStory {
+        id: String,
+        #[arg(long, default_value = "en")]
+        lang: String,
+        #[arg(long, default_value = "non_pro")]
+        user_prostatus: String,
+        #[arg(long)]
+        user_country: Option<String>,
+    },
+    #[command(about = "List official company documents and their view IDs")]
+    Documents {
+        symbol: String,
+        #[arg(long)]
+        category: Option<String>,
+        #[arg(long)]
+        event: Option<String>,
+        #[arg(long, help = "Inclusive event-window start as YYYY-MM-DDTHH:MM:SSZ")]
+        start_date: Option<String>,
+        #[arg(long, help = "Inclusive event-window end as YYYY-MM-DDTHH:MM:SSZ")]
+        end_date: Option<String>,
+        #[arg(long, default_value = "20")]
+        limit: u32,
+    },
+    #[command(about = "Read an unchanged views[].id returned by documents")]
+    Document { view_id: String },
     #[command(
         about = "Read official financial metrics; retain reporting period and missing values"
     )]

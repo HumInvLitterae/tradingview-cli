@@ -266,13 +266,16 @@ tv mcp financials NASDAQ:AAPL --period ttm
 tv mcp financial-history NASDAQ:AAPL --period fq
 tv mcp forecasts NASDAQ:AAPL
 tv mcp earnings NASDAQ:AAPL NASDAQ:MSFT
+tv mcp news NASDAQ:AAPL --limit 2
+tv mcp documents NASDAQ:AAPL --limit 2
 tv mcp logout
 ```
 
 These use OAuth and separate MCP contracts, preserving the existing commands.
 They support symbol/column discovery, single/batch symbol fields, screener queries and recent
 intraday/daily/weekly/monthly bars, plus watchlist/alert listing and ID-specific
-reads, financial snapshots/history, analyst forecasts and earnings dates.
+reads, financial snapshots/history, analyst forecasts, earnings dates, news and
+company documents. News stories and document views use exact IDs from list results.
 Explicit watchlist create/update/add/remove/delete and alert
 create/update/stop/restart/delete commands return separate
 mutation and readback evidence, verified with native disposable-object lifecycles.

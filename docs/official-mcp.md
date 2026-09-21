@@ -213,6 +213,108 @@ For example, three rows and `totalCount:120` produce `returned_count:3` and
 contradictory totals, excess rows, duplicate symbols and malformed rows fail with
 `mcp_error.v1`. Transport failure does not become an empty successful screen.
 
+## News and company documents
+
+These independent official-source commands read one response per invocation.
+The placeholders below must be replaced with unchanged IDs from the preceding
+list response; they are not IDs to construct from a title, URL or symbol.
+
+```sh
+tv mcp news NASDAQ:AAPL --lang en --limit 2 --offset 0
+tv mcp news-story '<STORY_ID>' --lang en
+tv mcp documents NASDAQ:AAPL --limit 2
+tv mcp document '<VIEW_ID>'
+tv mcp documents NASDAQ:AAPL --category annual_reports --start-date 2025-01-01T00:00:00Z --end-date 2026-09-21T23:59:59Z
+```
+
+| Command | Contract | Selection and bounds |
+| --- | --- | --- |
+| `news` | `mcp_news.v1` | Qualified symbol, language (default `en`), limit 1..200 (default 25), offset 0..200 |
+| `news-story` | `mcp_news_story.v1` | Exact news `items[].id`, language, optional viewer declarations |
+| `documents` | `mcp_documents.v1` | Qualified symbol; category/event filters; limit 1..100 (default 20); optional event-window endpoints |
+| `document` | `mcp_document.v1` | Exact `items[].views[].id` from documents |
+
+News uses the documented language set, including `en`, `ja`, `zh-Hans` and
+`zh-Hant`. Story IDs can be opaque strings as well as URNs: an observed list
+returned a non-URN ID that the story tool accepted unchanged. Both detail
+commands reject empty/whitespace/control-containing IDs and cap them at 2048
+bytes. This syntax check cannot prove the ID came from a list; the caller must
+retain the actual source reference. No URL rewriting, ID construction or link
+fetching occurs.
+
+`news-story --user-prostatus pro|non_pro` defaults to `non_pro` and is passed as
+declared, not inferred from the OAuth grant or paid subscription. Optional
+`--user-country` is a two-letter uppercase country code. The CLI never changes
+these declarations to recover restricted content. It preserves the provider's
+permission/copyright metadata and does not fall back to a publisher URL.
+
+Documents accepts `all`, `annual_reports`, `quarterly_reports`, `interim_reports`,
+`company_events`, `insider_transactions`, `transcripts`, `presentations`,
+`press_releases`, `other`, and the provider aliases `10-K`, `10-Q`, `8-K`.
+`--event` accepts `earning` or `corporate_event`. The limit of 100 is a client
+bound, not a claimed provider maximum. This CLI currently accepts the exact UTC
+second syntax `YYYY-MM-DDTHH:MM:SSZ` for `--start-date` / `--end-date`, a subset of
+the provider's RFC3339 syntax. Both endpoints are inclusive instants; fractional
+seconds, other offsets and date-only inputs are rejected before I/O. These are
+**event-date** filters; an item's `reported` timestamp is kept separately and
+is not used to infer full event-window coverage. No document offset/pagination
+is advertised by this CLI.
+
+Every response has `source:tradingview_mcp`, `source_category:desktop_free_read`,
+`requires_desktop:false`, the exact request and separate client receipt time.
+`client_observation.completeness` stays `unconfirmed`. Transport success is not
+proof of full history, full text, access rights or a stable multi-page snapshot.
+
+News `items` retains ID, title, publication timestamp, provider identity,
+urgency, story path, link, permission, paywall and related symbols. `pagination`
+retains the reported offset, next offset, `has_more` and `total_available`, using
+null for absent values. To continue, pass the returned next offset explicitly;
+there is no automatic page loop. The provider exposes at most its recent pool
+(documented as up to 200 headlines), not unrestricted historical access. Counts
+and request limits are checked, duplicate IDs within a page are rejected, and
+an advancing page cannot point back to the same offset.
+
+For example, a synthetic first page with one restricted headline and more
+available items retains both the usable reference and the restriction:
+
+```json
+{
+  "contract_version": "mcp_news.v1",
+  "items": [{"id": "opaque-example-id", "permission": "restricted", "paywall": true}],
+  "pagination": {"offset": 0, "next_offset": 1, "has_more": true, "total_available": 5},
+  "client_observation": {"returned_count": 1, "completeness": "unconfirmed"}
+}
+```
+
+Documents keeps document IDs, provider/category/form, event/fiscal metadata,
+reported timestamp, symbols, and exact view IDs/types. `provider_total` is kept
+as reported and does not promise that increasing the limit retrieves everything.
+An empty list is an empty observation, not proof that no documents exist.
+
+Both detail contracts return `content` and `provider_metadata`. News keeps the
+string fields `ast_description`, `short_description` and `summary`. Document
+views keep the structured `astDescription` object. These are inert provider
+content: no AST execution, HTML rendering, embedded instructions or reference
+fetching. Preserve attribution and access metadata alongside saved results.
+`content_status:returned` means content was supplied, not that full-text access
+or completeness was established. A metadata-only/restricted response uses
+`not_returned` and null content rather than a fabricated empty article.
+`id_echo_matches` is true for a matching supplied response ID, or null when no
+ID is reported. A contradictory response ID fails with `reference_id_mismatch`;
+the client does not reinterpret it as an alias or return a different body.
+
+Invalid bounds, dates, filters or IDs fail before credentials/network access.
+A 401, 429, timeout or malformed response uses the shared `mcp_error.v1` contract;
+data calls are never automatically replayed. Schema drift and contradictory
+pagination/counts fail explicitly. The client does not attempt broader viewer
+settings, scraping, another source or arbitrary MCP tool forwarding on failure.
+
+Native macOS verification covered two news pages, the empty page at offset 200,
+a news story, document listing, a document view and a dated annual-report query.
+Both detail responses echoed the exact requested IDs. Restricted/metadata-only
+responses and malformed cases are fixture evidence, not live paywall bypass
+checks. Windows qualification remains separate and pending.
+
 ## Financial data, forecasts and earnings
 
 These commands read the official MCP source independently of scanner-backed

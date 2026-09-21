@@ -18,7 +18,7 @@ async fn main() {
         if !(args.len() == 2 || (args.len() == 4 && args[2] == "--credential-worker-path")) {
             eprintln!(
                 "Usage: connection_proof --local-admission | \
-                 financial-commands/financial-shape/history-shape/forecast-shape/earnings-shape/discover/login/status/authorize-store/daily/weekly/monthly/all/search/columns/columns-overview/symbol/symbols/symbols-command/screener/screener-command/screener-empty-command/intraday-command/account-lists/account-commands/alert-catalog/alert-lifecycle/watchlist-catalog/watchlist-lifecycle/refresh/logout \
+                 research-commands/news-shape/documents-shape/story-shape/document-shape/financial-commands/financial-shape/history-shape/forecast-shape/earnings-shape/discover/login/status/authorize-store/daily/weekly/monthly/all/search/columns/columns-overview/symbol/symbols/symbols-command/screener/screener-command/screener-empty-command/intraday-command/account-lists/account-commands/alert-catalog/alert-lifecycle/watchlist-catalog/watchlist-lifecycle/refresh/logout \
                  <proof-directory> [--credential-worker-path <absolute-executable>]"
             );
             std::process::exit(1);
@@ -27,6 +27,11 @@ async fn main() {
             "history-shape" => Op::HistoryShape,
             "forecast-shape" => Op::ForecastShape,
             "earnings-shape" => Op::EarningsShape,
+            "story-shape" => Op::StoryShape,
+            "document-shape" => Op::DocumentShape,
+            "research-commands" => Op::ResearchCommands,
+            "news-shape" => Op::NewsShape,
+            "documents-shape" => Op::DocumentsShape,
             "financial-commands" => Op::FinancialCommands,
             "financial-shape" => Op::FinancialShape,
             "discover" => Op::Discover,

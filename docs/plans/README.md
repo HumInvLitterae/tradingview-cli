@@ -6,7 +6,7 @@ provider integration.
 
 | Purpose | Record |
 | --- | --- |
-| Active feature: official MCP client | [MCP ExecPlan](tradingview-cli-official-mcp-client.md) — initial OHLCV plus search/columns/symbol implemented; batch symbol reads and screener implemented; intraday implemented; watchlist/alert management verified; financial/earnings reads verified; news/research next; Windows qualification open |
+| Active feature: official MCP client | [MCP ExecPlan](tradingview-cli-official-mcp-client.md) — initial OHLCV plus search/columns/symbol implemented; batch symbol reads and screener implemented; intraday implemented; watchlist/alert management verified; financial/earnings reads verified; news/document reads verified; economics and Windows qualification open |
 | v0.32.0 candidate direction | [Roadmap](../next-version-roadmap.md) |
 | Ordered work, ownership and next return point | [Inventory](../next-version-work-items.md) |
 | Released baseline | [v0.31.4 closeout](archives/tradingview-cli-v0.31.4-release-readiness.md) |
@@ -29,8 +29,8 @@ screener limited/empty queries also passed native public-service verification.
 Recent-count intraday OHLCV is implemented. The roadmap records the agreed
 expansion order. Watchlist/alert listing and ID reads are implemented; explicit
 watchlist management passed fixture and native disposable-list verification;
-alert management also passed a native disposable-alert lifecycle. Financial/earnings reads also passed native checks. News, documents and
-economic/calendar data are next. Windows execution
+alert management also passed a native disposable-alert lifecycle. Financial/earnings reads also passed native checks. News/document list-to-body reads passed native verification; economic discovery, series
+and remaining calendars follow. Windows execution
 is deferred by the owner. The former count/time approval gates were withdrawn; request counters remain evidence.
 No Codex MCP setup is required. The work record owns the concrete execution
 live observations and remaining acceptance gates.

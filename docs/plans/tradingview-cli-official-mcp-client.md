@@ -71,6 +71,43 @@ the priority decision does not authorize changes to existing account objects.
 No additional dependency, executor, publication or default-backend change is
 implied. Keep this as the single MCP work record.
 
+## News and document slice (2026-09-21)
+
+The owner requested the next ordered work. Priority 7 is delivered in usable
+stages: first news/company-document listing through referenced body retrieval;
+economic symbol discovery, series and remaining calendars follow separately.
+`tv mcp news/news-story/documents/document` use the existing internal authenticated
+service with [explicit CLI/JSON contracts](../official-mcp.md#news-and-company-documents).
+No independent source fallback, dependency addition or account mutation is needed.
+
+The model owns closed requests and response interpretation. News keeps source
+pagination, access flags and IDs; documents keep event filters and view IDs.
+Bodies retain provider AST/text and attribution as inert data. Missing content
+and unknown completeness remain distinct from success. Document timestamps use
+canonical UTC seconds; the shared I/O-free date validator also preserves existing
+financial date behavior. This is a bounded RFC3339 subset, not a new date library.
+
+Actual list/detail schemas were inspected through the existing account and
+trusted credential worker using AAPL. A news-list attempt timed out without
+replay. Investigation then found that returned news IDs can be non-URN, contrary
+to an overly narrow reading of the public example. Validation now preserves any
+bounded, unchanged opaque ID, verified by a successful story call. News stories
+return root-level string AST fields; document views return root-level structured
+AST. Fixtures follow these observations instead of invented data wrappers.
+No body text or source IDs are committed as live evidence.
+
+Native macOS public-service checks passed: two news pages (two rows each), a
+news story, an empty page at offset 200, document listing (two rows), a document
+view and a dated annual-report query (one row). Detail response IDs matched the
+exact requested IDs. Each invocation used one tool call. Existing credentials
+worked without new browser/OS consent or changing the installed/trusted binaries.
+No body text or IDs are included in tracked evidence. The workspace baseline
+passed: 1,019 tests, 27 ignored, zero failures. Final reference-ID mismatch
+checks passed focused model/service tests. Strict Clippy, formatting, public/diff
+hygiene (692 tracked files) and runtime-resource checks passed (48 files, six
+skills per root). No dependency or installed-binary change was needed. Native Windows qualification remains explicitly deferred before release.
+Economic/catalog/calendar work remains the next unfinished part of priority 7.
+
 ## Financial and earnings slice (2026-09-21)
 
 The owner requested the next agreed slice after alert management. It implements
