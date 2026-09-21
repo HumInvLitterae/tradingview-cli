@@ -590,6 +590,12 @@ fn respond(ep: &Endpoints, r: &Request, mode: &str) -> Response {
                 }
                 _ => {}
             }
+            if mode == "application-429" {
+                result["structuredContent"] = json!({
+                    "success": false,
+                    "error": "Synthetic upstream status 429; synthetic-secret"
+                });
+            }
             let rpc = json!({"jsonrpc": "2.0", "id": id, "result": result});
             if mode == "sse" || mode == "alert-sse" {
                 let mut reply = Response::json(json!({}));
@@ -1727,6 +1733,69 @@ async fn economic_service_keeps_nulls_and_single_dispatch_failures() {
                     if mode == "schema-change" { 0 } else { 1 }
                 );
                 assert!(!details.to_string().contains("synthetic-secret"));
+            }
+        }
+    }
+}
+
+#[tokio::test]
+async fn dividend_service_distinguishes_http_throttling_from_application_errors() {
+    use crate::client::{Operation, execute};
+    use tradingview_model::mcp_economics::{DividendOptions, Request};
+
+    for market_mode in [false, true] {
+        for mode in ["429", "application-429", "401"] {
+            let server = Server::start(mode).await;
+            let (_root, mut guard, budget, http, store) = context(&server, 8).await;
+            fixture_login(&http, &store, &budget).await;
+            let request = Request::dividends(if market_mode {
+                DividendOptions {
+                    market: Some("america".into()),
+                    limit: Some(2),
+                    ..Default::default()
+                }
+            } else {
+                DividendOptions {
+                    symbols: vec!["NASDAQ:EXAMPLE".into()],
+                    ..Default::default()
+                }
+            })
+            .unwrap();
+            let error = execute(
+                Operation::Economic(request),
+                &mut guard,
+                store,
+                http,
+                budget,
+                true,
+            )
+            .await
+            .unwrap_err();
+            assert!(!format!("{error:?}").contains("synthetic-secret"));
+            let details = error.details.unwrap();
+            assert_eq!(server.calls("tools/call"), 1);
+            assert_eq!(details["tool_attempts"], 1);
+            match mode {
+                "429" => {
+                    assert_eq!(details["code"], "rate_limited");
+                    assert_eq!(details["retry_after_seconds"], 123);
+                    assert_eq!(details["retry_after_evidence"], "http_header");
+                    assert_eq!(guard.check_cooldown(), Err(Failure::RateLimited));
+                }
+                "application-429" => {
+                    assert_eq!(details["code"], "provider_error");
+                    assert!(details.get("retry_after_seconds").is_none());
+                    assert!(details.get("local_cooldown_seconds").is_none());
+                    assert_eq!(guard.check_cooldown(), Ok(()));
+                }
+                "401" => {
+                    assert_eq!(details["code"], "auth_refreshed_retry_required");
+                    assert_eq!(
+                        details["next_action"],
+                        "repeat the same explicit tv mcp command"
+                    );
+                }
+                _ => unreachable!(),
             }
         }
     }

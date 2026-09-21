@@ -102,3 +102,14 @@ remaining proof gates are recorded in the MCP plan. Real OAuth exchange, native 
 OHLCV reads passed for all three timeframes. Windows is mandatory and not yet
 qualified. The independent CLI/contract and downstream observation intake are implemented;
 Windows qualification and downstream analysis adoption remain open.
+
+
+The offline acceptance follow-up is recorded in the existing MCP plan. It
+covers the difference between HTTP throttling and application-level errors,
+non-bar refresh guidance, SDK/CLI boundaries and a Windows model cross-check.
+The Windows workspace cross-check is environment-blocked by the missing Windows
+SDK; the existing Windows CI job has not been dispatched. Remaining acceptance
+is ordered: successful native economic/dividend reads, Windows build/fixture
+execution, then the owner-deferred real Windows OAuth/store/restart/refresh
+checks. Do not interpret the dividend error as proof that all MCP tools are
+throttled, or repeatedly run unaffected tests to substitute for those gates.

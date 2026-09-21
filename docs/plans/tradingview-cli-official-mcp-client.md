@@ -141,6 +141,41 @@ are unchanged. Focused strict Clippy, formatting and diff/public hygiene passed;
 the prior workspace/fixture evidence remains valid for unchanged production code.
 Native dividend success and normal-deadline acceptance remain open.
 
+### Offline acceptance review (2026-09-21)
+
+The owner asked to continue verification independently of provider availability.
+No TradingView requests or native credential operations were made in this
+checkpoint. The observed 429 indication belongs to the dividend tool's error
+body; a service-wide MCP limit has not been established.
+
+The service fixtures now distinguish HTTP 429 with a real synthetic Retry-After
+header from HTTP 200 with `success:false` and an error string containing 429.
+Both dividend modes dispatch once and redact the source error. Only the former
+produces `rate_limited`, header evidence and a persisted cooldown; the latter
+remains `provider_error` without an invented retry time. A non-bar 401 exposed
+an incorrect instruction to rerun `tv mcp bars`. The shared error now directs
+the caller to repeat the same explicit MCP command; refresh still does not
+replay the request. Both dividend modes exercise this correction.
+
+| Verification | Evidence and remaining boundary |
+| --- | --- |
+| Authentication, refresh/storage failures, admission, JSON/SSE, schema changes, transport errors and no replay | MCP local fixture suite; synthetic credentials and loopback servers only. |
+| Shared SDK interfaces and CLI separation/validation | SDK and CLI contract tests; no Desktop/provider access. |
+| Windows model compilation | Offline locked `cargo check -p tradingview-model --all-targets --target x86_64-pc-windows-msvc` passed, including core/model tests at compile time. No Windows execution is implied. |
+| Windows whole-workspace compilation | Attempted offline with the installed target; stopped in aws-lc-sys because this host lacks Windows SDK `windows.h`. Native Windows code is not qualified by this attempt. |
+| Windows automation readiness | Existing CI test matrix includes Windows and the synthetic Credential Manager save/load/rotation/oversize/delete test. Configuration inspected; workflow not dispatched. |
+| Actual economics/dividend acceptance | Still open: normal-deadline reads and successful native dividend normalization after provider availability permits. |
+| Windows real OAuth/store/restart/refresh | Deferred by owner; mandatory before release. |
+
+Validation passed: 49 MCP library tests, two SDK integration tests, eight CLI
+contract tests, strict MCP Clippy, formatting and public/diff hygiene. These
+checks used existing locked dependencies without provider access.
+
+Do not replace dependencies, weaken native storage, or count model-only
+cross-compilation as a Windows release build. The earlier workspace baseline and
+runtime resource checks remain evidence for their unchanged inputs; release-wide
+checks will run with the selected release candidate.
+
 ## News and document slice (2026-09-21)
 
 The owner requested the next ordered work. Priority 7 is delivered in usable
