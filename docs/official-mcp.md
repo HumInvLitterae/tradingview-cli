@@ -213,6 +213,96 @@ For example, three rows and `totalCount:120` produce `returned_count:3` and
 contradictory totals, excess rows, duplicate symbols and malformed rows fail with
 `mcp_error.v1`. Transport failure does not become an empty successful screen.
 
+## Economic indicators and calendars
+
+These are independent authenticated reads. Existing `tv events`, scanner data
+and chart operations keep their existing behavior.
+
+```sh
+tv mcp economic-symbols
+tv mcp economic-symbols --category prce --search inflation
+tv mcp economic-symbols --country US --search inflation
+tv mcp economic-data '<SYMBOL_FROM_CATALOG>' --from 2025-01-01 --to 2026-09-21
+tv mcp economic-calendar --countries US,JP --min-importance 1 --from 2026-09-17 --to 2026-09-18
+tv mcp dividends NASDAQ:AAPL NASDAQ:MSFT
+tv mcp dividends --market america --from 2026-09-21 --to 2026-09-25 --limit 20
+```
+
+| Command | Contract | Meaning |
+| --- | --- | --- |
+| `economic-symbols` | `mcp_economic_symbols.v1` | No filters returns `mode:overview`, categories/countries and provider counts. Filters without country return `mode:indicators` with codes/names. A country returns `mode:symbols` with actual qualified symbols. |
+| `economic-data` | `mcp_economic_data.v1` | Exact catalog symbol; dated actual values with provider unit/scale. Optional date-only bounds. |
+| `economic-calendar` | `mcp_economic_calendar.v1` | Separate actual/forecast/previous and raw values, event dates, periods, units/scale and source fields when provided. |
+| `dividends` | `mcp_dividends.v1` | Explicit symbols or market screening; recent/upcoming amounts and ex/payment dates remain distinct. |
+
+Catalog categories are `gdp`, `lbr`, `prce`, `hlth`, `mny`, `trd`, `gov`,
+`bsnss`, `cnsm`, `hse`, `txs`, `enrg` and `clmt`.
+
+Never construct a ticker from an indicator code and country. Discover with
+`--country` and copy the returned `items[].symbol`. The series must echo the
+requested symbol; duplicates or inconsistent counts fail as `invalid_response`.
+Rows retain provider order. The client derives the actual date range without
+resampling, scaling values, filling gaps or treating it as requested-window
+coverage. Unit, scale and notices are source metadata, not client guarantees.
+
+Calendar countries default to `US`; country/currency filters use uppercase
+comma-separated two/three-letter codes. `--min-importance` accepts `-1` (all,
+default), `0` (medium/high), or `1` (high). Calendar bounds accept dates or
+canonical UTC second timestamps such as `2026-09-17T00:00:00Z`. Omitted bounds
+remain provider defaults. Category names differ from the indicator catalog;
+calendar categories are `all`, `gdp`, `bonds`, `business`, `consumer`,
+`goverment`, `health`, `housing`, `labor`, `money`, `prices`, `trade`, and
+`taxes`. The provider's exact spelling `goverment` is preserved. Historical and
+forward availability remain provider constraints. Event times and reference
+periods are retained as reported; no timezone conversion or economic-surprise
+judgment is inferred. Unknown status values or malformed rows fail closed.
+
+Dividend symbol mode accepts up to 50 distinct qualified symbols and rejects
+market/date/limit options. Market mode requires `--market`, accepts date-only
+bounds and limit 1..200 (default 50). It does not fetch additional pages.
+`outcomes` in symbol mode follows requested order and distinguishes `returned`
+from `unreported`; an omitted symbol is not declared nonexistent. Returned
+items keep provider order. A missing next dividend remains `null`, not zero or
+proof that no dividend is scheduled. Provider `dividends_yield` is not
+recalculated. No exchange calendar or currency conversion is inferred.
+
+All four contracts retain `request`, explicit MCP source, client `received_at`
+and `transport` evidence. Completeness and requested-window coverage remain
+`unconfirmed`, even for a successful response. These synthetic excerpts omit
+unchanged envelope and metadata fields:
+
+```json
+{
+  "contract_version": "mcp_economic_data.v1",
+  "source": "tradingview_mcp",
+  "symbol": "ECONOMICS:USEXAMPLE",
+  "series": [{"date": "2026-01-01", "value": 0}, {"date": "2026-02-01", "value": null}],
+  "provider_metadata": {"unit": "%", "scale": 1},
+  "client_observation": {"returned_count": 2, "actual_range": {"from": "2026-01-01", "to": "2026-02-01"}, "requested_window_coverage": "unconfirmed"},
+  "transport": {"status": "succeeded", "tool_attempts": 1}
+}
+```
+
+```json
+{
+  "contract_version": "mcp_dividends.v1",
+  "mode": "symbols",
+  "outcomes": [
+    {"requested_symbol": "NYSE:OTHER", "status": "unreported"},
+    {"requested_symbol": "NASDAQ:EXAMPLE", "status": "returned"}
+  ],
+  "items": [{"symbol": "NASDAQ:EXAMPLE", "dividend_amount_recent": 0, "dividend_amount_upcoming": null}],
+  "client_observation": {"returned_count": 1, "completeness": "unconfirmed"}
+}
+```
+
+Mixed dividend modes are `invalid_request` with zero tool attempts. Authentication,
+rate limit and timeout failures use the shared MCP error contract; no implicit
+retry or source fallback occurs. Wrong identity, count contradictions, wrong
+field types and response-schema changes fail explicitly without returning raw
+provider errors. Optional missing values remain unknown. See the existing work
+record for fixture and native qualification evidence.
+
 ## News and company documents
 
 These independent official-source commands read one response per invocation.

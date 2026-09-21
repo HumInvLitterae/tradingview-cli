@@ -4,6 +4,7 @@ pub mod mcp_account;
 pub mod mcp_bars;
 pub mod mcp_data;
 mod mcp_dates;
+pub mod mcp_economics;
 pub mod mcp_financials;
 pub mod mcp_research;
 pub mod replay;

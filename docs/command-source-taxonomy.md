@@ -47,6 +47,13 @@ follows links, executes content or changes viewer declarations to obtain access.
 Client receipt time is separate from provider publication and event timestamps.
 See [research contracts](official-mcp.md#news-and-company-documents).
 
+`tv mcp economic-symbols/economic-data/economic-calendar/dividends` uses the
+same non-mutating source with separate economic contracts. Catalog codes are
+not manufactured into tickers; series identity and actual date bounds are
+explicit. Calendar actual/forecast/previous fields and recent/upcoming dividends
+remain source observations, with unknown coverage. Dividend symbols and market
+screening are separate request modes. See [economic contracts](official-mcp.md#economic-indicators-and-calendars).
+
 ### Authenticated official MCP mutation
 
 `tv mcp watchlist create/update/add/remove/delete` uses
