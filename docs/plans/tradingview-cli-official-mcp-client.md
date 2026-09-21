@@ -43,7 +43,8 @@ watchlists and alerts immediately after intraday bars and before financial data.
 The earlier exclusions below describe the first delivered slice, not a permanent
 ban on this agreed follow-up. Symbol discovery, single/batch symbol reads and
 screener queries and recent-count intraday OHLCV are implemented using the shared
-authenticated service. Watchlists and alerts are next. Existing commands remain intact.
+authenticated service. Watchlist and alert list/ID reads are also implemented;
+explicit management with readback is next. Existing commands remain intact.
 
 Source inspection supports the watchlist/alert substitution rationale:
 
@@ -67,6 +68,61 @@ Agree on actual OAuth scope and disposable test targets before live mutations;
 the priority decision does not authorize changes to existing account objects.
 No additional dependency, executor, publication or default-backend change is
 implied. Keep this as the single MCP work record.
+
+## Watchlist and alert read slice (2026-09-21)
+
+This slice adds `tv mcp watchlist list/get <ID>` and
+`tv mcp alert list [--symbol <SYMBOL>] [--active true|false]` /
+`get <ID>...`. Account interpretation lives in `model::mcp_account`, separate
+from market data, and shares the existing credential/admission/transport service.
+No dependency or persisted credential-format change was needed.
+
+Existing Desktop commands remain intact. The explicit MCP route returns
+source-labelled account snapshots, provider order for lists, exact requested IDs
+for detail reads, nulls for absent optional fields, and unconfirmed completeness.
+An omitted requested alert must be distinguished from a returned alert and from
+a failed call. Provider errors or malformed responses never become empty lists.
+Before these commands are added, CLI parsing rejects them; after implementation,
+empty lists are successful snapshots while unsupported IDs/filters fail before
+I/O. Concrete contracts and partial/empty examples are in the
+[account read guide](../official-mcp.md#watchlists-and-alerts).
+
+Same-account nonmutating read verification is within the agreed work. Raw
+account values, identifiers, alert messages and webhook URLs must not be persisted
+in tracked records or proof reports. Do not invoke `get_active_watchlist`,
+which can activate/create a list. Actual create/update/delete/stop/restart
+verification still requires explicit disposable targets and confirmed OAuth
+scope. This read slice does not claim to finish the management slice or replace
+Pine alert conditions.
+
+Observed input-schema correction: `list_watchlists` publishes an object schema
+without `properties` or `required`. Permit absent properties only for the
+closed no-argument tool, preserving required-field and malformed-schema rejection.
+
+Native verification passed for all four contracts through the public service,
+using the existing authorized immutable credential worker. Both lists were
+populated; watchlist identity matched and the requested alert was returned.
+Each command dispatched once. No new credential consent, account mutation or
+installed-binary replacement occurred. Empty/unreported responses and malformed
+IDs/flags/conditions remain fixture evidence; live checks did not manufacture
+missing objects. Windows native verification remains deferred.
+
+The next management slice should begin with a disposable watchlist, then a
+disabled or non-notifying simple price alert only if the official API permits
+that initial state. Inspect actual OAuth write scope before consent. Contracts
+must report requested change, dispatch outcome and readback separately; a
+timeout is unknown, not permission to repeat a mutation. Existing objects are
+not test targets. Watchlist duplicate adds can reorder symbols; alert settings
+cannot change conditions/symbol/timeframe, and deleting alerts removes history.
+Confirm scope and disposable targets together once the concrete operations are
+ready. Do not claim the condition projection supports lossless alert recreation.
+
+Validation passed: 996 workspace tests, 27 ignored, zero failures; strict
+workspace Clippy, formatting, public/diff hygiene and runtime resources
+(48 staged files, six skills/root). Additional malformed-condition fixtures
+passed after the baseline. Only test/readability changes followed the baseline;
+the native evidence above uses the same production behavior. No dependency
+addition, Windows run, downstream edit, extra executor, push or release.
 
 ## Recent-count intraday slice (2026-09-21)
 

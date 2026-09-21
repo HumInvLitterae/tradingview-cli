@@ -120,7 +120,7 @@ installed binary remains `tv`.
   bounded HTTP/SSE transport, shared by the independent `tv mcp` command group
   and its opt-in proof harness. CLI adapters live in `ops/mcp.rs`; I/O-free
   request validation and response shaping live in `model::mcp_bars` and
-  `model::mcp_data`. The MCP service owns a closed tool allowlist; shared
+  `model::mcp_data`; account reads live separately in `model::mcp_account`. The MCP service owns a closed tool allowlist; shared
   transport does not expose arbitrary tool forwarding.
   Native worker adapters exist for macOS and Windows; Windows native acceptance
   and Linux implementation remain open. It does not broaden the

@@ -25,6 +25,7 @@ pub enum Operation {
     Logout,
     Bars(Request),
     Data(tradingview_model::mcp_data::Request),
+    Account(tradingview_model::mcp_account::Request),
 }
 
 /// Internal workspace service; no external stable Rust API is promised.
@@ -58,7 +59,10 @@ impl Client {
         let mut admission = Admission::acquire(&self.directory, deadline)
             .await
             .map_err(|e| failure(e, "local_admission", 0, None))?;
-        if matches!(operation, Operation::Bars(_) | Operation::Data(_)) {
+        if matches!(
+            operation,
+            Operation::Bars(_) | Operation::Data(_) | Operation::Account(_)
+        ) {
             admission
                 .check_cooldown()
                 .map_err(|e| failure(e, "local_admission", 0, None))?;
@@ -179,6 +183,7 @@ pub(crate) async fn execute(
         let (tool, arguments) = match &operation {
             Operation::Bars(request) => (crate::tools::Tool::Bars, request.arguments()),
             Operation::Data(request) => (request.kind().into(), request.arguments()),
+            Operation::Account(request) => (request.kind().into(), request.arguments()),
             _ => return Err(Failure::UnsupportedCapability.into()),
         };
         let outcome = transport::call(&http, token, tool, &[arguments], Some(admission))
@@ -200,6 +205,9 @@ pub(crate) async fn execute(
             Operation::Bars(request) => mcp_bars::normalize(request, value, received_ms),
             Operation::Data(request) => {
                 tradingview_model::mcp_data::normalize(request, value, received_ms)
+            }
+            Operation::Account(request) => {
+                tradingview_model::mcp_account::normalize(request, value, received_ms)
             }
             _ => Err(Failure::UnsupportedCapability.into()),
         }

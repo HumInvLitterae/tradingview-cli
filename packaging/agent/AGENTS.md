@@ -26,6 +26,16 @@ and only the references needed for the current question. Setup walkthroughs are
 available in [English](docs/getting-started.md) and
 [Japanese](docs/ja/getting-started.md).
 
+## Official account reads
+
+When the user selects official MCP and the binary supports it, use
+`tv mcp watchlist list/get` and `tv mcp alert list/get` for account snapshots.
+Obtain IDs from list results. Login is explicit and interactive; explain OS
+consent before invoking it. These reads do not activate lists or change alerts.
+Preserve nulls, unreported alert IDs and unknown completeness. Alert conditions
+are a limited projection, not a complete recipe for recreating Pine alerts.
+Do not put account IDs or returned account data in shared artifacts.
+
 ## Authority and evidence
 
 Prefer Desktop-free reads when they answer the question. For Desktop work,

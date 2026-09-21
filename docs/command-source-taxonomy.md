@@ -26,6 +26,10 @@ use CDP, legacy
 WebSocket, or scanner fallback. OAuth renewal and the dedicated OS credential
 record are separate local/authentication effects. `login` performs browser
 consent, `status` is local-only, and `logout` deletes local authorization only.
+`tv mcp watchlist list/get` and `tv mcp alert list/get` share this source
+category and return separate versioned account contracts. They never call
+`get_active_watchlist`, which can activate/create an account list. Returned
+account IDs are local to the authenticated account, not portable identities.
 See [MCP usage and contracts](official-mcp.md). Existing `tv bars` remains an
 independent command and contract; no implicit source migration occurs.
 

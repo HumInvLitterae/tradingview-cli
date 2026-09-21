@@ -213,6 +213,75 @@ For example, three rows and `totalCount:120` produce `returned_count:3` and
 contradictory totals, excess rows, duplicate symbols and malformed rows fail with
 `mcp_error.v1`. Transport failure does not become an empty successful screen.
 
+## Watchlists and alerts
+
+The independent account reads use the same explicit login and credentials:
+
+```sh
+tv mcp watchlist list
+tv mcp watchlist get 12
+tv mcp alert list --symbol NASDAQ:EXAMPLE --active false
+tv mcp alert get 12 10
+```
+
+IDs in these examples are synthetic. Use IDs returned by the corresponding
+list command. Watchlist IDs are canonical unsigned decimal strings; alert IDs
+are positive integers. Alert detail reads accept 1..100 distinct IDs per call
+(a client bound), without automatic splitting or replay.
+
+| Command | Contract | Result |
+| --- | --- | --- |
+| `watchlist list` | `mcp_watchlists.v1` | `items` in provider order |
+| `watchlist get <ID>` | `mcp_watchlist.v1` | `watchlist` with matching ID |
+| `alert list` | `mcp_alerts.v1` | `items` in provider order; optional symbol/active filters |
+| `alert get <ID>...` | `mcp_alert_details.v1` | `items` in requested ID order, each with `requested_id/status/alert` |
+
+All use `source:tradingview_mcp`, `source_category:desktop_free_read` and
+`requires_desktop:false`. They do not activate a watchlist or change an alert.
+The official `get_active_watchlist` operation can activate/create a list and
+is deliberately absent from the read path. Desktop watchlist and alert commands
+remain available separately.
+
+Watchlist snapshots retain IDs, names, optional description/type/active/shared
+metadata, provider timestamps and the original ordered `symbols` strings.
+Section labels are preserved; they are not resolved as instruments or flattened
+into a deduplicated symbol set. Missing symbols or optional fields remain null.
+
+Alert snapshots retain IDs, optional symbol/name/active state, condition type,
+threshold, resolution and provider timestamp strings. Detail reads additionally
+retain available auto-deactivation/webhook-presence flags and a supported
+`conditions` projection: type, frequency, resolution, cross-interval flag, and
+series type/numeric value. Missing fields remain null. No message, webhook URL,
+notification address or arbitrary raw payload is exposed. This projection is
+not a complete Pine/complex-condition serialization: `condition_completeness`
+stays `unconfirmed`, and it must not be used alone to recreate an alert.
+
+For example, a detail request for `[12,10]` with only alert 12 reported yields
+the following selected fields (other metadata omitted here):
+
+```json
+{
+  "items": [
+    {"requested_id": 12, "status": "returned", "alert": {"alert_id": 12}},
+    {"requested_id": 10, "status": "unreported", "alert": null}
+  ],
+  "client_observation": {
+    "returned_count": 1,
+    "unreported_count": 1,
+    "ids_status": "partial",
+    "completeness": "unconfirmed"
+  }
+}
+```
+
+An empty list is a successful observation with zero returned items, not proof
+of account-wide completeness. An omitted ID is unreported, not asserted deleted.
+Duplicate/unexpected IDs, a mismatched watchlist ID, contradictory filter echoes
+or malformed fields produce `mcp_error.v1`; failed calls never become empty
+successful results. Existing authentication/rate-limit/timeout handling applies.
+`received_at` is the client receipt time, separate from provider timestamps.
+Commands added here are reads; account management is a subsequent slice.
+
 ## Read contract
 
 Use an exchange-qualified symbol and one of `1m`, `5m`, `15m`, `30m`, `1h`,

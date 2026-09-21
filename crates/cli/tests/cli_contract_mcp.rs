@@ -33,6 +33,11 @@ fn independent_mcp_help_does_not_change_bars_entry() {
 #[test]
 fn invalid_mcp_requests_fail_before_cdp_state_store_or_provider_access() {
     for args in [
+        vec!["mcp", "watchlist", "get", "name"],
+        vec!["mcp", "watchlist", "get", "01"],
+        vec!["mcp", "alert", "get", "0"],
+        vec!["mcp", "alert", "get", "12", "12"],
+        vec!["mcp", "alert", "list", "--symbol", "EXAMPLE"],
         vec!["mcp", "screener", "--limit", "1001"],
         vec!["mcp", "screener", "--limit", "0"],
         vec!["mcp", "screener", "--sort-order", "invalid"],
@@ -149,5 +154,42 @@ fn supported_mcp_bar_intervals_reach_local_state_validation_without_provider_acc
         assert!(output.stdout.is_empty());
         let error: Value = serde_json::from_slice(&output.stderr).unwrap();
         assert_eq!(error["error"]["details"]["code"], "local_state_unavailable");
+    }
+}
+
+#[test]
+fn account_reads_parse_without_desktop_or_credential_access() {
+    for args in [
+        vec!["mcp", "watchlist", "list"],
+        vec!["mcp", "watchlist", "get", "12"],
+        vec!["mcp", "alert", "list"],
+        vec!["mcp", "alert", "list", "--active", "false"],
+        vec!["mcp", "alert", "get", "12", "10"],
+    ] {
+        let output = tv()
+            .args(args)
+            .env("HOME", "relative-home")
+            .env("LOCALAPPDATA", "relative-state")
+            .env("XDG_STATE_HOME", "relative-state")
+            .assert()
+            .code(1)
+            .get_output()
+            .clone();
+        assert!(output.stdout.is_empty());
+        let error: Value = serde_json::from_slice(&output.stderr).unwrap();
+        assert_eq!(error["error"]["details"]["code"], "local_state_unavailable");
+    }
+    for group in ["watchlist", "alert"] {
+        let output = tv()
+            .args(["mcp", group, "--help"])
+            .assert()
+            .success()
+            .get_output()
+            .stdout
+            .clone();
+        let help = String::from_utf8(output).unwrap();
+        assert!(help.contains("list"));
+        assert!(help.contains("get"));
+        assert!(!help.contains("create"));
     }
 }

@@ -1,13 +1,24 @@
-use crate::cli::McpCommand;
+use crate::cli::{McpAlertCommand, McpCommand, McpWatchlistCommand};
 use serde_json::Value;
 use tradingview_core::AppError;
 use tradingview_mcp::{Client, Operation};
+use tradingview_model::mcp_account;
 use tradingview_model::mcp_bars::{Request, unsupported};
 
 pub async fn run_mcp(command: McpCommand) -> Result<Value, AppError> {
     use tradingview_model::mcp_data;
 
     let operation = match command {
+        McpCommand::Watchlist { command } => Operation::Account(match command {
+            McpWatchlistCommand::List => mcp_account::Request::watchlists(),
+            McpWatchlistCommand::Get { id } => mcp_account::Request::watchlist(&id)?,
+        }),
+        McpCommand::Alert { command } => Operation::Account(match command {
+            McpAlertCommand::List { symbol, active } => {
+                mcp_account::Request::alerts(symbol.as_deref(), active)?
+            }
+            McpAlertCommand::Get { ids } => mcp_account::Request::alert_details(&ids)?,
+        }),
         McpCommand::Login => Operation::Login,
         McpCommand::Status => Operation::Status,
         McpCommand::Logout => Operation::Logout,

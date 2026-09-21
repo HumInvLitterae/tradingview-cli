@@ -54,7 +54,8 @@ implemented and passed deterministic checks and macOS public CLI smoke.
 Multi-symbol data is also implemented and verified through the public service;
 screener queries are implemented with native limited/empty-result verification.
 Recent-count intraday OHLCV is implemented with all six intervals verified.
-Watchlists and alerts are the next slice in the agreed order below.
+Watchlist and alert list/ID reads are implemented and verified through the native
+service. Their explicit management/readback is the next slice.
 The owner has handed the separate `mcp_bars.v1` path to the downstream PM. Windows
 qualification is deferred to a later stage and remains a release requirement. A successful read
 still leaves delay/adjustment/session/finality/anchoring unconfirmed. No new
@@ -72,7 +73,7 @@ contracts and acceptance. These are not all mandatory v0.32.0 release contents.
 | 2 | Multi-symbol data | Implemented as `tv mcp symbols` / `mcp_symbols.v1`, one request for up to 50 distinct symbols. Input order, partial results and missing fields covered by fixtures and native public-service verification; no new native credential executable was required. |
 | 3 | Screener | Implemented as `tv mcp screener` / `mcp_screener.v1`; explicit filters, columns, presets and limit. Native public-service limited and empty results passed; returned counts remain distinct from provider totals. |
 | 4 | Recent-count intraday OHLCV | Implemented: six intervals pass fixture and native service verification; no date-range or completeness claims. |
-| 5 | Watchlists and alerts | Read/list foundation, then explicit management with readback; compare existing behavior and retain unsupported Pine/Desktop capabilities. |
+| 5 | Watchlists and alerts | List/ID reads implemented and verified; explicit management with readback remains. Retain unsupported Pine/Desktop capabilities and establish disposable live targets before account mutations. |
 | 6 | Earnings and financial data | Periods, units, dates and missing values retain provider meaning. |
 | 7 | News, documents and economic data | Pagination, references, timestamps and access limits remain explicit. |
 

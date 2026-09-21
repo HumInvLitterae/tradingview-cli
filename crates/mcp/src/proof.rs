@@ -29,6 +29,8 @@ pub enum ProofOperation {
     ReadWeekly,
     ReadMonthly,
     IntradayCommand,
+    AccountLists,
+    AccountCommands,
     Refresh,
     Search,
     Columns,
@@ -53,6 +55,9 @@ pub async fn run_proof_with_worker(
     operation: ProofOperation,
     worker: Option<&Path>,
 ) -> Result<Value> {
+    if matches!(operation, ProofOperation::AccountCommands) {
+        return verify_account_commands(directory, worker).await;
+    }
     if matches!(operation, ProofOperation::IntradayCommand) {
         return verify_intraday_command(directory, worker).await;
     }
@@ -195,6 +200,61 @@ pub async fn run_proof_with_worker(
                     "provider_success": value.get("success").and_then(Value::as_bool),
                     "symbol_echo_matches": value.get("symbol").and_then(Value::as_str).map(|v| v == "NASDAQ:AAPL")
                 }))
+            }
+            ProofOperation::AccountLists => {
+                auth.restore().await?;
+                let mut observations = Vec::new();
+                for tool in [crate::tools::Tool::Watchlists, crate::tools::Tool::Alerts] {
+                    let mut results = crate::transport::call(
+                        &http,
+                        auth.token().await?,
+                        tool,
+                        &[json!({})],
+                        Some(&mut admission),
+                    )
+                    .await?;
+                    let value = crate::transport::result_value(
+                        results.pop().ok_or(Failure::InvalidResponse)??,
+                    )?;
+                    observations.push(json!({
+                        "tool": tool.names()[0],
+                        "response_shape": response_shape(&value, 0)
+                    }));
+                    let (rows_key, id_key, detail_tool) = if tool == crate::tools::Tool::Watchlists {
+                        ("watchlists", "id", crate::tools::Tool::Watchlist)
+                    } else {
+                        ("alerts", "alert_id", crate::tools::Tool::AlertDetails)
+                    };
+                    if let Some(id) = value
+                        .get(rows_key)
+                        .and_then(Value::as_array)
+                        .and_then(|rows| rows.first())
+                        .and_then(|row| row.get(id_key))
+                        .and_then(Value::as_u64)
+                    {
+                        let args = if detail_tool == crate::tools::Tool::Watchlist {
+                            json!({"watchlist_id": id.to_string()})
+                        } else {
+                            json!({"alert_ids": [id]})
+                        };
+                        let mut results = crate::transport::call(
+                            &http,
+                            auth.token().await?,
+                            detail_tool,
+                            &[args],
+                            Some(&mut admission),
+                        )
+                        .await?;
+                        let detail = crate::transport::result_value(
+                            results.pop().ok_or(Failure::InvalidResponse)??,
+                        )?;
+                        observations.push(json!({
+                            "tool": detail_tool.names()[0],
+                            "response_shape": response_shape(&detail, 0)
+                        }));
+                    }
+                }
+                Ok(json!({"lists": observations}))
             }
             ProofOperation::ReadAll => {
                 auth.restore().await?;
@@ -562,6 +622,46 @@ async fn verify_intraday_command(directory: &Path, worker: Option<&Path>) -> Res
             "calendar_coverage": data["client_observation"]["calendar_coverage"],
             "tool_attempts": data["transport"]["tool_attempts"]
         }));
+    }
+    Ok(json!({"success": true, "observations": observations}))
+}
+
+async fn verify_account_commands(directory: &Path, worker: Option<&Path>) -> Result<Value> {
+    use tradingview_model::mcp_account::{Kind, Request};
+    let worker = worker.ok_or(Failure::UnsupportedCapability)?;
+    let client = crate::Client::with_paths(directory.to_owned(), worker.to_owned());
+    let mut observations = Vec::new();
+    for request in [Request::watchlists(), Request::alerts(None, None).unwrap()] {
+        let kind = request.kind();
+        let data = client
+            .run(crate::Operation::Account(request))
+            .await
+            .map_err(|_| Failure::InvalidResponse)?;
+        observations.push(json!({
+            "contract_version": data["contract_version"],
+            "tool_attempts": data["transport"]["tool_attempts"],
+            "nonempty": data["items"].as_array().is_some_and(|items| !items.is_empty())
+        }));
+        if let Some(first) = data["items"].as_array().and_then(|items| items.first()) {
+            let request = if kind == Kind::Watchlists {
+                Request::watchlist(first["id"].as_str().ok_or(Failure::InvalidResponse)?)
+            } else {
+                Request::alert_details(&[first["alert_id"]
+                    .as_u64()
+                    .ok_or(Failure::InvalidResponse)?])
+            }
+            .map_err(|_| Failure::InvalidResponse)?;
+            let detail = client
+                .run(crate::Operation::Account(request))
+                .await
+                .map_err(|_| Failure::InvalidResponse)?;
+            observations.push(json!({
+                "contract_version": detail["contract_version"],
+                "identity_match": detail["client_observation"]["identity_match"],
+                "ids_status": detail["client_observation"]["ids_status"],
+                "tool_attempts": detail["transport"]["tool_attempts"]
+            }));
+        }
     }
     Ok(json!({"success": true, "observations": observations}))
 }
