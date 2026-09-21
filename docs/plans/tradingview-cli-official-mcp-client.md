@@ -135,6 +135,28 @@ It is a type/Clippy check, not a whole-workspace link or Windows runtime proof.
 No provider access, native credential operation, additional agent/session,
 workflow dispatch, push or release is part of this correction.
 
+### Directory sharing correction (2026-09-22)
+
+[The native Windows CI run for `25ac536`](https://github.com/HumInvLitterae/tradingview-cli/actions/runs/35625185867)
+passed 53 MCP tests, including the former admission failures and native ACL
+creation/rejection checks. One test failed: the directory could still be renamed
+while its guard was open. The guard requested only READ_CONTROL and
+FILE_READ_ATTRIBUTES. Metadata-only access did not provide the sharing
+participation needed for the intended delete exclusion.
+
+The guard now also requests FILE_LIST_DIRECTORY while still omitting
+FILE_SHARE_DELETE. This requests directory data access without enumerating entries
+or changing ACLs. The stronger regression checks two simultaneous guards,
+ERROR_SHARING_VIOLATION on an explicit DELETE-access open, rejected rename while
+either guard remains, and successful delete-access open/rename after both close.
+The test is retained and strengthened, not skipped. See [CreateFileW sharing semantics](https://learn.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-createfilew).
+
+Windows-target type checking and strict Clippy cover the actual native module,
+its callers and tests. All 51 host MCP tests passed; formatting and public/diff
+hygiene passed. Native runtime confirmation remains pending the next Windows
+CI run. No additional dependency, provider call, credential access,
+workflow dispatch or push is needed for this local correction.
+
 ## Economic and calendar slice (2026-09-21)
 
 The owner requested the remaining priority-7 implementation. Four independent

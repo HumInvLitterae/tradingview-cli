@@ -28,8 +28,8 @@ use windows_sys::Win32::{
     },
     Storage::FileSystem::{
         CreateDirectoryW, FILE_ATTRIBUTE_REPARSE_POINT, FILE_FLAG_BACKUP_SEMANTICS,
-        FILE_FLAG_OPEN_REPARSE_POINT, FILE_READ_ATTRIBUTES, FILE_SHARE_READ, FILE_SHARE_WRITE,
-        READ_CONTROL,
+        FILE_FLAG_OPEN_REPARSE_POINT, FILE_LIST_DIRECTORY, FILE_READ_ATTRIBUTES, FILE_SHARE_READ,
+        FILE_SHARE_WRITE, READ_CONTROL,
     },
     System::{
         SystemServices::{ACCESS_ALLOWED_ACE_TYPE, ACCESS_DENIED_ACE_TYPE},
@@ -242,8 +242,11 @@ pub(crate) fn prepare(directory: &Path) -> Result<File> {
     {
         create_missing(directory, &user.private_descriptor()?)?;
     }
+    // Metadata-only handles do not participate in the sharing checks needed to
+    // block deletion. Directory data access makes omission of FILE_SHARE_DELETE
+    // effective; it does not enumerate entries or change directory permissions.
     let file = OpenOptions::new()
-        .access_mode(READ_CONTROL | FILE_READ_ATTRIBUTES)
+        .access_mode(READ_CONTROL | FILE_READ_ATTRIBUTES | FILE_LIST_DIRECTORY)
         .share_mode(FILE_SHARE_READ | FILE_SHARE_WRITE)
         .custom_flags(FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OPEN_REPARSE_POINT)
         .open(directory)
@@ -457,13 +460,37 @@ mod tests {
     }
 
     #[test]
-    fn directory_handle_prevents_replacement_until_operation_finishes() {
+    fn directory_handles_prevent_delete_access_and_replacement_until_all_close() {
+        use windows_sys::Win32::{
+            Foundation::ERROR_SHARING_VIOLATION,
+            Storage::FileSystem::{DELETE, FILE_SHARE_DELETE},
+        };
+
         let root = tempfile::tempdir().unwrap();
         let directory = root.path().join("state");
-        let guard = prepare(&directory).unwrap();
+        let first = prepare(&directory).unwrap();
+        let second = prepare(&directory).unwrap();
         let other = root.path().join("moved");
+        let delete_access = || {
+            OpenOptions::new()
+                .access_mode(DELETE)
+                .share_mode(FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE)
+                .custom_flags(FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OPEN_REPARSE_POINT)
+                .open(&directory)
+        };
+        let error = delete_access().unwrap_err();
+        assert_eq!(error.raw_os_error(), Some(ERROR_SHARING_VIOLATION as i32));
         assert!(std::fs::rename(&directory, &other).is_err());
-        drop(guard);
+        assert!(directory.is_dir());
+        assert!(!other.exists());
+
+        drop(first);
+        let error = delete_access().unwrap_err();
+        assert_eq!(error.raw_os_error(), Some(ERROR_SHARING_VIOLATION as i32));
+        assert!(std::fs::rename(&directory, &other).is_err());
+
+        drop(second);
+        drop(delete_access().unwrap());
         std::fs::rename(&directory, &other).unwrap();
     }
 
