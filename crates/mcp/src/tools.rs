@@ -6,6 +6,10 @@ use tradingview_model::{mcp_account, mcp_bars, mcp_data};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) enum Tool {
+    Financials,
+    FinancialHistory,
+    Forecasts,
+    Earnings,
     Bars,
     Search,
     Columns,
@@ -31,6 +35,10 @@ pub(crate) enum Tool {
 impl Tool {
     pub fn names(self) -> &'static [&'static str] {
         match self {
+            Self::Financials => &["mcp-tv-get-financials", "get_financials"],
+            Self::FinancialHistory => &["mcp-tv-get-financial-history", "get_financial_history"],
+            Self::Forecasts => &["mcp-tv-get-forecasts", "get_forecasts"],
+            Self::Earnings => &["mcp-tv-get-earnings-calendar", "get_earnings_calendar"],
             Self::CreateAlert => &["mcp-tv-create-alert", "create_alert"],
             Self::UpdateAlert => &["mcp-tv-update-alert", "update_alert"],
             Self::StopAlerts => &["mcp-tv-stop-alerts", "stop_alerts"],
@@ -59,6 +67,23 @@ impl Tool {
 
     pub fn fields(self) -> &'static [(&'static str, &'static str)] {
         match self {
+            Self::Financials => &[
+                ("symbol", "string"),
+                ("period", "string"),
+                ("metric", "array"),
+            ],
+            Self::FinancialHistory => &[
+                ("symbol", "string"),
+                ("period", "string"),
+                ("date_from", "string"),
+                ("date_to", "string"),
+            ],
+            Self::Forecasts => &[("symbol", "string")],
+            Self::Earnings => &[
+                ("symbols", "array"),
+                ("date_from", "string"),
+                ("date_to", "string"),
+            ],
             Self::CreateAlert => &[
                 ("symbol", "string"),
                 ("price", "number"),
@@ -126,6 +151,10 @@ impl Tool {
 
     pub fn from_name(name: &str) -> Result<Self> {
         [
+            Self::Financials,
+            Self::FinancialHistory,
+            Self::Forecasts,
+            Self::Earnings,
             Self::Bars,
             Self::Search,
             Self::Columns,
@@ -171,6 +200,41 @@ impl Tool {
             _ => Err(Failure::UnsupportedCapability),
         };
         let validated = match self {
+            Self::Financials => {
+                let metrics = args
+                    .get("metric")
+                    .cloned()
+                    .unwrap_or_else(|| serde_json::json!([]));
+                let metrics: Vec<String> =
+                    serde_json::from_value(metrics).map_err(|_| Failure::UnsupportedCapability)?;
+                tradingview_model::mcp_financials::Request::snapshot(
+                    string("symbol")?,
+                    string("period")?,
+                    &metrics,
+                )
+                .map(|r| r.arguments())
+            }
+            Self::FinancialHistory => tradingview_model::mcp_financials::Request::history(
+                string("symbol")?,
+                string("period")?,
+                optional("date_from")?,
+                optional("date_to")?,
+            )
+            .map(|r| r.arguments()),
+            Self::Forecasts => {
+                tradingview_model::mcp_financials::Request::forecasts(string("symbol")?)
+                    .map(|r| r.arguments())
+            }
+            Self::Earnings => {
+                let symbols: Vec<String> = serde_json::from_value(args["symbols"].clone())
+                    .map_err(|_| Failure::UnsupportedCapability)?;
+                tradingview_model::mcp_financials::Request::earnings(
+                    &symbols,
+                    optional("date_from")?,
+                    optional("date_to")?,
+                )
+                .map(|r| r.arguments())
+            }
             Self::CreateAlert
             | Self::UpdateAlert
             | Self::StopAlerts
@@ -339,6 +403,18 @@ impl From<mcp_account::WatchlistAction> for Tool {
             WatchlistAction::Add => Self::AddWatchlist,
             WatchlistAction::Remove => Self::RemoveWatchlist,
             WatchlistAction::Delete => Self::DeleteWatchlist,
+        }
+    }
+}
+
+impl From<tradingview_model::mcp_financials::Kind> for Tool {
+    fn from(kind: tradingview_model::mcp_financials::Kind) -> Self {
+        use tradingview_model::mcp_financials::Kind;
+        match kind {
+            Kind::Snapshot => Self::Financials,
+            Kind::History => Self::FinancialHistory,
+            Kind::Forecasts => Self::Forecasts,
+            Kind::Earnings => Self::Earnings,
         }
     }
 }

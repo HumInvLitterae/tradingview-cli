@@ -20,6 +20,11 @@ use tokio::time::Instant;
 /// The caller explicitly chooses each effect; no startup discovery or login.
 #[derive(Clone, Copy)]
 pub enum ProofOperation {
+    FinancialCommands,
+    FinancialShape,
+    HistoryShape,
+    ForecastShape,
+    EarningsShape,
     Discover,
     Login,
     Status,
@@ -59,6 +64,9 @@ pub async fn run_proof_with_worker(
     operation: ProofOperation,
     worker: Option<&Path>,
 ) -> Result<Value> {
+    if matches!(operation, ProofOperation::FinancialCommands) {
+        return verify_financial_commands(directory, worker).await;
+    }
     if matches!(operation, ProofOperation::AlertLifecycle) {
         return verify_alert_lifecycle(directory, worker).await;
     }
@@ -124,6 +132,21 @@ pub async fn run_proof_with_worker(
         let mut auth = Auth::discover(http.clone(), store.clone(), budget.clone()).await?;
 
         match operation {
+            ProofOperation::FinancialShape | ProofOperation::HistoryShape | ProofOperation::ForecastShape | ProofOperation::EarningsShape => {
+                use tradingview_model::mcp_financials::Request;
+                auth.restore().await?;
+                let token = auth.token().await?;
+                let request = match operation {
+                    ProofOperation::FinancialShape => Request::snapshot("NASDAQ:AAPL", "ttm", &[]),
+                    ProofOperation::HistoryShape => Request::history("NASDAQ:AAPL", "fq", Some("2025-01-01"), Some("2026-09-21")),
+                    ProofOperation::ForecastShape => Request::forecasts("NASDAQ:AAPL"),
+                    _ => Request::earnings(&["NASDAQ:AAPL".into()], Some("2026-07-01"), Some("2026-12-31")),
+                }.map_err(|_| Failure::UnsupportedCapability)?;
+                let tool = crate::tools::Tool::from(request.kind());
+                let mut responses = crate::transport::call(&http, token, tool, &[request.arguments()], Some(&mut admission)).await?;
+                let value = crate::transport::result_value(responses.pop().ok_or(Failure::InvalidResponse)??)?;
+                Ok(json!({"tool": tool.names()[0], "shape": response_shape(&value, 0)}))
+            }
             ProofOperation::Discover => Ok(json!({
                 "public_discovery": "validated",
                 "registration": "not_attempted"
@@ -902,4 +925,57 @@ async fn verify_alert_lifecycle(directory: &Path, worker: Option<&Path>) -> Resu
         "observations": observations,
         "cleanup_observation": state["phase"]
     }))
+}
+
+/// Same public service as CLI commands, with a fixed credential worker for development.
+async fn verify_financial_commands(directory: &Path, worker: Option<&Path>) -> Result<Value> {
+    use tradingview_model::mcp_financials::Request;
+
+    let worker = worker.ok_or(Failure::UnsupportedCapability)?;
+    let client = crate::Client::with_paths(directory.to_owned(), worker.to_owned());
+    let mut observations = Vec::new();
+    for request in [
+        Request::snapshot("NASDAQ:AAPL", "ttm", &[]),
+        Request::snapshot("NASDAQ:AAPL", "fq", &["revenue".into(), "pe".into()]),
+        Request::history("NASDAQ:AAPL", "fq", Some("2025-01-01"), Some("2026-09-21")),
+        Request::history("NASDAQ:AAPL", "fy", Some("2022-01-01"), Some("2026-09-21")),
+        Request::forecasts("NASDAQ:AAPL"),
+        Request::earnings(
+            &["NASDAQ:AAPL".into(), "NASDAQ:MSFT".into()],
+            Some("2026-07-01"),
+            Some("2026-12-31"),
+        ),
+        Request::earnings(
+            &["NASDAQ:AAPL".into()],
+            Some("2000-01-01"),
+            Some("2000-01-02"),
+        ),
+    ] {
+        let request = request.map_err(|_| Failure::UnsupportedCapability)?;
+        let tool = crate::tools::Tool::from(request.kind());
+        let data = match client.run(crate::Operation::Financial(request)).await {
+            Ok(data) => data,
+            Err(error) => {
+                let details = error.details.unwrap_or(Value::Null);
+                return Ok(json!({
+                    "success": false,
+                    "tool": tool.names()[0],
+                    "code": details["code"],
+                    "reason": details["reason"],
+                    "completed": observations
+                }));
+            }
+        };
+        observations.push(json!({
+            "tool": tool.names()[0],
+            "contract": data["contract_version"],
+            "symbol_status": data["client_observation"]["symbol_status"],
+            "returned_field_count": data["client_observation"]["returned_field_count"],
+            "returned_period_count": data["client_observation"]["returned_period_count"],
+            "returned_event_count": data["client_observation"]["returned_count"],
+            "currency_reported": data["provider_metadata"]["currency"].is_string(),
+            "tool_attempts": data["transport"]["tool_attempts"]
+        }));
+    }
+    Ok(json!({"success": true, "observations": observations}))
 }

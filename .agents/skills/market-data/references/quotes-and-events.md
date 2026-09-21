@@ -55,3 +55,21 @@ Preserve requested/resolved symbols, event types and field availability. Do not
 infer timezone, before/after-market timing, confirmation, or publication meaning
 when TradingView did not return it. Null or missing event fields mean unknown,
 not proof that no event exists.
+
+
+## Official MCP financial data
+
+Use `tv mcp financials <SYMBOL> --period ttm [--metric revenue,pe]` for a current
+snapshot; `financial-history <SYMBOL> --period fq|fy [--from DATE --to DATE]`
+for fiscal labels and aligned series; `forecasts <SYMBOL>` for provider consensus;
+and `earnings <SYMBOL>... [--from DATE --to DATE]` for explicit-symbol event reads.
+Check command help for bounds and availability. These use separate MCP contracts,
+not the scanner-backed fundamentals/events source.
+
+Keep returned field names and nulls. Missing currency/unit/as-of values stay
+unknown. Fiscal labels do not establish start/end dates or full requested-window
+coverage. Analyst recommendations and EPS/revenue forecasts are provider
+observations, not actual earnings or a trading decision. Earnings can return
+multiple rows per symbol; follow `symbol_results` indices and preserve
+`unreported`. Empty results do not prove there were no events. Never silently
+retry a failed data call or substitute the existing source.

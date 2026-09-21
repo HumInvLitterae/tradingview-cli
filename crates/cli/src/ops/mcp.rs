@@ -8,7 +8,32 @@ use tradingview_model::mcp_bars::{Request, unsupported};
 pub async fn run_mcp(command: McpCommand) -> Result<Value, AppError> {
     use tradingview_model::mcp_data;
 
+    use tradingview_model::mcp_financials;
     let operation = match command {
+        McpCommand::Financials {
+            symbol,
+            period,
+            metrics,
+        } => Operation::Financial(mcp_financials::Request::snapshot(
+            &symbol, &period, &metrics,
+        )?),
+        McpCommand::FinancialHistory {
+            symbol,
+            period,
+            from,
+            to,
+        } => Operation::Financial(mcp_financials::Request::history(
+            &symbol,
+            &period,
+            from.as_deref(),
+            to.as_deref(),
+        )?),
+        McpCommand::Forecasts { symbol } => {
+            Operation::Financial(mcp_financials::Request::forecasts(&symbol)?)
+        }
+        McpCommand::Earnings { symbols, from, to } => Operation::Financial(
+            mcp_financials::Request::earnings(&symbols, from.as_deref(), to.as_deref())?,
+        ),
         McpCommand::Watchlist { command } => match command {
             McpWatchlistCommand::List => Operation::Account(mcp_account::Request::watchlists()),
             McpWatchlistCommand::Get { id } => {

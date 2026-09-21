@@ -3,6 +3,7 @@ pub mod drawing;
 pub mod mcp_account;
 pub mod mcp_bars;
 pub mod mcp_data;
+pub mod mcp_financials;
 pub mod replay;
 pub mod screener;
 pub mod visible_range;

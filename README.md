@@ -262,15 +262,20 @@ tv mcp screener --market america --limit 20 --columns name,close,volume
 tv mcp bars NASDAQ:AAPL --timeframe 1D --count 20
 tv mcp watchlist list
 tv mcp alert list --active true
+tv mcp financials NASDAQ:AAPL --period ttm
+tv mcp financial-history NASDAQ:AAPL --period fq
+tv mcp forecasts NASDAQ:AAPL
+tv mcp earnings NASDAQ:AAPL NASDAQ:MSFT
 tv mcp logout
 ```
 
 These use OAuth and separate MCP contracts, preserving the existing commands.
 They support symbol/column discovery, single/batch symbol fields, screener queries and recent
 intraday/daily/weekly/monthly bars, plus watchlist/alert listing and ID-specific
-reads. Explicit watchlist create/update/add/remove/delete and alert
+reads, financial snapshots/history, analyst forecasts and earnings dates.
+Explicit watchlist create/update/add/remove/delete and alert
 create/update/stop/restart/delete commands return separate
-mutation and readback evidence, verified with a native disposable-list lifecycle.
+mutation and readback evidence, verified with native disposable-object lifecycles.
 These commands preserve unknown data conditions and require
 an eligible paid account. Read [MCP usage and platform status](docs/official-mcp.md)
 before using this unreleased path; Windows runtime qualification remains open.
