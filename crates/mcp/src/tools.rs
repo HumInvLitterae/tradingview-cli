@@ -6,6 +6,10 @@ use tradingview_model::{mcp_account, mcp_bars, mcp_data};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) enum Tool {
+    News,
+    Story,
+    Documents,
+    Document,
     Financials,
     FinancialHistory,
     Forecasts,
@@ -35,6 +39,10 @@ pub(crate) enum Tool {
 impl Tool {
     pub fn names(self) -> &'static [&'static str] {
         match self {
+            Self::News => &["mcp-tv-get-news", "get_news"],
+            Self::Story => &["mcp-tv-get-news-story", "get_news_story"],
+            Self::Documents => &["mcp-tv-get-documents", "get_documents"],
+            Self::Document => &["mcp-tv-get-document-view", "get_document_view"],
             Self::Financials => &["mcp-tv-get-financials", "get_financials"],
             Self::FinancialHistory => &["mcp-tv-get-financial-history", "get_financial_history"],
             Self::Forecasts => &["mcp-tv-get-forecasts", "get_forecasts"],
@@ -67,6 +75,27 @@ impl Tool {
 
     pub fn fields(self) -> &'static [(&'static str, &'static str)] {
         match self {
+            Self::News => &[
+                ("symbol", "string"),
+                ("lang", "string"),
+                ("limit", "integer"),
+                ("offset", "integer"),
+            ],
+            Self::Story => &[
+                ("id", "string"),
+                ("lang", "string"),
+                ("user_prostatus", "string"),
+                ("user_country", "string"),
+            ],
+            Self::Documents => &[
+                ("symbol", "string"),
+                ("limit", "integer"),
+                ("category", "string"),
+                ("event", "string"),
+                ("start_date", "string"),
+                ("end_date", "string"),
+            ],
+            Self::Document => &[("view_id", "string")],
             Self::Financials => &[
                 ("symbol", "string"),
                 ("period", "string"),
@@ -151,6 +180,10 @@ impl Tool {
 
     pub fn from_name(name: &str) -> Result<Self> {
         [
+            Self::News,
+            Self::Story,
+            Self::Documents,
+            Self::Document,
             Self::Financials,
             Self::FinancialHistory,
             Self::Forecasts,
@@ -199,7 +232,42 @@ impl Tool {
             Some(Value::String(value)) => Ok(Some(value.as_str())),
             _ => Err(Failure::UnsupportedCapability),
         };
+        let number = |field| {
+            args.get(field)
+                .and_then(Value::as_u64)
+                .and_then(|v| u32::try_from(v).ok())
+                .ok_or(Failure::UnsupportedCapability)
+        };
         let validated = match self {
+            Self::News => tradingview_model::mcp_research::Request::news(
+                string("symbol")?,
+                string("lang")?,
+                number("limit")?,
+                number("offset")?,
+            )
+            .map(|r| r.arguments()),
+            Self::Story => tradingview_model::mcp_research::Request::story(
+                string("id")?,
+                string("lang")?,
+                string("user_prostatus")?,
+                optional("user_country")?,
+            )
+            .map(|r| r.arguments()),
+            Self::Documents => tradingview_model::mcp_research::Request::documents(
+                string("symbol")?,
+                tradingview_model::mcp_research::DocumentOptions {
+                    category: optional("category")?.map(str::to_owned),
+                    event: optional("event")?.map(str::to_owned),
+                    start_date: optional("start_date")?.map(str::to_owned),
+                    end_date: optional("end_date")?.map(str::to_owned),
+                    limit: Some(number("limit")?),
+                },
+            )
+            .map(|r| r.arguments()),
+            Self::Document => {
+                tradingview_model::mcp_research::Request::document(string("view_id")?)
+                    .map(|r| r.arguments())
+            }
             Self::Financials => {
                 let metrics = args
                     .get("metric")
@@ -415,6 +483,18 @@ impl From<tradingview_model::mcp_financials::Kind> for Tool {
             Kind::History => Self::FinancialHistory,
             Kind::Forecasts => Self::Forecasts,
             Kind::Earnings => Self::Earnings,
+        }
+    }
+}
+
+impl From<tradingview_model::mcp_research::Kind> for Tool {
+    fn from(kind: tradingview_model::mcp_research::Kind) -> Self {
+        use tradingview_model::mcp_research::Kind;
+        match kind {
+            Kind::News => Self::News,
+            Kind::Story => Self::Story,
+            Kind::Documents => Self::Documents,
+            Kind::Document => Self::Document,
         }
     }
 }

@@ -275,6 +275,10 @@ fn respond(ep: &Endpoints, r: &Request, mode: &str) -> Response {
                 "inputSchema": schema
             })];
             for tool in [
+                crate::tools::Tool::News,
+                crate::tools::Tool::Story,
+                crate::tools::Tool::Documents,
+                crate::tools::Tool::Document,
                 crate::tools::Tool::Financials,
                 crate::tools::Tool::FinancialHistory,
                 crate::tools::Tool::Forecasts,
@@ -384,6 +388,28 @@ fn respond(ep: &Endpoints, r: &Request, mode: &str) -> Response {
             });
             let args = &request["params"]["arguments"];
             match request["params"]["name"].as_str() {
+                Some("mcp-tv-get-news") => {
+                    result["structuredContent"] = json!({"success": true, "data": {
+                        "headlines": [{"id": "urn:newsml:example:one", "title": "Example", "permission": "restricted", "paywall": true}],
+                        "count": 1, "offset": args["offset"], "has_more": true, "next_offset": 1, "total_available": 2
+                    }});
+                }
+                Some("mcp-tv-get-news-story") => {
+                    result["structuredContent"] = json!({
+                        "id": args["id"], "permission": "restricted", "ast_description": null
+                    });
+                }
+                Some("mcp-tv-get-documents") => {
+                    result["structuredContent"] = json!({"items": [{
+                        "id": "synthetic-document", "title": "Example filing", "reported": 1000,
+                        "views": [{"id": "opaque-view", "type": "summary"}]
+                    }], "total": 1});
+                }
+                Some("mcp-tv-get-document-view") => {
+                    result["structuredContent"] = json!({"id": args["view_id"], "astDescription": {
+                        "type": "root", "children": [{"type": "paragraph", "children": ["Synthetic text"]}]
+                    }});
+                }
                 Some("mcp-tv-get-financials") => {
                     result["structuredContent"] = json!({"success": true, "data": {
                         "name": "EXAMPLE", "total_revenue_ttm": 0, "net_income_ttm": null
@@ -1533,6 +1559,60 @@ async fn financial_service_keeps_source_values_and_failure_dispatch_counts() {
             fixture_login(&http, &store, &budget).await;
             let result = execute(
                 Operation::Financial(request.clone()),
+                &mut guard,
+                store,
+                http,
+                budget,
+                true,
+            )
+            .await;
+            assert_eq!(
+                server.calls("tools/call"),
+                if mode == "schema-change" { 0 } else { 1 }
+            );
+            if matches!(mode, "json" | "sse") {
+                let data = result.unwrap();
+                assert_eq!(data["source"], "tradingview_mcp");
+                assert_eq!(data["transport"]["tool_attempts"], 1);
+                assert_eq!(data["client_observation"]["completeness"], "unconfirmed");
+            } else {
+                let details = result.unwrap_err().details.unwrap();
+                assert_eq!(
+                    details["tool_attempts"],
+                    if mode == "schema-change" { 0 } else { 1 }
+                );
+                assert!(!details.to_string().contains("synthetic-secret"));
+            }
+        }
+    }
+}
+
+#[tokio::test]
+async fn research_service_keeps_references_access_and_single_dispatch_failures() {
+    use crate::client::{Operation, execute};
+    use tradingview_model::mcp_research::{DocumentOptions, Request};
+
+    for request in [
+        Request::news("NASDAQ:EXAMPLE", "en", 2, 0).unwrap(),
+        Request::story("urn:newsml:example:one", "en", "non_pro", None).unwrap(),
+        Request::documents("NASDAQ:EXAMPLE", DocumentOptions::default()).unwrap(),
+        Request::document("opaque-view").unwrap(),
+    ] {
+        for mode in [
+            "json",
+            "sse",
+            "401",
+            "429",
+            "500",
+            "malformed",
+            "schema-change",
+            "tool-error",
+        ] {
+            let server = Server::start(mode).await;
+            let (_root, mut guard, budget, http, store) = context(&server, 8).await;
+            fixture_login(&http, &store, &budget).await;
+            let result = execute(
+                Operation::Research(request.clone()),
                 &mut guard,
                 store,
                 http,

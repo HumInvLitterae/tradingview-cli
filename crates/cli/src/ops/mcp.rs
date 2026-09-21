@@ -6,10 +6,46 @@ use tradingview_model::mcp_account;
 use tradingview_model::mcp_bars::{Request, unsupported};
 
 pub async fn run_mcp(command: McpCommand) -> Result<Value, AppError> {
-    use tradingview_model::mcp_data;
+    use tradingview_model::{mcp_data, mcp_financials, mcp_research};
 
-    use tradingview_model::mcp_financials;
     let operation = match command {
+        McpCommand::News {
+            symbol,
+            lang,
+            limit,
+            offset,
+        } => Operation::Research(mcp_research::Request::news(&symbol, &lang, limit, offset)?),
+        McpCommand::NewsStory {
+            id,
+            lang,
+            user_prostatus,
+            user_country,
+        } => Operation::Research(mcp_research::Request::story(
+            &id,
+            &lang,
+            &user_prostatus,
+            user_country.as_deref(),
+        )?),
+        McpCommand::Documents {
+            symbol,
+            category,
+            event,
+            start_date,
+            end_date,
+            limit,
+        } => Operation::Research(mcp_research::Request::documents(
+            &symbol,
+            mcp_research::DocumentOptions {
+                category,
+                event,
+                start_date,
+                end_date,
+                limit: Some(limit),
+            },
+        )?),
+        McpCommand::Document { view_id } => {
+            Operation::Research(mcp_research::Request::document(&view_id)?)
+        }
         McpCommand::Financials {
             symbol,
             period,

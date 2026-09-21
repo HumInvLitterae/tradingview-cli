@@ -20,6 +20,11 @@ use tokio::time::Instant;
 /// The caller explicitly chooses each effect; no startup discovery or login.
 #[derive(Clone, Copy)]
 pub enum ProofOperation {
+    ResearchCommands,
+    StoryShape,
+    DocumentShape,
+    NewsShape,
+    DocumentsShape,
     FinancialCommands,
     FinancialShape,
     HistoryShape,
@@ -64,6 +69,9 @@ pub async fn run_proof_with_worker(
     operation: ProofOperation,
     worker: Option<&Path>,
 ) -> Result<Value> {
+    if matches!(operation, ProofOperation::ResearchCommands) {
+        return verify_research_commands(directory, worker).await;
+    }
     if matches!(operation, ProofOperation::FinancialCommands) {
         return verify_financial_commands(directory, worker).await;
     }
@@ -132,6 +140,9 @@ pub async fn run_proof_with_worker(
         let mut auth = Auth::discover(http.clone(), store.clone(), budget.clone()).await?;
 
         match operation {
+            ProofOperation::NewsShape | ProofOperation::DocumentsShape | ProofOperation::StoryShape | ProofOperation::DocumentShape => {
+                inspect_research(operation, &mut auth, &mut admission, &budget).await
+            }
             ProofOperation::FinancialShape | ProofOperation::HistoryShape | ProofOperation::ForecastShape | ProofOperation::EarningsShape => {
                 use tradingview_model::mcp_financials::Request;
                 auth.restore().await?;
@@ -978,4 +989,217 @@ async fn verify_financial_commands(directory: &Path, worker: Option<&Path>) -> R
         }));
     }
     Ok(json!({"success": true, "observations": observations}))
+}
+
+async fn verify_research_commands(directory: &Path, worker: Option<&Path>) -> Result<Value> {
+    use tradingview_model::mcp_research::{DocumentOptions, Request};
+
+    let worker = worker.ok_or(Failure::UnsupportedCapability)?;
+    let client = crate::Client::with_paths(directory.to_owned(), worker.to_owned());
+    let mut reports = Vec::new();
+    let result: Result<()> = async {
+        let news = research_read(
+            &client,
+            Request::news("NASDAQ:AAPL", "en", 2, 0),
+            &mut reports,
+        )
+        .await?;
+        if let Some(id) = news.pointer("/items/0/id").and_then(Value::as_str) {
+            research_read(
+                &client,
+                Request::story(id, "en", "non_pro", None),
+                &mut reports,
+            )
+            .await?;
+        } else {
+            return Err(Failure::InvalidResponse);
+        }
+        if let Some(next) = news
+            .pointer("/pagination/next_offset")
+            .and_then(Value::as_u64)
+        {
+            research_read(
+                &client,
+                Request::news(
+                    "NASDAQ:AAPL",
+                    "en",
+                    2,
+                    u32::try_from(next).map_err(|_| Failure::InvalidResponse)?,
+                ),
+                &mut reports,
+            )
+            .await?;
+        }
+        research_read(
+            &client,
+            Request::news("NASDAQ:AAPL", "en", 2, 200),
+            &mut reports,
+        )
+        .await?;
+        let documents = research_read(
+            &client,
+            Request::documents(
+                "NASDAQ:AAPL",
+                DocumentOptions {
+                    limit: Some(2),
+                    ..Default::default()
+                },
+            ),
+            &mut reports,
+        )
+        .await?;
+        if let Some(id) = documents
+            .pointer("/items/0/views/0/id")
+            .and_then(Value::as_str)
+        {
+            research_read(&client, Request::document(id), &mut reports).await?;
+        } else {
+            return Err(Failure::InvalidResponse);
+        }
+        research_read(
+            &client,
+            Request::documents(
+                "NASDAQ:AAPL",
+                DocumentOptions {
+                    category: Some("annual_reports".into()),
+                    start_date: Some("2025-01-01T00:00:00Z".into()),
+                    end_date: Some("2026-09-21T23:59:59Z".into()),
+                    limit: Some(2),
+                    ..Default::default()
+                },
+            ),
+            &mut reports,
+        )
+        .await?;
+        Ok(())
+    }
+    .await;
+    Ok(json!({"success": result.is_ok(), "failure": result.err(), "observations": reports}))
+}
+
+async fn research_read(
+    client: &crate::Client,
+    request: std::result::Result<
+        tradingview_model::mcp_research::Request,
+        tradingview_core::AppError,
+    >,
+    reports: &mut Vec<Value>,
+) -> Result<Value> {
+    let request = request.map_err(|_| Failure::UnsupportedCapability)?;
+    let tool = crate::tools::Tool::from(request.kind());
+    let data = match client.run(crate::Operation::Research(request)).await {
+        Ok(data) => data,
+        Err(error) => {
+            let details = error.details.unwrap_or(Value::Null);
+            reports.push(json!({
+                "tool": tool.names()[0], "code": details["code"],
+                "reason": details["reason"], "tool_attempts": details["tool_attempts"]
+            }));
+            return Err(Failure::InvalidResponse);
+        }
+    };
+    reports.push(json!({
+        "tool": tool.names()[0],
+        "contract": data["contract_version"],
+        "returned_count": data["client_observation"]["returned_count"],
+        "content_status": data["client_observation"]["content_status"],
+        "id_echo_matches": data["client_observation"]["id_echo_matches"],
+        "has_more": data["pagination"]["has_more"],
+        "tool_attempts": data["transport"]["tool_attempts"]
+    }));
+    Ok(data)
+}
+
+async fn inspect_research(
+    operation: ProofOperation,
+    auth: &mut Auth,
+    admission: &mut Admission,
+    budget: &Arc<Mutex<Budget>>,
+) -> Result<Value> {
+    use tradingview_model::mcp_research::{DocumentOptions, Request};
+    auth.restore().await?;
+    let http = auth.http.clone();
+    let request = if matches!(
+        operation,
+        ProofOperation::NewsShape | ProofOperation::StoryShape
+    ) {
+        Request::news("NASDAQ:AAPL", "en", 2, 0)
+    } else {
+        Request::documents(
+            "NASDAQ:AAPL",
+            DocumentOptions {
+                limit: Some(2),
+                ..Default::default()
+            },
+        )
+    }
+    .map_err(|_| Failure::UnsupportedCapability)?;
+    let tool = crate::tools::Tool::from(request.kind());
+    let mut responses = crate::transport::call(
+        &http,
+        auth.token().await?,
+        tool,
+        &[request.arguments()],
+        Some(admission),
+    )
+    .await?;
+    let value = crate::transport::result_value(responses.pop().ok_or(Failure::InvalidResponse)??)?;
+    if matches!(
+        operation,
+        ProofOperation::StoryShape | ProofOperation::DocumentShape
+    ) {
+        let request = if matches!(operation, ProofOperation::StoryShape) {
+            Request::story(
+                value
+                    .pointer("/data/headlines/0/id")
+                    .and_then(Value::as_str)
+                    .ok_or(Failure::InvalidResponse)?,
+                "en",
+                "non_pro",
+                None,
+            )
+        } else {
+            Request::document(
+                value
+                    .pointer("/items/0/views/0/id")
+                    .and_then(Value::as_str)
+                    .ok_or(Failure::InvalidResponse)?,
+            )
+        };
+        let request = match request {
+            Ok(request) => request,
+            Err(error) => {
+                return Ok(json!({
+                    "failure": "unsupported_capability",
+                    "request_reason": error.details.and_then(|v| v.get("reason").cloned()),
+                    "id_has_urn_prefix": value.pointer("/data/headlines/0/id").and_then(Value::as_str).map(|v| v.starts_with("urn:")),
+                    "id_has_whitespace": value.pointer("/data/headlines/0/id").and_then(Value::as_str).map(|v| v.chars().any(char::is_whitespace))
+                }));
+            }
+        };
+        let tool = crate::tools::Tool::from(request.kind());
+        // The list and detail are distinct operations in this development proof.
+        let detail_http = Http::new(
+            Endpoints::tradingview(),
+            Instant::now() + Duration::from_secs(30),
+            budget.clone(),
+        )?;
+        let responses = crate::transport::call(
+            &detail_http,
+            auth.token().await?,
+            tool,
+            &[request.arguments()],
+            Some(admission),
+        )
+        .await;
+        if let Some(wait) = detail_http.cooldown() {
+            admission.cooldown(wait)?;
+        }
+        let mut responses = responses?;
+        let value =
+            crate::transport::result_value(responses.pop().ok_or(Failure::InvalidResponse)??)?;
+        Ok(json!({"tool": tool.names()[0], "shape": response_shape(&value, 0)}))
+    } else {
+        Ok(json!({"tool": tool.names()[0], "shape": response_shape(&value, 0)}))
+    }
 }

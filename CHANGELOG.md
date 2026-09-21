@@ -9,6 +9,11 @@ package version omits the leading `v`.
 
 ### Added
 
+- Official MCP news pages/stories and company documents/views through
+  `tv mcp news/news-story/documents/document`, with explicit pagination,
+  unchanged source IDs, inert body content and retained access/attribution
+  metadata. Document event windows accept canonical UTC second timestamps.
+
 - Official MCP financial snapshots, quarterly/annual history, analyst forecasts
   and earnings calendars via `tv mcp financials/financial-history/forecasts/earnings`.
   Separate contracts preserve provider periods, scalar values, nulls and unknown

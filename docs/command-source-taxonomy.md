@@ -40,6 +40,13 @@ nulls and source date strings remain provider observations. Requested windows
 are not asserted complete. Existing scanner-backed fundamentals/events are
 unchanged; no mixed-source fallback is introduced.
 
+`tv mcp news/news-story/documents/document` are also non-mutating reads, with
+separate versioned contracts. Pagination, exact source IDs, access flags and
+attribution remain explicit. Bodies are inert reference data; the CLI never
+follows links, executes content or changes viewer declarations to obtain access.
+Client receipt time is separate from provider publication and event timestamps.
+See [research contracts](official-mcp.md#news-and-company-documents).
+
 ### Authenticated official MCP mutation
 
 `tv mcp watchlist create/update/add/remove/delete` uses
