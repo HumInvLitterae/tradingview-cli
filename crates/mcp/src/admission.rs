@@ -19,6 +19,8 @@ struct State {
 
 pub(crate) struct Admission {
     _lock: File,
+    #[cfg(windows)]
+    _directory_guard: File,
     directory: PathBuf,
     state: State,
 }
@@ -30,7 +32,13 @@ pub(crate) fn now_ms() -> Result<u64> {
         .and_then(|d| u64::try_from(d.as_millis()).map_err(|_| Failure::Clock))
 }
 
-fn private_open(path: &Path, create_new: bool) -> Result<File> {
+enum StateFileMode {
+    Read,
+    Lock,
+    New,
+}
+
+fn private_open(path: &Path, mode: StateFileMode) -> Result<File> {
     if path
         .symlink_metadata()
         .is_ok_and(|m| !m.is_file() || m.file_type().is_symlink())
@@ -38,25 +46,28 @@ fn private_open(path: &Path, create_new: bool) -> Result<File> {
         return Err(Failure::LocalState);
     }
 
-    #[cfg(windows)]
-    if path.symlink_metadata().is_ok_and(|m| {
-        use std::os::windows::fs::MetadataExt;
-        m.file_attributes() & 0x400 != 0
-    }) {
-        return Err(Failure::LocalState);
-    }
     let mut options = OpenOptions::new();
-    options.read(true).write(true);
-    if create_new {
-        options.create_new(true);
-    } else {
-        options.create(true);
+    options.read(true);
+    match mode {
+        StateFileMode::Read => {}
+        StateFileMode::Lock => {
+            options.write(true).create(true);
+        }
+        StateFileMode::New => {
+            options.write(true).create_new(true);
+        }
     }
 
     #[cfg(unix)]
     {
         use std::os::unix::fs::OpenOptionsExt;
         options.mode(0o600);
+    }
+    #[cfg(windows)]
+    {
+        use std::os::windows::fs::OpenOptionsExt;
+        use windows_sys::Win32::Storage::FileSystem::FILE_FLAG_OPEN_REPARSE_POINT;
+        options.custom_flags(FILE_FLAG_OPEN_REPARSE_POINT);
     }
     let file = options.open(path).map_err(|_| Failure::LocalState)?;
     #[cfg(unix)]
@@ -73,6 +84,8 @@ fn private_open(path: &Path, create_new: bool) -> Result<File> {
             return Err(Failure::LocalState);
         }
     }
+    #[cfg(windows)]
+    crate::windows_state::validate_file(&file)?;
     Ok(file)
 }
 
@@ -85,6 +98,9 @@ impl Admission {
     }
 
     pub(crate) async fn acquire(directory: &Path, deadline: Instant) -> Result<Self> {
+        #[cfg(windows)]
+        let directory_guard = crate::windows_state::prepare(directory)?;
+        #[cfg(not(windows))]
         if !directory.exists() {
             let mut builder = fs::DirBuilder::new();
             builder.recursive(true);
@@ -110,15 +126,7 @@ impl Admission {
             }
         }
 
-        #[cfg(windows)]
-        {
-            use std::os::windows::fs::MetadataExt;
-            if meta.file_attributes() & 0x400 != 0 {
-                return Err(Failure::LocalState);
-            }
-            crate::windows_state::validate(directory, deadline).await?;
-        }
-        let lock = private_open(&directory.join("operation.lock"), false)?;
+        let lock = private_open(&directory.join("operation.lock"), StateFileMode::Lock)?;
         timeout_at(deadline, async {
             loop {
                 match lock.try_lock() {
@@ -135,20 +143,14 @@ impl Admission {
         .map_err(|_| Failure::Timeout)??;
         let path = directory.join("admission.json");
         let state = if path.exists() {
-            let mut bytes = Vec::new();
-            private_open(&path, false)?
-                .take(1025)
-                .read_to_end(&mut bytes)
-                .map_err(|_| Failure::LocalState)?;
-            if bytes.len() > 1024 {
-                return Err(Failure::LocalState);
-            }
-            serde_json::from_slice(&bytes).map_err(|_| Failure::LocalState)?
+            read_private_json(&path, 1024)?
         } else {
             State::default()
         };
         Ok(Self {
             _lock: lock,
+            #[cfg(windows)]
+            _directory_guard: directory_guard,
             directory: directory.to_owned(),
             state,
         })
@@ -184,13 +186,29 @@ impl Admission {
     }
 }
 
+/// Read through the same bounded, no-reparse state-file boundary used for writes.
+pub(crate) fn read_private_json<T: serde::de::DeserializeOwned>(
+    path: &Path,
+    max_bytes: u64,
+) -> Result<T> {
+    let mut bytes = Vec::new();
+    private_open(path, StateFileMode::Read)?
+        .take(max_bytes.saturating_add(1))
+        .read_to_end(&mut bytes)
+        .map_err(|_| Failure::LocalState)?;
+    if bytes.len() as u64 > max_bytes {
+        return Err(Failure::LocalState);
+    }
+    serde_json::from_slice(&bytes).map_err(|_| Failure::LocalState)
+}
+
 /// Caller holds the directory's operation lock. Contains no secret data.
 pub(crate) fn write_private_json(path: &Path, value: &impl Serialize) -> Result<()> {
     let next_path = path.with_extension("next");
     if next_path.exists() {
         fs::remove_file(&next_path).map_err(|_| Failure::LocalState)?;
     }
-    let mut next = private_open(&next_path, true)?;
+    let mut next = private_open(&next_path, StateFileMode::New)?;
     next.write_all(&serde_json::to_vec(value).map_err(|_| Failure::LocalState)?)
         .map_err(|_| Failure::LocalState)?;
     next.sync_all().map_err(|_| Failure::LocalState)?;
@@ -207,22 +225,40 @@ pub(crate) fn write_private_json(path: &Path, value: &impl Serialize) -> Result<
 mod tests {
     use super::*;
 
+    async fn prepared(directory: &Path) -> Admission {
+        Admission::acquire(directory, Instant::now() + Duration::from_secs(10))
+            .await
+            .unwrap()
+    }
+
+    #[tokio::test]
+    async fn state_reads_are_bounded_and_do_not_create_missing_files() {
+        let root = tempfile::tempdir().unwrap();
+        let directory = root.path().join("state");
+        let _guard = prepared(&directory).await;
+        let path = directory.join("sample.json");
+        assert!(read_private_json::<serde_json::Value>(&path, 16).is_err());
+        assert!(!path.exists());
+        write_private_json(&path, &serde_json::json!({"n": 1})).unwrap();
+        assert_eq!(
+            read_private_json::<serde_json::Value>(&path, 16).unwrap(),
+            serde_json::json!({"n": 1})
+        );
+        assert!(read_private_json::<serde_json::Value>(&path, 2).is_err());
+    }
+
     #[tokio::test]
     async fn lock_releases_on_drop_and_cooldown_survives_reopen() {
         let root = tempfile::tempdir().unwrap();
         let dir = root.path().join("state");
-        let mut first = Admission::acquire(&dir, Instant::now() + Duration::from_secs(1))
-            .await
-            .unwrap();
+        let mut first = prepared(&dir).await;
         assert!(matches!(
             Admission::acquire(&dir, Instant::now() + Duration::from_millis(30)).await,
             Err(Failure::Timeout)
         ));
         first.cooldown(60).unwrap();
         drop(first);
-        let mut next = Admission::acquire(&dir, Instant::now() + Duration::from_secs(1))
-            .await
-            .unwrap();
+        let mut next = prepared(&dir).await;
         assert_eq!(
             next.before_tool(Instant::now() + Duration::from_secs(1))
                 .await
@@ -235,9 +271,7 @@ mod tests {
     async fn corrupt_state_and_clock_rollback_fail_closed() {
         let root = tempfile::tempdir().unwrap();
         let dir = root.path().join("state");
-        let mut guard = Admission::acquire(&dir, Instant::now() + Duration::from_secs(1))
-            .await
-            .unwrap();
+        let mut guard = prepared(&dir).await;
         guard.state.last_dispatch_ms = now_ms().unwrap() + 10000;
         assert_eq!(
             guard
@@ -247,10 +281,10 @@ mod tests {
             Failure::Clock
         );
         drop(guard);
-        let mut file = private_open(&dir.join("admission.json"), false).unwrap();
+        let mut file = private_open(&dir.join("admission.json"), StateFileMode::Lock).unwrap();
         file.write_all(b"broken").unwrap();
         assert!(matches!(
-            Admission::acquire(&dir, Instant::now() + Duration::from_secs(1)).await,
+            Admission::acquire(&dir, Instant::now() + Duration::from_secs(10)).await,
             Err(Failure::LocalState)
         ));
     }
@@ -266,7 +300,7 @@ mod tests {
             .unwrap();
         runtime.block_on(async {
             let dir = PathBuf::from(directory);
-            let _guard = Admission::acquire(&dir, Instant::now() + Duration::from_secs(2))
+            let _guard = Admission::acquire(&dir, Instant::now() + Duration::from_secs(10))
                 .await
                 .unwrap();
             fs::write(dir.join("child-ready"), b"ready").unwrap();
@@ -278,9 +312,7 @@ mod tests {
     async fn process_exit_releases_lock_without_stale_pid_recovery() {
         let root = tempfile::tempdir().unwrap();
         let dir = root.path().join("state");
-        let first = Admission::acquire(&dir, Instant::now() + Duration::from_secs(1))
-            .await
-            .unwrap();
+        let first = prepared(&dir).await;
         drop(first);
         let mut child = tokio::process::Command::new(std::env::current_exe().unwrap())
             .args(["--exact", "admission::tests::process_lock_helper"])
@@ -290,7 +322,7 @@ mod tests {
             .kill_on_drop(true)
             .spawn()
             .unwrap();
-        timeout_at(Instant::now() + Duration::from_secs(5), async {
+        timeout_at(Instant::now() + Duration::from_secs(10), async {
             while !dir.join("child-ready").exists() {
                 sleep(Duration::from_millis(10)).await;
             }
@@ -314,9 +346,7 @@ mod tests {
     async fn pacing_obeys_the_original_deadline_and_preserves_dispatch_time() {
         let root = tempfile::tempdir().unwrap();
         let dir = root.path().join("state");
-        let mut guard = Admission::acquire(&dir, Instant::now() + Duration::from_secs(1))
-            .await
-            .unwrap();
+        let mut guard = prepared(&dir).await;
         guard
             .before_tool(Instant::now() + Duration::from_secs(1))
             .await
@@ -343,7 +373,7 @@ mod tests {
         fs::create_dir(&dir).unwrap();
         fs::set_permissions(&dir, fs::Permissions::from_mode(0o755)).unwrap();
         assert!(matches!(
-            Admission::acquire(&dir, Instant::now() + Duration::from_secs(1)).await,
+            Admission::acquire(&dir, Instant::now() + Duration::from_secs(10)).await,
             Err(Failure::LocalState)
         ));
         fs::set_permissions(&dir, fs::Permissions::from_mode(0o700)).unwrap();

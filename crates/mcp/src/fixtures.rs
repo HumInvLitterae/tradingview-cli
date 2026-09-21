@@ -695,8 +695,11 @@ async fn context(
 ) {
     let root = tempfile::tempdir().unwrap();
     let dir = root.path().join("state");
+    let guard = Admission::acquire(&dir, Instant::now() + Duration::from_secs(10))
+        .await
+        .unwrap();
+    // Response/deadline tests start their clock after local directory setup.
     let deadline = Instant::now() + Duration::from_secs(seconds);
-    let guard = Admission::acquire(&dir, deadline).await.unwrap();
     let budget = Arc::new(Mutex::new(Budget::open(&dir, true).unwrap()));
     let http = Http::new(server.endpoints.clone(), deadline, budget.clone()).unwrap();
     let store = Store::memory(server.endpoints.clone(), deadline);

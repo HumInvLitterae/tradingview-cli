@@ -702,11 +702,14 @@ mod tests {
 
         let root = tempfile::tempdir().unwrap();
         let script = root.path().join("synthetic-worker");
-        let deadline = Instant::now() + Duration::from_secs(5);
         assert_eq!(
-            worker_request(&script, Operation::Load, deadline)
-                .await
-                .unwrap_err(),
+            worker_request(
+                &script,
+                Operation::Load,
+                Instant::now() + Duration::from_secs(5),
+            )
+            .await
+            .unwrap_err(),
             Failure::CredentialWorkerSpawn
         );
 
@@ -724,9 +727,13 @@ mod tests {
             std::fs::write(&script, format!("#!/bin/sh\ncat >/dev/null\n{body}\n")).unwrap();
             std::fs::set_permissions(&script, std::fs::Permissions::from_mode(0o700)).unwrap();
             assert_eq!(
-                worker_request(&script, Operation::Load, deadline)
-                    .await
-                    .unwrap_err(),
+                worker_request(
+                    &script,
+                    Operation::Load,
+                    Instant::now() + Duration::from_secs(5),
+                )
+                .await
+                .unwrap_err(),
                 expected
             );
         }
