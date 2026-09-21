@@ -140,10 +140,12 @@ fn validate_schema(
     if schema.get("type").and_then(Value::as_str) != Some("object") {
         return Err(Failure::SchemaChanged);
     }
-    let properties = schema
-        .get("properties")
-        .and_then(Value::as_object)
-        .ok_or(Failure::SchemaChanged)?;
+    let empty = serde_json::Map::new();
+    let properties = match schema.get("properties") {
+        Some(Value::Object(properties)) => properties,
+        None if tool.fields().is_empty() => &empty,
+        _ => return Err(Failure::SchemaChanged),
+    };
     for &(name, kind) in tool.fields() {
         let field = properties.get(name).ok_or(Failure::SchemaChanged)?;
         if !accepts_type(field, kind) {
@@ -159,10 +161,16 @@ fn validate_schema(
                     .and_then(|variants| variants.iter().find(|v| accepts_direct_type(v, "array")))
             }
             .ok_or(Failure::SchemaChanged)?;
-            if !array_schema
-                .get("items")
-                .is_some_and(|items| accepts_type(items, "string"))
-            {
+            if !array_schema.get("items").is_some_and(|items| {
+                accepts_type(
+                    items,
+                    if tool == Tool::AlertDetails {
+                        "integer"
+                    } else {
+                        "string"
+                    },
+                )
+            }) {
                 return Err(Failure::SchemaChanged);
             }
         }
@@ -223,6 +231,36 @@ pub(crate) fn result_value(result: CallToolResult) -> Result<Value> {
 mod tests {
     use super::*;
     use serde_json::json;
+
+    #[test]
+    fn empty_and_integer_array_schemas_remain_closed() {
+        let empty = json!({"type": "object"});
+        validate_schema(empty.as_object().unwrap(), Tool::Watchlists, &[json!({})]).unwrap();
+        assert!(validate_schema(empty.as_object().unwrap(), Tool::Alerts, &[json!({})]).is_err());
+        for malformed in [
+            json!({"type": "object", "properties": null}),
+            json!({"type": "object", "required": ["new_field"]}),
+            json!({"type": "object", "required": "invalid"}),
+        ] {
+            assert!(
+                validate_schema(
+                    malformed.as_object().unwrap(),
+                    Tool::Watchlists,
+                    &[json!({})]
+                )
+                .is_err()
+            );
+        }
+        let mut schema = json!({
+            "type": "object",
+            "properties": {"alert_ids": {"type": "array", "items": {"type": "integer"}}},
+            "required": ["alert_ids"]
+        });
+        let args = [json!({"alert_ids": [10, 12]})];
+        validate_schema(schema.as_object().unwrap(), Tool::AlertDetails, &args).unwrap();
+        schema["properties"]["alert_ids"]["items"]["type"] = json!("string");
+        assert!(validate_schema(schema.as_object().unwrap(), Tool::AlertDetails, &args).is_err());
+    }
 
     #[test]
     fn incompatible_schema_prevents_dispatch() {

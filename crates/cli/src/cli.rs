@@ -1176,6 +1176,16 @@ pub enum UiCommand {
 
 #[derive(Debug, Subcommand)]
 pub enum McpCommand {
+    #[command(about = "Read official MCP watchlists without activating a list")]
+    Watchlist {
+        #[command(subcommand)]
+        command: McpWatchlistCommand,
+    },
+    #[command(about = "Read official MCP account alerts")]
+    Alert {
+        #[command(subcommand)]
+        command: McpAlertCommand,
+    },
     #[command(
         about = "Authorize this CLI using the browser and OS credential store",
         long_about = "Authorize this CLI using TradingView OAuth and the dedicated OS credential store. \
@@ -1312,4 +1322,28 @@ impl Command {
             Self::Screenshot { .. } => "screenshot",
         }
     }
+}
+
+#[derive(Debug, Subcommand)]
+pub enum McpWatchlistCommand {
+    #[command(about = "List watchlists without changing the active selection")]
+    List,
+    #[command(about = "Read one watchlist by its numeric ID without activating it")]
+    Get { id: String },
+}
+
+#[derive(Debug, Subcommand)]
+pub enum McpAlertCommand {
+    #[command(about = "List alerts, optionally filtered by symbol and active state")]
+    List {
+        #[arg(long)]
+        symbol: Option<String>,
+        #[arg(long, action = clap::ArgAction::Set)]
+        active: Option<bool>,
+    },
+    #[command(about = "Read 1 to 100 distinct alert IDs; no automatic changes")]
+    Get {
+        #[arg(required = true, num_args = 1..)]
+        ids: Vec<u64>,
+    },
 }

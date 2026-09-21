@@ -2,7 +2,7 @@
 
 use crate::{Failure, Result};
 use serde_json::Value;
-use tradingview_model::{mcp_bars, mcp_data};
+use tradingview_model::{mcp_account, mcp_bars, mcp_data};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) enum Tool {
@@ -12,11 +12,19 @@ pub(crate) enum Tool {
     Symbol,
     Symbols,
     Screener,
+    Watchlists,
+    Watchlist,
+    Alerts,
+    AlertDetails,
 }
 
 impl Tool {
     pub fn names(self) -> &'static [&'static str] {
         match self {
+            Self::Watchlists => &["mcp-watchlist-list-watchlists", "list_watchlists"],
+            Self::Watchlist => &["mcp-watchlist-get-watchlist", "get_watchlist"],
+            Self::Alerts => &["mcp-tv-list-alerts", "list_alerts"],
+            Self::AlertDetails => &["mcp-tv-get-alerts", "get_alerts"],
             Self::Bars => &["mcp-tv-get-ohlcv", "get_ohlcv"],
             Self::Search => &["mcp-tv-search-symbols", "search_symbols"],
             Self::Columns => &["mcp-tv-get-screener-columns", "get_screener_columns"],
@@ -28,6 +36,10 @@ impl Tool {
 
     pub fn fields(self) -> &'static [(&'static str, &'static str)] {
         match self {
+            Self::Watchlists => &[],
+            Self::Watchlist => &[("watchlist_id", "string")],
+            Self::Alerts => &[("symbol", "string"), ("active", "boolean")],
+            Self::AlertDetails => &[("alert_ids", "array")],
             Self::Bars => &[
                 ("symbol", "string"),
                 ("interval", "string"),
@@ -64,6 +76,10 @@ impl Tool {
             Self::Symbol,
             Self::Symbols,
             Self::Screener,
+            Self::Watchlists,
+            Self::Watchlist,
+            Self::Alerts,
+            Self::AlertDetails,
         ]
         .into_iter()
         .find(|tool| tool.names().contains(&name))
@@ -89,6 +105,27 @@ impl Tool {
             _ => Err(Failure::UnsupportedCapability),
         };
         let validated = match self {
+            Self::Watchlists => Ok(mcp_account::Request::watchlists().arguments()),
+            Self::Watchlist => {
+                mcp_account::Request::watchlist(string("watchlist_id")?).map(|v| v.arguments())
+            }
+            Self::Alerts => {
+                let active = match args.get("active") {
+                    None => None,
+                    Some(Value::Bool(value)) => Some(*value),
+                    _ => return Err(Failure::UnsupportedCapability),
+                };
+                mcp_account::Request::alerts(optional("symbol")?, active).map(|v| v.arguments())
+            }
+            Self::AlertDetails => {
+                let ids: Vec<u64> = serde_json::from_value(
+                    args.get("alert_ids")
+                        .cloned()
+                        .ok_or(Failure::UnsupportedCapability)?,
+                )
+                .map_err(|_| Failure::UnsupportedCapability)?;
+                mcp_account::Request::alert_details(&ids).map(|v| v.arguments())
+            }
             Self::Screener => {
                 let options = mcp_data::ScreenerOptions::from_arguments(args)
                     .map_err(|_| Failure::UnsupportedCapability)?;
@@ -158,6 +195,17 @@ impl From<mcp_data::Kind> for Tool {
     }
 }
 
+impl From<mcp_account::Kind> for Tool {
+    fn from(kind: mcp_account::Kind) -> Self {
+        match kind {
+            mcp_account::Kind::Watchlists => Self::Watchlists,
+            mcp_account::Kind::Watchlist => Self::Watchlist,
+            mcp_account::Kind::Alerts => Self::Alerts,
+            mcp_account::Kind::AlertDetails => Self::AlertDetails,
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -167,6 +215,8 @@ mod tests {
     fn allowlist_rejects_mutations_and_unvalidated_arguments() {
         for name in [
             "create_alert",
+            "mcp-watchlist-get-active-watchlist",
+            "mcp-watchlist-create-watchlist",
             "mcp-tv-delete-alert",
             "other-search_symbols",
         ] {

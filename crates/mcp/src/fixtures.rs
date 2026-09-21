@@ -280,6 +280,10 @@ fn respond(ep: &Endpoints, r: &Request, mode: &str) -> Response {
                 crate::tools::Tool::Symbol,
                 crate::tools::Tool::Symbols,
                 crate::tools::Tool::Screener,
+                crate::tools::Tool::Watchlists,
+                crate::tools::Tool::Watchlist,
+                crate::tools::Tool::Alerts,
+                crate::tools::Tool::AlertDetails,
             ] {
                 let properties: serde_json::Map<_, _> = tool
                     .fields()
@@ -288,7 +292,7 @@ fn respond(ep: &Endpoints, r: &Request, mode: &str) -> Response {
                         (
                             (*name).into(),
                             if *kind == "array" {
-                                json!({"type": ["null", "array"], "items": {"type": "string"}})
+                                json!({"type": ["null", "array"], "items": {"type": if tool == crate::tools::Tool::AlertDetails { "integer" } else { "string" }}})
                             } else {
                                 json!({"type": kind})
                             },
@@ -366,6 +370,22 @@ fn respond(ep: &Endpoints, r: &Request, mode: &str) -> Response {
             });
             let args = &request["params"]["arguments"];
             match request["params"]["name"].as_str() {
+                Some("mcp-watchlist-list-watchlists") => {
+                    result["structuredContent"] = json!({
+                        "watchlists": [{"id": 12, "name": "Example", "symbols": ["NASDAQ:EXAMPLE"]}]
+                    });
+                }
+                Some("mcp-watchlist-get-watchlist") => {
+                    result["structuredContent"] = json!({
+                        "watchlist": {"id": 12, "name": "Example", "symbols": ["NASDAQ:EXAMPLE"]}
+                    });
+                }
+                Some("mcp-tv-list-alerts" | "mcp-tv-get-alerts") => {
+                    result["structuredContent"] = json!({
+                        "success": true,
+                        "alerts": [{"alert_id": 12, "symbol": "NASDAQ:EXAMPLE", "active": false}]
+                    });
+                }
                 Some("mcp-tv-search-symbols") => {
                     result["structuredContent"] = json!({
                         "data": {
@@ -1052,6 +1072,88 @@ async fn symbol_data_commands_share_authentication_and_preserve_faults_without_r
                     details["tool_attempts"],
                     if mode == "schema-change" { 0 } else { 1 }
                 );
+                assert!(!details.to_string().contains("synthetic-access"));
+                if mode == "401" {
+                    assert_eq!(details["code"], "auth_refreshed_retry_required");
+                }
+            }
+        }
+    }
+}
+
+#[tokio::test]
+async fn account_read_service_preserves_contracts_and_never_replays_failures() {
+    use crate::client::{Operation, execute};
+    use tradingview_model::mcp_account::{Kind, Request};
+
+    for request in [
+        Request::watchlists(),
+        Request::watchlist("12").unwrap(),
+        Request::alerts(Some("NASDAQ:EXAMPLE"), Some(false)).unwrap(),
+        Request::alert_details(&[12, 10]).unwrap(),
+    ] {
+        for mode in [
+            "json",
+            "sse",
+            "401",
+            "429",
+            "malformed",
+            "tool-error",
+            "schema-change",
+        ] {
+            let server = Server::start(mode).await;
+            let (_root, mut guard, budget, http, store) = context(&server, 5).await;
+            let mut auth = Auth::discover(http.clone(), store.clone(), budget.clone())
+                .await
+                .unwrap();
+            let url = auth
+                .register("http://127.0.0.1:12345/callback")
+                .await
+                .unwrap();
+            let state = reqwest::Url::parse(&url)
+                .unwrap()
+                .query_pairs()
+                .find(|(key, _)| key == "state")
+                .unwrap()
+                .1
+                .into_owned();
+            auth.exchange("synthetic-code", &state, None).await.unwrap();
+
+            let result = execute(
+                Operation::Account(request.clone()),
+                &mut guard,
+                store,
+                http,
+                budget,
+                true,
+            )
+            .await;
+            assert_eq!(
+                server.calls("tools/call"),
+                if mode == "schema-change" { 0 } else { 1 }
+            );
+            if matches!(mode, "json" | "sse") {
+                let data = result.unwrap();
+                assert_eq!(data["source"], "tradingview_mcp");
+                assert_eq!(data["request"], request.arguments());
+                assert_eq!(data["transport"]["tool_attempts"], 1);
+                if request.kind() == Kind::AlertDetails {
+                    assert_eq!(data["items"][1]["status"], "unreported");
+                    assert!(data["items"][1]["alert"].is_null());
+                }
+                if request.kind() == Kind::Watchlist {
+                    assert_eq!(data["watchlist"]["id"], "12");
+                }
+                let requests = server.requests.lock().unwrap();
+                let call = requests
+                    .iter()
+                    .filter_map(|request| serde_json::from_slice::<Value>(&request.body).ok())
+                    .find(|value| value["method"] == "tools/call")
+                    .unwrap();
+                assert_eq!(call["params"]["arguments"], request.arguments());
+            } else {
+                let details = result.unwrap_err().details.unwrap();
+                assert_eq!(details["contract_version"], "mcp_error.v1");
                 assert!(!details.to_string().contains("synthetic-access"));
                 if mode == "401" {
                     assert_eq!(details["code"], "auth_refreshed_retry_required");

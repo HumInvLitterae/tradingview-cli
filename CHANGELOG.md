@@ -26,6 +26,10 @@ package version omits the leading `v`.
 - Recent intraday `tv mcp bars` for `1m`, `5m`, `15m`, `30m`, `1h`
   and `4h`, retaining `mcp_bars.v1`, explicit count coverage and unknown data
   conditions without date-range or resampling claims.
+- `tv mcp watchlist list/get` and `tv mcp alert list/get` for explicit
+  account reads, with separate JSON contracts, requested-ID tracking, null
+  optional fields and unreported alert outcomes. Reads do not activate lists
+  or change alerts; message and webhook URL fields are excluded.
 
 ## v0.31.4 - 2026-09-20
 
