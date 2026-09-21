@@ -1176,7 +1176,7 @@ pub enum UiCommand {
 
 #[derive(Debug, Subcommand)]
 pub enum McpCommand {
-    #[command(about = "Read official MCP watchlists without activating a list")]
+    #[command(about = "Read or explicitly change official MCP watchlists")]
     Watchlist {
         #[command(subcommand)]
         command: McpWatchlistCommand,
@@ -1330,6 +1330,34 @@ pub enum McpWatchlistCommand {
     List,
     #[command(about = "Read one watchlist by its numeric ID without activating it")]
     Get { id: String },
+    #[command(about = "Create a watchlist, then read it back; never automatically retry")]
+    Create {
+        name: String,
+        #[arg(long, value_delimiter = ',')]
+        symbols: Vec<String>,
+    },
+    #[command(about = "Update name/description, then read back; omitted fields stay unchanged")]
+    Update {
+        id: String,
+        #[arg(long)]
+        name: Option<String>,
+        #[arg(long)]
+        description: Option<String>,
+    },
+    #[command(about = "Add symbols; existing members move to the end; then read back")]
+    Add {
+        id: String,
+        #[arg(required = true, num_args = 1..)]
+        symbols: Vec<String>,
+    },
+    #[command(about = "Remove symbols, then read back; no automatic retry")]
+    Remove {
+        id: String,
+        #[arg(required = true, num_args = 1..)]
+        symbols: Vec<String>,
+    },
+    #[command(about = "Delete the specified watchlist, then check its absence from the list")]
+    Delete { id: String },
 }
 
 #[derive(Debug, Subcommand)]

@@ -26,6 +26,7 @@ pub enum Operation {
     Bars(Request),
     Data(tradingview_model::mcp_data::Request),
     Account(tradingview_model::mcp_account::Request),
+    WatchlistMutation(tradingview_model::mcp_account::WatchlistMutation),
 }
 
 /// Internal workspace service; no external stable Rust API is promised.
@@ -61,7 +62,10 @@ impl Client {
             .map_err(|e| failure(e, "local_admission", 0, None))?;
         if matches!(
             operation,
-            Operation::Bars(_) | Operation::Data(_) | Operation::Account(_)
+            Operation::Bars(_)
+                | Operation::Data(_)
+                | Operation::Account(_)
+                | Operation::WatchlistMutation(_)
         ) {
             admission
                 .check_cooldown()
@@ -148,7 +152,7 @@ pub(crate) async fn execute(
         .counts()
         .tools;
     let mut stage = "discovery";
-    let result: Result<Value, AppError> = async {
+    let mut result: Result<Value, AppError> = async {
         let mut auth = Auth::discover(http.clone(), store, budget.clone())
             .await
             .map_err(AppError::from)?;
@@ -180,6 +184,10 @@ pub(crate) async fn execute(
         auth.restore().await.map_err(AppError::from)?;
         let token = auth.token().await.map_err(AppError::from)?;
         stage = "tool_response";
+        if let Operation::WatchlistMutation(request) = &operation {
+            stage = "watchlist_mutation";
+            return crate::watchlist::change(request, &http, token, admission).await;
+        }
         let (tool, arguments) = match &operation {
             Operation::Bars(request) => (crate::tools::Tool::Bars, request.arguments()),
             Operation::Data(request) => (request.kind().into(), request.arguments()),
@@ -213,10 +221,10 @@ pub(crate) async fn execute(
         }
     }
     .await;
-    if let Some(wait) = http.cooldown() {
-        admission
-            .cooldown(wait)
-            .map_err(|e| failure(e, "local_state", 0, None))?;
+    if let Some(wait) = http.cooldown()
+        && let Err(error) = admission.cooldown(wait)
+    {
+        result = Err(failure(error, "local_state", 0, None));
     }
     let attempts = budget
         .lock()
@@ -225,7 +233,7 @@ pub(crate) async fn execute(
         .tools
         .saturating_sub(before);
     result.map_err(|mut error| {
-        if let Some(code) = error
+        let mut error = if let Some(code) = error
             .details
             .as_ref()
             .and_then(|v| v.get("failure"))
@@ -237,11 +245,22 @@ pub(crate) async fn execute(
             details["stage"] = json!(stage);
             details["tool_attempts"] = json!(attempts);
             error
+        };
+        if let Operation::WatchlistMutation(request) = &operation {
+            let details = error.details.get_or_insert_with(|| json!({}));
+            details["mutation"] = json!({
+                "operation": request.action_name(),
+                "status": if attempts == 0 { "not_attempted" } else { "outcome_unknown" },
+                "automatic_retry": false
+            });
+            details["next_action"] =
+                json!("inspect the watchlist before considering another mutation");
         }
+        error
     })
 }
 
-fn failure(error: Failure, stage: &str, attempts: u32, http: Option<&Http>) -> AppError {
+pub(crate) fn failure(error: Failure, stage: &str, attempts: u32, http: Option<&Http>) -> AppError {
     let mut result = AppError::from(error);
     let code = match error {
         Failure::Timeout if stage == "local_admission" => "local_busy",

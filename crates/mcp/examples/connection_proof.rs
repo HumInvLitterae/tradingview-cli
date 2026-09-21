@@ -18,7 +18,7 @@ async fn main() {
         if !(args.len() == 2 || (args.len() == 4 && args[2] == "--credential-worker-path")) {
             eprintln!(
                 "Usage: connection_proof --local-admission | \
-                 discover/login/status/authorize-store/daily/weekly/monthly/all/search/columns/columns-overview/symbol/symbols/symbols-command/screener/screener-command/screener-empty-command/intraday-command/account-lists/account-commands/refresh/logout \
+                 discover/login/status/authorize-store/daily/weekly/monthly/all/search/columns/columns-overview/symbol/symbols/symbols-command/screener/screener-command/screener-empty-command/intraday-command/account-lists/account-commands/watchlist-catalog/watchlist-lifecycle/refresh/logout \
                  <proof-directory> [--credential-worker-path <absolute-executable>]"
             );
             std::process::exit(1);
@@ -45,6 +45,8 @@ async fn main() {
             "intraday-command" => Op::IntradayCommand,
             "account-lists" => Op::AccountLists,
             "account-commands" => Op::AccountCommands,
+            "watchlist-catalog" => Op::WatchlistCatalog,
+            "watchlist-lifecycle" => Op::WatchlistLifecycle,
             "logout" => Op::Logout,
             _ => {
                 eprintln!("Unknown proof operation");

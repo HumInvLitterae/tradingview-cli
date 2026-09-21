@@ -3,7 +3,7 @@
 `tv` is a Rust-native command-line tool for TradingView workflows. It combines
 TradingView Desktop automation through Chrome DevTools Protocol with
 Desktop-free TradingView data reads for quotes, scanner rows, symbol metadata,
-and fundamentals.
+and fundamentals, plus explicit official-MCP watchlist management.
 
 This project is inspired by practical workflows built around
 [TradingView MCP Bridge](https://github.com/tradesdontlie/tradingview-mcp) by
@@ -268,7 +268,9 @@ tv mcp logout
 These use OAuth and separate MCP contracts, preserving the existing commands.
 They support symbol/column discovery, single/batch symbol fields, screener queries and recent
 intraday/daily/weekly/monthly bars, plus watchlist/alert listing and ID-specific
-reads. They preserve unknown data conditions and require
+reads. Explicit watchlist create/update/add/remove/delete commands return separate
+mutation and readback evidence, verified with a native disposable-list lifecycle.
+These commands preserve unknown data conditions and require
 an eligible paid account. Read [MCP usage and platform status](docs/official-mcp.md)
 before using this unreleased path; Windows runtime qualification remains open.
 

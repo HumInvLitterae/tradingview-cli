@@ -12,6 +12,7 @@ mod proof;
 mod sse;
 mod tools;
 mod transport;
+mod watchlist;
 #[cfg(windows)]
 mod windows_state;
 

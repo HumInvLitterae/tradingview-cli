@@ -36,6 +36,13 @@ Preserve nulls, unreported alert IDs and unknown completeness. Alert conditions
 are a limited projection, not a complete recipe for recreating Pine alerts.
 Do not put account IDs or returned account data in shared artifacts.
 
+For an explicit request to change a named watchlist, use the separate
+`tv mcp watchlist create/update/add/remove/delete` commands when supported.
+They can change account state. Inspect both `mutation` and `readback` results;
+outer success does not establish a matched postcondition. A failed or missing
+readback never authorizes repeating the mutation. New-object verification must
+use an approved disposable target, not a pre-existing account object.
+
 ## Authority and evidence
 
 Prefer Desktop-free reads when they answer the question. For Desktop work,

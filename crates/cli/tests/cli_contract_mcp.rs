@@ -34,6 +34,18 @@ fn independent_mcp_help_does_not_change_bars_entry() {
 fn invalid_mcp_requests_fail_before_cdp_state_store_or_provider_access() {
     for args in [
         vec!["mcp", "watchlist", "get", "name"],
+        vec!["mcp", "watchlist", "create", " "],
+        vec!["mcp", "watchlist", "update", "12"],
+        vec!["mcp", "watchlist", "add", "12", "EXAMPLE"],
+        vec![
+            "mcp",
+            "watchlist",
+            "remove",
+            "12",
+            "NASDAQ:EXAMPLE",
+            "NASDAQ:EXAMPLE",
+        ],
+        vec!["mcp", "watchlist", "delete", "name"],
         vec!["mcp", "watchlist", "get", "01"],
         vec!["mcp", "alert", "get", "0"],
         vec!["mcp", "alert", "get", "12", "12"],
@@ -190,6 +202,36 @@ fn account_reads_parse_without_desktop_or_credential_access() {
         let help = String::from_utf8(output).unwrap();
         assert!(help.contains("list"));
         assert!(help.contains("get"));
-        assert!(!help.contains("create"));
+        if group == "alert" {
+            assert!(!help.contains("create"));
+        } else {
+            for operation in ["create", "update", "add", "remove", "delete"] {
+                assert!(help.contains(operation));
+            }
+        }
+    }
+}
+
+#[test]
+fn watchlist_mutations_validate_before_credential_access() {
+    for args in [
+        vec!["mcp", "watchlist", "create", "Example"],
+        vec!["mcp", "watchlist", "update", "12", "--description", ""],
+        vec!["mcp", "watchlist", "add", "12", "NASDAQ:EXAMPLE"],
+        vec!["mcp", "watchlist", "remove", "12", "NASDAQ:EXAMPLE"],
+        vec!["mcp", "watchlist", "delete", "12"],
+    ] {
+        let output = tv()
+            .args(args)
+            .env("HOME", "relative-home")
+            .env("LOCALAPPDATA", "relative-state")
+            .env("XDG_STATE_HOME", "relative-state")
+            .assert()
+            .code(1)
+            .get_output()
+            .clone();
+        assert!(output.stdout.is_empty());
+        let error: Value = serde_json::from_slice(&output.stderr).unwrap();
+        assert_eq!(error["error"]["details"]["code"], "local_state_unavailable");
     }
 }

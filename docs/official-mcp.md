@@ -280,7 +280,92 @@ Duplicate/unexpected IDs, a mismatched watchlist ID, contradictory filter echoes
 or malformed fields produce `mcp_error.v1`; failed calls never become empty
 successful results. Existing authentication/rate-limit/timeout handling applies.
 `received_at` is the client receipt time, separate from provider timestamps.
-Commands added here are reads; account management is a subsequent slice.
+The commands in this section are reads; explicit watchlist changes are described
+below. Alert management remains a subsequent slice.
+
+## Explicit watchlist changes
+
+The development CLI also provides these explicit changes. A disposable-list
+lifecycle passed native macOS verification through the public service.
+Use account-local IDs obtained from `watchlist list`.
+
+```sh
+tv mcp watchlist create "Example research" --symbols NASDAQ:EXAMPLE,NYSE:OTHER
+tv mcp watchlist update 12 --name "Renamed research"
+tv mcp watchlist update 12 --description ""
+tv mcp watchlist add 12 NASDAQ:EXAMPLE
+tv mcp watchlist remove 12 NYSE:OTHER
+tv mcp watchlist delete 12
+```
+
+The IDs and symbols above are synthetic. Creation requires an explicit nonblank
+name (up to 500 characters). Update requires a name and/or description; omission
+keeps a field unchanged, while an empty description requests clearing it.
+Descriptions are bounded to 4096 characters by the client. Create accepts up to
+100 distinct qualified symbols; add/remove require 1..100. No implicit chunking
+occurs. Adding an existing symbol moves it to the end; it is not a no-op.
+Deletion names one target and cannot be inferred from a read request.
+
+Each invocation sends at most one mutation and, after a valid response, one
+readback using the same credential/admission service and overall deadline.
+No mutation is replayed after timeout, authentication failure or response error.
+OAuth renewal before dispatch retains the existing behavior; a rejected mutation
+does not trigger the read-command refresh-and-repeat path. Scopes are never
+expanded automatically. The public OAuth metadata advertises `mcp:read` and
+`mcp:tools`, but the watchlist tool definitions do not declare per-tool scopes;
+the disposable-list lifecycle succeeded under the existing `mcp:read` grant.
+That scope name is not a token-level guarantee against account writes. No
+additional scope was needed for the observed workflow.
+
+Results use `mcp_watchlist_mutation.v1`,
+`source_category:desktop_free_mutation` and `requires_desktop:false`.
+The outer success envelope means a valid mutation response was received.
+It does **not** assert that the requested state was confirmed; consumers must
+inspect `readback.status`. A successful response with failed readback is not
+a reason to repeat the mutation.
+
+Selected fields from a confirmed rename:
+
+```json
+{
+  "contract_version": "mcp_watchlist_mutation.v1",
+  "operation": "update",
+  "target_id": "12",
+  "mutation": {
+    "status": "response_received",
+    "tool_attempts": 1,
+    "automatic_retry": false
+  },
+  "readback": {"status": "matched", "tool_attempts": 1}
+}
+```
+
+| Readback status | Meaning |
+| --- | --- |
+| `matched` | Requested name/description/symbol postconditions match the ID-specific observation. |
+| `mismatch` | A reported field contradicts the requested postcondition. |
+| `unconfirmed` | Required observation fields are absent/null. |
+| `not_reported` | After deletion, the target is absent from the returned list; account-wide list completeness remains unconfirmed. |
+| `still_present` | The deleted target is still reported by the list read. |
+| `not_performed` | Creation returned no usable target ID; the client does not guess by name. |
+| `failed` | Readback failed; its structured error is retained separately from the received mutation response. |
+
+Ordinary readback includes the normalized target snapshot. Deletion reports
+only membership/timestamp/completeness evidence, not unrelated account lists.
+A missing description stays unknown, including after a requested update.
+
+A mutation failure uses `mcp_error.v1` with `details.mutation.status` equal to
+`not_attempted` or `outcome_unknown`; validation/local preflight errors retain
+zero tool attempts. HTTP/MCP rejection does not prove that no change occurred.
+For example, a timeout after attempted dispatch has
+`code:deadline_exceeded`, `mutation.status:outcome_unknown`, and
+`automatic_retry:false`. Inspect the target before considering a new mutation.
+For an uncertain create without an ID, inspect the list and resolve ownership;
+do not create another list or pick a same-named list automatically.
+
+Alert management is still a separate pending slice. In particular, official
+alert updates reactivate alerts and cannot change their conditions, symbol or
+timeframe. Existing Pine workflows remain separate.
 
 ## Read contract
 

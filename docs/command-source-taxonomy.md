@@ -33,6 +33,14 @@ account IDs are local to the authenticated account, not portable identities.
 See [MCP usage and contracts](official-mcp.md). Existing `tv bars` remains an
 independent command and contract; no implicit source migration occurs.
 
+### Authenticated official MCP mutation
+
+`tv mcp watchlist create/update/add/remove/delete` uses
+`source:tradingview_mcp`, `source_category:desktop_free_mutation` and
+`requires_desktop:false`. These explicit account changes have separate mutation
+and readback evidence. They never fall back to Desktop/internal APIs or replay
+uncertain writes. See the [management contract](official-mcp.md#explicit-watchlist-changes).
+
 ### Desktop-free read
 
 `requires_desktop`: no. `may_mutate`: no. `fallback_allowed`: no Desktop
