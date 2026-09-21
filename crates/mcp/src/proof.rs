@@ -815,8 +815,8 @@ async fn verify_alert_lifecycle(directory: &Path, worker: Option<&Path>) -> Resu
             write_private_json(&record, &state)?;
             return Ok(json!({
                 "success": false,
-                    "phase": state["phase"],
-                    "code": details["code"],
+                "phase": state["phase"],
+                "code": details["code"],
                 "mutation_status": details["mutation"]["status"]
             }));
         }

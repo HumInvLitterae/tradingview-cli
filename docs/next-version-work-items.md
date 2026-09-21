@@ -56,8 +56,8 @@ screener queries are implemented with native limited/empty-result verification.
 Recent-count intraday OHLCV is implemented with all six intervals verified.
 Watchlist and alert list/ID reads are implemented and verified through the native
 service. Watchlist management and readback passed fixture and native disposable-list
-verification. Alert management is implemented; disposable native verification
-is pending.
+verification. Alert management also passed native disposable-alert verification;
+financial data is the next ordered slice.
 The owner has handed the separate `mcp_bars.v1` path to the downstream PM. Windows
 qualification is deferred to a later stage and remains a release requirement. A successful read
 still leaves delay/adjustment/session/finality/anchoring unconfirmed. No new
@@ -75,7 +75,7 @@ contracts and acceptance. These are not all mandatory v0.32.0 release contents.
 | 2 | Multi-symbol data | Implemented as `tv mcp symbols` / `mcp_symbols.v1`, one request for up to 50 distinct symbols. Input order, partial results and missing fields covered by fixtures and native public-service verification; no new native credential executable was required. |
 | 3 | Screener | Implemented as `tv mcp screener` / `mcp_screener.v1`; explicit filters, columns, presets and limit. Native public-service limited and empty results passed; returned counts remain distinct from provider totals. |
 | 4 | Recent-count intraday OHLCV | Implemented: six intervals pass fixture and native service verification; no date-range or completeness claims. |
-| 5 | Watchlists and alerts | List/ID reads and watchlist management verified, including a native disposable-list lifecycle. Alert management is implemented with native verification pending; retain unsupported Pine/Desktop capabilities. |
+| 5 | Watchlists and alerts | List/ID reads and watchlist management verified, including a native disposable-list lifecycle. Alert management also passed a native disposable-alert lifecycle. Retain unsupported Pine/Desktop capabilities. |
 | 6 | Earnings and financial data | Periods, units, dates and missing values retain provider meaning. |
 | 7 | News, documents and economic data | Pagination, references, timestamps and access limits remain explicit. |
 

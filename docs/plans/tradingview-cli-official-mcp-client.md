@@ -44,8 +44,9 @@ The earlier exclusions below describe the first delivered slice, not a permanent
 ban on this agreed follow-up. Symbol discovery, single/batch symbol reads and
 screener queries and recent-count intraday OHLCV are implemented using the shared
 authenticated service. Watchlist and alert list/ID reads are also implemented;
-watchlist management also passed native lifecycle verification. Alert management with per-ID readback is implemented; its disposable native
-verification remains pending. Existing commands remain intact.
+watchlist and alert management passed native disposable-object lifecycle
+verification with readback. Financial data is the next ordered slice. Existing
+commands remain intact.
 
 Source inspection supports the watchlist/alert substitution rationale:
 
@@ -95,18 +96,28 @@ back each step. It never changes existing alerts. The high threshold does not
 substitute for disabling notification delivery. A private outside-repository
 record preserves the returned ID and phase for recovery; uncertain writes stop
 without replay or identity guessing. Necessary fixes/retests and cleanup stay
-limited to this disposable target. **Owner approval for these new alert-account
-effects is pending; no native alert mutation has run.** Additional OAuth scope
-is not assumed necessary from the public catalog alone.
+limited to this disposable target. The owner authorized the concrete alert
+verification by asking to proceed after the consolidated request.
+
+Native macOS verification completed: create, stop, rename/reactivate, stop and
+restart all returned `readback.status:matched`. Delete returned a valid response
+and the following list no longer reported the disposable ID (`not_reported`);
+unknown list completeness is preserved. The existing credential grant worked
+without additional scope, browser or OS consent. No pre-existing alert changed.
+The private recovery record ends at `delete_replied_and_not_reported`; account
+identifiers and live payloads are not in tracked evidence. The installed binary
+and immutable credential worker were not overwritten.
 
 Fixture checks cover notification defaults, omission/false, invalid requests,
 JSON/SSE, batch missing/contradictory outcomes, lost IDs, readback failure and
-401/429/5xx/timeout/schema-drift responses without write replay. Baseline validation passed: 1,007 workspace tests, 27 ignored, no failures;
+401/429/5xx/timeout/schema-drift responses without write replay. Baseline
+validation passed: 1,007 workspace tests, 27 ignored, no failures;
 the additional closed-tool argument test also passed. Strict workspace Clippy,
 formatting, public/diff hygiene and runtime-resource staging passed (48 files,
 six skills per root). The earlier failure was a shared synthetic SSE fixture
 whose active flag conflicted with an existing read filter; separate alert
-lifecycle fixture data resolved it. Native lifecycle verification remains open.
+lifecycle fixture data resolved it. Native verification required no behavior
+change; unchanged functional evidence was reused.
 Windows native qualification remains separately deferred by the owner.
 
 ## Watchlist management slice (2026-09-21)
@@ -169,7 +180,8 @@ The private recovery record is outside the repository; no live IDs, names or
 raw account payloads were committed. This is public-service evidence, not a
 new CLI executable's native-consent qualification. Description clearing remains
 fixture-only evidence. Windows native qualification remains deferred and
-mandatory before release. Alert management is implemented; disposable native verification is pending.
+mandatory before release. The subsequent alert-management result is recorded
+above.
 
 ## Watchlist and alert read slice (2026-09-21)
 
