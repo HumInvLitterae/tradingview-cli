@@ -47,10 +47,9 @@ MCP execution plan; do not create a duplicate documentation ExecPlan.
   The local checkout inspected for this plan is `42b1267`; its recorded remote
   tracking ref was stale. Reconcile the remote change before candidate checks.
 - Linux binaries remain part of distribution, but authenticated MCP credential
-  operations are explicitly unavailable in current code. Recommend shipping MCP
-  for macOS/Windows in this minor release with an explicit support matrix;
-  owner acceptance of that release scope is outstanding. Linux MCP support
-  would be separate implementation, dependency/store selection and verification.
+  operations are explicitly unavailable in current code. The owner now requests Linux implementation where feasible, with honest
+  separation of container tests and desktop acceptance. The implementation and
+  verification plan below supersedes the earlier macOS/Windows-only proposal.
 - Earlier feature slices and downstream observation intake are complete as
   recorded below. Downstream analytical admission is not an upstream release gate.
 
@@ -64,13 +63,12 @@ MCP execution plan; do not create a duplicate documentation ExecPlan.
    preserve errors and stop on renewed throttling. Do not infer a reset time or
    that all MCP tools are limited. No silent replay or deadline extension.
 2. Close candidate scope: recommend v0.32.0 with the existing separate `tv mcp`
-   surface, after the remaining reads pass, and the explicit macOS/Windows MCP
-   support boundary above. If service failures persist, return a concrete
+   surface, after the remaining reads pass, and Linux implementation with explicit validation limits below. If service failures persist, return a concrete
    choice: wait, or release the affected commands with clearly disclosed limited
    native qualification. Do not silently remove implemented commands or label
-   them qualified. Additional features and Linux implementation are not automatic
-   prerequisites.
-3. Complete the documentation/resource work below. It can proceed while provider
+   them qualified. Unrelated additional features are not prerequisites.
+3. Implement and verify the Linux adapter, then complete the documentation/resource
+   work below. It can proceed while provider
    acceptance is unavailable. Record current Windows acceptance now; preserve
    dated historical evidence rather than rewriting its observations.
 4. Reconcile remote main; review the candidate diff, dependency/lock coherence,
@@ -93,20 +91,137 @@ MCP execution plan; do not create a duplicate documentation ExecPlan.
 Current coverage is substantial: `docs/official-mcp.md` describes the commands
 and contracts, `market-data` covers data interpretation, and the packaged guide
 covers account changes. The missing work is release usability and consistency,
-not a new general MCP framework or an automatic seventh skill.
+not a new general MCP framework. Skill count is not a constraint; standalone
+attachment and clear task ownership take precedence.
 
 | Stage | Files / responsibility | Acceptance |
 | --- | --- | --- |
 | User entrypoints | `README.md`, English/Japanese getting-started guides, `docs/official-mcp.md` | One short login/status/read journey; normal same-browser sign-in first; explicit paid-account and platform prerequisites; Keychain executable consent, Windows Credential Manager, local-only status/logout behavior, Linux limitation. Remove development-only wording when the release is prepared. |
 | Command and contract navigation | MCP guide, source taxonomy, architecture, Rust API and development guide | Compact purpose-to-command/source/side-effect map covers every implemented MCP family, including batch reads and account operations. Preserve existing commands, partial/null/unknown semantics, exact ID discovery, unsupported range behavior, error recovery and no automatic backend fallback. Examples match parser/fixtures; distinguish measured, reported and unconfirmed conditions. Update stale Windows statements in current guidance. |
-| Runtime skills | `market-data/SKILL.md` and its references, `packaging/agent/AGENTS.md`; screener/chart/Pine entrypoints only where source choice is relevant | Keep six skills. Add a portable MCP connection/error reference and a focused account-operation reference under the existing runtime resources. Route authentication and watchlist/alert workflows from the packaged guide; route data through market-data. Include readback/unknown mutation outcome, update reactivation and deletion effects. Do not move account management into a Desktop-only screener workflow or imply Pine equivalence. |
-| Archive closure | Staging script, runtime checker, packaging guide and maintained resource links | An unpacked archive supplies all operational instructions without contributor plans. Put shared connection/account instructions in packaged references and link the repository MCP guide to them. Do not blindly copy the current long MCP guide with its contributor-plan dependencies. Both skill roots and agent guides match; transitive local links stay inside the package. Recalculate the resource count if files are added; 48 files / six skills is historical evidence, not a required future count. |
-| Review and checks | Existing checker/self-tests, local link checks, synthetic command/JSON examples and manual scenario review | Walk through fresh authentication, reused credentials, short bars, unsupported range, auth/429/timeout, account mutation with unknown readback, and Linux unsupported behavior. Review English/Japanese agreement and conventional wrapping. No live mutation is needed for documentation acceptance. |
+| Runtime skills | `market-data/SKILL.md` and its references, `packaging/agent/AGENTS.md`; screener/chart/Pine entrypoints only where source choice is relevant | Make each skill independently attachable with all mandatory references inside its own directory. Add a focused account-management skill for watchlists and price alerts; data stays in market-data. Each includes the connection/error guidance needed for its own task. Include readback/unknown mutation outcome, update reactivation and deletion effects. Do not move account management into a Desktop-only screener workflow or imply Pine equivalence. |
+| Archive closure | Staging script, runtime checker, packaging guide and maintained resource links | Each isolated skill and the unpacked archive supply their required operational instructions without contributor plans or sibling skills. Put shared connection/account instructions in packaged references and link the repository MCP guide to them. Do not blindly copy the current long MCP guide with its contributor-plan dependencies. Both skill roots and agent guides match; transitive local links stay inside the package. Recalculate the resource count if files are added; 48 files / six skills is historical evidence, not a required future count. |
+| Review and checks | Existing checker/self-tests, local link checks, synthetic command/JSON examples and manual scenario review | Walk through fresh authentication, reused credentials, short bars, unsupported range, auth/429/timeout, account mutation with unknown readback, and Linux missing/locked-service behavior and explicit desktop-validation limits. Review English/Japanese agreement and conventional wrapping. No live mutation is needed for documentation acceptance. |
 
 Use synthetic identifiers and payloads. Keep account IDs, tokens, raw live
 responses and machine paths out of tracked resources. For this planning-only
 update, document checks suffice; implementation/package acceptance above remains
 work to perform, not claimed evidence.
+
+## Linux implementation and independent skill delivery (2026-09-22)
+
+The owner requests a concrete PM plan and wants Linux functionality implemented
+where feasible, even without a physical Linux desktop. This checkpoint plans the
+work; it does not claim implementation or authorize real Linux account access.
+The current executor remains the sole implementer/PM; no delegation is authorized.
+
+### Linux design and acceptance
+
+Use the already approved Linux-only `secret-service = 5.2.0` with
+`rt-tokio-crypto-rust`; no new production dependency is currently needed.
+The [crate API](https://docs.rs/secret-service/5.2.0/secret_service/struct.SecretService.html)
+provides session connection, collection/item lookup and secret storage.
+The adapter belongs under `crates/mcp/src/credentials/`, behind the existing
+same-binary worker. Preserve record serialization, issuer/scope validation,
+IPC bounds, deadlines, admission locking and public error envelopes.
+
+- Use the user's session D-Bus Secret Service and a persistent default collection,
+  with exact application/profile attributes for this client's record. Never use
+  an arbitrary collection, import another application's secret, or fall back to
+  plaintext/session-only storage. Missing and ambiguous records must be distinct
+  internally; duplicates must not cause arbitrary selection or bulk deletion.
+- Implement load, save/replace, clear and explicit access authorization. Keep a
+  single complete record; never delete the old token before saving its replacement.
+  Verify readback and replacement behavior against the chosen backend. Logout
+  affects only this client's matching item, never the collection itself.
+- Ordinary reads, refresh writes and logout must not silently prompt. Only the
+  explicit login/access step may request unlock/initial setup. Inspect library
+  methods before use: `create_item` can execute a returned prompt internally;
+  checking `is_locked` alone is not sufficient to prove noninteractive behavior.
+  Verify prompt suppression/cancellation and bounded failure under races. If the
+  current library cannot meet this requirement, return a concrete minimal API/
+  dependency alternative for approval rather than weakening it.
+- Preserve redaction and existing structured errors for absent bus/service,
+  locked collection, access denial, malformed/oversized record and timeout.
+  Any new public reason values or changed persisted fields require concrete
+  before/after approval; do not invent them as an implementation convenience.
+- Audit Linux browser launching (`xdg-open` already exists), worker dispatch and
+  Unix state-file protections with their callers. Do not add token-on-command-line
+  or an improvised remote/headless OAuth flow. Document session-bus, Secret Service
+  and browser prerequisites; a generic container does not supply them by itself.
+
+| Verification layer | Environment and cases | Evidence boundary |
+| --- | --- | --- |
+| Deterministic fixtures | Synthetic records and local OAuth/HTTP; missing/locked store, duplicate match, corruption, timeout, refresh-save failure, no prompt/replay and redaction | Proves policy and contract paths without real credentials. |
+| Linux integration | Disposable container, unprivileged user, isolated HOME and session D-Bus with GNOME Keyring; store/load across worker processes, replace, delete, daemon restart with preserved test storage, locked/absent service | Exercises a real Linux Secret Service implementation using synthetic secrets. Do not mount host credential directories, session buses or sockets into the container. |
+| Linux target/CI | Full Linux build, focused integration job and applicable workspace baseline; report target architecture | Local Docker reports Linux aarch64; it does not prove the shipped x86_64 binary. Use the existing x86_64 Linux CI lane for that target, adding isolated service tests rather than silently skipping them. |
+| Desktop acceptance | Real browser consent, desktop unlock dialog, restart/reuse and live refresh on a chosen Linux desktop | Remains unverified until actually performed. A physical machine is not essential; a suitable graphical Linux VM could provide this evidence. Do not make it an artificial prerequisite for committing the implemented adapter. |
+
+Docker daemon availability was checked read-only; no image was pulled and no
+container/service was created for this planning turn. Before execution, identify
+and record the test image, packages and cleanup. Use disposable synthetic secrets,
+no host credential mounts and no TradingView requests. Never start/replace the
+host keyring or alter host login configuration. Real Linux login needs a concrete
+account/session scope; ordinary tests do not inherit that authority.
+
+### MCP-first routing and independent skills
+
+Deliver a purpose/capability/source/effect matrix first, using actual CLI parsers,
+service contracts and the existing native evidence. Prefer official MCP when it
+meets the task and authentication is available: watchlist reads/management, simple
+price-alert lifecycle, and data-only screening are primary candidates. Explain
+setup when authentication is missing; do not prompt for source approval repeatedly.
+Honor an explicit source selection and never silently switch after a failure.
+
+Keep CDP for visible chart/Pine observations, Pine-condition alerts and saved
+Desktop UI state that MCP does not reproduce. Keep the existing historical route
+for date-range requests MCP cannot satisfy. This changes skill guidance, not
+existing command defaults or contracts. Account effects still require the user's
+intent; read intent alone does not authorize list activation or alert changes.
+
+The intended skill split is existing `market-data` for data and a new
+`account-management` skill for watchlist/price-alert workflows. The latter owns
+list-to-ID selection, mutation/readback, unknown outcomes, notification defaults,
+update reactivation, ordering and deletion effects. It is not a generic MCP tool
+passthrough. The name/count may change only if the capability review demonstrates
+a clearer task boundary; six skills is no longer a fixed target.
+
+Every shipped skill must work when its directory alone is copied/attached.
+Audit all existing runtime skills for required sibling references, not just new
+MCP files. Keep necessary instructions and references inside that skill; optional
+handoffs may name another skill but cannot require its files to complete the
+current task. Repository docs and root AGENTS may enrich, never supply missing
+mandatory instructions. Limited repeated safety/setup guidance is preferable to
+hidden runtime coupling; maintain parity checks for intentionally shared wording
+without requiring generators during use.
+
+Update runtime allowlists/checker expectations and packaging documentation for the
+final skill inventory. Add isolated-skill reference validation with a negative
+fixture for sibling/repository dependencies, alongside full archive/root parity
+checks. Review routing scenarios for authenticated/unauthenticated MCP, explicit
+legacy source, unsupported range, Pine-only operation and uncertain mutation.
+Static links alone do not prove good agent decisions; record scenario review
+separately. No real account mutation is required for this documentation work.
+
+### Execution order and return points
+
+1. Reconcile the existing remote configuration change without discarding local
+   plan commits. Implement Linux adapter and focused fixtures; resolve the
+   noninteractive-prompt design before completing the production change.
+2. Run isolated real Secret Service integration and Linux CI-compatible tests;
+   update platform guidance with the actual evidence. Commit usable Linux work
+   separately from documentation restructuring. Desktop live qualification may
+   remain explicitly unverified, not mislabeled unsupported after implementation.
+3. Complete capability routing and standalone skill contents; synchronize user
+   docs, guides, allowlists and validators. Commit this coherent resource change
+   after isolated-skill and archive/scenario checks.
+4. Finish outstanding economic/dividend acceptance when provider availability
+   permits. Documentation/Linux work need not wait for the provider. Reuse prior
+   approvals and successful evidence; disclose any remaining provider limitation
+   before release scope is closed.
+5. Review the integrated candidate, then perform the existing release-preparation
+   checklist. Report implementation, fixture/container/CI evidence and remaining
+   real-desktop gaps separately. Return a concrete candidate for publication
+   approval; do not publish or add unrelated features during these stages.
 
 ## Current next slice and expansion decision (2026-09-21)
 

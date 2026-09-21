@@ -20,12 +20,13 @@ the candidate. Workspace version remains 0.31.4 until release preparation.
 
 | Order | Work / owner | Completion condition |
 | --- | --- | --- |
-| 1 | Economic/dividend acceptance — upstream | Normal-deadline filtered codes, selected series, economic calendar and both dividend modes succeed through the public service. Respect renewed provider limits; successful dividend normalization is still missing. |
-| 2 | Candidate scope — upstream PM / owner | Confirm v0.32.0 contents and explicit macOS/Windows MCP support. Recommend retaining Linux distribution with MCP credentials unavailable; Linux MCP implementation needs a separate decision. Persistent provider failure requires an explicit scope/qualification choice. |
-| 3 | MCP documentation and skills — upstream | Complete the staged plan in the existing record: English/Japanese onboarding, command/source navigation, portable connection/account references, six-skill routing and archive closure. Can proceed before item 1 clears. |
-| 4 | Candidate qualification — upstream | Integrate remote changes; inspect dependency/contract drift; applicable Rust and pinned JS gates plus native CI and package checks. Reuse unchanged evidence. |
-| 5 | Release preparation — upstream PM | Align 0.32.0 versions/lock metadata, changelog and curated notes; build/stage release binaries for supported targets, verify resources, version and checksums. Separate coherent release commit. |
-| 6 | Publication and closeout — owner / upstream PM | Current-turn authorization for remote publication, verified tag/assets/checksums, then archive completed work and synchronize plan entrypoints. |
+| 1 | Linux adapter and isolated service verification — upstream | Implement using existing secret-service dependency; verify synthetic-secret persistence, restart, replacement, deletion and noninteractive failures in isolated Linux. Real desktop OAuth remains separately unverified. |
+| 2 | MCP documentation and skills — upstream | Complete the staged plan in the existing record: English/Japanese onboarding, command/source navigation, MCP-first capability routing, independently attachable skills, account-management skill and isolated-skill/archive checks. Can proceed while provider verification is unavailable. |
+| 3 | Economic/dividend acceptance — upstream | Normal-deadline filtered codes, selected series, economic calendar and both dividend modes succeed through the public service. Respect renewed provider limits; successful dividend normalization is still missing. |
+| 4 | Candidate scope — upstream PM / owner | Confirm v0.32.0 contents including the requested Linux adapter, separating implemented support from container/CI and real-desktop evidence. Persistent provider failure requires an explicit scope/qualification choice. |
+| 5 | Candidate qualification — upstream | Integrate remote changes; inspect dependency/contract drift; applicable Rust and pinned JS gates plus native CI and package checks. Reuse unchanged evidence. |
+| 6 | Release preparation — upstream PM | Align 0.32.0 versions/lock metadata, changelog and curated notes; build/stage release binaries for supported targets, verify resources, version and checksums. Separate coherent release commit. |
+| 7 | Publication and closeout — owner / upstream PM | Current-turn authorization for remote publication, verified tag/assets/checksums, then archive completed work and synchronize plan entrypoints. |
 
 ## Nonblocking follow-up and retained boundaries
 
@@ -33,7 +34,8 @@ Downstream owns analysis/backtest adoption, provider-aware caches, fixed-source
 policy changes and Desktop-provider migration. These are not prerequisites for
 publishing the independent MCP interface. Unknown data semantics remain unknown.
 Windows refresh/long-running testing can extend current evidence without reopening
-the accepted correction. Linux MCP is a scope decision, not a hidden promise.
+the accepted correction. Linux implementation is requested; desktop validation
+limits must remain explicit.
 
 CDP retry/reconnect, broker/daemon, public recovery metadata, renderer/indicator
 search, larger bar caps, legacy intraday ranges, drawing geometry and MSIX

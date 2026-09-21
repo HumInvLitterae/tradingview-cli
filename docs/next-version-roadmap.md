@@ -114,13 +114,15 @@ live authorization does not authorize account changes.
 
 Follow the [current release checklist](plans/tradingview-cli-official-mcp-client.md#release-checklist-and-documentation-plan-2026-09-22).
 Recommend v0.32.0 with the separate implemented MCP commands after remaining
-native economic/dividend acceptance. Recommend explicitly limiting authenticated
-MCP support to macOS/Windows while retaining the existing Linux distribution;
-Linux credentials are not implemented. This scope choice remains for the owner.
+native economic/dividend acceptance. The owner requests Linux credential support
+using the existing dependency, with isolated Linux integration and explicit
+real-desktop validation limits. The existing plan owns implementation acceptance.
 Persistent provider errors need a concrete qualification/scope decision.
 
 Finish English/Japanese onboarding, command/source navigation, portable MCP
-connection and account references, and six-skill package routing before release.
+connection and account references, MCP-first capability routing and independently
+attachable skills before release. Add an account-management skill; skill count
+is not a constraint.
 Reuse the existing MCP record; no additional feature or documentation ExecPlan.
 Downstream analytical adoption and broad reliability studies do not block this
 independent interface. Release version/notes and publication follow qualification.
