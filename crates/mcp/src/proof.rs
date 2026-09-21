@@ -1357,9 +1357,11 @@ async fn verify_economic_commands(directory: &Path, worker: Option<&Path>) -> Re
         }),
     ] {
         let request = request.map_err(|_| Failure::UnsupportedCapability)?;
-        let data = economic_read(&client, request, &mut reports).await;
-        complete &= data.is_some();
-        if let Some(data) = data.filter(|data| data["mode"] == "symbols") {
+        let Some(data) = economic_read(&client, request, &mut reports).await else {
+            complete = false;
+            break;
+        };
+        if data["mode"] == "symbols" {
             let symbol = data["items"].as_array().and_then(|items| {
                 items
                     .iter()
@@ -1374,6 +1376,9 @@ async fn verify_economic_commands(directory: &Path, worker: Option<&Path>) -> Re
             } else {
                 complete = false;
             }
+        }
+        if !complete {
+            break;
         }
     }
     Ok(json!({"success": complete, "observations": reports}))
