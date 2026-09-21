@@ -31,7 +31,8 @@ macOS uses Keychain. When the OS asks, verify the executable and dedicated
 reads. Replacing an unsigned/development executable can require new OS consent;
 run `tv mcp login` explicitly to handle it. Windows uses Credential Manager,
 with local-machine persistence and one atomic credential blob; oversized records
-fail rather than truncate. Its native runtime acceptance remains a release gate.
+fail rather than truncate. Windows CI and an owner-reported basic machine check
+have passed; this does not establish every command or long-running refresh behavior.
 Linux credential operations currently return `credential_store_unavailable`;
 there is no plaintext fallback or claim of uniform platform support yet.
 

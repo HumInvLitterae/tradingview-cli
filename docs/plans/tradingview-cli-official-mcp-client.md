@@ -1,7 +1,7 @@
 # Official TradingView MCP client: bounded historical reads
 
 Status: **active v0.32.0 candidate; independent CLI implemented, qualification open**,
-2026-09-21. [v0.31.4 is released](archives/tradingview-cli-v0.31.4-release-readiness.md).
+2026-09-22. [v0.31.4 is released](archives/tradingview-cli-v0.31.4-release-readiness.md).
 The approved dependencies are settled: no direct async-trait; http 1.5.0 and
 sse-stream 0.3.0 accompany the existing SDK/store selections. No Codex MCP setup
 is needed. Live proof now covers OAuth, protected storage, cross-process reuse,
@@ -16,15 +16,97 @@ Continue respecting real rate limits, Retry-After, per-operation deadlines,
 body bounds, single dispatch/no replay, and the same account/scope/data targets.
 Keep request counters and their original start time as evidence; never reset
 history to disguise requests. Windows remains a required delivery platform;
-its full build/native-runtime acceptance remains open. The independent CLI is
-implemented locally; command acceptance is recorded in the latest checkpoint.
+its CI correction and owner-reported basic runtime acceptance are complete. See
+the current release checklist below for the exact evidence boundary. The
+independent CLI is implemented locally; command acceptance is recorded in the latest checkpoint.
 Broader actual consent, changed scope or new dependencies remain specific
 decision points.
 No additional agent/session, downstream write or remote publication is authorized.
 The owner now authorizes implementation commits after minimal readability
-corrections. Windows runtime verification is deferred until after this local
-checkpoint, and remains required for release qualification. Follow [PLANS.md](../../.agents/PLANS.md);
+corrections. The owner subsequently accepted the Windows basic runtime check;
+the earlier deferred-platform gates below are historical checkpoints. Follow [PLANS.md](../../.agents/PLANS.md);
 this is the single feature work record.
+
+## Release checklist and documentation plan (2026-09-22)
+
+This section owns current release readiness and supersedes older pending Windows
+statements in dated checkpoints. The existing feature record remains the only
+MCP execution plan; do not create a duplicate documentation ExecPlan.
+
+### Confirmed state
+
+- [CI at the sharing fix](https://github.com/HumInvLitterae/tradingview-cli/actions/runs/35627749695)
+  passed for `42b1267`. The owner also reports a basic Windows machine check
+  without problems and accepts the correction as resolved. Windows requires
+  normal TradingView browser sign-in before MCP login, as observed on macOS.
+  Do not claim that this brief report proves Windows refresh, long-running
+  stability or every command. Those are evidence limits, not a new blocking
+  acceptance ritual after the owner's decision.
+- Remote main is `7650066` (mise configuration update) and its
+  [CI also passed](https://github.com/HumInvLitterae/tradingview-cli/actions/runs/35660335044).
+  The local checkout inspected for this plan is `42b1267`; its recorded remote
+  tracking ref was stale. Reconcile the remote change before candidate checks.
+- Linux binaries remain part of distribution, but authenticated MCP credential
+  operations are explicitly unavailable in current code. Recommend shipping MCP
+  for macOS/Windows in this minor release with an explicit support matrix;
+  owner acceptance of that release scope is outstanding. Linux MCP support
+  would be separate implementation, dependency/store selection and verification.
+- Earlier feature slices and downstream observation intake are complete as
+  recorded below. Downstream analytical admission is not an upstream release gate.
+
+### Ordered remaining work
+
+1. Complete normal 30-second public-service acceptance for filtered economic
+   codes, a catalog-selected economic series, economic calendar, and both
+   dividend modes. Reuse successful overview/country-catalog observations and
+   unchanged fixtures. Successful native dividend normalization is still missing.
+   Reuse the approved same-account read scope and trusted credential worker;
+   preserve errors and stop on renewed throttling. Do not infer a reset time or
+   that all MCP tools are limited. No silent replay or deadline extension.
+2. Close candidate scope: recommend v0.32.0 with the existing separate `tv mcp`
+   surface, after the remaining reads pass, and the explicit macOS/Windows MCP
+   support boundary above. If service failures persist, return a concrete
+   choice: wait, or release the affected commands with clearly disclosed limited
+   native qualification. Do not silently remove implemented commands or label
+   them qualified. Additional features and Linux implementation are not automatic
+   prerequisites.
+3. Complete the documentation/resource work below. It can proceed while provider
+   acceptance is unavailable. Record current Windows acceptance now; preserve
+   dated historical evidence rather than rewriting its observations.
+4. Reconcile remote main; review the candidate diff, dependency/lock coherence,
+   CLI/contracts and platform support against v0.31.4. Run or reuse applicable
+   Rust baseline, four pinned JavaScript gates and native CI evidence under
+   [development guidance](../development.md#validation-baseline). Document-only
+   changes require focused checks, not another unchanged full Rust run.
+5. Prepare v0.32.0 versions, Cargo lock metadata, curated release notes and
+   CHANGELOG in a separate coherent release-preparation change. Build/package
+   actual release binaries for the configured targets; verify version/help,
+   archive resources and checksums. Placeholder staging proves resources only.
+   Keep any candidate-hash evidence in the report or ignored local ledger;
+   do not add a commit solely to record its own hash or rebuild merely for that.
+6. Obtain current-turn publication authorization for push/tag/release/workflow
+   effects once the candidate is reviewable. After publication, verify assets
+   and checksums, archive the completed work and synchronize entrypoints.
+
+### Documentation and skill work
+
+Current coverage is substantial: `docs/official-mcp.md` describes the commands
+and contracts, `market-data` covers data interpretation, and the packaged guide
+covers account changes. The missing work is release usability and consistency,
+not a new general MCP framework or an automatic seventh skill.
+
+| Stage | Files / responsibility | Acceptance |
+| --- | --- | --- |
+| User entrypoints | `README.md`, English/Japanese getting-started guides, `docs/official-mcp.md` | One short login/status/read journey; normal same-browser sign-in first; explicit paid-account and platform prerequisites; Keychain executable consent, Windows Credential Manager, local-only status/logout behavior, Linux limitation. Remove development-only wording when the release is prepared. |
+| Command and contract navigation | MCP guide, source taxonomy, architecture, Rust API and development guide | Compact purpose-to-command/source/side-effect map covers every implemented MCP family, including batch reads and account operations. Preserve existing commands, partial/null/unknown semantics, exact ID discovery, unsupported range behavior, error recovery and no automatic backend fallback. Examples match parser/fixtures; distinguish measured, reported and unconfirmed conditions. Update stale Windows statements in current guidance. |
+| Runtime skills | `market-data/SKILL.md` and its references, `packaging/agent/AGENTS.md`; screener/chart/Pine entrypoints only where source choice is relevant | Keep six skills. Add a portable MCP connection/error reference and a focused account-operation reference under the existing runtime resources. Route authentication and watchlist/alert workflows from the packaged guide; route data through market-data. Include readback/unknown mutation outcome, update reactivation and deletion effects. Do not move account management into a Desktop-only screener workflow or imply Pine equivalence. |
+| Archive closure | Staging script, runtime checker, packaging guide and maintained resource links | An unpacked archive supplies all operational instructions without contributor plans. Put shared connection/account instructions in packaged references and link the repository MCP guide to them. Do not blindly copy the current long MCP guide with its contributor-plan dependencies. Both skill roots and agent guides match; transitive local links stay inside the package. Recalculate the resource count if files are added; 48 files / six skills is historical evidence, not a required future count. |
+| Review and checks | Existing checker/self-tests, local link checks, synthetic command/JSON examples and manual scenario review | Walk through fresh authentication, reused credentials, short bars, unsupported range, auth/429/timeout, account mutation with unknown readback, and Linux unsupported behavior. Review English/Japanese agreement and conventional wrapping. No live mutation is needed for documentation acceptance. |
+
+Use synthetic identifiers and payloads. Keep account IDs, tokens, raw live
+responses and machine paths out of tracked resources. For this planning-only
+update, document checks suffice; implementation/package acceptance above remains
+work to perform, not claimed evidence.
 
 ## Current next slice and expansion decision (2026-09-21)
 
@@ -35,7 +117,8 @@ rows with one tool attempt and matching identity/interval. Unknown conditions
 remained unknown. This does not establish the cause of the earlier transient
 credential failures or long-running reliability. Downstream reports observation
 storage/readback and optional error-reason compatibility complete; analysis and
-scheduled collection adoption remain separate. Windows runtime remains deferred.
+scheduled collection adoption remain separate. Windows basic acceptance is now
+recorded in the current release checklist above.
 
 The owner agreed to the expansion sequence in the
 [roadmap](../next-version-roadmap.md#agreed-expansion-order), specifically promoting

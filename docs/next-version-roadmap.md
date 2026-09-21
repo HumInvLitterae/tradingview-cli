@@ -1,6 +1,7 @@
 # v0.32.0 candidate roadmap
 
-Status: initial CLI and downstream observation intake complete; expansion order agreed, Windows qualification open, 2026-09-21.
+Status: agreed MCP slices implemented; Windows CI and basic owner acceptance passed;
+economic/dividend acceptance and release preparation remain, 2026-09-22.
 [Work order](next-version-work-items.md) and the
 [existing MCP ExecPlan](plans/tradingview-cli-official-mcp-client.md) own execution
 and detailed contracts. No second feature plan is needed.
@@ -46,9 +47,9 @@ pass; the corrected wire-name mapping produced 20 daily, weekly and monthly bars
 each, with matching symbol/timeframe echoes. The independent CLI now shares
 that transport and emits `mcp_bars.v1`.
 The owner authorized a local implementation commit after readability corrections,
-deferred Windows runtime verification, and contacted the downstream PM. Windows
-qualification remains open; downstream reports initial observation intake and
-readback complete, with analysis adoption separate. The owner withdrew
+initially deferred Windows runtime verification, and contacted the downstream PM.
+Windows CI and owner-reported basic machine acceptance subsequently passed.
+Downstream reports initial observation intake and readback complete, with analysis adoption separate. The owner withdrew
 artificial count/time stop gates. No direct async-trait dependency is needed. See the work record for evidence and the unchanged live scope.
 
 ## Delivery order
@@ -61,8 +62,9 @@ artificial count/time stop gates. No direct async-trait dependency is needed. Se
 4. Have the downstream owner accept or explicitly quarantine saved observations,
    including negative cases and unknown semantics; assess backtest readiness
    separately from successful acquisition.
-5. Qualify the minor candidate across the supported platforms, including
-   mandatory Windows acceptance, and prepare its release only after the initial user journey is complete.
+5. Qualify the minor candidate across the supported platforms, using
+   the accepted Windows CI/basic runtime evidence. Prepare its release after the
+   initial user journey is complete.
 
 A beta-service or storage incompatibility may produce a precise no-go or narrower
 useful observation capability. Do not manufacture schema evidence or convert a
@@ -107,6 +109,21 @@ listing and ID-specific readback, then implement changes with observable
 postconditions and unknown-outcome handling. Inspect actual scope requirements
 and agree on disposable live targets before mutation tests. The current OHLCV
 live authorization does not authorize account changes.
+
+## Release scope and documentation finish
+
+Follow the [current release checklist](plans/tradingview-cli-official-mcp-client.md#release-checklist-and-documentation-plan-2026-09-22).
+Recommend v0.32.0 with the separate implemented MCP commands after remaining
+native economic/dividend acceptance. Recommend explicitly limiting authenticated
+MCP support to macOS/Windows while retaining the existing Linux distribution;
+Linux credentials are not implemented. This scope choice remains for the owner.
+Persistent provider errors need a concrete qualification/scope decision.
+
+Finish English/Japanese onboarding, command/source navigation, portable MCP
+connection and account references, and six-skill package routing before release.
+Reuse the existing MCP record; no additional feature or documentation ExecPlan.
+Downstream analytical adoption and broad reliability studies do not block this
+independent interface. Release version/notes and publication follow qualification.
 
 ## Maintained defers
 
