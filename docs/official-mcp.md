@@ -450,7 +450,10 @@ refresh-and-replay. Inspect the target before another explicit change.
 
 Input schemas for all five management tools were accepted against the official
 catalog without dispatching mutations. Synthetic JSON/SSE and failure fixtures
-cover lifecycle behavior; a disposable native alert lifecycle is still pending.
+cover lifecycle behavior. A native macOS disposable-alert lifecycle also passed:
+create, stop, rename/reactivate, stop and restart matched readback; after delete,
+the list no longer reported the disposable ID. This does not prove notification
+delivery, every supported condition, batch mutations or Windows execution.
 Do not infer write permission from the OAuth scope name or catalog annotations.
 
 ## Read contract

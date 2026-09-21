@@ -33,7 +33,8 @@ package version omits the leading `v`.
 - Independent `tv mcp alert create/update/stop/restart/delete` commands for simple
   price alerts, explicit notification defaults, update/reactivation semantics,
   and per-ID readback under `mcp_alert_mutation.v1`. Unknown outcomes are never
-  automatically replayed. Native disposable-alert verification remains pending.
+  automatically replayed. A native disposable-alert lifecycle verified creation,
+  state/settings changes and deletion readback.
 - Explicit official MCP watchlist create/update/add/remove/delete commands,
   with one mutation dispatch, separate readback evidence and unknown-outcome
   handling. A disposable-list lifecycle passed native macOS verification.
