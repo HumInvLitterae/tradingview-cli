@@ -56,6 +56,11 @@ package version omits the leading `v`.
   with one mutation dispatch, separate readback evidence and unknown-outcome
   handling. A disposable-list lifecycle passed native macOS verification.
 
+### Fixed
+
+- MCP authentication-refresh errors now ask the caller to repeat the same
+  explicit command, instead of incorrectly directing non-bar reads to `tv mcp bars`.
+
 ## v0.31.4 - 2026-09-20
 
 ### Changed

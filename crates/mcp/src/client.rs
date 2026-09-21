@@ -354,7 +354,7 @@ pub(crate) fn failure(error: Failure, stage: &str, attempts: u32, http: Option<&
         details["next_action"] = json!("tv mcp login");
     }
     if error == Failure::AuthRefreshedRetryRequired {
-        details["next_action"] = json!("repeat the explicit tv mcp bars command");
+        details["next_action"] = json!("repeat the same explicit tv mcp command");
     }
     if error == Failure::RateLimited {
         details["retry_after_seconds"] = Value::Null;
