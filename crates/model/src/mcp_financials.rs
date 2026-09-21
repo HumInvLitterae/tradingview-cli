@@ -595,7 +595,11 @@ mod tests {
         let request =
             Request::earnings(&["NASDAQ:EXAMPLE".into(), "NYSE:OTHER".into()], None, None).unwrap();
         let value = json!({"data": {"count": 2, "earnings": [
-            {"symbol": "NASDAQ:EXAMPLE", "release_date": "2026-02-01", "eps_forecast_next_fq": null},
+            {
+                "symbol": "NASDAQ:EXAMPLE",
+                "release_date": "2026-02-01",
+                "eps_forecast_next_fq": null
+            },
             {"symbol": "NASDAQ:EXAMPLE", "release_date": "2026-05-01", "eps_forecast_next_fq": 0}
         ]}});
         let out = normalize(&request, value.clone(), 1000).unwrap();

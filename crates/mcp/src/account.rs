@@ -49,7 +49,8 @@ pub(crate) async fn readback(
                 "status": "failed",
                 "tool_attempts": attempts,
                 "error": error.details,
-                "next_action": "read the target explicitly; do not repeat the mutation automatically"
+                "next_action":
+                    "read the target explicitly; do not repeat the mutation automatically"
             }))
         }
     }
