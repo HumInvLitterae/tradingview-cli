@@ -129,15 +129,73 @@ pub(crate) async fn call(
     result
 }
 
-/// Inspect only the closed watchlist-management schemas; never call a tool.
+/// Inspect closed schemas only; never dispatch a tool.
 pub(crate) async fn inspect_watchlist_tools(http: &Http, token: String) -> Result<Value> {
+    use serde_json::json;
     let expected = [
-        Tool::CreateWatchlist,
-        Tool::UpdateWatchlist,
-        Tool::AddWatchlist,
-        Tool::RemoveWatchlist,
-        Tool::DeleteWatchlist,
+        (
+            Tool::CreateWatchlist,
+            json!({"name": "Example", "symbols": []}),
+        ),
+        (
+            Tool::UpdateWatchlist,
+            json!({"watchlist_id": "12", "name": "Example", "description": ""}),
+        ),
+        (
+            Tool::AddWatchlist,
+            json!({"watchlist_id": "12", "symbols": ["NASDAQ:EXAMPLE"]}),
+        ),
+        (
+            Tool::RemoveWatchlist,
+            json!({"watchlist_id": "12", "symbols": ["NASDAQ:EXAMPLE"]}),
+        ),
+        (Tool::DeleteWatchlist, json!({"watchlist_id": "12"})),
     ];
+    inspect_tools(http, token, &expected).await
+}
+
+pub(crate) async fn inspect_alert_tools(http: &Http, token: String) -> Result<Value> {
+    use tradingview_model::mcp_account::{AlertAction, AlertMutation, AlertSettings};
+    let requests = [
+        AlertMutation::create(
+            "NASDAQ:EXAMPLE",
+            100.0,
+            "greater",
+            "1D",
+            AlertSettings {
+                name: Some("Example".into()),
+                ..Default::default()
+            },
+        ),
+        AlertMutation::update(
+            12,
+            AlertSettings {
+                name: Some("Example".into()),
+                auto_deactivate: Some(false),
+                email: Some(false),
+                mobile_push: Some(false),
+                popup: Some(false),
+            },
+        ),
+        AlertMutation::state(AlertAction::Stop, &[12]),
+        AlertMutation::state(AlertAction::Restart, &[12]),
+        AlertMutation::state(AlertAction::Delete, &[12]),
+    ];
+    let expected: Vec<_> = requests
+        .into_iter()
+        .map(|request| {
+            request
+                .map(|request| (Tool::from(request.action()), request.arguments()))
+                .map_err(|_| Failure::UnsupportedCapability)
+        })
+        .collect::<Result<_>>()?;
+    inspect_tools(http, token, &expected).await
+}
+
+async fn inspect_tools(http: &Http, token: String, expected: &[(Tool, Value)]) -> Result<Value> {
+    for (tool, arguments) in expected {
+        tool.validate_arguments(arguments)?;
+    }
     let config = transport_config(http, token);
     let service = timeout_at(
         http.deadline,
@@ -153,45 +211,49 @@ pub(crate) async fn inspect_watchlist_tools(http: &Http, token: String) -> Resul
         let mut cursor = None;
         let mut found = std::collections::HashSet::new();
         let mut reports = Vec::new();
+
         for _ in 0..10 {
-            let page = service.list_tools(cursor.map(|cursor| {
-                let mut params = PaginatedRequestParams::default();
-                params.cursor = Some(cursor);
-                params
-            })).await.map_err(|error| sdk_failure(error, http))?;
+            let page = service
+                .list_tools(cursor.map(|cursor| {
+                    let mut params = PaginatedRequestParams::default();
+                    params.cursor = Some(cursor);
+                    params
+                }))
+                .await
+                .map_err(|error| sdk_failure(error, http))?;
+
             for candidate in page.tools {
-                if let Some(tool) = expected.iter().find(|tool| tool.names().contains(&candidate.name.as_ref())) {
-                    if !found.insert(tool.names()[0]) { return Err(Failure::SchemaChanged); }
-                    let arguments = match tool {
-                        Tool::CreateWatchlist => serde_json::json!({"name": "Example", "symbols": []}),
-                        Tool::UpdateWatchlist => serde_json::json!({
-                            "watchlist_id": "12", "name": "Example", "description": ""
-                        }),
-                        Tool::AddWatchlist | Tool::RemoveWatchlist => serde_json::json!({
-                            "watchlist_id": "12", "symbols": ["NASDAQ:EXAMPLE"]
-                        }),
-                        Tool::DeleteWatchlist => serde_json::json!({"watchlist_id": "12"}),
-                        _ => return Err(Failure::UnsupportedCapability),
-                    };
-                    tool.validate_arguments(&arguments)?;
-                    validate_schema(&candidate.input_schema, *tool, &[arguments])?;
-                    let value = serde_json::to_value(candidate).map_err(|_| Failure::InvalidResponse)?;
-                    reports.push(serde_json::json!({
-                        "tool": tool.names()[0],
-                        "schema_accepted": true,
-                        "read_only_hint": value.pointer("/annotations/readOnlyHint").and_then(Value::as_bool),
-                        "destructive_hint": value.pointer("/annotations/destructiveHint").and_then(Value::as_bool),
-                        "security_schemes_present": value.get("securitySchemes").is_some()
-                            || value.pointer("/_meta/securitySchemes").is_some()
-                    }));
+                let Some((tool, arguments)) = expected.iter().find(|(tool, _)| {
+                    tool.names().contains(&candidate.name.as_ref())
+                }) else {
+                    continue;
+                };
+                if !found.insert(tool.names()[0]) {
+                    return Err(Failure::SchemaChanged);
                 }
+                validate_schema(&candidate.input_schema, *tool, std::slice::from_ref(arguments))?;
+                let value = serde_json::to_value(candidate).map_err(|_| Failure::InvalidResponse)?;
+                reports.push(serde_json::json!({
+                    "tool": tool.names()[0],
+                    "schema_accepted": true,
+                    "read_only_hint": value.pointer("/annotations/readOnlyHint").and_then(Value::as_bool),
+                    "destructive_hint": value.pointer("/annotations/destructiveHint").and_then(Value::as_bool),
+                    "security_schemes_present": value.get("securitySchemes").is_some()
+                        || value.pointer("/_meta/securitySchemes").is_some()
+                }));
             }
             cursor = page.next_cursor;
-            if cursor.is_none() { break; }
+            if cursor.is_none() {
+                break;
+            }
         }
-        if found.len() != expected.len() { return Err(Failure::UnsupportedCapability); }
+        if found.len() != expected.len() {
+            return Err(Failure::UnsupportedCapability);
+        }
         Ok(serde_json::json!({"tools": reports, "mutation_dispatches": 0}))
-    }).await.unwrap_or(Err(Failure::Timeout));
+    })
+    .await
+    .unwrap_or(Err(Failure::Timeout));
     let cleanup = timeout_at(http.deadline, service.cancel()).await;
     if result.is_ok() && !matches!(cleanup, Ok(Ok(_))) {
         return Err(Failure::Timeout);
@@ -239,7 +301,13 @@ fn validate_schema(
             if !array_schema.get("items").is_some_and(|items| {
                 accepts_type(
                     items,
-                    if tool == Tool::AlertDetails {
+                    if matches!(
+                        tool,
+                        Tool::AlertDetails
+                            | Tool::StopAlerts
+                            | Tool::RestartAlerts
+                            | Tool::DeleteAlerts
+                    ) {
                         "integer"
                     } else {
                         "string"

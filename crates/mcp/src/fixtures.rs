@@ -284,6 +284,11 @@ fn respond(ep: &Endpoints, r: &Request, mode: &str) -> Response {
                 crate::tools::Tool::Watchlist,
                 crate::tools::Tool::Alerts,
                 crate::tools::Tool::AlertDetails,
+                crate::tools::Tool::CreateAlert,
+                crate::tools::Tool::UpdateAlert,
+                crate::tools::Tool::StopAlerts,
+                crate::tools::Tool::RestartAlerts,
+                crate::tools::Tool::DeleteAlerts,
                 crate::tools::Tool::CreateWatchlist,
                 crate::tools::Tool::UpdateWatchlist,
                 crate::tools::Tool::AddWatchlist,
@@ -297,7 +302,7 @@ fn respond(ep: &Endpoints, r: &Request, mode: &str) -> Response {
                         (
                             (*name).into(),
                             if *kind == "array" {
-                                json!({"type": ["null", "array"], "items": {"type": if tool == crate::tools::Tool::AlertDetails { "integer" } else { "string" }}})
+                                json!({"type": ["null", "array"], "items": {"type": if matches!(tool, crate::tools::Tool::AlertDetails | crate::tools::Tool::StopAlerts | crate::tools::Tool::RestartAlerts | crate::tools::Tool::DeleteAlerts) { "integer" } else { "string" }}})
                             } else {
                                 json!({"type": kind})
                             },
@@ -376,6 +381,19 @@ fn respond(ep: &Endpoints, r: &Request, mode: &str) -> Response {
             let args = &request["params"]["arguments"];
             match request["params"]["name"].as_str() {
                 Some(
+                    "mcp-tv-create-alert"
+                    | "mcp-tv-update-alert"
+                    | "mcp-tv-stop-alerts"
+                    | "mcp-tv-restart-alerts"
+                    | "mcp-tv-delete-alert",
+                ) => {
+                    result["structuredContent"] = if mode == "mutation-no-id" {
+                        json!({"success": true})
+                    } else {
+                        json!({"success": true, "alert_id": 12})
+                    };
+                }
+                Some(
                     "mcp-watchlist-create-watchlist"
                     | "mcp-watchlist-update-watchlist"
                     | "mcp-watchlist-add-to-watchlist"
@@ -408,10 +426,25 @@ fn respond(ep: &Endpoints, r: &Request, mode: &str) -> Response {
                     });
                 }
                 Some("mcp-tv-list-alerts" | "mcp-tv-get-alerts") => {
+                    if mode == "readback-429" {
+                        let mut reply = Response::status(429);
+                        reply.extra = "Retry-After: 123\r\n".into();
+                        return reply;
+                    }
                     result["structuredContent"] = json!({
                         "success": true,
                         "alerts": [{"alert_id": 12, "symbol": "NASDAQ:EXAMPLE", "active": false}]
                     });
+                    if mode == "alert-active" || mode == "alert-sse" {
+                        result["structuredContent"] = json!({"success": true, "alerts": [{
+                            "alert_id": 12, "symbol": "NASDAQ:EXAMPLE", "active": true,
+                            "name": "Example", "condition_type": "greater", "threshold": 100.0,
+                            "resolution": "1D", "auto_deactivate": false,
+                            "email": false, "mobile_push": false, "popup": false
+                        }]});
+                    } else if mode == "alert-deleted" {
+                        result["structuredContent"] = json!({"alerts": []});
+                    }
                 }
                 Some("mcp-tv-search-symbols") => {
                     result["structuredContent"] = json!({
@@ -478,7 +511,7 @@ fn respond(ep: &Endpoints, r: &Request, mode: &str) -> Response {
                 _ => {}
             }
             let rpc = json!({"jsonrpc": "2.0", "id": id, "result": result});
-            if mode == "sse" {
+            if mode == "sse" || mode == "alert-sse" {
                 let mut reply = Response::json(json!({}));
                 reply.mime = "text/event-stream";
                 reply.body = format!("data: {rpc}\n\n").into_bytes();
@@ -1270,65 +1303,70 @@ async fn watchlist_changes_dispatch_once_and_separate_readback_from_mutation() {
 }
 
 #[tokio::test]
-async fn failed_watchlist_changes_do_not_refresh_or_replay() {
+async fn failed_account_changes_do_not_refresh_or_replay() {
     use crate::client::{Operation, execute};
     use tradingview_model::mcp_account::WatchlistMutation;
 
-    for mode in [
-        "401",
-        "429",
-        "500",
-        "malformed",
-        "tool-error",
-        "schema-change",
-        "stall",
-    ] {
-        let server = Server::start(mode).await;
-        let (_root, mut guard, budget, http, store) = context(&server, 8).await;
-        fixture_login(&http, &store, &budget).await;
-        let counts = budget.clone();
-        let request = WatchlistMutation::create("Example", &[]).unwrap();
-        let task = tokio::spawn(async move {
-            execute(
-                Operation::WatchlistMutation(request),
-                &mut guard,
-                store,
-                http,
-                budget,
-                true,
-            )
-            .await
-        });
-        if mode == "stall" {
-            tokio::time::timeout(Duration::from_secs(3), async {
-                while server.calls("tools/call") == 0 {
-                    sleep(Duration::from_millis(1)).await;
-                }
-            })
-            .await
-            .unwrap();
-            tokio::time::pause();
-            tokio::time::advance(Duration::from_secs(31)).await;
-        }
-        let result = task.await.unwrap();
-        if mode == "stall" {
-            tokio::time::resume();
-        }
-        let details = result.unwrap_err().details.unwrap();
-        assert_eq!(
-            details["mutation"]["status"],
-            if mode == "schema-change" {
-                "not_attempted"
+    for alert in [false, true] {
+        for mode in [
+            "401",
+            "429",
+            "500",
+            "malformed",
+            "tool-error",
+            "schema-change",
+            "stall",
+        ] {
+            let server = Server::start(mode).await;
+            let (_root, mut guard, budget, http, store) = context(&server, 8).await;
+            fixture_login(&http, &store, &budget).await;
+            let counts = budget.clone();
+            let request = WatchlistMutation::create("Example", &[]).unwrap();
+            let operation = if alert {
+                Operation::AlertMutation(
+                    tradingview_model::mcp_account::AlertMutation::state(
+                        tradingview_model::mcp_account::AlertAction::Stop,
+                        &[12],
+                    )
+                    .unwrap(),
+                )
             } else {
-                "outcome_unknown"
+                Operation::WatchlistMutation(request)
+            };
+            let task = tokio::spawn(async move {
+                execute(operation, &mut guard, store, http, budget, true).await
+            });
+            if mode == "stall" {
+                tokio::time::timeout(Duration::from_secs(3), async {
+                    while server.calls("tools/call") == 0 {
+                        sleep(Duration::from_millis(1)).await;
+                    }
+                })
+                .await
+                .unwrap();
+                tokio::time::pause();
+                tokio::time::advance(Duration::from_secs(31)).await;
             }
-        );
-        assert_eq!(
-            server.calls("tools/call"),
-            if mode == "schema-change" { 0 } else { 1 }
-        );
-        assert_eq!(counts.lock().unwrap().counts().refresh, 0);
-        assert_eq!(details["mutation"]["automatic_retry"], false);
+            let result = task.await.unwrap();
+            if mode == "stall" {
+                tokio::time::resume();
+            }
+            let details = result.unwrap_err().details.unwrap();
+            assert_eq!(
+                details["mutation"]["status"],
+                if mode == "schema-change" {
+                    "not_attempted"
+                } else {
+                    "outcome_unknown"
+                }
+            );
+            assert_eq!(
+                server.calls("tools/call"),
+                if mode == "schema-change" { 0 } else { 1 }
+            );
+            assert_eq!(counts.lock().unwrap().counts().refresh, 0);
+            assert_eq!(details["mutation"]["automatic_retry"], false);
+        }
     }
 }
 
@@ -1348,4 +1386,96 @@ async fn fixture_login(http: &Http, store: &Store, budget: &Arc<Mutex<Budget>>) 
         .1
         .into_owned();
     auth.exchange("synthetic-code", &state, None).await.unwrap();
+}
+
+#[tokio::test]
+async fn alert_changes_separate_received_reply_and_per_target_readback() {
+    use crate::client::{Operation, execute};
+    use tradingview_model::mcp_account::{AlertAction, AlertMutation, AlertSettings};
+
+    let create = || {
+        AlertMutation::create(
+            "NASDAQ:EXAMPLE",
+            100.0,
+            "greater",
+            "1D",
+            AlertSettings {
+                name: Some("Example".into()),
+                ..Default::default()
+            },
+        )
+        .unwrap()
+    };
+    for (request, mode, expected) in [
+        (create(), "alert-active", "matched"),
+        (
+            AlertMutation::update(
+                12,
+                AlertSettings {
+                    email: Some(false),
+                    ..Default::default()
+                },
+            )
+            .unwrap(),
+            "alert-sse",
+            "matched",
+        ),
+        (
+            AlertMutation::state(AlertAction::Stop, &[12]).unwrap(),
+            "json",
+            "matched",
+        ),
+        (
+            AlertMutation::state(AlertAction::Restart, &[12]).unwrap(),
+            "alert-active",
+            "matched",
+        ),
+        (
+            AlertMutation::state(AlertAction::Stop, &[12, 13]).unwrap(),
+            "json",
+            "unconfirmed",
+        ),
+        (
+            AlertMutation::state(AlertAction::Stop, &[12]).unwrap(),
+            "alert-active",
+            "mismatch",
+        ),
+        (
+            AlertMutation::state(AlertAction::Delete, &[12]).unwrap(),
+            "alert-deleted",
+            "not_reported",
+        ),
+        (
+            AlertMutation::state(AlertAction::Delete, &[12]).unwrap(),
+            "json",
+            "mismatch",
+        ),
+        (create(), "mutation-no-id", "not_performed"),
+        (create(), "readback-429", "failed"),
+    ] {
+        let server = Server::start(mode).await;
+        let (_root, mut guard, budget, http, store) = context(&server, 8).await;
+        fixture_login(&http, &store, &budget).await;
+        let result = execute(
+            Operation::AlertMutation(request),
+            &mut guard,
+            store,
+            http,
+            budget,
+            true,
+        )
+        .await
+        .unwrap();
+        assert_eq!(result["contract_version"], "mcp_alert_mutation.v1");
+        assert_eq!(result["mutation"]["tool_attempts"], 1);
+        assert_eq!(result["mutation"]["status"], "response_received");
+        assert_eq!(result["readback"]["status"], expected);
+        assert_eq!(
+            server.calls("tools/call"),
+            if expected == "not_performed" { 1 } else { 2 }
+        );
+        if expected == "failed" {
+            assert_eq!(result["readback"]["error"]["code"], "rate_limited");
+        }
+    }
 }

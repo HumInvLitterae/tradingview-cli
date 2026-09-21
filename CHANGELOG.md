@@ -30,6 +30,10 @@ package version omits the leading `v`.
   account reads, with separate JSON contracts, requested-ID tracking, null
   optional fields and unreported alert outcomes. Reads do not activate lists
   or change alerts; message and webhook URL fields are excluded.
+- Independent `tv mcp alert create/update/stop/restart/delete` commands for simple
+  price alerts, explicit notification defaults, update/reactivation semantics,
+  and per-ID readback under `mcp_alert_mutation.v1`. Unknown outcomes are never
+  automatically replayed. Native disposable-alert verification remains pending.
 - Explicit official MCP watchlist create/update/add/remove/delete commands,
   with one mutation dispatch, separate readback evidence and unknown-outcome
   handling. A disposable-list lifecycle passed native macOS verification.

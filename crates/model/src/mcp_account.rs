@@ -1,6 +1,9 @@
-//! I/O-free requests and response shaping for official MCP account reads.
+//! I/O-free requests, response shaping and postconditions for official MCP accounts.
 
+mod alert_mutation;
 mod watchlist_mutation;
+
+pub use alert_mutation::{Action as AlertAction, AlertMutation, AlertSettings};
 pub use watchlist_mutation::{Action as WatchlistAction, WatchlistMutation};
 
 use serde_json::{Value, json};
@@ -286,7 +289,14 @@ fn alert(row: &Value) -> Result<Value, AppError> {
     ] {
         item[field] = optional(row, field, "string")?;
     }
-    for field in ["active", "auto_deactivate", "has_webhook"] {
+    for field in [
+        "active",
+        "auto_deactivate",
+        "has_webhook",
+        "email",
+        "mobile_push",
+        "popup",
+    ] {
         item[field] = optional(row, field, "boolean")?;
     }
     item["threshold"] = optional(row, "threshold", "number")?;

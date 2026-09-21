@@ -16,6 +16,11 @@ pub(crate) enum Tool {
     Watchlist,
     Alerts,
     AlertDetails,
+    CreateAlert,
+    UpdateAlert,
+    StopAlerts,
+    RestartAlerts,
+    DeleteAlerts,
     CreateWatchlist,
     UpdateWatchlist,
     AddWatchlist,
@@ -26,6 +31,11 @@ pub(crate) enum Tool {
 impl Tool {
     pub fn names(self) -> &'static [&'static str] {
         match self {
+            Self::CreateAlert => &["mcp-tv-create-alert", "create_alert"],
+            Self::UpdateAlert => &["mcp-tv-update-alert", "update_alert"],
+            Self::StopAlerts => &["mcp-tv-stop-alerts", "stop_alerts"],
+            Self::RestartAlerts => &["mcp-tv-restart-alerts", "restart_alerts"],
+            Self::DeleteAlerts => &["mcp-tv-delete-alert", "delete_alert"],
             Self::CreateWatchlist => &["mcp-watchlist-create-watchlist", "create_watchlist"],
             Self::UpdateWatchlist => &["mcp-watchlist-update-watchlist", "update_watchlist"],
             Self::AddWatchlist => &["mcp-watchlist-add-to-watchlist", "add_to_watchlist"],
@@ -49,6 +59,29 @@ impl Tool {
 
     pub fn fields(self) -> &'static [(&'static str, &'static str)] {
         match self {
+            Self::CreateAlert => &[
+                ("symbol", "string"),
+                ("price", "number"),
+                ("condition", "string"),
+                ("resolution", "string"),
+                ("name", "string"),
+                ("auto_deactivate", "boolean"),
+                ("email", "boolean"),
+                ("mobile_push", "boolean"),
+                ("popup", "boolean"),
+                ("monitor", "boolean"),
+            ],
+            Self::UpdateAlert => &[
+                ("alert_id", "integer"),
+                ("name", "string"),
+                ("auto_deactivate", "boolean"),
+                ("email", "boolean"),
+                ("mobile_push", "boolean"),
+                ("popup", "boolean"),
+            ],
+            Self::StopAlerts | Self::RestartAlerts | Self::DeleteAlerts => {
+                &[("alert_ids", "array")]
+            }
             Self::CreateWatchlist => &[("name", "string"), ("symbols", "array")],
             Self::UpdateWatchlist => &[
                 ("watchlist_id", "string"),
@@ -103,6 +136,11 @@ impl Tool {
             Self::Watchlist,
             Self::Alerts,
             Self::AlertDetails,
+            Self::CreateAlert,
+            Self::UpdateAlert,
+            Self::StopAlerts,
+            Self::RestartAlerts,
+            Self::DeleteAlerts,
             Self::CreateWatchlist,
             Self::UpdateWatchlist,
             Self::AddWatchlist,
@@ -133,6 +171,22 @@ impl Tool {
             _ => Err(Failure::UnsupportedCapability),
         };
         let validated = match self {
+            Self::CreateAlert
+            | Self::UpdateAlert
+            | Self::StopAlerts
+            | Self::RestartAlerts
+            | Self::DeleteAlerts => {
+                use mcp_account::AlertAction;
+                let action = match self {
+                    Self::CreateAlert => AlertAction::Create,
+                    Self::UpdateAlert => AlertAction::Update,
+                    Self::StopAlerts => AlertAction::Stop,
+                    Self::RestartAlerts => AlertAction::Restart,
+                    Self::DeleteAlerts => AlertAction::Delete,
+                    _ => unreachable!(),
+                };
+                mcp_account::AlertMutation::from_arguments(action, args).map(|v| v.arguments())
+            }
             Self::CreateWatchlist | Self::AddWatchlist | Self::RemoveWatchlist => {
                 let symbols: Vec<String> = serde_json::from_value(
                     args.get("symbols")
@@ -240,6 +294,19 @@ impl Tool {
     }
 }
 
+impl From<mcp_account::AlertAction> for Tool {
+    fn from(action: mcp_account::AlertAction) -> Self {
+        use mcp_account::AlertAction;
+        match action {
+            AlertAction::Create => Self::CreateAlert,
+            AlertAction::Update => Self::UpdateAlert,
+            AlertAction::Stop => Self::StopAlerts,
+            AlertAction::Restart => Self::RestartAlerts,
+            AlertAction::Delete => Self::DeleteAlerts,
+        }
+    }
+}
+
 impl From<mcp_data::Kind> for Tool {
     fn from(kind: mcp_data::Kind) -> Self {
         match kind {
@@ -282,12 +349,10 @@ mod tests {
     use serde_json::json;
 
     #[test]
-    fn allowlist_rejects_mutations_and_unvalidated_arguments() {
+    fn allowlist_rejects_unsupported_tools_and_unvalidated_arguments() {
         for name in [
-            "create_alert",
             "mcp-watchlist-get-active-watchlist",
-            "mcp-tv-stop-alerts",
-            "mcp-tv-delete-alert",
+            "mcp-tv-get-alerts-log",
             "other-search_symbols",
         ] {
             assert_eq!(Tool::from_name(name), Err(Failure::UnsupportedCapability));
@@ -306,6 +371,51 @@ mod tests {
         ] {
             assert_eq!(
                 tool.validate_arguments(&args),
+                Err(Failure::UnsupportedCapability)
+            );
+        }
+    }
+
+    #[test]
+    fn alert_mutations_reject_unimplemented_fields_and_implicit_defaults() {
+        let request = mcp_account::AlertMutation::create(
+            "NASDAQ:EXAMPLE",
+            100.0,
+            "greater",
+            "1D",
+            mcp_account::AlertSettings {
+                name: Some("Example".into()),
+                ..Default::default()
+            },
+        )
+        .unwrap();
+        let valid = request.arguments();
+        Tool::CreateAlert.validate_arguments(&valid).unwrap();
+        for (field, value) in [
+            ("monitor", json!(true)),
+            ("webhook", json!("https://example.invalid")),
+            ("price", Value::Null),
+        ] {
+            let mut args = valid.clone();
+            args[field] = value;
+            assert_eq!(
+                Tool::CreateAlert.validate_arguments(&args),
+                Err(Failure::UnsupportedCapability)
+            );
+        }
+        let mut implicit = valid.clone();
+        implicit.as_object_mut().unwrap().remove("popup");
+        assert_eq!(
+            Tool::CreateAlert.validate_arguments(&implicit),
+            Err(Failure::UnsupportedCapability)
+        );
+        assert_eq!(
+            Tool::UpdateAlert.validate_arguments(&json!({"alert_id": 12, "price": 100})),
+            Err(Failure::UnsupportedCapability)
+        );
+        for tool in [Tool::StopAlerts, Tool::RestartAlerts, Tool::DeleteAlerts] {
+            assert_eq!(
+                tool.validate_arguments(&json!({"alert_ids": [12.5]})),
                 Err(Failure::UnsupportedCapability)
             );
         }

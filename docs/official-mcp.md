@@ -281,7 +281,7 @@ or malformed fields produce `mcp_error.v1`; failed calls never become empty
 successful results. Existing authentication/rate-limit/timeout handling applies.
 `received_at` is the client receipt time, separate from provider timestamps.
 The commands in this section are reads; explicit watchlist changes are described
-below. Alert management remains a subsequent slice.
+below, followed by explicit alert changes.
 
 ## Explicit watchlist changes
 
@@ -363,9 +363,95 @@ For example, a timeout after attempted dispatch has
 For an uncertain create without an ID, inspect the list and resolve ownership;
 do not create another list or pick a same-named list automatically.
 
-Alert management is still a separate pending slice. In particular, official
-alert updates reactivate alerts and cannot change their conditions, symbol or
-timeframe. Existing Pine workflows remain separate.
+## Explicit alert changes
+
+`tv mcp alert` provides simple price-alert creation, settings updates and
+explicit lifecycle operations. The existing Desktop commands remain separate.
+These synthetic examples change the account when run with real symbols/IDs:
+
+```sh
+tv mcp alert create NASDAQ:EXAMPLE --price 100 --condition greater --resolution 1D --name "Example threshold"
+tv mcp alert update 12 --name "Renamed threshold" --email false
+tv mcp alert stop 12 13
+tv mcp alert restart 12
+tv mcp alert delete 12
+```
+
+Create requires a qualified symbol, finite price and a nonblank name of at most
+300 characters. Supported conditions are `cross` (default), `cross_up`,
+`cross_down`, `greater` and `less`. `--resolution` uses official chart strings:
+`1` (default), `5`, `15`, `30`, `60`, `240`, `1D`, `1W`, `1M`.
+Creation explicitly sends `email:false`, `mobile_push:false`, `popup:false`,
+`auto_deactivate:false` and `monitor:false`. Override the first four using
+`--email true|false`, `--mobile-push true|false`, `--popup true|false`, and
+`--auto-deactivate true|false`. Notifications default off even where the official
+API defaults on. Creation still creates an active alert and consumes account
+capacity. Expiration uses the provider default; its observed value is retained
+by `alert get`.
+
+Update accepts `--name` and those four boolean settings; at least one is required.
+Omitted settings stay unchanged, and explicit `false` is transmitted.
+**Updating reactivates the alert**, including a name-only change to a stopped
+alert. It cannot change symbol, condition, price or resolution. Stop preserves
+settings and history; restart activates the existing conditions and notification
+settings. Delete also deletes fire history. Lifecycle commands accept 1..100
+distinct positive integer IDs, and never imply all alerts. Obtain IDs from
+explicit reads; do not guess them.
+
+This slice omits message/webhook editing, expiration editing, server-side
+monitoring, fire-log reads and Pine condition creation/reconstruction. Missing
+notification values in reads remain null, not false. No new dependency,
+credential store or implicit Desktop fallback is introduced.
+
+The data contract is `mcp_alert_mutation.v1`, with
+`source:tradingview_mcp`, `source_category:desktop_free_mutation` and
+`requires_desktop:false`. Like watchlist changes, one mutation is followed by
+one readback. `mutation.status:response_received` is separate from verified
+postconditions. For example, before `stop 12 13` both IDs may be active. A valid
+reply followed by ID 12 stopped and ID 13 omitted produces this abbreviated data:
+
+```json
+{
+  "contract_version": "mcp_alert_mutation.v1",
+  "operation": "stop",
+  "request": {"alert_ids": [12, 13]},
+  "target_ids": [12, 13],
+  "effects": {"reactivates": false, "deletes_fire_history": false},
+  "mutation": {"status": "response_received", "tool_attempts": 1, "automatic_retry": false},
+  "readback": {
+    "status": "unconfirmed",
+    "tool_attempts": 1,
+    "items": [
+      {"requested_id": 12, "status": "matched", "alert": {"alert_id": 12, "active": false}},
+      {"requested_id": 13, "status": "unreported", "alert": null}
+    ]
+  }
+}
+```
+
+For creation, `matched` requires observed symbol, resolution, condition, price,
+name, active state and requested notification settings to match; absent evidence
+is `unconfirmed`. Updates compare requested settings and active state. Stop and
+restart compare active state for every requested ID. A known contradiction is
+`mismatch`; a missing row is `unreported`. Batch aggregate is `matched` only when
+all targets match; any known contradiction yields `mismatch`, otherwise missing
+or unknown evidence yields `unconfirmed`. Matching covers the checked fields,
+not lossless alert/Pine reconstruction or notification delivery.
+
+Delete reads the alert list and reports each target as `still_present` or
+`not_reported`; absence alone does not establish complete deletion proof.
+Unrelated account rows are excluded. Creation without a returned ID uses
+`readback.status:not_performed`, never a guessed identity. Readback failure uses
+`readback.status:failed` with its structured error; the received mutation reply
+is retained. For example, a readback 429 is not a reason to create another alert.
+Mutation errors retain `not_attempted` or `outcome_unknown`; an authentication
+rejection, timeout or malformed response after dispatch never triggers automatic
+refresh-and-replay. Inspect the target before another explicit change.
+
+Input schemas for all five management tools were accepted against the official
+catalog without dispatching mutations. Synthetic JSON/SSE and failure fixtures
+cover lifecycle behavior; a disposable native alert lifecycle is still pending.
+Do not infer write permission from the OAuth scope name or catalog annotations.
 
 ## Read contract
 

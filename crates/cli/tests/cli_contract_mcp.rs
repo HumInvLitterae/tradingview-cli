@@ -47,6 +47,31 @@ fn invalid_mcp_requests_fail_before_cdp_state_store_or_provider_access() {
         ],
         vec!["mcp", "watchlist", "delete", "name"],
         vec!["mcp", "watchlist", "get", "01"],
+        vec!["mcp", "alert", "update", "12"],
+        vec!["mcp", "alert", "stop", "0"],
+        vec!["mcp", "alert", "restart", "12", "12"],
+        vec![
+            "mcp",
+            "alert",
+            "create",
+            "NASDAQ:EXAMPLE",
+            "--price",
+            "NaN",
+            "--name",
+            "Example",
+        ],
+        vec![
+            "mcp",
+            "alert",
+            "create",
+            "NASDAQ:EXAMPLE",
+            "--price",
+            "10",
+            "--name",
+            "Example",
+            "--condition",
+            "unknown",
+        ],
         vec!["mcp", "alert", "get", "0"],
         vec!["mcp", "alert", "get", "12", "12"],
         vec!["mcp", "alert", "list", "--symbol", "EXAMPLE"],
@@ -203,7 +228,9 @@ fn account_reads_parse_without_desktop_or_credential_access() {
         assert!(help.contains("list"));
         assert!(help.contains("get"));
         if group == "alert" {
-            assert!(!help.contains("create"));
+            for operation in ["create", "update", "stop", "restart", "delete"] {
+                assert!(help.contains(operation));
+            }
         } else {
             for operation in ["create", "update", "add", "remove", "delete"] {
                 assert!(help.contains(operation));
@@ -213,8 +240,22 @@ fn account_reads_parse_without_desktop_or_credential_access() {
 }
 
 #[test]
-fn watchlist_mutations_validate_before_credential_access() {
+fn account_mutations_validate_before_credential_access() {
     for args in [
+        vec![
+            "mcp",
+            "alert",
+            "create",
+            "NASDAQ:EXAMPLE",
+            "--price",
+            "-10",
+            "--name",
+            "Example",
+        ],
+        vec!["mcp", "alert", "update", "12", "--email", "false"],
+        vec!["mcp", "alert", "stop", "12", "13"],
+        vec!["mcp", "alert", "restart", "12"],
+        vec!["mcp", "alert", "delete", "12"],
         vec!["mcp", "watchlist", "create", "Example"],
         vec!["mcp", "watchlist", "update", "12", "--description", ""],
         vec!["mcp", "watchlist", "add", "12", "NASDAQ:EXAMPLE"],

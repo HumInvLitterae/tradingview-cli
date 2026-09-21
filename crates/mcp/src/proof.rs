@@ -31,6 +31,8 @@ pub enum ProofOperation {
     IntradayCommand,
     AccountLists,
     AccountCommands,
+    AlertCatalog,
+    AlertLifecycle,
     WatchlistCatalog,
     WatchlistLifecycle,
     Refresh,
@@ -57,6 +59,9 @@ pub async fn run_proof_with_worker(
     operation: ProofOperation,
     worker: Option<&Path>,
 ) -> Result<Value> {
+    if matches!(operation, ProofOperation::AlertLifecycle) {
+        return verify_alert_lifecycle(directory, worker).await;
+    }
     if matches!(operation, ProofOperation::WatchlistLifecycle) {
         return verify_watchlist_lifecycle(directory, worker).await;
     }
@@ -205,6 +210,10 @@ pub async fn run_proof_with_worker(
                     "provider_success": value.get("success").and_then(Value::as_bool),
                     "symbol_echo_matches": value.get("symbol").and_then(Value::as_str).map(|v| v == "NASDAQ:AAPL")
                 }))
+            }
+            ProofOperation::AlertCatalog => {
+                auth.restore().await?;
+                crate::transport::inspect_alert_tools(&http, auth.token().await?).await
             }
             ProofOperation::WatchlistCatalog => {
                 auth.restore().await?;
@@ -772,5 +781,125 @@ async fn verify_watchlist_lifecycle(directory: &Path, worker: Option<&Path>) -> 
         "success": true,
         "observations": observations,
         "cleanup_observation": "delete_replied_and_not_reported"
+    }))
+}
+
+/// Opt-in disposable alert lifecycle. Recovery identity stays in private state.
+async fn verify_alert_lifecycle(directory: &Path, worker: Option<&Path>) -> Result<Value> {
+    use tradingview_model::mcp_account::{AlertAction, AlertMutation, AlertSettings};
+
+    let worker = worker.ok_or(Failure::UnsupportedCapability)?;
+    let client = crate::Client::with_paths(directory.to_owned(), worker.to_owned());
+    let started = now_ms()?;
+    let name = format!("tv-cli-mcp-alert-verification-{started}");
+    let record = directory.join(format!("alert-verification-{started}.json"));
+    let mut state = json!({"name": name, "target_id": null, "phase": "create_pending"});
+    write_private_json(&record, &state)?;
+    let create = AlertMutation::create(
+        "NASDAQ:AAPL",
+        1_000_000_000.0,
+        "greater",
+        "1D",
+        AlertSettings {
+            name: Some(name.clone()),
+            ..Default::default()
+        },
+    )
+    .map_err(|_| Failure::InvalidResponse)?;
+    let created = match client.run(crate::Operation::AlertMutation(create)).await {
+        Ok(data) => data,
+        Err(error) => {
+            let details = error.details.unwrap_or(Value::Null);
+            state["phase"] = json!("create_unconfirmed");
+            state["error_code"] = details["code"].clone();
+            write_private_json(&record, &state)?;
+            return Ok(json!({
+                "success": false,
+                    "phase": state["phase"],
+                    "code": details["code"],
+                "mutation_status": details["mutation"]["status"]
+            }));
+        }
+    };
+    let Some(id) = created["target_ids"]
+        .as_array()
+        .filter(|ids| ids.len() == 1)
+        .and_then(|ids| ids[0].as_u64())
+    else {
+        state["phase"] = json!("create_id_unreported");
+        write_private_json(&record, &state)?;
+        return Ok(json!({"success": false, "phase": state["phase"]}));
+    };
+    state["target_id"] = json!(id);
+    state["phase"] = json!("created");
+    write_private_json(&record, &state)?;
+    let mut observations =
+        vec![json!({"operation": "create", "readback": created["readback"]["status"]})];
+    if created["readback"]["status"] != "matched" {
+        state["phase"] = json!("create_readback_unconfirmed");
+        write_private_json(&record, &state)?;
+        return Ok(json!({
+            "success": false,
+            "phase": state["phase"],
+            "completed": observations
+        }));
+    }
+
+    for request in [
+        AlertMutation::state(AlertAction::Stop, &[id]),
+        AlertMutation::update(
+            id,
+            AlertSettings {
+                name: Some(format!("{name}-renamed")),
+                ..Default::default()
+            },
+        ),
+        AlertMutation::state(AlertAction::Stop, &[id]),
+        AlertMutation::state(AlertAction::Restart, &[id]),
+        AlertMutation::state(AlertAction::Delete, &[id]),
+    ] {
+        let request = request.map_err(|_| Failure::InvalidResponse)?;
+        let action = request.action_name();
+        state["phase"] = json!(format!("{action}_pending"));
+        write_private_json(&record, &state)?;
+        let data = match client.run(crate::Operation::AlertMutation(request)).await {
+            Ok(data) => data,
+            Err(error) => {
+                let details = error.details.unwrap_or(Value::Null);
+                state["phase"] = json!(format!("{action}_unconfirmed"));
+                state["error_code"] = details["code"].clone();
+                write_private_json(&record, &state)?;
+                return Ok(json!({
+                    "success": false,
+                    "phase": state["phase"],
+                    "code": details["code"],
+                    "mutation_status": details["mutation"]["status"],
+                    "completed": observations
+                }));
+            }
+        };
+        let status = data["readback"]["status"].as_str().unwrap_or("unconfirmed");
+        observations.push(json!({"operation": action, "readback": status}));
+        let expected = if action == "delete" {
+            "not_reported"
+        } else {
+            "matched"
+        };
+        if status != expected {
+            state["phase"] = json!(format!("{action}_readback_unconfirmed"));
+            write_private_json(&record, &state)?;
+            return Ok(json!({
+                "success": false,
+                "phase": state["phase"],
+                "completed": observations
+            }));
+        }
+    }
+    state["phase"] = json!("delete_replied_and_not_reported");
+    write_private_json(&record, &state)?;
+    Ok(json!({
+        "success": true,
+        "observations": observations,
+        "cleanup_observation": state["phase"]
     }))
 }

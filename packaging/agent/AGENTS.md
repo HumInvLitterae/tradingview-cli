@@ -43,6 +43,13 @@ outer success does not establish a matched postcondition. A failed or missing
 readback never authorizes repeating the mutation. New-object verification must
 use an approved disposable target, not a pre-existing account object.
 
+For explicitly requested official alert changes, `tv mcp alert` supports simple
+price creation, settings updates, stop, restart and delete. Create defaults all
+notifications off; update reactivates even for a name change. Restart uses the
+existing notification settings; delete removes fire history too. Check per-ID
+readback and unknown outcomes. Do not use the limited condition projection to
+recreate Pine alerts. Live verification needs an approved disposable alert.
+
 ## Authority and evidence
 
 Prefer Desktop-free reads when they answer the question. For Desktop work,
