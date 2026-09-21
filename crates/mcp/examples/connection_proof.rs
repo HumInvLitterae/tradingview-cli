@@ -16,11 +16,21 @@ async fn main() {
     if args != ["--local-admission"] {
         use tradingview_mcp::{ProofOperation as Op, run_proof_with_worker};
         if !(args.len() == 2 || (args.len() == 4 && args[2] == "--credential-worker-path")) {
-            eprintln!(
-                "Usage: connection_proof --local-admission | \
-                 economic-commands/economic-codes-shape/economic-series-shape/economic-overview-shape/economic-symbols-shape/economic-calendar-shape/dividends-shape/dividend-screen-shape/research-commands/news-shape/documents-shape/story-shape/document-shape/financial-commands/financial-shape/history-shape/forecast-shape/earnings-shape/discover/login/status/authorize-store/daily/weekly/monthly/all/search/columns/columns-overview/symbol/symbols/symbols-command/screener/screener-command/screener-empty-command/intraday-command/account-lists/account-commands/alert-catalog/alert-lifecycle/watchlist-catalog/watchlist-lifecycle/refresh/logout \
-                 <proof-directory> [--credential-worker-path <absolute-executable>]"
-            );
+            eprintln!(concat!(
+                "Usage: connection_proof --local-admission | ",
+                "economic-commands/economic-codes-shape/economic-series-shape/",
+                "economic-overview-shape/economic-symbols-shape/",
+                "economic-calendar-shape/dividends-shape/dividend-screen-shape/",
+                "research-commands/news-shape/documents-shape/story-shape/",
+                "document-shape/financial-commands/financial-shape/history-shape/",
+                "forecast-shape/earnings-shape/discover/login/status/authorize-store/",
+                "daily/weekly/monthly/all/search/columns/columns-overview/symbol/",
+                "symbols/symbols-command/screener/screener-command/",
+                "screener-empty-command/intraday-command/account-lists/account-commands/",
+                "alert-catalog/alert-lifecycle/watchlist-catalog/watchlist-lifecycle/",
+                "refresh/logout <proof-directory> ",
+                "[--credential-worker-path <absolute-executable>]"
+            ));
             std::process::exit(1);
         }
         let operation = match args[0].as_str() {

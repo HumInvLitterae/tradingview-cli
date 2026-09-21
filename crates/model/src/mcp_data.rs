@@ -332,7 +332,14 @@ fn normalize_symbol(request: &Value, data: &mut Value, value: &Value) -> Result<
     let unknown = json!({"value": null, "evidence": "unconfirmed"});
     data["fields"] = json!(output);
     data["provider_observation"] = json!({
-        "symbol": {"value": symbol, "evidence": if symbol.is_null() { "unconfirmed" } else { "provider_response" }},
+        "symbol": {
+            "value": symbol,
+            "evidence": if symbol.is_null() {
+                "unconfirmed"
+            } else {
+                "provider_response"
+            }
+        },
         "data_as_of": unknown,
         "delay_seconds": unknown,
         "session": unknown

@@ -223,21 +223,31 @@ async fn inspect_tools(http: &Http, token: String, expected: &[(Tool, Value)]) -
                 .map_err(|error| sdk_failure(error, http))?;
 
             for candidate in page.tools {
-                let Some((tool, arguments)) = expected.iter().find(|(tool, _)| {
-                    tool.names().contains(&candidate.name.as_ref())
-                }) else {
+                let Some((tool, arguments)) = expected
+                    .iter()
+                    .find(|(tool, _)| tool.names().contains(&candidate.name.as_ref()))
+                else {
                     continue;
                 };
                 if !found.insert(tool.names()[0]) {
                     return Err(Failure::SchemaChanged);
                 }
-                validate_schema(&candidate.input_schema, *tool, std::slice::from_ref(arguments))?;
-                let value = serde_json::to_value(candidate).map_err(|_| Failure::InvalidResponse)?;
+                validate_schema(
+                    &candidate.input_schema,
+                    *tool,
+                    std::slice::from_ref(arguments),
+                )?;
+                let value =
+                    serde_json::to_value(candidate).map_err(|_| Failure::InvalidResponse)?;
                 reports.push(serde_json::json!({
                     "tool": tool.names()[0],
                     "schema_accepted": true,
-                    "read_only_hint": value.pointer("/annotations/readOnlyHint").and_then(Value::as_bool),
-                    "destructive_hint": value.pointer("/annotations/destructiveHint").and_then(Value::as_bool),
+                    "read_only_hint": value
+                        .pointer("/annotations/readOnlyHint")
+                        .and_then(Value::as_bool),
+                    "destructive_hint": value
+                        .pointer("/annotations/destructiveHint")
+                        .and_then(Value::as_bool),
                     "security_schemes_present": value.get("securitySchemes").is_some()
                         || value.pointer("/_meta/securitySchemes").is_some()
                 }));

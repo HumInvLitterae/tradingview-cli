@@ -239,7 +239,14 @@ pub(super) fn normalize(
     let unknown = json!({"value": null, "evidence": "unconfirmed"});
     output["items"] = json!(items);
     output["provider_observation"] = json!({
-        "total_count": {"value": total, "evidence": if total.is_null() { "unconfirmed" } else { "provider_response" }},
+        "total_count": {
+            "value": total,
+            "evidence": if total.is_null() {
+                "unconfirmed"
+            } else {
+                "provider_response"
+            }
+        },
         "data_as_of": unknown,
         "delay_seconds": unknown,
         "session": unknown

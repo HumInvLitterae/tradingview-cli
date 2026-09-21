@@ -172,22 +172,47 @@ pub async fn run_proof_with_worker(
             | ProofOperation::DividendScreenShape => {
                 inspect_economics(operation, &mut auth, &mut admission, &budget).await
             }
-            ProofOperation::NewsShape | ProofOperation::DocumentsShape | ProofOperation::StoryShape | ProofOperation::DocumentShape => {
+            ProofOperation::NewsShape
+            | ProofOperation::DocumentsShape
+            | ProofOperation::StoryShape
+            | ProofOperation::DocumentShape => {
                 inspect_research(operation, &mut auth, &mut admission, &budget).await
             }
-            ProofOperation::FinancialShape | ProofOperation::HistoryShape | ProofOperation::ForecastShape | ProofOperation::EarningsShape => {
+            ProofOperation::FinancialShape
+            | ProofOperation::HistoryShape
+            | ProofOperation::ForecastShape
+            | ProofOperation::EarningsShape => {
                 use tradingview_model::mcp_financials::Request;
                 auth.restore().await?;
                 let token = auth.token().await?;
                 let request = match operation {
                     ProofOperation::FinancialShape => Request::snapshot("NASDAQ:AAPL", "ttm", &[]),
-                    ProofOperation::HistoryShape => Request::history("NASDAQ:AAPL", "fq", Some("2025-01-01"), Some("2026-09-21")),
+                    ProofOperation::HistoryShape => Request::history(
+                        "NASDAQ:AAPL",
+                        "fq",
+                        Some("2025-01-01"),
+                        Some("2026-09-21"),
+                    ),
                     ProofOperation::ForecastShape => Request::forecasts("NASDAQ:AAPL"),
-                    _ => Request::earnings(&["NASDAQ:AAPL".into()], Some("2026-07-01"), Some("2026-12-31")),
-                }.map_err(|_| Failure::UnsupportedCapability)?;
+                    _ => Request::earnings(
+                        &["NASDAQ:AAPL".into()],
+                        Some("2026-07-01"),
+                        Some("2026-12-31"),
+                    ),
+                }
+                .map_err(|_| Failure::UnsupportedCapability)?;
                 let tool = crate::tools::Tool::from(request.kind());
-                let mut responses = crate::transport::call(&http, token, tool, &[request.arguments()], Some(&mut admission)).await?;
-                let value = crate::transport::result_value(responses.pop().ok_or(Failure::InvalidResponse)??)?;
+                let mut responses = crate::transport::call(
+                    &http,
+                    token,
+                    tool,
+                    &[request.arguments()],
+                    Some(&mut admission),
+                )
+                .await?;
+                let value = crate::transport::result_value(
+                    responses.pop().ok_or(Failure::InvalidResponse)??,
+                )?;
                 Ok(json!({"tool": tool.names()[0], "shape": response_shape(&value, 0)}))
             }
             ProofOperation::Discover => Ok(json!({
@@ -225,12 +250,14 @@ pub async fn run_proof_with_worker(
             | ProofOperation::Screener => {
                 use tradingview_model::mcp_data::Request;
                 let request = match operation {
-                    ProofOperation::Screener => Request::screener(tradingview_model::mcp_data::ScreenerOptions {
-                        limit: 3,
-                        columns: vec!["name".into(), "close".into(), "volume".into()],
-                        filters: json!({"close": [1, null]}),
-                        ..Default::default()
-                    }),
+                    ProofOperation::Screener => Request::screener(
+                        tradingview_model::mcp_data::ScreenerOptions {
+                            limit: 3,
+                            columns: vec!["name".into(), "close".into(), "volume".into()],
+                            filters: json!({"close": [1, null]}),
+                            ..Default::default()
+                        },
+                    ),
                     ProofOperation::Search => Request::search("Apple", None),
                     ProofOperation::Columns => Request::columns(None, None, Some("volume")),
                     ProofOperation::ColumnsOverview => Request::columns(None, None, None),
@@ -261,20 +288,28 @@ pub async fn run_proof_with_worker(
                     "response_shape": response_shape(&value, 0),
                     "batch_data_value_shapes": if matches!(operation, ProofOperation::Symbols) {
                         value.get("data").and_then(Value::as_object).map(|rows| {
-                            rows.values().take(2).map(|row| response_shape(row, 0)).collect::<Vec<_>>()
+                            rows.values()
+                                .take(2)
+                                .map(|row| response_shape(row, 0))
+                                .collect::<Vec<_>>()
                         })
                     } else { None },
                     "batch_data_keys_match_requested": if matches!(operation, ProofOperation::Symbols) {
-                        value.get("data").and_then(Value::as_object).map(|rows| rows.keys().all(|name| {
-                            request.arguments()["symbols"].as_array().is_some_and(|symbols| {
-                                symbols.iter().any(|symbol| symbol.as_str() == Some(name))
+                        value.get("data").and_then(Value::as_object).map(|rows| {
+                            rows.keys().all(|name| {
+                                request.arguments()["symbols"].as_array().is_some_and(|symbols| {
+                                    symbols.iter().any(|symbol| symbol.as_str() == Some(name))
+                                })
                             })
-                        }))
+                        })
                     } else { None },
                     "reported_count": value.get("count").and_then(Value::as_u64),
                     "reported_missing_count": value.get("missing_count").and_then(Value::as_u64),
                     "provider_success": value.get("success").and_then(Value::as_bool),
-                    "symbol_echo_matches": value.get("symbol").and_then(Value::as_str).map(|v| v == "NASDAQ:AAPL")
+                    "symbol_echo_matches": value
+                        .get("symbol")
+                        .and_then(Value::as_str)
+                        .map(|v| v == "NASDAQ:AAPL")
                 }))
             }
             ProofOperation::AlertCatalog => {
@@ -610,7 +645,9 @@ async fn verify_data_command(
     ];
     use tradingview_model::mcp_data::{Request, ScreenerOptions};
     let request = match operation {
-        ProofOperation::SymbolsCommand => Request::symbols(&symbols, &["close".into(), "volume".into()]),
+        ProofOperation::SymbolsCommand => {
+            Request::symbols(&symbols, &["close".into(), "volume".into()])
+        }
         _ => Request::screener(ScreenerOptions {
             limit: 3,
             columns: vec!["name".into(), "close".into(), "volume".into()],

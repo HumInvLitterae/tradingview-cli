@@ -230,7 +230,11 @@ fn respond(ep: &Endpoints, r: &Request, mode: &str) -> Response {
             return Response::json(json!({
                 "access_token": if refresh { "synthetic-new-access" } else { "synthetic-access" },
                 "token_type": "Bearer",
-                "refresh_token": if refresh { "synthetic-new-refresh" } else { "synthetic-refresh" },
+                "refresh_token": if refresh {
+                    "synthetic-new-refresh"
+                } else {
+                    "synthetic-refresh"
+                },
                 "expires_in": 3600,
                 "scope": scope
             }));
@@ -271,7 +275,11 @@ fn respond(ep: &Endpoints, r: &Request, mode: &str) -> Response {
                     json!({"anyOf": [{"type": "string"}, {"type": "null"}]});
             }
             let mut tools = vec![json!({
-                "name": if mode == "numeric-nullable-schema" { "mcp-tv-get-ohlcv" } else { "get_ohlcv" },
+                "name": if mode == "numeric-nullable-schema" {
+                    "mcp-tv-get-ohlcv"
+                } else {
+                    "get_ohlcv"
+                },
                 "inputSchema": schema
             })];
             for tool in [
@@ -314,7 +322,22 @@ fn respond(ep: &Endpoints, r: &Request, mode: &str) -> Response {
                         (
                             (*name).into(),
                             if *kind == "array" {
-                                json!({"type": ["null", "array"], "items": {"type": if matches!(tool, crate::tools::Tool::AlertDetails | crate::tools::Tool::StopAlerts | crate::tools::Tool::RestartAlerts | crate::tools::Tool::DeleteAlerts) { "integer" } else { "string" }}})
+                                json!({
+                                    "type": ["null", "array"],
+                                    "items": {
+                                        "type": if matches!(
+                                            tool,
+                                            crate::tools::Tool::AlertDetails
+                                                | crate::tools::Tool::StopAlerts
+                                                | crate::tools::Tool::RestartAlerts
+                                                | crate::tools::Tool::DeleteAlerts
+                                        ) {
+                                            "integer"
+                                        } else {
+                                            "string"
+                                        }
+                                    }
+                                })
                             } else {
                                 json!({"type": kind})
                             },
@@ -325,7 +348,11 @@ fn respond(ep: &Endpoints, r: &Request, mode: &str) -> Response {
                     "name": tool.names()[0],
                     "inputSchema": {
                         "type": "object", "properties": properties,
-                        "required": if mode == "schema-change" { vec!["new_required"] } else { vec![] }
+                        "required": if mode == "schema-change" {
+                            vec!["new_required"]
+                        } else {
+                            vec![]
+                        }
                     }
                 }));
             }
@@ -395,30 +422,58 @@ fn respond(ep: &Endpoints, r: &Request, mode: &str) -> Response {
                 Some("mcp-tv-get-economic-symbols") => {
                     result["structuredContent"] = json!({
                         "success": true, "count": 1,
-                        "symbols": [{"symbol": "ECONOMICS:USEXAMPLE", "description": "Synthetic indicator", "category": "prce"}]
+                        "symbols": [{
+                            "symbol": "ECONOMICS:USEXAMPLE",
+                            "description": "Synthetic indicator",
+                            "category": "prce"
+                        }]
                     });
                 }
                 Some("mcp-tv-get-economic-data") => {
                     result["structuredContent"] = json!({
                         "success": true, "symbol": args["symbol"], "count": 2,
-                        "series": [{"date": "2026-01-01", "value": 0}, {"date": "2026-02-01", "value": null}],
+                        "series": [
+                            {"date": "2026-01-01", "value": 0},
+                            {"date": "2026-02-01", "value": null}
+                        ],
                         "unit": "%", "scale": 1
                     });
                 }
                 Some("mcp-tv-get-economic-calendar") => {
                     result["structuredContent"] = json!({
-                        "status": "ok", "result": [{"id": "synthetic-event", "date": "2026-01-01T12:00:00Z", "actual": 0, "forecast": null}]
+                        "status": "ok",
+                        "result": [{
+                            "id": "synthetic-event",
+                            "date": "2026-01-01T12:00:00Z",
+                            "actual": 0,
+                            "forecast": null
+                        }]
                     });
                 }
                 Some("mcp-tv-get-dividends-calendar") => {
                     result["structuredContent"] = json!({
-                        "success": true, "count": 1, "data": [{"symbol": "NASDAQ:EXAMPLE", "dividend_amount_recent": 0, "dividend_amount_upcoming": null}]
+                        "success": true,
+                        "count": 1,
+                        "data": [{
+                            "symbol": "NASDAQ:EXAMPLE",
+                            "dividend_amount_recent": 0,
+                            "dividend_amount_upcoming": null
+                        }]
                     });
                 }
                 Some("mcp-tv-get-news") => {
                     result["structuredContent"] = json!({"success": true, "data": {
-                        "headlines": [{"id": "urn:newsml:example:one", "title": "Example", "permission": "restricted", "paywall": true}],
-                        "count": 1, "offset": args["offset"], "has_more": true, "next_offset": 1, "total_available": 2
+                        "headlines": [{
+                            "id": "urn:newsml:example:one",
+                            "title": "Example",
+                            "permission": "restricted",
+                            "paywall": true
+                        }],
+                        "count": 1,
+                        "offset": args["offset"],
+                        "has_more": true,
+                        "next_offset": 1,
+                        "total_available": 2
                     }});
                 }
                 Some("mcp-tv-get-news-story") => {
@@ -434,7 +489,11 @@ fn respond(ep: &Endpoints, r: &Request, mode: &str) -> Response {
                 }
                 Some("mcp-tv-get-document-view") => {
                     result["structuredContent"] = json!({"id": args["view_id"], "astDescription": {
-                        "type": "root", "children": [{"type": "paragraph", "children": ["Synthetic text"]}]
+                        "type": "root",
+                        "children": [{
+                            "type": "paragraph",
+                            "children": ["Synthetic text"]
+                        }]
                     }});
                 }
                 Some("mcp-tv-get-financials") => {
@@ -445,7 +504,8 @@ fn respond(ep: &Endpoints, r: &Request, mode: &str) -> Response {
                 Some("mcp-tv-get-financial-history") => {
                     result["structuredContent"] = json!({
                         "success": true, "symbol": "NASDAQ:EXAMPLE", "period": args["period"],
-                        "labels": ["FY2025 Q1"], "series": {"revenue": [{"value": 0, "yoy_pct": null}]}
+                        "labels": ["FY2025 Q1"],
+                        "series": {"revenue": [{"value": 0, "yoy_pct": null}]}
                     });
                 }
                 Some("mcp-tv-get-forecasts") => {
@@ -457,7 +517,11 @@ fn respond(ep: &Endpoints, r: &Request, mode: &str) -> Response {
                 }
                 Some("mcp-tv-get-earnings-calendar") => {
                     result["structuredContent"] = json!({"success": true, "data": {
-                        "count": 1, "earnings": [{"symbol": "NASDAQ:EXAMPLE", "release_date": "2026-05-01"}]
+                        "count": 1,
+                        "earnings": [{
+                            "symbol": "NASDAQ:EXAMPLE",
+                            "release_date": "2026-05-01"
+                        }]
                     }});
                 }
                 Some(

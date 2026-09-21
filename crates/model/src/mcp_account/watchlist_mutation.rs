@@ -215,7 +215,11 @@ impl WatchlistMutation {
             "operation": self.action_name(),
             "request": self.arguments,
             "target_id": target,
-            "mutation": {"status": "response_received", "tool_attempts": 1, "automatic_retry": false},
+            "mutation": {
+                "status": "response_received",
+                "tool_attempts": 1,
+                "automatic_retry": false
+            },
             "readback": readback
         })
     }
