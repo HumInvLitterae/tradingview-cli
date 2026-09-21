@@ -20,6 +20,14 @@ use tokio::time::Instant;
 /// The caller explicitly chooses each effect; no startup discovery or login.
 #[derive(Clone, Copy)]
 pub enum ProofOperation {
+    EconomicCommands,
+    EconomicCodesShape,
+    EconomicSeriesShape,
+    EconomicOverviewShape,
+    EconomicSymbolsShape,
+    EconomicCalendarShape,
+    DividendsShape,
+    DividendScreenShape,
     ResearchCommands,
     StoryShape,
     DocumentShape,
@@ -69,6 +77,9 @@ pub async fn run_proof_with_worker(
     operation: ProofOperation,
     worker: Option<&Path>,
 ) -> Result<Value> {
+    if matches!(operation, ProofOperation::EconomicCommands) {
+        return verify_economic_commands(directory, worker).await;
+    }
     if matches!(operation, ProofOperation::ResearchCommands) {
         return verify_research_commands(directory, worker).await;
     }
@@ -101,6 +112,18 @@ pub async fn run_proof_with_worker(
             ProofOperation::Login | ProofOperation::AuthorizeStore
         ) {
             Duration::from_secs(300)
+        } else if matches!(
+            operation,
+            ProofOperation::EconomicCodesShape
+                | ProofOperation::EconomicSeriesShape
+                | ProofOperation::EconomicOverviewShape
+                | ProofOperation::EconomicSymbolsShape
+                | ProofOperation::EconomicCalendarShape
+                | ProofOperation::DividendsShape
+                | ProofOperation::DividendScreenShape
+        ) {
+            // Schema investigation only; public commands retain their 30-second deadline.
+            Duration::from_secs(180)
         } else {
             Duration::from_secs(30)
         };
@@ -140,6 +163,15 @@ pub async fn run_proof_with_worker(
         let mut auth = Auth::discover(http.clone(), store.clone(), budget.clone()).await?;
 
         match operation {
+            ProofOperation::EconomicCodesShape
+            | ProofOperation::EconomicSeriesShape
+            | ProofOperation::EconomicOverviewShape
+            | ProofOperation::EconomicSymbolsShape
+            | ProofOperation::EconomicCalendarShape
+            | ProofOperation::DividendsShape
+            | ProofOperation::DividendScreenShape => {
+                inspect_economics(operation, &mut auth, &mut admission, &budget).await
+            }
             ProofOperation::NewsShape | ProofOperation::DocumentsShape | ProofOperation::StoryShape | ProofOperation::DocumentShape => {
                 inspect_research(operation, &mut auth, &mut admission, &budget).await
             }
@@ -1201,5 +1233,211 @@ async fn inspect_research(
         Ok(json!({"tool": tool.names()[0], "shape": response_shape(&value, 0)}))
     } else {
         Ok(json!({"tool": tool.names()[0], "shape": response_shape(&value, 0)}))
+    }
+}
+
+async fn inspect_economics(
+    operation: ProofOperation,
+    auth: &mut Auth,
+    admission: &mut Admission,
+    budget: &Arc<Mutex<Budget>>,
+) -> Result<Value> {
+    use tradingview_model::mcp_economics::{CalendarOptions, DividendOptions, Request};
+    auth.restore().await?;
+    let request = match operation {
+        ProofOperation::EconomicCodesShape => {
+            Request::symbols(None, Some("prce"), Some("inflation"))
+        }
+        ProofOperation::EconomicOverviewShape => Request::symbols(None, None, None),
+        ProofOperation::EconomicSymbolsShape | ProofOperation::EconomicSeriesShape => {
+            Request::symbols(Some("US"), None, Some("inflation"))
+        }
+        ProofOperation::EconomicCalendarShape => Request::calendar(CalendarOptions {
+            from: Some("2026-09-17".into()),
+            to: Some("2026-09-18".into()),
+            min_importance: Some(1),
+            ..Default::default()
+        }),
+        ProofOperation::DividendsShape => Request::dividends(DividendOptions {
+            symbols: vec!["NASDAQ:AAPL".into(), "NASDAQ:MSFT".into()],
+            ..Default::default()
+        }),
+        _ => Request::dividends(DividendOptions {
+            market: Some("america".into()),
+            from: Some("2026-09-21".into()),
+            to: Some("2026-09-25".into()),
+            limit: Some(2),
+            ..Default::default()
+        }),
+    }
+    .map_err(|_| Failure::UnsupportedCapability)?;
+    let tool = crate::tools::Tool::from(request.kind());
+    let mut responses = crate::transport::call(
+        &auth.http,
+        auth.token().await?,
+        tool,
+        &[request.arguments()],
+        Some(admission),
+    )
+    .await?;
+    let value = crate::transport::result_value(responses.pop().ok_or(Failure::InvalidResponse)??)?;
+    if matches!(operation, ProofOperation::EconomicSeriesShape) {
+        let symbol = value["symbols"]
+            .as_array()
+            .ok_or(Failure::InvalidResponse)?
+            .iter()
+            .find_map(|row| row["symbol"].as_str().filter(|s| *s == "ECONOMICS:USIRYY"))
+            .ok_or(Failure::UnsupportedCapability)?;
+        let request = Request::series(symbol, Some("2025-01-01"), Some("2026-09-21"))
+            .map_err(|_| Failure::UnsupportedCapability)?;
+        let http = Http::new(
+            Endpoints::tradingview(),
+            Instant::now() + Duration::from_secs(180),
+            budget.clone(),
+        )?;
+        let tool = crate::tools::Tool::from(request.kind());
+        let response = crate::transport::call(
+            &http,
+            auth.token().await?,
+            tool,
+            &[request.arguments()],
+            Some(admission),
+        )
+        .await;
+        if let Some(wait) = http.cooldown() {
+            admission.cooldown(wait)?;
+        }
+        let mut responses = response?;
+        let value =
+            crate::transport::result_value(responses.pop().ok_or(Failure::InvalidResponse)??)?;
+        Ok(json!({
+            "tool": tool.names()[0], "catalog_symbol_confirmed": true,
+            "shape": response_shape(&value, 0),
+            "normalization": economic_normalization(&request, &value),
+            "status_is_ok": value["status"] == "ok",
+            "status_is_success": value["status"] == "success"
+        }))
+    } else {
+        Ok(json!({
+            "tool": tool.names()[0], "shape": response_shape(&value, 0),
+            "normalization": economic_normalization(&request, &value),
+            "status_is_ok": value["status"] == "ok",
+            "status_is_success": value["status"] == "success"
+        }))
+    }
+}
+
+async fn verify_economic_commands(directory: &Path, worker: Option<&Path>) -> Result<Value> {
+    use tradingview_model::mcp_economics::{CalendarOptions, DividendOptions, Request};
+
+    let worker = worker.ok_or(Failure::UnsupportedCapability)?;
+    let client = crate::Client::with_paths(directory.to_owned(), worker.to_owned());
+    let mut reports = Vec::new();
+    let mut complete = true;
+    for request in [
+        Request::symbols(None, None, None),
+        Request::symbols(None, Some("prce"), Some("inflation")),
+        Request::symbols(Some("US"), None, Some("inflation")),
+        Request::calendar(CalendarOptions {
+            from: Some("2026-09-17".into()),
+            to: Some("2026-09-18".into()),
+            min_importance: Some(1),
+            ..Default::default()
+        }),
+        Request::dividends(DividendOptions {
+            symbols: vec!["NASDAQ:AAPL".into(), "NASDAQ:MSFT".into()],
+            ..Default::default()
+        }),
+        Request::dividends(DividendOptions {
+            market: Some("america".into()),
+            from: Some("2026-09-21".into()),
+            to: Some("2026-09-25".into()),
+            limit: Some(2),
+            ..Default::default()
+        }),
+    ] {
+        let request = request.map_err(|_| Failure::UnsupportedCapability)?;
+        let data = economic_read(&client, request, &mut reports).await;
+        complete &= data.is_some();
+        if let Some(data) = data.filter(|data| data["mode"] == "symbols") {
+            let symbol = data["items"].as_array().and_then(|items| {
+                items
+                    .iter()
+                    .find_map(|item| item["symbol"].as_str().filter(|s| *s == "ECONOMICS:USIRYY"))
+            });
+            if let Some(symbol) = symbol {
+                let request = Request::series(symbol, Some("2025-01-01"), Some("2026-09-21"))
+                    .map_err(|_| Failure::UnsupportedCapability)?;
+                complete &= economic_read(&client, request, &mut reports)
+                    .await
+                    .is_some();
+            } else {
+                complete = false;
+            }
+        }
+    }
+    Ok(json!({"success": complete, "observations": reports}))
+}
+
+async fn economic_read(
+    client: &crate::Client,
+    request: tradingview_model::mcp_economics::Request,
+    reports: &mut Vec<Value>,
+) -> Option<Value> {
+    let tool = crate::tools::Tool::from(request.kind());
+    match client.run(crate::Operation::Economic(request)).await {
+        Ok(data) => {
+            reports.push(json!({
+                "tool": tool.names()[0],
+                "contract": data["contract_version"],
+                "mode": data["mode"],
+                "returned_count": data["client_observation"]["returned_count"],
+                "tool_attempts": data["transport"]["tool_attempts"]
+            }));
+            Some(data)
+        }
+        Err(error) => {
+            let details = error.details.unwrap_or(Value::Null);
+            reports.push(json!({
+                "tool": tool.names()[0], "code": details["code"],
+                "reason": details["reason"], "stage": details["stage"], "tool_attempts": details["tool_attempts"]
+            }));
+            None
+        }
+    }
+}
+
+fn economic_normalization(
+    request: &tradingview_model::mcp_economics::Request,
+    value: &Value,
+) -> Value {
+    match tradingview_model::mcp_economics::normalize(request, value.clone(), 1000) {
+        Ok(data) => json!({"success": true, "contract": data["contract_version"]}),
+        Err(error) => {
+            let details = error.details.unwrap_or(Value::Null);
+            let message = value["error"]
+                .as_str()
+                .unwrap_or_default()
+                .to_ascii_lowercase();
+            let indications: Vec<_> = [
+                "429",
+                "403",
+                "401",
+                "500",
+                "502",
+                "503",
+                "timeout",
+                "rate limit",
+                "quota",
+                "permission",
+            ]
+            .into_iter()
+            .filter(|needle| message.contains(needle))
+            .collect();
+            json!({
+                "success": false, "code": details["code"], "reason": details["reason"],
+                "provider_error_indications": indications
+            })
+        }
     }
 }

@@ -6,6 +6,10 @@ use tradingview_model::{mcp_account, mcp_bars, mcp_data};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) enum Tool {
+    EconomicSymbols,
+    EconomicData,
+    EconomicCalendar,
+    Dividends,
     News,
     Story,
     Documents,
@@ -39,6 +43,10 @@ pub(crate) enum Tool {
 impl Tool {
     pub fn names(self) -> &'static [&'static str] {
         match self {
+            Self::EconomicSymbols => &["mcp-tv-get-economic-symbols", "get_economic_symbols"],
+            Self::EconomicData => &["mcp-tv-get-economic-data", "get_economic_data"],
+            Self::EconomicCalendar => &["mcp-tv-get-economic-calendar", "get_economic_calendar"],
+            Self::Dividends => &["mcp-tv-get-dividends-calendar", "get_dividends_calendar"],
             Self::News => &["mcp-tv-get-news", "get_news"],
             Self::Story => &["mcp-tv-get-news-story", "get_news_story"],
             Self::Documents => &["mcp-tv-get-documents", "get_documents"],
@@ -75,6 +83,31 @@ impl Tool {
 
     pub fn fields(self) -> &'static [(&'static str, &'static str)] {
         match self {
+            Self::EconomicSymbols => &[
+                ("country", "string"),
+                ("category", "string"),
+                ("search", "string"),
+            ],
+            Self::EconomicData => &[
+                ("symbol", "string"),
+                ("date_from", "string"),
+                ("date_to", "string"),
+            ],
+            Self::EconomicCalendar => &[
+                ("countries", "string"),
+                ("currencies", "string"),
+                ("category", "string"),
+                ("date_from", "string"),
+                ("date_to", "string"),
+                ("min_importance", "integer"),
+            ],
+            Self::Dividends => &[
+                ("symbols", "array"),
+                ("market", "string"),
+                ("date_from", "string"),
+                ("date_to", "string"),
+                ("limit", "integer"),
+            ],
             Self::News => &[
                 ("symbol", "string"),
                 ("lang", "string"),
@@ -180,6 +213,10 @@ impl Tool {
 
     pub fn from_name(name: &str) -> Result<Self> {
         [
+            Self::EconomicSymbols,
+            Self::EconomicData,
+            Self::EconomicCalendar,
+            Self::Dividends,
             Self::News,
             Self::Story,
             Self::Documents,
@@ -239,6 +276,53 @@ impl Tool {
                 .ok_or(Failure::UnsupportedCapability)
         };
         let validated = match self {
+            Self::EconomicSymbols => tradingview_model::mcp_economics::Request::symbols(
+                optional("country")?,
+                optional("category")?,
+                optional("search")?,
+            )
+            .map(|r| r.arguments()),
+            Self::EconomicData => tradingview_model::mcp_economics::Request::series(
+                string("symbol")?,
+                optional("date_from")?,
+                optional("date_to")?,
+            )
+            .map(|r| r.arguments()),
+            Self::EconomicCalendar => tradingview_model::mcp_economics::Request::calendar(
+                tradingview_model::mcp_economics::CalendarOptions {
+                    countries: Some(string("countries")?.to_owned()),
+                    currencies: optional("currencies")?.map(str::to_owned),
+                    category: optional("category")?.map(str::to_owned),
+                    from: optional("date_from")?.map(str::to_owned),
+                    to: optional("date_to")?.map(str::to_owned),
+                    min_importance: Some(
+                        args["min_importance"]
+                            .as_i64()
+                            .and_then(|v| i32::try_from(v).ok())
+                            .ok_or(Failure::UnsupportedCapability)?,
+                    ),
+                },
+            )
+            .map(|r| r.arguments()),
+            Self::Dividends => tradingview_model::mcp_economics::Request::dividends(
+                tradingview_model::mcp_economics::DividendOptions {
+                    symbols: serde_json::from_value(
+                        args.get("symbols")
+                            .cloned()
+                            .unwrap_or_else(|| serde_json::json!([])),
+                    )
+                    .map_err(|_| Failure::UnsupportedCapability)?,
+                    market: optional("market")?.map(str::to_owned),
+                    from: optional("date_from")?.map(str::to_owned),
+                    to: optional("date_to")?.map(str::to_owned),
+                    limit: if args.get("limit").is_some() {
+                        Some(number("limit")?)
+                    } else {
+                        None
+                    },
+                },
+            )
+            .map(|r| r.arguments()),
             Self::News => tradingview_model::mcp_research::Request::news(
                 string("symbol")?,
                 string("lang")?,
@@ -495,6 +579,18 @@ impl From<tradingview_model::mcp_research::Kind> for Tool {
             Kind::Story => Self::Story,
             Kind::Documents => Self::Documents,
             Kind::Document => Self::Document,
+        }
+    }
+}
+
+impl From<tradingview_model::mcp_economics::Kind> for Tool {
+    fn from(kind: tradingview_model::mcp_economics::Kind) -> Self {
+        use tradingview_model::mcp_economics::Kind;
+        match kind {
+            Kind::Symbols => Self::EconomicSymbols,
+            Kind::Series => Self::EconomicData,
+            Kind::Calendar => Self::EconomicCalendar,
+            Kind::Dividends => Self::Dividends,
         }
     }
 }

@@ -71,6 +71,58 @@ the priority decision does not authorize changes to existing account objects.
 No additional dependency, executor, publication or default-backend change is
 implied. Keep this as the single MCP work record.
 
+## Economic and calendar slice (2026-09-21)
+
+The owner requested the remaining priority-7 implementation. Four independent
+reads now use the existing service: `economic-symbols`, `economic-data`,
+`economic-calendar` and `dividends`. This completes the agreed feature inventory
+for priority 7, subject to the acceptance evidence below; it does not promote
+all other official MCP tools. The next step is completing normal-deadline economic read acceptance, then
+candidate scope/readiness review. Mandatory Windows qualification remains
+deferred by the owner.
+
+The [economic CLI/JSON contracts](../official-mcp.md#economic-indicators-and-calendars)
+distinguish overview, bare indicator codes and actual qualified symbols. Series
+identity, values, dates and provider unit/scale are preserved; actual returned
+bounds do not prove requested coverage. Economic events keep actual/forecast/
+previous and raw values separate. Dividend symbols and market screening are
+mutually exclusive modes, with ordered per-request outcomes for symbol lookup.
+No date interpolation, rescaling, invented ticker, source fallback, retry,
+production dependency, version bump or existing-command replacement was added.
+
+Official documentation and native response shapes were rechecked. Catalog
+responses have three distinct shapes; the calendar status was observed as `ok`.
+Native schema probes covered overview, filtered codes, country-specific symbols,
+a series selected from the returned catalog, economic events, symbol dividends
+and bounded market dividends. Extended-deadline normalization subsequently passed
+for the 22-row indicator-code list, 19-row series and two-row economic calendar.
+Dividend shapes initially returned two rows in both modes; later calls returned
+explicit provider errors, which normalization preserved as failures. A native
+successful normalized dividend response remains unconfirmed. A final sanitized
+check found `429` in the provider error text; this is an application-level
+indication, not an observed outer HTTP 429 or a measured Retry-After. Stop further
+live probes for this checkpoint and recheck after the provider limit permits it. Initial probes and an existing financial read
+experienced pre-tool timeouts. Public metadata and a disposable local fsync
+check succeeded. Temporary protocol timing diagnostics were removed. Schema
+investigation used explicit development-only extended deadlines; production
+commands retain the existing 30-second deadline. These observations do not
+prove normal-deadline command acceptance or general service reliability.
+
+Validation: 1,027 workspace tests passed, 27 ignored, zero failed. Strict Clippy,
+formatting and diff/public hygiene passed (693 files). Package self-tests and
+resource staging passed (48 files, six skills per root). Staging checks resource
+membership/parity, not a new release binary. Model and service fixtures cover
+null/zero distinctions, identity/count/type contradictions, malformed rows,
+invalid/mixed arguments, JSON/SSE, auth errors, throttling, server failures and
+schema changes without replay. Normal-deadline native qualification remains incomplete: the repeat run
+normalized overview and the 22-row country catalog, while other reads returned
+deadline errors or a provider error. The first run failed before all six tool
+dispatches. No automatic replay or deadline change was introduced. Do not treat
+extended schema probes as completed public-service acceptance.
+No new consent, scope, account mutation or credential-worker replacement was
+needed. Raw responses, machine paths and account-local identifiers stay outside
+tracked records.
+
 ## News and document slice (2026-09-21)
 
 The owner requested the next ordered work. Priority 7 is delivered in usable
@@ -106,7 +158,7 @@ passed: 1,019 tests, 27 ignored, zero failures. Final reference-ID mismatch
 checks passed focused model/service tests. Strict Clippy, formatting, public/diff
 hygiene (692 tracked files) and runtime-resource checks passed (48 files, six
 skills per root). No dependency or installed-binary change was needed. Native Windows qualification remains explicitly deferred before release.
-Economic/catalog/calendar work remains the next unfinished part of priority 7.
+The economic/calendar slice above follows this completed news/document stage.
 
 ## Financial and earnings slice (2026-09-21)
 

@@ -1176,6 +1176,50 @@ pub enum UiCommand {
 
 #[derive(Debug, Subcommand)]
 pub enum McpCommand {
+    #[command(about = "Discover economic categories/countries or explicit indicator symbols")]
+    EconomicSymbols {
+        #[arg(long)]
+        country: Option<String>,
+        #[arg(long)]
+        category: Option<String>,
+        #[arg(long)]
+        search: Option<String>,
+    },
+    #[command(about = "Read one ECONOMICS symbol obtained from economic-symbols")]
+    EconomicData {
+        symbol: String,
+        #[arg(long)]
+        from: Option<String>,
+        #[arg(long)]
+        to: Option<String>,
+    },
+    #[command(about = "Read economic events; keep actual, forecast and previous values separate")]
+    EconomicCalendar {
+        #[arg(long, default_value = "US")]
+        countries: String,
+        #[arg(long)]
+        currencies: Option<String>,
+        #[arg(long)]
+        category: Option<String>,
+        #[arg(long)]
+        from: Option<String>,
+        #[arg(long)]
+        to: Option<String>,
+        #[arg(long, default_value = "-1", allow_hyphen_values = true)]
+        min_importance: i32,
+    },
+    #[command(about = "Read dividends by explicit symbols OR a market/date screen")]
+    Dividends {
+        symbols: Vec<String>,
+        #[arg(long)]
+        market: Option<String>,
+        #[arg(long)]
+        from: Option<String>,
+        #[arg(long)]
+        to: Option<String>,
+        #[arg(long)]
+        limit: Option<u32>,
+    },
     #[command(about = "Read one page of official news; retain access flags and next offset")]
     News {
         symbol: String,

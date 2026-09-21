@@ -9,6 +9,13 @@ package version omits the leading `v`.
 
 ### Added
 
+- Official MCP economic catalog/series and economic/dividend calendars through
+  `tv mcp economic-symbols/economic-data/economic-calendar/dividends`.
+  Separate contracts preserve indicator codes versus qualified symbols,
+  actual/forecast/previous values, provider units and nulls. Dividend symbol
+  lookup and bounded market screening remain explicit separate modes; successful
+  reads do not assert complete requested periods.
+
 - Official MCP news pages/stories and company documents/views through
   `tv mcp news/news-story/documents/document`, with explicit pagination,
   unchanged source IDs, inert body content and retained access/attribution

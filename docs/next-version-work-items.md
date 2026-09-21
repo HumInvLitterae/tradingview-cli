@@ -58,8 +58,8 @@ Watchlist and alert list/ID reads are implemented and verified through the nativ
 service. Watchlist management and readback passed fixture and native disposable-list
 verification. Alert management also passed native disposable-alert verification;
 financial snapshots/history, forecasts and earnings have native read verification.
-News/document list and body reads passed native verification; economic discovery,
-series and remaining calendars follow.
+News/document list and body reads passed native verification. Economic discovery,
+series and economic/dividend calendars are implemented; native qualification remains incomplete due to deadline/provider errors.
 The owner has handed the separate `mcp_bars.v1` path to the downstream PM. Windows
 qualification is deferred to a later stage and remains a release requirement. A successful read
 still leaves delay/adjustment/session/finality/anchoring unconfirmed. No new
@@ -79,7 +79,7 @@ contracts and acceptance. These are not all mandatory v0.32.0 release contents.
 | 4 | Recent-count intraday OHLCV | Implemented: six intervals pass fixture and native service verification; no date-range or completeness claims. |
 | 5 | Watchlists and alerts | List/ID reads and watchlist management verified, including a native disposable-list lifecycle. Alert management also passed a native disposable-alert lifecycle. Retain unsupported Pine/Desktop capabilities. |
 | 6 | Earnings and financial data | Implemented: financials, financial-history, forecasts and earnings. Fixture and native service checks preserve provider periods, nulls and unknown currency/coverage. |
-| 7 | News, documents and economic data | News/document list-to-body reads passed fixture and native verification. Economic catalog/series and remaining calendars follow; preserve references, timestamps and access limits. |
+| 7 | News, documents and economic data | News/document reads are verified. Economic catalog/series and economic/dividend calendars are implemented; fixture checks pass, normal-deadline native qualification remains incomplete due to deadline/provider errors. Preserve unknown coverage and explicit dividend modes. |
 
 Windows runtime qualification remains deferred by the owner and required before
 release. Downstream analysis adoption does not block independent upstream slices.

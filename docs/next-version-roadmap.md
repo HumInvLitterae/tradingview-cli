@@ -95,8 +95,9 @@ passed fixture and native disposable-list verification. Alert management also
 passed a native disposable-alert lifecycle with readback. Financial snapshots,
 history, forecasts and earnings calendars are implemented with native checks.
 News and document list/body reads passed fixture and native verification.
-Economic discovery,
-series and remaining calendars follow within priority 7.
+Economic discovery, series and economic/dividend calendars are implemented;
+normal-deadline native qualification remains incomplete because reads also
+returned deadline/provider errors. Finish this acceptance before scope closeout.
 Reuse connection and credential handling; keep tool-specific
 schema checks and interpretation explicit. No arbitrary tool passthrough.
 

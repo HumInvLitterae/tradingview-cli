@@ -275,6 +275,10 @@ fn respond(ep: &Endpoints, r: &Request, mode: &str) -> Response {
                 "inputSchema": schema
             })];
             for tool in [
+                crate::tools::Tool::EconomicSymbols,
+                crate::tools::Tool::EconomicData,
+                crate::tools::Tool::EconomicCalendar,
+                crate::tools::Tool::Dividends,
                 crate::tools::Tool::News,
                 crate::tools::Tool::Story,
                 crate::tools::Tool::Documents,
@@ -388,6 +392,29 @@ fn respond(ep: &Endpoints, r: &Request, mode: &str) -> Response {
             });
             let args = &request["params"]["arguments"];
             match request["params"]["name"].as_str() {
+                Some("mcp-tv-get-economic-symbols") => {
+                    result["structuredContent"] = json!({
+                        "success": true, "count": 1,
+                        "symbols": [{"symbol": "ECONOMICS:USEXAMPLE", "description": "Synthetic indicator", "category": "prce"}]
+                    });
+                }
+                Some("mcp-tv-get-economic-data") => {
+                    result["structuredContent"] = json!({
+                        "success": true, "symbol": args["symbol"], "count": 2,
+                        "series": [{"date": "2026-01-01", "value": 0}, {"date": "2026-02-01", "value": null}],
+                        "unit": "%", "scale": 1
+                    });
+                }
+                Some("mcp-tv-get-economic-calendar") => {
+                    result["structuredContent"] = json!({
+                        "status": "ok", "result": [{"id": "synthetic-event", "date": "2026-01-01T12:00:00Z", "actual": 0, "forecast": null}]
+                    });
+                }
+                Some("mcp-tv-get-dividends-calendar") => {
+                    result["structuredContent"] = json!({
+                        "success": true, "count": 1, "data": [{"symbol": "NASDAQ:EXAMPLE", "dividend_amount_recent": 0, "dividend_amount_upcoming": null}]
+                    });
+                }
                 Some("mcp-tv-get-news") => {
                     result["structuredContent"] = json!({"success": true, "data": {
                         "headlines": [{"id": "urn:newsml:example:one", "title": "Example", "permission": "restricted", "paywall": true}],
@@ -1613,6 +1640,70 @@ async fn research_service_keeps_references_access_and_single_dispatch_failures()
             fixture_login(&http, &store, &budget).await;
             let result = execute(
                 Operation::Research(request.clone()),
+                &mut guard,
+                store,
+                http,
+                budget,
+                true,
+            )
+            .await;
+            assert_eq!(
+                server.calls("tools/call"),
+                if mode == "schema-change" { 0 } else { 1 }
+            );
+            if matches!(mode, "json" | "sse") {
+                let data = result.unwrap();
+                assert_eq!(data["source"], "tradingview_mcp");
+                assert_eq!(data["transport"]["tool_attempts"], 1);
+                assert_eq!(data["client_observation"]["completeness"], "unconfirmed");
+            } else {
+                let details = result.unwrap_err().details.unwrap();
+                assert_eq!(
+                    details["tool_attempts"],
+                    if mode == "schema-change" { 0 } else { 1 }
+                );
+                assert!(!details.to_string().contains("synthetic-secret"));
+            }
+        }
+    }
+}
+
+#[tokio::test]
+async fn economic_service_keeps_nulls_and_single_dispatch_failures() {
+    use crate::client::{Operation, execute};
+    use tradingview_model::mcp_economics::{CalendarOptions, DividendOptions, Request};
+
+    for request in [
+        Request::symbols(Some("US"), None, None).unwrap(),
+        Request::series("ECONOMICS:USEXAMPLE", None, None).unwrap(),
+        Request::calendar(CalendarOptions::default()).unwrap(),
+        Request::dividends(DividendOptions {
+            symbols: vec!["NASDAQ:EXAMPLE".into(), "NYSE:OTHER".into()],
+            ..Default::default()
+        })
+        .unwrap(),
+        Request::dividends(DividendOptions {
+            market: Some("america".into()),
+            limit: Some(2),
+            ..Default::default()
+        })
+        .unwrap(),
+    ] {
+        for mode in [
+            "json",
+            "sse",
+            "401",
+            "429",
+            "500",
+            "malformed",
+            "schema-change",
+            "tool-error",
+        ] {
+            let server = Server::start(mode).await;
+            let (_root, mut guard, budget, http, store) = context(&server, 8).await;
+            fixture_login(&http, &store, &budget).await;
+            let result = execute(
+                Operation::Economic(request.clone()),
                 &mut guard,
                 store,
                 http,

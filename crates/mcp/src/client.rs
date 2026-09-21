@@ -23,6 +23,7 @@ pub enum Operation {
     Login,
     Status,
     Logout,
+    Economic(tradingview_model::mcp_economics::Request),
     Research(tradingview_model::mcp_research::Request),
     Financial(tradingview_model::mcp_financials::Request),
     Bars(Request),
@@ -69,6 +70,7 @@ impl Client {
                 | Operation::Data(_)
                 | Operation::Financial(_)
                 | Operation::Research(_)
+                | Operation::Economic(_)
                 | Operation::Account(_)
                 | Operation::WatchlistMutation(_)
                 | Operation::AlertMutation(_)
@@ -203,6 +205,7 @@ pub(crate) async fn execute(
             Operation::Data(request) => (request.kind().into(), request.arguments()),
             Operation::Financial(request) => (request.kind().into(), request.arguments()),
             Operation::Research(request) => (request.kind().into(), request.arguments()),
+            Operation::Economic(request) => (request.kind().into(), request.arguments()),
             Operation::Account(request) => (request.kind().into(), request.arguments()),
             _ => return Err(Failure::UnsupportedCapability.into()),
         };
@@ -223,6 +226,9 @@ pub(crate) async fn execute(
         let received_ms = now_ms().map_err(AppError::from)?;
         match &operation {
             Operation::Bars(request) => mcp_bars::normalize(request, value, received_ms),
+            Operation::Economic(request) => {
+                tradingview_model::mcp_economics::normalize(request, value, received_ms)
+            }
             Operation::Research(request) => {
                 tradingview_model::mcp_research::normalize(request, value, received_ms)
             }

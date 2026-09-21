@@ -6,9 +6,53 @@ use tradingview_model::mcp_account;
 use tradingview_model::mcp_bars::{Request, unsupported};
 
 pub async fn run_mcp(command: McpCommand) -> Result<Value, AppError> {
-    use tradingview_model::{mcp_data, mcp_financials, mcp_research};
+    use tradingview_model::{mcp_data, mcp_economics, mcp_financials, mcp_research};
 
     let operation = match command {
+        McpCommand::EconomicSymbols {
+            country,
+            category,
+            search,
+        } => Operation::Economic(mcp_economics::Request::symbols(
+            country.as_deref(),
+            category.as_deref(),
+            search.as_deref(),
+        )?),
+        McpCommand::EconomicData { symbol, from, to } => Operation::Economic(
+            mcp_economics::Request::series(&symbol, from.as_deref(), to.as_deref())?,
+        ),
+        McpCommand::EconomicCalendar {
+            countries,
+            currencies,
+            category,
+            from,
+            to,
+            min_importance,
+        } => Operation::Economic(mcp_economics::Request::calendar(
+            mcp_economics::CalendarOptions {
+                countries: Some(countries),
+                currencies,
+                category,
+                from,
+                to,
+                min_importance: Some(min_importance),
+            },
+        )?),
+        McpCommand::Dividends {
+            symbols,
+            market,
+            from,
+            to,
+            limit,
+        } => Operation::Economic(mcp_economics::Request::dividends(
+            mcp_economics::DividendOptions {
+                symbols,
+                market,
+                from,
+                to,
+                limit,
+            },
+        )?),
         McpCommand::News {
             symbol,
             lang,
