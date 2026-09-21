@@ -45,9 +45,14 @@ Coordination files contain counters and timestamps, never tokens or market data.
 They live under `~/Library/Application Support/tradingview-cli/mcp` on macOS,
 `%LOCALAPPDATA%\tradingview-cli\mcp` on Windows, and
 `$XDG_STATE_HOME/tradingview-cli/mcp` (or `~/.local/state/tradingview-cli/mcp`) on
-Linux. Windows validates the directory's owner/access rules and rejects reparse
-points; it does not weaken an existing ACL. SDK/wire tracing is suppressed for
-MCP commands even when `RUST_LOG=trace` is set.
+Linux. Windows uses native APIs to create missing coordination directories with
+protected ACLs for the current user, SYSTEM and administrators. Child state
+files inherit those permissions. Existing directories and opened state files
+are checked without changing their ACLs; untrusted allow entries, unsupported
+ACE types and reparse points are rejected. The directory handle stays open for
+the operation without delete sharing to prevent replacement of the checked leaf.
+No PowerShell process is started for these checks. SDK/wire tracing is suppressed
+for MCP commands even when `RUST_LOG=trace` is set.
 
 ## Symbol discovery and data
 
@@ -806,6 +811,29 @@ invalid stored record, or native store read/write. These reasons contain no raw
 OS error text, credentials, paths or IPC bytes. They identify the failed boundary,
 not an instruction to retry or delete credentials. `status` proves only its own
 local read; a subsequent command starts a separate credential operation.
+
+Windows state-security errors keep `code:"local_state_unavailable"` and add a
+closed `reason`, such as `state_acl_rejected`, `state_owner_rejected` or
+`state_security_query_failed`. Native API failures also include `win32_error`
+as a number; policy rejections omit it. No path, SID or native message is returned.
+For example, an OS security-query failure may return:
+
+```json
+{
+  "contract_version": "mcp_error.v1",
+  "source": "tradingview_mcp",
+  "code": "local_state_unavailable",
+  "stage": "local_admission",
+  "reason": "state_security_query_failed",
+  "win32_error": 5,
+  "tool_attempts": 0,
+  "automatic_retry": false
+}
+```
+
+An ACL rejection requires reviewing the existing directory/file permissions;
+it is not authorization to delete state files or broaden access. The CLI does
+not rewrite existing ACLs or substitute another state location automatically.
 
 Within one command's admission lock, validated credentials are reused in memory.
 A successful durable update replaces that snapshot; a failed update invalidates

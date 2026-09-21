@@ -58,6 +58,11 @@ package version omits the leading `v`.
 
 ### Fixed
 
+- Windows MCP state initialization now uses native security APIs instead of
+  spawning PowerShell. New directories receive private inheritable ACLs;
+  existing directories/files are checked without silently changing permissions.
+  State-security errors preserve closed reasons and numeric Win32 failures.
+
 - MCP authentication-refresh errors now ask the caller to repeat the same
   explicit command, instead of incorrectly directing non-bar reads to `tv mcp bars`.
 

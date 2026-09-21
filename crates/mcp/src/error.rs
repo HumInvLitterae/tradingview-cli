@@ -1,11 +1,43 @@
 use serde::{Deserialize, Serialize};
 use tradingview_core::{AppError, ErrorKind};
 
+/// State-security diagnostics contain no native messages, paths or identities.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum StateSecurityReason {
+    #[serde(rename = "state_token_query_failed")]
+    TokenQueryFailed,
+    #[serde(rename = "state_descriptor_create_failed")]
+    DescriptorCreateFailed,
+    #[serde(rename = "state_directory_create_failed")]
+    DirectoryCreateFailed,
+    #[serde(rename = "state_directory_open_failed")]
+    DirectoryOpenFailed,
+    #[serde(rename = "state_security_query_failed")]
+    SecurityQueryFailed,
+    #[serde(rename = "state_owner_rejected")]
+    OwnerRejected,
+    #[serde(rename = "state_acl_rejected")]
+    AclRejected,
+    #[serde(rename = "state_acl_invalid")]
+    AclInvalid,
+    #[serde(rename = "state_ace_unsupported")]
+    AceUnsupported,
+    #[serde(rename = "state_reparse_point")]
+    ReparsePoint,
+    #[serde(rename = "state_path_invalid")]
+    PathInvalid,
+}
+
 /// Only closed, public-safe codes leave local coordination.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum Failure {
     LocalState,
+    StateSecurity {
+        reason: StateSecurityReason,
+        win32_error: Option<u32>,
+    },
     Clock,
     Timeout,
     RateLimited,
@@ -74,6 +106,7 @@ impl std::fmt::Display for Failure {
             Self::ProviderError => "provider returned an error",
             Self::UnsupportedCapability => "required capability is unavailable",
             Self::AuthRefreshedRetryRequired => "authorization refreshed; repeat the explicit read",
+            Self::StateSecurity { .. } => "local coordination security check failed",
             Self::LocalState => "local coordination state unavailable",
             Self::Clock => "local clock is inconsistent with coordination state",
             Self::Timeout => "operation deadline exceeded",
@@ -93,6 +126,7 @@ impl From<Failure> for AppError {
             Failure::Timeout => ErrorKind::Timeout,
             Failure::Connection => ErrorKind::Connection,
             Failure::LocalState
+            | Failure::StateSecurity { .. }
             | Failure::Clock
             | Failure::StorageUnavailable
             | Failure::CredentialWorkerSpawn

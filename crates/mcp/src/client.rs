@@ -315,7 +315,9 @@ pub(crate) fn failure(error: Failure, stage: &str, attempts: u32, http: Option<&
         Failure::InvalidResponse | Failure::BindingMismatch | Failure::ResponseTooLarge => {
             "invalid_response"
         }
-        Failure::LocalState | Failure::Clock => "local_state_unavailable",
+        Failure::LocalState | Failure::Clock | Failure::StateSecurity { .. } => {
+            "local_state_unavailable"
+        }
         Failure::AuthRequired => "auth_required",
         Failure::AccessDenied => "access_denied",
         Failure::RateLimited => "rate_limited",
@@ -344,6 +346,16 @@ pub(crate) fn failure(error: Failure, stage: &str, attempts: u32, http: Option<&
         "tool_attempts": attempts,
         "automatic_retry": false
     });
+    if let Failure::StateSecurity {
+        reason,
+        win32_error,
+    } = error
+    {
+        details["reason"] = json!(reason);
+        if let Some(code) = win32_error {
+            details["win32_error"] = json!(code);
+        }
+    }
     if let Some(reason) = error.credential_reason() {
         details["reason"] = json!(reason);
     }
@@ -397,6 +409,33 @@ fn state_directory() -> Result<PathBuf, Failure> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn state_security_diagnostics_preserve_codes_without_private_context() {
+        use crate::error::StateSecurityReason;
+
+        for win32_error in [None, Some(5)] {
+            let cause = Failure::StateSecurity {
+                reason: StateSecurityReason::SecurityQueryFailed,
+                win32_error,
+            };
+            let encoded = serde_json::to_value(cause).unwrap();
+            assert_eq!(serde_json::from_value::<Failure>(encoded).unwrap(), cause);
+            let error = failure(cause, "local_admission", 0, None);
+            let details = error.details.unwrap();
+            assert_eq!(details["code"], "local_state_unavailable");
+            assert_eq!(details["reason"], "state_security_query_failed");
+            assert_eq!(details["stage"], "local_admission");
+            assert_eq!(details["tool_attempts"], 0);
+            assert_eq!(
+                details.get("win32_error"),
+                win32_error.map(|v| json!(v)).as_ref()
+            );
+            assert!(details.get("path").is_none());
+            assert!(details.get("sid").is_none());
+            assert!(details.get("stderr").is_none());
+        }
+    }
 
     #[test]
     fn credential_reasons_preserve_the_existing_public_error_contract() {

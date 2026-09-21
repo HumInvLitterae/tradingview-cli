@@ -30,6 +30,7 @@ reqwest = "0.13.5"
 rmcp = { version = "=3.4.0", default-features = false, features = ["client", "auth", "transport-streamable-http-client-reqwest", "reqwest"] }
 security-framework = { version = "=3.7.0", default-features = false }
 keyring-core = { version = "=1.0.0", default-features = false }
+windows-sys = { version = "0.61.2", default-features = false }
 windows-native-keyring-store = { version = "=1.1.0", default-features = false }
 secret-service = { version = "=5.2.0", default-features = false, features = ["rt-tokio-crypto-rust"] }
 serde = "1.0.229"

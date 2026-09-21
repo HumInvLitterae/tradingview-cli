@@ -2,10 +2,7 @@
 
 use crate::{Failure, Result, admission::now_ms};
 use serde::{Deserialize, Serialize};
-use std::{
-    fs,
-    path::{Path, PathBuf},
-};
+use std::path::{Path, PathBuf};
 
 #[derive(Clone, Copy)]
 pub(crate) enum RequestClass {
@@ -51,11 +48,7 @@ impl Budget {
                 ..Default::default()
             }
         } else {
-            let raw = fs::read(&path).map_err(|_| Failure::LocalState)?;
-            if raw.len() > 4096 {
-                return Err(Failure::LocalState);
-            }
-            serde_json::from_slice(&raw).map_err(|_| Failure::LocalState)?
+            crate::admission::read_private_json(&path, 4096)?
         };
         let value = Self { path, counts };
         if create {
@@ -117,7 +110,7 @@ mod tests {
         let root = tempfile::tempdir().unwrap();
         let dir = root.path().join("state");
         let _guard =
-            crate::admission::Admission::acquire(&dir, Instant::now() + Duration::from_secs(1))
+            crate::admission::Admission::acquire(&dir, Instant::now() + Duration::from_secs(10))
                 .await
                 .unwrap();
         let mut first = Budget::open(&dir, true).unwrap();

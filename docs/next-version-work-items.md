@@ -107,8 +107,10 @@ Windows qualification and downstream analysis adoption remain open.
 The offline acceptance follow-up is recorded in the existing MCP plan. It
 covers the difference between HTTP throttling and application-level errors,
 non-bar refresh guidance, SDK/CLI boundaries and a Windows model cross-check.
-The Windows workspace cross-check is environment-blocked by the missing Windows
-SDK; the existing Windows CI job has not been dispatched. Remaining acceptance
+The local Windows workspace cross-check is environment-blocked by the missing
+Windows SDK. The owner subsequently pushed: native CI compilation passed, but
+MCP state initialization failed. The native ACL correction and regression tests
+are implemented; the next Windows CI result is pending. Remaining acceptance
 is ordered: successful native economic/dividend reads, Windows build/fixture
 execution, then the owner-deferred real Windows OAuth/store/restart/refresh
 checks. Do not interpret the dividend error as proof that all MCP tools are

@@ -71,6 +71,70 @@ the priority decision does not authorize changes to existing account objects.
 No additional dependency, executor, publication or default-backend change is
 implied. Keep this as the single MCP work record.
 
+## Windows native state security correction (2026-09-21)
+
+The owner requested a design correction after the Windows CI run at `891185f`
+failed in local state initialization (five timeouts and twenty LocalState
+errors). Compilation and the native synthetic credential-store test passed;
+this was not a provider/429 or missing-SDK failure. The former PowerShell ACL
+adapter discarded exit distinctions/stderr and added process startup to every
+admission, while directory creation inherited permissions the checker could
+reject. Exact failing ACL principals were not logged and remain unconfirmed.
+
+The owner approved Windows-only direct `windows-sys 0.61.2` and additive
+`reason`/numeric `win32_error` diagnostics under `local_state_unavailable`.
+The current upstream release was checked and matches the existing lock graph;
+no package version was upgraded. Enabled features cover Foundation, Security,
+Authorization, FileSystem, Threading and SystemServices constants. The bindings
+avoid handwritten Win32 declarations. See [CreateDirectoryW](https://learn.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-createdirectoryw)
+and [GetSecurityInfo](https://learn.microsoft.com/en-us/windows/win32/api/aclapi/nf-aclapi-getsecurityinfo)
+for creation-time descriptors and handle-based queries.
+
+The replacement creates missing directories with protected inheritable ACLs for
+the current process user, SYSTEM and administrators, and sets the current user
+as owner. Existing directories/ACLs are not repaired silently. Owner and DACL
+checks use the actual open handle, reject null/invalid DACLs, untrusted grants,
+unsupported ACE types and reparse points. A handle without delete sharing keeps
+the checked leaf from being renamed/replaced during the operation. State files
+are opened without following reparse points and have their ACLs checked too;
+admission and budget JSON reads share the bounded file boundary. Native buffers
+and token/file handles have explicit ownership and release paths.
+
+PowerShell is removed from state initialization. This does not change the
+separate, explicit OAuth browser-launch operation. No ACL-check cache is added:
+existing state remains checked on each operation because external permission
+changes must not be hidden by a prior result. The native check avoids the
+former shell startup cost. Policy failures have closed reasons, API failures
+also preserve numeric Win32 codes, and paths/SIDs/raw OS text are excluded.
+The public code and operation deadlines stay unchanged.
+
+Test setup now has its own bounded preparation period; lock contention and
+pacing still test their original short deadlines, and transport deadlines start
+after local fixture setup. New Windows tests cover private creation under a
+broad parent, inherited file permissions, reopen, refusal to rewrite unsafe
+existing ACLs, broad file ACL rejection, directory replacement prevention and
+null/untrusted/deny ACL policies. Shared tests cover bounded state reads and
+public diagnostic serialization. One Unix credential-worker classification test
+also shared a five-second deadline across independent cases; a final run exposed
+that coupling, and each case now starts its own deadline after setup. The actual
+worker-timeout test and production deadlines are unchanged.
+
+Validation passed: the workspace baseline ran 1,029 tests with 27 ignored and
+zero failed. After the bounded state-read and test-setup refinements, 51 MCP
+library tests, two SDK integration tests and eight CLI contract tests passed.
+Workspace/focused strict Clippy, formatting, diff/public hygiene (693 files),
+26 changed-document local links and runtime resource checks passed (48 files,
+six skills per root). Package staging checks resources, not a new release binary.
+Windows execution must be confirmed by the next native CI run, not inferred
+from host checks. On Windows, `cargo test --locked -p tradingview-mcp --lib`
+runs the new native ACL tests; then run the normal workspace baseline.
+
+The isolated Windows-target check compiles the actual error, state-security,
+admission and budget modules plus their tests, without TLS C dependencies.
+It is a type/Clippy check, not a whole-workspace link or Windows runtime proof.
+No provider access, native credential operation, additional agent/session,
+workflow dispatch, push or release is part of this correction.
+
 ## Economic and calendar slice (2026-09-21)
 
 The owner requested the remaining priority-7 implementation. Four independent
