@@ -662,9 +662,9 @@ example installs no logging subscriber and emits sanitized observations only;
 never enable SDK wire/debug logging around real authorization. macOS and Windows
 credential calls run in a killable same-binary worker. The explicit
 `authorize-store` action permits an OS access check after an executable update;
-normal reads never prompt. Windows native qualification and Linux implementation
-remain open; no plaintext fallback exists. On Windows, the native store test
-uses a disposable synthetic entry and deletes it afterward.
+normal reads never prompt. Windows CI and owner-reported basic native acceptance
+have passed. Linux credential implementation remains open; no plaintext fallback
+exists. On Windows, the native store test uses a disposable synthetic entry and deletes it afterward.
 
 ## Public hygiene guard
 
