@@ -123,6 +123,24 @@ No new consent, scope, account mutation or credential-worker replacement was
 needed. Raw responses, machine paths and account-local identifiers stay outside
 tracked records.
 
+### Acceptance follow-up (2026-09-21)
+
+One explicit dividend recheck still returned `success:false` with a `429`
+indication in the provider error text. No further live reads were made. The
+scope of that limit and its reset time remain UNCONFIRMED; the documented
+approximately 100 tool calls/minute/user does not establish the cause of an
+application-level provider error or a retry time. Do not infer a daily reset or
+change the production deadline to make this checkpoint appear accepted.
+
+The development `economic-commands` sequence now stops at its first failed
+read, including a failed catalog-selected series. It returns the observations
+already gathered and `success:false`, without attempting the remaining reads.
+This avoids continuing a verification batch when a provider/transport failure
+may indicate throttling. Public command behavior, retry policy and contracts
+are unchanged. Focused strict Clippy, formatting and diff/public hygiene passed;
+the prior workspace/fixture evidence remains valid for unchanged production code.
+Native dividend success and normal-deadline acceptance remain open.
+
 ## News and document slice (2026-09-21)
 
 The owner requested the next ordered work. Priority 7 is delivered in usable
