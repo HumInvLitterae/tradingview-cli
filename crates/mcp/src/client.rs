@@ -26,6 +26,7 @@ pub enum Operation {
     Bars(Request),
     Data(tradingview_model::mcp_data::Request),
     Account(tradingview_model::mcp_account::Request),
+    AlertMutation(tradingview_model::mcp_account::AlertMutation),
     WatchlistMutation(tradingview_model::mcp_account::WatchlistMutation),
 }
 
@@ -66,6 +67,7 @@ impl Client {
                 | Operation::Data(_)
                 | Operation::Account(_)
                 | Operation::WatchlistMutation(_)
+                | Operation::AlertMutation(_)
         ) {
             admission
                 .check_cooldown()
@@ -188,6 +190,10 @@ pub(crate) async fn execute(
             stage = "watchlist_mutation";
             return crate::watchlist::change(request, &http, token, admission).await;
         }
+        if let Operation::AlertMutation(request) = &operation {
+            stage = "alert_mutation";
+            return crate::alert::change(request, &http, token, admission).await;
+        }
         let (tool, arguments) = match &operation {
             Operation::Bars(request) => (crate::tools::Tool::Bars, request.arguments()),
             Operation::Data(request) => (request.kind().into(), request.arguments()),
@@ -246,15 +252,25 @@ pub(crate) async fn execute(
             details["tool_attempts"] = json!(attempts);
             error
         };
-        if let Operation::WatchlistMutation(request) = &operation {
+        let mutation = match &operation {
+            Operation::WatchlistMutation(request) => Some((
+                request.action_name(),
+                "inspect the watchlist before considering another mutation",
+            )),
+            Operation::AlertMutation(request) => Some((
+                request.action_name(),
+                "inspect the alerts before considering another mutation",
+            )),
+            _ => None,
+        };
+        if let Some((action, next_action)) = mutation {
             let details = error.details.get_or_insert_with(|| json!({}));
             details["mutation"] = json!({
-                "operation": request.action_name(),
+                "operation": action,
                 "status": if attempts == 0 { "not_attempted" } else { "outcome_unknown" },
                 "automatic_retry": false
             });
-            details["next_action"] =
-                json!("inspect the watchlist before considering another mutation");
+            details["next_action"] = json!(next_action);
         }
         error
     })

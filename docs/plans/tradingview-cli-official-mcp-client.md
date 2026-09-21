@@ -44,8 +44,8 @@ The earlier exclusions below describe the first delivered slice, not a permanent
 ban on this agreed follow-up. Symbol discovery, single/batch symbol reads and
 screener queries and recent-count intraday OHLCV are implemented using the shared
 authenticated service. Watchlist and alert list/ID reads are also implemented;
-watchlist management also passed native lifecycle verification. Alert management
-with readback is next. Existing commands remain intact.
+watchlist management also passed native lifecycle verification. Alert management with per-ID readback is implemented; its disposable native
+verification remains pending. Existing commands remain intact.
 
 Source inspection supports the watchlist/alert substitution rationale:
 
@@ -69,6 +69,45 @@ Agree on actual OAuth scope and disposable test targets before live mutations;
 the priority decision does not authorize changes to existing account objects.
 No additional dependency, executor, publication or default-backend change is
 implied. Keep this as the single MCP work record.
+
+## Alert management slice (2026-09-21)
+
+The owner requested the next ordered feature after watchlist management.
+`tv mcp alert create/update/stop/restart/delete` implements simple price alerts
+and explicit settings/lifecycle management, independently of Desktop commands.
+[CLI and JSON examples](../official-mcp.md#explicit-alert-changes) define
+`mcp_alert_mutation.v1`, notification defaults, bounds and per-ID postconditions.
+Update always reactivates; delete removes history. Message/webhook/expiration
+editing, monitoring and Pine reconstruction are outside this first slice.
+
+The model validates requests and interprets receipts/readback; the authenticated
+service issues one mutation and one read, with shared readback transport used by
+watchlists and alerts. Failed writes do not refresh-and-replay. Missing creation
+IDs are not guessed; partial batch outcomes and unknown fields are retained.
+Native schema inspection accepted all five tool schemas with zero mutation
+dispatches, using the existing authorized credential worker and account.
+
+The opt-in `alert-lifecycle` harness is prepared for one new
+`tv-cli-mcp-alert-verification-<timestamp>` alert on NASDAQ:AAPL, greater than
+1,000,000,000, resolution 1D. Email, push, popup and monitoring are explicitly off.
+It creates, stops, renames (reactivating), stops, restarts, deletes, and reads
+back each step. It never changes existing alerts. The high threshold does not
+substitute for disabling notification delivery. A private outside-repository
+record preserves the returned ID and phase for recovery; uncertain writes stop
+without replay or identity guessing. Necessary fixes/retests and cleanup stay
+limited to this disposable target. **Owner approval for these new alert-account
+effects is pending; no native alert mutation has run.** Additional OAuth scope
+is not assumed necessary from the public catalog alone.
+
+Fixture checks cover notification defaults, omission/false, invalid requests,
+JSON/SSE, batch missing/contradictory outcomes, lost IDs, readback failure and
+401/429/5xx/timeout/schema-drift responses without write replay. Baseline validation passed: 1,007 workspace tests, 27 ignored, no failures;
+the additional closed-tool argument test also passed. Strict workspace Clippy,
+formatting, public/diff hygiene and runtime-resource staging passed (48 files,
+six skills per root). The earlier failure was a shared synthetic SSE fixture
+whose active flag conflicted with an existing read filter; separate alert
+lifecycle fixture data resolved it. Native lifecycle verification remains open.
+Windows native qualification remains separately deferred by the owner.
 
 ## Watchlist management slice (2026-09-21)
 
@@ -130,7 +169,7 @@ The private recovery record is outside the repository; no live IDs, names or
 raw account payloads were committed. This is public-service evidence, not a
 new CLI executable's native-consent qualification. Description clearing remains
 fixture-only evidence. Windows native qualification remains deferred and
-mandatory before release. Alert management is next.
+mandatory before release. Alert management is implemented; disposable native verification is pending.
 
 ## Watchlist and alert read slice (2026-09-21)
 

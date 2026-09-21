@@ -1,12 +1,12 @@
-//! One explicit watchlist mutation followed by one non-mutating readback.
+//! One explicit alert mutation followed by one non-mutating readback.
 
 use crate::{Failure, admission::Admission, http::Http, transport};
 use serde_json::{Value, json};
 use tradingview_core::AppError;
-use tradingview_model::mcp_account::WatchlistMutation;
+use tradingview_model::mcp_account::AlertMutation;
 
 pub(crate) async fn change(
-    request: &WatchlistMutation,
+    request: &AlertMutation,
     http: &Http,
     token: String,
     admission: &mut Admission,
@@ -20,23 +20,23 @@ pub(crate) async fn change(
     )
     .await?;
     let value = transport::result_value(responses.pop().ok_or(Failure::InvalidResponse)??)?;
-    let target = request.target_after_reply(&value)?;
-    let Some(id) = target else {
+    let ids = request.targets_after_reply(&value)?;
+    if ids.is_empty() {
         return Ok(request.report(
-            None,
+            &ids,
             json!({
                 "status": "not_performed",
                 "reason": "target_id_unreported",
                 "tool_attempts": 0
             }),
         ));
-    };
+    }
 
-    let read = request.readback(&id)?;
+    let read = request.readback(&ids)?;
     let readback =
-        match crate::account::readback(&read, http, token, admission, "watchlist_readback").await {
-            Ok((data, attempts)) => request.verified_readback(&id, data, attempts),
+        match crate::account::readback(&read, http, token, admission, "alert_readback").await {
+            Ok((data, attempts)) => request.verified_readback(&ids, data, attempts),
             Err(readback) => readback,
         };
-    Ok(request.report(Some(&id), readback))
+    Ok(request.report(&ids, readback))
 }

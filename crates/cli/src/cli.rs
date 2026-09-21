@@ -1181,7 +1181,7 @@ pub enum McpCommand {
         #[command(subcommand)]
         command: McpWatchlistCommand,
     },
-    #[command(about = "Read official MCP account alerts")]
+    #[command(about = "Read or explicitly change official MCP account alerts")]
     Alert {
         #[command(subcommand)]
         command: McpAlertCommand,
@@ -1362,6 +1362,47 @@ pub enum McpWatchlistCommand {
 
 #[derive(Debug, Subcommand)]
 pub enum McpAlertCommand {
+    #[command(
+        about = "Create a simple price alert; notifications default off; provider default expiration"
+    )]
+    Create {
+        symbol: String,
+        #[arg(long, allow_hyphen_values = true)]
+        price: f64,
+        #[arg(long)]
+        name: String,
+        #[arg(long, default_value = "cross")]
+        condition: String,
+        #[arg(long, default_value = "1")]
+        resolution: String,
+        #[command(flatten)]
+        settings: McpAlertSettings,
+    },
+    #[command(about = "Update settings and reactivate the alert; omitted fields stay unchanged")]
+    Update {
+        id: u64,
+        #[arg(long)]
+        name: Option<String>,
+        #[command(flatten)]
+        settings: McpAlertSettings,
+    },
+    #[command(about = "Stop 1 to 100 alerts, preserving settings and fire history")]
+    Stop {
+        #[arg(required = true, num_args = 1..)]
+        ids: Vec<u64>,
+    },
+    #[command(
+        about = "Reactivate 1 to 100 alerts with their existing conditions and notifications"
+    )]
+    Restart {
+        #[arg(required = true, num_args = 1..)]
+        ids: Vec<u64>,
+    },
+    #[command(about = "Delete 1 to 100 alerts and their fire history; no automatic retry")]
+    Delete {
+        #[arg(required = true, num_args = 1..)]
+        ids: Vec<u64>,
+    },
     #[command(about = "List alerts, optionally filtered by symbol and active state")]
     List {
         #[arg(long)]
@@ -1374,4 +1415,16 @@ pub enum McpAlertCommand {
         #[arg(required = true, num_args = 1..)]
         ids: Vec<u64>,
     },
+}
+
+#[derive(Debug, clap::Args)]
+pub struct McpAlertSettings {
+    #[arg(long, action = clap::ArgAction::Set)]
+    pub auto_deactivate: Option<bool>,
+    #[arg(long, action = clap::ArgAction::Set)]
+    pub email: Option<bool>,
+    #[arg(long, action = clap::ArgAction::Set)]
+    pub mobile_push: Option<bool>,
+    #[arg(long, action = clap::ArgAction::Set)]
+    pub popup: Option<bool>,
 }

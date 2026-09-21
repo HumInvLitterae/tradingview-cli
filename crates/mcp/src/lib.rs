@@ -1,6 +1,8 @@
 //! Internal authenticated TradingView MCP client. No stable external Rust API.
 
+mod account;
 mod admission;
+mod alert;
 mod auth;
 mod browser;
 mod budget;

@@ -41,6 +41,12 @@ independent command and contract; no implicit source migration occurs.
 and readback evidence. They never fall back to Desktop/internal APIs or replay
 uncertain writes. See the [management contract](official-mcp.md#explicit-watchlist-changes).
 
+`tv mcp alert create/update/stop/restart/delete` also uses
+`desktop_free_mutation`. Creation defaults notifications off; updates and
+restarts activate alerts, and deletion removes fire history. Per-ID readback
+remains distinct from receipt of a mutation response; list absence is unconfirmed
+completeness. See [alert management](official-mcp.md#explicit-alert-changes).
+
 ### Desktop-free read
 
 `requires_desktop`: no. `may_mutate`: no. `fallback_allowed`: no Desktop

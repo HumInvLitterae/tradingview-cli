@@ -36,12 +36,40 @@ pub async fn run_mcp(command: McpCommand) -> Result<Value, AppError> {
                 Operation::WatchlistMutation(mcp_account::WatchlistMutation::delete(&id)?)
             }
         },
-        McpCommand::Alert { command } => Operation::Account(match command {
+        McpCommand::Alert { command } => match command {
             McpAlertCommand::List { symbol, active } => {
-                mcp_account::Request::alerts(symbol.as_deref(), active)?
+                Operation::Account(mcp_account::Request::alerts(symbol.as_deref(), active)?)
             }
-            McpAlertCommand::Get { ids } => mcp_account::Request::alert_details(&ids)?,
-        }),
+            McpAlertCommand::Get { ids } => {
+                Operation::Account(mcp_account::Request::alert_details(&ids)?)
+            }
+            McpAlertCommand::Create {
+                symbol,
+                price,
+                name,
+                condition,
+                resolution,
+                settings,
+            } => Operation::AlertMutation(mcp_account::AlertMutation::create(
+                &symbol,
+                price,
+                &condition,
+                &resolution,
+                alert_settings(Some(name), settings),
+            )?),
+            McpAlertCommand::Update { id, name, settings } => Operation::AlertMutation(
+                mcp_account::AlertMutation::update(id, alert_settings(name, settings))?,
+            ),
+            McpAlertCommand::Stop { ids } => Operation::AlertMutation(
+                mcp_account::AlertMutation::state(mcp_account::AlertAction::Stop, &ids)?,
+            ),
+            McpAlertCommand::Restart { ids } => Operation::AlertMutation(
+                mcp_account::AlertMutation::state(mcp_account::AlertAction::Restart, &ids)?,
+            ),
+            McpAlertCommand::Delete { ids } => Operation::AlertMutation(
+                mcp_account::AlertMutation::state(mcp_account::AlertAction::Delete, &ids)?,
+            ),
+        },
         McpCommand::Login => Operation::Login,
         McpCommand::Status => Operation::Status,
         McpCommand::Logout => Operation::Logout,
@@ -99,4 +127,17 @@ pub async fn run_mcp(command: McpCommand) -> Result<Value, AppError> {
         }
     };
     Client::current_user()?.run(operation).await
+}
+
+fn alert_settings(
+    name: Option<String>,
+    settings: crate::cli::McpAlertSettings,
+) -> mcp_account::AlertSettings {
+    mcp_account::AlertSettings {
+        name,
+        auto_deactivate: settings.auto_deactivate,
+        email: settings.email,
+        mobile_push: settings.mobile_push,
+        popup: settings.popup,
+    }
 }
