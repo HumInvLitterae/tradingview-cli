@@ -1,5 +1,8 @@
 //! I/O-free requests and response shaping for official MCP account reads.
 
+mod watchlist_mutation;
+pub use watchlist_mutation::{Action as WatchlistAction, WatchlistMutation};
+
 use serde_json::{Value, json};
 use tradingview_core::{AppError, ErrorKind};
 

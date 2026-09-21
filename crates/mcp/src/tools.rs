@@ -16,11 +16,24 @@ pub(crate) enum Tool {
     Watchlist,
     Alerts,
     AlertDetails,
+    CreateWatchlist,
+    UpdateWatchlist,
+    AddWatchlist,
+    RemoveWatchlist,
+    DeleteWatchlist,
 }
 
 impl Tool {
     pub fn names(self) -> &'static [&'static str] {
         match self {
+            Self::CreateWatchlist => &["mcp-watchlist-create-watchlist", "create_watchlist"],
+            Self::UpdateWatchlist => &["mcp-watchlist-update-watchlist", "update_watchlist"],
+            Self::AddWatchlist => &["mcp-watchlist-add-to-watchlist", "add_to_watchlist"],
+            Self::RemoveWatchlist => &[
+                "mcp-watchlist-remove-from-watchlist",
+                "remove_from_watchlist",
+            ],
+            Self::DeleteWatchlist => &["mcp-watchlist-delete-watchlist", "delete_watchlist"],
             Self::Watchlists => &["mcp-watchlist-list-watchlists", "list_watchlists"],
             Self::Watchlist => &["mcp-watchlist-get-watchlist", "get_watchlist"],
             Self::Alerts => &["mcp-tv-list-alerts", "list_alerts"],
@@ -36,6 +49,16 @@ impl Tool {
 
     pub fn fields(self) -> &'static [(&'static str, &'static str)] {
         match self {
+            Self::CreateWatchlist => &[("name", "string"), ("symbols", "array")],
+            Self::UpdateWatchlist => &[
+                ("watchlist_id", "string"),
+                ("name", "string"),
+                ("description", "string"),
+            ],
+            Self::AddWatchlist | Self::RemoveWatchlist => {
+                &[("watchlist_id", "string"), ("symbols", "array")]
+            }
+            Self::DeleteWatchlist => &[("watchlist_id", "string")],
             Self::Watchlists => &[],
             Self::Watchlist => &[("watchlist_id", "string")],
             Self::Alerts => &[("symbol", "string"), ("active", "boolean")],
@@ -80,6 +103,11 @@ impl Tool {
             Self::Watchlist,
             Self::Alerts,
             Self::AlertDetails,
+            Self::CreateWatchlist,
+            Self::UpdateWatchlist,
+            Self::AddWatchlist,
+            Self::RemoveWatchlist,
+            Self::DeleteWatchlist,
         ]
         .into_iter()
         .find(|tool| tool.names().contains(&name))
@@ -105,6 +133,35 @@ impl Tool {
             _ => Err(Failure::UnsupportedCapability),
         };
         let validated = match self {
+            Self::CreateWatchlist | Self::AddWatchlist | Self::RemoveWatchlist => {
+                let symbols: Vec<String> = serde_json::from_value(
+                    args.get("symbols")
+                        .cloned()
+                        .ok_or(Failure::UnsupportedCapability)?,
+                )
+                .map_err(|_| Failure::UnsupportedCapability)?;
+                if self == Self::CreateWatchlist {
+                    mcp_account::WatchlistMutation::create(string("name")?, &symbols)
+                        .map(|v| v.arguments())
+                } else {
+                    mcp_account::WatchlistMutation::symbols(
+                        string("watchlist_id")?,
+                        &symbols,
+                        self == Self::RemoveWatchlist,
+                    )
+                    .map(|v| v.arguments())
+                }
+            }
+            Self::UpdateWatchlist => mcp_account::WatchlistMutation::update(
+                string("watchlist_id")?,
+                optional("name")?,
+                optional("description")?,
+            )
+            .map(|v| v.arguments()),
+            Self::DeleteWatchlist => {
+                mcp_account::WatchlistMutation::delete(string("watchlist_id")?)
+                    .map(|v| v.arguments())
+            }
             Self::Watchlists => Ok(mcp_account::Request::watchlists().arguments()),
             Self::Watchlist => {
                 mcp_account::Request::watchlist(string("watchlist_id")?).map(|v| v.arguments())
@@ -206,6 +263,19 @@ impl From<mcp_account::Kind> for Tool {
     }
 }
 
+impl From<mcp_account::WatchlistAction> for Tool {
+    fn from(action: mcp_account::WatchlistAction) -> Self {
+        use mcp_account::WatchlistAction;
+        match action {
+            WatchlistAction::Create => Self::CreateWatchlist,
+            WatchlistAction::Update => Self::UpdateWatchlist,
+            WatchlistAction::Add => Self::AddWatchlist,
+            WatchlistAction::Remove => Self::RemoveWatchlist,
+            WatchlistAction::Delete => Self::DeleteWatchlist,
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -216,7 +286,7 @@ mod tests {
         for name in [
             "create_alert",
             "mcp-watchlist-get-active-watchlist",
-            "mcp-watchlist-create-watchlist",
+            "mcp-tv-stop-alerts",
             "mcp-tv-delete-alert",
             "other-search_symbols",
         ] {

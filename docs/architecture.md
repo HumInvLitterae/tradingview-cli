@@ -5,9 +5,9 @@ This document records the stable architecture boundary for the Rust-native
 
 ## Product boundary
 
-`tv` is a CLI-first Rust binary for operating the user's own local TradingView
-Desktop session. It is not an MCP server, and this repository does not plan to
-implement one.
+`tv` is a CLI-first Rust binary for TradingView Desktop automation,
+Desktop-free data reads, and explicit official-MCP account operations.
+It is not an MCP server, and this repository does not plan to implement one.
 
 Downstream tools should invoke `tv` as a normal process and consume structured
 JSON output. The old JavaScript CLI command surface has been migrated for the
@@ -120,7 +120,8 @@ installed binary remains `tv`.
   bounded HTTP/SSE transport, shared by the independent `tv mcp` command group
   and its opt-in proof harness. CLI adapters live in `ops/mcp.rs`; I/O-free
   request validation and response shaping live in `model::mcp_bars` and
-  `model::mcp_data`; account reads live separately in `model::mcp_account`. The MCP service owns a closed tool allowlist; shared
+  `model::mcp_data`; account reads live separately in `model::mcp_account`, including explicit watchlist mutation postconditions.
+  `mcp::watchlist` coordinates mutation and readback. The MCP service owns a closed tool allowlist; shared
   transport does not expose arbitrary tool forwarding.
   Native worker adapters exist for macOS and Windows; Windows native acceptance
   and Linux implementation remain open. It does not broaden the

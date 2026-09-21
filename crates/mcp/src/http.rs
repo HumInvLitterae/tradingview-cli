@@ -165,6 +165,15 @@ impl Http {
             .unwrap_or(Failure::InvalidResponse)
     }
 
+    pub(crate) fn tool_attempts(&self) -> Result<u32> {
+        Ok(self
+            .budget
+            .lock()
+            .map_err(|_| Failure::LocalState)?
+            .counts()
+            .tools)
+    }
+
     pub fn cooldown(&self) -> Option<u64> {
         self.cooldown.lock().ok().and_then(|v| *v)
     }

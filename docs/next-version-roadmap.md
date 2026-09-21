@@ -90,8 +90,9 @@ and acceptance. Multi-symbol data is implemented as `tv mcp symbols`, with
 per-symbol returned/missing/unreported outcomes. `tv mcp screener` now provides
 one bounded official screen with honest total/returned counts. Recent-count
 intraday OHLCV now supports six official intervals with native read verification.
-Watchlist/alert list and ID-specific reads are implemented; explicit management
-and its readback are next. Reuse connection and credential handling; keep tool-specific
+Watchlist/alert list and ID-specific reads are implemented. Watchlist management
+passed fixture and native disposable-list verification. Alert management is next.
+Reuse connection and credential handling; keep tool-specific
 schema checks and interpretation explicit. No arbitrary tool passthrough.
 
 Watchlist/alert work includes both reads and explicit management operations;

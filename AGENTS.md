@@ -1,7 +1,8 @@
 # Agent Operating Guide
 
 Build and maintain `tv`, one Rust-native CLI for TradingView Desktop automation
-and Desktop-free data reads. This is contributor guidance; release users get
+and explicit Desktop-free data and account operations. This is contributor
+guidance; release users get
 [packaging/agent/AGENTS.md](packaging/agent/AGENTS.md).
 
 ## Project boundaries

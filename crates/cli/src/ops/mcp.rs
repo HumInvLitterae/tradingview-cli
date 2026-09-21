@@ -9,10 +9,33 @@ pub async fn run_mcp(command: McpCommand) -> Result<Value, AppError> {
     use tradingview_model::mcp_data;
 
     let operation = match command {
-        McpCommand::Watchlist { command } => Operation::Account(match command {
-            McpWatchlistCommand::List => mcp_account::Request::watchlists(),
-            McpWatchlistCommand::Get { id } => mcp_account::Request::watchlist(&id)?,
-        }),
+        McpCommand::Watchlist { command } => match command {
+            McpWatchlistCommand::List => Operation::Account(mcp_account::Request::watchlists()),
+            McpWatchlistCommand::Get { id } => {
+                Operation::Account(mcp_account::Request::watchlist(&id)?)
+            }
+            McpWatchlistCommand::Create { name, symbols } => Operation::WatchlistMutation(
+                mcp_account::WatchlistMutation::create(&name, &symbols)?,
+            ),
+            McpWatchlistCommand::Update {
+                id,
+                name,
+                description,
+            } => Operation::WatchlistMutation(mcp_account::WatchlistMutation::update(
+                &id,
+                name.as_deref(),
+                description.as_deref(),
+            )?),
+            McpWatchlistCommand::Add { id, symbols } => Operation::WatchlistMutation(
+                mcp_account::WatchlistMutation::symbols(&id, &symbols, false)?,
+            ),
+            McpWatchlistCommand::Remove { id, symbols } => Operation::WatchlistMutation(
+                mcp_account::WatchlistMutation::symbols(&id, &symbols, true)?,
+            ),
+            McpWatchlistCommand::Delete { id } => {
+                Operation::WatchlistMutation(mcp_account::WatchlistMutation::delete(&id)?)
+            }
+        },
         McpCommand::Alert { command } => Operation::Account(match command {
             McpAlertCommand::List { symbol, active } => {
                 mcp_account::Request::alerts(symbol.as_deref(), active)?

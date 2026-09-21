@@ -14,6 +14,16 @@ use std::{sync::Arc, time::Duration};
 use tokio::time::timeout_at;
 use tradingview_model::mcp_bars::Request;
 
+fn transport_config(http: &Http, token: String) -> StreamableHttpClientTransportConfig {
+    let mut config = StreamableHttpClientTransportConfig::with_uri(http.endpoints.resource.clone())
+        .auth_header(token)
+        .max_concurrent_requests(1)
+        .max_sse_event_size(sse::MAX_RESPONSE_BYTES)
+        .reinit_on_expired_session(false);
+    config.retry_config = Arc::new(NeverRetry::default());
+    config
+}
+
 pub(crate) async fn read(
     http: &Http,
     token: String,
@@ -34,12 +44,7 @@ pub(crate) async fn call(
     for args in arguments {
         tool.validate_arguments(args)?;
     }
-    let mut config = StreamableHttpClientTransportConfig::with_uri(http.endpoints.resource.clone())
-        .auth_header(token)
-        .max_concurrent_requests(1)
-        .max_sse_event_size(sse::MAX_RESPONSE_BYTES)
-        .reinit_on_expired_session(false);
-    config.retry_config = Arc::new(NeverRetry::default());
+    let config = transport_config(http, token);
     let transport = StreamableHttpClientTransport::with_client(http.clone(), config);
     let service = timeout_at(http.deadline, ().serve(transport))
         .await
@@ -117,6 +122,76 @@ pub(crate) async fn call(
     })
     .await
     .unwrap_or(Err(Failure::Timeout));
+    let cleanup = timeout_at(http.deadline, service.cancel()).await;
+    if result.is_ok() && !matches!(cleanup, Ok(Ok(_))) {
+        return Err(Failure::Timeout);
+    }
+    result
+}
+
+/// Inspect only the closed watchlist-management schemas; never call a tool.
+pub(crate) async fn inspect_watchlist_tools(http: &Http, token: String) -> Result<Value> {
+    let expected = [
+        Tool::CreateWatchlist,
+        Tool::UpdateWatchlist,
+        Tool::AddWatchlist,
+        Tool::RemoveWatchlist,
+        Tool::DeleteWatchlist,
+    ];
+    let config = transport_config(http, token);
+    let service = timeout_at(
+        http.deadline,
+        ().serve(StreamableHttpClientTransport::with_client(
+            http.clone(),
+            config,
+        )),
+    )
+    .await
+    .map_err(|_| Failure::Timeout)?
+    .map_err(|_| http.failure())?;
+    let result = timeout_at(http.deadline, async {
+        let mut cursor = None;
+        let mut found = std::collections::HashSet::new();
+        let mut reports = Vec::new();
+        for _ in 0..10 {
+            let page = service.list_tools(cursor.map(|cursor| {
+                let mut params = PaginatedRequestParams::default();
+                params.cursor = Some(cursor);
+                params
+            })).await.map_err(|error| sdk_failure(error, http))?;
+            for candidate in page.tools {
+                if let Some(tool) = expected.iter().find(|tool| tool.names().contains(&candidate.name.as_ref())) {
+                    if !found.insert(tool.names()[0]) { return Err(Failure::SchemaChanged); }
+                    let arguments = match tool {
+                        Tool::CreateWatchlist => serde_json::json!({"name": "Example", "symbols": []}),
+                        Tool::UpdateWatchlist => serde_json::json!({
+                            "watchlist_id": "12", "name": "Example", "description": ""
+                        }),
+                        Tool::AddWatchlist | Tool::RemoveWatchlist => serde_json::json!({
+                            "watchlist_id": "12", "symbols": ["NASDAQ:EXAMPLE"]
+                        }),
+                        Tool::DeleteWatchlist => serde_json::json!({"watchlist_id": "12"}),
+                        _ => return Err(Failure::UnsupportedCapability),
+                    };
+                    tool.validate_arguments(&arguments)?;
+                    validate_schema(&candidate.input_schema, *tool, &[arguments])?;
+                    let value = serde_json::to_value(candidate).map_err(|_| Failure::InvalidResponse)?;
+                    reports.push(serde_json::json!({
+                        "tool": tool.names()[0],
+                        "schema_accepted": true,
+                        "read_only_hint": value.pointer("/annotations/readOnlyHint").and_then(Value::as_bool),
+                        "destructive_hint": value.pointer("/annotations/destructiveHint").and_then(Value::as_bool),
+                        "security_schemes_present": value.get("securitySchemes").is_some()
+                            || value.pointer("/_meta/securitySchemes").is_some()
+                    }));
+                }
+            }
+            cursor = page.next_cursor;
+            if cursor.is_none() { break; }
+        }
+        if found.len() != expected.len() { return Err(Failure::UnsupportedCapability); }
+        Ok(serde_json::json!({"tools": reports, "mutation_dispatches": 0}))
+    }).await.unwrap_or(Err(Failure::Timeout));
     let cleanup = timeout_at(http.deadline, service.cancel()).await;
     if result.is_ok() && !matches!(cleanup, Ok(Ok(_))) {
         return Err(Failure::Timeout);

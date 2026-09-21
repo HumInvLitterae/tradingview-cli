@@ -284,6 +284,11 @@ fn respond(ep: &Endpoints, r: &Request, mode: &str) -> Response {
                 crate::tools::Tool::Watchlist,
                 crate::tools::Tool::Alerts,
                 crate::tools::Tool::AlertDetails,
+                crate::tools::Tool::CreateWatchlist,
+                crate::tools::Tool::UpdateWatchlist,
+                crate::tools::Tool::AddWatchlist,
+                crate::tools::Tool::RemoveWatchlist,
+                crate::tools::Tool::DeleteWatchlist,
             ] {
                 let properties: serde_json::Map<_, _> = tool
                     .fields()
@@ -370,12 +375,34 @@ fn respond(ep: &Endpoints, r: &Request, mode: &str) -> Response {
             });
             let args = &request["params"]["arguments"];
             match request["params"]["name"].as_str() {
+                Some(
+                    "mcp-watchlist-create-watchlist"
+                    | "mcp-watchlist-update-watchlist"
+                    | "mcp-watchlist-add-to-watchlist"
+                    | "mcp-watchlist-remove-from-watchlist"
+                    | "mcp-watchlist-delete-watchlist",
+                ) => {
+                    result["structuredContent"] = if mode == "mutation-no-id" {
+                        json!({"success": true})
+                    } else {
+                        json!({"success": true, "watchlist": {"id": 12}})
+                    };
+                }
                 Some("mcp-watchlist-list-watchlists") => {
-                    result["structuredContent"] = json!({
-                        "watchlists": [{"id": 12, "name": "Example", "symbols": ["NASDAQ:EXAMPLE"]}]
-                    });
+                    result["structuredContent"] = if mode == "watchlist-deleted" {
+                        json!({"watchlists": []})
+                    } else {
+                        json!({
+                            "watchlists": [{"id": 12, "name": "Example", "symbols": ["NASDAQ:EXAMPLE"]}]
+                        })
+                    };
                 }
                 Some("mcp-watchlist-get-watchlist") => {
+                    if mode == "readback-429" {
+                        let mut reply = Response::status(429);
+                        reply.extra = "Retry-After: 123\r\n".into();
+                        return reply;
+                    }
                     result["structuredContent"] = json!({
                         "watchlist": {"id": 12, "name": "Example", "symbols": ["NASDAQ:EXAMPLE"]}
                     });
@@ -1161,4 +1188,164 @@ async fn account_read_service_preserves_contracts_and_never_replays_failures() {
             }
         }
     }
+}
+
+#[tokio::test]
+async fn watchlist_changes_dispatch_once_and_separate_readback_from_mutation() {
+    use crate::client::{Operation, execute};
+    use tradingview_model::mcp_account::WatchlistMutation;
+
+    for (request, mode, expected) in [
+        (
+            WatchlistMutation::create("Example", &["NASDAQ:EXAMPLE".into()]).unwrap(),
+            "json",
+            "matched",
+        ),
+        (
+            WatchlistMutation::update("12", Some("Example"), None).unwrap(),
+            "sse",
+            "matched",
+        ),
+        (
+            WatchlistMutation::symbols("12", &["NASDAQ:EXAMPLE".into()], false).unwrap(),
+            "json",
+            "matched",
+        ),
+        (
+            WatchlistMutation::symbols("12", &["NYSE:OTHER".into()], true).unwrap(),
+            "json",
+            "matched",
+        ),
+        (
+            WatchlistMutation::delete("12").unwrap(),
+            "watchlist-deleted",
+            "not_reported",
+        ),
+        (
+            WatchlistMutation::delete("12").unwrap(),
+            "json",
+            "still_present",
+        ),
+        (
+            WatchlistMutation::create("Example", &[]).unwrap(),
+            "mutation-no-id",
+            "not_performed",
+        ),
+        (
+            WatchlistMutation::update("12", Some("After"), None).unwrap(),
+            "json",
+            "mismatch",
+        ),
+        (
+            WatchlistMutation::update("12", Some("Example"), None).unwrap(),
+            "readback-429",
+            "failed",
+        ),
+    ] {
+        let server = Server::start(mode).await;
+        let (_root, mut guard, budget, http, store) = context(&server, 8).await;
+        fixture_login(&http, &store, &budget).await;
+        let result = execute(
+            Operation::WatchlistMutation(request),
+            &mut guard,
+            store,
+            http,
+            budget,
+            true,
+        )
+        .await
+        .unwrap();
+        assert_eq!(result["contract_version"], "mcp_watchlist_mutation.v1");
+        assert_eq!(result["mutation"]["tool_attempts"], 1);
+        assert_eq!(result["mutation"]["status"], "response_received");
+        assert_eq!(result["readback"]["status"], expected);
+        assert_eq!(
+            server.calls("tools/call"),
+            if expected == "not_performed" { 1 } else { 2 }
+        );
+        if expected == "failed" {
+            assert_eq!(result["readback"]["error"]["code"], "rate_limited");
+        }
+    }
+}
+
+#[tokio::test]
+async fn failed_watchlist_changes_do_not_refresh_or_replay() {
+    use crate::client::{Operation, execute};
+    use tradingview_model::mcp_account::WatchlistMutation;
+
+    for mode in [
+        "401",
+        "429",
+        "500",
+        "malformed",
+        "tool-error",
+        "schema-change",
+        "stall",
+    ] {
+        let server = Server::start(mode).await;
+        let (_root, mut guard, budget, http, store) = context(&server, 8).await;
+        fixture_login(&http, &store, &budget).await;
+        let counts = budget.clone();
+        let request = WatchlistMutation::create("Example", &[]).unwrap();
+        let task = tokio::spawn(async move {
+            execute(
+                Operation::WatchlistMutation(request),
+                &mut guard,
+                store,
+                http,
+                budget,
+                true,
+            )
+            .await
+        });
+        if mode == "stall" {
+            tokio::time::timeout(Duration::from_secs(3), async {
+                while server.calls("tools/call") == 0 {
+                    sleep(Duration::from_millis(1)).await;
+                }
+            })
+            .await
+            .unwrap();
+            tokio::time::pause();
+            tokio::time::advance(Duration::from_secs(31)).await;
+        }
+        let result = task.await.unwrap();
+        if mode == "stall" {
+            tokio::time::resume();
+        }
+        let details = result.unwrap_err().details.unwrap();
+        assert_eq!(
+            details["mutation"]["status"],
+            if mode == "schema-change" {
+                "not_attempted"
+            } else {
+                "outcome_unknown"
+            }
+        );
+        assert_eq!(
+            server.calls("tools/call"),
+            if mode == "schema-change" { 0 } else { 1 }
+        );
+        assert_eq!(counts.lock().unwrap().counts().refresh, 0);
+        assert_eq!(details["mutation"]["automatic_retry"], false);
+    }
+}
+
+async fn fixture_login(http: &Http, store: &Store, budget: &Arc<Mutex<Budget>>) {
+    let mut auth = Auth::discover(http.clone(), store.clone(), budget.clone())
+        .await
+        .unwrap();
+    let url = auth
+        .register("http://127.0.0.1:12345/callback")
+        .await
+        .unwrap();
+    let state = reqwest::Url::parse(&url)
+        .unwrap()
+        .query_pairs()
+        .find(|(key, _)| key == "state")
+        .unwrap()
+        .1
+        .into_owned();
+    auth.exchange("synthetic-code", &state, None).await.unwrap();
 }

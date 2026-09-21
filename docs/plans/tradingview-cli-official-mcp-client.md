@@ -44,7 +44,8 @@ The earlier exclusions below describe the first delivered slice, not a permanent
 ban on this agreed follow-up. Symbol discovery, single/batch symbol reads and
 screener queries and recent-count intraday OHLCV are implemented using the shared
 authenticated service. Watchlist and alert list/ID reads are also implemented;
-explicit management with readback is next. Existing commands remain intact.
+watchlist management also passed native lifecycle verification. Alert management
+with readback is next. Existing commands remain intact.
 
 Source inspection supports the watchlist/alert substitution rationale:
 
@@ -68,6 +69,68 @@ Agree on actual OAuth scope and disposable test targets before live mutations;
 the priority decision does not authorize changes to existing account objects.
 No additional dependency, executor, publication or default-backend change is
 implied. Keep this as the single MCP work record.
+
+## Watchlist management slice (2026-09-21)
+
+Implement watchlist changes first, as ordered above, before alert management.
+The explicit commands are `tv mcp watchlist create/update/add/remove/delete`.
+Their before/after examples, bounds and `mcp_watchlist_mutation.v1` contract
+are in the [management guide](../official-mcp.md#explicit-watchlist-changes).
+Existing account reads and Desktop commands retain their behavior.
+
+The model owns request validation and postcondition interpretation. The service
+dispatches one mutation and performs one readback under the existing deadline.
+A received response and an observed postcondition are separate. Readback failure
+does not erase the mutation response; dispatch failure has an unknown outcome
+once attempted. There is no mutation replay, post-rejection token refresh, ID
+guessing or name-based targeting. Delete checks list membership and reports
+`not_reported`, without upgrading unknown list completeness into deletion proof.
+No new dependencies or credential format/scope changes were introduced.
+
+Public metadata currently advertises `mcp:read` and `mcp:tools`. Authenticated
+catalog inspection accepted the five actual mutation tool schemas, with zero
+mutation dispatches. No per-tool security-scheme declarations were present.
+The existing `mcp:read` grant accepted the disposable-list lifecycle below.
+The scope name is not a token-level read-only guarantee. No additional consent
+or grant changes were needed; the existing grant guard remains intact.
+
+The prepared opt-in `watchlist-lifecycle` proof uses one newly created list
+named `tv-cli-mcp-verification-<timestamp>`. It creates with NASDAQ:AAPL,
+renames that same list, adds NASDAQ:MSFT, re-adds NASDAQ:AAPL to check ordering,
+removes NASDAQ:MSFT, then deletes the created ID and checks list membership.
+It never targets a pre-existing object or calls an alert mutation. A private
+record outside the repository retains the created ID and last phase for
+recovery. On a failed/unconfirmed step it stops; subsequent cleanup must use
+that recorded ID and the same authorized scope, without replaying an uncertain
+step. Description clearing remains fixture evidence unless separately observed.
+
+The owner explicitly approved this disposable-list lifecycle, required fixes
+and retests on the same account, and conditional `mcp:tools` reauthorization
+and dedicated credential updates if the current grant is insufficient.
+Use the current grant first; catalog visibility alone is not write acceptance.
+Announce required browser/OS actions before opening dialogs and wait for their
+completion. Existing list contents and alerts are outside the mutation scope.
+The owner has also authorized local implementation and coherent commits.
+No extra agents, downstream writes, publication or installed-binary replacement.
+
+Deterministic coverage includes all five actions, ordering/omission/clearing,
+mismatched IDs, unreported create IDs, readback failure and 401/429/500,
+malformed/tool-error/schema-drift/timeout dispatches without mutation replay.
+The Rust baseline passed 1002 tests with 27 ignored and zero failures.
+Strict workspace Clippy, formatting, public/diff hygiene and runtime package
+checks passed (48 files, six skills/root). A final focused model check covers
+provider-declared failure classification; no mutation was replayed in fixtures.
+
+The approved native lifecycle completed on a newly created list: create,
+rename, add, re-add/order change and remove all returned matching postconditions;
+delete replied successfully and the following list did not report the created
+ID. No pre-existing list content or alert was changed. The already-authorized
+immutable credential worker was reused, without new browser/Keychain consent.
+The private recovery record is outside the repository; no live IDs, names or
+raw account payloads were committed. This is public-service evidence, not a
+new CLI executable's native-consent qualification. Description clearing remains
+fixture-only evidence. Windows native qualification remains deferred and
+mandatory before release. Alert management is next.
 
 ## Watchlist and alert read slice (2026-09-21)
 

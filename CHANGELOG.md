@@ -30,6 +30,9 @@ package version omits the leading `v`.
   account reads, with separate JSON contracts, requested-ID tracking, null
   optional fields and unreported alert outcomes. Reads do not activate lists
   or change alerts; message and webhook URL fields are excluded.
+- Explicit official MCP watchlist create/update/add/remove/delete commands,
+  with one mutation dispatch, separate readback evidence and unknown-outcome
+  handling. A disposable-list lifecycle passed native macOS verification.
 
 ## v0.31.4 - 2026-09-20
 
