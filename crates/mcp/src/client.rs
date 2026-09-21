@@ -23,6 +23,7 @@ pub enum Operation {
     Login,
     Status,
     Logout,
+    Financial(tradingview_model::mcp_financials::Request),
     Bars(Request),
     Data(tradingview_model::mcp_data::Request),
     Account(tradingview_model::mcp_account::Request),
@@ -65,6 +66,7 @@ impl Client {
             operation,
             Operation::Bars(_)
                 | Operation::Data(_)
+                | Operation::Financial(_)
                 | Operation::Account(_)
                 | Operation::WatchlistMutation(_)
                 | Operation::AlertMutation(_)
@@ -197,6 +199,7 @@ pub(crate) async fn execute(
         let (tool, arguments) = match &operation {
             Operation::Bars(request) => (crate::tools::Tool::Bars, request.arguments()),
             Operation::Data(request) => (request.kind().into(), request.arguments()),
+            Operation::Financial(request) => (request.kind().into(), request.arguments()),
             Operation::Account(request) => (request.kind().into(), request.arguments()),
             _ => return Err(Failure::UnsupportedCapability.into()),
         };
@@ -217,6 +220,9 @@ pub(crate) async fn execute(
         let received_ms = now_ms().map_err(AppError::from)?;
         match &operation {
             Operation::Bars(request) => mcp_bars::normalize(request, value, received_ms),
+            Operation::Financial(request) => {
+                tradingview_model::mcp_financials::normalize(request, value, received_ms)
+            }
             Operation::Data(request) => {
                 tradingview_model::mcp_data::normalize(request, value, received_ms)
             }

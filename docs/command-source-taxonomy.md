@@ -33,6 +33,13 @@ account IDs are local to the authenticated account, not portable identities.
 See [MCP usage and contracts](official-mcp.md). Existing `tv bars` remains an
 independent command and contract; no implicit source migration occurs.
 
+`tv mcp financials/financial-history/forecasts/earnings` also uses this read
+source, with distinct `mcp_financials.v1`, `mcp_financial_history.v1`,
+`mcp_forecasts.v1` and `mcp_earnings.v1` contracts. Currency, period metadata,
+nulls and source date strings remain provider observations. Requested windows
+are not asserted complete. Existing scanner-backed fundamentals/events are
+unchanged; no mixed-source fallback is introduced.
+
 ### Authenticated official MCP mutation
 
 `tv mcp watchlist create/update/add/remove/delete` uses

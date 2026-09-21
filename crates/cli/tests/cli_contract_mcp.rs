@@ -16,7 +16,19 @@ fn independent_mcp_help_does_not_change_bars_entry() {
         .clone();
     let help = String::from_utf8(output).unwrap();
     for command in [
-        "login", "status", "bars", "logout", "search", "columns", "symbol", "symbols", "screener",
+        "login",
+        "status",
+        "bars",
+        "logout",
+        "search",
+        "columns",
+        "symbol",
+        "symbols",
+        "screener",
+        "financials",
+        "financial-history",
+        "forecasts",
+        "earnings",
     ] {
         assert!(help.contains(command));
     }
@@ -33,6 +45,33 @@ fn independent_mcp_help_does_not_change_bars_entry() {
 #[test]
 fn invalid_mcp_requests_fail_before_cdp_state_store_or_provider_access() {
     for args in [
+        vec!["mcp", "financials", "EXAMPLE"],
+        vec!["mcp", "financials", "NASDAQ:EXAMPLE", "--period", "quarter"],
+        vec!["mcp", "financials", "NASDAQ:EXAMPLE", "--metric", "pe,pe"],
+        vec![
+            "mcp",
+            "financial-history",
+            "NASDAQ:EXAMPLE",
+            "--period",
+            "ttm",
+        ],
+        vec![
+            "mcp",
+            "financial-history",
+            "NASDAQ:EXAMPLE",
+            "--from",
+            "2025-02-29",
+        ],
+        vec!["mcp", "earnings", "NASDAQ:EXAMPLE", "NASDAQ:EXAMPLE"],
+        vec![
+            "mcp",
+            "earnings",
+            "NASDAQ:EXAMPLE",
+            "--from",
+            "2026-02-01",
+            "--to",
+            "2026-01-01",
+        ],
         vec!["mcp", "watchlist", "get", "name"],
         vec!["mcp", "watchlist", "create", " "],
         vec!["mcp", "watchlist", "update", "12"],
@@ -197,6 +236,24 @@ fn supported_mcp_bar_intervals_reach_local_state_validation_without_provider_acc
 #[test]
 fn account_reads_parse_without_desktop_or_credential_access() {
     for args in [
+        vec![
+            "mcp",
+            "financials",
+            "NASDAQ:EXAMPLE",
+            "--metric",
+            "pe,revenue",
+            "--period",
+            "fq",
+        ],
+        vec![
+            "mcp",
+            "financial-history",
+            "NASDAQ:EXAMPLE",
+            "--from",
+            "2024-02-29",
+        ],
+        vec!["mcp", "forecasts", "NASDAQ:EXAMPLE"],
+        vec!["mcp", "earnings", "NASDAQ:EXAMPLE", "NYSE:OTHER"],
         vec!["mcp", "watchlist", "list"],
         vec!["mcp", "watchlist", "get", "12"],
         vec!["mcp", "alert", "list"],

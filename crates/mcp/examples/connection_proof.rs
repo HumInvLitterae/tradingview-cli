@@ -18,12 +18,17 @@ async fn main() {
         if !(args.len() == 2 || (args.len() == 4 && args[2] == "--credential-worker-path")) {
             eprintln!(
                 "Usage: connection_proof --local-admission | \
-                 discover/login/status/authorize-store/daily/weekly/monthly/all/search/columns/columns-overview/symbol/symbols/symbols-command/screener/screener-command/screener-empty-command/intraday-command/account-lists/account-commands/alert-catalog/alert-lifecycle/watchlist-catalog/watchlist-lifecycle/refresh/logout \
+                 financial-commands/financial-shape/history-shape/forecast-shape/earnings-shape/discover/login/status/authorize-store/daily/weekly/monthly/all/search/columns/columns-overview/symbol/symbols/symbols-command/screener/screener-command/screener-empty-command/intraday-command/account-lists/account-commands/alert-catalog/alert-lifecycle/watchlist-catalog/watchlist-lifecycle/refresh/logout \
                  <proof-directory> [--credential-worker-path <absolute-executable>]"
             );
             std::process::exit(1);
         }
         let operation = match args[0].as_str() {
+            "history-shape" => Op::HistoryShape,
+            "forecast-shape" => Op::ForecastShape,
+            "earnings-shape" => Op::EarningsShape,
+            "financial-commands" => Op::FinancialCommands,
+            "financial-shape" => Op::FinancialShape,
             "discover" => Op::Discover,
             "login" => Op::Login,
             "status" => Op::Status,

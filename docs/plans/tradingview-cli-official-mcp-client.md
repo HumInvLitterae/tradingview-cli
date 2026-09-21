@@ -45,8 +45,8 @@ ban on this agreed follow-up. Symbol discovery, single/batch symbol reads and
 screener queries and recent-count intraday OHLCV are implemented using the shared
 authenticated service. Watchlist and alert list/ID reads are also implemented;
 watchlist and alert management passed native disposable-object lifecycle
-verification with readback. Financial data is the next ordered slice. Existing
-commands remain intact.
+verification with readback. Financial snapshots/history, forecasts and earnings are implemented with native
+public-service verification. Existing commands remain intact.
 
 Source inspection supports the watchlist/alert substitution rationale:
 
@@ -70,6 +70,51 @@ Agree on actual OAuth scope and disposable test targets before live mutations;
 the priority decision does not authorize changes to existing account objects.
 No additional dependency, executor, publication or default-backend change is
 implied. Keep this as the single MCP work record.
+
+## Financial and earnings slice (2026-09-21)
+
+The owner requested the next agreed slice after alert management. It implements
+`tv mcp financials`, `financial-history`, `forecasts` and `earnings`, without
+changing scanner-backed fundamentals/events or promoting the later news/document/
+economic-data slice. Concrete [CLI and JSON contracts](../official-mcp.md#financial-data-forecasts-and-earnings)
+define the four versioned responses, date/period bounds, null semantics and
+unconfirmed identity/currency/window coverage. No new dependency is needed.
+
+`model::mcp_financials` owns I/O-free requests and shaping; the existing internal
+MCP application service owns OAuth, admission, dispatch and typed failures.
+Snapshot aliases remain server-owned. History requires labels/series alignment
+and retains latest capex separately. Forecast groups distinguish named estimates
+from provider consensus. Earnings keeps rows and input-ordered symbol outcomes;
+unreported symbols are not fabricated missing events. No private downstream
+policy, Rust API stabilization, backend replacement or implicit fallback occurs.
+
+Same-account read-only verification uses the already trusted credential worker
+and known AAPL/MSFT targets, within the owner's continuing read-verification
+scope. It performs no account-object writes or new authentication setup. A first
+combined shape probe exhausted its shared deadline; splitting development probes
+by operation fixed that investigation setup without changing the public 30-second
+operation deadline or adding replay. Current schemas and actual response shapes
+were rechecked. In particular, snapshot symbol/currency and history currency
+were absent; those values remain unconfirmed rather than inferred.
+
+Native macOS public-service checks passed: full TTM snapshot (34 returned fields),
+FQ subset (two fields), quarterly history (six labels), annual history (four),
+forecasts with provider currency, two-symbol earnings (two rows), and an empty
+past earnings window (zero rows). Each successful invocation made one tool call.
+No new browser/Keychain interaction or installed-binary/worker overwrite occurred.
+These counts are observations of those requests, not server limits or completeness
+proof. The shared fixed-worker harness is not a newly installed binary's consent
+qualification. Native Windows remains the owner's deferred release requirement.
+
+Fixtures cover period/date validation, null versus zero, absent identity/currency,
+misaligned fiscal series, forecast fields, partial/multiple/empty earnings rows,
+and JSON/SSE plus 401/429/5xx/schema/invalid-response failures without replay.
+Focused checks and the workspace baseline passed: 1,014 tests, 27 ignored, zero
+failed. Strict workspace Clippy, formatting, public/diff hygiene (690 tracked
+files) and runtime-resource validation passed (48 files, six skills per root).
+The initial Clippy module-order finding was fixed before the final check. No
+production dependencies changed. The next ordered slice is news, documents and
+economic/calendar data.
 
 ## Alert management slice (2026-09-21)
 

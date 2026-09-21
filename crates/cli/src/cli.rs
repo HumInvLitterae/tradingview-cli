@@ -1176,6 +1176,37 @@ pub enum UiCommand {
 
 #[derive(Debug, Subcommand)]
 pub enum McpCommand {
+    #[command(
+        about = "Read official financial metrics; retain reporting period and missing values"
+    )]
+    Financials {
+        symbol: String,
+        #[arg(long, default_value = "ttm")]
+        period: String,
+        #[arg(long = "metric", value_delimiter = ',')]
+        metrics: Vec<String>,
+    },
+    #[command(about = "Read quarterly/annual financial history; no completeness guarantee")]
+    FinancialHistory {
+        symbol: String,
+        #[arg(long, default_value = "fq")]
+        period: String,
+        #[arg(long)]
+        from: Option<String>,
+        #[arg(long)]
+        to: Option<String>,
+    },
+    #[command(about = "Read analyst consensus and estimates as provider observations")]
+    Forecasts { symbol: String },
+    #[command(about = "Read earnings dates and estimates for 1 to 50 explicit symbols")]
+    Earnings {
+        #[arg(required = true, num_args = 1..)]
+        symbols: Vec<String>,
+        #[arg(long)]
+        from: Option<String>,
+        #[arg(long)]
+        to: Option<String>,
+    },
     #[command(about = "Read or explicitly change official MCP watchlists")]
     Watchlist {
         #[command(subcommand)]

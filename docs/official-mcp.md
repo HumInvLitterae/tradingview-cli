@@ -213,6 +213,110 @@ For example, three rows and `totalCount:120` produce `returned_count:3` and
 contradictory totals, excess rows, duplicate symbols and malformed rows fail with
 `mcp_error.v1`. Transport failure does not become an empty successful screen.
 
+## Financial data, forecasts and earnings
+
+These commands read the official MCP source independently of scanner-backed
+`tv fundamentals` / `tv events`; neither existing command is redirected.
+
+```sh
+tv mcp financials NASDAQ:EXAMPLE --period ttm
+tv mcp financials NASDAQ:EXAMPLE --period fq --metric revenue,pe
+tv mcp financial-history NASDAQ:EXAMPLE --period fq --from 2025-01-01 --to 2026-09-21
+tv mcp forecasts NASDAQ:EXAMPLE
+tv mcp earnings NASDAQ:EXAMPLE NYSE:OTHER --from 2026-07-01 --to 2026-12-31
+```
+
+| Command | Contract | Selection |
+| --- | --- | --- |
+| `financials` | `mcp_financials.v1` | `--period fy\|fq\|ttm\|fh\|current`, default `ttm`; optional `--metric` aliases or raw column names |
+| `financial-history` | `mcp_financial_history.v1` | `--period fq\|fy`, default `fq`; optional `--from` / `--to` |
+| `forecasts` | `mcp_forecasts.v1` | One exchange-qualified symbol |
+| `earnings` | `mcp_earnings.v1` | 1..50 distinct exchange-qualified symbols; optional `--from` / `--to` |
+
+Dates must be real `YYYY-MM-DD` dates in ascending order. Either endpoint may
+be omitted, leaving its default to the provider. The CLI caps metric lists and
+earnings symbol lists at 50; these are client bounds, not claims about server
+capacity. Metric names accept letters, digits, underscores, dots, hyphens and
+period separators (`|`), at most 128 bytes; duplicates are rejected. Omit
+`--metric` to ask for the provider's full snapshot. Aliases and period-specific
+column rewriting belong to the provider; inspect returned field names rather
+than assuming a requested alias proves a particular calculation.
+
+All four contracts retain the request, `source:tradingview_mcp`,
+`source_category:desktop_free_read`, `requires_desktop:false`, and
+`transport:{status:succeeded,tool_attempts:1}`. `provider_metadata` retains
+available symbol/name, reporting period, currency, unit, scale, as-of and window
+values. Missing metadata is null. `client_observation.received_at` is the local
+receipt time, not a filing/publication/market-data timestamp. Currency is not
+inferred from a listing exchange; numeric units and scale are not converted.
+Conflicting symbol/period metadata, incompatible known field types, or an
+explicit provider failure produce a structured error.
+
+Financial snapshots keep provider column names and scalar JSON values in
+`fields`. For example, a synthetic response to a quarterly revenue request can
+contain `fields:{total_revenue_fq:null,net_income_fq:0}`: revenue is unknown and
+net income is zero. The two remain distinct. `null_fields` and
+`returned_field_count` describe the returned object; they do not establish
+whether aliases were fully satisfied. `metric_selection_status` stays
+`unconfirmed`. In native observation the snapshot returned a ticker name but no
+qualified symbol or currency, so `symbol_status` and currency stayed unknown.
+
+History keeps `labels` in provider order and aligns every `series` array to
+those labels. Each point retains `value` and `yoy_pct`; null is not zero.
+Different array lengths fail with `invalid_response` instead of pairing values
+with the wrong period. `capex_latest` is a separate latest-value observation,
+not an extra historical row. Returned labels are not converted into fiscal
+start/end dates. For example, a request spanning two years may return six
+quarterly labels: `returned_period_count:6` is observed, while
+`requested_window_coverage:unconfirmed` prevents claiming eight complete quarters.
+
+Forecasts preserve `analyst_rating`, `price_targets`, `estimates` and the current
+`price` under `forecast`. A provider recommendation is the provider's opinion,
+not a CLI-generated decision. Names such as `eps_next_quarter` and `eps_ttm`
+retain their distinct meanings; estimates are not relabelled as actual results.
+Missing groups/fields remain null where the supported schema permits them.
+No return, surprise or upside calculation is invented by the client.
+
+Earnings preserves event rows in `items`, including provider release-date strings
+and next-quarter forecast fields. Multiple rows for one symbol are retained;
+`symbol_results` follows requested symbol order and points to matching row
+indices. For example, requesting two symbols with only the first returned yields
+this abbreviated data (synthetic symbols and values):
+
+```json
+{
+  "contract_version": "mcp_earnings.v1",
+  "request": {"symbols": ["NASDAQ:EXAMPLE", "NYSE:OTHER"]},
+  "items": [{"symbol": "NASDAQ:EXAMPLE", "release_date": "2026-08-01", "eps_forecast_next_fq": null}],
+  "symbol_results": [
+    {"requested_symbol": "NASDAQ:EXAMPLE", "status": "returned", "item_indices": [0]},
+    {"requested_symbol": "NYSE:OTHER", "status": "unreported", "item_indices": []}
+  ],
+  "client_observation": {"returned_count": 1, "completeness": "unconfirmed", "requested_window_coverage": "unconfirmed"}
+}
+```
+
+An empty list leaves every symbol `unreported`; it does not prove no earnings
+occurred. Release-date strings, provider `from`/`to` echoes and request dates are
+separate from actual window coverage. No timezone, session, confirmed/estimated
+event classification or calendar completeness is inferred. Unexpected symbols
+or a contradictory returned count fail before producing a success contract.
+
+A `financial-history --period ttm` request or an invalid date is rejected before
+credentials/network access with `code:invalid_request` and `tool_attempts:0`.
+Authentication, rate limits, timeouts and response errors use the shared
+`mcp_error.v1` contract. A 401 may refresh credentials for the next explicit
+invocation but never repeats the data call. A 429 retains the shared cooldown;
+a timeout is `deadline_exceeded`; malformed/unaligned data is `invalid_response`.
+No fallback or missing-value substitution follows these errors.
+
+Native macOS checks covered a full TTM snapshot, an FQ metric subset, quarterly
+and annual history, forecasts, a two-symbol earnings query and an empty past
+window through the public service. They establish response handling for those
+cases, not general completeness, every metric/market/period, or Windows runtime
+qualification. Synthetic JSON/SSE and failure fixtures cover the remaining
+contract branches. See the [work record](plans/tradingview-cli-official-mcp-client.md).
+
 ## Watchlists and alerts
 
 The independent account reads use the same explicit login and credentials:

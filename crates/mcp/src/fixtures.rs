@@ -275,6 +275,10 @@ fn respond(ep: &Endpoints, r: &Request, mode: &str) -> Response {
                 "inputSchema": schema
             })];
             for tool in [
+                crate::tools::Tool::Financials,
+                crate::tools::Tool::FinancialHistory,
+                crate::tools::Tool::Forecasts,
+                crate::tools::Tool::Earnings,
                 crate::tools::Tool::Search,
                 crate::tools::Tool::Columns,
                 crate::tools::Tool::Symbol,
@@ -380,6 +384,29 @@ fn respond(ep: &Endpoints, r: &Request, mode: &str) -> Response {
             });
             let args = &request["params"]["arguments"];
             match request["params"]["name"].as_str() {
+                Some("mcp-tv-get-financials") => {
+                    result["structuredContent"] = json!({"success": true, "data": {
+                        "name": "EXAMPLE", "total_revenue_ttm": 0, "net_income_ttm": null
+                    }});
+                }
+                Some("mcp-tv-get-financial-history") => {
+                    result["structuredContent"] = json!({
+                        "success": true, "symbol": "NASDAQ:EXAMPLE", "period": args["period"],
+                        "labels": ["FY2025 Q1"], "series": {"revenue": [{"value": 0, "yoy_pct": null}]}
+                    });
+                }
+                Some("mcp-tv-get-forecasts") => {
+                    result["structuredContent"] = json!({"success": true, "data": {
+                        "symbol": "NASDAQ:EXAMPLE", "currency": "EUR",
+                        "analyst_rating": {"recommendation": "provider-opinion"},
+                        "price_targets": {"average": null}, "estimates": {"eps_next_quarter": 0}
+                    }});
+                }
+                Some("mcp-tv-get-earnings-calendar") => {
+                    result["structuredContent"] = json!({"success": true, "data": {
+                        "count": 1, "earnings": [{"symbol": "NASDAQ:EXAMPLE", "release_date": "2026-05-01"}]
+                    }});
+                }
                 Some(
                     "mcp-tv-create-alert"
                     | "mcp-tv-update-alert"
@@ -1476,6 +1503,60 @@ async fn alert_changes_separate_received_reply_and_per_target_readback() {
         );
         if expected == "failed" {
             assert_eq!(result["readback"]["error"]["code"], "rate_limited");
+        }
+    }
+}
+
+#[tokio::test]
+async fn financial_service_keeps_source_values_and_failure_dispatch_counts() {
+    use crate::client::{Operation, execute};
+    use tradingview_model::mcp_financials::Request;
+
+    for request in [
+        Request::snapshot("NASDAQ:EXAMPLE", "ttm", &[]).unwrap(),
+        Request::history("NASDAQ:EXAMPLE", "fq", Some("2025-01-01"), None).unwrap(),
+        Request::forecasts("NASDAQ:EXAMPLE").unwrap(),
+        Request::earnings(&["NASDAQ:EXAMPLE".into(), "NYSE:OTHER".into()], None, None).unwrap(),
+    ] {
+        for mode in [
+            "json",
+            "sse",
+            "401",
+            "429",
+            "500",
+            "malformed",
+            "tool-error",
+            "schema-change",
+        ] {
+            let server = Server::start(mode).await;
+            let (_root, mut guard, budget, http, store) = context(&server, 8).await;
+            fixture_login(&http, &store, &budget).await;
+            let result = execute(
+                Operation::Financial(request.clone()),
+                &mut guard,
+                store,
+                http,
+                budget,
+                true,
+            )
+            .await;
+            assert_eq!(
+                server.calls("tools/call"),
+                if mode == "schema-change" { 0 } else { 1 }
+            );
+            if matches!(mode, "json" | "sse") {
+                let data = result.unwrap();
+                assert_eq!(data["source"], "tradingview_mcp");
+                assert_eq!(data["transport"]["tool_attempts"], 1);
+                assert_eq!(data["client_observation"]["completeness"], "unconfirmed");
+            } else {
+                let details = result.unwrap_err().details.unwrap();
+                assert_eq!(
+                    details["tool_attempts"],
+                    if mode == "schema-change" { 0 } else { 1 }
+                );
+                assert!(!details.to_string().contains("synthetic-secret"));
+            }
         }
     }
 }

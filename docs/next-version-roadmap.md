@@ -92,7 +92,9 @@ one bounded official screen with honest total/returned counts. Recent-count
 intraday OHLCV now supports six official intervals with native read verification.
 Watchlist/alert list and ID-specific reads are implemented. Watchlist management
 passed fixture and native disposable-list verification. Alert management also
-passed a native disposable-alert lifecycle with readback. Financial data is next.
+passed a native disposable-alert lifecycle with readback. Financial snapshots,
+history, forecasts and earnings calendars are implemented with native checks.
+News, documents and economic/calendar data are next.
 Reuse connection and credential handling; keep tool-specific
 schema checks and interpretation explicit. No arbitrary tool passthrough.
 

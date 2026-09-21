@@ -9,6 +9,11 @@ package version omits the leading `v`.
 
 ### Added
 
+- Official MCP financial snapshots, quarterly/annual history, analyst forecasts
+  and earnings calendars via `tv mcp financials/financial-history/forecasts/earnings`.
+  Separate contracts preserve provider periods, scalar values, nulls and unknown
+  currency/coverage; earnings tracks unreported symbols without source fallback.
+
 - Independent `tv mcp login/status/bars/logout` commands for the official
   TradingView MCP service. Recent daily/weekly/monthly OHLCV uses `mcp_bars.v1`
   and source-specific errors; existing `tv bars` and `bars.v1` are unchanged.
