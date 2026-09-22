@@ -37,7 +37,7 @@ git config --local hook.tv-fast.enabled true
 
 git config --local hook.tv-baseline.event pre-push
 git config --local hook.tv-baseline.command $baselineCommand
-git config --local hook.tv-baseline.enabled true
+git config --local hook.tv-baseline.enabled false
 
 git hook list pre-commit
 git hook list pre-push

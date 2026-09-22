@@ -6,7 +6,7 @@ Direction: [roadmap](next-version-roadmap.md). Decisions and acceptance:
 | Order | Work | Completion condition |
 | --- | --- | --- |
 | 1 | Close v0.32.0 and establish baseline | Done: publication/workflow verified; prior record archived with historical evidence preserved and downstream report distinguished from local checks. |
-| 2 | Settle new read contracts and live verification scope | Proposed alert-history and technical-snapshot examples reviewed; actual response shapes and missing-value rules verified before finalizing normalization. Both are planned features. |
+| 2 | Settle new read contracts and live verification scope | Contract proposals and scoped reads approved; actual response shapes and missing-value rules still need verification before finalizing normalization. Both are planned features. |
 | 3 | Improve login/upgrade operation | Existing successful stdout/error JSON preserved; useful pre-interaction guidance for explicit login, correct credential reuse and no prompts in ordinary commands. |
 | 4 | Implement alert history | Bounded read, source/evidence separation, no sensitive free text, safe empty/limited/error results, fixtures and scoped real acceptance. |
 | 5 | Implement official technical snapshot | Single symbol/timeframe, provider values/ratings without local recomputation, missing/unknown conditions retained; fixtures and scoped real acceptance. |
@@ -15,8 +15,10 @@ Direction: [roadmap](next-version-roadmap.md). Decisions and acceptance:
 | 8 | Integrate documentation and standalone skills | User guides, command/source mapping and account-management/market-data references reflect implemented behavior; individual skill and archive checks pass. |
 | 9 | Qualify and prepare release | Applicable Rust/platform checks, scoped runtime acceptance and honest limits recorded; version/notes in a separate final preparation commit. Publication separately authorized. |
 
-Current return point: review the concrete public-contract proposal. No new read
-implementation, version bump, account mutation, dependency addition or live
-request has occurred in this planning stage. Existing same-scope authority is
-retained; new account-history access and technical-tool reads are enumerated in
-the plan before requesting missing authority together.
+Current prerequisite: disable expensive local pre-push checks by default and
+use one Cargo build job/test thread with focused local validation. The owner
+approved both public-contract proposals and the scoped technical/history reads.
+Next: qualify actual response shapes, then implement the agreed slices. Reuse
+same-scope authority; material new effects or contract differences need review.
+No new read implementation, version bump, account mutation or dependency
+addition has occurred in this planning/tooling stage.

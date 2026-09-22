@@ -1,6 +1,6 @@
 # MCP operational improvements and two additional reads
 
-Status: **scope accepted; contract proposal ready for review**, 2026-09-22.
+Status: **contracts and scoped reads approved; implementation pending**, 2026-09-22.
 Direction and priority live in the [roadmap](../next-version-roadmap.md) and
 [inventory](../next-version-work-items.md). This is the single work record for
 v0.33.0; the [v0.32.0 record](archives/tradingview-cli-official-mcp-client.md)
@@ -15,14 +15,14 @@ into planned scope. Connection reuse is conditional on measurement. Existing
 CLI consumers keep their commands, envelopes and source semantics.
 
 The PM remains the sole executor; no additional agent/session is authorized.
-Public CLI/JSON examples below require agreement before implementation under
-[AGENTS.md](../../AGENTS.md). Their values are synthetic client-output proposals,
+The owner approved the CLI/JSON proposals below and the bundled new live-read
+scope on 2026-09-22 under [AGENTS.md](../../AGENTS.md). Their values are synthetic client-output proposals,
 not observed provider payloads. No new Rust dependency or persisted format is
 proposed. Local documentation commits are within the established PM authority;
 push/tag/workflow/release and downstream edits are not authorized here.
 
-Reuse existing same-target verification authority. New verification needs are
-listed together below; no arbitrary count/time approval cycle is introduced.
+Reuse existing same-target verification authority. The new verification scope
+below is also approved; no arbitrary count/time approval cycle is introduced.
 Actual rate limits, deadlines, dispatch guards and user-controlled OS consent
 remain mandatory. This planning stage performs no account or credential I/O.
 
@@ -178,7 +178,7 @@ specific before/after choice rather than mixing prose into JSON stderr.
 
 ## Implementation and acceptance sequence
 
-1. Review the proposed public contracts and authorize the new scoped reads.
+1. Contracts and the new scoped reads are approved.
    Verify actual tool names/schema/response shape. Revise material contract
    differences before implementation; do not encode guessed provider evidence.
 2. Improve login reuse/interaction guidance. Test existing credentials, expired
@@ -214,7 +214,8 @@ on all supported OSes; Linux graphical OAuth remains a separately stated limit.
 
 ## Live verification proposal and remaining decisions
 
-Bundle missing authority before starting live work:
+The owner approved the following scope; reuse this approval for necessary
+verification and fixes within the same targets and effects:
 
 - Use the existing chosen account and selected installed/trusted executable;
   no new account setup or OAuth scopes are expected. The technical tool reads
@@ -232,8 +233,8 @@ Bundle missing authority before starting live work:
   Any additional live mutation requires a concrete disposable target proposal;
   it is not a hidden prerequisite for either new read.
 
-Contract review must settle the two CLI shapes, source/unknown handling, limited
-history output and interaction guidance. Provider response details remain
+The approved contract direction covers the two CLI shapes, source/unknown
+handling, limited history output and interaction guidance. Provider response details remain
 UNCONFIRMED until observation; public documentation is insufficient to assert
 them. No new dependencies are expected; any demonstrated need is a separate
 concrete proposal with current-version verification.
@@ -250,4 +251,22 @@ concrete proposal with current-version verification.
   whitespace checks. Credential-language review found only policy/examples.
   No runtime resources or Rust code changed, so no rebuild or functional suite
   was run for this documentation-only change.
-- Next: owner review of contracts and the bundled new read scope above.
+- Owner approved the contracts and bundled scoped reads. Material differences
+  discovered in real response shapes remain decision points; do not re-ask for
+  already approved operations.
+- Before feature implementation, the owner requested disabling expensive local
+  pre-push checks by default and minimizing workstation load. Installers and
+  normal hook enablement now leave the baseline disabled; explicit baseline
+  runs default to one build job and one test thread. CI remains unchanged.
+- Subsequent local work uses one Cargo operation at a time, focused checks and
+  existing build artifacts. Broad/release checks require a concrete need and
+  should not be repeated after unchanged inputs.
+- Hook prerequisite validated with a temporary repository and mocked Cargo:
+  install/enable leave pre-push disabled, disabled pre-push invokes no Cargo,
+  explicit baseline uses 1/1 defaults, caller overrides work, and command
+  failure stops subsequent checks. Bash syntax, TOML parsing, public hygiene
+  and diff checks passed. This checkout's baseline hook is disabled.
+  PowerShell received the equivalent source change but was not executed because
+  it is unavailable on this host. No Rust compilation or functional test ran.
+- Next: continue the approved contract qualification and implementation with
+  these resource limits.

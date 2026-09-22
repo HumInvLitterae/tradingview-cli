@@ -702,6 +702,21 @@ agent-resource changes, use the focused checks below and the
 [package checks](release-packaging.md#packaging-validation); an unchanged Rust
 binary does not need a rebuild or full suite merely because its guidance changed.
 
+### Local resource limits
+
+Keep local verification proportional to the changed properties. Do not run
+multiple Cargo builds, Clippy jobs or test suites concurrently. For local Cargo
+commands use `CARGO_BUILD_JOBS=1`; for tests also use `RUST_TEST_THREADS=1`, unless
+the owner explicitly chooses higher concurrency. Avoid unnecessary release
+builds, fresh target directories and repeated full-workspace checks. Start with
+affected tests and reuse unchanged evidence; use normal CI for broad platform
+and parallel-test coverage. These limits do not disable CI or replace missing
+acceptance evidence with a claim that tests passed.
+
+The explicit local baseline runner below supplies these conservative defaults
+and respects caller overrides. Run a full local baseline only when broad local
+verification is needed, not automatically on every push or every small edit.
+
 For the Rust baseline, run:
 
 ```bash
@@ -830,6 +845,28 @@ On Windows:
 
 ```powershell
 ./scripts/install-config-hooks.ps1
+```
+
+Installation enables only the fast pre-commit checks (`cargo fmt --check` and
+`git diff --check`). The full pre-push baseline is registered but disabled,
+including when reinstalling hooks or running `mise run hooks:enable`. Normal
+pushes therefore do not launch local Clippy or workspace tests. GitHub Actions
+continues its existing checks.
+
+To disable an already installed baseline without changing other hooks:
+
+```bash
+git config --local hook.tv-baseline.enabled false
+```
+
+Run full checks deliberately with `mise run check:baseline`. Its default is
+one Cargo build job and one test thread; `CARGO_BUILD_JOBS` and
+`RUST_TEST_THREADS` can explicitly override those values. Build-job limits do
+not cap every thread used internally by rustc or a linker, so one job still
+has a resource cost. To explicitly opt back into full checks on each push:
+
+```bash
+git config --local hook.tv-baseline.enabled true
 ```
 
 These hooks are convenience checks. They do not replace the validation baseline
