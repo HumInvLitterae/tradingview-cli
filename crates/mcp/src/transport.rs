@@ -39,94 +39,138 @@ pub(crate) async fn call(
     token: String,
     tool: Tool,
     arguments: &[Value],
-    mut admission: Option<&mut Admission>,
+    admission: Option<&mut Admission>,
 ) -> Result<Vec<Result<CallToolResult>>> {
     for args in arguments {
         tool.validate_arguments(args)?;
     }
-    let config = transport_config(http, token);
-    let transport = StreamableHttpClientTransport::with_client(http.clone(), config);
-    let service = timeout_at(http.deadline, ().serve(transport))
-        .await
-        .map_err(|_| Failure::Timeout)?
-        .map_err(|_| http.failure())?;
-    let result = timeout_at(http.deadline, async {
-        let mut cursor = None;
-        let mut tool_name = None;
-        for _ in 0..10 {
-            let page = service
-                .list_tools(cursor.map(|cursor| {
-                    let mut params = PaginatedRequestParams::default();
-                    params.cursor = Some(cursor);
-                    params
-                }))
-                .await
-                .map_err(|error| sdk_failure(error, http))?;
-            http.describe_catalog(&page.tools);
-            for candidate in page.tools {
+    let mut session = Session::connect(http, token).await?;
+    let result = session.call(tool, arguments, admission).await;
+    session.finish(result).await
+}
+
+/// One command owns the connection and lazy catalog pages; nothing survives it.
+pub(crate) struct Session {
+    http: Http,
+    service: rmcp::service::RunningService<rmcp::RoleClient, ()>,
+    pages: Vec<Vec<rmcp::model::Tool>>,
+    next_cursor: Option<String>,
+}
+
+impl Session {
+    pub(crate) async fn connect(http: &Http, token: String) -> Result<Self> {
+        let transport =
+            StreamableHttpClientTransport::with_client(http.clone(), transport_config(http, token));
+        let service = timeout_at(http.deadline, ().serve(transport))
+            .await
+            .map_err(|_| Failure::Timeout)?
+            .map_err(|_| http.failure())?;
+        Ok(Self {
+            http: http.clone(),
+            service,
+            pages: Vec::new(),
+            next_cursor: None,
+        })
+    }
+
+    async fn resolve(&mut self, tool: Tool, arguments: &[Value]) -> Result<String> {
+        for index in 0..10 {
+            if index == self.pages.len() {
+                if index > 0 && self.next_cursor.is_none() {
+                    break;
+                }
+                let page = self
+                    .service
+                    .list_tools(self.next_cursor.clone().map(|cursor| {
+                        let mut params = PaginatedRequestParams::default();
+                        params.cursor = Some(cursor);
+                        params
+                    }))
+                    .await
+                    .map_err(|error| sdk_failure(error, &self.http))?;
+                self.http.describe_catalog(&page.tools);
+                self.next_cursor = page.next_cursor;
+                self.pages.push(page.tools);
+            }
+            let mut found = None;
+            for candidate in &self.pages[index] {
                 if tool.names().contains(&candidate.name.as_ref()) {
-                    if tool_name.is_some() {
+                    if found.is_some() {
                         return Err(Failure::UnsupportedCapability);
                     }
                     if tool == Tool::Bars {
-                        http.describe_ohlcv_schema(Some(&candidate.input_schema));
+                        self.http
+                            .describe_ohlcv_schema(Some(&candidate.input_schema));
                     }
                     validate_schema(&candidate.input_schema, tool, arguments)?;
-                    tool_name = Some(candidate.name.to_string());
+                    found = Some(candidate.name.to_string());
                 }
             }
-            if tool_name.is_some() {
-                break;
-            }
-            cursor = page.next_cursor;
-            if cursor.is_none() {
-                break;
+            if let Some(name) = found {
+                return Ok(name);
             }
         }
-        if tool_name.is_none() {
-            if tool == Tool::Bars {
-                http.describe_ohlcv_schema(None);
-            }
-            return Err(Failure::UnsupportedCapability);
+        if tool == Tool::Bars {
+            self.http.describe_ohlcv_schema(None);
         }
-        let mut results = Vec::new();
-        for (index, args) in arguments.iter().enumerate() {
-            if let Some(admission) = admission.as_deref_mut() {
-                admission.before_tool(http.deadline).await?;
-            } else if index > 0 {
-                tokio::time::sleep(Duration::from_secs(1)).await;
-            }
-            let outcome = service
-                .call_tool_once(
-                    CallToolRequestParams::new(
-                        tool_name.clone().ok_or(Failure::UnsupportedCapability)?,
-                    )
-                    .with_arguments(args.as_object().unwrap().clone()),
-                )
-                .await;
-            let outcome = match outcome {
-                Ok(CallToolResponse::Complete(result)) if result.is_error != Some(true) => {
-                    Ok(result)
-                }
-                Ok(CallToolResponse::Complete(_)) => Err(Failure::ProviderError),
-                Ok(_) => Err(Failure::UnsupportedCapability),
-                Err(error) => Err(sdk_failure(error, http)),
-            };
-            let failed = outcome.is_err();
-            results.push(outcome);
-            if failed {
-                break;
-            }
-        }
-        Ok(results)
-    })
-    .await
-    .unwrap_or(Err(Failure::Timeout));
-    let cleanup = timeout_at(http.deadline, service.cancel()).await;
-    if result.is_ok() && !matches!(cleanup, Ok(Ok(_))) {
-        return Err(Failure::Timeout);
+        Err(Failure::UnsupportedCapability)
     }
-    result
+
+    pub(crate) async fn call(
+        &mut self,
+        tool: Tool,
+        arguments: &[Value],
+        mut admission: Option<&mut Admission>,
+    ) -> Result<Vec<Result<CallToolResult>>> {
+        for args in arguments {
+            tool.validate_arguments(args)?;
+        }
+        timeout_at(self.http.deadline, async {
+            let tool_name = self.resolve(tool, arguments).await?;
+            let mut results = Vec::new();
+            for (index, args) in arguments.iter().enumerate() {
+                if let Some(admission) = admission.as_deref_mut() {
+                    admission.before_tool(self.http.deadline).await?;
+                } else if index > 0 {
+                    tokio::time::sleep(Duration::from_secs(1)).await;
+                }
+                let outcome = self
+                    .service
+                    .call_tool_once(
+                        CallToolRequestParams::new(tool_name.clone())
+                            .with_arguments(args.as_object().unwrap().clone()),
+                    )
+                    .await;
+                let outcome = match outcome {
+                    Ok(CallToolResponse::Complete(result)) if result.is_error != Some(true) => {
+                        Ok(result)
+                    }
+                    Ok(CallToolResponse::Complete(_)) => Err(Failure::ProviderError),
+                    Ok(_) => Err(Failure::UnsupportedCapability),
+                    Err(error) => Err(sdk_failure(error, &self.http)),
+                };
+                let failed = outcome.is_err();
+                results.push(outcome);
+                if failed {
+                    break;
+                }
+            }
+            Ok(results)
+        })
+        .await
+        .unwrap_or(Err(Failure::Timeout))
+    }
+
+    pub(crate) async fn finish<T, E: From<Failure>>(
+        self,
+        result: std::result::Result<T, E>,
+    ) -> std::result::Result<T, E> {
+        let cleanup = timeout_at(self.http.deadline, self.service.cancel()).await;
+        if result.is_ok() && !matches!(cleanup, Ok(Ok(_))) {
+            return Err(Failure::Timeout.into());
+        }
+        result
+    }
 }
 
 /// Inspect closed schemas only; never dispatch a tool.

@@ -400,6 +400,28 @@ fn respond(ep: &Endpoints, r: &Request, mode: &str) -> Response {
                     }
                 }));
             }
+            let is_readback = |tool: &Value| {
+                matches!(
+                    tool["name"].as_str(),
+                    Some("mcp-watchlist-get-watchlist" | "mcp-tv-get-alerts")
+                )
+            };
+            if mode == "reuse-missing-readback" {
+                tools.retain(|tool| !is_readback(tool));
+            }
+            if mode == "reuse-invalid-readback-schema" {
+                for tool in tools.iter_mut().filter(|tool| is_readback(tool)) {
+                    tool["inputSchema"]["required"] = json!(["new_required"]);
+                }
+            }
+            if mode == "reuse-paged-readback" {
+                let second_page = request["params"]["cursor"] == "readback-page";
+                tools.retain(|tool| is_readback(tool) == second_page);
+                return Response::json(json!({"jsonrpc": "2.0", "id": id, "result": {
+                    "tools": tools,
+                    "nextCursor": if second_page { None } else { Some("readback-page") }
+                }}));
+            }
             json!({"tools": tools})
         }
         "tools/call" => {
@@ -407,6 +429,21 @@ fn respond(ep: &Endpoints, r: &Request, mode: &str) -> Response {
                 r.headers.get("authorization").map(String::as_str),
                 Some("Bearer synthetic-access")
             );
+            if matches!(
+                request["params"]["name"].as_str(),
+                Some("mcp-watchlist-get-watchlist" | "mcp-tv-get-alerts")
+            ) {
+                match mode {
+                    "reuse-readback-401" => return Response::status(401),
+                    "reuse-readback-404" => return Response::status(404),
+                    "reuse-readback-timeout" => {
+                        let mut reply = Response::status(200);
+                        reply.delay = Duration::from_secs(60);
+                        return reply;
+                    }
+                    _ => {}
+                }
+            }
             let status = match mode {
                 "401" => 401,
                 "429" => 429,
@@ -2048,9 +2085,9 @@ async fn measure_account_setup_before_readback() {
             assert_eq!(result["mutation"]["tool_attempts"], 1);
             assert_eq!(result["readback"]["status"], "matched");
             assert_eq!(server.calls("tools/call"), 2);
-            assert_eq!(server.calls("initialize"), 2);
-            assert_eq!(server.calls("notifications/initialized"), 2);
-            assert_eq!(server.calls("tools/list"), 2);
+            assert_eq!(server.calls("initialize"), 1);
+            assert_eq!(server.calls("notifications/initialized"), 1);
+            assert_eq!(server.calls("tools/list"), 1);
             eprintln!(
                 "account_setup kind={} setup_delay_ms={} elapsed_ms={} initialize={} catalog={} tools={}",
                 if alert { "alert" } else { "watchlist" },
@@ -2060,6 +2097,55 @@ async fn measure_account_setup_before_readback() {
                 server.calls("tools/list"),
                 server.calls("tools/call")
             );
+        }
+    }
+}
+
+#[tokio::test]
+async fn reused_session_preserves_mutation_when_readback_fails() {
+    use crate::client::{Operation, execute};
+    use tradingview_model::mcp_account::{AlertAction, AlertMutation, WatchlistMutation};
+
+    for alert in [false, true] {
+        for (mode, code, attempts) in [
+            ("reuse-missing-readback", "unsupported_capability", 0),
+            ("reuse-invalid-readback-schema", "schema_changed", 0),
+            ("reuse-readback-401", "auth_required", 1),
+            ("reuse-readback-404", "provider_error", 1),
+            ("readback-429", "rate_limited", 1),
+            ("reuse-readback-timeout", "deadline_exceeded", 1),
+            ("reuse-paged-readback", "", 1),
+        ] {
+            let server = Server::start(mode).await;
+            let (_root, mut guard, budget, http, store) = context(&server, 4).await;
+            fixture_login(&http, &store, &budget).await;
+            let counts = budget.clone();
+            let operation = if alert {
+                Operation::AlertMutation(AlertMutation::state(AlertAction::Stop, &[12]).unwrap())
+            } else {
+                Operation::WatchlistMutation(
+                    WatchlistMutation::update("12", Some("Example"), None).unwrap(),
+                )
+            };
+            let result = execute(operation, &mut guard, store, http, budget, true)
+                .await
+                .unwrap();
+            assert_eq!(result["mutation"]["status"], "response_received", "{mode}");
+            assert_eq!(result["mutation"]["tool_attempts"], 1);
+            assert_eq!(result["readback"]["tool_attempts"], attempts, "{mode}");
+            if code.is_empty() {
+                assert_eq!(result["readback"]["status"], "matched");
+            } else {
+                assert_eq!(result["readback"]["status"], "failed", "{mode}");
+                assert_eq!(result["readback"]["error"]["code"], code, "{mode}");
+            }
+            assert_eq!(server.calls("initialize"), 1, "{mode}");
+            assert_eq!(server.calls("tools/call"), 1 + attempts as usize, "{mode}");
+            assert_eq!(
+                server.calls("tools/list"),
+                if code.is_empty() { 2 } else { 1 }
+            );
+            assert_eq!(counts.lock().unwrap().counts().refresh, 0);
         }
     }
 }

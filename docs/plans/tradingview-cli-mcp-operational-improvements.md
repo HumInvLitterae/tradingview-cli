@@ -574,3 +574,58 @@ changed in this slice; no production API, dependency or timeout changed.
 The existing transport fault/no-reinitialization regression also passed.
 Formatting, diff and public-hygiene checks passed. No full workspace suite,
 release build, installed-binary replacement or external publication was run.
+
+
+## Command-local connection reuse (2026-09-23)
+
+Implemented one transport session per account mutation command, retained through
+its readback. Initialization occurs once. Catalog pages are fetched lazily and
+reused only inside that command; when the readback tool is on a later page,
+lookup resumes from the recorded cursor without repeating initialization or
+previous pages. Each dispatch still validates arguments and the chosen schema,
+then applies admission under the original absolute deadline. No reconnect,
+replay, credential cache or cross-process session was introduced.
+
+Readback capability checks occur after the mutation reply, so a missing tool or
+changed readback schema cannot prevent an otherwise valid existing mutation.
+The shared readback path closes the session and represents its failures within
+the readback result, retaining the received mutation response. Failed mutations
+and replies without a usable target also close the session. Ordinary independent
+reads use the same transport primitive but finish their own session as before.
+No public command, JSON, dependency or persisted-state format changed.
+
+Added regression scenarios for both watchlists and alerts: absent readback tool,
+changed readback schema, 401, 404, 429, readback deadline expiry and paginated
+catalog lookup. They verify a single mutation, a single initialization, expected
+readback dispatch counts and no token refresh/replay. The first fixture run used
+an incorrect expected code for schema drift; it was corrected to the existing
+`schema_changed` contract without changing production error mappings.
+
+
+### Verification and measured outcome
+
+The MCP library suite passed: 61 tests, with the opt-in measurement ignored.
+All-target Clippy for the MCP crate passed with warnings denied. The same six
+measurement scenarios then passed explicitly, with one initialization, one
+initialized notification and one catalog read for two tools in every case.
+
+| Added delay per setup response | Watchlist before / after | Alert before / after |
+| --- | --- | --- |
+| 0 ms | 1115 / 1109 ms | 1149 / 1121 ms |
+| 100 ms | 1333 / 1323 ms | 1322 / 1353 ms |
+| 600 ms | 2623 / 2335 ms | 2609 / 2336 ms |
+
+These single-run synthetic comparisons establish reduced setup request counts,
+not a general speedup percentage. At 600 ms, elapsed time decreased by about
+0.27–0.29 seconds; at shorter delays, one-second admission spacing dominates and
+the observed differences are small or within scheduling noise. Both tool calls
+and their admission checks remain necessary. No production latency claim or
+provider-error fix follows from this result.
+
+Formatting, public-hygiene and diff checks passed. Cargo work was sequential,
+one build job and one test thread, using existing artifacts. The library suite
+took 89.92 seconds; the explicit measurement took 10.88 seconds; scoped Clippy
+took 6.44 seconds. No workspace-wide/release build, real account mutation or
+Windows/Linux runtime operation ran. Native history acceptance and successful
+technical schema qualification remain open. The next provider read must reuse
+approved scope and respect actual limits; do not substitute guessed fields.

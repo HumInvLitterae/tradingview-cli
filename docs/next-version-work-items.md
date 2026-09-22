@@ -10,7 +10,7 @@ Direction: [roadmap](next-version-roadmap.md). Decisions and acceptance:
 | 3 | Improve login/upgrade operation | Implemented terminal-only pre-interaction guidance; captured stderr, existing stdout/error JSON and credential reuse verified by focused tests. Fresh live authorization not repeated. |
 | 4 | Implement alert history | Implemented and fixture-verified, including nonempty provider shape evidence. Public-service 30-second native acceptance remains open after a tool-response timeout. |
 | 5 | Implement official technical snapshot | Single symbol/timeframe, provider values/ratings without local recomputation, missing/unknown conditions retained; fixtures and scoped real acceptance. |
-| 6 | Measure and conditionally optimize transport | Baseline measured: mutation/readback repeats initialization and catalog twice; synthetic latency results support command-local reuse. Implement reuse, measure afterward, and preserve admission, mutation/readback outcomes and deadlines. |
+| 6 | Measure and conditionally optimize transport | Implemented and measured: initialization/catalog reduced from two to one on a single-page catalog; lazy pagination and failed readback retain mutation results. MCP regression suite and scoped Clippy passed; no live latency claim. |
 | 7 | Stabilize affected fixtures | Reproduce and correct time/readiness dependencies; normal CI parallel execution passes without production timeout changes. Work can accompany stages 3–6. |
 | 8 | Integrate documentation and standalone skills | User guides, command/source mapping and account-management/market-data references reflect implemented behavior; individual skill and archive checks pass. |
 | 9 | Qualify and prepare release | Applicable Rust/platform checks, scoped runtime acceptance and honest limits recorded; version/notes in a separate final preparation commit. Publication separately authorized. |
@@ -29,5 +29,6 @@ addition occurred. The active record separates fixture, investigation-budget
 and public-deadline evidence; release readiness is not yet established.
 
 The daily technical recheck again returned a rate-limit textual clue. The
-opt-in synthetic setup measurement is complete; connection reuse is the next
-independent implementation slice while successful technical data is unavailable.
+opt-in synthetic before/after measurement and command-local connection reuse
+are complete. Successful technical response qualification and normal-deadline
+history acceptance remain the next provider-dependent work.

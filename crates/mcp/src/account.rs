@@ -8,7 +8,7 @@ use tradingview_model::mcp_account;
 pub(crate) async fn readback(
     read: &mcp_account::Request,
     http: &Http,
-    token: String,
+    mut session: transport::Session,
     admission: &mut Admission,
     stage: &str,
 ) -> Result<(Value, u32), Value> {
@@ -16,14 +16,10 @@ pub(crate) async fn readback(
         .tool_attempts()
         .map_err(|_| json!({"status": "failed", "reason": "attempt_count_unavailable"}))?;
     let result: Result<Value, AppError> = async {
-        let mut responses = transport::call(
-            http,
-            token,
-            read.kind().into(),
-            &[read.arguments()],
-            Some(admission),
-        )
-        .await?;
+        let responses = session
+            .call(read.kind().into(), &[read.arguments()], Some(admission))
+            .await;
+        let mut responses = session.finish(responses).await?;
         let value = transport::result_value(responses.pop().ok_or(Failure::InvalidResponse)??)?;
         mcp_account::normalize(read, value, crate::admission::now_ms()?)
     }
