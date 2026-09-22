@@ -1,7 +1,7 @@
 # v0.33.0 roadmap
 
-Status: direction accepted on 2026-09-22; public contracts are proposed, not
-implemented. Baseline: [released v0.32.0](plans/archives/tradingview-cli-official-mcp-client.md#publication-closeout-2026-09-22).
+Status: direction accepted on 2026-09-22; public contract proposals and scoped reads are
+approved, not implemented. Baseline: [released v0.32.0](plans/archives/tradingview-cli-official-mcp-client.md#publication-closeout-2026-09-22).
 The [inventory](next-version-work-items.md) owns order; the
 [operational-improvements plan](plans/tradingview-cli-mcp-operational-improvements.md)
 owns contracts, decisions and acceptance.

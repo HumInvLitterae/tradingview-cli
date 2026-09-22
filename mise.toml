@@ -7,7 +7,7 @@ run = "bash scripts/git-hooks/pre-commit-fast.sh"
 run_windows = "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/git-hooks/pre-commit-fast.ps1"
 
 [tasks."check:baseline"]
-description = "Run the full local baseline used by the pre-push hook"
+description = "Run the full local baseline explicitly with conservative concurrency"
 run = "bash scripts/git-hooks/pre-push-baseline.sh"
 run_windows = "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/git-hooks/pre-push-baseline.ps1"
 
@@ -32,7 +32,7 @@ run = "python3 scripts/check-three-point-drawing-js-contract.py"
 run_windows = "python scripts/check-three-point-drawing-js-contract.py"
 
 [tasks."hooks:install"]
-description = "Install Git 2.54 config-based hooks into local git config"
+description = "Install fast local hooks; leave the full pre-push baseline disabled"
 run = '''
 bash scripts/install-config-hooks.sh
 '''
@@ -55,10 +55,10 @@ git hook list pre-push || true
 '''
 
 [tasks."hooks:enable"]
-description = "Enable repo-local config-based hooks"
+description = "Enable fast local hooks; leave the full pre-push baseline disabled"
 run = '''
 git config --local hook.tv-fast.enabled true
-git config --local hook.tv-baseline.enabled true
+git config --local hook.tv-baseline.enabled false
 git hook list pre-commit || true
 git hook list pre-push || true
 '''

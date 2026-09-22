@@ -12,8 +12,9 @@
 The owner accepted the v0.33.0 direction and explicitly included official
 technical snapshots alongside alert firing history. Login usability,
 measurement-led connection reuse and fixture stability complete the scope.
-Concrete public contracts remain proposed; the active record owns their review
-and the verification authority, not this index.
+Public-contract proposals and scoped live reads are approved. The active record
+owns response qualification and remaining material decisions. The immediate
+prerequisite is opt-in heavy local hooks and conservative local Cargo execution.
 
 Historical release records preserve dated evidence and do not establish a
 current checkout, ongoing provider availability or new execution authority.
