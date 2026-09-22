@@ -18,7 +18,8 @@ async fn main() {
         if !(args.len() == 2 || (args.len() == 4 && args[2] == "--credential-worker-path")) {
             eprintln!(concat!(
                 "Usage: connection_proof --local-admission | ",
-                "economic-commands/economic-codes-shape/economic-series-shape/",
+                "economic-commands/dividend-commands/",
+                "economic-codes-shape/economic-series-shape/",
                 "economic-overview-shape/economic-symbols-shape/",
                 "economic-calendar-shape/dividends-shape/dividend-screen-shape/",
                 "research-commands/news-shape/documents-shape/story-shape/",
@@ -40,6 +41,7 @@ async fn main() {
             "story-shape" => Op::StoryShape,
             "document-shape" => Op::DocumentShape,
             "economic-commands" => Op::EconomicCommands,
+            "dividend-commands" => Op::DividendCommands,
             "economic-codes-shape" => Op::EconomicCodesShape,
             "economic-series-shape" => Op::EconomicSeriesShape,
             "economic-overview-shape" => Op::EconomicOverviewShape,

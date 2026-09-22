@@ -27,6 +27,35 @@ corrections. The owner subsequently accepted the Windows basic runtime check;
 the earlier deferred-platform gates below are historical checkpoints. Follow [PLANS.md](../../.agents/PLANS.md);
 this is the single feature work record.
 
+## Dividend acceptance and CI closeout (2026-09-22)
+
+[CI for `ccd780d`](https://github.com/HumInvLitterae/tradingview-cli/actions/runs/35671957710)
+passed, including Linux Secret Service integration, macOS/Windows tests, all four
+JavaScript contract gates, Clippy, formatting and runtime resources. This closes
+the previously pending remote Linux integration gate. Real graphical Linux OAuth
+remains explicitly unverified under the owner's implementation-first scope.
+
+The same approved account, existing trusted worker and shared state were reused
+for dividend qualification. A development-only `dividend-commands` action now
+selects the two dividend requests without repeating qualified economic reads.
+The first successful symbol response exposed a harness bug: `mode:symbols` was
+mistaken for an economic catalog solely by its mode string. The harness now
+requires the economic Symbols kind before selecting a follow-up series. Public
+CLI/service normalization was unaffected; this is not a production contract fix.
+
+The corrected normal-deadline run returned two symbol-mode rows and two
+market-mode rows, one tool attempt each, both normalized as `mcp_dividends.v1`.
+The aggregate proof succeeded. The earlier provider errors remain historical
+observations; no current all-MCP outage or continuing 429 is inferred. All agreed
+feature slices now have their required scoped native evidence. This is not a
+claim of general availability, complete data coverage or identical per-command
+runtime evidence on every platform.
+
+The example build, focused all-target MCP Clippy, formatting and public/diff
+checks validate the harness change. Existing passing production/CI evidence is
+reused. Next: prepare the agreed v0.32.0 candidate and its local release artifact;
+publication still requires explicit current-turn authorization.
+
 ## Linux and independent runtime guidance implementation (2026-09-22)
 
 The owner approved execution of the Linux/standalone-skill plan and subsequently
