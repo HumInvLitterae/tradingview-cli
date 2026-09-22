@@ -676,3 +676,80 @@ next live attempt. Any configurable public timeout proposal needs its own
 concrete CLI/behavior review; it is not included in this diagnostic change.
 Formatting, public-hygiene and diff checks passed; no real account mutation,
 new dependency, installed-binary replacement, push or release occurred.
+
+
+## Independent latency investigation and timeout proposal (2026-09-23)
+
+Source review found one reused reqwest client per command, existing connection
+pooling and HTTP/2 support, no HTTP retry, and no intentional multi-second sleep
+between initialization and catalog requests. Admission delays tool dispatch,
+not metadata or initialization. No evidence justifies weakening binding checks,
+removing durable pre-dispatch counters, forcing a protocol or caching metadata
+across commands.
+
+Anonymous curl GETs reproduced latency independently of the Rust client,
+credential worker and state files. Bodies were discarded. For the MCP protected
+resource metadata, the first observation completed TLS at 0.438 s but received
+headers at 11.592 s. A separate reused-connection comparison returned 8.842 s
+then 0.962 s (`num_connects` 1 then 0); issuer metadata returned in 0.063 s.
+Explicit HTTP/1.1 pairs completed in 2.406/0.624 s and 5.985/4.826 s. An HTTP/2
+pair completed in 13.092/2.919 s. These sequential small samples have different
+network/server conditions and overlapping warm-request results; they do not
+prove HTTP/2 causes the delay or identify an origin versus intermediary fault.
+No authenticated MCP or technical tool call was repeated in this investigation.
+
+Also corrected stale `tv mcp --help` text that still said Linux credential
+support was unavailable. It now identifies Secret Service and its session-bus /
+unlocked-collection requirement, consistent with the implemented adapter.
+
+### Proposed explicit read timeout — NOT APPROVED OR IMPLEMENTED
+
+Keep the existing 30-second default. Add an explicit MCP-group option only for
+provider read operations, such as:
+
+```sh
+tv mcp --timeout-secs 90 alert history --symbol NASDAQ:EXAMPLE --days 7 --limit 100
+```
+
+Scope: Bars, Data, Financial, Research, Economic and Account reads. Login,
+logout, local status and all watchlist/alert mutations reject the override
+before credential/provider access. This avoids changing uncertainty windows for
+account mutations. Positive integer seconds 1..180 would be accepted; invalid
+numeric bounds return existing `mcp_error.v1` with `code: invalid_request`,
+`reason: timeout_seconds`, `tool_attempts: 0`. Unsupported operation/override
+combinations use `unsupported_capability` with zero attempts. Non-integer CLI
+values follow existing argument parsing errors.
+
+Before/after: the same request without the option still has a 30-second total
+budget and can return `deadline_exceeded`. With `--timeout-secs 90`, the client
+may wait up to 90 seconds total for local admission, discovery, credentials,
+connection, dispatch and response/cleanup. Success uses the unchanged
+`mcp_alert_history.v1` envelope; expiry still uses `mcp_error.v1` /
+`deadline_exceeded`. Longer waiting is not guaranteed success. No retry, source
+fallback, new JSON field, persisted configuration or default increase is added.
+Actual cooldown and provider errors terminate normally; this does not solve the
+technical tool's rate-limit response.
+
+Alternatives: preserve the current behavior and wait for better provider/network
+availability, or increase the default for all operations. Recommend the explicit
+read-only option because callers retain their current maximum wait unless they
+choose otherwise. Default increases remain outside the approved scope. This
+public CLI/behavior proposal requires owner agreement under AGENTS.md before
+implementation; research and the platform-help correction do not depend on it.
+
+If approved, add operation-level validation before store/provider access, carry
+one selected absolute deadline through the existing service, and test default,
+explicit bounds, rejection on mutations, delayed success/expiry, no replay and
+unchanged success/error envelopes. Update help/usage and independently usable
+skills where they explain long reads. Then qualify the approved AAPL history
+request with an explicit budget, separately from the still-open default-deadline
+acceptance. Keep official technical snapshots planned until their wire response
+can be qualified; do not equate a timeout option with completing that feature.
+
+
+The existing focused MCP help/legacy-bars contract test passed, and the complete
+help output was read back successfully with the corrected platform text.
+Formatting, public-hygiene and diff checks passed. Local Cargo used one build
+job and one test thread; no workspace-wide suite or release build ran. The
+explicit timeout proposal was presented for owner review; its implementation
+remains pending that decision.

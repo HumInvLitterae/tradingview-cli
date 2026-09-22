@@ -38,3 +38,9 @@ readiness. Repeated identical technical checks still return a rate-limit textual
 clue; another live attempt should follow new availability evidence or a concrete
 diagnostic hypothesis, not an automatic retry on each continuation. The public
 30-second deadline and approved feature scope remain unchanged.
+
+Independent anonymous HTTP checks reproduced variable response latency outside
+the Rust client; no transport configuration fix is established. The active
+record proposes an explicit read-only timeout option with the 30-second default
+unchanged. That public CLI extension is pending owner approval, not implemented
+or part of the previously approved scope.
