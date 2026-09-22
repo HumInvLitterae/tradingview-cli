@@ -33,6 +33,39 @@ pub enum Operation {
     WatchlistMutation(tradingview_model::mcp_account::WatchlistMutation),
 }
 
+impl Operation {
+    pub(crate) fn timeout_duration(&self, seconds: Option<u64>) -> Result<Duration, AppError> {
+        let Some(seconds) = seconds else {
+            return Ok(Duration::from_secs(if matches!(self, Self::Login) {
+                300
+            } else {
+                30
+            }));
+        };
+        if !(1..=180).contains(&seconds) {
+            return Err(
+                AppError::new(ErrorKind::Validation, "MCP timeout must be 1-180 seconds")
+                    .with_details(json!({
+                        "contract_version": "mcp_error.v1", "source": "tradingview_mcp",
+                        "code": "invalid_request", "reason": "timeout_seconds", "tool_attempts": 0
+                    })),
+            );
+        }
+        if !matches!(
+            self,
+            Self::Bars(_)
+                | Self::Data(_)
+                | Self::Financial(_)
+                | Self::Research(_)
+                | Self::Economic(_)
+                | Self::Account(_)
+        ) {
+            return Err(mcp_bars::unsupported("timeout"));
+        }
+        Ok(Duration::from_secs(seconds))
+    }
+}
+
 /// Internal workspace service; no external stable Rust API is promised.
 pub struct Client {
     directory: PathBuf,
@@ -55,12 +88,15 @@ impl Client {
     }
 
     pub async fn run(&self, operation: Operation) -> Result<Value, AppError> {
-        let deadline = Instant::now()
-            + Duration::from_secs(if matches!(operation, Operation::Login) {
-                300
-            } else {
-                30
-            });
+        self.run_with_timeout(operation, None).await
+    }
+
+    pub async fn run_with_timeout(
+        &self,
+        operation: Operation,
+        timeout_seconds: Option<u64>,
+    ) -> Result<Value, AppError> {
+        let deadline = Instant::now() + operation.timeout_duration(timeout_seconds)?;
         let mut admission = Admission::acquire(&self.directory, deadline)
             .await
             .map_err(|e| failure(e, "local_admission", 0, None))?;

@@ -85,7 +85,7 @@ async fn async_main() -> ExitCode {
         return terminal_error("tv", app_error);
     };
 
-    if let Command::Mcp { command } = command {
+    if let Command::Mcp { command, timeout } = command {
         if cli.target_id.is_some() {
             return terminal_error(
                 "mcp",
@@ -94,7 +94,7 @@ async fn async_main() -> ExitCode {
         }
         // No tracing subscriber for account-bearing MCP flows, even with
         // RUST_LOG=trace. Other command groups retain their existing logging.
-        return standard_exit("mcp", crate::ops::run_mcp(command).await);
+        return standard_exit("mcp", crate::ops::run_mcp(command, timeout).await);
     }
     init_tracing();
 

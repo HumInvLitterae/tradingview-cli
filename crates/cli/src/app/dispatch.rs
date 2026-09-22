@@ -37,7 +37,7 @@ pub async fn dispatch(
     config: &TransportConfig,
 ) -> Result<serde_json::Value, AppError> {
     match command {
-        Command::Mcp { command } => ops::run_mcp(command).await,
+        Command::Mcp { command, timeout } => ops::run_mcp(command, timeout).await,
         Command::Status => ops::status(config).await,
         Command::Readiness => ops::readiness(config).await,
         Command::Launch {

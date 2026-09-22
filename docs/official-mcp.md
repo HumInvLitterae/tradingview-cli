@@ -22,6 +22,29 @@ reads need no repeated source approval. For setup and errors, the portable
 [connection reference](../.agents/skills/market-data/references/mcp-connection.md)
 also ships with the independently attachable data/account skills.
 
+## Read deadlines (next version)
+
+Provider reads default to a 30-second total deadline. When the caller chooses
+to wait longer, specify seconds explicitly:
+
+```sh
+tv mcp --timeout 90 alert history --symbol NASDAQ:AAPL --days 7 --limit 100
+```
+
+`--timeout` accepts integer seconds 1..180 and may appear before or after the
+read subcommand. The budget includes local admission, authentication, metadata,
+connection setup, data and cleanup; it is not a fresh timeout per network request.
+It supports bars, data, financial, research, economic and account reads.
+Login, logout, local status and account mutations reject the override before
+credential/provider access. Without an override, all existing deadlines remain
+unchanged. Invalid numeric bounds return `invalid_request` / `timeout_seconds`
+with zero tool attempts; unsupported operation combinations return
+`unsupported_capability` with zero attempts. There is no `--timeout-secs` alias.
+
+An explicit longer deadline does not retry a request, bypass a cooldown or fix a
+provider limit. Success and error JSON contracts are unchanged. A timeout is
+still a failure; do not interpret it as empty data or silently switch sources.
+
 ## Use
 
 ```sh

@@ -675,7 +675,10 @@ it. The next-version proof adds `next-read-catalog`,
 These are development-only
 operations with fixed approved requests; they do not add public CLI commands.
 `alert-history-command` separately exercises the public service at its normal
-30-second deadline with the original explicit symbol; it prints only contract,
+30-second deadline with the original explicit symbol. The fixed
+`alert-history-extended-command` uses the same service with an explicit 90-second
+read timeout, equivalent to `tv mcp --timeout 90 alert history` for that target.
+Both print only contract,
 count and coverage or structured failure details. The
 [active plan](plans/tradingview-cli-mcp-operational-improvements.md) owns
 qualification. Output contains only a closed field-name/type vocabulary,

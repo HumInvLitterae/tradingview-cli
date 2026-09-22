@@ -753,3 +753,50 @@ Formatting, public-hygiene and diff checks passed. Local Cargo used one build
 job and one test thread; no workspace-wide suite or release build ran. The
 explicit timeout proposal was presented for owner review; its implementation
 remains pending that decision.
+
+
+## Explicit read timeout approved and implemented (2026-09-23)
+
+The owner approved the preceding read-only timeout proposal, then chose the
+shorter spelling `--timeout`. That choice supersedes `--timeout-secs`; no alias
+is provided. Implemented the MCP-group option, accepting seconds before or after
+a read subcommand. The previously recorded range, eligibility, unchanged default,
+error contract and total-budget semantics are retained.
+
+The CLI forwards the option to the service. Operation-level validation selects
+one absolute deadline before local admission, credential-worker setup or provider
+access. Existing callers of the internal service `run` retain default behavior.
+No new dependency, persisted setting, public JSON field, automatic retry or
+mutation deadline change was introduced. Usage docs and the independently
+packaged connection references in market-data, account-management and
+screener-workflow now explain the option and its limits.
+
+Focused verification passed for invalid bounds, unsupported operations,
+zero-attempt failures, absence of state-directory creation for rejected options,
+unchanged default durations, accepted boundaries, and whole-operation expiry
+versus delayed success without replay. The old `--timeout-secs` spelling is
+rejected. The existing MCP help/legacy-bars test also passed. A selected short
+operation deadline expires during catalog setup in the fixture; it does not
+restart per request. Native verification is recorded separately below.
+
+
+### Native acceptance and final checks
+
+The fixed development harness invoked the same public service with the selected
+90-second timeout for the approved AAPL/seven-day/100-event history request. It
+used the installed trusted executable only as credential worker, preserving
+PATH's released binary. The request succeeded with `mcp_alert_history.v1`,
+`returned_count: 0` and `coverage: unconfirmed`. This qualifies empty-history
+native behavior with an explicit timeout. It does not establish nonempty native
+normalization, complete coverage or reliable success at the unchanged default;
+the preceding default-30-second failure remains valid scoped evidence.
+
+The affected MCP/CLI all-target Clippy check passed. Formatting, public hygiene,
+changed Markdown links and twelve JSON examples passed. All three touched skills
+passed metadata and standalone-reference checks. Runtime-package self-tests
+passed (11 cases), and disposable placeholder-binary staging passed with seven
+skills per root; it is not release-binary validation. All Cargo operations were
+sequential with one build job and one test thread. No workspace-wide test,
+release build, Windows/Linux runtime test, account mutation, push or installed
+binary replacement occurred. Technical response qualification remains open and
+was not retried for this timeout change.

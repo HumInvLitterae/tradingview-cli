@@ -457,3 +457,42 @@ fn alert_history_help_and_invalid_requests_need_no_account_access() {
         .failure()
         .stderr(predicates::str::contains("--symbol"));
 }
+
+#[test]
+fn mcp_timeout_rejects_invalid_or_non_read_requests_before_access() {
+    for (args, code) in [
+        (
+            vec!["--timeout", "0", "bars", "NASDAQ:EXAMPLE"],
+            "invalid_request",
+        ),
+        (
+            vec!["bars", "NASDAQ:EXAMPLE", "--timeout", "181"],
+            "invalid_request",
+        ),
+        (vec!["--timeout", "90", "login"], "unsupported_capability"),
+        (vec!["--timeout", "90", "logout"], "unsupported_capability"),
+        (vec!["--timeout", "90", "status"], "unsupported_capability"),
+        (
+            vec!["--timeout", "90", "alert", "stop", "12"],
+            "unsupported_capability",
+        ),
+        (
+            vec!["--timeout", "90", "watchlist", "delete", "12"],
+            "unsupported_capability",
+        ),
+    ] {
+        let output = tv()
+            .arg("mcp")
+            .args(args)
+            .assert()
+            .failure()
+            .get_output()
+            .clone();
+        let error: Value = serde_json::from_slice(&output.stderr).unwrap();
+        assert_eq!(error["error"]["details"]["code"], code);
+        assert_eq!(error["error"]["details"]["tool_attempts"], 0);
+    }
+    tv().args(["mcp", "--timeout-secs", "90", "status"])
+        .assert()
+        .failure();
+}

@@ -5,7 +5,7 @@ use tradingview_mcp::{Client, Operation};
 use tradingview_model::mcp_account;
 use tradingview_model::mcp_bars::{Request, unsupported};
 
-pub async fn run_mcp(command: McpCommand) -> Result<Value, AppError> {
+pub async fn run_mcp(command: McpCommand, timeout: Option<u64>) -> Result<Value, AppError> {
     use tradingview_model::{mcp_data, mcp_economics, mcp_financials, mcp_research};
 
     let operation = match command {
@@ -236,7 +236,9 @@ pub async fn run_mcp(command: McpCommand) -> Result<Value, AppError> {
             Operation::Bars(Request::new(&symbol, &timeframe, count)?)
         }
     };
-    Client::current_user()?.run(operation).await
+    Client::current_user()?
+        .run_with_timeout(operation, timeout)
+        .await
 }
 
 fn alert_settings(
