@@ -10,7 +10,7 @@ Prepare v0.31.4 from published v0.31.3 plus the ten maintenance commits through
 [maintenance classification](#maintenance-classification) classifies
 nine dependency updates and the runtime guidance/package reorganization.
 There is no production Rust source change in this patch. MCP implementation
-and dependencies remain in the separate [MCP plan](../tradingview-cli-official-mcp-client.md).
+and dependencies remain in the separate [MCP plan](tradingview-cli-official-mcp-client.md).
 
 The release preparation commit groups workspace versions, CHANGELOG, curated
 release notes, the README archive example, this work record and current release

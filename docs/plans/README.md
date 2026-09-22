@@ -2,22 +2,18 @@
 
 | Purpose | Record |
 | --- | --- |
-| Active official MCP client and release checklist | [MCP work record](tradingview-cli-official-mcp-client.md#release-checklist-and-documentation-plan-2026-09-22) |
-| v0.32.0 candidate direction | [Roadmap](../next-version-roadmap.md) |
-| Ordered remaining work and ownership | [Inventory](../next-version-work-items.md) |
-| Released baseline | [v0.31.4 closeout](archives/tradingview-cli-v0.31.4-release-readiness.md) |
+| v0.33.0 direction | [Roadmap](../next-version-roadmap.md) |
+| Priority and completion conditions | [Ordered inventory](../next-version-work-items.md) |
+| Active contracts, implementation and evidence | [MCP operational improvements](tradingview-cli-mcp-operational-improvements.md) |
+| Released baseline | [v0.32.0 closeout](archives/tradingview-cli-official-mcp-client.md#publication-closeout-2026-09-22) |
 | CDP stability triggers | [Strategy note](../notes/cdp-stability-and-autonomous-operation-strategy.md) |
 | Completed plans | [Historical catalog](archives/README.md) |
 
-The agreed MCP slices are implemented. Windows CI and owner-reported basic
-machine acceptance passed. Both dividend modes now pass native acceptance. The v0.32.0 scope is selected;
-remaining work is the local release artifact and publication after owner approval. The Linux credential adapter and
-MCP-first independent skills are implemented with focused validation recorded
-in the work record. Real Linux desktop OAuth remains separate from container/CI
-evidence. Downstream analytical adoption is separate.
+The owner accepted the v0.33.0 direction and explicitly included official
+technical snapshots alongside alert firing history. Login usability,
+measurement-led connection reuse and fixture stability complete the scope.
+Concrete public contracts remain proposed; the active record owns their review
+and the verification authority, not this index.
 
-Use the current checklist above rather than pending statements in dated evidence.
-Historical release records do not establish current checkout or publication state.
-Keep direction, ordering and detailed acceptance in their respective records;
-do not create a duplicate feature/documentation plan. Publication remains separate
-from local preparation and requires explicit current-turn authorization.
+Historical release records preserve dated evidence and do not establish a
+current checkout, ongoing provider availability or new execution authority.

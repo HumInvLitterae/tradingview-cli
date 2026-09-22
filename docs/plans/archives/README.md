@@ -8,6 +8,11 @@ remain at their original paths. Use [current work](../README.md) to resume.
 
 Recently completed:
 
+- [Official MCP client and v0.32.0 release](tradingview-cli-official-mcp-client.md):
+  published 2026-09-22 at 54dabec; release workflow success and downstream
+  adoption reported. Historical preparation evidence and platform limits remain
+  scoped to their recorded checks.
+
 - [v0.31.4 release](tradingview-cli-v0.31.4-release-readiness.md): publication
   and successful native release jobs verified on 2026-09-20 at 48e500b. The
   record retains the maintenance-candidate classification and validation.
