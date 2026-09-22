@@ -153,6 +153,8 @@ fn error_hints(error: Option<&Value>) -> Value {
         .to_ascii_lowercase();
     let groups: &[(&str, &[&str])] = &[
         ("rate_limit", &["429", "rate limit", "too many requests"]),
+        // This is an error-text reference, not proof of a request made by this client.
+        ("screener_endpoint", &["scanner.tradingview.com"]),
         (
             "authorization",
             &["401", "403", "unauthorized", "forbidden", "permission"],
@@ -340,6 +342,17 @@ mod tests {
         let hints = error_hints(Some(&json!("429 rate limit for private-account")));
         assert_eq!(hints["textual_clues"], json!(["rate_limit"]));
         assert_eq!(hints["root_cause"], "unconfirmed");
+        let upstream = error_hints(Some(&json!(
+            "429 Client Error for https://scanner.tradingview.com/private?token=secret"
+        )));
+        assert_eq!(
+            upstream["textual_clues"],
+            json!(["rate_limit", "screener_endpoint"])
+        );
+        for private in ["https", "private", "token", "secret"] {
+            assert!(!upstream.to_string().contains(private));
+        }
+
         assert!(!hints.to_string().contains("private-account"));
         assert_eq!(
             error_hints(Some(&json!({"secret": "429"})))["textual_clues"],

@@ -1,7 +1,7 @@
 # MCP operational improvements and two additional reads
 
-Status: **login guidance and alert history implemented; native history acceptance
-and technical response qualification remain open**, 2026-09-23.
+Status: **login guidance, history, connection reuse and read timeout implemented;
+technical snapshots blocked on provider response evidence**, 2026-09-23.
 Direction and priority live in the [roadmap](../next-version-roadmap.md) and
 [inventory](../next-version-work-items.md). This is the single work record for
 v0.33.0; the [v0.32.0 record](archives/tradingview-cli-official-mcp-client.md)
@@ -800,3 +800,63 @@ sequential with one build job and one test thread. No workspace-wide test,
 release build, Windows/Linux runtime test, account mutation, push or installed
 binary replacement occurred. Technical response qualification remains open and
 was not retried for this timeout change.
+
+
+## Technical upstream-error qualification (2026-09-23)
+
+A new diagnostic hypothesis distinguished an outer MCP HTTP limit from an
+application error mentioning the screener endpoint. Added one private
+closed-vocabulary `screener_endpoint` hint for the literal known service
+hostname in error text; no URL, query, error string or account identifier is
+retained. A synthetic error containing a private path/query verifies that those
+values are absent from the report. This does not change public error mapping.
+
+The single approved AAPL daily recheck returned HTTP 200 with completed JSON
+at 3.190 seconds into the investigation budget. Initialization and catalog also
+completed with HTTP 200. The tool's structured response was `success:false`,
+with a string error matching both `rate_limit` and `screener_endpoint`. No
+indicator/rating containers were returned. This is a provider application
+failure, not a client deadline expiry or an observed outer HTTP 429. The text
+points to the official service's screener data path; the client did not directly
+request that endpoint, so the upstream status, quota ownership and reset remain
+unconfirmed. A longer timeout cannot resolve this received failure.
+
+Stop identical technical rechecks until new availability evidence or a provider
+response gives a reason to resume. Keep technical snapshots in the approved
+version scope, but mark their implementation blocked on usable source evidence;
+do not silently defer them, invent a wire schema or substitute another source.
+The history and timeout features remain independently implemented and verified.
+
+### Public-safe provider inquiry draft (not sent)
+
+The official MCP tool `get_technicals_rating` (catalog wire name
+`mcp-tv-get-technicals-rating`) fails for `symbol: NASDAQ:AAPL`, `interval: 1D`.
+Observed on 2026-09-22 UTC / 2026-09-23 JST. Authenticated initialization and
+catalog discovery succeed. The tool HTTP response is 200 with structured
+`success:false` and a string error containing rate-limit and
+`scanner.tradingview.com` references; no technical observations are returned.
+The most recent response arrived within about 3.2 seconds. Other account reads
+have succeeded separately; this report does not claim a universal MCP outage.
+No raw error, credentials, account identifiers or opaque request IDs are included.
+
+Please confirm whether this is an upstream screener access limitation, whether
+there is a supported recovery/reset condition, and the successful response schema
+for this tool. In particular, document indicator/rating containers, missing-value
+representation, symbol/interval echoes and any data timestamp. This draft is
+provided for owner review only; no external message or support ticket was sent.
+
+### Resume and verification
+
+Resume the approved daily shape read after a provider fix/availability indication
+or new diagnostic evidence. If it succeeds, qualify the actual fields before
+implementing normalization; then verify the approved weekly/monthly/two-hour
+requests and preserved unknown conditions. Timeout extension alone is not that
+availability indication. No additional account authorization is needed for the
+already approved same-target reads.
+
+The targeted redaction/classification test passed. The incremental proof build,
+formatting, public-hygiene and diff checks passed. Builds were sequential with
+one Cargo job and tests used one thread. No broad suite, release build, other
+technical timeframe, new dependency, account mutation or installed-binary change
+was performed. The official documentation was rechecked and still advertises
+the tool and supported intervals, without the missing successful response shape.
