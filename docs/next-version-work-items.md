@@ -8,7 +8,7 @@ Direction: [roadmap](next-version-roadmap.md). Decisions and acceptance:
 | 1 | Close v0.32.0 and establish baseline | Done: publication/workflow verified; prior record archived with historical evidence preserved and downstream report distinguished from local checks. |
 | 2 | Settle new read contracts and live verification scope | Contract proposals and scoped reads approved; actual response shapes and missing-value rules still need verification before finalizing normalization. Both are planned features. |
 | 3 | Improve login/upgrade operation | Implemented terminal-only pre-interaction guidance; captured stderr, existing stdout/error JSON and credential reuse verified by focused tests. Fresh live authorization not repeated. |
-| 4 | Implement alert history | Implemented and fixture-verified, including nonempty provider shape evidence. Public-service 30-second native acceptance remains open after a tool-response timeout. |
+| 4 | Implement alert history | Implemented and fixture-verified, including nonempty provider shape evidence. Public-service 30-second native acceptance remains open. A long-budget empty-history read completed at 50.8 seconds, including 26.9 seconds before catalog completion; the latency root cause is unconfirmed. |
 | 5 | Implement official technical snapshot | Single symbol/timeframe, provider values/ratings without local recomputation, missing/unknown conditions retained; fixtures and scoped real acceptance. |
 | 6 | Measure and conditionally optimize transport | Implemented and measured: initialization/catalog reduced from two to one on a single-page catalog; lazy pagination and failed readback retain mutation results. MCP regression suite and scoped Clippy passed; no live latency claim. |
 | 7 | Stabilize affected fixtures | Reproduce and correct time/readiness dependencies; normal CI parallel execution passes without production timeout changes. Work can accompany stages 3–6. |
@@ -32,3 +32,9 @@ The daily technical recheck again returned a rate-limit textual clue. The
 opt-in synthetic before/after measurement and command-local connection reuse
 are complete. Successful technical response qualification and normal-deadline
 history acceptance remain the next provider-dependent work.
+
+Completed-response diagnostics now distinguish long-budget success from public
+readiness. Repeated identical technical checks still return a rate-limit textual
+clue; another live attempt should follow new availability evidence or a concrete
+diagnostic hypothesis, not an automatic retry on each continuation. The public
+30-second deadline and approved feature scope remain unchanged.
