@@ -2149,3 +2149,61 @@ async fn reused_session_preserves_mutation_when_readback_fails() {
         }
     }
 }
+
+#[tokio::test]
+async fn explicit_read_timeout_bounds_the_entire_operation_without_replay() {
+    use crate::client::{Operation, execute};
+    use tradingview_model::mcp_bars::Request as Bars;
+
+    let read = || Operation::Bars(Bars::new("NASDAQ:EXAMPLE", "1D", 20).unwrap());
+    assert_eq!(
+        read().timeout_duration(None).unwrap(),
+        Duration::from_secs(30)
+    );
+    assert_eq!(
+        Operation::Login.timeout_duration(None).unwrap(),
+        Duration::from_secs(300)
+    );
+    for seconds in [1, 90, 180] {
+        assert_eq!(
+            read().timeout_duration(Some(seconds)).unwrap(),
+            Duration::from_secs(seconds)
+        );
+    }
+    let root = tempfile::tempdir().unwrap();
+    let directory = root.path().join("must-not-exist");
+    let client = crate::Client::with_paths(directory.clone(), root.path().join("missing-worker"));
+    for (operation, seconds, code) in [
+        (read(), 0, "invalid_request"),
+        (read(), 181, "invalid_request"),
+        (Operation::Status, 90, "unsupported_capability"),
+    ] {
+        let error = client
+            .run_with_timeout(operation, Some(seconds))
+            .await
+            .unwrap_err();
+        assert_eq!(error.details.unwrap()["code"], code);
+        assert!(!directory.exists());
+    }
+    for seconds in [1, 3] {
+        let server = Server::start("setup-latency-600").await;
+        let operation = read();
+        let duration = operation.timeout_duration(Some(seconds)).unwrap();
+        let (_root, mut guard, budget, mut http, store) = context(&server, 10).await;
+        fixture_login(&http, &store, &budget).await;
+        // Credential setup belongs to the fixture; the operation keeps one deadline.
+        http.deadline = Instant::now() + duration;
+        let result = execute(operation, &mut guard, store, http, budget, true).await;
+        if seconds == 1 {
+            assert_eq!(
+                result.unwrap_err().details.unwrap()["code"],
+                "deadline_exceeded"
+            );
+            assert_eq!(server.calls("tools/call"), 0);
+        } else {
+            assert_eq!(result.unwrap()["contract_version"], "mcp_bars.v1");
+            assert_eq!(server.calls("tools/call"), 1);
+        }
+        assert_eq!(server.calls("initialize"), 1);
+    }
+}

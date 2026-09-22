@@ -52,6 +52,14 @@ pub enum Command {
                       are required for noninteractive credential access."
     )]
     Mcp {
+        #[arg(
+            long,
+            global = true,
+            value_name = "SECONDS",
+            help = "Total deadline for provider reads in seconds (1-180; default: 30). \
+                    Not valid for login, logout, status or mutations"
+        )]
+        timeout: Option<u64>,
         #[command(subcommand)]
         command: McpCommand,
     },

@@ -8,7 +8,7 @@ Direction: [roadmap](next-version-roadmap.md). Decisions and acceptance:
 | 1 | Close v0.32.0 and establish baseline | Done: publication/workflow verified; prior record archived with historical evidence preserved and downstream report distinguished from local checks. |
 | 2 | Settle new read contracts and live verification scope | Contract proposals and scoped reads approved; actual response shapes and missing-value rules still need verification before finalizing normalization. Both are planned features. |
 | 3 | Improve login/upgrade operation | Implemented terminal-only pre-interaction guidance; captured stderr, existing stdout/error JSON and credential reuse verified by focused tests. Fresh live authorization not repeated. |
-| 4 | Implement alert history | Implemented and fixture-verified, including nonempty provider shape evidence. Public-service 30-second native acceptance remains open. A long-budget empty-history read completed at 50.8 seconds, including 26.9 seconds before catalog completion; the latency root cause is unconfirmed. |
+| 4 | Implement alert history | Implemented and fixture-verified, including nonempty provider shape evidence. The public service succeeded with an explicit 90-second timeout (empty history); default-30-second success remains unqualified. Coverage stays unconfirmed. |
 | 5 | Implement official technical snapshot | Single symbol/timeframe, provider values/ratings without local recomputation, missing/unknown conditions retained; fixtures and scoped real acceptance. |
 | 6 | Measure and conditionally optimize transport | Implemented and measured: initialization/catalog reduced from two to one on a single-page catalog; lazy pagination and failed readback retain mutation results. MCP regression suite and scoped Clippy passed; no live latency claim. |
 | 7 | Stabilize affected fixtures | Reproduce and correct time/readiness dependencies; normal CI parallel execution passes without production timeout changes. Work can accompany stages 3–6. |
@@ -20,8 +20,9 @@ and explicit local baselines default to one build job/test thread. Both new
 contracts and scoped reads are approved. Catalog/schema checks passed. History
 now has a public command, strict normalization, deterministic tests and updated
 standalone guidance. Account-wide shape-only investigation established nonempty
-fields; the public CLI still requires a symbol. Its separate normal-deadline
-native check timed out after one dispatch, so runtime acceptance remains open.
+fields; the public CLI still requires a symbol. Its default-deadline
+native check timed out after one dispatch; the later explicit-90-second public
+service check succeeded with an empty history.
 Technical daily returned a provider application error with a rate-limit textual
 clue; further technical probes are stopped until the limit permits them.
 Successful indicator fields remain unqualified. No version bump or dependency
@@ -40,7 +41,12 @@ diagnostic hypothesis, not an automatic retry on each continuation. The public
 30-second deadline and approved feature scope remain unchanged.
 
 Independent anonymous HTTP checks reproduced variable response latency outside
-the Rust client; no transport configuration fix is established. The active
-record proposes an explicit read-only timeout option with the 30-second default
-unchanged. That public CLI extension is pending owner approval, not implemented
-or part of the previously approved scope.
+the Rust client; no transport configuration fix is established. The owner subsequently approved the explicit read-only timeout option and chose
+`--timeout` as its spelling. It is implemented with the 30-second default
+unchanged; rejected operations fail before credential/provider access. The active
+record owns the added acceptance evidence.
+
+The approved `--timeout` option, focused tests, standalone guidance and native
+90-second empty-history acceptance are complete. No `--timeout-secs` alias is
+provided. Successful technical values and default-deadline history availability
+remain separate outstanding evidence; no release-ready claim is made.

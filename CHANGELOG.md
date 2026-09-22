@@ -9,6 +9,9 @@ package version omits the leading `v`.
 
 ### Added
 
+- `tv mcp --timeout <SECONDS>` selects a 1–180 second total deadline for provider
+  reads. The default remains 30 seconds; login, logout, status and mutations
+  reject the override before credential/provider access.
 - `tv mcp alert history --symbol <EXCHANGE:SYMBOL>` reads bounded recent firing
   history with `mcp_alert_history.v1`, explicit unknown coverage, validated alert
   identity/UTC fire time, and no notification-message or webhook-content output.

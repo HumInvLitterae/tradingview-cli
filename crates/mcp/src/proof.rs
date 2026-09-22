@@ -30,6 +30,7 @@ pub enum ProofOperation {
     AlertHistoryShape,
     AccountHistoryShape,
     AlertHistoryCommand,
+    AlertHistoryExtendedCommand,
     EconomicCommands,
     DividendCommands,
     EconomicCodesShape,
@@ -88,8 +89,13 @@ pub async fn run_proof_with_worker(
     operation: ProofOperation,
     worker: Option<&Path>,
 ) -> Result<Value> {
-    if matches!(operation, ProofOperation::AlertHistoryCommand) {
-        return next_reads::verify_history_command(directory, worker).await;
+    if matches!(
+        operation,
+        ProofOperation::AlertHistoryCommand | ProofOperation::AlertHistoryExtendedCommand
+    ) {
+        let timeout =
+            matches!(operation, ProofOperation::AlertHistoryExtendedCommand).then_some(90);
+        return next_reads::verify_history_command(directory, worker, timeout).await;
     }
     if matches!(
         operation,

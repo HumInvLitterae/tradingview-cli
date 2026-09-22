@@ -300,12 +300,13 @@ fn safe_shape(value: &Value, depth: usize) -> Value {
 pub(super) async fn verify_history_command(
     directory: &std::path::Path,
     worker: Option<&std::path::Path>,
+    timeout_seconds: Option<u64>,
 ) -> Result<Value> {
     let worker = worker.ok_or(Failure::UnsupportedCapability)?;
     let request = tradingview_model::mcp_account::Request::alert_history("NASDAQ:AAPL", 7, 100)
         .map_err(|_| Failure::UnsupportedCapability)?;
     match crate::Client::with_paths(directory.to_owned(), worker.to_owned())
-        .run(crate::Operation::Account(request))
+        .run_with_timeout(crate::Operation::Account(request), timeout_seconds)
         .await
     {
         Ok(data) => Ok(
