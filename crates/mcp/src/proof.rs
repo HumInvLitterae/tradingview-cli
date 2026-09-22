@@ -28,6 +28,8 @@ pub enum ProofOperation {
     TechnicalMonthlyShape,
     TechnicalTwoHourShape,
     AlertHistoryShape,
+    AccountHistoryShape,
+    AlertHistoryCommand,
     EconomicCommands,
     DividendCommands,
     EconomicCodesShape,
@@ -86,6 +88,9 @@ pub async fn run_proof_with_worker(
     operation: ProofOperation,
     worker: Option<&Path>,
 ) -> Result<Value> {
+    if matches!(operation, ProofOperation::AlertHistoryCommand) {
+        return next_reads::verify_history_command(directory, worker).await;
+    }
     if matches!(
         operation,
         ProofOperation::EconomicCommands | ProofOperation::DividendCommands
@@ -136,6 +141,7 @@ pub async fn run_proof_with_worker(
                 | ProofOperation::TechnicalWeeklyShape
                 | ProofOperation::TechnicalMonthlyShape
                 | ProofOperation::TechnicalTwoHourShape
+                | ProofOperation::AccountHistoryShape
                 | ProofOperation::AlertHistoryShape
                 | ProofOperation::EconomicCodesShape
                 | ProofOperation::EconomicSeriesShape
@@ -194,7 +200,8 @@ pub async fn run_proof_with_worker(
             | ProofOperation::TechnicalWeeklyShape
             | ProofOperation::TechnicalMonthlyShape
             | ProofOperation::TechnicalTwoHourShape
-            | ProofOperation::AlertHistoryShape => {
+            | ProofOperation::AlertHistoryShape
+            | ProofOperation::AccountHistoryShape => {
                 next_reads::inspect(operation, &mut auth, &mut admission).await
             }
             ProofOperation::EconomicCodesShape

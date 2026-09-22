@@ -671,9 +671,13 @@ native store test uses a disposable synthetic entry and deletes it afterward.
 this is not the public command's 30-second deadline or acceptance evidence for
 it. The next-version proof adds `next-read-catalog`,
 `technical-daily-shape`, `technical-weekly-shape`, `technical-monthly-shape`,
-`technical-two-hour-shape` and `alert-history-shape`. These are development-only
+`technical-two-hour-shape`, `alert-history-shape` and `account-history-shape`.
+These are development-only
 operations with fixed approved requests; they do not add public CLI commands.
-The [active plan](plans/tradingview-cli-mcp-operational-improvements.md) owns
+`alert-history-command` separately exercises the public service at its normal
+30-second deadline with the original explicit symbol; it prints only contract,
+count and coverage or structured failure details. The
+[active plan](plans/tradingview-cli-mcp-operational-improvements.md) owns
 qualification. Output contains only a closed field-name/type vocabulary,
 array counts and echo comparisons; unknown keys and scalar values are omitted.
 Use an explicitly selected, already authorized credential worker without

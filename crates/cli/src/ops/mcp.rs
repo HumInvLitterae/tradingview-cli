@@ -142,6 +142,11 @@ pub async fn run_mcp(command: McpCommand) -> Result<Value, AppError> {
             }
         },
         McpCommand::Alert { command } => match command {
+            McpAlertCommand::History {
+                symbol,
+                days,
+                limit,
+            } => Operation::Account(mcp_account::Request::alert_history(&symbol, days, limit)?),
             McpAlertCommand::List { symbol, active } => {
                 Operation::Account(mcp_account::Request::alerts(symbol.as_deref(), active)?)
             }

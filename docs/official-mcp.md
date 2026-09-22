@@ -697,6 +697,54 @@ For example, a timeout after attempted dispatch has
 For an uncertain create without an ID, inspect the list and resolve ownership;
 do not create another list or pick a same-named list automatically.
 
+## Alert firing history (next version)
+
+```sh
+tv mcp alert history --symbol NASDAQ:EXAMPLE --days 7 --limit 100
+```
+
+This non-mutating read requires an exchange-qualified symbol. `--days` is a
+positive integer, default 7; `--limit` is 1..2000, default 100. There is no
+account-wide public mode, paging or arbitrary date range. Invalid input fails
+before credentials or provider access. The output is `mcp_alert_history.v1`:
+
+```json
+{
+  "success": true,
+  "command": "mcp",
+  "data": {
+    "contract_version": "mcp_alert_history.v1",
+    "source": "tradingview_mcp",
+    "requested": {"symbol": "NASDAQ:EXAMPLE", "days": 7, "limit": 100},
+    "retrieved_at_unix_ms": 1700000000000,
+    "events": [{
+      "alert_id": 12,
+      "symbol": "NASDAQ:EXAMPLE",
+      "fired_at_unix_seconds": 951827696,
+      "webhook_delivery_status": null
+    }],
+    "returned_count": 1,
+    "limit_reached": false,
+    "coverage": "unconfirmed"
+  }
+}
+```
+
+All values in this example are synthetic. `tv_alert_id` supplies `alert_id`;
+provider `fire_id` is a different event identifier and is not substituted.
+`fired_at` is parsed from the observed second-precision UTC format into Unix
+seconds. `bar_time` is not the firing time. Malformed dates, missing IDs,
+contradictory symbols, count/days echoes and oversized results fail closed.
+
+Order and repeated events are preserved. `returned_count` measures returned
+rows; hitting the limit does not prove more events exist. Empty/short results
+do not establish full coverage or prove that an alert did not fire. Current
+active state belongs to `alert list/get`, not this historical response.
+Messages, names, webhook URLs and raw webhook objects are not passed through.
+Delivery status stays null because no reliable non-null status shape has been
+qualified. A fire record is not proof of notification delivery or a trade.
+The client does not fetch more pages or switch sources implicitly.
+
 ## Explicit alert changes
 
 `tv mcp alert` provides simple price-alert creation, settings updates and
@@ -733,7 +781,8 @@ distinct positive integer IDs, and never imply all alerts. Obtain IDs from
 explicit reads; do not guess them.
 
 This slice omits message/webhook editing, expiration editing, server-side
-monitoring, fire-log reads and Pine condition creation/reconstruction. Missing
+monitoring and Pine condition creation/reconstruction. History reads are
+separate from this mutation slice. Missing
 notification values in reads remain null, not false. No new dependency,
 credential store or implicit Desktop fallback is introduced.
 

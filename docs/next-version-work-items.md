@@ -8,7 +8,7 @@ Direction: [roadmap](next-version-roadmap.md). Decisions and acceptance:
 | 1 | Close v0.32.0 and establish baseline | Done: publication/workflow verified; prior record archived with historical evidence preserved and downstream report distinguished from local checks. |
 | 2 | Settle new read contracts and live verification scope | Contract proposals and scoped reads approved; actual response shapes and missing-value rules still need verification before finalizing normalization. Both are planned features. |
 | 3 | Improve login/upgrade operation | Implemented terminal-only pre-interaction guidance; captured stderr, existing stdout/error JSON and credential reuse verified by focused tests. Fresh live authorization not repeated. |
-| 4 | Implement alert history | Bounded read, source/evidence separation, no sensitive free text, safe empty/limited/error results, fixtures and scoped real acceptance. |
+| 4 | Implement alert history | Implemented and fixture-verified, including nonempty provider shape evidence. Public-service 30-second native acceptance remains open after a tool-response timeout. |
 | 5 | Implement official technical snapshot | Single symbol/timeframe, provider values/ratings without local recomputation, missing/unknown conditions retained; fixtures and scoped real acceptance. |
 | 6 | Measure and conditionally optimize transport | Document before/after initialization/catalog counts and timings; one command owns one connection where useful; no mutation replay or deadline/contract changes. No-go with evidence is acceptable. |
 | 7 | Stabilize affected fixtures | Reproduce and correct time/readiness dependencies; normal CI parallel execution passes without production timeout changes. Work can accompany stages 3–6. |
@@ -17,12 +17,13 @@ Direction: [roadmap](next-version-roadmap.md). Decisions and acceptance:
 
 The local resource prerequisite is complete: heavy pre-push checks are disabled
 and explicit local baselines default to one build job/test thread. Both new
-contracts and scoped reads are approved. A fixed-request, redacted proof path
-is built and tested. Catalog/schema checks subsequently passed. Private diagnostics distinguish
-initialization and tool-response timeouts. History returned an empty successful
-response; technical daily returned a provider application error with a rate-limit
-textual clue. Technical probes are stopped; a broader, shape-only history read
-is awaiting owner authorization. Output schemas contain no field definitions.
-Successful indicator data and nonempty history fields remain unqualified.
-No public read implementation, version bump or dependency addition is complete.
-The active record distinguishes preparation evidence from runtime qualification.
+contracts and scoped reads are approved. Catalog/schema checks passed. History
+now has a public command, strict normalization, deterministic tests and updated
+standalone guidance. Account-wide shape-only investigation established nonempty
+fields; the public CLI still requires a symbol. Its separate normal-deadline
+native check timed out after one dispatch, so runtime acceptance remains open.
+Technical daily returned a provider application error with a rate-limit textual
+clue; further technical probes are stopped until the limit permits them.
+Successful indicator fields remain unqualified. No version bump or dependency
+addition occurred. The active record separates fixture, investigation-budget
+and public-deadline evidence; release readiness is not yet established.

@@ -7,7 +7,7 @@ use tradingview_model::{mcp_account, mcp_bars, mcp_data};
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) enum Tool {
     TechnicalSnapshotProof,
-    AlertHistoryProof,
+    AlertHistory,
     EconomicSymbols,
     EconomicData,
     EconomicCalendar,
@@ -48,7 +48,7 @@ impl Tool {
             Self::TechnicalSnapshotProof => {
                 &["mcp-tv-get-technicals-rating", "get_technicals_rating"]
             }
-            Self::AlertHistoryProof => &["mcp-tv-get-alerts-log", "get_alerts_log"],
+            Self::AlertHistory => &["mcp-tv-get-alerts-log", "get_alerts_log"],
             Self::EconomicSymbols => &["mcp-tv-get-economic-symbols", "get_economic_symbols"],
             Self::EconomicData => &["mcp-tv-get-economic-data", "get_economic_data"],
             Self::EconomicCalendar => &["mcp-tv-get-economic-calendar", "get_economic_calendar"],
@@ -90,7 +90,7 @@ impl Tool {
     pub fn fields(self) -> &'static [(&'static str, &'static str)] {
         match self {
             Self::TechnicalSnapshotProof => &[("symbol", "string"), ("interval", "string")],
-            Self::AlertHistoryProof => &[
+            Self::AlertHistory => &[
                 ("symbol", "string"),
                 ("days", "integer"),
                 ("limit", "integer"),
@@ -226,7 +226,7 @@ impl Tool {
     pub fn from_name(name: &str) -> Result<Self> {
         [
             Self::TechnicalSnapshotProof,
-            Self::AlertHistoryProof,
+            Self::AlertHistory,
             Self::EconomicSymbols,
             Self::EconomicData,
             Self::EconomicCalendar,
@@ -301,11 +301,9 @@ impl Tool {
                 }
                 return Err(Failure::UnsupportedCapability);
             }
-            Self::AlertHistoryProof => {
-                return if *args
-                    == serde_json::json!({
-                        "symbol": "NASDAQ:AAPL", "days": 7, "limit": 100
-                    }) {
+            Self::AlertHistory if !object.contains_key("symbol") => {
+                // Only the explicit account-wide schema investigation uses this form.
+                return if *args == serde_json::json!({"days": 7, "limit": 100}) {
                     Ok(())
                 } else {
                     Err(Failure::UnsupportedCapability)
@@ -314,7 +312,13 @@ impl Tool {
             _ => {}
         }
         let validated = match self {
-            Self::TechnicalSnapshotProof | Self::AlertHistoryProof => unreachable!(),
+            Self::TechnicalSnapshotProof => unreachable!(),
+            Self::AlertHistory => mcp_account::Request::alert_history(
+                string("symbol")?,
+                number("days")?,
+                number("limit")?,
+            )
+            .map(|r| r.arguments()),
             Self::EconomicSymbols => tradingview_model::mcp_economics::Request::symbols(
                 optional("country")?,
                 optional("category")?,
@@ -577,6 +581,7 @@ impl From<mcp_data::Kind> for Tool {
 impl From<mcp_account::Kind> for Tool {
     fn from(kind: mcp_account::Kind) -> Self {
         match kind {
+            mcp_account::Kind::AlertHistory => Self::AlertHistory,
             mcp_account::Kind::Watchlists => Self::Watchlists,
             mcp_account::Kind::Watchlist => Self::Watchlist,
             mcp_account::Kind::Alerts => Self::Alerts,

@@ -426,3 +426,34 @@ fn account_mutations_validate_before_credential_access() {
         assert_eq!(error["error"]["details"]["code"], "local_state_unavailable");
     }
 }
+
+#[test]
+fn alert_history_help_and_invalid_requests_need_no_account_access() {
+    tv().args(["mcp", "alert", "history", "--help"])
+        .assert()
+        .success()
+        .stdout(predicates::str::contains("--symbol"));
+    for (flag, value) in [("--days", "0"), ("--limit", "0"), ("--limit", "2001")] {
+        let output = tv()
+            .args([
+                "mcp",
+                "alert",
+                "history",
+                "--symbol",
+                "NASDAQ:EXAMPLE",
+                flag,
+                value,
+            ])
+            .output()
+            .unwrap();
+        assert!(!output.status.success());
+        assert!(output.stdout.is_empty());
+        let error: Value = serde_json::from_slice(&output.stderr).unwrap();
+        assert_eq!(error["error"]["details"]["code"], "invalid_request");
+        assert_eq!(error["error"]["details"]["tool_attempts"], 0);
+    }
+    tv().args(["mcp", "alert", "history"])
+        .assert()
+        .failure()
+        .stderr(predicates::str::contains("--symbol"));
+}

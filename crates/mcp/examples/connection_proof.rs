@@ -19,7 +19,8 @@ async fn main() {
             eprintln!(concat!(
                 "Usage: connection_proof --local-admission | ",
                 "next-read-catalog/technical-daily-shape/technical-weekly-shape/",
-                "technical-monthly-shape/technical-two-hour-shape/alert-history-shape/",
+                "technical-monthly-shape/technical-two-hour-shape/",
+                "alert-history-shape/account-history-shape/alert-history-command/",
                 "economic-commands/dividend-commands/",
                 "economic-codes-shape/economic-series-shape/",
                 "economic-overview-shape/economic-symbols-shape/",
@@ -43,6 +44,8 @@ async fn main() {
             "technical-monthly-shape" => Op::TechnicalMonthlyShape,
             "technical-two-hour-shape" => Op::TechnicalTwoHourShape,
             "alert-history-shape" => Op::AlertHistoryShape,
+            "account-history-shape" => Op::AccountHistoryShape,
+            "alert-history-command" => Op::AlertHistoryCommand,
             "history-shape" => Op::HistoryShape,
             "forecast-shape" => Op::ForecastShape,
             "earnings-shape" => Op::EarningsShape,
