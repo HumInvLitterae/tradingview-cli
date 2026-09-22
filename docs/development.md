@@ -667,7 +667,9 @@ have passed. Linux uses Secret Service plus Linux-only zbus to dismiss delete
 prompts without displaying them; no plaintext fallback exists. On Windows, the
 native store test uses a disposable synthetic entry and deletes it afterward.
 
-#The next-version proof adds `next-read-catalog`,
+#The next-version proof uses the private 180-second schema-investigation budget;
+this is not the public command's 30-second deadline or acceptance evidence for
+it. The next-version proof adds `next-read-catalog`,
 `technical-daily-shape`, `technical-weekly-shape`, `technical-monthly-shape`,
 `technical-two-hour-shape` and `alert-history-shape`. These are development-only
 operations with fixed approved requests; they do not add public CLI commands.
@@ -675,7 +677,10 @@ The [active plan](plans/tradingview-cli-mcp-operational-improvements.md) owns
 qualification. Output contains only a closed field-name/type vocabulary,
 array counts and echo comparisons; unknown keys and scalar values are omitted.
 Use an explicitly selected, already authorized credential worker without
-replacing it, preserve normal deadlines and stop on actual rate limits.
+replacing it. Preserve public deadlines and stop on actual rate limits.
+The catalog outline excludes schema descriptions/examples/defaults; error-text
+classification emits only closed hints, not the error string, HTTP status or
+an inferred reset time.
 
 Private proof diagnostics distinguish initialization, initialized notification,
 catalog, tool dispatch, event-stream setup and session cleanup. Each stores its
