@@ -9,7 +9,7 @@ Direction: [roadmap](next-version-roadmap.md). Decisions and acceptance:
 | 2 | Settle new read contracts and live verification scope | Contract proposals and scoped reads approved; actual response shapes and missing-value rules still need verification before finalizing normalization. Both are planned features. |
 | 3 | Improve login/upgrade operation | Implemented terminal-only pre-interaction guidance; captured stderr, existing stdout/error JSON and credential reuse verified by focused tests. Fresh live authorization not repeated. |
 | 4 | Implement alert history | Implemented and fixture-verified, including nonempty provider shape evidence. The public service succeeded with an explicit 90-second timeout (empty history); default-30-second success remains unqualified. Coverage stays unconfirmed. |
-| 5 | Implement official technical snapshot | Single symbol/timeframe, provider values/ratings without local recomputation, missing/unknown conditions retained; fixtures and scoped real acceptance. |
+| 5 | Implement official technical snapshot | Blocked on provider response evidence: latest daily request returned HTTP 200 with application failure referencing a rate limit and screener endpoint, no values. Retain planned scope; resume after availability evidence, then implement and qualify actual fields. |
 | 6 | Measure and conditionally optimize transport | Implemented and measured: initialization/catalog reduced from two to one on a single-page catalog; lazy pagination and failed readback retain mutation results. MCP regression suite and scoped Clippy passed; no live latency claim. |
 | 7 | Stabilize affected fixtures | Reproduce and correct time/readiness dependencies; normal CI parallel execution passes without production timeout changes. Work can accompany stages 3–6. |
 | 8 | Integrate documentation and standalone skills | User guides, command/source mapping and account-management/market-data references reflect implemented behavior; individual skill and archive checks pass. |
@@ -50,3 +50,10 @@ The approved `--timeout` option, focused tests, standalone guidance and native
 90-second empty-history acceptance are complete. No `--timeout-secs` alias is
 provided. Successful technical values and default-deadline history availability
 remain separate outstanding evidence; no release-ready claim is made.
+
+The latest technical investigation separated transport success from provider
+application failure: HTTP 200 in about 3.2 seconds, but no indicators and error
+text mentioning a rate limit and the screener endpoint. This is not a timeout
+fix target. A public-safe inquiry draft and precise resume conditions are in the
+active record; it has not been sent. Technical implementation remains blocked
+pending usable response evidence, without removing it from the approved scope.

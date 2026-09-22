@@ -687,7 +687,9 @@ Use an explicitly selected, already authorized credential worker without
 replacing it. Preserve public deadlines and stop on actual rate limits.
 The catalog outline excludes schema descriptions/examples/defaults; error-text
 classification emits only closed hints, not the error string, HTTP status or
-an inferred reset time.
+an inferred reset time. A `screener_endpoint` hint means only that provider
+error text mentioned the known screener host; it is not evidence of an HTTP
+request made by this client or a verified upstream status.
 
 Private proof diagnostics distinguish initialization, initialized notification,
 catalog, tool dispatch, event-stream setup and session cleanup. Each stores its
