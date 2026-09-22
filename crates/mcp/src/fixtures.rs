@@ -724,6 +724,16 @@ fn respond(ep: &Endpoints, r: &Request, mode: &str) -> Response {
     if mode == "session-json" && request["method"] == "initialize" {
         response.extra = "Mcp-Session-Id: synthetic-session\r\n".into();
     }
+    if matches!(
+        request["method"].as_str(),
+        Some("initialize" | "tools/list")
+    ) {
+        response.delay = match mode {
+            "setup-latency-100" => Duration::from_millis(100),
+            "setup-latency-600" => Duration::from_millis(600),
+            _ => response.delay,
+        };
+    }
     response
 }
 
@@ -2003,6 +2013,53 @@ async fn alert_history_service_preserves_outcomes_without_replay() {
                 assert_eq!(data["coverage"], "unconfirmed");
                 assert!(!data.to_string().contains("private"));
             }
+        }
+    }
+}
+
+// Explicit measurement only: routine CI must not pay for artificial latency.
+#[tokio::test]
+#[ignore = "opt-in synthetic account setup measurement"]
+async fn measure_account_setup_before_readback() {
+    use crate::client::{Operation, execute};
+    use tradingview_model::mcp_account::{AlertAction, AlertMutation, WatchlistMutation};
+
+    for (mode, setup_delay_ms) in [
+        ("json", 0),
+        ("setup-latency-100", 100),
+        ("setup-latency-600", 600),
+    ] {
+        for alert in [false, true] {
+            let server = Server::start(mode).await;
+            let (_root, mut guard, budget, http, store) = context(&server, 15).await;
+            fixture_login(&http, &store, &budget).await;
+            let operation = if alert {
+                Operation::AlertMutation(AlertMutation::state(AlertAction::Stop, &[12]).unwrap())
+            } else {
+                Operation::WatchlistMutation(
+                    WatchlistMutation::update("12", Some("Example"), None).unwrap(),
+                )
+            };
+            let start = Instant::now();
+            let result = execute(operation, &mut guard, store, http, budget, true)
+                .await
+                .unwrap();
+            let elapsed = start.elapsed();
+            assert_eq!(result["mutation"]["tool_attempts"], 1);
+            assert_eq!(result["readback"]["status"], "matched");
+            assert_eq!(server.calls("tools/call"), 2);
+            assert_eq!(server.calls("initialize"), 2);
+            assert_eq!(server.calls("notifications/initialized"), 2);
+            assert_eq!(server.calls("tools/list"), 2);
+            eprintln!(
+                "account_setup kind={} setup_delay_ms={} elapsed_ms={} initialize={} catalog={} tools={}",
+                if alert { "alert" } else { "watchlist" },
+                setup_delay_ms,
+                elapsed.as_millis(),
+                server.calls("initialize"),
+                server.calls("tools/list"),
+                server.calls("tools/call")
+            );
         }
     }
 }
