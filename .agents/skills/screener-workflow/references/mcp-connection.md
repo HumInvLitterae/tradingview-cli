@@ -20,8 +20,11 @@ it works solely because the binary starts. Where available it requires a session
 D-Bus and an unlocked persistent Secret Service store; no plaintext fallback.
 
 Ordinary commands must not trigger authentication dialogs. If credentials are
-missing, rejected or interaction is required, report the structured error and
-arrange explicit login. `tv mcp logout` removes this client's local record only;
+missing or rejected, report the structured error and arrange explicit login.
+Explicit login may also unlock the store. If logout specifically requires
+deletion confirmation, use the OS credential manager for the dedicated record;
+a generic login does not approve that deletion.
+`tv mcp logout` removes this client's local record only;
 it is neither remote revocation nor routine cleanup after a read.
 
 Preserve `mcp_error.v1`, its stage/code/reason and known attempt information.
