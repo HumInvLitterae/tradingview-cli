@@ -44,3 +44,8 @@ No credentials, account-local payloads or machine paths belong in tracked
 records. Keep private downstream collection policy and analytical admission
 outside this repository. The roadmap retains the existing CDP/deferred-feature
 triggers; dependency maintenance does not promote those features automatically.
+
+The owner requested a final outer Retry-After check and then waiting. That one
+technical read returned HTTP 200 without Retry-After and the same application
+failure. Internal screener headers remain unknown. Additional live checks are
+stopped; no automatic polling or inquiry has been initiated.
