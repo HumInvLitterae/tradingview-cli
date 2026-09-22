@@ -10,8 +10,8 @@
 | Completed plans | [Historical catalog](archives/README.md) |
 
 The agreed MCP slices are implemented. Windows CI and owner-reported basic
-machine acceptance passed. Remaining work is dividend native acceptance,
-candidate scope and release preparation. The Linux credential adapter and
+machine acceptance passed. Both dividend modes now pass native acceptance. The v0.32.0 scope is selected;
+remaining work is the local release artifact and publication after owner approval. The Linux credential adapter and
 MCP-first independent skills are implemented with focused validation recorded
 in the work record. Real Linux desktop OAuth remains separate from container/CI
 evidence. Downstream analytical adoption is separate.

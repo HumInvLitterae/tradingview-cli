@@ -272,7 +272,7 @@ scanner-backed quote reads, not the selected Desktop chart.
   repository.
 - [market-data](../.agents/skills/market-data/SKILL.md): purpose-to-command selection and references included in the archive.
 
-## Official MCP (unreleased candidate)
+## Official MCP (v0.32.0 and later)
 
 Prefer MCP for supported data queries, watchlists and simple price alerts when
 an eligible paid account is available. It does not require TradingView Desktop

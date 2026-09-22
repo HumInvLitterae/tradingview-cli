@@ -267,7 +267,7 @@ tv watch compare NASDAQ:AAPL NASDAQ:MSFT --duration-ms 10000 --interval 2000 --h
 - `docs/command-source-taxonomy.md`: リポジトリ内の詳しいコマンド分類。
 - [market-data](../../.agents/skills/market-data/SKILL.md): 目的からコマンドを選ぶ表と、配布物に同梱された参照資料。
 
-## 公式MCP（未リリースの候補版）
+## 公式MCP（v0.32.0以降）
 
 対応するデータ取得、ウォッチリスト、単純な価格アラートは、有効な対象有料
 アカウントがあればMCPを優先できます。TradingView DesktopやCodexのMCP設定は

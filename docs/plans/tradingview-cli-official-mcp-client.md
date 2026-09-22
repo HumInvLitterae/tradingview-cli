@@ -1,6 +1,6 @@
 # Official TradingView MCP client: bounded historical reads
 
-Status: **active v0.32.0 candidate; independent CLI implemented, qualification open**,
+Status: **v0.32.0 release preparation; scoped functional qualification complete**,
 2026-09-22. [v0.31.4 is released](archives/tradingview-cli-v0.31.4-release-readiness.md).
 The approved dependencies are settled: no direct async-trait; http 1.5.0 and
 sse-stream 0.3.0 accompany the existing SDK/store selections. No Codex MCP setup
@@ -26,6 +26,45 @@ The owner now authorizes implementation commits after minimal readability
 corrections. The owner subsequently accepted the Windows basic runtime check;
 the earlier deferred-platform gates below are historical checkpoints. Follow [PLANS.md](../../.agents/PLANS.md);
 this is the single feature work record.
+
+## v0.32.0 release preparation (2026-09-22)
+
+The agreed scope is selected for v0.32.0: the independent MCP commands, Linux
+Secret Service adapter and seven standalone runtime skills. Both dividend modes
+now have successful normal-deadline normalization, as recorded below. No feature
+is removed or silently downgraded. Existing command sources/contracts remain
+unchanged. Linux graphical OAuth is explicitly unverified under the owner's
+implementation-first decision, not falsely described as unsupported.
+
+The workspace and all eight members move to 0.32.0, with matching local lockfile
+versions and unchanged external locked packages/checksums. The curated
+[release notes](../releases/v0.32.0.md), CHANGELOG and English/Japanese user
+entrypoints describe the accepted scope. The new features are no longer labelled
+as development-only in their versioned usage instructions; publication itself
+has not occurred.
+
+Reuse the successful `ccd780d` CI baseline, including all OS tests, Linux native
+store integration and four separately pinned JavaScript gates. The subsequent
+development-harness-only correction passed example build and focused all-target
+Clippy plus both live dividend modes. No production Rust behavior or external
+dependency changed during release preparation; version/document changes do not
+justify repeating that full functional baseline.
+
+After the coherent release-preparation commit, build the native macOS ARM
+release binary once in a dedicated target directory, preserving installed/trusted
+binaries. Check verbose version provenance, CLI help, invalid-input behavior,
+resource staging and unpacked archive contents/checksum. The current archive
+contract is 70 files / seven skills per root. Keep the execution hash/checksum
+in the final handoff and ignored local continuity record, without another tracked
+commit solely to record its own hash or another unchanged rebuild. Resource-only
+placeholder staging is not release-binary proof.
+
+The configured tag workflow builds/tests Linux x86_64, macOS Intel/ARM and Windows
+release assets before publication. Those optimized remote builds have not been
+run by this session; do not label a local ARM build as all-target release proof.
+Push, tag creation, workflow dispatch and GitHub Release creation remain outside
+this turn's authority. After explicit publication authorization, verify all native
+assets/checksums and remote release state before archiving this record.
 
 ## Dividend acceptance and CI closeout (2026-09-22)
 
