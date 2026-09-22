@@ -21,6 +21,7 @@ use tokio::time::Instant;
 #[derive(Clone, Copy)]
 pub enum ProofOperation {
     EconomicCommands,
+    DividendCommands,
     EconomicCodesShape,
     EconomicSeriesShape,
     EconomicOverviewShape,
@@ -77,8 +78,16 @@ pub async fn run_proof_with_worker(
     operation: ProofOperation,
     worker: Option<&Path>,
 ) -> Result<Value> {
-    if matches!(operation, ProofOperation::EconomicCommands) {
-        return verify_economic_commands(directory, worker).await;
+    if matches!(
+        operation,
+        ProofOperation::EconomicCommands | ProofOperation::DividendCommands
+    ) {
+        return verify_economic_commands(
+            directory,
+            worker,
+            matches!(operation, ProofOperation::DividendCommands),
+        )
+        .await;
     }
     if matches!(operation, ProofOperation::ResearchCommands) {
         return verify_research_commands(directory, worker).await;
@@ -1367,8 +1376,12 @@ async fn inspect_economics(
     }
 }
 
-async fn verify_economic_commands(directory: &Path, worker: Option<&Path>) -> Result<Value> {
-    use tradingview_model::mcp_economics::{CalendarOptions, DividendOptions, Request};
+async fn verify_economic_commands(
+    directory: &Path,
+    worker: Option<&Path>,
+    dividends_only: bool,
+) -> Result<Value> {
+    use tradingview_model::mcp_economics::{CalendarOptions, DividendOptions, Kind, Request};
 
     let worker = worker.ok_or(Failure::UnsupportedCapability)?;
     let client = crate::Client::with_paths(directory.to_owned(), worker.to_owned());
@@ -1397,11 +1410,15 @@ async fn verify_economic_commands(directory: &Path, worker: Option<&Path>) -> Re
         }),
     ] {
         let request = request.map_err(|_| Failure::UnsupportedCapability)?;
+        let kind = request.kind();
+        if dividends_only && kind != Kind::Dividends {
+            continue;
+        }
         let Some(data) = economic_read(&client, request, &mut reports).await else {
             complete = false;
             break;
         };
-        if data["mode"] == "symbols" {
+        if kind == Kind::Symbols && data["mode"] == "symbols" {
             let symbol = data["items"].as_array().and_then(|items| {
                 items
                     .iter()
