@@ -951,3 +951,26 @@ Validation: the new control/redaction test and incremental proof build passed,
 with one Cargo job and one test thread. Formatting, public-hygiene and diff
 checks passed. No broad suite, release build, dependency, account mutation,
 installed-binary replacement, push or external message occurred.
+
+
+## Retry-After check and owner-directed wait (2026-09-23)
+
+The owner requested only an outer Retry-After check, then waiting if it supplies
+no usable guidance. Private tool-response diagnostics now retain header presence
+and parsed seconds even for HTTP 200; raw headers are never retained. Missing
+headers produce null seconds rather than the existing local 60-second fallback.
+Unparseable values remain present with null seconds. Public errors and cooldown
+behavior are unchanged; a diagnostic clock failure cannot change the response.
+
+One approved AAPL daily technical request returned HTTP 200 with completed JSON
+at approximately 31.463 seconds under the private investigation budget. Its
+Retry-After header was absent. The body still reported a rate-limit failure with
+a screener-endpoint reference. This establishes absence only on the outer MCP
+response, not on the internal screener response, which remains inaccessible.
+There is no provider reset time to report. Stop additional tool reads and wait
+as requested; no polling automation or external inquiry was started.
+
+The existing Retry-After parser test and new presence/redaction test passed.
+The incremental proof build, formatting, public-hygiene and diff checks passed.
+Cargo ran sequentially with one build job/test thread; no broad suite or release
+build ran. No account mutation, installed-binary replacement or push occurred.

@@ -455,6 +455,14 @@ impl Http {
         let response = self.send(request).await?;
         let status = response.status();
         self.describe_protocol(method, "headers_received", Some(status));
+        if method == "tools/call" {
+            let observation = crate::admission::now_ms()
+                .map(|now| retry_after_observation(response.headers(), now / 1000))
+                .unwrap_or(Value::Null);
+            if let Ok(mut diagnostics) = self.diagnostics.lock() {
+                diagnostics["tool_response_retry_after"] = observation;
+            }
+        }
         self.status(&response)?;
         if status == StatusCode::ACCEPTED {
             self.describe_protocol(method, "accepted", Some(status));
@@ -730,8 +738,17 @@ impl OAuthHttpClient for Http {
     }
 }
 
+// Private evidence only: never report the local fallback as a server hint.
+fn retry_after_observation(headers: &http::HeaderMap, now: u64) -> Value {
+    let present = headers.contains_key(http::header::RETRY_AFTER);
+    let seconds = present
+        .then(|| retry_after_seconds(headers, now))
+        .filter(|n| *n != u64::MAX);
+    serde_json::json!({"present": present, "seconds": seconds})
+}
+
 // RFC 9110 delta-seconds or IMF-fixdate. An unrecognized server hint blocks
-// this proof's remaining reads rather than retrying earlier than it may allow.
+// remaining reads rather than retrying earlier than it may allow.
 fn retry_after_seconds(headers: &http::HeaderMap, now: u64) -> u64 {
     let Some(header) = headers.get(http::header::RETRY_AFTER) else {
         return 60;
@@ -792,6 +809,28 @@ fn http_date_seconds(text: &str) -> Option<u64> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn retry_after_observation_does_not_invent_wait_or_expose_invalid_header() {
+        let mut headers = http::HeaderMap::new();
+        assert_eq!(
+            retry_after_observation(&headers, 0),
+            serde_json::json!({"present": false, "seconds": null})
+        );
+        headers.insert(http::header::RETRY_AFTER, HeaderValue::from_static("120"));
+        assert_eq!(
+            retry_after_observation(&headers, 0),
+            serde_json::json!({"present": true, "seconds": 120})
+        );
+        headers.insert(
+            http::header::RETRY_AFTER,
+            HeaderValue::from_static("private-value"),
+        );
+        assert_eq!(
+            retry_after_observation(&headers, 0),
+            serde_json::json!({"present": true, "seconds": null})
+        );
+    }
 
     #[test]
     fn retry_after_date_delta_and_unknown_are_not_shortened() {
