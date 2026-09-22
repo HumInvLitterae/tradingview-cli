@@ -246,6 +246,7 @@ pub(crate) async fn inspect_tools(
                 reports.push(serde_json::json!({
                     "tool": tool.names()[0],
                     "schema_accepted": true,
+                    "output_schema": value.get("outputSchema").map(|schema| schema_outline(schema, 0)),
                     "read_only_hint": value
                         .pointer("/annotations/readOnlyHint")
                         .and_then(Value::as_bool),
@@ -273,6 +274,59 @@ pub(crate) async fn inspect_tools(
         return Err(Failure::Timeout);
     }
     result
+}
+
+// Public tool schema structure only; no descriptions, examples or default values.
+fn schema_outline(schema: &Value, depth: usize) -> Value {
+    if depth > 8 {
+        return serde_json::json!({"truncated": true});
+    }
+    let mut result = serde_json::Map::new();
+    if let Some(kind) = schema.get("type").and_then(Value::as_str)
+        && matches!(
+            kind,
+            "object" | "array" | "string" | "number" | "integer" | "boolean" | "null"
+        )
+    {
+        result.insert("type".into(), Value::String(kind.into()));
+    }
+    if let Some(properties) = schema.get("properties").and_then(Value::as_object) {
+        let properties = properties
+            .iter()
+            .filter(|(name, _)| {
+                name.len() <= 128
+                    && name.starts_with(|c: char| c.is_ascii_alphabetic())
+                    && name
+                        .bytes()
+                        .all(|b| b.is_ascii_alphanumeric() || b"_.-".contains(&b))
+            })
+            .take(100)
+            .map(|(name, value)| (name.clone(), schema_outline(value, depth + 1)))
+            .collect();
+        result.insert("properties".into(), Value::Object(properties));
+    }
+    if let Some(items) = schema.get("items") {
+        result.insert("items".into(), schema_outline(items, depth + 1));
+    }
+    for union in ["anyOf", "oneOf", "allOf"] {
+        if let Some(variants) = schema.get(union).and_then(Value::as_array) {
+            result.insert(
+                union.into(),
+                Value::Array(
+                    variants
+                        .iter()
+                        .take(20)
+                        .map(|value| schema_outline(value, depth + 1))
+                        .collect(),
+                ),
+            );
+        }
+    }
+    result.insert(
+        "ref_present".into(),
+        Value::Bool(schema.get("$ref").is_some()),
+    );
+    Value::Object(result)
 }
 
 fn sdk_failure(error: rmcp::ServiceError, http: &Http) -> Failure {
@@ -388,6 +442,33 @@ pub(crate) fn result_value(result: CallToolResult) -> Result<Value> {
 mod tests {
     use super::*;
     use serde_json::json;
+
+    #[test]
+    fn schema_outline_excludes_values_and_free_text() {
+        let summary = schema_outline(
+            &json!({
+                "type": "object", "description": "private description",
+                "properties": {"events": {"type": "array", "items": {
+                    "type": "object", "properties": {"alert_id": {"type": "integer", "default": 123}}
+                }}}, "examples": [{"secret": true}]
+            }),
+            0,
+        );
+        assert_eq!(
+            summary["properties"]["events"]["items"]["properties"]["alert_id"]["type"],
+            "integer"
+        );
+        for omitted in [
+            "private",
+            "description",
+            "123",
+            "default",
+            "examples",
+            "secret",
+        ] {
+            assert!(!summary.to_string().contains(omitted));
+        }
+    }
 
     #[test]
     fn empty_and_integer_array_schemas_remain_closed() {

@@ -131,7 +131,13 @@ pub async fn run_proof_with_worker(
             Duration::from_secs(300)
         } else if matches!(
             operation,
-            ProofOperation::EconomicCodesShape
+            ProofOperation::NextReadCatalog
+                | ProofOperation::TechnicalDailyShape
+                | ProofOperation::TechnicalWeeklyShape
+                | ProofOperation::TechnicalMonthlyShape
+                | ProofOperation::TechnicalTwoHourShape
+                | ProofOperation::AlertHistoryShape
+                | ProofOperation::EconomicCodesShape
                 | ProofOperation::EconomicSeriesShape
                 | ProofOperation::EconomicOverviewShape
                 | ProofOperation::EconomicSymbolsShape

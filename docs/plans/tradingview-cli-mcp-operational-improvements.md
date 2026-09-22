@@ -404,3 +404,70 @@ fields from designated evidence, and implement the reviewed normalizers. Login
 prompt policy is delivered; transport optimization still requires measurement
 and fixture-readiness changes still require a reproduced issue. Reuse current
 approval rather than asking again for the same reads.
+
+
+## Investigation budget decision (2026-09-22)
+
+Repeated normal-deadline probes exhausted the 30-second budget during setup:
+one catalog request began with about five seconds remaining, another with less
+than four. A synthetic atomic write/fsync in a disposable directory under the
+same local state root completed in 1.24 ms and was removed; this does not
+reproduce the multi-second delay as local state-write latency.
+
+Use the existing development-only 180-second shape-investigation budget for
+these six proof operations, as already used by economic schema investigations.
+This supersedes the earlier self-imposed no-extension rule for these private
+probes only. The owner-approved targets/effects, single dispatch, real limits,
+credential policy and public 30-second deadline are unchanged. No automatic
+retry is added. Waiting longer may obtain schema evidence but cannot establish
+normal-deadline acceptance. Report investigation and public readiness separately.
+This is a private diagnostic procedure within the approved read scope, not a
+public timeout/API change or new access permission.
+
+
+## Provider-limit classification and schema evidence (2026-09-22)
+
+Added private closed-vocabulary classification of provider error text. The
+report retains only matched categories and `root_cause: unconfirmed`, never the
+error string, nested error values, request URLs or identifiers. Application-level
+hints do not change the public error code, create HTTP-status evidence, choose
+a reset time or trigger automatic retries.
+
+The catalog probe now summarizes optional output schemas without descriptions,
+examples, defaults or enum values. Both selected tools returned an object schema
+without field definitions in the captured outline. Input schema compatibility
+remains established; the output schema does not supply missing nonempty event
+or technical field definitions. The published official documentation still
+lists the commands/parameters but is not substitute response-shape evidence.
+
+Normal-deadline attempts again expired before tool dispatch. With the private
+investigation budget, catalog inspection completed and a daily technical read
+returned `success:false` with a string error matching the `rate_limit` category.
+This is provider-text evidence, not an observed outer HTTP 429 or Retry-After.
+Stop further technical probes until the provider limit permits them; do not
+claim that all MCP commands are limited. No additional timeframe was called.
+The successful empty history response from the previous checkpoint remains
+valid only as empty-response evidence. No reset time or general availability
+was inferred.
+
+A question is pending to the owner: permit one same-account, last-seven-days,
+maximum-100-event history read without the symbol filter, for shape discovery
+only. This expands the current AAPL-only access to potentially other symbols,
+messages and delivery details, so it has not been executed or silently inferred
+from the prior approval. Store/report only shape, never actual account values.
+No creation, edit, firing, deletion or webhook delivery is part of the request.
+The proposed public CLI still requires a symbol. If the owner declines or the
+broader response is empty, retain the missing evidence explicitly; do not guess
+nonempty fields or manufacture activity.
+
+Validation: four scoped proof tests and one output-schema sanitization test
+passed. The example was incrementally built with one Cargo job; tests used one
+thread. Public-hygiene, formatting, Markdown reference and diff checks passed.
+No new dependencies, public contracts, installed binary, local pre-push settings
+or workspace version changed. No full workspace test or release build ran.
+
+Next: obtain nonempty history structure within an approved read scope, then
+complete its normalizer; resume technical shape qualification only when limits
+permit. The two features remain required planned scope, not silently deferred
+or claimed ready for release. Independent measurement and deterministic fixture
+work may proceed while provider data qualification is unavailable.

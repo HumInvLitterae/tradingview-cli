@@ -75,8 +75,57 @@ fn observation(tool: Tool, arguments: &Value, value: &Value) -> Value {
     });
     if value.get("success") == Some(&Value::Bool(false)) {
         report["failure"] = json!(Failure::ProviderError);
+        report["provider_error_hints"] = error_hints(value.get("error"));
     }
     report
+}
+
+// These are textual clues, not HTTP statuses or verified root causes.
+// Never retain the provider's arbitrary error string or nested private values.
+fn error_hints(error: Option<&Value>) -> Value {
+    let text = error
+        .and_then(Value::as_str)
+        .unwrap_or("")
+        .to_ascii_lowercase();
+    let groups: &[(&str, &[&str])] = &[
+        ("rate_limit", &["429", "rate limit", "too many requests"]),
+        (
+            "authorization",
+            &["401", "403", "unauthorized", "forbidden", "permission"],
+        ),
+        (
+            "entitlement",
+            &["subscription", "premium", "paid plan", "entitlement"],
+        ),
+        ("timeout", &["timeout", "timed out"]),
+        (
+            "symbol",
+            &["invalid symbol", "unknown symbol", "symbol not found"],
+        ),
+        (
+            "interval",
+            &["unsupported interval", "invalid interval", "timeframe"],
+        ),
+        (
+            "implementation",
+            &[
+                "typeerror",
+                "nameerror",
+                "keyerror",
+                "attributeerror",
+                "not defined",
+                "unexpected keyword",
+                "internal server",
+            ],
+        ),
+        ("not_found", &["404", "not found"]),
+    ];
+    let matched: Vec<_> = groups
+        .iter()
+        .filter(|(_, needles)| needles.iter().any(|needle| text.contains(needle)))
+        .map(|(name, _)| *name)
+        .collect();
+    json!({"textual_clues": matched, "root_cause": "unconfirmed"})
 }
 
 // Names are a closed observation vocabulary, not arbitrary provider/account keys.
@@ -182,6 +231,18 @@ fn safe_shape(value: &Value, depth: usize) -> Value {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn next_reads_error_hints_do_not_retain_messages_or_claim_http_status() {
+        let hints = error_hints(Some(&json!("429 rate limit for private-account")));
+        assert_eq!(hints["textual_clues"], json!(["rate_limit"]));
+        assert_eq!(hints["root_cause"], "unconfirmed");
+        assert!(!hints.to_string().contains("private-account"));
+        assert_eq!(
+            error_hints(Some(&json!({"secret": "429"})))["textual_clues"],
+            json!([])
+        );
+    }
 
     #[test]
     fn next_reads_provider_failure_is_not_successful_data() {

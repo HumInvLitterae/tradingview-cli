@@ -20,7 +20,9 @@ and explicit local baselines default to one build job/test thread. Both new
 contracts and scoped reads are approved. A fixed-request, redacted proof path
 is built and tested. Catalog/schema checks subsequently passed. Private diagnostics distinguish
 initialization and tool-response timeouts. History returned an empty successful
-response; technical daily returned a provider application error. Successful
-indicator data and nonempty history fields remain unqualified.
+response; technical daily returned a provider application error with a rate-limit
+textual clue. Technical probes are stopped; a broader, shape-only history read
+is awaiting owner authorization. Output schemas contain no field definitions.
+Successful indicator data and nonempty history fields remain unqualified.
 No public read implementation, version bump or dependency addition is complete.
 The active record distinguishes preparation evidence from runtime qualification.
