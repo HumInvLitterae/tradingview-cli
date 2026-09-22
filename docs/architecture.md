@@ -123,10 +123,11 @@ installed binary remains `tv`.
   `model::mcp_data`; account reads live separately in `model::mcp_account`, including explicit watchlist mutation postconditions.
   `mcp::watchlist` coordinates mutation and readback. The MCP service owns a closed tool allowlist; shared
   transport does not expose arbitrary tool forwarding.
-  Native worker adapters exist for macOS and Windows; Windows native acceptance
-  and Linux implementation remain open. It does not broaden the
+  Native worker adapters exist for macOS, Windows and Linux. Windows CI and
+  owner-reported basic runtime acceptance passed; Linux service/CI coverage
+  does not establish graphical OAuth acceptance. It does not broaden the
   credential-free responsibilities of `market` or `scanner`. Scope and proof
-  gates live in the [MCP work record](plans/tradingview-cli-official-mcp-client.md).
+  gates live in the [MCP work record](plans/archives/tradingview-cli-official-mcp-client.md).
 - `crates/scanner/src/lib.rs` owns Desktop-free scanner reads for hotlists and
   basic scanner scans. It exposes typed read results as the reusable Rust API
   and keeps JSON-returning wrappers for the CLI payload contract. It uses

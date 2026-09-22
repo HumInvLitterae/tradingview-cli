@@ -2,8 +2,8 @@
 
 Starting with v0.32.0, `tv` provides a separate `tv mcp` command group. It does
 not replace `tv bars`, add a backend switch to it, or change `bars.v1`. One `tv`
-binary contains both paths. See the [work record](plans/tradingview-cli-official-mcp-client.md)
-for remaining platform/release qualification; these commands are not in v0.31.4.
+binary contains both paths. See the [work record](plans/archives/tradingview-cli-official-mcp-client.md)
+for scoped implementation and release evidence; these commands are not in v0.31.4.
 
 ## Choose by capability
 
@@ -539,7 +539,7 @@ and annual history, forecasts, a two-symbol earnings query and an empty past
 window through the public service. They establish response handling for those
 cases, not general completeness, every metric/market/period, or Windows runtime
 qualification. Synthetic JSON/SSE and failure fixtures cover the remaining
-contract branches. See the [work record](plans/tradingview-cli-official-mcp-client.md).
+contract branches. See the [work record](plans/archives/tradingview-cli-official-mcp-client.md).
 
 ## Watchlists and alerts
 
@@ -820,7 +820,7 @@ provider observations, client observations, transport evidence and normalized
   descending/duplicate timestamps and invalid high/low bounds fail closed.
 
 Full synthetic before/after examples and the downstream handoff are in the
-[contract examples](plans/tradingview-cli-official-mcp-client.md#accepted-cli-and-json-contract).
+[contract examples](plans/archives/tradingview-cli-official-mcp-client.md#accepted-cli-and-json-contract).
 The downstream must add an explicit MCP reader and isolate caches by provider;
 it must not feed this output through a `bars.v1` parser or invent missing evidence.
 

@@ -1,7 +1,36 @@
 # Official TradingView MCP client: bounded historical reads
 
+## Publication closeout (2026-09-22)
+
+Status: **complete and archived**. The owner published v0.32.0 and confirmed
+that the PATH binary was upgraded. GitHub reports the non-draft
+[release](https://github.com/HumInvLitterae/tradingview-cli/releases/tag/v0.32.0)
+as published at 2026-09-22T03:29:14Z. The
+[release workflow](https://github.com/HumInvLitterae/tradingview-cli/actions/runs/35682348026)
+succeeded for commit `54dabecb0a2565baef461214cc7df6ffea20a687`.
+This is remote publication/workflow evidence, not a new local execution of
+all platform binaries or an independent download/checksum audit.
+
+The downstream PM reports adopting the released executable with explicit
+binary identity, preserving the observation contract and verifying a daily
+20-bar intake/readback after OS consent. Weekly/monthly evidence was reused
+with unchanged contracts; production/schema changes were unnecessary.
+Downstream cache namespaces and analytical admission remain downstream work.
+Unknown data semantics and Linux graphical OAuth qualification remain explicit.
+
+Six initial exact dependency requirements were relaxed in `3feb98f` before
+release preparation, with the locked graph unchanged. Historical pin decisions
+below describe initial integration, not the current dependency policy.
+
+The dated preparation and verification sections below are frozen history.
+Their pending/publication/authority statements do not describe current state.
+New work follows the [v0.33.0 roadmap](../../next-version-roadmap.md) and
+[operational-improvements plan](../tradingview-cli-mcp-operational-improvements.md).
+
+## Historical implementation and preparation record
+
 Status: **v0.32.0 release preparation; scoped functional qualification complete**,
-2026-09-22. [v0.31.4 is released](archives/tradingview-cli-v0.31.4-release-readiness.md).
+2026-09-22. [v0.31.4 is released](tradingview-cli-v0.31.4-release-readiness.md).
 The approved dependencies are settled: no direct async-trait; http 1.5.0 and
 sse-stream 0.3.0 accompany the existing SDK/store selections. No Codex MCP setup
 is needed. Live proof now covers OAuth, protected storage, cross-process reuse,
@@ -24,7 +53,7 @@ decision points.
 No additional agent/session, downstream write or remote publication is authorized.
 The owner now authorizes implementation commits after minimal readability
 corrections. The owner subsequently accepted the Windows basic runtime check;
-the earlier deferred-platform gates below are historical checkpoints. Follow [PLANS.md](../../.agents/PLANS.md);
+the earlier deferred-platform gates below are historical checkpoints. Follow [PLANS.md](../../../.agents/PLANS.md);
 this is the single feature work record.
 
 ## v0.32.0 release preparation (2026-09-22)
@@ -38,7 +67,7 @@ implementation-first decision, not falsely described as unsupported.
 
 The workspace and all eight members move to 0.32.0, with matching local lockfile
 versions and unchanged external locked packages/checksums. The curated
-[release notes](../releases/v0.32.0.md), CHANGELOG and English/Japanese user
+[release notes](../../releases/v0.32.0.md), CHANGELOG and English/Japanese user
 entrypoints describe the accepted scope. The new features are no longer labelled
 as development-only in their versioned usage instructions; publication itself
 has not occurred.
@@ -207,7 +236,7 @@ MCP execution plan; do not create a duplicate documentation ExecPlan.
 4. Reconcile remote main; review the candidate diff, dependency/lock coherence,
    CLI/contracts and platform support against v0.31.4. Run or reuse applicable
    Rust baseline, four pinned JavaScript gates and native CI evidence under
-   [development guidance](../development.md#validation-baseline). Document-only
+   [development guidance](../../development.md#validation-baseline). Document-only
    changes require focused checks, not another unchanged full Rust run.
 5. Prepare v0.32.0 versions, Cargo lock metadata, curated release notes and
    CHANGELOG in a separate coherent release-preparation change. Build/package
@@ -370,7 +399,7 @@ scheduled collection adoption remain separate. Windows basic acceptance is now
 recorded in the current release checklist above.
 
 The owner agreed to the expansion sequence in the
-[roadmap](../next-version-roadmap.md#agreed-expansion-order), specifically promoting
+[roadmap](../../next-version-roadmap.md#agreed-expansion-order), specifically promoting
 watchlists and alerts immediately after intraday bars and before financial data.
 The earlier exclusions below describe the first delivered slice, not a permanent
 ban on this agreed follow-up. Symbol discovery, single/batch symbol reads and
@@ -499,7 +528,7 @@ all other official MCP tools. The next step is completing normal-deadline econom
 candidate scope/readiness review. Mandatory Windows qualification remains
 deferred by the owner.
 
-The [economic CLI/JSON contracts](../official-mcp.md#economic-indicators-and-calendars)
+The [economic CLI/JSON contracts](../../official-mcp.md#economic-indicators-and-calendars)
 distinguish overview, bare indicator codes and actual qualified symbols. Series
 identity, values, dates and provider unit/scale are preserved; actual returned
 bounds do not prove requested coverage. Economic events keep actual/forecast/
@@ -600,7 +629,7 @@ The owner requested the next ordered work. Priority 7 is delivered in usable
 stages: first news/company-document listing through referenced body retrieval;
 economic symbol discovery, series and remaining calendars follow separately.
 `tv mcp news/news-story/documents/document` use the existing internal authenticated
-service with [explicit CLI/JSON contracts](../official-mcp.md#news-and-company-documents).
+service with [explicit CLI/JSON contracts](../../official-mcp.md#news-and-company-documents).
 No independent source fallback, dependency addition or account mutation is needed.
 
 The model owns closed requests and response interpretation. News keeps source
@@ -636,7 +665,7 @@ The economic/calendar slice above follows this completed news/document stage.
 The owner requested the next agreed slice after alert management. It implements
 `tv mcp financials`, `financial-history`, `forecasts` and `earnings`, without
 changing scanner-backed fundamentals/events or promoting the later news/document/
-economic-data slice. Concrete [CLI and JSON contracts](../official-mcp.md#financial-data-forecasts-and-earnings)
+economic-data slice. Concrete [CLI and JSON contracts](../../official-mcp.md#financial-data-forecasts-and-earnings)
 define the four versioned responses, date/period bounds, null semantics and
 unconfirmed identity/currency/window coverage. No new dependency is needed.
 
@@ -681,7 +710,7 @@ economic/calendar data.
 The owner requested the next ordered feature after watchlist management.
 `tv mcp alert create/update/stop/restart/delete` implements simple price alerts
 and explicit settings/lifecycle management, independently of Desktop commands.
-[CLI and JSON examples](../official-mcp.md#explicit-alert-changes) define
+[CLI and JSON examples](../../official-mcp.md#explicit-alert-changes) define
 `mcp_alert_mutation.v1`, notification defaults, bounds and per-ID postconditions.
 Update always reactivates; delete removes history. Message/webhook/expiration
 editing, monitoring and Pine reconstruction are outside this first slice.
@@ -730,7 +759,7 @@ Windows native qualification remains separately deferred by the owner.
 Implement watchlist changes first, as ordered above, before alert management.
 The explicit commands are `tv mcp watchlist create/update/add/remove/delete`.
 Their before/after examples, bounds and `mcp_watchlist_mutation.v1` contract
-are in the [management guide](../official-mcp.md#explicit-watchlist-changes).
+are in the [management guide](../../official-mcp.md#explicit-watchlist-changes).
 Existing account reads and Desktop commands retain their behavior.
 
 The model owns request validation and postcondition interpretation. The service
@@ -804,7 +833,7 @@ a failed call. Provider errors or malformed responses never become empty lists.
 Before these commands are added, CLI parsing rejects them; after implementation,
 empty lists are successful snapshots while unsupported IDs/filters fail before
 I/O. Concrete contracts and partial/empty examples are in the
-[account read guide](../official-mcp.md#watchlists-and-alerts).
+[account read guide](../../official-mcp.md#watchlists-and-alerts).
 
 Same-account nonmutating read verification is within the agreed work. Raw
 account values, identifiers, alert messages and webhook URLs must not be persisted
@@ -885,7 +914,7 @@ The owner approved implementing the first expansion: `tv mcp search`,
 `tv mcp columns` and `tv mcp symbol`. These preserve existing commands and add
 `mcp_search.v1`, `mcp_columns.v1` and `mcp_symbol.v1` to the existing MCP envelope.
 The concrete usage, synthetic before/after example, missing-field behavior and
-error handling are in [the public contract](../official-mcp.md#symbol-discovery-and-data).
+error handling are in [the public contract](../../official-mcp.md#symbol-discovery-and-data).
 This agreement concerns the standalone commands, not changing legacy defaults.
 
 The owner separately authorized same-account read verification for Apple symbol
@@ -939,7 +968,7 @@ not claimed by the earlier OHLCV observation acceptance.
 
 The owner requested the next ordered slice. The public entry is
 `tv mcp symbols <EXCHANGE:SYMBOL>... --columns <FIELDS>`, with `mcp_symbols.v1`.
-The [concrete contract](../official-mcp.md#multi-symbol-data) distinguishes returned,
+The [concrete contract](../../official-mcp.md#multi-symbol-data) distinguishes returned,
 explicitly missing and unreported symbols, retaining input order and per-field
 null/absence. The provider cap is 50 symbols; this CLI requires distinct inputs
 and makes one batch request without implicit splitting or individual fallback.
@@ -986,7 +1015,7 @@ to complete necessary same-account read verification without repeating routine
 confirmation questions. Implement `tv mcp screener` with explicit market, JSON
 filters, sort field/direction, limit, columns, symbol types, preset and symbolset.
 The before/after use and partial/empty/error outcomes are in the
-[public contract](../official-mcp.md#screener-queries). No legacy command changes.
+[public contract](../../official-mcp.md#screener-queries). No legacy command changes.
 
 The observed wire uses `data.rows` with flat symbol/field objects and
 `data.totalCount`. Preserve provider row order and selected JSON field values;
@@ -1093,12 +1122,12 @@ OAuth success, or historical availability from the bar timestamp alone.
 ### Current code and consumers
 
 Released upstream baseline: `v0.31.4` / `48e500b`. The Rust-source inspection
-originally made at 7a7b883 was revalidated: there is no `crates/` diff. [CLI parsing](../../crates/cli/src/cli.rs) and
-[dispatch](../../crates/cli/src/app/dispatch.rs) route `bars` into
-[market bars](../../crates/market/src/bars.rs). Its
-[transport](../../crates/market/src/bars/transport.rs) sends an unauthenticated
+originally made at 7a7b883 was revalidated: there is no `crates/` diff. [CLI parsing](../../../crates/cli/src/cli.rs) and
+[dispatch](../../../crates/cli/src/app/dispatch.rs) route `bars` into
+[market bars](../../../crates/market/src/bars.rs). Its
+[transport](../../../crates/market/src/bars/transport.rs) sends an unauthenticated
 WebSocket token and explicitly requests split adjustment; its
-[payload](../../crates/market/src/bars/payload.rs) fixes `bars.v1` and
+[payload](../../../crates/market/src/bars/payload.rs) fixes `bars.v1` and
 `tradingview_bars_ws`, with WebSocket wait/pagination diagnostics. Recent mode
 caps at 500; date-range mode supports bounded additional windows up to 5,000.
 These source-specific facts cannot be fabricated for MCP.
@@ -1534,7 +1563,7 @@ an accepted backtest-ready `prepared_bars.v1` artifact is a separate stronger ga
   no hidden replays, deadline cancellation and no late output.
 - Consumer-driven synthetic fixtures for every before/after/error case above;
   downstream tests run by its owner. Required evidence survives any transformation.
-- Rust baseline per [development](../development.md#validation-baseline), current
+- Rust baseline per [development](../../development.md#validation-baseline), current
   separately pinned JS gates for release qualification, public hygiene, minimal
   dependency features, package guide/reference checks and source/staged provenance.
 
@@ -1555,7 +1584,7 @@ them. Do not provoke quota exhaustion or change an account to manufacture errors
 Any comparison with legacy WebSocket or Desktop requires separately named
 targets and a bounded read budget; equality of a few bars is not semantic parity.
 
-Distribution keeps the four [existing targets](../release-packaging.md#release-channel).
+Distribution keeps the four [existing targets](../../release-packaging.md#release-channel).
 Build and fixture-test all platforms; prove browser callback, credential-store
 access, restart and refresh on macOS and Windows and the selected Linux runtime.
 An untested target is explicitly unverified and blocks a claim of uniform MCP

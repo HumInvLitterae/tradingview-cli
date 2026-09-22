@@ -657,7 +657,7 @@ The example's other operations are explicit live proof actions. The development
 CLI also exposes `tv mcp`; its service shares the same bounded transport and
 validates `mcp_bars.v1` with JSON/SSE, 401/429, schema and invalid-response fixtures.
 Their account, credential-record and provider authority belong
-to the [MCP work record](plans/tradingview-cli-official-mcp-client.md). The
+to the [MCP work record](plans/archives/tradingview-cli-official-mcp-client.md). The
 example installs no logging subscriber and emits sanitized observations only;
 never enable SDK wire/debug logging around real authorization. macOS, Windows and Linux
 credential calls run in a killable same-binary worker. The explicit
