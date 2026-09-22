@@ -694,6 +694,24 @@ entry can remain at its last observed phase on timeout; metadata's older `stage`
 field alone cannot locate a later protocol failure. These details are not added
 to the public MCP error contract.
 
+## Synthetic account setup measurement
+
+Run the opt-in mutation/readback measurement without account or credential access:
+
+```bash
+CARGO_BUILD_JOBS=1 RUST_TEST_THREADS=1 cargo test --offline --locked \
+  -p tradingview-mcp --lib measure_account_setup_before_readback \
+  -- --ignored --nocapture
+```
+
+The loopback fixture measures alert stop and watchlist rename with 0, 100 and
+600 ms added to each initialization/catalog response. It checks mutation and
+readback outcomes and counts protocol requests. Elapsed times are observations,
+not pass/fail thresholds or provider latency claims. Each case uses disposable
+synthetic state; the existing one-second dispatch spacing remains active.
+The ignored test adds no artificial delay to ordinary CI. Keep its count
+expectations synchronized when implementing command-local connection reuse.
+
 ## Linux Secret Service integration
 
 `bash scripts/check-linux-secret-service.sh` requires Linux, a Rust toolchain,

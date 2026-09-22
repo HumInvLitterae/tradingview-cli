@@ -525,3 +525,52 @@ rate-limit textual clue; no reset time or all-MCP outage is inferred. Next:
 qualify normal-deadline history success when available, obtain successful
 technical response evidence when limits permit, and continue independent
 synthetic transport measurement. Neither feature is declared release-ready.
+
+
+## Technical recheck and setup measurement (2026-09-23)
+
+One explicit daily technical shape recheck used the already approved account,
+symbol and interval, with the installed binary as credential worker. It again
+returned `success:false`, string `error`, and a `rate_limit` textual clue.
+This does not establish HTTP 429, a reset time or all-tool unavailability.
+Weekly, monthly and two-hour probes were not dispatched. Successful technical
+fields remain unqualified; do not implement a decoder from guessed values.
+
+Added an opt-in loopback measurement using the actual account service path,
+synthetic credentials and disposable admission state. It runs watchlist rename
+and alert stop, each followed by successful readback. All six cases dispatched
+exactly two tools, with two initializations, two initialized notifications and
+two catalog reads. The mutation was dispatched once; no live mutation occurred.
+
+| Added delay per initialization/catalog response | Watchlist elapsed | Alert elapsed |
+| --- | --- | --- |
+| 0 ms | 1115 ms | 1149 ms |
+| 100 ms | 1333 ms | 1322 ms |
+| 600 ms | 2623 ms | 2609 ms |
+
+These are one-run synthetic observations, not a production benchmark. The
+one-second tool-admission interval hides some second-setup latency: removing
+100 ms initialization plus 100 ms catalog waiting does not imply a 200 ms
+end-to-end saving. At 600 ms per response, the repeated setup exceeds admission
+spacing. The evidence supports proceeding with command-local reuse to eliminate
+redundant protocol requests; the actual latency gain must be measured afterward.
+It does not explain the provider's technical error or establish a timeout fix.
+
+Implementation boundary for the next slice: one account command owns one
+session and its catalog until readback completes, under the existing absolute
+deadline. Validate each selected tool's arguments/schema before dispatch,
+including readback targets learned from the mutation reply. Preserve the
+mutation result when readback capability/transport fails; do not preflight a
+readback in a way that changes existing mutation behavior. Keep admission before
+each tool, no retry/reinitialization, no process-wide catalog/credential cache,
+and existing cleanup/error semantics. Measure identical scenarios afterward
+and extend missing-capability, deadline, 401/429 and uncertain-readback fixtures.
+
+The measurement passed all six cases in 11.44 seconds; its incremental build
+was 10.16 seconds with one Cargo job. It is ignored during ordinary CI and
+explicitly documented in development guidance. Only fixture code and records
+changed in this slice; no production API, dependency or timeout changed.
+
+The existing transport fault/no-reinitialization regression also passed.
+Formatting, diff and public-hygiene checks passed. No full workspace suite,
+release build, installed-binary replacement or external publication was run.
