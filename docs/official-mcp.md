@@ -944,8 +944,12 @@ Within one command's admission lock, validated credentials are reused in memory.
 A successful durable update replaces that snapshot; a failed update invalidates
 it. A new command reads the OS store again. There is no cross-process token cache.
 
-Reads have one 30-second deadline spanning lock wait, credential work, discovery,
-pacing and response. Login has a five-minute interaction deadline. Processes
+Provider reads default to one 30-second deadline spanning lock wait, credential
+work, discovery, pacing, response and cleanup. In the next version, callers can
+explicitly select 1..180 seconds with [read deadlines](#read-deadlines-next-version)
+using `--timeout`; it does not reset the budget for each request. Mutations and
+local status retain their existing deadlines and reject the override. Login has
+a five-minute interaction deadline and also rejects the override. Processes
 share an operation lock and persisted one-second spacing/cooldown. Server limits
 and Retry-After take precedence. A missing Retry-After stays unconfirmed in the
 contract; a conservative 60-second local cooldown is a client policy, not a
