@@ -46,8 +46,10 @@ pub enum Command {
         about = "Use the official TradingView MCP service",
         long_about = "Explicit official MCP commands, separate from tv bars. \
                       Requires a paid TradingView account and protected OS credentials. \
-                      No Desktop connection or fallback. macOS and Windows adapters are provided; \
-                      Linux credential support remains unavailable."
+                      No Desktop connection or fallback. Credential storage uses macOS Keychain, \
+                      Windows Credential Manager, or Linux Secret Service. On Linux, \
+                      an available session bus and an unlocked Secret Service collection \
+                      are required for noninteractive credential access."
     )]
     Mcp {
         #[command(subcommand)]
