@@ -15,10 +15,10 @@ Direction: [roadmap](next-version-roadmap.md). Decisions and acceptance:
 | 8 | Integrate documentation and standalone skills | User guides, command/source mapping and account-management/market-data references reflect implemented behavior; individual skill and archive checks pass. |
 | 9 | Qualify and prepare release | Applicable Rust/platform checks, scoped runtime acceptance and honest limits recorded; version/notes in a separate final preparation commit. Publication separately authorized. |
 
-Current prerequisite: disable expensive local pre-push checks by default and
-use one Cargo build job/test thread with focused local validation. The owner
-approved both public-contract proposals and the scoped technical/history reads.
-Next: qualify actual response shapes, then implement the agreed slices. Reuse
-same-scope authority; material new effects or contract differences need review.
-No new read implementation, version bump, account mutation or dependency
-addition has occurred in this planning/tooling stage.
+The local resource prerequisite is complete: heavy pre-push checks are disabled
+and explicit local baselines default to one build job/test thread. Both new
+contracts and scoped reads are approved. A fixed-request, redacted proof path
+is built and tested. Catalog qualification currently times out before any tool
+dispatch; first attribute initialization/catalog waiting with private diagnostics.
+No public read implementation, version bump or dependency addition is complete.
+The active record distinguishes preparation evidence from runtime qualification.

@@ -245,7 +245,8 @@ concrete proposal with current-version verification.
 - v0.32.0 publication and release-workflow success rechecked; old plan archived.
 - Current code and downstream readback reviewed; no new consumer defect claimed.
 - Roadmap/inventory synchronized; synthetic contract examples proposed here.
-- No implementation, live request, dependency change or version bump yet.
+- At planning completion, no implementation or live request had occurred.
+  The subsequent preparation checkpoint below supersedes that state.
 - Planning checks passed: 59 local Markdown file references, two synthetic
   JSON examples, public-hygiene self-test/scan (709 tracked files), and diff
   whitespace checks. Credential-language review found only policy/examples.
@@ -270,3 +271,63 @@ concrete proposal with current-version verification.
   it is unavailable on this host. No Rust compilation or functional test ran.
 - Next: continue the approved contract qualification and implementation with
   these resource limits.
+
+
+## Contract qualification preparation (2026-09-22)
+
+Added six explicit development-harness operations, not public commands:
+`next-read-catalog`, four technical timeframe shape reads and
+`alert-history-shape`. The closed registry accepts only the approved requests
+for these proof tools. The existing transport, absolute 30-second deadline,
+OS credential worker, admission/cooldown and no-replay behavior are reused.
+No dependencies, public success/error contracts or persisted credential formats
+changed. The installed v0.32.0 binary was preserved and selected as worker.
+
+The new observation module retains only known field names, scalar types,
+array lengths and identity comparisons. It suppresses all scalar values and
+unknown keys, including account IDs, message bodies and webhook URLs. It does
+not store raw provider payloads or turn unobserved shapes into fixtures.
+
+### Executed evidence
+
+- Two new pure tests passed: exact proof-scope validation and observation
+  redaction, including unknown keys and empty arrays. Three existing tool
+  registry tests also passed. Tests used one thread.
+- The incremental test build took 16.76 seconds and the example build took
+  12.02 seconds, with one Cargo job and no overlapping builds. Existing target
+  artifacts were reused. An attempted lower process priority was denied by the
+  local sandbox; no reduced-priority claim is made. Full workspace/release
+  builds and broad Clippy were not repeated for this preparatory change.
+- Two explicit catalog attempts ended within the normal operation deadline
+  without catalog completion. In the second attempt, persisted counters rose
+  by two metadata and two protocol requests, with no tool call, registration,
+  token exchange or refresh. Credential restoration therefore progressed far
+  enough to begin MCP protocol traffic; this does not prove server acceptance.
+- Separate public GET checks for the configured protected-resource and issuer
+  metadata endpoints returned HTTP 200 and valid JSON. An initial manual
+  resource-path probe omitted the `/mcp` suffix and is not evidence about the
+  configured endpoint. No endpoint configuration was changed.
+- Existing HTTP diagnostics retained `authorization_metadata` as their last
+  named stage while subsequent protocol traffic had begun. That field cannot
+  identify the timeout's phase. Last HTTP status 200 and no tool dispatch do
+  not establish whether initialization, notification or catalog waiting was
+  responsible. No current all-MCP outage, 429 or credential defect is inferred.
+
+### Implementation handoff
+
+The next step is narrow, private attribution of MCP initialization versus
+catalog waiting before another live attempt. Preserve normal deadlines and
+avoid raw SDK logging or token/payload capture. The current evidence does not
+justify raising timeouts, adding retries or implementing schema guesses.
+
+Once discovery completes, use the prepared shape operations sequentially.
+Capture the documented indicator and rating containers, symbol/timeframe echoes
+and actual timestamp units; for history, distinguish empty-only native evidence
+from nonempty synthetic coverage. Finalize model normalizers only after these
+facts are established. New fixture values must be synthetic, with unknowns
+preserved. Login-journey and fixture-readiness work can proceed independently.
+
+No technical snapshot or alert-history tool call has yet been dispatched.
+Both public features remain planned and unimplemented; no new user approval is
+needed for the existing scoped reads. Material contract differences still need
+review. Preparation is ready; runtime contract qualification remains open.

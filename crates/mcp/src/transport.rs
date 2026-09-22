@@ -192,7 +192,11 @@ pub(crate) async fn inspect_alert_tools(http: &Http, token: String) -> Result<Va
     inspect_tools(http, token, &expected).await
 }
 
-async fn inspect_tools(http: &Http, token: String, expected: &[(Tool, Value)]) -> Result<Value> {
+pub(crate) async fn inspect_tools(
+    http: &Http,
+    token: String,
+    expected: &[(Tool, Value)],
+) -> Result<Value> {
     for (tool, arguments) in expected {
         tool.validate_arguments(arguments)?;
     }

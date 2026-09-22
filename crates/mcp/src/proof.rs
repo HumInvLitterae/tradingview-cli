@@ -1,5 +1,7 @@
 //! Opt-in connection proof, not the public bars contract or an arbitrary MCP proxy.
 
+mod next_reads;
+
 use crate::{
     Failure, Result,
     admission::{Admission, now_ms, write_private_json},
@@ -20,6 +22,12 @@ use tokio::time::Instant;
 /// The caller explicitly chooses each effect; no startup discovery or login.
 #[derive(Clone, Copy)]
 pub enum ProofOperation {
+    NextReadCatalog,
+    TechnicalDailyShape,
+    TechnicalWeeklyShape,
+    TechnicalMonthlyShape,
+    TechnicalTwoHourShape,
+    AlertHistoryShape,
     EconomicCommands,
     DividendCommands,
     EconomicCodesShape,
@@ -175,6 +183,14 @@ pub async fn run_proof_with_worker(
         let mut auth = Auth::discover(http.clone(), store.clone(), budget.clone()).await?;
 
         match operation {
+            ProofOperation::NextReadCatalog
+            | ProofOperation::TechnicalDailyShape
+            | ProofOperation::TechnicalWeeklyShape
+            | ProofOperation::TechnicalMonthlyShape
+            | ProofOperation::TechnicalTwoHourShape
+            | ProofOperation::AlertHistoryShape => {
+                next_reads::inspect(operation, &mut auth, &mut admission).await
+            }
             ProofOperation::EconomicCodesShape
             | ProofOperation::EconomicSeriesShape
             | ProofOperation::EconomicOverviewShape
