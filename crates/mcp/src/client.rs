@@ -79,8 +79,12 @@ impl Client {
                 .check_cooldown()
                 .map_err(|e| failure(e, "local_admission", 0, None))?;
         }
-        let store = Store::native_worker(Endpoints::tradingview(), deadline, self.worker.clone())
-            .map_err(|e| failure(e, "credentials", 0, None))?;
+        let mut store =
+            Store::native_worker(Endpoints::tradingview(), deadline, self.worker.clone())
+                .map_err(|e| failure(e, "credentials", 0, None))?;
+        if matches!(operation, Operation::Login) {
+            store.permit_login_interaction();
+        }
         if matches!(operation, Operation::Logout) {
             store
                 .clear_record()

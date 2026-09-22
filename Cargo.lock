@@ -2719,6 +2719,7 @@ dependencies = [
  "tradingview-model",
  "windows-native-keyring-store",
  "windows-sys 0.61.2",
+ "zbus",
 ]
 
 [[package]]

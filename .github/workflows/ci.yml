@@ -163,3 +163,10 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
       - name: Run tests
         run: cargo test --workspace
+
+      - name: Install isolated Linux credential test services
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y dbus gnome-keyring
+      - name: Check Linux Secret Service integration
+        if: runner.os == 'Linux'
+        run: bash scripts/check-linux-secret-service.sh

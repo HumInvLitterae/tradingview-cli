@@ -34,6 +34,7 @@ windows-sys = { workspace = true, features = [
 
 [target.'cfg(target_os = "linux")'.dependencies]
 secret-service.workspace = true
+zbus.workspace = true
 
 [dev-dependencies]
 tempfile.workspace = true
