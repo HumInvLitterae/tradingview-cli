@@ -59,15 +59,24 @@ pub(super) async fn inspect(
     )
     .await?;
     let value = transport::result_value(responses.pop().ok_or(Failure::InvalidResponse)??)?;
-    Ok(json!({
+    Ok(observation(tool, &arguments, &value))
+}
+
+fn observation(tool: Tool, arguments: &Value, value: &Value) -> Value {
+    let mut report = json!({
         "tool": tool.names()[0],
         "requested_interval": arguments.get("interval"),
-        "shape": safe_shape(&value, 0),
+        "provider_success": value.get("success").and_then(Value::as_bool),
+        "shape": safe_shape(value, 0),
         "symbol_echo_matches": value.get("symbol").and_then(Value::as_str)
             .map(|symbol| symbol == "NASDAQ:AAPL"),
         "interval_echo_matches": value.get("interval").and_then(Value::as_str)
             .map(|interval| arguments.get("interval").and_then(Value::as_str) == Some(interval))
-    }))
+    });
+    if value.get("success") == Some(&Value::Bool(false)) {
+        report["failure"] = json!(Failure::ProviderError);
+    }
+    report
 }
 
 // Names are a closed observation vocabulary, not arbitrary provider/account keys.
@@ -83,6 +92,12 @@ fn safe_shape(value: &Value, depth: usize) -> Value {
                 if matches!(
                     name.as_str(),
                     "symbol"
+                        | "result"
+                        | "results"
+                        | "technical_rating"
+                        | "technical_ratings"
+                        | "error"
+                        | "error_message"
                         | "interval"
                         | "timeframe"
                         | "data"
@@ -167,6 +182,19 @@ fn safe_shape(value: &Value, depth: usize) -> Value {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn next_reads_provider_failure_is_not_successful_data() {
+        let report = observation(
+            Tool::TechnicalSnapshotProof,
+            &json!({"symbol": "NASDAQ:AAPL", "interval": "1D"}),
+            &json!({"success": false, "error": "private provider detail"}),
+        );
+        assert_eq!(report["provider_success"], false);
+        assert_eq!(report["failure"], json!(Failure::ProviderError));
+        assert_eq!(report["shape"]["fields"]["error"], "string");
+        assert!(!report.to_string().contains("private provider detail"));
+    }
 
     #[test]
     fn next_reads_shape_suppresses_values_and_unknown_keys() {

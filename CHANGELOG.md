@@ -7,6 +7,12 @@ package version omits the leading `v`.
 
 ## Unreleased
 
+### Changed
+
+- Explicit MCP login now gives terminal-only guidance before credential and
+  browser interaction. Captured stderr remains free of human progress messages,
+  and usable credentials continue to be reused.
+
 ## v0.32.0 - 2026-09-22
 
 ### Added

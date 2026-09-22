@@ -677,6 +677,14 @@ array counts and echo comparisons; unknown keys and scalar values are omitted.
 Use an explicitly selected, already authorized credential worker without
 replacing it, preserve normal deadlines and stop on actual rate limits.
 
+Private proof diagnostics distinguish initialization, initialized notification,
+catalog, tool dispatch, event-stream setup and session cleanup. Each stores its
+own latest phase, optional HTTP status and remaining operation budget. No URL,
+headers, session ID, request arguments or response body is recorded. A protocol
+entry can remain at its last observed phase on timeout; metadata's older `stage`
+field alone cannot locate a later protocol failure. These details are not added
+to the public MCP error contract.
+
 ## Linux Secret Service integration
 
 `bash scripts/check-linux-secret-service.sh` requires Linux, a Rust toolchain,

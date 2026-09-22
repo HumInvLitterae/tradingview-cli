@@ -83,6 +83,10 @@ impl Client {
             Store::native_worker(Endpoints::tradingview(), deadline, self.worker.clone())
                 .map_err(|e| failure(e, "credentials", 0, None))?;
         if matches!(operation, Operation::Login) {
+            crate::auth::login_notice(
+                "Checking saved TradingView authorization. Usable credentials will be reused; \
+                 browser authorization is requested only when needed.",
+            );
             store.permit_login_interaction();
         }
         if matches!(operation, Operation::Logout) {
@@ -98,10 +102,10 @@ impl Client {
         }
         let record = match store.load_record().await {
             Err(Failure::StorageInteractionRequired) if matches!(operation, Operation::Login) => {
-                eprintln!(
-                    "The OS will ask to let tv access its dedicated credential. \
-                     On macOS choose Always Allow for this executable to enable \
-                     later noninteractive reads."
+                crate::auth::login_notice(
+                    "The OS may ask to let tv access its dedicated credential. Verify the \
+                     executable and credential item first. On macOS choose Always Allow \
+                     for this executable to enable later noninteractive reads.",
                 );
                 store
                     .authorize_access()

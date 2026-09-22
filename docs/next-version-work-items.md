@@ -7,7 +7,7 @@ Direction: [roadmap](next-version-roadmap.md). Decisions and acceptance:
 | --- | --- | --- |
 | 1 | Close v0.32.0 and establish baseline | Done: publication/workflow verified; prior record archived with historical evidence preserved and downstream report distinguished from local checks. |
 | 2 | Settle new read contracts and live verification scope | Contract proposals and scoped reads approved; actual response shapes and missing-value rules still need verification before finalizing normalization. Both are planned features. |
-| 3 | Improve login/upgrade operation | Existing successful stdout/error JSON preserved; useful pre-interaction guidance for explicit login, correct credential reuse and no prompts in ordinary commands. |
+| 3 | Improve login/upgrade operation | Implemented terminal-only pre-interaction guidance; captured stderr, existing stdout/error JSON and credential reuse verified by focused tests. Fresh live authorization not repeated. |
 | 4 | Implement alert history | Bounded read, source/evidence separation, no sensitive free text, safe empty/limited/error results, fixtures and scoped real acceptance. |
 | 5 | Implement official technical snapshot | Single symbol/timeframe, provider values/ratings without local recomputation, missing/unknown conditions retained; fixtures and scoped real acceptance. |
 | 6 | Measure and conditionally optimize transport | Document before/after initialization/catalog counts and timings; one command owns one connection where useful; no mutation replay or deadline/contract changes. No-go with evidence is acceptable. |
@@ -18,7 +18,9 @@ Direction: [roadmap](next-version-roadmap.md). Decisions and acceptance:
 The local resource prerequisite is complete: heavy pre-push checks are disabled
 and explicit local baselines default to one build job/test thread. Both new
 contracts and scoped reads are approved. A fixed-request, redacted proof path
-is built and tested. Catalog qualification currently times out before any tool
-dispatch; first attribute initialization/catalog waiting with private diagnostics.
+is built and tested. Catalog/schema checks subsequently passed. Private diagnostics distinguish
+initialization and tool-response timeouts. History returned an empty successful
+response; technical daily returned a provider application error. Successful
+indicator data and nonempty history fields remain unqualified.
 No public read implementation, version bump or dependency addition is complete.
 The active record distinguishes preparation evidence from runtime qualification.
