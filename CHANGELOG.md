@@ -22,6 +22,11 @@ package version omits the leading `v`.
   browser interaction. Captured stderr remains free of human progress messages,
   and usable credentials continue to be reused.
 
+### Fixed
+
+- MCP command help now describes the implemented Linux Secret Service credential
+  support instead of incorrectly reporting Linux credentials as unavailable.
+
 ## v0.32.0 - 2026-09-22
 
 ### Added
