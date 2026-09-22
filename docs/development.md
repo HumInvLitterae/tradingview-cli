@@ -667,7 +667,17 @@ have passed. Linux uses Secret Service plus Linux-only zbus to dismiss delete
 prompts without displaying them; no plaintext fallback exists. On Windows, the
 native store test uses a disposable synthetic entry and deletes it afterward.
 
-### Linux Secret Service integration
+#The next-version proof adds `next-read-catalog`,
+`technical-daily-shape`, `technical-weekly-shape`, `technical-monthly-shape`,
+`technical-two-hour-shape` and `alert-history-shape`. These are development-only
+operations with fixed approved requests; they do not add public CLI commands.
+The [active plan](plans/tradingview-cli-mcp-operational-improvements.md) owns
+qualification. Output contains only a closed field-name/type vocabulary,
+array counts and echo comparisons; unknown keys and scalar values are omitted.
+Use an explicitly selected, already authorized credential worker without
+replacing it, preserve normal deadlines and stop on actual rate limits.
+
+## Linux Secret Service integration
 
 `bash scripts/check-linux-secret-service.sh` requires Linux, a Rust toolchain,
 `dbus-run-session`, GNOME Keyring and Python 3. It compiles the fixture/worker,

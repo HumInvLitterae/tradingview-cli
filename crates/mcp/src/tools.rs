@@ -6,6 +6,8 @@ use tradingview_model::{mcp_account, mcp_bars, mcp_data};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) enum Tool {
+    TechnicalSnapshotProof,
+    AlertHistoryProof,
     EconomicSymbols,
     EconomicData,
     EconomicCalendar,
@@ -43,6 +45,10 @@ pub(crate) enum Tool {
 impl Tool {
     pub fn names(self) -> &'static [&'static str] {
         match self {
+            Self::TechnicalSnapshotProof => {
+                &["mcp-tv-get-technicals-rating", "get_technicals_rating"]
+            }
+            Self::AlertHistoryProof => &["mcp-tv-get-alerts-log", "get_alerts_log"],
             Self::EconomicSymbols => &["mcp-tv-get-economic-symbols", "get_economic_symbols"],
             Self::EconomicData => &["mcp-tv-get-economic-data", "get_economic_data"],
             Self::EconomicCalendar => &["mcp-tv-get-economic-calendar", "get_economic_calendar"],
@@ -83,6 +89,12 @@ impl Tool {
 
     pub fn fields(self) -> &'static [(&'static str, &'static str)] {
         match self {
+            Self::TechnicalSnapshotProof => &[("symbol", "string"), ("interval", "string")],
+            Self::AlertHistoryProof => &[
+                ("symbol", "string"),
+                ("days", "integer"),
+                ("limit", "integer"),
+            ],
             Self::EconomicSymbols => &[
                 ("country", "string"),
                 ("category", "string"),
@@ -213,6 +225,8 @@ impl Tool {
 
     pub fn from_name(name: &str) -> Result<Self> {
         [
+            Self::TechnicalSnapshotProof,
+            Self::AlertHistoryProof,
             Self::EconomicSymbols,
             Self::EconomicData,
             Self::EconomicCalendar,
@@ -275,7 +289,32 @@ impl Tool {
                 .and_then(|v| u32::try_from(v).ok())
                 .ok_or(Failure::UnsupportedCapability)
         };
+        // Development-only requests stay within the approved observation scope.
+        // Public CLI support will use model-owned validation after qualification.
+        match self {
+            Self::TechnicalSnapshotProof => {
+                let interval = string("interval")?;
+                if matches!(interval, "1D" | "1W" | "1M" | "2h")
+                    && *args == serde_json::json!({"symbol": "NASDAQ:AAPL", "interval": interval})
+                {
+                    return Ok(());
+                }
+                return Err(Failure::UnsupportedCapability);
+            }
+            Self::AlertHistoryProof => {
+                return if *args
+                    == serde_json::json!({
+                        "symbol": "NASDAQ:AAPL", "days": 7, "limit": 100
+                    }) {
+                    Ok(())
+                } else {
+                    Err(Failure::UnsupportedCapability)
+                };
+            }
+            _ => {}
+        }
         let validated = match self {
+            Self::TechnicalSnapshotProof | Self::AlertHistoryProof => unreachable!(),
             Self::EconomicSymbols => tradingview_model::mcp_economics::Request::symbols(
                 optional("country")?,
                 optional("category")?,
@@ -604,7 +643,7 @@ mod tests {
     fn allowlist_rejects_unsupported_tools_and_unvalidated_arguments() {
         for name in [
             "mcp-watchlist-get-active-watchlist",
-            "mcp-tv-get-alerts-log",
+            "mcp-tv-unknown-tool",
             "other-search_symbols",
         ] {
             assert_eq!(Tool::from_name(name), Err(Failure::UnsupportedCapability));
