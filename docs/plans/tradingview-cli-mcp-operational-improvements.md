@@ -1,6 +1,7 @@
 # MCP operational improvements and two additional reads
 
-Status: **contracts and scoped reads approved; implementation pending**, 2026-09-22.
+Status: **login guidance and alert history implemented; native history acceptance
+and technical response qualification remain open**, 2026-09-23.
 Direction and priority live in the [roadmap](../next-version-roadmap.md) and
 [inventory](../next-version-work-items.md). This is the single work record for
 v0.33.0; the [v0.32.0 record](archives/tradingview-cli-official-mcp-client.md)
@@ -43,8 +44,8 @@ remain mandatory. This planning stage performs no account or credential I/O.
   serially; CI later passed. Investigate reproducibility, not an assumed
   production defect. Downstream test scheduling has a separate owner.
 - [Official documentation](https://www.tradingview.com/mcp/docs), checked on
-  2026-09-22, lists `get_alerts_log` and `get_technicals_rating`. Neither is in
-  the current closed tool registry. Documentation is not actual wire/schema
+  2026-09-22, lists `get_alerts_log` and `get_technicals_rating`. Neither was in
+  the released v0.32.0 closed tool registry. Documentation is not actual wire/schema
   evidence; inspect the authenticated catalog and responses before freezing
   their decoders.
 
@@ -471,3 +472,56 @@ complete its normalizer; resume technical shape qualification only when limits
 permit. The two features remain required planned scope, not silently deferred
 or claimed ready for release. Independent measurement and deterministic fixture
 work may proceed while provider data qualification is unavailable.
+
+
+## Alert history implementation (2026-09-23)
+
+The owner instructed proceeding after the concrete account-wide shape-read
+proposal. That instruction was treated as approval for the same account,
+seven-day window, maximum 100 events, shape-only investigation and necessary
+verification. Two explicit reads returned one event each. Only flat field names,
+types and a masked timestamp pattern were retained; no event values, account
+identifiers, message bodies or webhook contents were saved. The public CLI
+continues to require a symbol; the development-only unfiltered request remains
+fixed to seven days and 100 events. No account mutation occurred.
+
+Observed event fields include numeric `tv_alert_id` and `fire_id`, string
+`symbol`, `fired_at`, `bar_time`, `resolution`, `message`, and null `name` and
+`webhook`. The firing timestamp has UTC second syntax `YYYY-MM-DDTHH:MM:SSZ`.
+The implemented normalizer uses `tv_alert_id` for alert identity and `fired_at`
+for firing time, never the event ID or bar time. Synthetic fixtures exercise
+those distinctions. Non-null webhook delivery semantics remain unqualified;
+`webhook_delivery_status` is always null in this slice, with no raw passthrough.
+
+Implemented the approved `tv mcp alert history --symbol … --days 7 --limit 100`
+command and `mcp_alert_history.v1`. It preserves row order and repeated events,
+rejects contradictory symbols/counts/window echoes and malformed required
+identity/time fields, and reports empty versus saturated results without
+claiming coverage. Existing commands and public deadlines are unchanged.
+Documentation, source taxonomy and the independently usable account-management
+skill now describe this command and its limits.
+
+### Acceptance evidence and limits
+
+- Focused model checks passed, including UTC/calendar conversion and 14 account
+  tests. The service fixture covers valid, empty, mismatched, malformed,
+  provider-error and HTTP-429 results with one dispatch and no replay.
+- All nine MCP CLI contract tests, three registry tests and five proof tests
+  passed. Scoped strict Clippy passed for model, MCP and CLI, all targets.
+- Formatting, diff/public hygiene, skill validation, standalone references and
+  runtime-package self-tests passed. Placeholder-binary staging passed with
+  seven skills per root; this is not release-binary validation.
+- Cargo operations were sequential with one build job and one test thread.
+  No full workspace test, release build or Windows/Linux native run was added.
+- Nonempty provider structure was obtained with the private 180-second
+  investigation budget. A separate AAPL/seven-day/100-event call through the
+  public service's normal 30-second deadline ended with `deadline_exceeded`,
+  `stage: tool_response`, `tool_attempts: 1`. Thus public-service native success
+  remains unqualified. No retry or public timeout increase was introduced.
+
+The installed released binary remains unchanged and served only as the trusted
+credential worker. Technical reads remain stopped after the earlier provider
+rate-limit textual clue; no reset time or all-MCP outage is inferred. Next:
+qualify normal-deadline history success when available, obtain successful
+technical response evidence when limits permit, and continue independent
+synthetic transport measurement. Neither feature is declared release-ready.

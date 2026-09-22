@@ -1473,6 +1473,15 @@ pub enum McpWatchlistCommand {
 
 #[derive(Debug, Subcommand)]
 pub enum McpAlertCommand {
+    #[command(about = "Read recent firing history for an explicit symbol; coverage is unconfirmed")]
+    History {
+        #[arg(long)]
+        symbol: String,
+        #[arg(long, default_value_t = 7)]
+        days: u32,
+        #[arg(long, default_value_t = 100)]
+        limit: u32,
+    },
     #[command(
         about = "Create a simple price alert; notifications default off; provider default expiration"
     )]

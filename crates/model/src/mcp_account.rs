@@ -1,6 +1,7 @@
 //! I/O-free requests, response shaping and postconditions for official MCP accounts.
 
 mod alert_mutation;
+mod history;
 mod watchlist_mutation;
 
 pub use alert_mutation::{Action as AlertAction, AlertMutation, AlertSettings};
@@ -11,6 +12,7 @@ use tradingview_core::{AppError, ErrorKind};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Kind {
+    AlertHistory,
     Watchlists,
     Watchlist,
     Alerts,
@@ -24,6 +26,20 @@ pub struct Request {
 }
 
 impl Request {
+    pub fn alert_history(symbol: &str, days: u32, limit: u32) -> Result<Self, AppError> {
+        crate::mcp_bars::validate_symbol(symbol)?;
+        if days == 0 {
+            return Err(invalid_request("days"));
+        }
+        if !(1..=2000).contains(&limit) {
+            return Err(invalid_request("limit"));
+        }
+        Ok(Self {
+            kind: Kind::AlertHistory,
+            arguments: json!({"symbol": symbol, "days": days, "limit": limit}),
+        })
+    }
+
     pub fn watchlists() -> Self {
         Self {
             kind: Kind::Watchlists,
@@ -129,7 +145,11 @@ pub fn normalize(request: &Request, value: Value, received_ms: u64) -> Result<Va
             _ => return Err(invalid_response("status_flag")),
         }
     }
+    if request.kind == Kind::AlertHistory {
+        return history::normalize(request, &value, received_ms);
+    }
     let contract = match request.kind {
+        Kind::AlertHistory => unreachable!(),
         Kind::Watchlists => "mcp_watchlists.v1",
         Kind::Watchlist => "mcp_watchlist.v1",
         Kind::Alerts => "mcp_alerts.v1",

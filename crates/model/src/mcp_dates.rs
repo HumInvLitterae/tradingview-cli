@@ -49,3 +49,52 @@ pub(crate) fn utc_seconds(value: &str) -> bool {
         && value[14..16].parse::<u32>().is_ok_and(|v| v < 60)
         && value[17..19].parse::<u32>().is_ok_and(|v| v < 60)
 }
+
+pub(crate) fn utc_seconds_to_unix(value: &str) -> Option<i64> {
+    if !utc_seconds(value) {
+        return None;
+    }
+    let year = value[..4].parse::<i64>().ok()?;
+    let month = value[5..7].parse::<usize>().ok()?;
+    let day = value[8..10].parse::<i64>().ok()?;
+    let leap_days = |year: i64| year / 4 - year / 100 + year / 400;
+    let month_days = [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334];
+    let leap = month > 2 && year % 4 == 0 && (year % 100 != 0 || year % 400 == 0);
+    let days = (year - 1970) * 365 + leap_days(year - 1) - leap_days(1969)
+        + month_days[month - 1]
+        + i64::from(leap)
+        + day
+        - 1;
+    Some(
+        days * 86400
+            + value[11..13].parse::<i64>().ok()? * 3600
+            + value[14..16].parse::<i64>().ok()? * 60
+            + value[17..19].parse::<i64>().ok()?,
+    )
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn history_timestamps_preserve_utc_seconds_and_validate_calendar() {
+        for (text, expected) in [
+            ("1970-01-01T00:00:00Z", 0),
+            ("1969-12-31T23:59:59Z", -1),
+            ("2000-02-29T12:34:56Z", 951827696),
+            ("2024-03-01T00:00:00Z", 1709251200),
+        ] {
+            assert_eq!(utc_seconds_to_unix(text), Some(expected));
+        }
+        for text in [
+            "1900-02-29T00:00:00Z",
+            "2024-02-30T00:00:00Z",
+            "2024-01-01T24:00:00Z",
+            "2024-01-01T00:00:00",
+            "2024-01-01T00:00:00.123Z",
+        ] {
+            assert_eq!(utc_seconds_to_unix(text), None);
+        }
+    }
+}

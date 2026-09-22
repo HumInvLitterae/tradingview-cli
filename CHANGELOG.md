@@ -7,6 +7,12 @@ package version omits the leading `v`.
 
 ## Unreleased
 
+### Added
+
+- `tv mcp alert history --symbol <EXCHANGE:SYMBOL>` reads bounded recent firing
+  history with `mcp_alert_history.v1`, explicit unknown coverage, validated alert
+  identity/UTC fire time, and no notification-message or webhook-content output.
+
 ### Changed
 
 - Explicit MCP login now gives terminal-only guidance before credential and

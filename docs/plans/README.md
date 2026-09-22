@@ -13,8 +13,9 @@ The owner accepted the v0.33.0 direction and explicitly included official
 technical snapshots alongside alert firing history. Login usability,
 measurement-led connection reuse and fixture stability complete the scope.
 Public-contract proposals and scoped live reads are approved. The active record
-owns response qualification and remaining material decisions. The immediate
-prerequisite is opt-in heavy local hooks and conservative local Cargo execution.
+owns response qualification and remaining material decisions. Heavy local hooks are now opt-in and local Cargo execution is conservative.
+Login guidance and alert history are implemented; normal-deadline history
+acceptance and successful technical response qualification remain open.
 
 Historical release records preserve dated evidence and do not establish a
 current checkout, ongoing provider availability or new execution authority.

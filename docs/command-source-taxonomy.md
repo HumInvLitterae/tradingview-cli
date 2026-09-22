@@ -54,6 +54,12 @@ explicit. Calendar actual/forecast/previous fields and recent/upcoming dividends
 remain source observations, with unknown coverage. Dividend symbols and market
 screening are separate request modes. See [economic contracts](official-mcp.md#economic-indicators-and-calendars).
 
+`tv mcp alert history --symbol ...` is a non-mutating recent-history read with
+`mcp_alert_history.v1`. Requested conditions, client receipt time and provider
+firing time are separate; coverage and webhook delivery remain unconfirmed.
+It does not create alerts, expose notification messages, change current state
+or use Desktop as fallback. See [history semantics](official-mcp.md#alert-firing-history-next-version).
+
 ### Authenticated official MCP mutation
 
 `tv mcp watchlist create/update/add/remove/delete` uses

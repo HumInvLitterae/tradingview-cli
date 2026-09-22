@@ -253,6 +253,43 @@ fn respond(ep: &Endpoints, r: &Request, mode: &str) -> Response {
         response.delay = Duration::from_secs(5);
         return response;
     }
+    if mode.starts_with("alert-history-") {
+        if request["method"] == "tools/list" {
+            return Response::json(json!({"jsonrpc": "2.0", "id": id, "result": {"tools": [{
+                "name": "get_alerts_log", "inputSchema": {
+                    "type": "object", "properties": {
+                        "symbol": {"type": "string"}, "days": {"type": "integer"},
+                        "limit": {"type": "integer"}
+                    }, "required": ["symbol"]
+                }
+            }]}}));
+        }
+        if request["method"] == "tools/call" {
+            if mode == "alert-history-429" {
+                return Response::status(429);
+            }
+            let mut value = json!({"success": true, "days": 7, "count": 1, "events": [{
+                "tv_alert_id": 12, "fire_id": 34, "symbol": "NASDAQ:EXAMPLE",
+                "fired_at": "2000-02-29T12:34:56Z", "message": "private event text",
+                "webhook": null
+            }]});
+            match mode {
+                "alert-history-empty" => {
+                    value["events"] = json!([]);
+                    value["count"] = json!(0);
+                }
+                "alert-history-mismatch" => value["events"][0]["symbol"] = json!("NYSE:OTHER"),
+                "alert-history-invalid" => value["events"][0]["tv_alert_id"] = Value::Null,
+                "alert-history-provider-error" => {
+                    value = json!({"success": false, "error": "private"})
+                }
+                _ => {}
+            }
+            return Response::json(json!({"jsonrpc": "2.0", "id": id, "result": {
+                "content": [], "structuredContent": value
+            }}));
+        }
+    }
     let result = match request["method"].as_str().unwrap() {
         "initialize" => {
             json!({
@@ -1919,6 +1956,52 @@ async fn dividend_service_distinguishes_http_throttling_from_application_errors(
                     );
                 }
                 _ => unreachable!(),
+            }
+        }
+    }
+}
+
+#[tokio::test]
+async fn alert_history_service_preserves_outcomes_without_replay() {
+    for (mode, error_code) in [
+        ("alert-history-valid", None),
+        ("alert-history-empty", None),
+        ("alert-history-mismatch", Some("invalid_response")),
+        ("alert-history-invalid", Some("invalid_response")),
+        ("alert-history-provider-error", Some("provider_error")),
+        ("alert-history-429", Some("rate_limited")),
+    ] {
+        let server = Server::start(mode).await;
+        let (_root, mut guard, budget, http, store) = context(&server, 8).await;
+        fixture_login(&http, &store, &budget).await;
+        let request =
+            tradingview_model::mcp_account::Request::alert_history("NASDAQ:EXAMPLE", 7, 100)
+                .unwrap();
+        let result = crate::client::execute(
+            crate::Operation::Account(request),
+            &mut guard,
+            store,
+            http,
+            budget,
+            true,
+        )
+        .await;
+        assert_eq!(server.calls("tools/call"), 1);
+        match error_code {
+            Some(code) => {
+                let details = result.unwrap_err().details.unwrap();
+                assert_eq!(details["code"], code);
+                assert_eq!(details["tool_attempts"], 1);
+            }
+            None => {
+                let data = result.unwrap();
+                assert_eq!(data["contract_version"], "mcp_alert_history.v1");
+                assert_eq!(
+                    data["returned_count"],
+                    if mode == "alert-history-empty" { 0 } else { 1 }
+                );
+                assert_eq!(data["coverage"], "unconfirmed");
+                assert!(!data.to_string().contains("private"));
             }
         }
     }

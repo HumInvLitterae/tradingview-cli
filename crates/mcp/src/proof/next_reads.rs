@@ -21,7 +21,7 @@ pub(super) async fn inspect(
                     json!({"symbol": "NASDAQ:AAPL", "interval": "1D"}),
                 ),
                 (
-                    Tool::AlertHistoryProof,
+                    Tool::AlertHistory,
                     json!({"symbol": "NASDAQ:AAPL", "days": 7, "limit": 100}),
                 ),
             ],
@@ -29,8 +29,11 @@ pub(super) async fn inspect(
         .await;
     }
     let (tool, arguments) = match operation {
+        ProofOperation::AccountHistoryShape => {
+            (Tool::AlertHistory, json!({"days": 7, "limit": 100}))
+        }
         ProofOperation::AlertHistoryShape => (
-            Tool::AlertHistoryProof,
+            Tool::AlertHistory,
             json!({"symbol": "NASDAQ:AAPL", "days": 7, "limit": 100}),
         ),
         ProofOperation::TechnicalDailyShape
@@ -73,11 +76,72 @@ fn observation(tool: Tool, arguments: &Value, value: &Value) -> Value {
         "interval_echo_matches": value.get("interval").and_then(Value::as_str)
             .map(|interval| arguments.get("interval").and_then(Value::as_str) == Some(interval))
     });
+    if tool == Tool::AlertHistory {
+        report["event_field_types"] = history_fields(value);
+    }
     if value.get("success") == Some(&Value::Bool(false)) {
         report["failure"] = json!(Failure::ProviderError);
         report["provider_error_hints"] = error_hints(value.get("error"));
     }
     report
+}
+
+// Only flat event-schema identifiers and primitive types, never values or
+// nested maps whose keys could be account-local identifiers.
+fn history_fields(value: &Value) -> Value {
+    let Some(events) = value.get("events").and_then(Value::as_array) else {
+        return Value::Null;
+    };
+    Value::Array(
+        events
+            .iter()
+            .take(2)
+            .map(|event| {
+                let Some(fields) = event.as_object() else {
+                    return json!("invalid_event");
+                };
+                let types = fields
+                    .iter()
+                    .filter(|(name, _)| {
+                        name.len() <= 64
+                            && name.starts_with(|c: char| c.is_ascii_alphabetic())
+                            && name.bytes().all(|b| b.is_ascii_alphanumeric() || b == b'_')
+                    })
+                    .take(40)
+                    .map(|(name, value)| {
+                        let kind = match value {
+                            Value::Object(_) => "object",
+                            Value::Array(_) => "array",
+                            Value::Number(_) => "number",
+                            Value::String(_) => "string",
+                            Value::Bool(_) => "boolean",
+                            Value::Null => "null",
+                        };
+                        (name.clone(), json!(kind))
+                    })
+                    .collect::<serde_json::Map<_, _>>();
+                let timestamp_pattern = event
+                    .get("fired_at")
+                    .and_then(Value::as_str)
+                    .filter(|value| value.len() <= 64)
+                    .map(|value| {
+                        value
+                            .chars()
+                            .map(|c| {
+                                if c.is_ascii_digit() {
+                                    '#'
+                                } else if "-:TtZz+. ".contains(c) {
+                                    c
+                                } else {
+                                    '?'
+                                }
+                            })
+                            .collect::<String>()
+                    });
+                json!({"fields": types, "fired_at_pattern": timestamp_pattern})
+            })
+            .collect(),
+    )
 }
 
 // These are textual clues, not HTTP statuses or verified root causes.
@@ -198,6 +262,11 @@ fn safe_shape(value: &Value, depth: usize) -> Value {
                         | "history"
                         | "alert_id"
                         | "id"
+                        | "fire_time"
+                        | "fire_timestamp"
+                        | "created_at"
+                        | "delivery_status"
+                        | "webhook_sent"
                         | "fired_at"
                         | "triggered_at"
                         | "message"
@@ -228,9 +297,42 @@ fn safe_shape(value: &Value, depth: usize) -> Value {
     }
 }
 
+pub(super) async fn verify_history_command(
+    directory: &std::path::Path,
+    worker: Option<&std::path::Path>,
+) -> Result<Value> {
+    let worker = worker.ok_or(Failure::UnsupportedCapability)?;
+    let request = tradingview_model::mcp_account::Request::alert_history("NASDAQ:AAPL", 7, 100)
+        .map_err(|_| Failure::UnsupportedCapability)?;
+    match crate::Client::with_paths(directory.to_owned(), worker.to_owned())
+        .run(crate::Operation::Account(request))
+        .await
+    {
+        Ok(data) => Ok(
+            json!({"success": true, "contract": data["contract_version"],
+            "returned_count": data["returned_count"], "coverage": data["coverage"]}),
+        ),
+        Err(error) => Ok(json!({"success": false, "error": error.details})),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn next_reads_history_schema_never_retains_event_values_or_nested_keys() {
+        let schema = history_fields(&json!({"events": [{
+            "alertId": 123456, "fired_at": "2026-01-02T03:04:05.123Z",
+            "message": "private message", "details": {"private-key": "secret"},
+            "123456": "opaque key", "private-key": "not a schema identifier"
+        }]}));
+        assert_eq!(schema[0]["fields"]["alertId"], "number");
+        assert_eq!(schema[0]["fired_at_pattern"], "####-##-##T##:##:##.###Z");
+        for forbidden in ["123456", "private", "secret", "2026", "opaque"] {
+            assert!(!schema.to_string().contains(forbidden));
+        }
+    }
 
     #[test]
     fn next_reads_error_hints_do_not_retain_messages_or_claim_http_status() {
@@ -282,7 +384,7 @@ mod tests {
     }
 
     #[test]
-    fn next_reads_proof_requests_cannot_expand_the_approved_scope() {
+    fn next_reads_technical_scope_and_history_inputs_stay_validated() {
         for interval in ["1D", "1W", "1M", "2h"] {
             assert!(
                 Tool::TechnicalSnapshotProof
@@ -291,8 +393,13 @@ mod tests {
             );
         }
         assert!(
-            Tool::AlertHistoryProof
+            Tool::AlertHistory
                 .validate_arguments(&json!({"symbol": "NASDAQ:AAPL", "days": 7, "limit": 100}))
+                .is_ok()
+        );
+        assert!(
+            Tool::AlertHistory
+                .validate_arguments(&json!({"days": 7, "limit": 100}))
                 .is_ok()
         );
         for (tool, arguments) in [
@@ -304,14 +411,14 @@ mod tests {
                 Tool::TechnicalSnapshotProof,
                 json!({"symbol": "NASDAQ:AAPL", "interval": "1m"}),
             ),
-            (Tool::AlertHistoryProof, json!({"days": 7, "limit": 100})),
+            (Tool::AlertHistory, json!({"days": 8, "limit": 100})),
             (
-                Tool::AlertHistoryProof,
-                json!({"symbol": "NASDAQ:AAPL", "days": 8, "limit": 100}),
+                Tool::AlertHistory,
+                json!({"symbol": "NASDAQ:AAPL", "days": 0, "limit": 100}),
             ),
             (
-                Tool::AlertHistoryProof,
-                json!({"symbol": "NASDAQ:AAPL", "days": 7, "limit": 101}),
+                Tool::AlertHistory,
+                json!({"symbol": "NASDAQ:AAPL", "days": 7, "limit": 2001}),
             ),
         ] {
             assert_eq!(
