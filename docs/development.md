@@ -709,8 +709,9 @@ The loopback fixture measures alert stop and watchlist rename with 0, 100 and
 readback outcomes and counts protocol requests. Elapsed times are observations,
 not pass/fail thresholds or provider latency claims. Each case uses disposable
 synthetic state; the existing one-second dispatch spacing remains active.
-The ignored test adds no artificial delay to ordinary CI. Keep its count
-expectations synchronized when implementing command-local connection reuse.
+The ignored test adds no artificial delay to ordinary CI. It expects one initialization and one catalog read for both tool calls when
+both tools are on one page. Additional catalog pages remain lazy and are tested
+separately; readback failure must not erase the received mutation result.
 
 ## Linux Secret Service integration
 

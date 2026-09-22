@@ -11,30 +11,39 @@ pub(crate) async fn change(
     token: String,
     admission: &mut Admission,
 ) -> Result<Value, AppError> {
-    let mut responses = transport::call(
-        http,
-        token.clone(),
-        request.action().into(),
-        &[request.arguments()],
-        Some(admission),
-    )
-    .await?;
-    let value = transport::result_value(responses.pop().ok_or(Failure::InvalidResponse)??)?;
-    let ids = request.targets_after_reply(&value)?;
+    let mut session = transport::Session::connect(http, token).await?;
+    let target = async {
+        let mut responses = session
+            .call(
+                request.action().into(),
+                &[request.arguments()],
+                Some(admission),
+            )
+            .await?;
+        let value = transport::result_value(responses.pop().ok_or(Failure::InvalidResponse)??)?;
+        request.targets_after_reply(&value)
+    }
+    .await;
+    let ids = match target {
+        Ok(target) => target,
+        Err(error) => return session.finish(Err(error)).await,
+    };
     if ids.is_empty() {
-        return Ok(request.report(
-            &ids,
-            json!({
-                "status": "not_performed",
-                "reason": "target_id_unreported",
-                "tool_attempts": 0
-            }),
-        ));
+        return session
+            .finish(Ok(request.report(
+                &ids,
+                json!({
+                    "status": "not_performed",
+                    "reason": "target_id_unreported",
+                    "tool_attempts": 0
+                }),
+            )))
+            .await;
     }
 
     let read = request.readback(&ids)?;
     let readback =
-        match crate::account::readback(&read, http, token, admission, "alert_readback").await {
+        match crate::account::readback(&read, http, session, admission, "alert_readback").await {
             Ok((data, attempts)) => request.verified_readback(&ids, data, attempts),
             Err(readback) => readback,
         };

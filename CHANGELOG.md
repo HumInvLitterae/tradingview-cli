@@ -15,6 +15,9 @@ package version omits the leading `v`.
 
 ### Changed
 
+- Official-MCP watchlist and alert changes reuse their connection and discovered
+  tool catalog for readback, reducing repeated setup without replaying mutations
+  or changing call admission, deadlines or result contracts.
 - Explicit MCP login now gives terminal-only guidance before credential and
   browser interaction. Captured stderr remains free of human progress messages,
   and usable credentials continue to be reused.

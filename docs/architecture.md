@@ -121,8 +121,13 @@ installed binary remains `tv`.
   and its opt-in proof harness. CLI adapters live in `ops/mcp.rs`; I/O-free
   request validation and response shaping live in `model::mcp_bars` and
   `model::mcp_data`; account reads live separately in `model::mcp_account`, including explicit watchlist mutation postconditions.
-  `mcp::watchlist` coordinates mutation and readback. The MCP service owns a closed tool allowlist; shared
-  transport does not expose arbitrary tool forwarding.
+  `mcp::watchlist` and `mcp::alert` coordinate mutation and readback. Each
+  mutation command owns one transport session through readback, reusing catalog
+  pages only within that command. Readback selection and schema validation occur
+  after the mutation reply supplies the target; failures remain readback failures.
+  Every dispatch retains admission checks and the same absolute deadline.
+  The MCP service owns a closed tool allowlist; shared transport does not expose
+  arbitrary tool forwarding or retain sessions across commands.
   Native worker adapters exist for macOS, Windows and Linux. Windows CI and
   owner-reported basic runtime acceptance passed; Linux service/CI coverage
   does not establish graphical OAuth acceptance. It does not broaden the
