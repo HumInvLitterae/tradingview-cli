@@ -1,7 +1,9 @@
 # v0.33.0 roadmap
 
-Status: direction accepted on 2026-09-22; public contract proposals and scoped reads are
-approved, not implemented. Baseline: [released v0.32.0](plans/archives/tradingview-cli-official-mcp-client.md#publication-closeout-2026-09-22).
+Status: implementation in progress, 2026-09-23. Alert history, login guidance,
+command-local connection reuse and the explicit read timeout are implemented.
+Technical snapshots remain planned but blocked on usable provider response
+evidence. Baseline: [released v0.32.0](plans/archives/tradingview-cli-official-mcp-client.md#publication-closeout-2026-09-22).
 The [inventory](next-version-work-items.md) owns order; the
 [operational-improvements plan](plans/tradingview-cli-mcp-operational-improvements.md)
 owns contracts, decisions and acceptance.
@@ -19,6 +21,8 @@ upgrade, and complete two useful read workflows:
   preserving noninteractive ordinary commands and structured output.
 - Measure repeated initialization within one command; reuse a connection for
   mutation/readback only if the measured benefit warrants the change.
+- Allow an explicit `--timeout` for provider reads while retaining the 30-second
+  default and unchanged mutation deadlines. This addition was separately approved.
 - Diagnose time-sensitive MCP fixtures and fix demonstrated synchronization
   problems without relaxing production deadlines or hiding failed assertions.
 

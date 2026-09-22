@@ -9,13 +9,14 @@
 | CDP stability triggers | [Strategy note](../notes/cdp-stability-and-autonomous-operation-strategy.md) |
 | Completed plans | [Historical catalog](archives/README.md) |
 
-The owner accepted the v0.33.0 direction and explicitly included official
-technical snapshots alongside alert firing history. Login usability,
-measurement-led connection reuse and fixture stability complete the scope.
-Public-contract proposals and scoped live reads are approved. The active record
-owns response qualification and remaining material decisions. Heavy local hooks are now opt-in and local Cargo execution is conservative.
-Login guidance and alert history are implemented; normal-deadline history
-acceptance and successful technical response qualification remain open.
+The owner accepted v0.33.0 scope including official technical snapshots alongside
+alert firing history. Login guidance, history, command-local connection reuse and
+the separately approved read-only `--timeout` are implemented. History succeeded
+through the public service with an explicit 90-second budget; default-deadline
+success remains unqualified. Technical snapshots are blocked on a provider
+application error with no usable data, and remain in the selected scope.
+The active record owns evidence and resumption conditions. Heavy local hooks are
+opt-in; current-candidate cross-platform CI and release qualification remain open.
 
 Historical release records preserve dated evidence and do not establish a
 current checkout, ongoing provider availability or new execution authority.

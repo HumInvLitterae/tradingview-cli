@@ -1,59 +1,46 @@
 # v0.33.0 ordered work inventory
 
-Direction: [roadmap](next-version-roadmap.md). Decisions and acceptance:
+Current state: 2026-09-23. Direction: [roadmap](next-version-roadmap.md).
+Contracts, approvals and dated evidence:
 [one active work record](plans/tradingview-cli-mcp-operational-improvements.md).
 
-| Order | Work | Completion condition |
+| Order | Work | Current state and remaining acceptance |
 | --- | --- | --- |
-| 1 | Close v0.32.0 and establish baseline | Done: publication/workflow verified; prior record archived with historical evidence preserved and downstream report distinguished from local checks. |
-| 2 | Settle new read contracts and live verification scope | Contract proposals and scoped reads approved; actual response shapes and missing-value rules still need verification before finalizing normalization. Both are planned features. |
-| 3 | Improve login/upgrade operation | Implemented terminal-only pre-interaction guidance; captured stderr, existing stdout/error JSON and credential reuse verified by focused tests. Fresh live authorization not repeated. |
-| 4 | Implement alert history | Implemented and fixture-verified, including nonempty provider shape evidence. The public service succeeded with an explicit 90-second timeout (empty history); default-30-second success remains unqualified. Coverage stays unconfirmed. |
-| 5 | Implement official technical snapshot | Blocked on provider response evidence: latest daily request returned HTTP 200 with application failure referencing a rate limit and screener endpoint, no values. Retain planned scope; resume after availability evidence, then implement and qualify actual fields. |
-| 6 | Measure and conditionally optimize transport | Implemented and measured: initialization/catalog reduced from two to one on a single-page catalog; lazy pagination and failed readback retain mutation results. MCP regression suite and scoped Clippy passed; no live latency claim. |
-| 7 | Stabilize affected fixtures | Reproduce and correct time/readiness dependencies; normal CI parallel execution passes without production timeout changes. Work can accompany stages 3–6. |
-| 8 | Integrate documentation and standalone skills | User guides, command/source mapping and account-management/market-data references reflect implemented behavior; individual skill and archive checks pass. |
-| 9 | Qualify and prepare release | Applicable Rust/platform checks, scoped runtime acceptance and honest limits recorded; version/notes in a separate final preparation commit. Publication separately authorized. |
+| 1 | Close v0.32.0 and establish baseline | Complete: publication/workflow verified, old record archived. Historical platform evidence is not current-candidate CI proof. |
+| 2 | Settle new read contracts and verification scope | Approved. History fields are qualified; successful technical fields are still missing. The separately approved timeout option uses `--timeout`, with no `--timeout-secs` alias. |
+| 3 | Improve login/upgrade operation | Implemented. Focused tests cover terminal-only guidance, captured output and credential reuse. A fresh interactive native login was not repeated for the wording change. |
+| 4 | Implement alert history | Implemented and fixture-verified. Nonempty provider structure was observed; the public service succeeded with explicit 90 seconds and empty history. Default-30-second native success and nonempty native normalization remain unqualified; coverage is always unconfirmed. |
+| 5 | Implement official technical snapshot | Blocked on provider response evidence. The latest daily request returned HTTP 200 in about 3.2 seconds, with an application error mentioning a rate limit and screener endpoint; no indicators. Keep planned scope. Resume on provider availability evidence or a new diagnostic hypothesis, then implement and qualify actual fields. |
+| 6 | Measure and optimize transport | Implemented and measured. A single-page mutation/readback flow uses one initialization/catalog instead of two. Lazy pagination, admission, deadlines and separate readback failures are fixture-verified. No live latency improvement is claimed. |
+| 7 | Stabilize affected fixtures | Scoped serial regression passed; no new timing defect was established. Current-candidate default-concurrency and cross-platform CI remain pending. Correct concrete failures if observed; do not weaken production deadlines or assertions. |
+| 8 | Integrate documentation and standalone skills | Complete for implemented behavior: help, usage, source taxonomy and standalone MCP references updated and checked. Add technical snapshot guidance only after its implementation. |
+| 9 | Qualify and prepare release | Not ready. Resolve technical response/implementation, review remaining native limits, obtain current-candidate platform/CI evidence, then prepare version and notes separately. Publishing remains separately authorized. |
 
-The local resource prerequisite is complete: heavy pre-push checks are disabled
-and explicit local baselines default to one build job/test thread. Both new
-contracts and scoped reads are approved. Catalog/schema checks passed. History
-now has a public command, strict normalization, deterministic tests and updated
-standalone guidance. Account-wide shape-only investigation established nonempty
-fields; the public CLI still requires a symbol. Its default-deadline
-native check timed out after one dispatch; the later explicit-90-second public
-service check succeeded with an empty history.
-Technical daily returned a provider application error with a rate-limit textual
-clue; further technical probes are stopped until the limit permits them.
-Successful indicator fields remain unqualified. No version bump or dependency
-addition occurred. The active record separates fixture, investigation-budget
-and public-deadline evidence; release readiness is not yet established.
+## Completed operating prerequisite
 
-The daily technical recheck again returned a rate-limit textual clue. The
-opt-in synthetic before/after measurement and command-local connection reuse
-are complete. Successful technical response qualification and normal-deadline
-history acceptance remain the next provider-dependent work.
+Heavy local pre-push checks are opt-in. Local Cargo uses one build job and one
+test thread, with existing artifacts and focused checks. The current workspace
+version remains 0.32.0; no release bump or new production dependency was added.
 
-Completed-response diagnostics now distinguish long-budget success from public
-readiness. Repeated identical technical checks still return a rate-limit textual
-clue; another live attempt should follow new availability evidence or a concrete
-diagnostic hypothesis, not an automatic retry on each continuation. The public
-30-second deadline and approved feature scope remain unchanged.
+## Next actions and boundaries
 
-Independent anonymous HTTP checks reproduced variable response latency outside
-the Rust client; no transport configuration fix is established. The owner subsequently approved the explicit read-only timeout option and chose
-`--timeout` as its spelling. It is implemented with the 30-second default
-unchanged; rejected operations fail before credential/provider access. The active
-record owns the added acceptance evidence.
+- Technical data: retain the approved AAPL D/W/M/2h scope. A public-safe provider
+  inquiry draft exists in the active record but has not been sent. Do not retry
+  the same failure on each continuation, invent response fields or substitute
+  `mcp symbol`/legacy data as the dedicated tool's output.
+- Read deadlines: `--timeout` accepts 1..180 seconds only for provider reads;
+  omitted reads retain 30 seconds. Rejected bounds/operations fail before
+  credential/provider access. The explicit-90-second native history result is
+  separate from the earlier default timeout; longer waiting does not cure the
+  technical application's received failure.
+- CI: once the owner makes the candidate available to CI, inspect its results.
+  Existing macOS focused checks and prior-release Windows/Linux evidence do not
+  establish current-candidate platform success. No push is implied by this list.
+- Release scope: technical snapshots remain a required planned feature. If their
+  provider cannot be qualified, present a concrete scope/schedule decision before
+  changing the release content. Do not silently drop them or start release prep.
 
-The approved `--timeout` option, focused tests, standalone guidance and native
-90-second empty-history acceptance are complete. No `--timeout-secs` alias is
-provided. Successful technical values and default-deadline history availability
-remain separate outstanding evidence; no release-ready claim is made.
-
-The latest technical investigation separated transport success from provider
-application failure: HTTP 200 in about 3.2 seconds, but no indicators and error
-text mentioning a rate limit and the screener endpoint. This is not a timeout
-fix target. A public-safe inquiry draft and precise resume conditions are in the
-active record; it has not been sent. Technical implementation remains blocked
-pending usable response evidence, without removing it from the approved scope.
+No credentials, account-local payloads or machine paths belong in tracked
+records. Keep private downstream collection policy and analytical admission
+outside this repository. The roadmap retains the existing CDP/deferred-feature
+triggers; dependency maintenance does not promote those features automatically.

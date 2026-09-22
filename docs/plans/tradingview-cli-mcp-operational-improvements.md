@@ -860,3 +860,34 @@ one Cargo job and tests used one thread. No broad suite, release build, other
 technical timeframe, new dependency, account mutation or installed-binary change
 was performed. The official documentation was rechecked and still advertises
 the tool and supported intervals, without the missing successful response shape.
+
+
+## Documentation and remaining-work reconciliation (2026-09-23)
+
+Audited implemented commands against help, the user reference, README, packaged
+runtime guidance and standalone skill references. Corrected the roadmap's stale
+claim that all approved work was unimplemented and the user reference's blanket
+30-second statement, which omitted the explicit read timeout. README now clearly
+separates development-only history/timeout capabilities from released v0.32.0.
+Its detailed reference uses the repository URL because release packages do not
+include the full contributor documentation tree.
+
+Replaced accumulated inventory checkpoint prose with a current state table and
+concrete next actions; dated evidence remains in this record. The plan index now
+reflects delivered history, timeout and connection reuse, while retaining the
+blocked technical snapshot in scope. Standalone skill routing and references
+already cover implemented behavior and need no further edits in this pass.
+
+Current-candidate cross-platform/default-concurrency CI is still pending; prior
+release Windows/Linux results are not reused as current implementation proof.
+No new fixture timing defect was established by the scoped serial checks, so no
+speculative synchronization changes or heavier parallel local test was added.
+Technical snapshots still require a usable provider response before production
+normalization and associated guidance. No version bump, release notes or scope
+reduction was started, and the provider inquiry draft remains unsent.
+
+Validation passed: changed Markdown local links, 14 JSON examples, public-hygiene
+scan and diff whitespace. Disposable placeholder-binary staging verified guide
+parity, seven skills per root and all standalone references; it is not a release
+binary check. No Rust source changed, so no Cargo build/test was repeated.
+No provider or credential access, additional agent, push or publication occurred.

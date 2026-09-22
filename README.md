@@ -291,6 +291,20 @@ for authentication and platform prerequisites. The
 [full MCP reference](https://github.com/HumInvLitterae/tradingview-cli/blob/main/docs/official-mcp.md)
 covers command contracts and the remaining Linux desktop OAuth verification limit.
 
+The development checkout additionally supports alert firing history and an
+explicit read timeout (planned for v0.33.0; not included in released v0.32.0):
+
+```sh
+tv mcp --timeout 90 alert history --symbol NASDAQ:AAPL --days 7 --limit 100
+```
+
+`--timeout` is a total read deadline in seconds (1..180, default 30), including
+setup. It is not accepted for login/logout/status or account mutations. History
+keeps coverage unconfirmed and excludes notification messages and webhook
+contents. See the [read deadline and history reference](https://github.com/HumInvLitterae/tradingview-cli/blob/main/docs/official-mcp.md#read-deadlines-next-version)
+for contracts and limits. The dedicated technical snapshot command remains planned and is not available
+in this checkout.
+
 Browserless historical bars are Desktop-free and bounded:
 
 ```bash
