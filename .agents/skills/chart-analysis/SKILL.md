@@ -6,7 +6,7 @@ description: Inspect a TradingView Desktop chart with tv when the user needs cha
 # Chart analysis
 
 Use the selected Desktop chart as the source. For Desktop-free prices, symbol
-comparison, or historical bars, use [market-data](../market-data/SKILL.md).
+comparison, or historical bars, use the optional `market-data` skill.
 Resolve the [Desktop session](references/desktop-session.md) when the target is
 new, uncertain, or changed; reuse a confirmed target across the workflow.
 
@@ -25,10 +25,10 @@ new, uncertain, or changed; reuse a confirmed target across the workflow.
 | Compare a small set using the chart feed | `tv chart compare <SYMBOL>...` | Temporary chart switching; check item status and restoration. |
 | Export this chart's historical range | `tv export chart-bars --from <UNIX_SECONDS> --to <UNIX_SECONDS>` | Moves the viewport; read [export evidence](references/workflow.md). |
 
-Read [bounded observations](../market-data/references/observations.md) for
+Read [bounded observations](references/observations.md) for
 `tv observe chart` or lower-level streams. Use
-[strategy-report](../strategy-report/SKILL.md) for strategy results and
-[replay-practice](../replay-practice/SKILL.md) for Replay operations.
+the optional `strategy-report` skill for strategy results and
+the optional `replay-practice` skill for Replay operations.
 
 Lead with the chart finding and its evidence. Distinguish observed bars/studies,
 visual observations, and inference. Do not invent indicator values, rankings,

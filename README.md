@@ -33,8 +33,8 @@ Version tags such as `v0.31.4` publish native archives like:
 - `SHA256SUMS`
 
 Each archive contains the binary, README, changelog, license, getting-started
-docs, user-facing agent guides, and six runtime-oriented TradingView CLI skills
-with their references (`market-data`, `chart-analysis`, `pine-develop`,
+docs, user-facing agent guides, and seven runtime-oriented TradingView CLI skills
+with their references (`account-management`, `market-data`, `chart-analysis`, `pine-develop`,
 `replay-practice`, `screener-workflow`, and `strategy-report`).
 Verify the archive against `SHA256SUMS`, unpack it, place the executable on
 your `PATH`, and confirm the binary:
@@ -252,6 +252,7 @@ scanner `extended_hours`.
 The development checkout also provides independent **official MCP** commands:
 
 ```sh
+# Sign in on the TradingView homepage in the default browser first.
 tv mcp login
 tv mcp status
 tv mcp search Apple

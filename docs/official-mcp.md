@@ -5,6 +5,23 @@ not replace `tv bars`, add a backend switch to it, or change `bars.v1`. One `tv`
 binary contains both paths. See the [work record](plans/tradingview-cli-official-mcp-client.md)
 for remaining platform/release qualification; these commands are not in v0.31.4.
 
+## Choose by capability
+
+| Task | Preferred available route | Boundary |
+| --- | --- | --- |
+| Watchlist reads and management | `tv mcp watchlist` | Account effects need the requested target; readback is distinct from dispatch. |
+| Simple price alerts | `tv mcp alert` | Does not recreate Pine conditions; notification defaults and update reactivation matter. |
+| Data-only screening, symbol/financial/research reads | Corresponding `tv mcp` command when authenticated | Preserve source, missing values and qualification limits. No saved Desktop screen is changed. |
+| Recent bars | `tv mcp bars` when its source and recent count meet the task | Count met is not historical completeness or proof of data conditions. |
+| Historical date range | Existing `tv bars` | MCP recent-count reads do not implement this request. |
+| Selected chart, Pine values/conditions or saved Desktop state | Existing Desktop commands | Their state/evidence is not replaced by independent MCP data. |
+
+Honor a specified source or consumer contract. These recommendations do not change
+existing CLI defaults and never authorize fallback after failure. Authenticated
+reads need no repeated source approval. For setup and errors, the portable
+[connection reference](../.agents/skills/market-data/references/mcp-connection.md)
+also ships with the independently attachable data/account skills.
+
 ## Use
 
 ```sh
@@ -33,8 +50,16 @@ run `tv mcp login` explicitly to handle it. Windows uses Credential Manager,
 with local-machine persistence and one atomic credential blob; oversized records
 fail rather than truncate. Windows CI and an owner-reported basic machine check
 have passed; this does not establish every command or long-running refresh behavior.
-Linux credential operations currently return `credential_store_unavailable`;
-there is no plaintext fallback or claim of uniform platform support yet.
+Linux uses the session D-Bus Secret Service (for example GNOME Keyring) with a
+persistent default collection and an encrypted D-Bus session. Explicit login may
+request collection setup/unlock and first-item creation. Ordinary reads, refresh
+writes and logout never display prompts; a required interaction returns a
+structured failure. Missing services, ambiguous records and unexpected attributes
+fail closed. No arbitrary collection or plaintext fallback is used. Linux GUI
+OAuth remains separately unverified; container tests exercise synthetic secrets.
+If a service requires confirmation specifically for deletion, logout reports
+interaction required without displaying it. Use the OS credential manager for
+that confirmation; a generic login/unlock cannot guarantee deletion approval.
 
 `status` reads local presence/expiry only, without contacting TradingView or
 proving that a token is still accepted. `logout` deletes only this client's
@@ -409,7 +434,8 @@ Native macOS verification covered two news pages, the empty page at offset 200,
 a news story, document listing, a document view and a dated annual-report query.
 Both detail responses echoed the exact requested IDs. Restricted/metadata-only
 responses and malformed cases are fixture evidence, not live paywall bypass
-checks. Windows qualification remains separate and pending.
+checks. The owner-reported basic Windows acceptance does not independently
+verify each news/document operation.
 
 ## Financial data, forecasts and earnings
 

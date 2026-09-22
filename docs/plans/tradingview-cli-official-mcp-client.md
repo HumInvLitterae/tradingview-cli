@@ -27,6 +27,72 @@ corrections. The owner subsequently accepted the Windows basic runtime check;
 the earlier deferred-platform gates below are historical checkpoints. Follow [PLANS.md](../../.agents/PLANS.md);
 this is the single feature work record.
 
+## Linux and independent runtime guidance implementation (2026-09-22)
+
+The owner approved execution of the Linux/standalone-skill plan and subsequently
+approved Linux-only direct `zbus = 5.19.0` with default features disabled and
+`tokio` only. It was already locked transitively; the upstream docs confirm the
+same current version. The reason is concrete: secret-service's delete helper
+executes returned prompts, while ordinary logout must remain noninteractive.
+No public JSON or credential-record format changed.
+
+Linux now uses the existing encrypted Secret Service session and a persistent
+default collection through the bounded credential worker. Only explicit login
+permits initial item creation and collection setup/unlock. Refresh updates an
+existing record without delete-first replacement; logout rejects/dismisses a
+returned prompt without displaying it. Exact application/profile/schema
+attributes, duplicate rejection, record bounds and saved-value readback protect
+record selection. GNOME Keyring adds the standard xdg schema attribute; making
+it explicit avoids inconsistent record lookup across processes. Temporary session
+collections are rejected by their service alias, not a guessed object path.
+
+The dedicated Linux container uses synthetic secrets, an unprivileged account,
+isolated HOME/session bus, and GNOME Keyring. It has no host credential mounts or
+TradingView access. Integration runs separately in the Linux CI job. Tests cover
+cross-process reuse, replacement, persistence after service restart/unlock,
+delete/missing-record behavior, absent bus, locked collection, duplicate/foreign
+attributes and rejecting a delete prompt without displaying it. Real graphical
+Linux OAuth remains unverified; this does not reopen the accepted Windows fix.
+
+Runtime guidance now has seven independently attachable skills, adding
+`account-management`. MCP-capable account/data tasks route to MCP when it meets
+the request and authentication is available; explicit sources, date ranges,
+Pine conditions and saved Desktop state retain their distinct routes. Required
+references stay within each skill. Shared connection/session instructions are
+copied intentionally and checked for parity; optional task handoffs name skills
+without requiring their files. User-facing entrypoints, source/architecture docs,
+English/Japanese setup and staging membership are synchronized.
+
+Validation: host workspace tests passed with 1,030 successful and 27 ignored
+cases using `--test-threads=1`; an earlier parallel run timed out in two existing
+MCP fixtures, without an assertion/contract mismatch. The serial full rerun
+passed without weakening their deadlines. Strict host workspace Clippy and
+Linux MCP all-target Clippy passed. Linux ordinary tests passed 51 cases with
+three opt-in integration tests ignored there; those three passed separately
+against isolated D-Bus/GNOME Keyring, together with the real worker lifecycle.
+The container was Linux aarch64, Rust 1.98.1 and GNOME Keyring 48.0. It is not
+x86_64 CI or graphical Linux OAuth evidence; the new Linux CI step is prepared,
+not remotely executed by this session.
+
+Seven skill metadata checks passed. Each skill was copied alone into a temporary
+directory and its references resolved without repository/sibling resources.
+The package validator's 11 tests passed, including cross-skill escape and shared
+copy drift failures. Resource staging passed with 70 files and seven skills per
+root; the binary was a placeholder, not release-binary validation. Manual route
+review covered authenticated account reads, missing authentication, explicit
+legacy source, historical ranges, Pine-only requirements and inactive-alert
+rename/reactivation. No independent agent evaluation is claimed. Formatting,
+public hygiene and local link/diff checks complete the focused validation.
+Unchanged production JavaScript gates were not rerun for this implementation.
+The candidate remains unreleased at 0.31.4. A same-account recheck using the
+existing trusted credential worker and shared state passed normal-deadline
+public-service normalization for overview, 22 indicator codes, 22 country symbols,
+19 series observations and two economic-calendar events. Each had one tool
+attempt. Symbol-mode dividends returned `provider_error` at `tool_response`;
+the batch stopped and did not attempt market dividends. This recheck establishes
+neither continuing 429 nor an all-MCP outage. Successful normalized dividend
+reads in both modes and candidate release preparation remain outstanding.
+
 ## Release checklist and documentation plan (2026-09-22)
 
 This section owns current release readiness and supersedes older pending Windows
@@ -46,19 +112,18 @@ MCP execution plan; do not create a duplicate documentation ExecPlan.
   [CI also passed](https://github.com/HumInvLitterae/tradingview-cli/actions/runs/35660335044).
   The local checkout inspected for this plan is `42b1267`; its recorded remote
   tracking ref was stale. Reconcile the remote change before candidate checks.
-- Linux binaries remain part of distribution, but authenticated MCP credential
-  operations are explicitly unavailable in current code. The owner now requests Linux implementation where feasible, with honest
+- Linux binaries remain part of distribution; the previously missing credential
+  adapter is now implemented as recorded above. The owner now requests Linux implementation where feasible, with honest
   separation of container tests and desktop acceptance. The implementation and
-  verification plan below supersedes the earlier macOS/Windows-only proposal.
+  verification record above supersedes the earlier macOS/Windows-only proposal.
 - Earlier feature slices and downstream observation intake are complete as
   recorded below. Downstream analytical admission is not an upstream release gate.
 
 ### Ordered remaining work
 
-1. Complete normal 30-second public-service acceptance for filtered economic
-   codes, a catalog-selected economic series, economic calendar, and both
-   dividend modes. Reuse successful overview/country-catalog observations and
-   unchanged fixtures. Successful native dividend normalization is still missing.
+1. Complete normal 30-second public-service acceptance for both dividend modes.
+   The current checkpoint above closes filtered codes, selected series and
+   economic-calendar acceptance. Reuse those observations and unchanged fixtures. Successful native dividend normalization is still missing.
    Reuse the approved same-account read scope and trusted credential worker;
    preserve errors and stop on renewed throttling. Do not infer a reset time or
    that all MCP tools are limited. No silent replay or deadline extension.
@@ -117,7 +182,8 @@ The current executor remains the sole implementer/PM; no delegation is authorize
 ### Linux design and acceptance
 
 Use the already approved Linux-only `secret-service = 5.2.0` with
-`rt-tokio-crypto-rust`; no new production dependency is currently needed.
+`rt-tokio-crypto-rust`; the later-approved direct zbus addition is recorded in the implementation
+checkpoint above.
 The [crate API](https://docs.rs/secret-service/5.2.0/secret_service/struct.SecretService.html)
 provides session connection, collection/item lookup and secret storage.
 The adapter belongs under `crates/mcp/src/credentials/`, behind the existing

@@ -63,6 +63,7 @@ project reference and is not broadly packaged.
 
 Runtime skills currently included:
 
+- `account-management`
 - `market-data`
 - `chart-analysis`
 - `pine-develop`
@@ -80,15 +81,18 @@ When changing runtime guidance, update affected entrypoints and references,
 the staging allowlist, the packaged guide, and user-facing package docs together.
 Keep links relative to their containing document, except the packaged guide
 source, whose links are authored relative to the archive root. Shared references
-must be included under both skill roots. Do not link runtime skills to
-repository-only docs; use the included skill references instead.
+must be included inside each skill that needs them and under both skill roots.
+A skill must work when only its directory is attached: no required sibling-skill
+or repository references. Optional handoffs name another skill without making
+its files part of the current workflow.
 
 ## Packaging validation
 
 Staging runs `scripts/check-runtime-package.py` with the same allowlist. It
 checks guide/resource parity, exact skill membership, and local Markdown links
 transitively from the guides and skills, including document paths written as
-inline code in skills. A missing or escaping reference fails
+inline code in skills. Each skill is also checked in isolation, rejecting sibling
+references even when the sibling is present in the archive. A missing or escaping reference fails
 staging. Online links are not fetched. CI also exercises the checker and stages
 a disposable placeholder binary, proving guidance packaging without claiming a
 working CLI build.
@@ -99,6 +103,7 @@ disposable output directory:
 ```bash
 bash -n scripts/stage-release-package-files.sh
 python scripts/check-runtime-package.py --self-test
+python scripts/check-runtime-package.py --skill .agents/skills/account-management
 scripts/stage-release-package-files.sh target/release-package-smoke target/release/tv
 git diff --check
 ```

@@ -267,12 +267,27 @@ tv watch compare NASDAQ:AAPL NASDAQ:MSFT --duration-ms 10000 --interval 2000 --h
 - `docs/command-source-taxonomy.md`: リポジトリ内の詳しいコマンド分類。
 - [market-data](../../.agents/skills/market-data/SKILL.md): 目的からコマンドを選ぶ表と、配布物に同梱された参照資料。
 
-## 公式MCP（開発版）
+## 公式MCP（未リリースの候補版）
 
-`tv mcp login`で認証し、`tv mcp bars NASDAQ:AAPL --timeframe 1D --count 20`
-で公式経路を明示して取得できます。既存の`tv bars`は変更しません。
-macOSでKeychain確認が出たら、専用項目と実行ファイルを確認して「常に許可」を
-選ぶと、以後の非対話取得で利用できます。WindowsはCredential Managerを使いますが、
-実機での受け入れ検証は引き続き必要です。Linuxの資格情報保存は未実装です。
-未リリースの機能です。取得条件は同梱の[履歴足リファレンス](../../.agents/skills/market-data/references/historical-bars.md#official-mcp)を、
-開発用の詳しいガイドはリポジトリのREADMEから確認してください。
+対応するデータ取得、ウォッチリスト、単純な価格アラートは、有効な対象有料
+アカウントがあればMCPを優先できます。TradingView DesktopやCodexのMCP設定は
+不要です。既存コマンドの取得元は変わりません。
+
+1. 既定ブラウザでTradingViewのホームページから通常ログインします。
+2. `tv mcp login`を実行し、ブラウザの認証を完了します。macOSでKeychain確認が
+   出たら、実行ファイルと専用項目を確認して「常に許可」を選びます。
+3. `tv mcp status`でローカルの保存状態・期限を確認し、
+   `tv mcp bars NASDAQ:AAPL --timeframe 1D --count 20`で直近の足を取得します。
+
+WindowsはCredential Managerを使用します。LinuxではセッションD-Busと
+GNOME Keyringなどの永続的なSecret Serviceが必要です。コンテナ検証と
+デスクトップでのOAuth確認は別です。通常操作は解除画面を開きません。
+対話が必要なら明示的なログインで解消します。平文保存への切替はありません。
+
+認証とエラーは同梱の[接続ガイド](../../.agents/skills/market-data/references/mcp-connection.md)、
+データ取得は[market-data](../../.agents/skills/market-data/SKILL.md)、
+アカウント変更と結果確認は[account-management](../../.agents/skills/account-management/SKILL.md)
+を参照してください。各スキルはディレクトリごと単独で添付できます。
+`status`はサーバーによるトークン受入れを確認せず、`logout`はローカル記録だけを
+削除します。本数不足や取得条件の不明点はそのまま扱ってください。期間指定履歴や
+チャート・Pineの観察には、引き続き対応する既存の経路を使います。

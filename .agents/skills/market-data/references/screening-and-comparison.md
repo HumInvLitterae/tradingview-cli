@@ -2,10 +2,12 @@
 
 ## Fetch only the needed evidence
 
-For unknown candidates use `tv scanner scan` or the requested hotlist. Record
+For unknown candidates, prefer `tv mcp screener` when authenticated and it meets
+the requested coverage. For the existing scanner source use `tv scanner scan`
+or the requested hotlist. Record
 filters, columns, sort, result count, and source. Consult `tv scanner metainfo
 --field <FIELD>` when a field is unclear. For saved/visible Desktop screens,
-use [screener-workflow](../../screener-workflow/SKILL.md).
+use the optional `screener-workflow` skill.
 
 Use `--max-results <N> --page-size <N>` only when one scanner page is
 insufficient. The per-request cap is 100 rows. Aggregation deduplicates in
@@ -44,7 +46,7 @@ choosing a relevant follow-up. `chart_quote` is the stable kind; `quote_chart`
 is not an alias. Hints neither execute reads nor rank candidates.
 
 Stay with the known set for a requested bounded watch. Move to
-[chart-analysis](../../chart-analysis/SKILL.md) only when chart-specific evidence
+the optional `chart-analysis` skill only when chart-specific evidence
 is needed. `tv chart compare` serially uses the selected Desktop chart and may
 temporarily switch it; it is not a broad scanner comparison loop. Watchlist
 writes, including `tv watchlist add-bulk`, require intent to change that saved
@@ -53,7 +55,7 @@ state. Do not add them as a routine final step of analysis.
 
 ## Official MCP screens
 
-When the user selects the official source, `tv mcp screener` performs one query
+For official-source screening, `tv mcp screener` performs one query
 and returns `mcp_screener.v1`, independent of scanner REST and Desktop Screener.
 Use `tv mcp columns` to find field names. Supply numeric filters as a JSON object
 of `[min,max]` bounds (null is unbounded); optional presets are provider-defined

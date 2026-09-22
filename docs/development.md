@@ -659,12 +659,24 @@ validates `mcp_bars.v1` with JSON/SSE, 401/429, schema and invalid-response fixt
 Their account, credential-record and provider authority belong
 to the [MCP work record](plans/tradingview-cli-official-mcp-client.md). The
 example installs no logging subscriber and emits sanitized observations only;
-never enable SDK wire/debug logging around real authorization. macOS and Windows
+never enable SDK wire/debug logging around real authorization. macOS, Windows and Linux
 credential calls run in a killable same-binary worker. The explicit
 `authorize-store` action permits an OS access check after an executable update;
 normal reads never prompt. Windows CI and owner-reported basic native acceptance
-have passed. Linux credential implementation remains open; no plaintext fallback
-exists. On Windows, the native store test uses a disposable synthetic entry and deletes it afterward.
+have passed. Linux uses Secret Service plus Linux-only zbus to dismiss delete
+prompts without displaying them; no plaintext fallback exists. On Windows, the
+native store test uses a disposable synthetic entry and deletes it afterward.
+
+### Linux Secret Service integration
+
+`bash scripts/check-linux-secret-service.sh` requires Linux, a Rust toolchain,
+`dbus-run-session`, GNOME Keyring and Python 3. It compiles the fixture/worker,
+then creates a disposable HOME and session bus with synthetic secrets. It never
+uses the caller's keyring or real TradingView account. The CI Linux lane runs
+this separately from ordinary fixtures. Tests cover cross-process credential
+reuse, replacement, persistence across service restart, deletion, missing bus,
+ambiguous ownership and prompt rejection. Graphical login and real OAuth remain
+separate acceptance; container success does not prove desktop dialogs.
 
 ## Public hygiene guard
 
@@ -711,7 +723,8 @@ mise run check:indicator-insertion-js
 mise run check:three-point-drawing-js
 ```
 
-These gates use Node.js `24.18.0`, pinned in `mise.toml`. The study-value gate
+These gates use Node.js `24.18.0`, pinned in their scripts and CI independently
+of the default development version in `mise.toml`. The study-value gate
 executes the exact helper with synthetic sources and throwing Proxy fixtures.
 The Pine-open gate executes the generated asynchronous page expression against
 synthetic Pine facade, Pine-owned Monaco, overlay-menu, and Save-bound store
@@ -780,7 +793,7 @@ Add a feature to a skill entrypoint only if it changes the initial command
 choice or an essential workflow constraint. Put detailed mode-specific knowledge
 in its relevant reference, and move closed migration history out of runtime steps.
 
-The runtime skills are `market-data`, `chart-analysis`, `pine-develop`,
+The runtime skills are `account-management`, `market-data`, `chart-analysis`, `pine-develop`,
 `replay-practice`, `screener-workflow`, and `strategy-report`. The first replaces
 `market-data-interpretation`, `multi-symbol-scan`, and `screener-result-analysis`.
 Update explicit invocations; historical plans remain records of their old names.
@@ -790,7 +803,9 @@ commit convention and the skill-creation facilities available to the contributor
 
 Validate changed metadata, descriptions, and reference routing, then stage the
 runtime resources using [packaging validation](release-packaging.md#packaging-validation).
-Keep Codex/Claude guide and resource parity. A metadata validator or link check
+Keep Codex/Claude guide and resource parity. Validate each runtime skill with
+`python scripts/check-runtime-package.py --skill <SKILL_DIRECTORY>`; mandatory
+references must stay inside that directory even when a sibling is packaged. A metadata validator or link check
 does not demonstrate good model decisions; evaluate improvements from actual
 usage, including unnecessary reads, confirmation stops, task completion, and
 preservation of source/effect boundaries.

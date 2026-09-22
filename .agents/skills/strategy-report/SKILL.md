@@ -5,7 +5,7 @@ description: Read and explain TradingView strategy metrics, trades, and equity w
 
 # Strategy report
 
-Resolve the [Desktop session](../chart-analysis/references/desktop-session.md)
+Resolve the [Desktop session](references/desktop-session.md)
 if the intended chart is not already known. Gather only the requested evidence:
 
 | Need | Command |

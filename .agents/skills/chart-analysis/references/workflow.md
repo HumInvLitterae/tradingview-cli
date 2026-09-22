@@ -15,7 +15,8 @@ historical export. Use `tv export chart-bars` when this chart's range is the
 intended source and moving its viewport is authorized. Report
 `export_chart_bars.v1`, requested visible range, range operation, chart context,
 returned bars range, and range-match status. For reproducible Desktop-free
-historical input, use [historical bars](../../market-data/references/historical-bars.md).
+historical input, use the existing bars command and inspect returned coverage:
+`tv bars <EXCHANGE:SYMBOL> --from <YYYY-MM-DD> --to <YYYY-MM-DD>`.
 Do not silently substitute one source for another.
 
 ## Screenshots and study identity

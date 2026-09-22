@@ -14,6 +14,7 @@ matters. Check `tv <family> --help` for uncertain arguments.
 
 | Task | Start here |
 | --- | --- |
+| Watchlists and simple price alerts, including account changes | [account-management](.agents/skills/account-management/SKILL.md) |
 | Price, symbol discovery, comparison, historical bars, freshness | [market-data](.agents/skills/market-data/SKILL.md): purpose-to-command table |
 | Selected Desktop chart, studies, viewport, images | [chart-analysis](.agents/skills/chart-analysis/SKILL.md) |
 | Pine source and validation | [pine-develop](.agents/skills/pine-develop/SKILL.md) |
@@ -26,29 +27,27 @@ and only the references needed for the current question. Setup walkthroughs are
 available in [English](docs/getting-started.md) and
 [Japanese](docs/ja/getting-started.md).
 
-## Official account reads
+## Choose MCP or Desktop by capability
 
-When the user selects official MCP and the binary supports it, use
-`tv mcp watchlist list/get` and `tv mcp alert list/get` for account snapshots.
-Obtain IDs from list results. Login is explicit and interactive; explain OS
-consent before invoking it. These reads do not activate lists or change alerts.
-Preserve nulls, unreported alert IDs and unknown completeness. Alert conditions
-are a limited projection, not a complete recipe for recreating Pine alerts.
-Do not put account IDs or returned account data in shared artifacts.
+Prefer official MCP when it meets the task and credentials are available.
+Watchlist management, simple price alerts and data-only screening do not need
+Desktop. Honor an explicit source choice and never change sources silently after
+failure. Existing command defaults are unchanged. Use the task skill for the
+required authentication, source conditions and operation effects:
 
-For an explicit request to change a named watchlist, use the separate
-`tv mcp watchlist create/update/add/remove/delete` commands when supported.
-They can change account state. Inspect both `mutation` and `readback` results;
-outer success does not establish a matched postcondition. A failed or missing
-readback never authorizes repeating the mutation. New-object verification must
-use an approved disposable target, not a pre-existing account object.
+- [market-data](.agents/skills/market-data/SKILL.md) for independent data reads.
+- [account-management](.agents/skills/account-management/SKILL.md) for watchlists
+  and price alerts, including readback and unknown mutation outcomes.
 
-For explicitly requested official alert changes, `tv mcp alert` supports simple
-price creation, settings updates, stop, restart and delete. Create defaults all
-notifications off; update reactivates even for a name change. Restart uses the
-existing notification settings; delete removes fire history too. Check per-ID
-readback and unknown outcomes. Do not use the limited condition projection to
-recreate Pine alerts. Live verification needs an approved disposable alert.
+Selected chart/Pine evidence, Pine-condition alerts and saved Desktop screen
+state still require their Desktop workflows. Recent-count MCP bars do not satisfy
+historical date-range requests. Login is explicit; explain browser/OS consent
+before starting it and wait for completion. Do not ask for renewed source approval
+on every authenticated read within the requested task.
+
+Each runtime skill can also be attached on its own: its required instructions
+and references are contained in its directory. Other skill names are optional
+handoffs, not dependencies. Copy the complete skill directory when attaching it.
 
 ## Authority and evidence
 

@@ -6,8 +6,10 @@ description: Run or review bounded TradingView Replay practice with tv when Repl
 # Replay practice
 
 Use Replay for practice or investigation of the selected Desktop chart.
-For historical datasets, use [historical bars](../market-data/references/historical-bars.md).
-Resolve the [Desktop session](../chart-analysis/references/desktop-session.md)
+For a historical dataset, use the existing bars command and inspect coverage:
+`tv bars <EXCHANGE:SYMBOL> --from <YYYY-MM-DD> --to <YYYY-MM-DD>`. The optional `market-data`
+skill provides further data interpretation; Replay itself is not a dataset export.
+Resolve the [Desktop session](references/desktop-session.md)
 only when needed. Inspect `tv replay status` and chart context before mutation.
 
 | Requested action | Command |

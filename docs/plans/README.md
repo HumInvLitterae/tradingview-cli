@@ -10,11 +10,11 @@
 | Completed plans | [Historical catalog](archives/README.md) |
 
 The agreed MCP slices are implemented. Windows CI and owner-reported basic
-machine acceptance passed. Remaining work is economic/dividend native acceptance,
-the requested Linux credential adapter and isolated integration tests, candidate
-scope, MCP-first standalone skills/documentation and release preparation. Linux
-credentials remain unimplemented today; desktop acceptance will be reported
-separately from container/CI evidence. Downstream analytical adoption is separate.
+machine acceptance passed. Remaining work is dividend native acceptance,
+candidate scope and release preparation. The Linux credential adapter and
+MCP-first independent skills are implemented with focused validation recorded
+in the work record. Real Linux desktop OAuth remains separate from container/CI
+evidence. Downstream analytical adoption is separate.
 
 Use the current checklist above rather than pending statements in dated evidence.
 Historical release records do not establish current checkout or publication state.

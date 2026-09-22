@@ -272,12 +272,28 @@ scanner-backed quote reads, not the selected Desktop chart.
   repository.
 - [market-data](../.agents/skills/market-data/SKILL.md): purpose-to-command selection and references included in the archive.
 
-## Official MCP (development checkout)
+## Official MCP (unreleased candidate)
 
-Use `tv mcp login`, then `tv mcp bars NASDAQ:AAPL --timeframe 1D --count 20`
-for the explicitly selected official source. This does not change `tv bars`.
-On macOS, verify the dedicated Keychain item and choose **Always Allow** for
-later noninteractive reads. Windows uses Credential Manager; native acceptance
-remains open. Linux credentials are not implemented yet. These commands are
-unreleased. See the packaged [historical-bars reference](../.agents/skills/market-data/references/historical-bars.md#official-mcp)
-for output conditions; full developer guidance is available from the repository README.
+Prefer MCP for supported data queries, watchlists and simple price alerts when
+an eligible paid account is available. It does not require TradingView Desktop
+or Codex MCP configuration, and does not change existing command sources.
+
+1. Sign in on the TradingView homepage using your default browser.
+2. Run `tv mcp login` and complete browser consent. On macOS, check the executable
+   and dedicated Keychain item before choosing **Always Allow**.
+3. Run `tv mcp status` to inspect local presence/expiry, then try
+   `tv mcp bars NASDAQ:AAPL --timeframe 1D --count 20` for recent observations.
+
+Windows uses Credential Manager. Linux requires a session D-Bus and a persistent
+Secret Service such as GNOME Keyring; desktop OAuth acceptance is separate from
+container tests. Ordinary operations do not open unlock dialogs; use explicit
+login to resolve required interaction. No plaintext credentials fallback exists.
+
+The packaged [connection reference](../.agents/skills/market-data/references/mcp-connection.md)
+explains errors and consent. Use [market-data](../.agents/skills/market-data/SKILL.md)
+for command choice and output interpretation, or
+[account-management](../.agents/skills/account-management/SKILL.md) for account
+changes and readback. Each skill can be attached independently with its directory.
+`status` does not test remote token acceptance; `logout` deletes only local
+credentials. Short results and unknown data conditions remain explicit. Date-range
+history and chart/Pine observations retain their existing separate workflows.

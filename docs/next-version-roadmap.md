@@ -1,7 +1,7 @@
 # v0.32.0 candidate roadmap
 
 Status: agreed MCP slices implemented; Windows CI and basic owner acceptance passed;
-economic/dividend acceptance and release preparation remain, 2026-09-22.
+dividend acceptance and release preparation remain, 2026-09-22.
 [Work order](next-version-work-items.md) and the
 [existing MCP ExecPlan](plans/tradingview-cli-official-mcp-client.md) own execution
 and detailed contracts. No second feature plan is needed.
@@ -98,8 +98,10 @@ passed a native disposable-alert lifecycle with readback. Financial snapshots,
 history, forecasts and earnings calendars are implemented with native checks.
 News and document list/body reads passed fixture and native verification.
 Economic discovery, series and economic/dividend calendars are implemented;
-normal-deadline native qualification remains incomplete because reads also
-returned deadline/provider errors. Finish this acceptance before scope closeout.
+normal-deadline economic catalog/series/calendar qualification subsequently
+passed. Both dividend modes still need successful normalization; the latest
+symbol-mode read returned provider_error. Finish this acceptance before scope
+closeout.
 Reuse connection and credential handling; keep tool-specific
 schema checks and interpretation explicit. No arbitrary tool passthrough.
 
@@ -114,15 +116,15 @@ live authorization does not authorize account changes.
 
 Follow the [current release checklist](plans/tradingview-cli-official-mcp-client.md#release-checklist-and-documentation-plan-2026-09-22).
 Recommend v0.32.0 with the separate implemented MCP commands after remaining
-native economic/dividend acceptance. The owner requests Linux credential support
-using the existing dependency, with isolated Linux integration and explicit
-real-desktop validation limits. The existing plan owns implementation acceptance.
+native economic/dividend acceptance. Linux credential support is implemented using Secret Service and approved
+Linux-only zbus, with isolated integration and explicit real-desktop validation
+limits. The existing plan owns implementation acceptance.
 Persistent provider errors need a concrete qualification/scope decision.
 
-Finish English/Japanese onboarding, command/source navigation, portable MCP
-connection and account references, MCP-first capability routing and independently
-attachable skills before release. Add an account-management skill; skill count
-is not a constraint.
+English/Japanese onboarding, command/source navigation, portable MCP connection
+and account references, MCP-first routing and independent skill packaging are
+implemented. The seven-skill inventory includes account-management; acceptance
+evidence belongs to the work record.
 Reuse the existing MCP record; no additional feature or documentation ExecPlan.
 Downstream analytical adoption and broad reliability studies do not block this
 independent interface. Release version/notes and publication follow qualification.
