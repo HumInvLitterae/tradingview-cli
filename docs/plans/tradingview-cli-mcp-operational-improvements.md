@@ -629,3 +629,50 @@ took 6.44 seconds. No workspace-wide/release build, real account mutation or
 Windows/Linux runtime operation ran. Native history acceptance and successful
 technical schema qualification remain open. The next provider read must reuse
 approved scope and respect actual limits; do not substitute guessed fields.
+
+
+## Native read recheck and completed-response diagnostics (2026-09-23)
+
+Rebuilt only the incremental proof executable after connection reuse, retaining
+the installed released executable as credential worker. The original
+symbol/seven-day/100-event public-service history check again timed out at its
+normal deadline after one tool dispatch (`stage: tool_response`). This does not
+invalidate fixture normalization, but normal-deadline native acceptance remains
+open. Mutation/readback reuse does not remove setup from a standalone read.
+
+One daily technical shape recheck again returned `success:false` with a
+rate-limit textual clue and no indicator containers. No other interval was
+called. The official MCP documentation was rechecked: the dedicated technical
+tool and its documented intervals remain present, but it supplies no successful
+response example that resolves the unobserved wire shape. Neither a quota reset
+nor an all-MCP outage is established. Further repeated technical calls are not
+an implementation strategy; retain the planned feature pending usable evidence.
+
+The private proof previously attached HTTP phase diagnostics only to transport
+failures, losing that context when a longer-budget response arrived. It now
+includes the existing sanitized diagnostics on received responses as well.
+This changes only investigation output, not public CLI contracts or deadlines.
+No raw payload, URL, header or credential is added. The existing protocol-phase
+regression passed; the example was incrementally rebuilt, both sequentially with
+one Cargo job and one test thread. Full suites and release builds were not rerun.
+
+
+The subsequent AAPL history investigation succeeded with an empty event array.
+Its sanitized protocol checkpoints, measured from the 180-second operation
+budget, were: initialization JSON complete at 12.170 s (HTTP 200), initialized
+notification accepted at 21.098 s (202), catalog complete at 26.867 s (200), and
+history JSON complete at 50.781 s (200). The catalog-to-history interval was
+23.914 s. These checkpoints include earlier work and scheduling; they are not
+isolated server processing measurements and do not identify the latency root
+cause. The longer-budget success is not normal-deadline acceptance and does not
+justify silently increasing the public deadline. It establishes that this
+bounded history request can succeed, while the observed total exceeds 30 s.
+
+Current decision boundary: both public history acceptance and technical response
+qualification remain incomplete. Do not repeat the same probes merely on every
+continuation or mark unavailable technical fields implemented. A new provider
+availability signal or a specific new diagnostic hypothesis should motivate the
+next live attempt. Any configurable public timeout proposal needs its own
+concrete CLI/behavior review; it is not included in this diagnostic change.
+Formatting, public-hygiene and diff checks passed; no real account mutation,
+new dependency, installed-binary replacement, push or release occurred.

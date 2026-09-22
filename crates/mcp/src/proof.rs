@@ -444,7 +444,8 @@ pub async fn run_proof_with_worker(
             json!({
                 "success": data.get("failure").is_none(),
                 "observation": data,
-                "budget": counts
+                "budget": counts,
+                "http": http.diagnostics()
             })
         }
         Err(error) => {

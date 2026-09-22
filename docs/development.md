@@ -692,7 +692,9 @@ own latest phase, optional HTTP status and remaining operation budget. No URL,
 headers, session ID, request arguments or response body is recorded. A protocol
 entry can remain at its last observed phase on timeout; metadata's older `stage`
 field alone cannot locate a later protocol failure. These details are not added
-to the public MCP error contract.
+to the public MCP error contract. Development proof reports include the same
+sanitized diagnostics after a received response as well as transport failures,
+so successful long-budget investigations can be compared with normal deadlines.
 
 ## Synthetic account setup measurement
 
