@@ -24,6 +24,7 @@ use tokio::time::Instant;
 pub enum ProofOperation {
     NextReadCatalog,
     TechnicalDailyShape,
+    TechnicalControlShape,
     TechnicalWeeklyShape,
     TechnicalMonthlyShape,
     TechnicalTwoHourShape,
@@ -143,6 +144,7 @@ pub async fn run_proof_with_worker(
         } else if matches!(
             operation,
             ProofOperation::NextReadCatalog
+                | ProofOperation::TechnicalControlShape
                 | ProofOperation::TechnicalDailyShape
                 | ProofOperation::TechnicalWeeklyShape
                 | ProofOperation::TechnicalMonthlyShape
@@ -202,6 +204,7 @@ pub async fn run_proof_with_worker(
 
         match operation {
             ProofOperation::NextReadCatalog
+            | ProofOperation::TechnicalControlShape
             | ProofOperation::TechnicalDailyShape
             | ProofOperation::TechnicalWeeklyShape
             | ProofOperation::TechnicalMonthlyShape
