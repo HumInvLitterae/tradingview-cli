@@ -24,7 +24,7 @@ non-developer walkthrough from download to first checks, read the
 [getting-started guide](docs/getting-started.md) or the
 [Japanese getting-started guide](docs/ja/getting-started.md).
 
-Version tags such as `v0.31.4` publish native archives like:
+Version tags such as `v0.32.0` publish native archives like:
 
 - `tv-<tag>-x86_64-unknown-linux-gnu.tar.gz`
 - `tv-<tag>-x86_64-apple-darwin.tar.gz`
@@ -249,7 +249,7 @@ This source reports TradingView quote-data readbacks such as `qsd.rtc` or
 regular quote-data `qsd.v.lp` separately from chart main-series quotes and
 scanner `extended_hours`.
 
-The development checkout also provides independent **official MCP** commands:
+Starting with v0.32.0, `tv` provides independent **official MCP** commands:
 
 ```sh
 # Sign in on the TradingView homepage in the default browser first.
@@ -285,8 +285,11 @@ Explicit watchlist create/update/add/remove/delete and alert
 create/update/stop/restart/delete commands return separate
 mutation and readback evidence, verified with native disposable-object lifecycles.
 These commands preserve unknown data conditions and require
-an eligible paid account. Read [MCP usage and platform status](docs/official-mcp.md)
-before using this unreleased path; Windows runtime qualification remains open.
+an eligible paid account. Read the packaged
+[MCP connection guide](.agents/skills/market-data/references/mcp-connection.md)
+for authentication and platform prerequisites. The
+[full MCP reference](https://github.com/HumInvLitterae/tradingview-cli/blob/main/docs/official-mcp.md)
+covers command contracts and the remaining Linux desktop OAuth verification limit.
 
 Browserless historical bars are Desktop-free and bounded:
 

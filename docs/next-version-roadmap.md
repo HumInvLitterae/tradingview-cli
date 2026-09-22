@@ -1,7 +1,7 @@
 # v0.32.0 candidate roadmap
 
-Status: agreed MCP slices implemented; Windows CI and basic owner acceptance passed;
-dividend acceptance and release preparation remain, 2026-09-22.
+Status: v0.32.0 scope and functional qualification complete; release artifacts and
+publication are the next stage, 2026-09-22.
 [Work order](next-version-work-items.md) and the
 [existing MCP ExecPlan](plans/tradingview-cli-official-mcp-client.md) own execution
 and detailed contracts. No second feature plan is needed.
@@ -18,8 +18,8 @@ a wholesale replacement of existing data sources.
 v0.31.4 is [released and archived](plans/archives/tradingview-cli-v0.31.4-release-readiness.md).
 Its dependency/runtime-guidance changes are complete maintenance history. The
 next feature is a **v0.32.0 candidate**, conditional on connection and downstream
-acceptance. Keep the workspace at 0.31.4 during implementation; bump the version
-when the accepted minor candidate enters release preparation.
+acceptance. The accepted minor candidate has entered release preparation at workspace
+version 0.32.0.
 
 ## Initial delivered scope
 
@@ -99,9 +99,8 @@ history, forecasts and earnings calendars are implemented with native checks.
 News and document list/body reads passed fixture and native verification.
 Economic discovery, series and economic/dividend calendars are implemented;
 normal-deadline economic catalog/series/calendar qualification subsequently
-passed. Both dividend modes still need successful normalization; the latest
-symbol-mode read returned provider_error. Finish this acceptance before scope
-closeout.
+passed. Both dividend modes subsequently passed normal-deadline normalization. Their
+earlier provider errors remain historical observations.
 Reuse connection and credential handling; keep tool-specific
 schema checks and interpretation explicit. No arbitrary tool passthrough.
 

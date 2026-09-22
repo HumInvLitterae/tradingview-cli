@@ -1,6 +1,6 @@
 # Official TradingView MCP commands
 
-The development checkout provides a separate `tv mcp` command group. It does
+Starting with v0.32.0, `tv` provides a separate `tv mcp` command group. It does
 not replace `tv bars`, add a backend switch to it, or change `bars.v1`. One `tv`
 binary contains both paths. See the [work record](plans/tradingview-cli-official-mcp-client.md)
 for remaining platform/release qualification; these commands are not in v0.31.4.
@@ -613,7 +613,7 @@ below, followed by explicit alert changes.
 
 ## Explicit watchlist changes
 
-The development CLI also provides these explicit changes. A disposable-list
+The CLI also provides these explicit changes. A disposable-list
 lifecycle passed native macOS verification through the public service.
 Use account-local IDs obtained from `watchlist list`.
 

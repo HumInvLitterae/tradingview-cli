@@ -7,6 +7,8 @@ package version omits the leading `v`.
 
 ## Unreleased
 
+## v0.32.0 - 2026-09-22
+
 ### Added
 
 - Linux official-MCP credential storage through session D-Bus Secret Service,
