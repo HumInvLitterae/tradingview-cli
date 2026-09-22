@@ -315,8 +315,8 @@ not store raw provider payloads or turn unobserved shapes into fixtures.
 
 ### Implementation handoff
 
-The next step is narrow, private attribution of MCP initialization versus
-catalog waiting before another live attempt. Preserve normal deadlines and
+The next step at that checkpoint was narrow, private attribution of MCP
+initialization versus catalog waiting before another live attempt. Preserve normal deadlines and
 avoid raw SDK logging or token/payload capture. The current evidence does not
 justify raising timeouts, adding retries or implementing schema guesses.
 
@@ -331,3 +331,76 @@ No technical snapshot or alert-history tool call has yet been dispatched.
 Both public features remain planned and unimplemented; no new user approval is
 needed for the existing scoped reads. Material contract differences still need
 review. Preparation is ready; runtime contract qualification remains open.
+
+
+## Protocol attribution and login guidance (2026-09-22)
+
+Implemented private per-method HTTP diagnostics with latest phase, status and
+remaining operation budget. Concurrent event-stream setup no longer obscures
+which request was waiting. Only closed protocol names and nonsecret scalars are
+recorded; public `mcp_error.v1` is unchanged. Synthetic delayed-header fixtures
+prove separate initialization and catalog attribution with zero tool calls and
+no tokens/arguments in diagnostics.
+
+The catalog subsequently completed with the existing credentials and a
+successful token refresh. Both proposed tools were present, their documented
+arguments passed schema checks, and both advertised read-only hints. This does
+not establish that their data responses work. The old timeouts did not recur in
+that call; their root cause is still unconfirmed.
+
+Later observations distinguish separate outcomes:
+
+- A daily technical call completed initialization (HTTP 200), initialized
+  notification (202) and catalog (200), then timed out awaiting tool-response
+  headers. No response status for that tool call was received.
+- An independent alert-history attempt timed out awaiting initialization headers,
+  before dispatching the history tool. These failures have different boundaries.
+- A subsequent daily technical call returned JSON with a success boolean and an
+  initially unrecognized field. This first shape receipt was not data acceptance.
+  The proof was tightened to preserve the provider success flag and classify
+  explicit `success:false` as a failure. A new read confirmed `success:false`
+  plus an error string, with no indicator values. The error string itself is
+  suppressed; its cause is not established. Do not infer HTTP 429 or a daily
+  quota from this application-level failure.
+- The subsequent history read completed with `success:true`, an empty `events`
+  array, and numeric `count`/`days` fields. This is empty-only native response
+  evidence for the approved symbol/window, not a validated nonempty event schema
+  or a complete-history claim. No alert was created, edited, fired or deleted.
+
+The technical weekly/monthly/two-hour reads were not dispatched after the daily
+failure. Both new public commands remain planned; there is no schema guess,
+timeout extension, implicit source switch or mutation replay. Successful catalog
+and history observations rule out treating all MCP commands as unavailable.
+
+### Login usability delivered
+
+Explicit login now announces credential reuse/possible interaction on a real
+terminal, explains verifying the executable/item before an OS permission, and
+announces browser opening before invoking it. It only says the URL was handed
+off after browser launch succeeds. All human progress notices are suppressed
+when stderr is captured, preserving parseable error output for CLI consumers.
+No registration, consent, worker or saved-format policy changed. The installed
+released binary remains untouched; the new terminal journey has not been
+exercised with a fresh live authorization.
+
+### Validation and next work
+
+Focused offline validation passed: the protocol timeout test (both phases),
+validated-record reuse test, two auth tests including a child-process check that
+captured stderr contains only JSON, three proof-scope/redaction/application-error
+tests, and the existing no-replay/no-reinitialization fixture. The first new
+protocol fixture omitted a required request default and failed before I/O; it
+was corrected to use the existing model request builder, then passed.
+
+All Cargo work was sequential with one build job and one test thread, using the
+existing target cache. No full workspace or release build was run. macOS native
+observations are as described above; no Windows/Linux runtime claims are added.
+The private diagnostic and login changes compile in the example; they do not
+qualify either new public command.
+
+Next: investigate the technical tool's application failure with public-safe
+cause classification, qualify successful technical values and nonempty history
+fields from designated evidence, and implement the reviewed normalizers. Login
+prompt policy is delivered; transport optimization still requires measurement
+and fixture-readiness changes still require a reproduced issue. Reuse current
+approval rather than asking again for the same reads.

@@ -246,6 +246,13 @@ fn respond(ep: &Endpoints, r: &Request, mode: &str) -> Response {
     }
     let request: Value = serde_json::from_slice(&r.body).unwrap();
     let id = &request["id"];
+    if (mode == "slow-initialize-headers" && request["method"] == "initialize")
+        || (mode == "slow-catalog-headers" && request["method"] == "tools/list")
+    {
+        let mut response = Response::status(200);
+        response.delay = Duration::from_secs(5);
+        return response;
+    }
     let result = match request["method"].as_str().unwrap() {
         "initialize" => {
             json!({
@@ -704,6 +711,55 @@ async fn context(
     let http = Http::new(server.endpoints.clone(), deadline, budget.clone()).unwrap();
     let store = Store::memory(server.endpoints.clone(), deadline);
     (root, guard, budget, http, store)
+}
+
+#[tokio::test]
+async fn protocol_diagnostics_separate_initialization_and_catalog_timeouts() {
+    for (mode, waiting_method) in [
+        ("slow-initialize-headers", "initialize"),
+        ("slow-catalog-headers", "tools/list"),
+    ] {
+        let server = Server::start(mode).await;
+        let (_root, _guard, _budget, http, _store) = context(&server, 1).await;
+        let outcome = crate::transport::inspect_tools(
+            &http,
+            "synthetic-secret-token".into(),
+            &[(
+                crate::tools::Tool::Bars,
+                tradingview_model::mcp_bars::Request::new("NASDAQ:EXAMPLE", "1D", 20)
+                    .unwrap()
+                    .arguments(),
+            )],
+        )
+        .await;
+        assert_eq!(outcome, Err(Failure::Timeout));
+        let diagnostics = http.diagnostics();
+        assert_eq!(
+            diagnostics["protocol"][waiting_method]["phase"],
+            "await_headers"
+        );
+        assert!(diagnostics["protocol"][waiting_method]["status"].is_null());
+        if waiting_method == "tools/list" {
+            assert_eq!(
+                diagnostics["protocol"]["initialize"]["phase"],
+                "json_complete"
+            );
+            assert_eq!(
+                diagnostics["protocol"]["notifications/initialized"]["phase"],
+                "accepted"
+            );
+        }
+        assert_eq!(server.calls("tools/call"), 0);
+        let encoded = diagnostics.to_string();
+        for secret in [
+            "synthetic-secret-token",
+            "NASDAQ:EXAMPLE",
+            "params",
+            "arguments",
+        ] {
+            assert!(!encoded.contains(secret));
+        }
+    }
 }
 
 #[tokio::test]

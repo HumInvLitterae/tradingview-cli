@@ -43,6 +43,12 @@ homepage sign-in in that same browser before repeating login. No browser/Codex
 cookies or tokens are imported. Do not paste an authorization URL or token into
 logs or shell commands.
 
+In the next development version, explicit login prints progress guidance only
+when stderr is a terminal, before credential/browser interaction. Captured stderr
+omits that prose so structured failures remain parseable. A caller capturing
+output must still tell the user about any required OS/browser interaction and
+wait for completion. Successful stdout and ordinary read behavior are unchanged.
+
 macOS uses Keychain. When the OS asks, verify the executable and dedicated
 `tradingview-cli.mcp` item, then choose **Always Allow** for later noninteractive
 reads. Replacing an unsigned/development executable can require new OS consent;

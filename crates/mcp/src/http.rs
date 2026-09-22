@@ -97,6 +97,33 @@ impl Http {
             .unwrap_or(Value::Null)
     }
 
+    // Private proof diagnostics only: closed protocol names, phases and statuses.
+    // Keep each operation separate because the SDK may also open an SSE stream.
+    fn describe_protocol(&self, method: &str, phase: &str, status: Option<StatusCode>) {
+        if !matches!(
+            method,
+            "initialize"
+                | "notifications/initialized"
+                | "notifications/cancelled"
+                | "tools/list"
+                | "tools/call"
+                | "event_stream"
+                | "delete_session"
+        ) {
+            return;
+        }
+        if let Ok(mut diagnostics) = self.diagnostics.lock() {
+            if !diagnostics["protocol"].is_object() {
+                diagnostics["protocol"] = serde_json::json!({});
+            }
+            diagnostics["protocol"][method] = serde_json::json!({
+                "phase": phase,
+                "status": status.map(|value| value.as_u16()),
+                "remaining_ms": self.deadline.saturating_duration_since(Instant::now()).as_millis()
+            });
+        }
+    }
+
     pub(crate) fn describe_catalog(&self, tools: &[rmcp::model::Tool]) {
         if let Ok(mut diagnostics) = self.diagnostics.lock() {
             diagnostics["tool_count_on_page"] = serde_json::json!(tools.len());
@@ -392,7 +419,8 @@ impl Http {
         limit: usize,
     ) -> Result<StreamableHttpPostResponse> {
         let value = serde_json::to_value(&message).map_err(|_| Failure::InvalidResponse)?;
-        let class = match value.get("method").and_then(Value::as_str) {
+        let method = value.get("method").and_then(Value::as_str);
+        let class = match method {
             Some(
                 "initialize"
                 | "notifications/initialized"
@@ -422,9 +450,14 @@ impl Http {
             .protocol_request(Method::POST, &uri, session.as_deref(), token, headers)?
             .json(&message);
         self.charge(class)?;
+        let method = method.ok_or(Failure::UnsupportedCapability)?;
+        self.describe_protocol(method, "await_headers", None);
         let response = self.send(request).await?;
+        let status = response.status();
+        self.describe_protocol(method, "headers_received", Some(status));
         self.status(&response)?;
-        if response.status() == StatusCode::ACCEPTED {
+        if status == StatusCode::ACCEPTED {
+            self.describe_protocol(method, "accepted", Some(status));
             return Ok(StreamableHttpPostResponse::Accepted);
         }
         let session = response
@@ -445,14 +478,19 @@ impl Http {
             .to_owned();
         match mime.as_str() {
             "application/json" => {
+                self.describe_protocol(method, "json_body", Some(status));
                 let message = serde_json::from_slice(&self.bytes(response).await?)
                     .map_err(|_| self.remember(Failure::InvalidResponse))?;
+                self.describe_protocol(method, "json_complete", Some(status));
                 Ok(StreamableHttpPostResponse::Json(message, session))
             }
-            "text/event-stream" => Ok(StreamableHttpPostResponse::Sse(
-                self.events(response, limit),
-                session,
-            )),
+            "text/event-stream" => {
+                self.describe_protocol(method, "sse_stream", Some(status));
+                Ok(StreamableHttpPostResponse::Sse(
+                    self.events(response, limit),
+                    session,
+                ))
+            }
             _ => Err(self.remember(Failure::InvalidResponse)),
         }
     }
@@ -509,7 +547,9 @@ impl StreamableHttpClient for Http {
             let request =
                 self.protocol_request(Method::GET, &uri, session.as_deref(), token, headers)?;
             self.charge(RequestClass::Protocol)?;
+            self.describe_protocol("event_stream", "await_headers", None);
             let response = self.send(request).await?;
+            self.describe_protocol("event_stream", "headers_received", Some(response.status()));
             if response.status() == StatusCode::METHOD_NOT_ALLOWED {
                 return Ok(None);
             }
@@ -543,7 +583,13 @@ impl StreamableHttpClient for Http {
             let request =
                 self.protocol_request(Method::DELETE, &uri, Some(&session), token, headers)?;
             self.charge(RequestClass::Protocol)?;
+            self.describe_protocol("delete_session", "await_headers", None);
             let response = self.send(request).await?;
+            self.describe_protocol(
+                "delete_session",
+                "headers_received",
+                Some(response.status()),
+            );
             if response.status() == StatusCode::METHOD_NOT_ALLOWED {
                 return Ok(());
             }

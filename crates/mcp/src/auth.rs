@@ -5,6 +5,7 @@ use rmcp::transport::auth::{AuthorizationManager, AuthorizationMetadata, OAuthCl
 use serde_json::Value;
 use std::{
     collections::HashMap,
+    io::{IsTerminal, Write},
     sync::{Arc, Mutex},
 };
 use tokio::{
@@ -12,6 +13,15 @@ use tokio::{
     net::TcpListener,
     time::timeout_at,
 };
+
+// Interactive guidance must not contaminate captured JSON stderr. The caller
+// still owns announcing and awaiting OS/browser actions when running via pipes.
+pub(crate) fn login_notice(message: &'static str) {
+    let mut stderr = std::io::stderr().lock();
+    if stderr.is_terminal() {
+        let _ = writeln!(stderr, "{message}");
+    }
+}
 
 pub(crate) struct Auth {
     pub manager: AuthorizationManager,
@@ -166,10 +176,12 @@ impl Auth {
             .ok_or(Failure::InvalidResponse)?;
         // Private browser handoff: never put this URL (state, client id, PKCE)
         // in ordinary output, logs, history, or the observation summary.
-        crate::browser::open(&url, self.http.deadline).await?;
-        eprintln!(
-            "Authorization URL handed to the default browser; waiting for TradingView consent."
+        login_notice(
+            "Opening TradingView authorization in the default browser. \
+             If sign-in fails, sign in on the TradingView homepage in that browser first.",
         );
+        crate::browser::open(&url, self.http.deadline).await?;
+        login_notice("Authorization URL handed to the browser; waiting for your consent.");
         timeout_at(self.http.deadline, async {
             // Reject malformed/unrelated callbacks without consuming OAuth state.
             for _ in 0..8 {
@@ -300,6 +312,32 @@ fn parse_callback(raw: &[u8], host: &str) -> Result<HashMap<String, String>> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn login_notice_keeps_captured_stderr_parseable() {
+        const CHILD: &str = "TV_TEST_LOGIN_NOTICE_CHILD";
+        if std::env::var_os(CHILD).is_some() {
+            login_notice("Interactive guidance must not appear in this pipe.");
+            std::io::stderr()
+                .write_all(b"{\"success\":false,\"error\":\"synthetic\"}\n")
+                .unwrap();
+            return;
+        }
+        let output = std::process::Command::new(std::env::current_exe().unwrap())
+            .args([
+                "--exact",
+                "auth::tests::login_notice_keeps_captured_stderr_parseable",
+                "--nocapture",
+            ])
+            .env(CHILD, "1")
+            .output()
+            .unwrap();
+        assert!(output.status.success());
+        assert_eq!(
+            serde_json::from_slice::<Value>(&output.stderr).unwrap(),
+            serde_json::json!({"success": false, "error": "synthetic"})
+        );
+    }
 
     #[test]
     fn callback_rejects_wrong_host_path_and_duplicate_state() {
