@@ -9,6 +9,15 @@ package version omits the leading `v`.
 
 ### Added
 
+- Linux official-MCP credential storage through session D-Bus Secret Service,
+  with persistent records, explicit login setup and noninteractive reads/refresh/
+  logout. No plaintext fallback; graphical Linux OAuth acceptance remains separate
+  from container and fixture validation.
+- An independently attachable `account-management` skill for official MCP
+  watchlists and simple price alerts. Runtime skills prefer MCP where suitable,
+  include their required references locally, and are validated in isolation as
+  well as in the complete release archive.
+
 - Official MCP economic catalog/series and economic/dividend calendars through
   `tv mcp economic-symbols/economic-data/economic-calendar/dividends`.
   Separate contracts preserve indicator codes versus qualified symbols,
@@ -31,7 +40,7 @@ package version omits the leading `v`.
   and source-specific errors; existing `tv bars` and `bars.v1` are unchanged.
   OAuth/store/transport validation is separate from remaining platform release
   qualification. Windows native adapters are implemented; Linux credentials
-  currently fail explicitly without a plaintext fallback.
+  use Secret Service without a plaintext fallback.
 - Official MCP symbol search, column discovery and single-symbol reads through
   `tv mcp search/columns/symbol`, with separate versioned contracts and explicit
   missing-field and unknown-freshness information.

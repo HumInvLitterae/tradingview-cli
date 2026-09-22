@@ -1,6 +1,6 @@
 # Pine editor identity and persistence
 
-Resolve the [Desktop session](../../chart-analysis/references/desktop-session.md)
+Resolve the [Desktop session](desktop-session.md)
 when necessary, then preserve the intended script and source before editing.
 Reuse authorization for the same script and effects; a local coding request
 alone does not authorize changing the editor or saving cloud state.

@@ -5,15 +5,20 @@ description: Inspect or change TradingView Desktop Screener screens, filters, an
 
 # Desktop Screener workflow
 
-Use this skill for a visible or saved Desktop Screener. Desktop-free scanner
-queries and result interpretation belong to [market-data](../market-data/SKILL.md).
+Use this skill for a visible or saved Desktop Screener. For a data-only query,
+prefer `tv mcp screener --market <MARKET> --limit <N>` when authenticated and
+capable of answering the request. It does not operate a saved Desktop screen.
+Use [MCP connection guidance](references/mcp-connection.md) if setup is needed.
+Keep returned rows distinct from provider totals; no pagination/completeness
+claim or automatic fallback. Explicit saved-screen work still follows below.
+Desktop-free scanner queries and result interpretation belong to the optional `market-data` skill.
 
 ## Target and first read
 
 Reuse a confirmed Screener target. Otherwise use `tv tab list` and its
 `screener_targets`, then pass the intended target's `target_cli_args` to later
 commands. If connection is unclear, consult
-[Desktop session guidance](../chart-analysis/references/desktop-session.md).
+[Desktop session guidance](references/desktop-session.md).
 If no target exists, `tv screener open --full-page` opens one; use it only when
 opening a Screener is part of the requested workflow.
 
@@ -26,8 +31,8 @@ opening a Screener is part of the requested workflow.
 | Visual evidence | `tv screenshot --region full --output <PATH>` | Only when structured state does not answer the question |
 
 Report source, screen/filters, columns, sort, and coverage relevant to the task.
-For why rows matched, use the
-[screen interpretation reference](../market-data/references/screening-and-comparison.md).
+Explain why rows matched using returned filter, column, source and coverage
+evidence. Preserve missing values; do not assert criteria unsupported by those fields.
 
 ## Saved-state changes
 

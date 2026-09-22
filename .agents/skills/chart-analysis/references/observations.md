@@ -1,8 +1,7 @@
-# Bounded observations
+# Bounded chart observations
 
 | Need | Command | Contract/source |
 | --- | --- | --- |
-| Poll known symbols through scanner REST | `tv watch compare <SYMBOL>... --duration-ms <MS> --interval <MS>` | `watch_compare.v1`, `scanner_scan_rest`, Desktop-free |
 | Observe the selected chart's last bar | `tv observe chart --duration-ms <MS> --heartbeat-ms <MS>` | `observe_chart.v1`, Desktop-backed |
 | A specific lower-level chart sample type | `tv stream ... --duration-ms <MS> --max-events <N>` | `stream.v1`, Desktop-backed |
 

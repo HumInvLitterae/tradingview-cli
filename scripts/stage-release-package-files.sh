@@ -31,6 +31,7 @@ cp docs/ja/getting-started.md "$package_dir/docs/ja/getting-started.md"
 
 skills=(
   # Explicit runtime allowlist; contributor skills stay in the source repository.
+  account-management
   chart-analysis
   market-data
   pine-develop

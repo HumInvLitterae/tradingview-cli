@@ -5,7 +5,7 @@
 | Source | When to use | Meaning and limits |
 | --- | --- | --- |
 | `tv quote <SYMBOL>`, `tv quotes`, snapshot/compare quote sections | Ordinary Desktop-free price or extended-hours checks | Scanner REST; inspect `time`, `update_mode`, `delay_seconds` when freshness matters. Desktop-free does not guarantee realtime entitlements. |
-| `tv quote --source chart` | The selected chart's main series is the evidence | Desktop-backed. Supplying a different symbol can temporarily switch and restore the chart; follow [Desktop session guidance](../../chart-analysis/references/desktop-session.md). |
+| `tv quote --source chart` | The selected chart's main series is the evidence | Desktop-backed. Supplying a different symbol can temporarily switch and restore the chart; follow [Desktop session guidance](desktop-session.md). |
 | `tv quote <SYMBOL> --source quote-data` | Explicit Desktop quote-data such as `qsd.rtc` is requested | Separate Desktop-backed source; inspect availability instead of substituting scanner or chart values. |
 | `tv quote <SYMBOL> --source auto` | The caller intentionally accepts its documented source choice | Chart-first with scanner fallback only before chart mutation. Report which source was actually used. |
 

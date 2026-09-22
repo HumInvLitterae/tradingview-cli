@@ -487,3 +487,13 @@ Default to the narrowest source that answers the question:
 When sources disagree, do not collapse them into a single value. Report the
 source names and freshness fields, then decide whether another read changes the
 answer.
+
+## Agent command selection
+
+Prefer official MCP for supported, authenticated independent data queries and
+watchlist/simple-price-alert workflows. This is guidance for selecting explicit
+`tv mcp` commands, not a change to any existing command's source. Respect a
+requested provider or consumer contract; do not fall back after a failure.
+Selected chart/Pine evidence and saved Desktop UI state still require CDP;
+historical date ranges still use the existing WebSocket bars path. Acquisition,
+coverage and account-mutation readback remain separate evidence.
