@@ -16,6 +16,8 @@ use tokio::{
     time::{Instant, timeout_at},
 };
 
+#[cfg(target_os = "linux")]
+mod linux;
 #[cfg(target_os = "windows")]
 mod windows;
 
@@ -39,6 +41,7 @@ enum Operation {
     Load,
     AuthorizeAccess,
     Save(Vec<u8>),
+    SaveInteractive(Vec<u8>),
     Clear,
 }
 
@@ -66,6 +69,7 @@ struct MemoryStore {
 #[derive(Clone)]
 pub(crate) struct Store {
     backend: Backend,
+    allow_interaction: bool,
     endpoints: Endpoints,
     deadline: Instant,
     redirect: Arc<Mutex<String>>,
@@ -102,6 +106,7 @@ impl Store {
     fn new(backend: Backend, endpoints: Endpoints, deadline: Instant) -> Self {
         Self {
             backend,
+            allow_interaction: false,
             endpoints,
             deadline,
             redirect: Arc::new(Mutex::new(String::new())),
@@ -141,6 +146,10 @@ impl Store {
             Backend::Memory(state) => state.lock().unwrap().load_calls,
             Backend::Native(_) => panic!("fixture counter requires synthetic storage"),
         }
+    }
+
+    pub fn permit_login_interaction(&mut self) {
+        self.allow_interaction = true;
     }
 
     pub fn set_redirect(&self, redirect: String) -> Result<()> {
@@ -188,7 +197,7 @@ impl Store {
         }
         let native_failure = match &operation {
             Operation::Load => Failure::CredentialRead,
-            Operation::Save(_) => Failure::CredentialWrite,
+            Operation::Save(_) | Operation::SaveInteractive(_) => Failure::CredentialWrite,
             _ => Failure::StorageUnavailable,
         };
         let result = match &self.backend {
@@ -211,7 +220,7 @@ impl Store {
                         }
                     }
                     Operation::AuthorizeAccess => Ok(None),
-                    Operation::Save(bytes) => {
+                    Operation::Save(bytes) | Operation::SaveInteractive(bytes) => {
                         if state.fail_saves {
                             Err(Failure::StorageUnavailable)
                         } else {
@@ -306,7 +315,12 @@ impl Store {
         // Invalidate first: a failed write must never publish the new token in
         // memory or conceal uncertainty about the persistent store.
         self.cache_record(None)?;
-        self.operation(Operation::Save(bytes)).await?;
+        let operation = if cfg!(target_os = "linux") && self.allow_interaction {
+            Operation::SaveInteractive(bytes)
+        } else {
+            Operation::Save(bytes)
+        };
+        self.operation(operation).await?;
         self.cache_record(Some(Some(credentials)))?;
         *self
             .last_saved_bytes
@@ -504,9 +518,11 @@ async fn native_operation(operation: Operation) -> Result<Option<Vec<u8>>> {
             Err(e) if e.code() == -25300 => Ok(None),
             Err(e) => Err(store_error(e)),
         },
-        Operation::Save(bytes) => passwords::set_generic_password(SERVICE, PROFILE, &bytes)
-            .map(|()| None)
-            .map_err(store_error),
+        Operation::Save(bytes) | Operation::SaveInteractive(bytes) => {
+            passwords::set_generic_password(SERVICE, PROFILE, &bytes)
+                .map(|()| None)
+                .map_err(store_error)
+        }
         Operation::Clear => match passwords::delete_generic_password(SERVICE, PROFILE) {
             Ok(()) => Ok(None),
             Err(e) if e.code() == -25300 => Ok(None),
@@ -521,10 +537,14 @@ async fn native_operation(operation: Operation) -> Result<Option<Vec<u8>>> {
     windows::operation(operation, "tradingview-cli.mcp/default")
 }
 
-#[cfg(not(any(target_os = "macos", target_os = "windows")))]
+#[cfg(target_os = "linux")]
+async fn native_operation(operation: Operation) -> Result<Option<Vec<u8>>> {
+    linux::operation(operation, PROFILE).await
+}
+
+#[cfg(not(any(target_os = "macos", target_os = "windows", target_os = "linux")))]
 async fn native_operation(_operation: Operation) -> Result<Option<Vec<u8>>> {
-    // Platform gates remain explicit; do not fall back to plaintext or invoke
-    // Linux unlock/delete prompts before its native store is implemented.
+    // Unsupported platforms never fall back to plaintext credential storage.
     let _ = (SERVICE, PROFILE);
     Err(Failure::StorageUnavailable)
 }

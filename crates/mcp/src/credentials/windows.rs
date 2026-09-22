@@ -22,7 +22,7 @@ pub(super) fn operation(operation: Operation, target: &str) -> Result<Option<Vec
             Err(Error::NoEntry) => Ok(None),
             Err(_) => Err(Failure::StorageUnavailable),
         },
-        Operation::Save(bytes) => {
+        Operation::Save(bytes) | Operation::SaveInteractive(bytes) => {
             if !windows_record_fits(bytes.len()) {
                 return Err(Failure::StorageTooLarge);
             }

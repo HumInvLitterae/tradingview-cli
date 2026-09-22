@@ -129,10 +129,13 @@ pub async fn run_proof_with_worker(
         };
     let mut admission = Admission::acquire(directory, deadline).await?;
     let endpoints = Endpoints::tradingview();
-    let store = match worker {
+    let mut store = match worker {
         Some(worker) => Store::native_worker(endpoints.clone(), deadline, worker.to_owned())?,
         None => Store::native(endpoints.clone(), deadline)?,
     };
+    if matches!(operation, ProofOperation::Login) {
+        store.permit_login_interaction();
+    }
     if matches!(operation, ProofOperation::AuthorizeStore) {
         store.authorize_access().await?;
         return Ok(json!({

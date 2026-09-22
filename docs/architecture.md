@@ -352,3 +352,14 @@ Keep these boundaries unless a future ExecPlan records new evidence:
 - direct HTTP operation without TradingView Desktop page-session context is
   still future research for account/session-bound commands, documented in
   `docs/plans/archives/tradingview-cli-direct-http-feasibility.md`
+
+## Native MCP credentials
+
+The MCP service keeps OS operations behind a bounded same-binary worker. macOS
+uses Keychain, Windows uses Credential Manager, and Linux uses Secret Service
+on the session bus. Linux reuses secret-service for encrypted secret transport;
+the narrow zbus delete call dismisses a returned prompt without displaying it.
+Only explicit login permits interactive collection/item setup. Regular refresh
+updates an existing item and never deletes it first. Each backend retains the
+same serialized record and existing public error envelope. Linux desktop OAuth
+qualification is separate from isolated service/fixture tests.
