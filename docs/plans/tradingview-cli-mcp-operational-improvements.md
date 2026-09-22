@@ -891,3 +891,63 @@ scan and diff whitespace. Disposable placeholder-binary staging verified guide
 parity, seven skills per root and all standalone references; it is not a release
 binary check. No Rust source changed, so no Cargo build/test was repeated.
 No provider or credential access, additional agent, push or publication occurred.
+
+
+## Cross-tool control investigation (2026-09-23)
+
+The owner explicitly requested further investigation rather than treating the
+previous failure as the end of research. Tested a new concrete hypothesis:
+a technical-tool-specific or interval-specific problem versus a shared screener
+data-path failure. Reviewed the closed wire aliases and request validation;
+the dedicated request uses the documented qualified symbol and `1D` interval,
+and authenticated catalog validation had accepted its schema.
+
+Added a fixed `technical-control-shape` development operation using the already
+approved same-account AAPL `close`, `volume`, `market_cap_basic` request through
+`get_symbol_data`. It shares auth, transport and sanitized observation handling
+with the technical probe, but does not use the technical tool or an interval
+argument. No arbitrary argument forwarding or production command was added.
+The test verifies request validation, successful scalar-type observation without
+values, and failure classification without raw error leakage.
+
+| Observation | Dedicated technical request (previous) | Basic symbol control (this investigation) |
+| --- | --- | --- |
+| Wire tool | `mcp-tv-get-technicals-rating` | `mcp-tv-get-symbol-data` |
+| Symbol | NASDAQ:AAPL | NASDAQ:AAPL |
+| Other arguments | interval 1D | close, volume, market_cap_basic columns |
+| Outer HTTP | 200 | 200 |
+| Provider response | success false, string error | success false, string error |
+| Retained textual hints | rate_limit, screener_endpoint | rate_limit, screener_endpoint |
+| Usable observations | none | none |
+| Total elapsed | approximately 3.190 s | approximately 73.581 s |
+
+These were separate observations, not simultaneous benchmark samples. The control
+catalog completed at 43.824 s; the final HTTP-200 JSON completed at 73.581 s under
+the existing private investigation budget. The control therefore reached a
+provider application failure rather than expiring locally. No additional
+technical timeframe or dedicated-tool retry was issued after this result.
+
+Inference: failure is not confined to the dedicated technical request or its
+interval argument; a basic column read for the same symbol is also affected.
+This supports investigating the shared official-MCP screener path. It does not
+establish that every symbol/tool/account is affected, prove server-internal
+behavior, or identify user/IP/server quota ownership or a reset time. No local
+argument/normalization fix is supported by this evidence. Directly bypassing
+MCP, changing account/source, or fabricating technical values is not a remedy.
+
+### Addendum to the unsent provider inquiry
+
+The same account's `get_symbol_data` request for AAPL and three basic columns
+also returned HTTP 200 with `success:false` and error references to rate limiting
+and `scanner.tradingview.com`. No interval was sent. Please investigate the common
+screener acquisition path and clarify whether the restriction is account-scoped
+or upstream-service-scoped. This addendum and the earlier draft are not sent.
+A successful basic read would be a concrete availability signal to justify a
+new dedicated-tool probe; a provider explanation or response fixture can also
+supply new evidence. The dedicated technical normalizer still requires its own
+successful schema and must not reuse basic columns as if they were that response.
+
+Validation: the new control/redaction test and incremental proof build passed,
+with one Cargo job and one test thread. Formatting, public-hygiene and diff
+checks passed. No broad suite, release build, dependency, account mutation,
+installed-binary replacement, push or external message occurred.

@@ -672,6 +672,10 @@ this is not the public command's 30-second deadline or acceptance evidence for
 it. The next-version proof adds `next-read-catalog`,
 `technical-daily-shape`, `technical-weekly-shape`, `technical-monthly-shape`,
 `technical-two-hour-shape`, `alert-history-shape` and `account-history-shape`.
+`technical-control-shape` separately reads the approved AAPL close/volume/market
+capitalization columns through the existing symbol tool for comparison with a
+technical-tool failure. It retains only shapes and the same closed error hints;
+it does not substitute that result for technical data.
 These are development-only
 operations with fixed approved requests; they do not add public CLI commands.
 `alert-history-command` separately exercises the public service at its normal

@@ -18,7 +18,8 @@ async fn main() {
         if !(args.len() == 2 || (args.len() == 4 && args[2] == "--credential-worker-path")) {
             eprintln!(concat!(
                 "Usage: connection_proof --local-admission | ",
-                "next-read-catalog/technical-daily-shape/technical-weekly-shape/",
+                "next-read-catalog/technical-control-shape/technical-daily-shape/",
+                "technical-weekly-shape/",
                 "technical-monthly-shape/technical-two-hour-shape/",
                 "alert-history-shape/account-history-shape/alert-history-command/",
                 "alert-history-extended-command/",
@@ -41,6 +42,7 @@ async fn main() {
         let operation = match args[0].as_str() {
             "next-read-catalog" => Op::NextReadCatalog,
             "technical-daily-shape" => Op::TechnicalDailyShape,
+            "technical-control-shape" => Op::TechnicalControlShape,
             "technical-weekly-shape" => Op::TechnicalWeeklyShape,
             "technical-monthly-shape" => Op::TechnicalMonthlyShape,
             "technical-two-hour-shape" => Op::TechnicalTwoHourShape,

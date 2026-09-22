@@ -29,6 +29,10 @@ pub(super) async fn inspect(
         .await;
     }
     let (tool, arguments) = match operation {
+        ProofOperation::TechnicalControlShape => (
+            Tool::Symbol,
+            json!({"symbol": "NASDAQ:AAPL", "columns": ["close", "volume", "market_cap_basic"]}),
+        ),
         ProofOperation::AccountHistoryShape => {
             (Tool::AlertHistory, json!({"days": 7, "limit": 100}))
         }
@@ -207,6 +211,9 @@ fn safe_shape(value: &Value, depth: usize) -> Value {
                 if matches!(
                     name.as_str(),
                     "symbol"
+                        | "close"
+                        | "volume"
+                        | "market_cap_basic"
                         | "result"
                         | "results"
                         | "technical_rating"
@@ -358,6 +365,34 @@ mod tests {
             error_hints(Some(&json!({"secret": "429"})))["textual_clues"],
             json!([])
         );
+    }
+
+    #[test]
+    fn technical_control_preserves_shape_and_failure_without_values() {
+        let arguments =
+            json!({"symbol": "NASDAQ:AAPL", "columns": ["close", "volume", "market_cap_basic"]});
+        Tool::Symbol.validate_arguments(&arguments).unwrap();
+        let success = observation(
+            Tool::Symbol,
+            &arguments,
+            &json!({
+                "success": true, "symbol": "NASDAQ:AAPL", "data": {"close": 123.45, "volume": null}
+            }),
+        );
+        assert_eq!(
+            success["shape"]["fields"]["data"]["fields"]["close"],
+            "number"
+        );
+        assert!(!success.to_string().contains("123.45"));
+        let failure = observation(
+            Tool::Symbol,
+            &arguments,
+            &json!({
+                "success": false, "error": "429 https://scanner.tradingview.com/private"
+            }),
+        );
+        assert_eq!(failure["failure"], "provider_error");
+        assert!(!failure.to_string().contains("private"));
     }
 
     #[test]
