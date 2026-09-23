@@ -49,3 +49,10 @@ The owner requested a final outer Retry-After check and then waiting. That one
 technical read returned HTTP 200 without Retry-After and the same application
 failure. Internal screener headers remain unknown. Additional live checks are
 stopped; no automatic polling or inquiry has been initiated.
+
+After the owner resumed the paused investigation more than 20 hours later, one
+AAPL daily technical call again returned outer HTTP 200 with an application
+failure mentioning a rate limit and the screener endpoint. The outer response
+had no Retry-After; no indicator values were returned. Further identical reads
+are stopped, and the technical implementation still awaits usable response
+evidence or a provider explanation.
