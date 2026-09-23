@@ -974,3 +974,28 @@ The existing Retry-After parser test and new presence/redaction test passed.
 The incremental proof build, formatting, public-hygiene and diff checks passed.
 Cargo ran sequentially with one build job/test thread; no broad suite or release
 build ran. No account mutation, installed-binary replacement or push occurred.
+
+
+## Owner-requested retry after 20 hours (2026-09-23 UTC)
+
+The owner reopened the paused read after more than 20 hours. The TradingView
+tool was not exposed to this Codex task on this turn, so the established fixed
+proof operation used the same approved AAPL daily request and the installed
+released binary only as credential worker. An initial sandboxed invocation
+failed at local state access without reaching the provider; the authorized
+native invocation then completed. That local error is not provider evidence.
+
+The native call reached the official MCP tool once. Initialization, catalog and
+tool response all returned outer HTTP 200; the tool result was `success:false`
+with only the existing `rate_limit` and `screener_endpoint` textual hints. No
+indicator values or successful response shape were obtained. The outer tool
+response again had no Retry-After header. The attempt used the existing private
+investigation deadline; the tool JSON completed at about 52 seconds, which is
+not default-30-second acceptance. These observations do not reveal the internal
+screener response headers, quota owner or reset time.
+
+No weekly/monthly/two-hour or basic-column follow-up was dispatched. The owner
+requested a retry, not recurring polling; stop the same reads again while this
+condition persists. The dedicated technical contract remains unimplemented and
+in planned scope. No code, dependencies, account state or installed binary were
+changed by this verification.
