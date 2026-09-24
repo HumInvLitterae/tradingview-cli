@@ -302,8 +302,8 @@ tv mcp --timeout 90 alert history --symbol NASDAQ:AAPL --days 7 --limit 100
 setup. It is not accepted for login/logout/status or account mutations. History
 keeps coverage unconfirmed and excludes notification messages and webhook
 contents. See the [read deadline and history reference](https://github.com/HumInvLitterae/tradingview-cli/blob/main/docs/official-mcp.md#read-deadlines-next-version)
-for contracts and limits. The dedicated technical snapshot command remains planned and is not available
-in this checkout.
+for contracts and limits. The dedicated technical snapshot command is deferred
+and is not available in this checkout.
 
 Browserless historical bars are Desktop-free and bounded:
 

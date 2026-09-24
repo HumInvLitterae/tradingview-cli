@@ -1,7 +1,7 @@
 # MCP operational improvements and two additional reads
 
 Status: **login guidance, history, connection reuse and read timeout implemented;
-technical snapshots blocked on provider response evidence**, 2026-09-23.
+technical snapshots deferred by the owner**, 2026-09-25.
 Direction and priority live in the [roadmap](../next-version-roadmap.md) and
 [inventory](../next-version-work-items.md). This is the single work record for
 v0.33.0; the [v0.32.0 record](archives/tradingview-cli-official-mcp-client.md)
@@ -9,10 +9,11 @@ is closed historical evidence.
 
 ## Outcome, consumers and authority
 
-Deliver alert firing history, official technical snapshots and a more usable
-login/upgrade journey through the independent `tv mcp` surface. The owner
-accepted the proposed direction and explicitly promoted technical snapshots
-into planned scope. Connection reuse is conditional on measurement. Existing
+Deliver alert firing history and a more usable login/upgrade journey through
+the independent `tv mcp` surface. The owner initially included technical
+snapshots, then explicitly deferred them on 2026-09-25. Their proposed contract
+and dated investigation below are retained for future resumption, not as a
+current release requirement. Connection reuse is conditional on measurement. Existing
 CLI consumers keep their commands, envelopes and source semantics.
 
 The PM remains the sole executor; no additional agent/session is authorized.
@@ -999,3 +1000,28 @@ requested a retry, not recurring polling; stop the same reads again while this
 condition persists. The dedicated technical contract remains unimplemented and
 in planned scope. No code, dependencies, account state or installed binary were
 changed by this verification.
+
+
+## Owner deferral and dependency review (2026-09-25)
+
+The owner deferred technical implementation to finish the other work. This
+supersedes earlier statements that technical snapshots must remain in v0.33.0.
+No replacement feature is promoted. Retain the existing contract proposal and
+unsent inquiry; do not poll or retry merely because a dependency changed.
+
+The owner's dependency update selects rmcp 3.4.1 and thiserror 2.0.21.
+The [rmcp release notes](https://github.com/modelcontextprotocol/rust-sdk/releases/tag/rmcp-v3.4.1)
+and [transport fix](https://github.com/modelcontextprotocol/rust-sdk/pull/1288)
+describe fallback after discovery rejection during connection setup. Our
+observed failure followed successful initialization/catalog and an HTTP 200 tool
+response reporting an internal screener 429. The independent Codex client also
+returned that application error. The SDK update is therefore not evidence of a
+provider fix; the updated SDK has not been live-qualified in this review.
+
+Remaining order: run affected regression checks with the new lockfile; inspect
+current-candidate platform/default-concurrency CI when available; review history
+acceptance limits (explicit 90-second empty success, nonempty wire observation
+plus fixtures, default-30-second native success unqualified); finish docs and
+standalone package qualification; prepare version/notes separately. Preserve
+those limits in release documentation rather than claim unobserved coverage.
+No live requests or Rust builds were needed for this scope/dependency review.
