@@ -42,6 +42,9 @@ def check_skill(skill):
 def check_package(package, expected_skills):
     package = package.resolve()
     errors = []
+    for path in package.rglob("*"):
+        if path.is_symlink():
+            errors.append(f"symlink in archive: {path.relative_to(package)}")
     guides = [package / name for name in ("AGENTS.md", "CLAUDE.md")]
     for guide in guides:
         if not guide.is_file():
@@ -137,6 +140,14 @@ class PackageReferenceTests(unittest.TestCase):
 
     def test_self_contained_skills_are_complete(self):
         self.assertEqual(self.check(), [])
+
+    def test_archive_rejects_links_even_with_internal_targets(self):
+        link = self.root / "guide-link.md"
+        try:
+            link.symlink_to("AGENTS.md")
+        except OSError as error:
+            self.skipTest(f"symlinks unavailable: {error}")
+        self.assertIn("symlink in archive: guide-link.md", self.check())
 
     def test_sibling_reference_fails_even_when_packaged(self):
         self.write_skill("one", "[other](../two/references/detail.md)\n")

@@ -835,7 +835,7 @@ For docs-only changes, at minimum run:
 git diff --check
 python scripts/check-public-hygiene.py --self-test
 python scripts/check-public-hygiene.py
-git grep -nE '(USER;|sessionid|cookie|authorization|bearer)' -- README.md CHANGELOG.md docs .agents/skills packaging scripts || true
+git grep -nE '(USER;|sessionid|cookie|authorization|bearer)' -- README.md CHANGELOG.md docs skills .agents/skills packaging scripts || true
 ```
 
 If the credential grep finds only validation-command examples or public-safe
@@ -864,6 +864,11 @@ owns source contracts. Link to those owners instead of repeating their content.
 Add a feature to a skill entrypoint only if it changes the initial command
 choice or an essential workflow constraint. Put detailed mode-specific knowledge
 in its relevant reference, and move closed migration history out of runtime steps.
+
+Runtime skill sources live in `skills/`; edit them there. Repository-local
+agent directories reference those sources, while release staging copies real
+files. See [skill installation](release-packaging.md#skill-installation) for
+Windows checkouts without symlink support and isolated installation checks.
 
 The runtime skills are `account-management`, `market-data`, `chart-analysis`, `pine-develop`,
 `replay-practice`, `screener-workflow`, and `strategy-report`. The first replaces

@@ -72,8 +72,10 @@ or a source of new PM, commit, or delegation authority.
   concurrent work; follow the assigned PM/implementer commit boundary.
 - Never push unless explicitly requested in the current turn. Release work
   keeps versioning, notes, packaging, and CI fixes separate from feature work.
-- `CLAUDE.md` shares this guide; `.claude/skills` shares `.agents/skills`.
-  Runtime guides and skills have a separate, explicit package allowlist.
+- `CLAUDE.md` shares this guide. Runtime skill sources live in `skills/`;
+  `.agents/skills/<name>` links to them, and `.claude/skills` shares that root.
+  Edit runtime skills only in `skills/`. Contributor skills remain in
+  `.agents/skills`; distribution uses an explicit runtime allowlist and real files.
 - Current work lives in `docs/plans`; completed plans in `docs/plans/archives`;
   research and historical rationale in `docs/notes`. Do not rewrite frozen
   evidence merely to match a new documentation style.

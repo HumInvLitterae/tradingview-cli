@@ -14,7 +14,9 @@ Contracts, approvals and dated evidence:
 | 6 | Measure and optimize transport | Implemented and measured. A single-page mutation/readback flow uses one initialization/catalog instead of two. Lazy pagination, admission, deadlines and separate readback failures are fixture-verified. No live latency improvement is claimed. |
 | 7 | Stabilize affected fixtures | Scoped serial regression passed; no new timing defect was established. Current-candidate default-concurrency and cross-platform CI remain pending. Correct concrete failures if observed; do not weaken production deadlines or assertions. |
 | 8 | Integrate documentation and standalone skills | Complete for implemented behavior: help, usage, source taxonomy and standalone MCP references updated and checked. Add technical snapshot guidance only after its implementation. |
-| 9 | Qualify and prepare release | Pending. Qualify the updated dependency graph, review remaining native limits, obtain current-candidate platform/CI evidence, then prepare version and notes separately. Publishing remains separately authorized. |
+| 9 | Distribute standalone skills from one source | Implemented: root `skills/` owns seven runtime skills; local agent links reuse them and archives copy real files. gh local install and npm discovery confirmed seven skills. Remote installation of this unpublished layout and Windows execution remain unverified. |
+| 10 | Add offline command specifications | Approved next implementation: `tv spec` index and command detail. Reuse clap definitions; report semantic coverage honestly. Schema export and offline request validation follow separately. See the active work record. |
+| 11 | Qualify and prepare release | Pending. Qualify the updated dependency graph, review remaining native limits, obtain current-candidate platform/CI evidence, then prepare version and notes separately. Publishing remains separately authorized. |
 
 ## Completed operating prerequisite
 
@@ -39,7 +41,8 @@ version remains 0.32.0. The owner updated rmcp to 3.4.1 and thiserror to
   establish current-candidate platform success. No push is implied by this list.
 - Release scope: the owner explicitly deferred technical snapshots on 2026-09-25.
   Finish qualification of implemented changes; do not add replacement features.
-- Next order: focused dependency/transport regression, current-candidate CI and
+- Next order: implement offline command specifications, focused affected
+  regression including updated dependencies, current-candidate CI and
   review of native evidence limits, final docs/standalone-package checks, then
   separate release version/notes preparation. Avoid repeating unchanged checks.
 

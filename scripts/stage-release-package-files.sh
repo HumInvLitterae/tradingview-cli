@@ -43,7 +43,7 @@ skills=(
 for root in "$package_dir/.agents/skills" "$package_dir/.claude/skills"; do
   mkdir -p "$root"
   for skill in "${skills[@]}"; do
-    cp -R ".agents/skills/$skill" "$root/$skill"
+    cp -R "skills/$skill" "$root/$skill"
   done
 done
 

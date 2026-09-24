@@ -1,6 +1,8 @@
 ---
 name: release-prep
 description: Prepare tv release versions, notes, archives, and validation when a release or distribution change is requested.
+metadata:
+  internal: true
 ---
 
 # Release preparation

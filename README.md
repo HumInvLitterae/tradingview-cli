@@ -286,7 +286,7 @@ create/update/stop/restart/delete commands return separate
 mutation and readback evidence, verified with native disposable-object lifecycles.
 These commands preserve unknown data conditions and require
 an eligible paid account. Read the packaged
-[MCP connection guide](.agents/skills/market-data/references/mcp-connection.md)
+[MCP connection guide](skills/market-data/references/mcp-connection.md)
 for authentication and platform prerequisites. The
 [full MCP reference](https://github.com/HumInvLitterae/tradingview-cli/blob/main/docs/official-mcp.md)
 covers command contracts and the remaining Linux desktop OAuth verification limit.
@@ -304,6 +304,13 @@ keeps coverage unconfirmed and excludes notification messages and webhook
 contents. See the [read deadline and history reference](https://github.com/HumInvLitterae/tradingview-cli/blob/main/docs/official-mcp.md#read-deadlines-next-version)
 for contracts and limits. The dedicated technical snapshot command is deferred
 and is not available in this checkout.
+
+Runtime agent skills are maintained in [`skills/`](skills/), with self-contained
+references in each skill. After this layout is published, install a selected
+skill using `gh skill install HumInvLitterae/tradingview-cli market-data --agent codex`
+or `npx skills add HumInvLitterae/tradingview-cli --skill market-data`.
+Choose a release/ref matching your binary; see the
+[skill installation guidance](docs/release-packaging.md#skill-installation).
 
 Browserless historical bars are Desktop-free and bounded:
 
