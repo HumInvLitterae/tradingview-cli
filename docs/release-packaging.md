@@ -59,7 +59,11 @@ project reference and is not broadly packaged.
 
 ## Runtime skill allowlist
 
-`scripts/stage-release-package-files.sh` owns the release skill allowlist.
+`scripts/stage-release-package-files.sh` owns the release skill allowlist and
+copies its sources from `skills/`. Those directories are the only editable
+runtime skill sources. Repository `.agents/skills/<name>` entries link to them;
+`.claude/skills` links to `.agents/skills`. The archive contains real files in
+both agent roots, never symlinks.
 
 Runtime skills currently included:
 
@@ -86,6 +90,41 @@ A skill must work when only its directory is attached: no required sibling-skill
 or repository references. Optional handoffs name another skill without making
 its files part of the current workflow.
 
+## Skill installation
+
+The root `skills/` tree supports standard GitHub CLI and `npx skills` discovery.
+Install only the workflows you need. Remote commands apply after this layout is
+published; use a tag or ref containing it and compatible with the installed
+`tv` binary. Earlier tags do not gain the new layout retroactively.
+
+```sh
+gh skill install HumInvLitterae/tradingview-cli market-data --agent codex
+npx skills add HumInvLitterae/tradingview-cli --skill market-data
+```
+
+For reproducible GitHub CLI installation, add `--pin <TAG_OR_SHA>`. Use the
+installer's source/ref support for the equivalent npm workflow. The GitHub CLI
+feature is currently in preview. Development-only skills carry
+`metadata.internal: true` for npm discovery; default GitHub CLI discovery skips
+hidden directories. Neither convention is an access-control mechanism.
+
+On Windows checkouts without working symlinks, install real copies from the
+local source with the same manager rather than editing a second tracked tree:
+
+```sh
+gh skill install . --from-local --all --agent codex --scope user
+```
+
+Use `--agent claude-code` for Claude. Inspect existing installations before
+replacing them. Refresh local installations after editing `skills/`; these are
+installed artifacts, not editable sources. Do not replace tracked repository
+links with copies or commit installed provenance metadata. Contributors with
+working symlinks need no installation or synchronization step.
+
+To verify without touching active agent configuration, install into a fresh
+disposable directory using `gh skill install . --from-local --all --dir <DIR>`.
+Check that exactly the seven runtime skills are present and each works alone.
+
 ## Packaging validation
 
 Staging runs `scripts/check-runtime-package.py` with the same allowlist. It
@@ -103,7 +142,7 @@ disposable output directory:
 ```bash
 bash -n scripts/stage-release-package-files.sh
 python scripts/check-runtime-package.py --self-test
-python scripts/check-runtime-package.py --skill .agents/skills/account-management
+python scripts/check-runtime-package.py --skill skills/account-management
 scripts/stage-release-package-files.sh target/release-package-smoke target/release/tv
 git diff --check
 ```

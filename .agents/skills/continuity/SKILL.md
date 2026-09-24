@@ -2,6 +2,8 @@
 name: continuity
 description: Prepare or refresh a project handoff when the user explicitly requests continuity work.
 disable-model-invocation: true
+metadata:
+  internal: true
 ---
 
 # Continuity handoff

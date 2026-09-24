@@ -18,6 +18,10 @@ package version omits the leading `v`.
 
 ### Changed
 
+- Runtime skill sources now live in root `skills/` for standard skill-manager
+  discovery. Development uses links to those sources; release archives retain
+  self-contained real files in both agent skill directories.
+
 - Official-MCP watchlist and alert changes reuse their connection and discovered
   tool catalog for readback, reducing repeated setup without replaying mutations
   or changing call admission, deadlines or result contracts.

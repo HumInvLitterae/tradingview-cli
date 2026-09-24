@@ -1,7 +1,8 @@
 # MCP operational improvements and two additional reads
 
 Status: **login guidance, history, connection reuse and read timeout implemented;
-technical snapshots deferred by the owner**, 2026-09-25.
+technical snapshots deferred; skill layout implemented, offline spec next**,
+2026-09-25.
 Direction and priority live in the [roadmap](../next-version-roadmap.md) and
 [inventory](../next-version-work-items.md). This is the single work record for
 v0.33.0; the [v0.32.0 record](archives/tradingview-cli-official-mcp-client.md)
@@ -1025,3 +1026,70 @@ plus fixtures, default-30-second native success unqualified); finish docs and
 standalone package qualification; prepare version/notes separately. Preserve
 those limits in release documentation rather than claim unobserved coverage.
 No live requests or Rust builds were needed for this scope/dependency review.
+
+
+## Portable skills and offline command specification (2026-09-25)
+
+The owner approved the proposed skill layout and agent-oriented command
+specification direction. The PM remains sole executor. This extends the current
+version work; it does not reopen technical snapshots or authorize publication.
+
+### Skill source and distribution
+
+Before: runtime sources lived in `.agents/skills`. After: seven standalone
+sources live in `skills/`; repository `.agents/skills/<name>` entries link to
+those sources and `.claude/skills` retains its shared-root link. Release staging
+copies real files from `skills/` into both archive roots. No installed skill
+requires its source checkout or siblings. Contributor-only skills stay local
+and use internal metadata for npm discovery.
+
+Windows without symlink support uses the documented local `gh skill` install
+into user scope, not a second editable tracked copy. No custom sync utility is
+needed. Existing ignored local remnants were not promoted to distribution.
+
+Acceptance observed: gh 2.101.0 local install into a disposable directory
+installed exactly seven runtime skills; skills 1.7.0 discovery and isolated
+copy installation found exactly those seven without contributor skills or
+duplicates. Copied npm contents matched the sources; both installations passed
+standalone reference checks. All seven skill metadata validations and the
+12 package-validator tests passed. Package staging with a
+placeholder binary passed parity and standalone reference validation. Remote
+installation awaits publication; Windows installer execution is not established
+by these macOS observations. CI already stages this layout on Windows/Linux.
+
+### Next implementation: tv spec
+
+Before: agents inspect textual help and skills to assemble commands. After:
+`tv spec` returns a compact JSON index, and `tv spec mcp alert history` returns
+that command's arguments, constraints, source/prerequisites, contract name and
+an argv example in the existing success envelope, with `cli_spec.v1` in data.
+Unknown paths return the existing validation-error envelope without I/O.
+
+Use clap's command tree for names, defaults, required flags, aliases, arity and
+available enumerations. Do not parse rendered help or duplicate that tree.
+Reuse existing validation constants and public contract definitions for facts
+that clap does not describe. Return explicit coverage/unknown fields when a
+command lacks semantic annotations; syntax discovery must not claim complete
+runtime validation. Keep dynamic values out of the static catalog, but identify
+the existing discovery command and result field from which to obtain them.
+Index every public command and initially qualify useful MCP read detail,
+including alert history. Preserve each command's actual source and side effects.
+
+Specification lookup must precede Desktop configuration, credential access and
+provider initialization. It needs no account, Desktop, network or new production
+dependency. Include the running binary's version; fetch only requested detail,
+not the entire catalog by default. Existing commands and output contracts stay
+unchanged. The existing `tv discover` probes Desktop internals and is not reused
+for this offline operation.
+
+Acceptance: compare the index to clap's public tree; test nested lookup,
+unknown paths, inherited options, defaults and supported enums; check history
+annotations against actual validation; execute CLI specs with unusable Desktop
+configuration and absent credentials to prove offline operation. Compare a few
+representative command-selection tasks against help for lookup count and output
+size without claiming unmeasured token or latency savings. Keep local checks
+focused and serial. Update standalone skills only after the command exists.
+
+`tv schema` and `tv validate` remain follow-on design stages. Their concrete
+contract coverage must be established before exposing them; no partial validator
+may claim that provider or account conditions were verified.
