@@ -9,12 +9,12 @@
 | CDP stability triggers | [Strategy note](../notes/cdp-stability-and-autonomous-operation-strategy.md) |
 | Completed plans | [Historical catalog](archives/README.md) |
 
-The owner accepted v0.33.0 scope including official technical snapshots alongside
-alert firing history. Login guidance, history, command-local connection reuse and
-the separately approved read-only `--timeout` are implemented. History succeeded
+The owner deferred official technical snapshots on 2026-09-25. The remaining
+v0.33.0 scope includes alert firing history and operational improvements. Login
+guidance, history, command-local connection reuse and the separately approved read-only `--timeout` are implemented. History succeeded
 through the public service with an explicit 90-second budget; default-deadline
-success remains unqualified. Technical snapshots are blocked on a provider
-application error with no usable data, and remain in the selected scope.
+success remains unqualified. Technical snapshots have no usable provider response
+evidence and no longer block this release.
 The active record owns evidence and resumption conditions. Heavy local hooks are
 opt-in; current-candidate cross-platform CI and release qualification remain open.
 

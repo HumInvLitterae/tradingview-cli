@@ -1,9 +1,9 @@
 # v0.33.0 roadmap
 
-Status: implementation in progress, 2026-09-23. Alert history, login guidance,
-command-local connection reuse and the explicit read timeout are implemented.
-Technical snapshots remain planned but blocked on usable provider response
-evidence. Baseline: [released v0.32.0](plans/archives/tradingview-cli-official-mcp-client.md#publication-closeout-2026-09-22).
+Status: implemented scope awaiting release qualification, 2026-09-25.
+Alert history, login guidance, command-local connection reuse and the explicit read timeout are implemented.
+The owner deferred technical snapshots on 2026-09-25; they no longer block
+this release. Baseline: [released v0.32.0](plans/archives/tradingview-cli-official-mcp-client.md#publication-closeout-2026-09-22).
 The [inventory](next-version-work-items.md) owns order; the
 [operational-improvements plan](plans/tradingview-cli-mcp-operational-improvements.md)
 owns contracts, decisions and acceptance.
@@ -11,12 +11,9 @@ owns contracts, decisions and acceptance.
 ## Outcome and selected scope
 
 Make the independent MCP commands easier to operate after installation or
-upgrade, and complete two useful read workflows:
+upgrade, and deliver alert history with qualified operational improvements:
 
 - Read alert firing history without changing account state.
-- Retrieve an official technical-indicator snapshot for one symbol/timeframe.
-  This is planned release scope, not an optional backlog item. The owner
-  explicitly requested inclusion alongside alert history.
 - Improve explicit login guidance and credential reuse across supported OSes,
   preserving noninteractive ordinary commands and structured output.
 - Measure repeated initialization within one command; reuse a connection for
@@ -26,8 +23,8 @@ upgrade, and complete two useful read workflows:
 - Diagnose time-sensitive MCP fixtures and fix demonstrated synchronization
   problems without relaxing production deadlines or hiding failed assertions.
 
-Technical snapshots complement arbitrary `mcp symbol`/`symbols` columns and
-selected-chart/Pine observations. Compare overlapping data without promising
+Deferred technical snapshots would complement arbitrary `mcp symbol`/`symbols`
+columns and selected-chart/Pine observations. Compare overlapping data without promising
 identical sources, values or timing. Official aggregate ratings remain provider
 observations, not CLI trading recommendations or backtest admission.
 
@@ -46,11 +43,13 @@ cost and distribution decision, not an implied fix for OS consent.
 
 ## Version and release decision
 
-Target v0.33.0 for the two additive reads and qualified operational improvements.
+Target v0.33.0 for additive alert history, the read timeout and qualified
+operational improvements.
 A separately useful fix can ship as v0.32.1, but a patch-first sequence is not
 required. Keep the workspace at the released version until feature qualification
-is complete. If either new read cannot be qualified, present a concrete scope
-or schedule choice; do not silently demote the technical snapshot.
+is complete. Technical snapshots are explicitly deferred by the owner, not a
+release prerequisite. Resume their existing design when usable response evidence
+or a concrete provider explanation becomes available and the owner resumes work.
 
 ## Retained evidence triggers
 
