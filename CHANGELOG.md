@@ -10,46 +10,12 @@ package version omits the leading `v`.
 ### Added
 
 - `tv spec [COMMAND...]` provides an offline JSON command index and clap-derived
-  argument details. MCP search, columns, symbol, symbols, bars and alert history
-  include source, prerequisites, shared constraints and discovery examples;
-  watchlist/alert mutation details include ID discovery, side effects and readback.
-  Desktop chart controls describe conditional reads/changes and target discovery;
-  lifecycle and chart-comparison specs describe process/UI effects and restoration;
-  Replay specs describe toggles, practice actions and conditional log attachments.
-  UI specs distinguish observations, input, toggles and gated arbitrary evaluation.
-  Indicator specs describe chart-local IDs, insertion verification and input updates.
-  Drawing specs describe geometry constraints, chart-local IDs and clear/dry-run effects.
-  Pane/saved-layout specs distinguish selection, dry-run and observed state.
-  Pine specs distinguish local analysis, remote checks and Editor/compile/save effects.
-  Selected-chart capture specs describe count handling, viewport effects and file writes.
-  Credential-free search/bars specs distinguish symbol resolution and count/range coverage.
-  Quote specs describe routing/restoration and batch failures; scanner metainfo describes field discovery.
-  Chart-analysis specs describe study identity, strategy selection and report/series limits.
-  Pine graphics specs explain filtering, rounding, label limits and lossy table rows.
-  Scanner scan specs distinguish page/aggregate modes, field choices and filter constraints.
-  Snapshot/compare specs describe section coverage, field selection and follow-up limitations.
-  Official MCP screener specs describe filters, presets, selection limits and count coverage.
-  Official financial specs describe fiscal periods, metric selection and unreported earnings.
-  Official news/document specs describe IDs, paging bounds and content/access limitations.
-  Official economics/dividend specs distinguish catalogs, release values and lookup modes.
-  Chart observation specs describe JSONL lifecycle, deduplication and termination limits.
-  Chart stream specs distinguish numeric study values, lossy Pine graphics and
-  current-layout bar samples, including filter differences and per-pane failures.
-  Account discovery specs describe list/get ID formats, filters and partial results.
-  Authorization specs distinguish local status, conditional login and local-only logout.
-  Visible Screener/watchlist read specs explain UI effects and rendered-data limits.
-  Screener discovery specs explain menu probes and storage-column identity limits.
-  Saved-screen specs describe test-name guards, dry-run effects and persistence limits.
-  Column-edit specs describe saved-set writes, positional selection and readback limits.
-  Filter-edit specs distinguish UI presets/options, storage writes and refresh evidence.
-  Legacy watchlist specs expose active-list targeting, fallback and bulk partial outcomes.
-  Legacy price-alert specs expose notification defaults and source-dependent confirmation.
-  Pine indicator-alert specs explain source/version, input selection and preview limits.
-  Pine shape specs explain per-study scan windows, activity values and OHLC alignment limits.
-  Status/UI-state specs distinguish target selection and heuristic UI observations from readiness.
-  Scanner comparison, event and fundamentals specs explain partial results and polling limits.
-  Screener lifecycle specs distinguish dialog operations from tab creation/activation.
-  Other semantic coverage is explicitly unannotated.
+  argument details. Semantic metadata covers 164 of 169 executable paths,
+  including chart/Pine analysis, MCP data and account operations, scanner reads,
+  Screener workflows and UI actions. It describes prerequisites, constraints,
+  source/coverage limits, side effects, discovery and readback. Unannotated
+  semantics remain explicit; validation is partial, with no output-schema export
+  or offline request validator. Existing command behavior is unchanged.
 
 - `tv mcp --timeout <SECONDS>` selects a 1–180 second total deadline for provider
   reads. The default remains 30 seconds; login, logout, status and mutations

@@ -72,6 +72,8 @@ input selection and limited preview/readback guarantees.
 A 2026-09-26 offline audit confirmed 156 annotated leaves and enumerated 13
 remaining paths in the inventory. Data shapes, status/ui-state, analysis support
 and Screener open/close are now annotated, leaving 5 diagnostic/discovery paths.
+The five remaining paths are follow-ups, not release blockers.
+[Release notes](../releases/v0.33.0.md) are drafted; current-lockfile CI remains pending.
 Latest observed CI still covers the released baseline, not the current candidate.
 The active record owns evidence and resumption conditions. Heavy local hooks are
 opt-in; current-candidate cross-platform CI and release qualification remain open.

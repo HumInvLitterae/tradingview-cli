@@ -37,8 +37,9 @@ command details from the running binary, reusing clap definitions instead of
 maintaining duplicate argument catalogs. Mark incomplete semantic coverage
 explicitly and route dynamic values to existing discovery commands. Current
 offline evidence covers 164 of 169 executable paths; the inventory prioritizes
-the remaining 5 diagnostic/discovery paths. Full annotation coverage is not a new release gate, and disclosed legacy behavior
-findings are separate contract work rather than implicit fixes in this version.
+the remaining 5 diagnostic/discovery paths as follow-ups. Full annotation
+coverage is not a new release gate, and disclosed legacy behavior findings are
+separate contract work rather than implicit fixes in this version.
 
 Output schemas and offline request validation are subsequent stages after their
 contract coverage is established; they are not silently included in the first
