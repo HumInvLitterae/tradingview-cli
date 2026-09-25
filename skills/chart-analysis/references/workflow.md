@@ -68,3 +68,23 @@ per-value timestamp or closed-bar guarantee. Rows without readable values can
 be omitted, while hidden studies can still return values. Missing output is not
 zero. Compact inputs are not a complete parameter export. Read `data indicator`
 with a confirmed chart-local entity ID when more input detail is needed.
+
+
+## Pine-generated lines, labels, tables and boxes
+
+Use `tv spec data <lines|labels|tables|boxes>` for command details when supported;
+older binaries retain help. These read Pine graphics, not hand-drawn objects.
+`--filter` is a case-sensitive study-name substring, not an entity ID selector.
+Rows lack study IDs, so same-name instances can remain ambiguous. Empty results
+can reflect inaccessible primitives; hidden studies are not automatically excluded.
+
+Line levels and box zones use two-decimal rounding and deduplication; a rounded
+horizontal line or zone is not independently established support/resistance.
+Verbose coordinates are internal values, not guaranteed timestamps or prices.
+Label `--max` defaults to 500 per study and retains the last readable entries in
+iteration order, not guaranteed chronological order. Inspect available/showing/
+truncated separately; the limit applies after Desktop extraction.
+
+Tables are lossy row strings joined with ` | `: empty cells, coordinates and table
+IDs are omitted. Do not reconstruct a rectangular dataset by splitting strings.
+Keep script meaning and the chart context separate from these display summaries.

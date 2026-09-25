@@ -37,7 +37,8 @@ severity rather than command-family completion. Chart-analysis reads are first;
 downstream call sites and recorded runs are usage evidence even without an
 aggregated frequency count. Values and strategy/trades/equity semantics now
 describe identity, availability and output limits, including unresolved equity
-series provenance.
+series provenance. Pine graphics specs explain name-filter ambiguity, rounding,
+label truncation and lossy table formatting.
 The active record owns evidence and resumption conditions. Heavy local hooks are
 opt-in; current-candidate cross-platform CI and release qualification remain open.
 
