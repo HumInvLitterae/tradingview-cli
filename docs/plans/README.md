@@ -38,7 +38,8 @@ downstream call sites and recorded runs are usage evidence even without an
 aggregated frequency count. Values and strategy/trades/equity semantics now
 describe identity, availability and output limits, including unresolved equity
 series provenance. Pine graphics specs explain name-filter ambiguity, rounding,
-label truncation and lossy table formatting.
+label truncation and lossy table formatting. Scanner scan specs distinguish
+page reads from bounded sequential population reads and expose their limits.
 The active record owns evidence and resumption conditions. Heavy local hooks are
 opt-in; current-candidate cross-platform CI and release qualification remain open.
 

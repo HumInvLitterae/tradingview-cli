@@ -1542,3 +1542,28 @@ one offline CLI subprocess test covering all four paths. Scoped CLI Clippy,
 formatting/diff checks, 12 package self-tests, guidance staging and chart-analysis
 skill metadata passed. Cargo ran serially with one build job. No live chart,
 provider request, full-workspace suite or release build was performed.
+
+
+### Scanner scan specifications (2026-09-25)
+
+Added scanner scan, reaching 95 documented leaves of 169. First-page, explicit
+page and aggregate modes retain different limits and completeness claims.
+Metadata includes the execution allowlist, numeric filter domains and greater/
+less operators; provider metainfo does not override local supported fields.
+The scanner's private catalog remains private, avoiding a new public Rust API.
+The copied metadata catalog was compared against the execution source for this
+change; future field additions must update both.
+
+Aggregate population bounds are not top-N limits. Missing totals, incomplete
+pages and page failures fail closed. Deduplication and drift flags do not make
+sequential pages an atomic snapshot. Standalone market-data guidance carries
+these distinctions without depending on repository docs. Execution is unchanged.
+The next priority remains comparison/snapshot and analysis-related MCP reads,
+subject to concrete downstream chart-analysis needs.
+
+Validation passed: 25 spec unit tests, 20 existing scan fixtures and the focused
+offline CLI subprocess test. The metadata field list exactly matched the private
+execution allowlist in an explicit comparison. Scoped CLI Clippy, formatting/
+diff checks, 12 package self-tests, guidance staging and market-data skill
+metadata passed. Cargo ran serially with one build job. No live scan, Desktop
+operation, full-workspace test or release build was performed.

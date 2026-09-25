@@ -447,3 +447,28 @@ and overwrite duplicate coordinates. Output contains only row strings joined
 with ` | `, dropping empty cells/rows and original coordinates/IDs. Delimiters in
 text are not escaped; the result cannot reliably reconstruct a typed rectangle.
 There is no tables verbose or max option.
+
+
+## Scanner page and aggregate modes
+
+Scanner scan defaults to the first page, with limit 20 and a 100-row clamp;
+zero is rejected. An explicit offset selects one page and adds offset to the
+otherwise flattened page payload. Max-results selects sequential aggregation
+and conflicts with offset/limit. Page-size requires aggregate mode. The spec
+lists limits, fixed field choices, defaults, filter domains and CLI argument IDs.
+
+Max-results is a permitted population ceiling, not a top-N request. Aggregate
+requires numeric totals within that ceiling and exact expected page sizes;
+missing totals, incomplete/overfull pages and request failures return errors.
+Rows deduplicate by exact symbol, retaining first occurrence. The result includes
+duplicate and total-drift observations, request fingerprint and start/end times.
+It is not an atomic snapshot: membership and ordering can change without a total
+change. The fingerprint identifies query fields, not a frozen dataset.
+
+Both modes use credential-free scanner REST, not Desktop Screener or official
+MCP. Column/sort fields use a local allowlist; provider metainfo is a separate
+catalog. Numeric filters must be finite; price/volume/valuation thresholds are
+nonnegative, signed performance/change thresholds may be negative, RSI is 0–100
+and recommendations are -1–1. Provider operators are greater/less; min/max pairs
+are not checked for ordering. Inspect the actual filters rather than assuming
+inclusive thresholds or a sensible interval.
