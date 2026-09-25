@@ -27,6 +27,7 @@ package version omits the leading `v`.
   Chart-analysis specs describe study identity, strategy selection and report/series limits.
   Pine graphics specs explain filtering, rounding, label limits and lossy table rows.
   Scanner scan specs distinguish page/aggregate modes, field choices and filter constraints.
+  Snapshot/compare specs describe section coverage, field selection and follow-up limitations.
   Other semantic coverage is explicitly unannotated.
 
 - `tv mcp --timeout <SECONDS>` selects a 1–180 second total deadline for provider

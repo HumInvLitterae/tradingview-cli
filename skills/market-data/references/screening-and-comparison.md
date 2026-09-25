@@ -56,7 +56,10 @@ For regular-session movement, use
 `chart_quote`, `observe_chart`, `screenshot`). Check `requires_desktop`,
 `source_category`, `non_mutating`, `evidence_role`, and `auto_execute` before
 choosing a relevant follow-up. `chart_quote` is the stable kind; `quote_chart`
-is not an alias. Hints neither execute reads nor rank candidates.
+is not an alias. Hints neither execute reads nor rank candidates. Existing hints can label
+chart_quote and screenshot `non_mutating` even though the command can switch a
+chart symbol or write a file. Consult the command's own spec/help and obtain the
+needed intent; that flag is not a complete side-effect declaration.
 
 Stay with the known set for a requested bounded watch. Move to
 the optional `chart-analysis` skill only when chart-specific evidence
@@ -82,3 +85,15 @@ Report `client_observation.returned_count` alongside the provider's `total_count
 Neither status proves exhaustive market coverage or realtime data. Empty success
 is distinct from a failed request. No pagination, retry or source fallback is
 performed; the maximum per request is 1000 rows.
+
+
+## Snapshot and comparison completeness
+
+Use `tv spec snapshot` or `tv spec compare` for offline details when supported.
+One successful section is enough for a symbol packet to succeed. For compare,
+resolved_count counts such packets, not symbols with all evidence available.
+Complete coverage does not audit every quote/info field: tracked missing-field
+counts primarily cover fundamentals. Inspect the sections and freshness fields.
+Top-level symbol selection prefers quote, then fundamentals, then info; it does
+not establish cross-section identity agreement or a synchronized observation.
+Snapshot group/field options affect fundamentals only; compare uses defaults.

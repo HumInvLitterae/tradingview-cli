@@ -472,3 +472,27 @@ nonnegative, signed performance/change thresholds may be negative, RSI is 0–10
 and recommendations are -1–1. Provider operators are greater/less; min/max pairs
 are not checked for ordering. Inspect the actual filters rather than assuming
 inclusive thresholds or a sensible interval.
+
+
+## Snapshot and comparison packets
+
+Snapshot and compare assemble scanner quote, REST symbol info and scanner
+fundamentals without Desktop or MCP. They return snapshot.v1 and compare.v1.
+Sections are separate observations, not a synchronized dataset. Snapshot accepts
+one symbol and fundamentals group/field selection; compare accepts 2–25 symbols,
+preserves order/duplicates and uses default fundamentals fields. Group expansion
+precedes explicit fields and deduplicates them; specifying either replaces the
+default selection only for the fundamentals section.
+
+Any successful section makes a symbol packet successful. Compare resolved_count
+therefore does not count fully populated packets. Complete coverage checks
+section success and tracked fundamentals missing fields, not every quote/info
+field, identity agreement, freshness or entitlements. All-section/all-item
+failure retains the packet in outer error details. Use sections, errors and
+missing_evidence alongside summary. The top-level symbol uses quote, then
+fundamentals, then info rather than requiring cross-section agreement.
+
+Follow-up hints do not execute or authorize actions. In particular, existing
+non_mutating hints can name chart_quote or screenshot despite chart switching or
+file output. Inspect the hinted command's own specification before executing it.
+Correcting that legacy hint contract remains a separate consumer-facing change.
