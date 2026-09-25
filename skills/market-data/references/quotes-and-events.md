@@ -110,3 +110,18 @@ inferred timezones, finalized releases or client-generated surprise scores.
 Retain recent/upcoming amounts, ex/payment dates and currency separately. An
 unreported symbol or null next dividend is unknown, not zero or absence proof.
 All reads retain MCP provenance, receipt time and unconfirmed completeness.
+
+
+For these four financial commands, `tv spec mcp <command>` provides offline
+constraints when supported; use help on older binaries. Financial snapshots
+accept fy/fq/ttm/fh/current, while history accepts only fy/fq. Metric selection
+uses up to 50 unique names and remains unconfirmed in the returned snapshot;
+provider aliasing does not prove every requested metric was returned.
+
+History and earnings dates are independently optional calendar dates. One bound
+does not imply the other, and provider fiscal labels are not price-bar dates.
+Projected missing optional values can become null, so not every field preserves
+a distinction between omission and explicit null. Currency/unit/scale remain
+unknown unless supplied. Earnings symbol_results distinguishes returned from
+unreported; multiple events can belong to one symbol, and unreported is not proof
+that no earnings event exists.

@@ -2,7 +2,7 @@ use serde_json::{Value, json};
 use tradingview_mcp::Operation;
 use tradingview_model::{mcp_account::Request, mcp_bars, mcp_data};
 
-fn read_metadata() -> Value {
+pub(super) fn read_metadata() -> Value {
     json!({
         "source": "tradingview_mcp",
         "requires": {"authentication": true, "desktop": false},
@@ -274,7 +274,7 @@ pub(super) fn symbol_discovery(argument: &str) -> Value {
         "result_path": "data.symbols[].symbol"})
 }
 
-fn read_timeout() -> Value {
+pub(super) fn read_timeout() -> Value {
     json!({
         "minimum": 1,
         "maximum": Operation::MAX_READ_TIMEOUT_SECONDS,

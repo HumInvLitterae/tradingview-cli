@@ -489,3 +489,24 @@ fn mcp_screener_spec_needs_no_credentials_or_provider_call() {
     assert_eq!(semantics["requires"]["desktop"], false);
     assert_eq!(semantics["output_contract"], "mcp_screener.v1");
 }
+
+#[test]
+fn financial_specs_are_offline_and_do_not_refresh_credentials() {
+    for action in ["financials", "financial-history", "forecasts", "earnings"] {
+        let output = Command::cargo_bin("tv")
+            .unwrap()
+            .env("TV_CDP_PORT", "invalid")
+            .args(["spec", "mcp", action])
+            .assert()
+            .success()
+            .get_output()
+            .clone();
+        assert!(output.stderr.is_empty());
+        let value: Value = serde_json::from_slice(&output.stdout).unwrap();
+        let semantics = &value["data"]["semantics"];
+        assert_eq!(semantics["requires"]["authentication"], true);
+        assert_eq!(semantics["requires"]["desktop"], false);
+        assert_eq!(semantics["effects"]["account_mutation"], false);
+        assert!(semantics["constraints"]["timeout"]["maximum"].is_number());
+    }
+}
