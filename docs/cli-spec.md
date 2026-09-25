@@ -367,3 +367,29 @@ Read range_coverage_status, range_fetch_summary and data_quality.completed;
 summary.coverage_status and data_quality.partial_result describe count fulfillment.
 Timestamp-bound coverage is not a trading-calendar gap audit. A failure stage
 locates the error but does not authorize repeated requests or provider fallback.
+
+
+## Quote source selection and scanner field discovery
+
+Quote semantics depend on both symbol and source. Without a symbol, the default,
+chart and auto routes read the current Desktop chart. Scanner and quote-data
+require a symbol. With a symbol and no explicit source, quote uses scanner REST;
+explicit chart can temporarily switch the chart symbol and attempt restoration.
+Bare-symbol comparisons do not establish strict identity across exchanges.
+Inspect observed symbol and restoration/freshness evidence.
+
+Auto falls back to scanner only when connecting to Desktop fails. Once connected,
+it uses the chart path and returns its failures without scanner fallback.
+Quote-data instead observes Desktop network events and returns quote_data.v1;
+it neither switches symbols nor participates in auto routing. Scanner extended
+hours, chart last-bar/session data and quote-data rtc/lp have different meanings.
+
+Quotes accepts 1–25 nonblank symbols and preserves order, requested_index and
+duplicates. Mixed results use a successful envelope with per-item errors; all
+failures produce an error with ordered batch details. Missing session prices stay
+unknown rather than borrowing another source's value.
+
+Scanner metainfo discovers fields for america. Repeated --field values are
+trimmed/deduplicated; omission requests all available fields. Inspect missing_fields
+and optional metadata. This discovery is a provider read, not proof that every
+requested field or scan capability is available.

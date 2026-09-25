@@ -1452,3 +1452,28 @@ formatting and diff checks passed. Cargo ran serially with one build job.
 No real network request, Desktop operation, full-workspace test or release build
 was performed. Runtime package inputs were unchanged, so packaging checks were
 not repeated.
+
+
+### Quote routing and priority correction (2026-09-25)
+
+The owner requested higher-priority commands first. The inventory now ranks
+remaining gaps by documented workflow usefulness, effect severity and missing
+decision guidance, without claiming measured usage. Family completion and raw
+coverage counts are not the prioritization objective. Next: MCP authentication
+and account read/discovery commands, followed by scan and core chart analysis.
+
+Added quote, quotes and scanner metainfo (86 documented leaves of
+169, with 83 unannotated). Quote distinguishes no-symbol Desktop reads,
+symbol-default scanner reads, chart switching/restoration, explicit quote-data
+and connection-failure-only auto fallback. Batch success can contain item
+failures; complete failure keeps ordered batch details. Metainfo exposes missing
+fields rather than treating a successful request as full field availability.
+Existing execution logic, provider contracts and runtime skills are unchanged.
+
+Validation passed: 22 spec unit tests, one focused offline CLI test covering all
+three added paths, and three existing batch-quote finalization fixtures for
+ordered, mixed and all-failed results. Scoped CLI Clippy and formatting/diff
+checks passed. Only the new CLI test was rerun; unchanged command-spec subprocess
+coverage and runtime package checks were reused. Cargo ran serially with one
+build job. No provider/Desktop operation, full-workspace suite or release build
+was performed.
