@@ -1991,3 +1991,38 @@ one offline CLI test without a source file or Desktop access, scoped CLI Clippy,
 formatting/diff checks, 12 package self-tests, guidance staging and both skill
 metadata checks. Cargo ran serially with one build job. No provider/account
 operation, source upload, workspace suite or release build was performed.
+
+
+### Remaining-scope and candidate audit (2026-09-26)
+
+Requeried the cached development binary's complete spec tree with invalid CDP
+configuration: 195 paths, 169 executable leaves, 156 annotated and 13 unavailable.
+All leaf queries returned valid JSON without stderr. No rebuild or Rust test run
+was needed for this audit. The inventory now lists the exact remaining paths;
+data shapes is next, followed by chart setup observations and analysis support.
+Completed family descriptions no longer masquerade as remaining priority rows.
+Full annotation coverage was not added as a release gate.
+
+Read-only GitHub inspection found the latest CI success at released 54dabec
+(run 35682348029); it does not qualify current local changes. No push, fetch into
+local refs or workflow dispatch occurred. Current workflow requirements and
+native evidence limits are listed separately from command-spec work.
+
+Compared manifests and parsed lockfiles against v0.32.0. Direct constraints are
+rmcp 3.4.0 to 3.4.1 and thiserror 2.0.20 to 2.0.21. Lock versions changed for
+encoding_rs 0.8.41 to 0.8.42, hyper-util 0.1.20 to 0.1.21,
+rustls-platform-verifier 0.7.0 to 0.7.1, its Android package 0.1.1 to 0.2.0,
+zerocopy/zerocopy-derive 0.8.57 to 0.8.58 and thiserror-impl alongside thiserror.
+multiversion and multiversion-macros 0.9.0 disappeared. This is graph-change
+classification, not platform or vulnerability qualification. No dependencies
+were changed.
+
+Consolidated legacy watchlist/alert/indicator-alert behavioral findings with the
+existing equity and packet findings. They remain separate contract decisions,
+not undocumented fixes or automatically promoted release blockers. Technical
+snapshot implementation and repeated provider probes remain deferred.
+
+Validation: offline command audit above, source/workflow/manifest inspection,
+public-hygiene self-test and tracked-tree check, plus diff hygiene. Only planning
+documents changed; previous runtime and package checks were not repeated. No
+Desktop/provider access, credential operation, build or full test suite ran.

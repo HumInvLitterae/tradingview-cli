@@ -1,6 +1,6 @@
 # v0.33.0 ordered work inventory
 
-Current state: 2026-09-25. Direction: [roadmap](next-version-roadmap.md).
+Current state: 2026-09-26. Direction: [roadmap](next-version-roadmap.md).
 Contracts, approvals and dated evidence:
 [one active work record](plans/tradingview-cli-mcp-operational-improvements.md).
 
@@ -15,7 +15,7 @@ Contracts, approvals and dated evidence:
 | 7 | Stabilize affected fixtures | Scoped serial regression passed; no new timing defect was established. Current-candidate default-concurrency and cross-platform CI remain pending. Correct concrete failures if observed; do not weaken production deadlines or assertions. |
 | 8 | Integrate documentation and standalone skills | Complete for implemented behavior: help, usage, source taxonomy and standalone MCP references updated and checked. Add technical snapshot guidance only after its implementation. |
 | 9 | Distribute standalone skills from one source | Implemented: root `skills/` owns seven runtime skills; local agent links reuse them and archives copy real files. gh local install and npm discovery confirmed seven skills. Remote installation of this unpublished layout and Windows execution remain unverified. |
-| 10 | Add offline command specifications | Implemented: offline `tv spec` index and clap-derived command detail, with primary MCP read/history and watchlist/alert mutation semantics, shared validation constants and conditional Desktop chart-control variants plus launch, tab changes, chart comparison, Replay, UI, indicator, drawing, pane, saved-layout, Pine, selected-chart capture and credential-free search/bars and quote/scanner-field and core chart-analysis and Pine-graphics operations. Unannotated paths and partial validation remain explicit. Schema export and offline request validation follow separately. See the active work record. |
+| 10 | Add offline command specifications | Implemented with clap-derived syntax and explicit partial validation. A 2026-09-26 executable audit found 156 of 169 leaves annotated; the 13 remaining paths and priorities are below. Further annotations do not change runtime contracts. Schema export and request validation remain separate. |
 | 11 | Qualify and prepare release | Pending. Qualify the updated dependency graph, review remaining native limits, obtain current-candidate platform/CI evidence, then prepare version and notes separately. Publishing remains separately authorized. |
 
 ## Completed operating prerequisite
@@ -41,10 +41,11 @@ version remains 0.32.0. The owner updated rmcp to 3.4.1 and thiserror to
   establish current-candidate platform success. No push is implied by this list.
 - Release scope: the owner explicitly deferred technical snapshots on 2026-09-25.
   Finish qualification of implemented changes; do not add replacement features.
-- Next order: review remaining dependency regression coverage, current-candidate
-  CI and
-  review of native evidence limits, final docs/standalone-package checks, then
-  separate release version/notes preparation. Avoid repeating unchanged checks.
+- Next order: annotate `data shapes`, then chart setup observations and analysis
+  support as ordered below. Reassess lower-priority gaps before freezing scope;
+  100% semantic annotation is not a newly imposed release condition. Then qualify
+  the dependency graph/current candidate, finish docs/package checks and prepare
+  version/notes separately. Reuse evidence whose inputs remain unchanged.
 
 No credentials, account-local payloads or machine paths belong in tracked
 records. Keep private downstream collection policy and analytical admission
@@ -66,32 +67,67 @@ evidence or a provider explanation.
 
 ## Remaining command-specification order
 
-A 2026-09-25 offline inventory found 169 executable paths, excluding 26 command
-groups. After Pine indicator-alert annotations, 156 paths have semantics
-and 13 do not. Validation coverage remains partial even for annotated paths.
-Use the current development binary's `tv spec` to reproduce the path inventory.
+A 2026-09-26 audit queried every executable path through the cached development
+binary with an invalid CDP port. All 169 leaf queries returned valid JSON without
+stderr; 156 have semantic annotations and the following 13 do not. The root
+contains 195 paths including 26 groups. This proves offline lookup, not runtime
+behavior. Validation coverage remains partial for annotated paths too.
 
-The owner requested priority by command importance on 2026-09-25. The order below
-uses downstream call sites and recorded executions, documented agent workflows,
-effect severity and missing decision guidance. Usage evidence exists even though
-command frequencies have not been aggregated. Chart analysis is the owner's
-primary workflow. Reassess when a concrete downstream
-need or unsafe ambiguity changes the ranking. Do not finish a low-value family
-merely to raise the coverage count.
+Chart analysis remains first. Prior downstream call sites and recorded runs are
+usage evidence, although no aggregate frequency ranking exists. The ordering
+below uses current source inspection and workflow relevance, not a claim that
+all remaining commands are actively used downstream.
 
-| Priority | Remaining surface | Reason and acceptance focus |
+| Priority | Exact remaining paths | Acceptance focus |
 | --- | --- | --- |
-| 1 | Remaining analysis-critical chart reads; values, strategy/trades/equity and Pine lines/labels/tables/boxes and observe chart plus all seven stream kinds metadata complete | Prioritize chart analysis. Explain study identity, formatted values, ambiguous strategy selection, report availability and missing data. Check downstream call sites and recorded runs before ordering supporting reads. |
-| 2 | Analysis-related MCP reads; compare/snapshot, scanner scan and MCP screener and financial/earnings, news/document and economics/dividend metadata complete | Support symbol selection and chart analysis with pagination completeness, partial-result, source and freshness guidance. |
-| 3 | MCP login/status/logout and watchlist/alert list/get metadata complete; reassess remaining setup needs | Clarify browser/credential effects, readiness and ID discovery. Advance a command if it blocks an actual chart-analysis workflow. |
-| 4 | Legacy account and Desktop Screener mutations; status/get, active screen, filter/column lists and Desktop watchlist get plus screen/action/storage-column discovery and saved-screen/column/filter and legacy watchlist and price/indicator-alert metadata complete | Expose account/storage/UI effects and existing MCP alternatives where equivalent. Advance earlier if a live workflow depends on them. |
-| 5 | Remaining research reads, hotlists, observation/streaming and diagnostics | Use downstream evidence to identify analysis-critical commands and advance them; audit lower-priority gaps afterward. |
+| 1 | `data shapes` | Pine shape/character observations: bar window, plotted values, filtering and lossy summaries. Distinguish from hand-drawn objects. |
+| 2 | `status`, `ui-state` | Connection versus chart readiness; observed UI state versus permission or ability to execute later actions. |
+| 3 | `watch compare`, `events compare`, `fundamentals` | Bounded repeated observations, event coverage and source-dependent financial interpretation. |
+| 4 | `screener open`, `screener close` | Explicit UI/target effects and full-page versus dialog behavior; do not infer opening from a read request. |
+| 5 | `diagnose quote-data` | Advance when diagnosing a concrete quote-data problem; state network/subscription effects and evidence limits. |
+| 6 | `scanner hotlist`, `data depth`, `discover`, `spec` | Remaining discovery/self-description; depth is a heuristic DOM read, not authenticated exchange depth proof. Review value before treating annotation completion as a release gate. |
 
-Completed groups include primary MCP reads/mutations, common chart controls,
-Replay/UI/indicator/drawing/pane/layout/Pine, selected-chart capture, search/bars,
-quote/quotes and scanner field discovery. Schema export and request validation
-remain separate follow-ups. This inventory authorizes metadata work for existing
-commands, not new commands, changed execution guarantees or live operations.
+This inventory authorizes metadata for existing commands, not changed execution
+guarantees, live operations or new commands. Schema export and offline request
+validation remain separate follow-ups.
+
+## Candidate qualification still required
+
+- Latest observed CI success is for released `54dabec`, not the current candidate:
+  [CI run](https://github.com/HumInvLitterae/tradingview-cli/actions/runs/35682348029).
+  Current CI defines tests on macOS/Windows/Linux, Linux Secret Service integration,
+  workspace Clippy, script/package checks and four JavaScript contract jobs.
+  Obtain candidate-SHA results after the owner pushes; do not duplicate broad
+  suites locally by default or trigger a workflow without authorization.
+- Dependency constraints changed from v0.32.0: rmcp 3.4.0 to 3.4.1 and thiserror
+  2.0.20 to 2.0.21. Lock changes also affect encoding_rs, hyper-util, platform
+  verification and zerocopy. Review relevant regression evidence against this
+  graph; the current audit is not a dependency security or platform qualification.
+- Preserve native limits: alert history succeeded with an explicit 90-second
+  budget and empty history; default-deadline/nonempty native behavior remains
+  unqualified. Linux graphical OAuth and remote skill installation remain
+  unverified. Decide which limitations can be documented without expanding claims;
+  further native checks require concrete targets and any uncovered authority.
+- Finish current-candidate distribution checks when executable/package inputs
+  are final. Guidance fixture staging is not release-binary validation. Version
+  remains 0.32.0 until qualification; version/notes preparation stays separate
+  from features. Publication is not authorized by this inventory.
+
+## Behavioral findings kept separate from annotations
+
+These findings were disclosed during metadata work. They are not fixed by
+passing spec tests and are not silently added to v0.33.0 implementation scope.
+Any correction needs concrete before/after contracts and consumer impact.
+
+- Legacy watchlist mutations can fall back to DOM after selected uncertain
+  writes; API readback can use a different active list when the original vanishes.
+- Legacy alert listing can return embedded errors or empty normalized data under
+  outer success. DOM price-alert creation does not set the requested condition
+  and reports a button click rather than persistence. Numeric IDs cross a
+  JavaScript Number conversion without a safe-integer bound.
+- Indicator-alert creation does not verify supplied source against saved version
+  and uses the first name-matched chart study. Preview and readback do not prove
+  complete input/version identity.
 
 
 Chart-analysis follow-up finding: current `data equity` does not distinguish its
