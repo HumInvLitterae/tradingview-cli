@@ -35,6 +35,7 @@ mod screener_filters;
 mod screener_screens;
 mod stream;
 mod ui;
+mod watchlist;
 
 pub(super) fn describe(path: &[String]) -> Result<Value, AppError> {
     let mut root = Cli::command();
@@ -102,6 +103,7 @@ pub(super) fn describe(path: &[String]) -> Result<Value, AppError> {
         .or_else(|| desktop::describe(&canonical))
         .or_else(|| replay::describe(&canonical))
         .or_else(|| ui::describe(&canonical))
+        .or_else(|| watchlist::describe(&canonical))
         .or_else(|| indicator::describe(&canonical))
         .or_else(|| drawing::describe(&canonical))
         .or_else(|| layout::describe(&canonical))

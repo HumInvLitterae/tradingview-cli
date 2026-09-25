@@ -770,3 +770,23 @@ fn filter_edit_specs_do_not_open_or_change_filters() {
         assert_eq!(spec["variants"][0]["effects"]["account_mutation"], false);
     }
 }
+
+#[test]
+fn legacy_watchlist_specs_do_not_mutate_account_lists() {
+    for action in ["add", "add-bulk", "remove"] {
+        let output = Command::cargo_bin("tv")
+            .unwrap()
+            .env("TV_CDP_PORT", "invalid")
+            .args(["spec", "watchlist", action])
+            .assert()
+            .success()
+            .get_output()
+            .clone();
+        assert!(output.stderr.is_empty());
+        let value: Value = serde_json::from_slice(&output.stdout).unwrap();
+        let spec = &value["data"]["semantics"];
+        assert_eq!(spec["effects"]["account_mutation"], true);
+        assert_eq!(spec["requires"]["desktop"], true);
+        assert_eq!(spec["constraints"]["dry_run"]["supported"], false);
+    }
+}

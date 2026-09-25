@@ -29,6 +29,10 @@ index when the command is already known.
 | Create/edit/remove a watchlist or its symbols | `tv mcp watchlist create/update/add/remove/delete` | The target and account effect are requested; read [mutation guidance](references/mutations.md). |
 | Create/change/stop/restart/delete simple price alerts | `tv mcp alert create/update/stop/restart/delete` | The condition, target and notifications are understood; read [mutation guidance](references/mutations.md). |
 
+For an explicitly requested legacy Desktop watchlist change, read
+[legacy watchlist guidance](references/legacy-watchlists.md). Its active-list
+targeting, API-to-DOM fallback and existing-member ordering differ from MCP.
+
 Read intent does not authorize changes. Reuse authorization for the same target
 and effect. Normal use acts on the user's requested object; disposable targets
 are for implementation tests, not a mandatory extra object for every operation.
