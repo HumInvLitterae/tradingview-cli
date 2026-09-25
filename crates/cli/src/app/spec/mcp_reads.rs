@@ -185,14 +185,14 @@ fn text_constraint(max: usize) -> Value {
     })
 }
 
-fn symbol_constraint() -> Value {
+pub(super) fn symbol_constraint() -> Value {
     json!({
         "format": "exchange-qualified-symbol",
         "max_bytes": mcp_bars::MAX_SYMBOL_BYTES,
         "pattern": "^[A-Za-z0-9_]+:[A-Za-z0-9_.!\\-]+$"})
 }
 
-fn symbol_discovery(argument: &str) -> Value {
+pub(super) fn symbol_discovery(argument: &str) -> Value {
     json!({
         "argument": argument,
         "argv": ["tv", "mcp", "search", "<query>"],

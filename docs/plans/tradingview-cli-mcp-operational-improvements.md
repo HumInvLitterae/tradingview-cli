@@ -1177,3 +1177,35 @@ formatting and diff checks. All Cargo execution was serial with one build job.
 No full-workspace suite, release build, provider access or installed-binary
 replacement was performed. Remaining semantic stages are account mutations and
 Desktop/other commands; unannotated MCP families remain explicitly unavailable.
+
+
+### Account mutation specifications (2026-09-25)
+
+Added semantic details for all five watchlist mutations and all five alert
+mutations. Before, `tv spec mcp alert update` exposed argument syntax with null
+semantics. It now exposes account mutation and reactivation effects, ID discovery
+through alert list, update-field requirements, input bounds, a synthetic argv
+example, output/error contracts and readback instructions. All spec queries
+remain offline. Existing mutation dispatch and readback behavior are unchanged.
+
+Watchlist add documents movement of existing symbols to the end; deletion
+retains uncertain list completeness. Alert update/restart explicitly reactivate;
+delete removes fire history. Omission remains distinct from false or empty
+values. Names/descriptions use Unicode scalar limits; query byte limits are not
+reused for them. Shared model constants own name, description, symbol/ID count,
+ID range, alert enum and contract values. Automatic retry remains false, and
+spec output never authorizes account changes.
+
+The automatic readback description is conditional on a usable reply/target.
+Failure or unconfirmed readback cannot turn response receipt into verification.
+Uncertain creation requires resolving the account target rather than repeating
+creation or choosing an item by name. Account read specs remain unannotated;
+their existing list/get commands still provide the documented discovery/readback
+paths. Desktop and other command semantics remain the next stage.
+
+Validation passed: eight spec unit tests, 14 account model tests and three CLI
+subprocess tests, including offline lookup of all ten mutations. Scoped CLI
+Clippy passed with warnings denied. Package validation (12 self-tests and staged
+seven-skill roots), skill metadata, formatting and diff checks passed. Cargo ran
+serially with one build job. No provider reads/mutations, full-workspace suite,
+release build, installed-binary replacement or remote publication was performed.

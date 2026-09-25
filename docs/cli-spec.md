@@ -32,7 +32,8 @@ with `contract_version: cli_spec.v1` and `binary_version` (including build ident
   Conditional requirements and adapter checks are not fully represented. Read
   the command description and skill guidance for remaining conditions.
 - `coverage.semantics` is `documented` for MCP search, columns, symbol, symbols,
-  bars and alert history; it is `unavailable` for other commands.
+  bars, alert history and the ten watchlist/alert mutations; it is `unavailable`
+  for other commands.
   `semantics: null` means not annotated, never no side effects.
   More commands can acquire annotations without changing how they execute.
 - Documented read semantics contain source, prerequisites, account/provider effects,
@@ -78,3 +79,32 @@ unconfirmed; batch missing and unreported outcomes have different meanings.
 Absent fields and explicit nulls are not interchangeable or zero. `limits`
 records these distinctions. All six operations can update local authorization
 through token refresh without mutating account watchlists or alerts.
+
+
+## Account mutation details
+
+`tv spec mcp watchlist create|update|add|remove|delete` and
+`tv spec mcp alert create|update|stop|restart|delete` describe changes; looking
+up those specifications never dispatches them. Choose one action per invocation.
+
+Each detail includes ID discovery, examples with synthetic targets, shared
+input bounds and the output/error contracts. Names use Unicode scalar counts,
+unlike the byte limits on market-data queries. Watchlist IDs are canonical
+unsigned decimal strings; alert IDs are positive integers bounded by the
+existing signed-64-bit provider limit. `--timeout` is unsupported for mutations.
+
+Watchlist add moves existing members to the end. Update preserves omitted
+fields, while an explicitly empty description clears it. Alert update
+reactivates an inactive alert even if only its name changes. Alert restart uses
+existing conditions and notification settings; delete also removes fire history.
+Create defaults notifications and auto-deactivation to false. Specs expose these
+effects so an agent can check them against the user's requested operation.
+
+`readback` describes the CLI's automatic follow-up and a separate read command.
+A usable reply and identifiable target are needed before that follow-up can
+run. `response_received` does not prove persistence; inspect the readback status
+and per-target observations. An item absent from an incomplete list is not a
+confirmed deletion. After `outcome_unknown`, inspect state before considering
+another mutation. For an uncertain create, do not select by name or create a
+replacement automatically. Examples are instructions for syntax, not permission
+to change an account.
