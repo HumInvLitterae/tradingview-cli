@@ -79,3 +79,18 @@ an atomic cross-symbol snapshot guarantee or a saved-layout/tab switch.
 Defaults are 1000 ms for lines/labels, 2000 ms for tables and 500 ms for all.
 Use `tv spec stream <kind>` when available and help otherwise. The same JSONL
 error channels, deduplication and duration/count limits described above apply.
+
+## Scanner comparison polling
+
+Use `tv spec watch compare` for offline controls when available. Its readiness
+is input validation, not a provider probe. Samples contain scanner quotes, not
+all sections of `tv compare`. Inspect per-item errors and resolved/error counts.
+Poll errors go to stderr and the loop continues; successful completion alone
+is not collection success.
+
+Only changed samples count toward `max-events`; timestamps and poll counters
+are excluded from deduplication. The interval starts after the poll completes.
+Duration is checked between polls, so in-flight requests can overrun it and
+postpone heartbeats. `_ts` is client emission time, not market time. Summary
+last-result counts describe the latest successful poll; inspect `poll_error_count`
+as well. A closed output pipe can omit the summary.
