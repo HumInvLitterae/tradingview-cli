@@ -1,6 +1,7 @@
 //! Argument-dependent Desktop effects. Spec lookup itself remains offline.
 
-use crate::ops::CHART_TYPES;
+use super::super::dispatch::MAX_CHART_COMPARE_SYMBOLS;
+use crate::ops::{CHART_COMPARE_CONTRACT_VERSION, CHART_TYPES};
 use serde_json::{Value, json};
 
 pub(super) fn describe(path: &[&str]) -> Option<Value> {
@@ -99,11 +100,84 @@ pub(super) fn describe(path: &[&str]) -> Option<Value> {
             result["limits"].as_array_mut().unwrap().push(json!("A successful envelope may contain ready=false. This checks readiness without switching symbols, activating tabs or capturing screenshots."));
         }
         ["tab", "list"] => {
-            result["source"] = json!("cdp_targets");
+            result["source"] = json!("desktop_target_list");
             result["discovery"] = json!([]);
             result["examples"] = json!([["tv", "tab", "list"]]);
             result["limits"] = json!([
                 "Listing does not activate a target. Use the selected row's ID for --target-id; an index used by tab switch is a different argument."
+            ]);
+        }
+        ["launch"] => {
+            result["source"] = json!("desktop_launcher");
+            result["requires"] = json!({"desktop_installed": null, "desktop_running": false, "authentication": null});
+            result["effects"] = json!({"may_start_process": true, "may_terminate_process": null});
+            result["discovery"] = json!([]);
+            result["constraints"] = json!({
+                "port": {"minimum": 1, "maximum": u16::MAX, "default_source": "CDP transport configuration"},
+                "path": {"nonempty": true, "existing_file": true}
+            });
+            result["variants"] = json!([
+                {"when": {"runtime": "CDP endpoint already responds"}, "operation": "reuse", "effects": {"starts_process": false, "terminates_process": false}},
+                {"when": {"runtime": "No reusable CDP response; startup proceeds", "flag_true": ["kill_existing"]}, "operation": "terminate_then_launch"},
+                {"when": {"runtime": "No reusable CDP response; startup proceeds", "flag_false": ["kill_existing"]}, "operation": "launch_without_termination"}
+            ]);
+            result["readback"] = json!({"argv": ["tv", "readiness"]});
+            result["examples"] = json!([["tv", "launch"], ["tv", "launch", "--port", "9222"]]);
+            result["limits"] = json!([
+                "kill-existing may end the current Desktop session; require the user's authority for that effect.",
+                "A responding CDP endpoint is reused even when kill-existing was supplied.",
+                "Inspect CDP readiness and warnings; starting a process does not prove chart readiness.",
+                "Starting a new process requires an installed app. Explicit path selects a local executable; normal macOS launch uses the system app launcher."
+            ]);
+        }
+        ["tab", action @ ("switch" | "new" | "close")] => {
+            result["source"] = json!("desktop_tab_operation");
+            result["effects"] = json!({"desktop_mutation": true,
+                "activates_source_tab": *action == "new", "activates_target": *action == "switch",
+                "creates_tab": *action == "new", "closes_tab": *action == "close"});
+            let argument = if *action == "new" { "from" } else { "index" };
+            let result_path = if *action == "close" {
+                "data.app_tabs[].index"
+            } else {
+                "data.tabs[].index"
+            };
+            result["discovery"] = json!([{"argument": argument,
+                "argv": ["tv", "tab", "list"], "result_path": result_path}]);
+            result["constraints"] = json!({argument: {"minimum": 0, "maximum": null, "runtime_bound": "current selected list length"}});
+            result["readback"] = json!({"argv": ["tv", "tab", "list"]});
+            result["examples"] = if *action == "new" {
+                json!([["tv", "tab", "new", "--from", "0"]])
+            } else {
+                json!([["tv", "tab", action, "0"]])
+            };
+            result["limits"] = json!([
+                "Indices are transient: refresh tab list and select the intended row before changing tabs.",
+                "switch/new use chart-tab indices; close uses app-tab indices, which may differ.",
+                "new without from is allowed only when exactly one chart tab exists; it activates the source before creating a tab.",
+                "close refuses to close the last app tab. new/close also require an app-window target and usable UI.",
+                "Inspect readback before retrying after an error; an error does not guarantee no UI change. --target-id does not replace an index."
+            ]);
+        }
+        ["chart", "compare"] => {
+            result["output_contract"] = json!(CHART_COMPARE_CONTRACT_VERSION);
+            result["effects"] = json!({"chart_mutation": true, "temporary_symbol_changes": true, "restoration_guaranteed": false});
+            result["constraints"] = json!({"symbols": {"min_items": 2, "max_items": MAX_CHART_COMPARE_SYMBOLS,
+                "item": {"nonblank": true, "trimmed": true}, "unique_required": false}});
+            result["readback"] = json!({"argv": ["tv", "--target-id", "<target_id>", "symbol"]});
+            result["examples"] = json!([[
+                "tv",
+                "--target-id",
+                "<target_id>",
+                "chart",
+                "compare",
+                "NASDAQ:EXAMPLE",
+                "NYSE:OTHER"
+            ]]);
+            result["limits"] = json!([
+                "Requests each symbol on the selected chart and attempts to restore the original symbol after each read.",
+                "Stops on an item error. Inspect per-item status/restored, summary and final chart context; a success envelope can contain partial results.",
+                "Restoration can fail or remain unknown. Inspect the target before another mutation; do not treat comparison as a non-mutating read.",
+                "No scanner, quote-data, Replay or historical-bar fallback is used. Use tv compare for Desktop-free scanner comparison."
             ]);
         }
         _ => return None,
@@ -153,6 +227,48 @@ mod tests {
         assert!(ops::validate_visible_range_request(1.0, 2.0).is_ok());
         assert!(ops::validate_visible_range_request(2.0, 1.0).is_err());
         assert!(ops::validate_visible_range_request(f64::NAN, 2.0).is_err());
+    }
+
+    #[test]
+    fn lifecycle_examples_parse_and_comparison_limits_match_dispatch() {
+        use super::super::super::dispatch::validate_chart_compare_symbols;
+        for path in [
+            vec!["launch"],
+            vec!["tab", "switch"],
+            vec!["tab", "new"],
+            vec!["tab", "close"],
+            vec!["chart", "compare"],
+        ] {
+            for example in describe(&path).unwrap()["examples"].as_array().unwrap() {
+                assert!(
+                    Cli::try_parse_from(
+                        example
+                            .as_array()
+                            .unwrap()
+                            .iter()
+                            .map(|v| v.as_str().unwrap())
+                    )
+                    .is_ok()
+                );
+            }
+        }
+        let spec = describe(&["chart", "compare"]).unwrap();
+        let max = spec["constraints"]["symbols"]["max_items"]
+            .as_u64()
+            .unwrap() as usize;
+        assert!(validate_chart_compare_symbols(&vec!["NASDAQ:X".into(); max]).is_ok());
+        assert!(validate_chart_compare_symbols(&vec!["NASDAQ:X".into(); max + 1]).is_err());
+        assert!(validate_chart_compare_symbols(&["NASDAQ:X".into()]).is_err());
+        assert!(validate_chart_compare_symbols(&["NASDAQ:X".into(), " ".into()]).is_err());
+        assert_eq!(
+            describe(&["tab", "close"]).unwrap()["discovery"][0]["result_path"],
+            "data.app_tabs[].index"
+        );
+        assert_eq!(
+            describe(&["tab", "switch"]).unwrap()["discovery"][0]["result_path"],
+            "data.tabs[].index"
+        );
+        assert_eq!(spec["effects"]["restoration_guaranteed"], false);
     }
 
     #[test]

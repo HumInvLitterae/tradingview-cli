@@ -6,6 +6,7 @@ mod quote;
 mod quote_data;
 
 pub use bars::bars;
+pub(crate) use chart_compare::CHART_COMPARE_CONTRACT_VERSION;
 pub use chart_compare::chart_compare;
 pub use direct::{
     compare_symbols, events_compare_symbols, events_symbol, fundamentals_symbol, quote_symbol,
