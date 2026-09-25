@@ -2048,3 +2048,26 @@ guidance staging and skill metadata validation. Shared count constants are reuse
 the new example and zero-count syntax parse through clap. Cargo ran serially
 with one build job. No Desktop/provider operation, workspace suite or release
 build was performed.
+
+### Desktop setup observation specifications (2026-09-26)
+
+Added status/ui-state, reaching 159 documented leaves of 169. Status distinguishes
+reachable target enumeration from selected-chart connection and suppressible
+chart-evaluation errors; its desktop_readiness summary is not bar readiness.
+UI state uses dimension/DOM/text heuristics, lossy button deduplication and fixed
+coordinate regions. Embedded chart/Replay failures can coexist with a successful
+snapshot, and positions are not verified click centers.
+
+All six independently distributed Desktop-session references retain this guidance.
+Actual operations, JSON payloads and target selection are unchanged. Dedicated
+readiness remains the chart/bar preflight. Remaining metadata work starts with
+watch compare and related analysis support, without requiring all annotations
+before release qualification.
+
+Validation passed: 41 spec unit tests, two existing status-summary fixtures, one
+UI-state payload fixture and one offline CLI test covering both spec paths.
+Scoped CLI Clippy, formatting/diff checks, 12 package self-tests, guidance staging
+and six skill metadata checks passed. Source inspection establishes actual
+status branching; these fixtures are not live connection proof. Cargo ran serially
+with one build job. No Desktop/provider operation, workspace suite or release
+build was performed.

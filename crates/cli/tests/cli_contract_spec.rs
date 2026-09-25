@@ -842,3 +842,23 @@ fn pine_shapes_spec_does_not_read_desktop_data() {
     assert_eq!(spec["constraints"]["count"]["minimum"], 0);
     assert_eq!(spec["effects"]["chart_mutation"], false);
 }
+
+#[test]
+fn setup_observation_specs_do_not_connect_to_desktop() {
+    for command in ["status", "ui-state"] {
+        let output = Command::cargo_bin("tv")
+            .unwrap()
+            .env("TV_CDP_PORT", "invalid")
+            .args(["spec", command])
+            .assert()
+            .success()
+            .get_output()
+            .clone();
+        assert!(output.stderr.is_empty());
+        let value: Value = serde_json::from_slice(&output.stdout).unwrap();
+        assert_eq!(
+            value["data"]["semantics"]["effects"]["chart_mutation"],
+            false
+        );
+    }
+}
