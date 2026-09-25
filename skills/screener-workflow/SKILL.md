@@ -45,9 +45,11 @@ and use `--dry-run` where supported before applying the change. A read request
 alone does not authorize changing screens, filters, columns, or watchlists.
 
 - `screens switch --name <NAME> [--catalog] --dry-run` previews selection.
-- For implementation/testing, use disposable names containing `CLI-Test` or
-  `テスト`. Real saved-screen create/rename/save-as/delete/save needs explicit
-  intent to change that account state. Save only to the verified intended screen.
+- Create/rename/save-as/delete execution is restricted by code to names containing
+  `CLI-Test` or `テスト`; rename requires it in both names. Save/switch have no
+  test-name restriction. Read [saved-screen guidance](references/saved-screens.md)
+  for dry-run effects and what post-checks establish. Save only to the verified
+  intended screen.
 - Use filter add/modify/remove/clear with target checks. Broad multi-option and
   free-text editing are not genericized.
 - Inspect column config before add/remove/reorder. Add requires a known storage
