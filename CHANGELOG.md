@@ -37,6 +37,7 @@ package version omits the leading `v`.
   current-layout bar samples, including filter differences and per-pane failures.
   Account discovery specs describe list/get ID formats, filters and partial results.
   Authorization specs distinguish local status, conditional login and local-only logout.
+  Visible Screener/watchlist read specs explain UI effects and rendered-data limits.
   Other semantic coverage is explicitly unannotated.
 
 - `tv mcp --timeout <SECONDS>` selects a 1–180 second total deadline for provider

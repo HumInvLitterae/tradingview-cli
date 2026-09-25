@@ -27,3 +27,20 @@ account time fields remain provider strings. Conditions are a limited projection
 with unknown completeness, insufficient to recreate complex Pine alerts. Messages
 and webhook URLs are excluded; notification flags do not establish delivery.
 Keep account IDs and returned account data private.
+
+
+## Existing Desktop watchlist read
+
+Use `tv spec watchlist get` when available to inspect this distinct Desktop
+operation. It reads rendered right-panel content without selecting a list by ID.
+Closed/missing panels can return successful empty rows. Extracted symbols are
+deduplicated; rendered content does not establish full account-list coverage.
+The `source` field reports panel_closed, no_container, data_attributes, text_scan
+or empty. Data-attribute reads infer last/change/change_percent from numeric
+cell strings; text scans can return unqualified ticker-like names with null
+prices. Neither confirms symbol identity or freshness.
+
+Prefer explicit `tv mcp watchlist list` followed by `get <ID>` for account-list
+contents. MCP preserves sections and ordering but does not reproduce visible
+quote cells or establish which list is selected in Desktop. Do not switch
+sources after a failure without deciding that the alternative meets the request.
