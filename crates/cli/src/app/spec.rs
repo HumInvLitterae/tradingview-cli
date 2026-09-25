@@ -15,6 +15,7 @@ mod drawing;
 mod indicator;
 mod layout;
 mod market;
+mod mcp_economics;
 mod mcp_financials;
 mod mcp_mutations;
 mod mcp_reads;
@@ -104,6 +105,7 @@ pub(super) fn describe(path: &[String]) -> Result<Value, AppError> {
         .or_else(|| packets::describe(&canonical))
         .or_else(|| mcp_financials::describe(&canonical))
         .or_else(|| mcp_research::describe(&canonical))
+        .or_else(|| mcp_economics::describe(&canonical))
     {
         data["coverage"]["semantics"] = json!("documented");
         data["semantics"] = semantics;
