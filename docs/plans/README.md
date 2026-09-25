@@ -29,7 +29,8 @@ command semantics remain unannotated. Pane and saved-layout specs distinguish
 selection from observed state. Pine specs distinguish local analysis, source
 transmission, Editor changes and compile/save evidence. The inventory orders
 the remaining families. Selected-chart capture specs distinguish file writes,
-viewport changes and returned-range limits.
+viewport changes and returned-range limits. Credential-free search/bars specs
+separate symbol resolution, count fulfillment and period coverage.
 The active record owns evidence and resumption conditions. Heavy local hooks are
 opt-in; current-candidate cross-platform CI and release qualification remain open.
 

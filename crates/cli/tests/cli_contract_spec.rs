@@ -335,3 +335,27 @@ fn capture_specs_do_not_connect_move_viewport_or_write_files() {
         }
     }
 }
+
+#[test]
+fn market_specs_need_no_query_symbol_or_network() {
+    for action in ["search", "bars"] {
+        let output = Command::cargo_bin("tv")
+            .unwrap()
+            .env("TV_CDP_PORT", "invalid")
+            .args(["spec", action])
+            .assert()
+            .success()
+            .get_output()
+            .clone();
+        assert!(output.stderr.is_empty());
+        let value: Value = serde_json::from_slice(&output.stdout).unwrap();
+        let semantics = &value["data"]["semantics"];
+        assert_eq!(semantics["requires"]["desktop"], false);
+        assert_eq!(semantics["requires"]["authentication"], false);
+        assert_eq!(semantics["effects"]["local_file_write"], false);
+        if action == "bars" {
+            assert_eq!(semantics["output_contract"], "bars.v1");
+            assert_eq!(semantics["variants"][2]["operation"], "validation_error");
+        }
+    }
+}

@@ -22,6 +22,7 @@ package version omits the leading `v`.
   Pane/saved-layout specs distinguish selection, dry-run and observed state.
   Pine specs distinguish local analysis, remote checks and Editor/compile/save effects.
   Selected-chart capture specs describe count handling, viewport effects and file writes.
+  Credential-free search/bars specs distinguish symbol resolution and count/range coverage.
   Other semantic coverage is explicitly unannotated.
 
 - `tv mcp --timeout <SECONDS>` selects a 1–180 second total deadline for provider

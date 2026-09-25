@@ -1430,3 +1430,25 @@ validators. Scoped CLI Clippy, formatting and diff checks passed. Cargo used
 one build job and serial tests. Unchanged capture/JavaScript fixtures and runtime
 package inputs were not revalidated. No chart operation, provider request,
 screenshot capture, full-workspace test or release build was performed.
+
+
+### Credential-free search and bars specifications (2026-09-25)
+
+Search and bars now have semantics: 83 of 169 leaf paths are documented and 86
+remain unannotated. Bare-symbol resolution chooses the first exact search
+candidate; exchange-qualified input avoids that choice. Metadata distinguishes
+recent count from range caps, timeframe subsets/aliases, inclusive UTC date
+bounds and period-start filtering. Count fulfillment, observed range coverage
+and source completion remain separate. A complete timestamp range is not a
+calendar-gap audit. Source adjustment is requested, not independently verified.
+
+The existing market crate keeps its private validators; no public Rust API or
+production dependency was added for metadata. Execution code and runtime skills
+are unchanged. Continue with quotes/scanner and remaining chart-data reads.
+
+Validation passed: 21 spec unit tests, four existing bars-validation tests, ten
+bars-payload fixtures and 12 offline CLI subprocess tests. Scoped CLI Clippy,
+formatting and diff checks passed. Cargo ran serially with one build job.
+No real network request, Desktop operation, full-workspace test or release build
+was performed. Runtime package inputs were unchanged, so packaging checks were
+not repeated.
