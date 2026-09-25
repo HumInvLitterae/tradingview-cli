@@ -807,3 +807,21 @@ fn legacy_alert_specs_do_not_access_or_change_alerts() {
         assert_eq!(value["data"]["semantics"]["requires"]["desktop"], true);
     }
 }
+
+#[test]
+fn indicator_alert_spec_does_not_read_source_or_create_alert() {
+    let output = Command::cargo_bin("tv")
+        .unwrap()
+        .env("TV_CDP_PORT", "invalid")
+        .args(["spec", "alert", "create-indicator"])
+        .assert()
+        .success()
+        .get_output()
+        .clone();
+    assert!(output.stderr.is_empty());
+    let value: Value = serde_json::from_slice(&output.stdout).unwrap();
+    let spec = &value["data"]["semantics"];
+    assert_eq!(spec["effects"]["chart_mutation"], false);
+    assert_eq!(spec["variants"][0]["effects"]["account_mutation"], false);
+    assert_eq!(spec["variants"][1]["effects"]["account_mutation"], true);
+}

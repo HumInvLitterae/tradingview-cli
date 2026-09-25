@@ -22,3 +22,7 @@ Use the editor reference for the guarded open/set/compile/save sequence and
 its failure handling. Treat local analysis, server check, editor compile, and
 cloud save as distinct results. Finish at the requested validation/persistence
 level, reporting errors and unverified levels that matter to that request.
+
+For a requested Pine `alertcondition()` alert, read
+[indicator alert guidance](references/indicator-alerts.md). A live dry-run does
+not verify source/version identity, study inputs or provider creation.
