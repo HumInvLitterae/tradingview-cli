@@ -19,8 +19,10 @@ all references. Use `tv --version` when the binary is new or build identity
 matters; use `tv <family> --help` when arguments are uncertain.
 
 When supported by the installed binary, `tv spec <command path>` provides
-argument metadata without connecting. `tv spec mcp alert history` also describes
-source, limits and symbol discovery. Respect partial validation and unavailable
+argument metadata without connecting. MCP `search`, `columns`, `symbol`,
+`symbols`, `bars` and `alert history` also describe source, constraints, result
+interpretation and how to discover symbols or fields. Request the specific path,
+for example `tv spec mcp bars`. Respect partial validation and unavailable
 semantic annotations; use `--help` on older binaries. Do not fetch the whole
 index when the command is already known.
 
