@@ -1967,3 +1967,27 @@ crossing mappings match the actual model helpers. Scoped CLI Clippy, formatting/
 diff checks, 12 package self-tests, guidance staging and skill metadata validation
 passed. Cargo ran serially with one build job. No Desktop/account operations,
 provider access, workspace suite or release build was performed.
+
+
+### Pine indicator-alert specification (2026-09-26)
+
+Added alert create-indicator, reaching 156 documented leaves of 169. Local source
+supplies best-effort condition/feature inference, not saved-source identity or
+compilation proof. Preview reads the saved-script catalog but does not validate
+input extraction or creation. Execution uses the first name-matched chart study,
+with ordered inputs and textual input detection; readback does not verify every
+script/version/input field. Notification and adjustment defaults are explicit.
+
+Account-management and pine-develop each carry a self-contained reference. Full
+source is not uploaded by this operation; derived metadata and inputs are used
+with the saved script. Runtime behavior and JSON contracts are unchanged. Strict
+saved-version/study identity remains a potential contract follow-up, not solved
+by these annotations. Next reassess the remaining command surfaces by practical
+workflow importance before release qualification; coverage count alone does not
+promote deferred features or behavior changes.
+
+Validation passed: 41 spec unit tests, six existing indicator-alert fixtures,
+one offline CLI test without a source file or Desktop access, scoped CLI Clippy,
+formatting/diff checks, 12 package self-tests, guidance staging and both skill
+metadata checks. Cargo ran serially with one build job. No provider/account
+operation, source upload, workspace suite or release build was performed.

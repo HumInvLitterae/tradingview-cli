@@ -14,6 +14,7 @@ mod capture;
 mod desktop;
 mod drawing;
 mod indicator;
+mod indicator_alert;
 mod layout;
 mod market;
 mod mcp_accounts;
@@ -107,6 +108,7 @@ pub(super) fn describe(path: &[String]) -> Result<Value, AppError> {
         .or_else(|| ui::describe(&canonical))
         .or_else(|| watchlist::describe(&canonical))
         .or_else(|| indicator::describe(&canonical))
+        .or_else(|| indicator_alert::describe(&canonical))
         .or_else(|| drawing::describe(&canonical))
         .or_else(|| layout::describe(&canonical))
         .or_else(|| pine::describe(&canonical))

@@ -50,8 +50,10 @@ event, and `fired_at_unix_seconds` is the parsed UTC firing time, not bar time.
 Notification messages and webhook contents are omitted. Delivery status remains
 unknown; a fire record is not proof that a notification reached a person.
 
-MCP price alerts do not replace Pine `alertcondition()` workflows. A limited
-condition projection is insufficient to recreate an existing complex alert.
+MCP price alerts do not replace Pine `alertcondition()` workflows. For the
+existing Desktop command, read
+[indicator alert guidance](references/indicator-alerts.md). A limited condition
+projection is insufficient to recreate an existing complex alert.
 For Pine-specific or visible Desktop state, explain the missing capability and
 use a separately authorized Desktop workflow; never silently substitute it after
 an MCP failure. The optional `pine-develop` or `chart-analysis` skills may help,

@@ -66,7 +66,9 @@ distinguish UI presets/options from guarded storage writes and count-only refres
 evidence, including live dry-run limits. Legacy watchlist specs expose active-list
 targeting, API-to-DOM fallback, bulk partial results and MCP ordering differences.
 Legacy price-alert specs distinguish list error payloads, notification defaults,
-DOM click-only evidence and account-wide deletion snapshots.
+DOM click-only evidence and account-wide deletion snapshots. Indicator-alert
+specs distinguish local candidate inference, saved-script matching, first-study
+input selection and limited preview/readback guarantees.
 The active record owns evidence and resumption conditions. Heavy local hooks are
 opt-in; current-candidate cross-platform CI and release qualification remain open.
 
