@@ -33,6 +33,10 @@ For an explicitly requested legacy Desktop watchlist change, read
 [legacy watchlist guidance](references/legacy-watchlists.md). Its active-list
 targeting, API-to-DOM fallback and existing-member ordering differ from MCP.
 
+For an explicit legacy Desktop price-alert request, consult
+[legacy alert guidance](references/legacy-alerts.md): notification defaults,
+list errors and DOM creation evidence differ substantially from MCP.
+
 Read intent does not authorize changes. Reuse authorization for the same target
 and effect. Normal use acts on the user's requested object; disposable targets
 are for implementation tests, not a mandatory extra object for every operation.

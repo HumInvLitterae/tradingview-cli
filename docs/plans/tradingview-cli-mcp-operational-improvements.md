@@ -1943,3 +1943,27 @@ actual validators. Scoped CLI Clippy, formatting/diff checks, 12 package
 self-tests, guidance staging and skill metadata validation passed. Cargo ran
 serially with one build job. No Desktop/account mutation, provider access,
 full-workspace suite or release build was performed.
+
+
+### Legacy price-alert specifications (2026-09-26)
+
+Added alert list/create/delete, reaching 155 documented leaves of 169. Specs
+separate list's embedded errors/empty normalization from account absence, price
+creation's chart-derived symbol and notification defaults from MCP, and deletion's
+account-wide snapshot from chart-local scope. API creation stops DOM fallback
+after a write attempt. DOM creation echoes the requested condition without setting
+its UI and confirms only a Create click, not account persistence.
+
+Standalone account guidance prefers official MCP where its explicit-symbol/ID
+operations meet the request. Legacy DOM condition handling, list failure shaping
+and numeric-ID conversion remain behavior-review candidates, not fixes delivered
+by this metadata change. Runtime operations and JSON contracts are unchanged.
+Next inspect create-indicator separately because Pine alertcondition identity,
+source handling and chart effects cannot be inferred from simple price alerts.
+
+Validation passed: 40 spec unit tests, 20 existing list/create/delete fixtures and
+one offline CLI test covering all three paths. Condition choices and internal
+crossing mappings match the actual model helpers. Scoped CLI Clippy, formatting/
+diff checks, 12 package self-tests, guidance staging and skill metadata validation
+passed. Cargo ran serially with one build job. No Desktop/account operations,
+provider access, workspace suite or release build was performed.

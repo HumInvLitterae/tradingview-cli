@@ -43,6 +43,7 @@ package version omits the leading `v`.
   Column-edit specs describe saved-set writes, positional selection and readback limits.
   Filter-edit specs distinguish UI presets/options, storage writes and refresh evidence.
   Legacy watchlist specs expose active-list targeting, fallback and bulk partial outcomes.
+  Legacy price-alert specs expose notification defaults and source-dependent confirmation.
   Other semantic coverage is explicitly unannotated.
 
 - `tv mcp --timeout <SECONDS>` selects a 1–180 second total deadline for provider
