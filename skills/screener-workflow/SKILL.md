@@ -53,7 +53,9 @@ alone does not authorize changing screens, filters, columns, or watchlists.
 - Use filter add/modify/remove/clear with target checks. Broad multi-option and
   free-text editing are not genericized.
 - Inspect column config before add/remove/reorder. Add requires a known storage
-  column ID and optional JSON-object params, not display-name search.
+  column ID and optional JSON-object params, not display-name search. These writes
+  require a test-named active screen and verify storage, not refreshed UI; read
+  [column-change guidance](references/columns.md).
   `columns reset` remains deferred because a reliable default source is unknown.
 
 Read back the requested after-state. Report remaining changed state and any

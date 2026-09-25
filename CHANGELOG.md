@@ -40,6 +40,7 @@ package version omits the leading `v`.
   Visible Screener/watchlist read specs explain UI effects and rendered-data limits.
   Screener discovery specs explain menu probes and storage-column identity limits.
   Saved-screen specs describe test-name guards, dry-run effects and persistence limits.
+  Column-edit specs describe saved-set writes, positional selection and readback limits.
   Other semantic coverage is explicitly unannotated.
 
 - `tv mcp --timeout <SECONDS>` selects a 1–180 second total deadline for provider

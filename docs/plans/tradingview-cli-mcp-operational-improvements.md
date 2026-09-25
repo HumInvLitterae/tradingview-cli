@@ -1872,3 +1872,26 @@ verify the documented test-name and confirmation boundaries. Scoped CLI Clippy,
 formatting/diff checks, 12 package self-tests, guidance staging and skill metadata
 validation passed. Cargo ran serially with one build job. No Desktop/account
 mutation, provider access, full-workspace suite or release build was performed.
+
+
+### Saved-column mutation specifications (2026-09-26)
+
+Added columns add/remove/reorder, reaching 145 documented leaves of 169. These
+three share a saved-configuration path, distinct from mixed UI/storage filter
+operations. Specs require an open Screener, expose execution-only test-name
+guards, and distinguish live preview reads from writes of a custom column set.
+
+Removal maps visible selection to storage by position; add does not reject
+local duplicates or validate a provider column catalog; reorder uses the final
+destination index. Readback checks ordered ID/params pairs and count, not refreshed
+UI or every screen field. The adapter does not reconcile intervening edits, and
+post-check failure does not imply rollback. Standalone guidance now carries these
+limits. Runtime edits and JSON contracts are unchanged. Filter add/modify/remove/
+clear remain next because their execution and confirmation paths differ by mode.
+
+Validation passed: 37 spec unit tests, 13 existing column fixtures and one offline
+CLI test covering all three paths. Real validation functions check selector,
+JSON-object, index and test-name boundaries. Scoped CLI Clippy, formatting/diff
+checks, 12 package self-tests, guidance staging and skill metadata validation
+passed. Cargo ran serially with one build job. No Desktop/storage mutation,
+provider access, workspace suite or release build was performed.

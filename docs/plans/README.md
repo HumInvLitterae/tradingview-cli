@@ -60,6 +60,8 @@ read specs distinguish rendered rows from official account-list contents.
 Screener edit-discovery specs expose menu side effects, probe-specific capability
 flags and positional storage-column name mapping. Saved-screen specs distinguish
 enforced test-name restrictions, live dry-run UI effects and limited post-checks.
+Column-edit specs describe positional selectors, custom storage writes and
+ordered ID/params verification without claiming refreshed UI.
 The active record owns evidence and resumption conditions. Heavy local hooks are
 opt-in; current-candidate cross-platform CI and release qualification remain open.
 
