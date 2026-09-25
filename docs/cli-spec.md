@@ -1070,3 +1070,35 @@ Chart/Replay errors can be embedded in an otherwise successful UI snapshot.
 Inspect those sections; no bar freshness, complete button inventory or future
 action readiness is implied. Recheck after UI changes rather than reusing old
 coordinates, and keep target URLs/titles and UI content private.
+
+## Scanner comparison polling
+
+Use `tv spec watch compare` for offline controls when available. Its readiness
+is input validation, not a provider probe. Samples contain scanner quotes, not
+all sections of `tv compare`. Inspect per-item errors and resolved/error counts.
+Poll errors go to stderr and the loop continues; successful completion alone
+is not collection success.
+
+Only changed samples count toward `max-events`; timestamps and poll counters
+are excluded from deduplication. The interval starts after the poll completes.
+Duration is checked between polls, so in-flight requests can overrun it and
+postpone heartbeats. `_ts` is client emission time, not market time. Summary
+last-result counts describe the latest successful poll; inspect `poll_error_count`
+as well. A closed output pipe can omit the summary.
+
+
+## Scanner financial and event coverage
+
+Use `tv spec fundamentals` and `tv spec events compare` for offline details when
+available. Fundamentals reads the america scanner market and preserves raw
+field values. `missing_fields` lists absent array positions, not explicit nulls;
+an empty list is not proof of complete financial data. Inspect `field_values`.
+The local identity check compares bare symbols, so verify `observed_symbol` and
+its exchange against the request. No currency, period or freshness is inferred.
+
+Events compare preserves request order and duplicates. Even when every item
+fails, its outer response can succeed: inspect item status, failure details and
+`summary.error_count`. Successful items contain `events.v1`, shaped from scanner
+fields rather than a full calendar. `no_events_returned` does not prove absence
+of events. Preserve raw readback and source availability; do not infer timezone,
+market session or confirmed/estimated status.

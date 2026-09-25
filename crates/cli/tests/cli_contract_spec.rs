@@ -862,3 +862,29 @@ fn setup_observation_specs_do_not_connect_to_desktop() {
         );
     }
 }
+
+#[test]
+fn analysis_support_specs_are_available_offline() {
+    for path in [
+        vec!["watch", "compare"],
+        vec!["events", "compare"],
+        vec!["fundamentals"],
+    ] {
+        let output = Command::cargo_bin("tv")
+            .unwrap()
+            .env("TV_CDP_PORT", "invalid")
+            .arg("spec")
+            .args(path)
+            .assert()
+            .success()
+            .get_output()
+            .clone();
+        assert!(output.stderr.is_empty());
+        let value: Value = serde_json::from_slice(&output.stdout).unwrap();
+        assert_eq!(value["data"]["semantics"]["requires"]["desktop"], false);
+        assert_eq!(
+            value["data"]["semantics"]["effects"]["chart_mutation"],
+            false
+        );
+    }
+}

@@ -154,3 +154,19 @@ actual_range is only the extrema of returned dates, not complete-window proof.
 Explicit-symbol dividends cannot be combined with market, dates or even limit;
 market mode requires market and has no paging. Keep ex-date, payment date and
 reported amount distinct, and leave unreported symbols unknown.
+
+## Scanner financial and event coverage
+
+Use `tv spec fundamentals` and `tv spec events compare` for offline details when
+available. Fundamentals reads the america scanner market and preserves raw
+field values. `missing_fields` lists absent array positions, not explicit nulls;
+an empty list is not proof of complete financial data. Inspect `field_values`.
+The local identity check compares bare symbols, so verify `observed_symbol` and
+its exchange against the request. No currency, period or freshness is inferred.
+
+Events compare preserves request order and duplicates. Even when every item
+fails, its outer response can succeed: inspect item status, failure details and
+`summary.error_count`. Successful items contain `events.v1`, shaped from scanner
+fields rather than a full calendar. `no_events_returned` does not prove absence
+of events. Preserve raw readback and source availability; do not infer timezone,
+market session or confirmed/estimated status.

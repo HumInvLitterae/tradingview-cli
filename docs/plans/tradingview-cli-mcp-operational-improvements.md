@@ -2071,3 +2071,27 @@ and six skill metadata checks passed. Source inspection establishes actual
 status branching; these fixtures are not live connection proof. Cargo ran serially
 with one build job. No Desktop/provider operation, workspace suite or release
 build was performed.
+
+### Scanner analysis-support specifications (2026-09-26)
+
+Added watch compare, events compare and fundamentals semantics, bringing the
+annotated total to 162 of 169 executable paths. These are scanner-backed reads;
+actual execution and output contracts remain unchanged. Market-data references
+contain standalone interpretation guidance and the inventory now starts with
+Screener open/close.
+
+Watch readiness validates inputs only. Poll errors continue on stderr, duration
+checks do not cancel in-flight requests, and summary result counts describe the
+last successful poll. Events compare can succeed with every item failed, so
+consumers must inspect item status and error counts. Fundamentals preserves
+explicit nulls without listing them in missing_fields and checks bare-symbol
+identity locally. These limits are source-confirmed, not new guarantees or an
+implicit authorization to change behavior.
+
+Validation passed: 41 spec tests, one offline CLI test covering all three paths,
+seven watch fixtures, eight event fixtures and five fundamentals normalization
+fixtures. Scoped CLI Clippy, formatting/diff checks, 12 runtime-package self-tests,
+seven-skill package staging and market-data skill validation passed. Cargo ran
+serially with one build job and one test thread. No live provider/Desktop access,
+workspace test suite or release build was used. Current-candidate cross-platform
+CI and release qualification remain separate pending work.
