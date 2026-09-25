@@ -1,6 +1,6 @@
 # v0.33.0 roadmap
 
-Status: offline specification implemented; release qualification open, 2026-09-25.
+Status: offline specification implemented; release qualification open, 2026-09-26.
 Alert history, login guidance, command-local connection reuse and the explicit read timeout are implemented.
 The owner deferred technical snapshots on 2026-09-25; they no longer block
 this release. Baseline: [released v0.32.0](plans/archives/tradingview-cli-official-mcp-client.md#publication-closeout-2026-09-22).
@@ -35,7 +35,11 @@ and real-file distribution. Support standard skill-manager discovery without
 including contributor workflows. Add an offline `tv spec` index and selected
 command details from the running binary, reusing clap definitions instead of
 maintaining duplicate argument catalogs. Mark incomplete semantic coverage
-explicitly and route dynamic values to existing discovery commands.
+explicitly and route dynamic values to existing discovery commands. Current
+offline evidence covers 156 of 169 executable paths; the inventory prioritizes
+the remaining 13, starting with Pine shapes. Full annotation coverage is not a
+new release gate, and disclosed legacy behavior findings are separate contract
+work rather than implicit fixes in this version.
 
 Output schemas and offline request validation are subsequent stages after their
 contract coverage is established; they are not silently included in the first

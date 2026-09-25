@@ -69,6 +69,9 @@ Legacy price-alert specs distinguish list error payloads, notification defaults,
 DOM click-only evidence and account-wide deletion snapshots. Indicator-alert
 specs distinguish local candidate inference, saved-script matching, first-study
 input selection and limited preview/readback guarantees.
+A 2026-09-26 offline audit confirmed 156 annotated leaves and enumerated 13
+remaining paths in the inventory, with data shapes next. Latest observed CI
+still covers the released baseline, not the current candidate.
 The active record owns evidence and resumption conditions. Heavy local hooks are
 opt-in; current-candidate cross-platform CI and release qualification remain open.
 
