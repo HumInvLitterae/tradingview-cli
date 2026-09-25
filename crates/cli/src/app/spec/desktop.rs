@@ -90,6 +90,32 @@ pub(super) fn describe(path: &[&str]) -> Option<Value> {
             result["examples"] = json!([["tv", "info"], ["tv", "info", "NASDAQ:EXAMPLE"]]);
             result["limits"].as_array_mut().unwrap().push(json!("An explicit symbol uses the credential-free HTTP endpoint and does not switch the chart. This is not official MCP."));
         }
+        ["status"] => {
+            result["source"] = json!("desktop_status");
+            result["examples"] = json!([
+                ["tv", "status"],
+                ["tv", "--target-id", "<target_id>", "status"]
+            ]);
+            result["readback"] = json!({"argv": ["tv", "--target-id", "<target_id>", "readiness"], "meaning": "Check chart API and recent-bar readiness after resolving the intended target."});
+            result["limits"].as_array_mut().unwrap().extend([
+                json!("Fetches CDP targets and, when selected, connects to query basic chart metadata. It does not launch Desktop, activate a tab, read bars or test official MCP authorization."),
+                json!("Without an explicit target, no chart candidate or ambiguous candidates returns outer success with connected/cdp_connected false and data.error. The target list was reachable in these cases: false does not by itself prove CDP is offline. Inspect desktop_readiness.target_selection and candidates."),
+                json!("Target-list, explicit-target selection or WebSocket connection failures are errors. After connection, chart evaluation errors can be suppressed, leaving api_available false and unknown/null chart fields; a JavaScript chart exception can appear as api_error."),
+                json!("connected true and api_available true do not establish readable bars, freshness, entitlement or a future command's success. The desktop_readiness object is a target summary, not the dedicated readiness command's ready result."),
+                json!("Reuse returned target_cli_args for the intended target. next_action_hint does not authorize launching, switching or mutating anything; keep target URLs/titles private.")
+            ]);
+        }
+        ["ui-state"] => {
+            result["source"] = Value::Null;
+            result["examples"] = json!([["tv", "--target-id", "<target_id>", "ui-state"]]);
+            result["limits"].as_array_mut().unwrap().extend([
+                json!("Observes current DOM plus chart/Replay API state without opening panels, clicking controls or changing Replay. No versioned success contract or source field is supplied by this operation."),
+                json!("Panel open flags are heuristics: bottom height/right width/widgetbar width over 50 pixels, Pine editor element presence, and Strategy Tester offsetParent presence. Hidden or changed DOM can be misclassified; dimensions are not operation readiness."),
+                json!("Button discovery skips hidden, narrow and long-label entries; deduplication strips non-ASCII characters and truncates keys, so localized or repeated labels can collapse. Output labels are truncated and region names use fixed coordinate thresholds, not semantic panel membership."),
+                json!("Returned x/y are rounded viewport top-left coordinates, not verified click centers or stable selectors. disabled reflects the element property only. key_buttons uses mostly English text patterns, and later matches can overwrite earlier ones; presence/absence is not proof that an action is supported or safe."),
+                json!("Chart and Replay exceptions are embedded in their sections while the overall read can succeed. Replay available/started observations do not change playback. No recent-bar check, cross-section atomicity or permission to act follows from this snapshot.")
+            ]);
+        }
         ["state"] => {
             result["examples"] = json!([["tv", "--target-id", "<target_id>", "state"]]);
             result["limits"].as_array_mut().unwrap().push(json!("Chart API readiness does not prove that bar values can be read; inspect chart_readiness."));
@@ -199,6 +225,8 @@ mod tests {
             vec!["type"],
             vec!["range"],
             vec!["info"],
+            vec!["status"],
+            vec!["ui-state"],
             vec!["state"],
             vec!["readiness"],
             vec!["tab", "list"],

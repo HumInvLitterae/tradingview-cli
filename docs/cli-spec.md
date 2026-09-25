@@ -1043,3 +1043,30 @@ not study entity IDs or chart symbol/timeframe. Confirm chart context separately
 Per-study errors can omit rows and malformed raw collections can become empty
 success. Empty results do not prove absent markers, closed bars or valid trading
 signals; they are bounded observations of currently loaded data.
+
+## Status and UI snapshots
+
+Use `tv spec status` or `tv spec ui-state` when available to inspect these
+commands offline. Actual `status` fetches CDP targets and queries basic chart
+metadata for a selected target. Without an explicit target, missing or ambiguous
+chart candidates can return success with `connected`/`cdp_connected` false and
+`data.error`, even though target enumeration worked. Check target selection and
+candidates before treating this as an offline endpoint. Connection failures are
+errors; chart evaluation failures can leave unknown fields after connection.
+
+Neither `connected` nor `api_available` proves recent bars can be read.
+`desktop_readiness` in status summarizes targets; use `tv readiness` for the
+chart/bar check and retain the intended target's returned `target_cli_args`.
+These commands do not launch Desktop, switch targets or authorize later edits.
+
+`ui-state` observes DOM layout and chart/Replay state. Open flags use dimension
+thresholds or element presence, not proof of usable controls. Button labels are
+filtered/truncated, and deduplication strips non-ASCII characters; localized or
+repeated controls can be omitted. Key-button matches are mostly English and can
+be overwritten by later matches. Coordinates are rounded viewport top-left
+positions, not verified click centers or stable selectors.
+
+Chart/Replay errors can be embedded in an otherwise successful UI snapshot.
+Inspect those sections; no bar freshness, complete button inventory or future
+action readiness is implied. Recheck after UI changes rather than reusing old
+coordinates, and keep target URLs/titles and UI content private.
