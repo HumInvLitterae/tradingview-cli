@@ -774,6 +774,10 @@ fn respond(ep: &Endpoints, r: &Request, mode: &str) -> Response {
     response
 }
 
+// Content/dispatch assertions need scheduling headroom on slower CI runners.
+// Tests of deadline behavior keep their explicit short budgets below.
+const RESPONSE_TEST_TIMEOUT_SECS: u64 = 30;
+
 async fn context(
     server: &Server,
     seconds: u64,
@@ -926,7 +930,8 @@ async fn real_sdk_transport_does_not_replay_faults_or_reinitialize_sessions() {
         ("tool-error", Failure::ProviderError),
     ] {
         let server = Server::start(mode).await;
-        let (_root, _guard, _budget, http, _store) = context(&server, 3).await;
+        let (_root, _guard, _budget, http, _store) =
+            context(&server, RESPONSE_TEST_TIMEOUT_SECS).await;
         let error = proof::read(&http, "synthetic-access".into(), "1D")
             .await
             .unwrap_err();
@@ -1221,7 +1226,8 @@ async fn public_service_shapes_wire_data_and_preserves_typed_failures() {
         "schema-change",
     ] {
         let server = Server::start(mode).await;
-        let (_root, mut guard, budget, http, store) = context(&server, 5).await;
+        let (_root, mut guard, budget, http, store) =
+            context(&server, RESPONSE_TEST_TIMEOUT_SECS).await;
         let mut auth = Auth::discover(http.clone(), store.clone(), budget.clone())
             .await
             .unwrap();
@@ -1261,7 +1267,8 @@ async fn public_service_shapes_wire_data_and_preserves_typed_failures() {
             assert_eq!(details["contract_version"], "mcp_error.v1");
             assert_eq!(
                 details["tool_attempts"],
-                if mode == "schema-change" { 0 } else { 1 }
+                if mode == "schema-change" { 0 } else { 1 },
+                "fixture {mode}: {details}"
             );
             assert!(!details.to_string().contains("synthetic-access"));
             assert!(!error.message.contains("synthetic-provider"));
@@ -1795,7 +1802,8 @@ async fn financial_service_keeps_source_values_and_failure_dispatch_counts() {
             "schema-change",
         ] {
             let server = Server::start(mode).await;
-            let (_root, mut guard, budget, http, store) = context(&server, 8).await;
+            let (_root, mut guard, budget, http, store) =
+                context(&server, RESPONSE_TEST_TIMEOUT_SECS).await;
             fixture_login(&http, &store, &budget).await;
             let result = execute(
                 Operation::Financial(request.clone()),
@@ -1808,7 +1816,8 @@ async fn financial_service_keeps_source_values_and_failure_dispatch_counts() {
             .await;
             assert_eq!(
                 server.calls("tools/call"),
-                if mode == "schema-change" { 0 } else { 1 }
+                if mode == "schema-change" { 0 } else { 1 },
+                "fixture {mode}: {result:?}"
             );
             if matches!(mode, "json" | "sse") {
                 let data = result.unwrap();
@@ -1913,7 +1922,8 @@ async fn economic_service_keeps_nulls_and_single_dispatch_failures() {
             "tool-error",
         ] {
             let server = Server::start(mode).await;
-            let (_root, mut guard, budget, http, store) = context(&server, 8).await;
+            let (_root, mut guard, budget, http, store) =
+                context(&server, RESPONSE_TEST_TIMEOUT_SECS).await;
             fixture_login(&http, &store, &budget).await;
             let result = execute(
                 Operation::Economic(request.clone()),
@@ -1926,7 +1936,8 @@ async fn economic_service_keeps_nulls_and_single_dispatch_failures() {
             .await;
             assert_eq!(
                 server.calls("tools/call"),
-                if mode == "schema-change" { 0 } else { 1 }
+                if mode == "schema-change" { 0 } else { 1 },
+                "fixture {mode}: {result:?}"
             );
             if matches!(mode, "json" | "sse") {
                 let data = result.unwrap();
