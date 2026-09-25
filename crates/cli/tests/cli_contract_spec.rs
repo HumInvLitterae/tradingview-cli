@@ -80,3 +80,33 @@ fn mutation_specs_are_offline_descriptions_not_account_operations() {
         }
     }
 }
+
+#[test]
+fn desktop_specs_do_not_connect_or_resolve_effects_without_arguments() {
+    for path in [
+        vec!["symbol"],
+        vec!["timeframe"],
+        vec!["type"],
+        vec!["range"],
+        vec!["info"],
+        vec!["state"],
+        vec!["readiness"],
+        vec!["tab", "list"],
+    ] {
+        let output = Command::cargo_bin("tv")
+            .unwrap()
+            .env("TV_CDP_PORT", "invalid")
+            .arg("spec")
+            .args(&path)
+            .assert()
+            .success()
+            .get_output()
+            .clone();
+        assert!(output.stderr.is_empty());
+        let result: Value = serde_json::from_slice(&output.stdout).unwrap();
+        assert_eq!(result["data"]["coverage"]["semantics"], "documented");
+        if ["symbol", "timeframe", "type", "range"].contains(&path[0]) {
+            assert!(result["data"]["semantics"]["effects"]["chart_mutation"].is_null());
+        }
+    }
+}

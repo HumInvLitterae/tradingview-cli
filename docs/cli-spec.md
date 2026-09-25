@@ -33,7 +33,7 @@ with `contract_version: cli_spec.v1` and `binary_version` (including build ident
   the command description and skill guidance for remaining conditions.
 - `coverage.semantics` is `documented` for MCP search, columns, symbol, symbols,
   bars, alert history and the ten watchlist/alert mutations; it is `unavailable`
-  for other commands.
+  for other commands except the Desktop paths listed below.
   `semantics: null` means not annotated, never no side effects.
   More commands can acquire annotations without changing how they execute.
 - Documented read semantics contain source, prerequisites, account/provider effects,
@@ -108,3 +108,29 @@ confirmed deletion. After `outcome_unknown`, inspect state before considering
 another mutation. For an uncertain create, do not select by name or create a
 replacement automatically. Examples are instructions for syntax, not permission
 to change an account.
+
+
+## Conditional Desktop operations
+
+Desktop semantics cover `symbol`, `timeframe`, `type`, `range`, `info`, `state`,
+`readiness` and `tab list`. `variants` describes argument-dependent behavior;
+`tv spec` does not accept an invocation's values or select a variant for you.
+Each `when` uses clap argument IDs: `present`, `absent`, or
+`exactly_one_present`. A null common effect or requirement means that callers
+must inspect the variants, not that the effect is absent.
+
+| Path | Behavior |
+| --- | --- |
+| `symbol`, `timeframe`, `type` | Omit the positional argument to read; provide it to change the selected chart. Chart-type names/codes use the execution table. |
+| `range` | Neither bound reads; both bounds request a range change and may load older history. One bound alone is rejected. Bounds must be finite with `from < to`. |
+| `info` | No symbol reads the selected chart; an explicit symbol uses credential-free `symbol_search_rest` without switching the chart. |
+| `state` | Reads the selected chart's current state and readiness clues. |
+| `readiness` | Checks Desktop/chart/bar readiness; a successful envelope may contain `ready=false`. |
+| `tab list` | Lists targets without activating them. `data.tabs[].id` supplies `--target-id`; it is not the numeric index used by tab switching. |
+
+Examples containing `<target_id>` require a selected live ID. Specification
+lookup never obtains one or changes the chart. Desktop authentication is left
+unknown because session/data access belongs to the running application; these
+commands do not use MCP OAuth. A null output contract means no versioned contract
+is advertised here. Other Desktop commands remain explicitly unannotated,
+including launch, chart compare, UI actions, drawings, indicators and Replay.

@@ -10,6 +10,12 @@ comparison, or historical bars, use the optional `market-data` skill.
 Resolve the [Desktop session](references/desktop-session.md) when the target is
 new, uncertain, or changed; reuse a confirmed target across the workflow.
 
+On binaries with `spec`, inspect `tv spec <command path>` when arguments or
+effects are uncertain. Symbol, timeframe, chart type, range and info have
+argument-dependent variants: null common effects do not mean read-only. Use
+`tv tab list` to select a target ID before actual Desktop operations. Older
+binaries still use `--help`; specification lookup itself never connects.
+
 ## Choose the evidence
 
 | Need | Command | Condition or readback |
