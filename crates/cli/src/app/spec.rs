@@ -14,6 +14,7 @@ mod indicator;
 mod layout;
 mod mcp_mutations;
 mod mcp_reads;
+mod pine;
 mod replay;
 mod ui;
 
@@ -84,6 +85,7 @@ pub(super) fn describe(path: &[String]) -> Result<Value, AppError> {
         .or_else(|| indicator::describe(&canonical))
         .or_else(|| drawing::describe(&canonical))
         .or_else(|| layout::describe(&canonical))
+        .or_else(|| pine::describe(&canonical))
     {
         data["coverage"]["semantics"] = json!("documented");
         data["semantics"] = semantics;

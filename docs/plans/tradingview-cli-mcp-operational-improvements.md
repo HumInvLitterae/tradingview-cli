@@ -1380,3 +1380,28 @@ checks passed. Cargo ran serially with one build job. Runtime skills and package
 inputs did not change, so the preceding package checks were not repeated. No
 live Desktop/provider operation, full-workspace test, release build or installed
 binary replacement was performed.
+
+
+### Pine specifications (2026-09-25)
+
+All 13 Pine leaf paths now have semantics, bringing coverage to 77 of 169 leaves
+with 92 still unannotated. Source-input paths distinguish file/stdin reads from
+Editor access. Check explicitly transmits source to the credential-free Pine
+facade; analyze and alertconditions stay local. These operations write no local
+files. Desktop reads may open the Editor, except saved-script listing.
+
+Set/new verify text without rebinding a saved identity. Open verifies identity
+and version with no source-only fallback. Compile can change chart studies;
+raw-compile can additionally save and has no diagnostic verification. Save uses
+explicit clean/saved UI evidence, with new-script naming still unsupported.
+Empty markers, echoed action names and heuristic candidates are not stronger
+execution proof. Existing production code, embedded JavaScript and runtime
+skills are unchanged. The next family is data and capture, per the inventory.
+
+Validation passed: 19 spec unit tests and ten offline CLI subprocess tests. The
+Pine subprocess test was rerun after clarifying unknown Desktop source
+transmission; all 13 paths passed without source input or valid CDP settings.
+Scoped CLI Clippy, formatting and diff checks passed. Cargo remained serial with
+one build job. Existing Pine execution/JavaScript fixtures and package checks
+were not repeated because those inputs were unchanged. No provider request,
+Editor operation, full-workspace test or release build was performed.

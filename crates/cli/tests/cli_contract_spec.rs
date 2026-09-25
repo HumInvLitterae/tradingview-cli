@@ -258,3 +258,49 @@ fn layout_specs_do_not_connect_focus_or_navigate() {
         }
     }
 }
+
+#[test]
+fn pine_specs_never_read_source_connect_or_compile() {
+    for action in [
+        "get",
+        "set",
+        "compile",
+        "raw-compile",
+        "save",
+        "new",
+        "open",
+        "analyze",
+        "alertconditions",
+        "check",
+        "errors",
+        "console",
+        "list",
+    ] {
+        let output = Command::cargo_bin("tv")
+            .unwrap()
+            .env("TV_CDP_PORT", "invalid")
+            .args(["spec", "pine", action])
+            .assert()
+            .success()
+            .get_output()
+            .clone();
+        assert!(output.stderr.is_empty());
+        let value: Value = serde_json::from_slice(&output.stdout).unwrap();
+        let semantics = &value["data"]["semantics"];
+        let desktop = !["analyze", "alertconditions", "check"].contains(&action);
+        assert_eq!(semantics["requires"]["desktop"], desktop);
+        if desktop {
+            assert!(semantics["effects"]["transmits_source"].is_null());
+        } else {
+            assert_eq!(semantics["effects"]["transmits_source"], action == "check");
+        }
+        assert_eq!(
+            semantics["effects"]["may_open_editor"],
+            desktop && action != "list"
+        );
+        assert_eq!(
+            semantics["effects"]["may_save_script"],
+            ["save", "raw-compile"].contains(&action)
+        );
+    }
+}
