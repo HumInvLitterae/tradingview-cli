@@ -359,3 +359,29 @@ fn market_specs_need_no_query_symbol_or_network() {
         }
     }
 }
+
+#[test]
+fn quote_specs_do_not_select_or_contact_a_source() {
+    for path in [vec!["quote"], vec!["quotes"], vec!["scanner", "metainfo"]] {
+        let output = Command::cargo_bin("tv")
+            .unwrap()
+            .env("TV_CDP_PORT", "invalid")
+            .arg("spec")
+            .args(&path)
+            .assert()
+            .success()
+            .get_output()
+            .clone();
+        assert!(output.stderr.is_empty());
+        let value: Value = serde_json::from_slice(&output.stdout).unwrap();
+        let semantics = &value["data"]["semantics"];
+        if path == ["quote"] {
+            assert!(semantics["source"].is_null());
+            assert!(semantics["effects"]["chart_mutation"].is_null());
+            assert!(semantics["requires"]["desktop"].is_null());
+        } else {
+            assert_eq!(semantics["effects"]["chart_mutation"], false);
+            assert_eq!(semantics["requires"]["desktop"], false);
+        }
+    }
+}

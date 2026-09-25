@@ -15,7 +15,7 @@ Contracts, approvals and dated evidence:
 | 7 | Stabilize affected fixtures | Scoped serial regression passed; no new timing defect was established. Current-candidate default-concurrency and cross-platform CI remain pending. Correct concrete failures if observed; do not weaken production deadlines or assertions. |
 | 8 | Integrate documentation and standalone skills | Complete for implemented behavior: help, usage, source taxonomy and standalone MCP references updated and checked. Add technical snapshot guidance only after its implementation. |
 | 9 | Distribute standalone skills from one source | Implemented: root `skills/` owns seven runtime skills; local agent links reuse them and archives copy real files. gh local install and npm discovery confirmed seven skills. Remote installation of this unpublished layout and Windows execution remain unverified. |
-| 10 | Add offline command specifications | Implemented: offline `tv spec` index and clap-derived command detail, with primary MCP read/history and watchlist/alert mutation semantics, shared validation constants and conditional Desktop chart-control variants plus launch, tab changes, chart comparison, Replay, UI, indicator, drawing, pane, saved-layout, Pine, selected-chart capture and credential-free search/bars operations. Unannotated paths and partial validation remain explicit. Schema export and offline request validation follow separately. See the active work record. |
+| 10 | Add offline command specifications | Implemented: offline `tv spec` index and clap-derived command detail, with primary MCP read/history and watchlist/alert mutation semantics, shared validation constants and conditional Desktop chart-control variants plus launch, tab changes, chart comparison, Replay, UI, indicator, drawing, pane, saved-layout, Pine, selected-chart capture and credential-free search/bars and quote/scanner-field operations. Unannotated paths and partial validation remain explicit. Schema export and offline request validation follow separately. See the active work record. |
 | 11 | Qualify and prepare release | Pending. Qualify the updated dependency graph, review remaining native limits, obtain current-candidate platform/CI evidence, then prepare version and notes separately. Publishing remains separately authorized. |
 
 ## Completed operating prerequisite
@@ -67,27 +67,26 @@ evidence or a provider explanation.
 ## Remaining command-specification order
 
 A 2026-09-25 offline inventory found 169 executable paths, excluding 26 command
-groups. After credential-free search/bars annotations, 83 paths have semantics
-and 86 do not.
-Validation coverage remains partial even for annotated paths. Use `tv spec`
-from the current development binary to reproduce the path inventory.
+groups. After quote/quotes/scanner-metainfo annotations, 86 paths have semantics
+and 83 do not. Validation coverage remains partial even for annotated paths.
+Use the current development binary's `tv spec` to reproduce the path inventory.
 
-Continue in this order, with source inspection and focused offline tests for each:
+The owner requested priority by command importance on 2026-09-25. The order below
+uses documented agent workflows, effect severity and missing decision guidance;
+there is no measured command-usage telemetry. Reassess when a concrete downstream
+need or unsafe ambiguity changes the ranking. Do not finish a low-value family
+merely to raise the coverage count.
 
-1. Pine: complete for all 13 paths; local checks, source transmission, Editor
-   mutation and compile/save limits are documented.
-2. Data and capture: credential-free bars/quotes/scanner reads, chart data/export,
-   screenshots and scroll; retain source, file-write and viewport distinctions.
-   Ohlcv, export chart-bars, scroll and screenshot are complete. Search and
-   Desktop-free bars are also complete. Next: quotes/scanner reads and the
-   remaining chart-data paths.
-3. Remaining MCP reads and authentication: account discovery, screener, economic,
-   news and financial surfaces; separate OAuth/credential effects from reads.
-4. Legacy account and Desktop Screener: clarify mutations, storage and UI effects,
-   and guide users toward existing MCP alternatives where equivalent.
-5. Observation and diagnostics: streaming/watch lifetimes, events, status,
-   discovery and spec itself; finish the leaf-path audit before claiming coverage.
+| Priority | Remaining surface | Reason and acceptance focus |
+| --- | --- | --- |
+| 1 | MCP login/status/logout, watchlist list/get and alert list/get | Authentication and account discovery support existing MCP workflows. Clarify browser/credential effects, readiness and ID discovery before mutation. |
+| 2 | Scanner scan; chart values and strategy/trades/equity | Screening and chart/strategy analysis are documented agent workflows. Explain pagination completeness, study identity, ambiguous selection and missing data. |
+| 3 | Compare/snapshot/fundamentals and remaining MCP research reads | Multi-symbol analysis and contextual data need partial-result, source and freshness guidance. Prioritize concrete consumer needs within this group. |
+| 4 | Legacy account and Desktop Screener mutations | Expose account/storage/UI effects and existing MCP alternatives where equivalent. Advance earlier if a live workflow depends on them. |
+| 5 | Other chart data, hotlists, observation/streaming and diagnostics | Add lifecycle, output and source guidance when needed by a workflow; audit remaining leaf paths after higher-priority gaps. |
 
-This is metadata work for existing commands, not authorization to add commands,
-change their execution guarantees or run live operations. Schema export and
-request validation remain separate follow-ups.
+Completed groups include primary MCP reads/mutations, common chart controls,
+Replay/UI/indicator/drawing/pane/layout/Pine, selected-chart capture, search/bars,
+quote/quotes and scanner field discovery. Schema export and request validation
+remain separate follow-ups. This inventory authorizes metadata work for existing
+commands, not new commands, changed execution guarantees or live operations.

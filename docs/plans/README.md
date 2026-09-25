@@ -30,7 +30,10 @@ selection from observed state. Pine specs distinguish local analysis, source
 transmission, Editor changes and compile/save evidence. The inventory orders
 the remaining families. Selected-chart capture specs distinguish file writes,
 viewport changes and returned-range limits. Credential-free search/bars specs
-separate symbol resolution, count fulfillment and period coverage.
+separate symbol resolution, count fulfillment and period coverage. Quote specs
+expose argument-dependent routing and restoration; scanner field discovery is
+also described. Remaining work is ordered by workflow importance and effect
+severity rather than command-family completion.
 The active record owns evidence and resumption conditions. Heavy local hooks are
 opt-in; current-candidate cross-platform CI and release qualification remain open.
 
