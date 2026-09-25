@@ -19,6 +19,7 @@ package version omits the leading `v`.
   UI specs distinguish observations, input, toggles and gated arbitrary evaluation.
   Indicator specs describe chart-local IDs, insertion verification and input updates.
   Drawing specs describe geometry constraints, chart-local IDs and clear/dry-run effects.
+  Pane/saved-layout specs distinguish selection, dry-run and observed state.
   Other semantic coverage is explicitly unannotated.
 
 - `tv mcp --timeout <SECONDS>` selects a 1–180 second total deadline for provider

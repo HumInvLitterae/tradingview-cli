@@ -11,6 +11,7 @@ use crate::{build_info, cli::Cli};
 mod desktop;
 mod drawing;
 mod indicator;
+mod layout;
 mod mcp_mutations;
 mod mcp_reads;
 mod replay;
@@ -82,6 +83,7 @@ pub(super) fn describe(path: &[String]) -> Result<Value, AppError> {
         .or_else(|| ui::describe(&canonical))
         .or_else(|| indicator::describe(&canonical))
         .or_else(|| drawing::describe(&canonical))
+        .or_else(|| layout::describe(&canonical))
     {
         data["coverage"]["semantics"] = json!("documented");
         data["semantics"] = semantics;

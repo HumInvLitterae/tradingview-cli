@@ -134,7 +134,7 @@ fn parse_pane_layout(layout: &str) -> Result<PaneLayout, AppError> {
         })
 }
 
-fn supported_pane_layouts() -> Vec<Value> {
+pub(crate) fn supported_pane_layouts() -> Vec<Value> {
     PANE_LAYOUTS
         .iter()
         .map(|layout| json!({ "layout": layout.code, "layout_name": layout.name }))

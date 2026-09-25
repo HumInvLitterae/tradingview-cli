@@ -60,6 +60,7 @@ pub use indicator::{
     parse_indicator_inputs,
 };
 pub use launch::{LaunchRequest, launch};
+pub(crate) use layout::supported_pane_layouts;
 pub use layout::{
     pane_focus, pane_layout, pane_list, pane_symbol, validate_pane_layout, watchlist_add,
     watchlist_add_bulk, watchlist_get, watchlist_remove,

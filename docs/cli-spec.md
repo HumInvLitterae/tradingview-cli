@@ -134,7 +134,7 @@ lookup never obtains one or changes the chart. Desktop authentication is left
 unknown because session/data access belongs to the running application; these
 commands do not use MCP OAuth. A null output contract means no versioned contract
 is advertised here. Other Desktop commands remain explicitly unannotated,
-including Pine, layout, panes and other data/export paths.
+including Pine and other data/export paths.
 
 
 ## Desktop lifecycle and comparison
@@ -269,3 +269,26 @@ empty inventory afterward. `--dry-run` reports targets/counts without deletion;
 it does not freeze the set for a later invocation. Empty inventory is a no-op.
 Remove checks absence of the selected ID. Errors after mutation require reading
 current state before retrying; no rollback is guaranteed by specification lookup.
+
+
+## Panes and saved layouts
+
+`pane list/layout/focus/symbol` operate on the current Desktop chart collection;
+`layout list/switch` enumerate and load account-saved charts. Pane layout codes
+come from the execution catalog. Pane indices come from `data.panes[].index`
+and are distinct from tab indices and saved-layout IDs.
+
+Pane focus attempts a click but does not verify active-pane identity. Symbol
+first focuses, then changes the active chart; its returned symbol echoes the
+request. Read `pane list` afterward to check the intended pane. Pane layout
+returns both requested `layout` and `observed_layout` without asserting equality.
+These limitations remain visible in the specification rather than upgrading
+existing mutation results into stronger evidence.
+
+Saved-layout selection matches an exact ID first, then a case-insensitive exact
+name, and rejects ambiguous matches. `layout switch --dry-run` resolves the
+selection through Desktop without loading it. Normal execution can navigate;
+`switched` is not proof that loading finished. The command reports observed
+unsaved-change dialogs without dismissing them. Refresh targets after navigation
+and inspect the intended chart before continuing. `layout list` is inventory,
+not active-layout readback; inspect `data.error` even with a successful envelope.

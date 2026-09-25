@@ -1356,3 +1356,27 @@ staging) and chart-analysis skill metadata passed. Cargo remained serial with
 one build job. The unchanged drawing JavaScript was not revalidated through a
 live chart. No Desktop/provider operation, full-workspace test, release build
 or installed-binary replacement was performed.
+
+
+### Pane/layout specifications and remaining inventory (2026-09-25)
+
+The offline leaf audit found 58 documented and 111 unannotated executable paths
+before this change, plus 26 parent groups. Six pane/layout annotations bring the
+leaf totals to 64 documented and 105 unannotated. The ordered inventory now owns
+the remaining family sequence; no additional production command is promoted.
+
+Specs expose the execution pane-layout catalog through a crate-private helper.
+Pane focus and symbol echoes are not verified state, and layout changes return
+an observed code without asserting equality. Saved-layout switch resolves IDs
+before names, distinguishes dry-run from loading/navigation, and does not
+promise completed navigation or dismissal of unsaved-change dialogs. Existing
+execution and payloads are unchanged. No skill change is needed for this step:
+the chart-analysis workflow already points to command specifications and the
+new detailed usage is in the specification reference.
+
+Validation passed: 18 spec unit tests, nine pane fixtures, seven saved-layout
+fixtures and nine offline CLI subprocess tests. Scoped CLI Clippy and formatting
+checks passed. Cargo ran serially with one build job. Runtime skills and package
+inputs did not change, so the preceding package checks were not repeated. No
+live Desktop/provider operation, full-workspace test, release build or installed
+binary replacement was performed.
