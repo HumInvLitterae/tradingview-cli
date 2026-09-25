@@ -35,6 +35,7 @@ package version omits the leading `v`.
   Chart observation specs describe JSONL lifecycle, deduplication and termination limits.
   Chart stream specs distinguish numeric study values, lossy Pine graphics and
   current-layout bar samples, including filter differences and per-pane failures.
+  Account discovery specs describe list/get ID formats, filters and partial results.
   Other semantic coverage is explicitly unannotated.
 
 - `tv mcp --timeout <SECONDS>` selects a 1–180 second total deadline for provider

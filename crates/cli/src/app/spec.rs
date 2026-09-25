@@ -15,6 +15,7 @@ mod drawing;
 mod indicator;
 mod layout;
 mod market;
+mod mcp_accounts;
 mod mcp_economics;
 mod mcp_financials;
 mod mcp_mutations;
@@ -91,6 +92,7 @@ pub(super) fn describe(path: &[String]) -> Result<Value, AppError> {
     data["semantics"] = Value::Null;
     if let Some(semantics) = mcp_reads::describe(&canonical)
         .or_else(|| mcp_mutations::describe(&canonical))
+        .or_else(|| mcp_accounts::describe(&canonical))
         .or_else(|| desktop::describe(&canonical))
         .or_else(|| replay::describe(&canonical))
         .or_else(|| ui::describe(&canonical))

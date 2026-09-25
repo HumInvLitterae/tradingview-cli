@@ -604,3 +604,28 @@ fn stream_specs_do_not_start_polling() {
         assert_eq!(semantics["effects"]["chart_mutation"], false);
     }
 }
+
+#[test]
+fn account_read_specs_do_not_access_credentials_or_provider() {
+    for (family, action, contract) in [
+        ("watchlist", "list", "mcp_watchlists.v1"),
+        ("watchlist", "get", "mcp_watchlist.v1"),
+        ("alert", "list", "mcp_alerts.v1"),
+        ("alert", "get", "mcp_alert_details.v1"),
+    ] {
+        let output = Command::cargo_bin("tv")
+            .unwrap()
+            .env("TV_CDP_PORT", "invalid")
+            .args(["spec", "mcp", family, action])
+            .assert()
+            .success()
+            .get_output()
+            .clone();
+        assert!(output.stderr.is_empty());
+        let value: Value = serde_json::from_slice(&output.stdout).unwrap();
+        let semantics = &value["data"]["semantics"];
+        assert_eq!(semantics["output_contract"], contract);
+        assert_eq!(semantics["effects"]["account_mutation"], false);
+        assert_eq!(semantics["requires"]["desktop"], false);
+    }
+}
