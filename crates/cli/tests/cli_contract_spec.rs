@@ -629,3 +629,26 @@ fn account_read_specs_do_not_access_credentials_or_provider() {
         assert_eq!(semantics["requires"]["desktop"], false);
     }
 }
+
+#[test]
+fn authorization_specs_do_not_run_credential_lifecycle_operations() {
+    for action in ["login", "status", "logout"] {
+        let output = Command::cargo_bin("tv")
+            .unwrap()
+            .env("TV_CDP_PORT", "invalid")
+            .args(["spec", "mcp", action])
+            .assert()
+            .success()
+            .get_output()
+            .clone();
+        assert!(output.stderr.is_empty());
+        let value: Value = serde_json::from_slice(&output.stdout).unwrap();
+        let semantics = &value["data"]["semantics"];
+        assert_eq!(semantics["constraints"]["timeout"]["supported"], false);
+        assert_eq!(semantics["effects"]["provider_request"], action == "login");
+        assert_eq!(
+            semantics["effects"]["credential_change"],
+            action != "status"
+        );
+    }
+}
