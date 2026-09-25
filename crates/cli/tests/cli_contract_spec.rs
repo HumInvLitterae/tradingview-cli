@@ -200,3 +200,29 @@ fn indicator_specs_are_offline_and_do_not_create_or_modify_studies() {
         );
     }
 }
+
+#[test]
+fn drawing_specs_never_create_or_clear_chart_objects() {
+    for action in ["shape", "position", "list", "get", "remove", "clear"] {
+        let output = Command::cargo_bin("tv")
+            .unwrap()
+            .env("TV_CDP_PORT", "invalid")
+            .args(["spec", "draw", action])
+            .assert()
+            .success()
+            .get_output()
+            .clone();
+        assert!(output.stderr.is_empty());
+        let value: Value = serde_json::from_slice(&output.stdout).unwrap();
+        let effects = &value["data"]["semantics"]["effects"];
+        assert_eq!(effects["broker_order"], false);
+        if action == "clear" {
+            assert!(effects["chart_mutation"].is_null());
+        } else {
+            assert_eq!(
+                effects["chart_mutation"],
+                !["list", "get"].contains(&action)
+            );
+        }
+    }
+}

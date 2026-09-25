@@ -48,3 +48,13 @@ Add requires an exact metainfo name and verifies scalar inputs. Set can update
 matched keys while reporting unmatched keys, so read actual inputs afterward.
 There is no dedicated metainfo search command, and failed insertion cleanup is
 not a rollback guarantee. Older binaries retain textual help.
+
+
+## Drawing command details
+
+`tv spec draw <action>` describes coordinate pairs, position-price ordering and
+conditional deletion. `draw clear` deletes all drawings unless `--dry-run` is
+present. Resolve IDs through `draw list` on the same target. Position drawings
+are not trades. Three-point parallel channels have stricter validation than
+generic shapes; inspect geometry/readback after creation instead of assuming
+that a returned ID proves every property. Use help on older binaries.

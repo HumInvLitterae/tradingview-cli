@@ -1332,3 +1332,27 @@ JavaScript was unchanged. Scoped CLI Clippy, formatting/diff checks, package
 validation (12 self-tests and staging) and skill metadata passed. Cargo remained
 serial with one build job. No Desktop/provider operation, full-workspace test,
 release build or installed-binary replacement was performed.
+
+
+### Drawing specifications (2026-09-25)
+
+Added shape/position/list/get/remove/clear. Specs distinguish read-only inventory
+from creation/removal and clear's dry-run branch. Default clear deletes the whole
+selected-chart inventory; dry-run is not a reservation of future targets. IDs
+come from draw list on the same target.
+
+Coordinate pairs, finite values, third-point parallel-channel rules and position
+price ordering match current model validation. Direction names come from the
+existing direction type. Generic shape types remain runtime-dependent. Specs do
+not promote deferred geometry support or claim generic shape property verification.
+Native position drawings are visual objects, not orders. No production drawing
+code or embedded JavaScript was changed. Pine/layout/pane/data/export and other
+unannotated paths remain outside this step; unavailable semantics remain explicit.
+
+Validation passed: 17 spec unit tests, seven drawing model tests and eight CLI
+subprocess tests, including all six drawing paths with invalid Desktop settings.
+Scoped CLI Clippy, formatting/diff checks, package validation (12 self-tests and
+staging) and chart-analysis skill metadata passed. Cargo remained serial with
+one build job. The unchanged drawing JavaScript was not revalidated through a
+live chart. No Desktop/provider operation, full-workspace test, release build
+or installed-binary replacement was performed.
