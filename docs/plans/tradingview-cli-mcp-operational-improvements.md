@@ -2026,3 +2026,25 @@ Validation: offline command audit above, source/workflow/manifest inspection,
 public-hygiene self-test and tracked-tree check, plus diff hygiene. Only planning
 documents changed; previous runtime and package checks were not repeated. No
 Desktop/provider access, credential operation, build or full test suite ran.
+
+
+### Pine shape/character specification (2026-09-26)
+
+Added data shapes, reaching 157 documented leaves of 169. The existing Pine
+shape reader scans a per-study index window, not a signal quota. Specs expose
+zero/inactive-value suppression, unfiltered visibility, omitted studies, malformed
+raw-array normalization and same-index OHLC attachment without offset/alignment
+proof. Metadata/default styles do not establish actual rendered overrides.
+
+Verbose output adds plot metadata, not study identity or chart context. OHLC
+rounding remains two decimals and recent bars need not be closed. Standalone
+chart-analysis guidance carries these boundaries. Runtime extraction and payloads
+are unchanged. The remaining inventory now begins with status/ui-state; the
+previous complete-tree audit remains historical evidence rather than a rerun.
+
+Validation passed: 41 spec unit tests, three existing shape fixtures, one focused
+offline CLI test, scoped CLI Clippy, formatting/diff checks, 12 package self-tests,
+guidance staging and skill metadata validation. Shared count constants are reused;
+the new example and zero-count syntax parse through clap. Cargo ran serially
+with one build job. No Desktop/provider operation, workspace suite or release
+build was performed.

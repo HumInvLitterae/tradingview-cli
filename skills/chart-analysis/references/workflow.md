@@ -88,3 +88,31 @@ truncated separately; the limit applies after Desktop extraction.
 Tables are lossy row strings joined with ` | `: empty cells, coordinates and table
 IDs are omitted. Do not reconstruct a rectangular dataset by splitting strings.
 Keep script meaning and the chart context separate from these display summaries.
+
+## Pine shape and character observations
+
+Use `tv data shapes --count <N> [--filter <TEXT>] [--verbose]` for Pine plots
+represented internally as `shapes`, not hand-drawn objects or line/label
+primitives. Use `tv spec data shapes` when available, and help otherwise.
+Filter is a case-sensitive substring of the first available description, short
+name or metainfo ID; whitespace is not trimmed. Hidden studies are not excluded.
+
+Count is a per-study bar-index window, default 100 and clamped to 500, not the
+number of signals. Zero can retain plot metadata with no signals. Results run
+from newest index backward, with plots in declaration order within each bar.
+`bars_scanned` counts the span even when data rows are missing; `scan_count` is
+the effective cap. Neither is complete historical coverage.
+
+Numeric zero, false, null and nonfinite numbers are omitted. Nonempty strings
+and other values can be reported as active; `value` is not necessarily a price
+or boolean. Zero-valued absolute-position plots can therefore disappear. Style
+fields come from metainfo/defaults, not verified rendered overrides, and do not
+reconstruct all glyphs, offsets or pixel positions.
+
+OHLC uses the main-series row at the same index, without independent timestamp
+alignment or plot-offset correction, and is rounded to two decimals even in
+verbose mode. Missing values remain null. Verbose adds plot IDs/indexes/size,
+not study entity IDs or chart symbol/timeframe. Confirm chart context separately.
+Per-study errors can omit rows and malformed raw collections can become empty
+success. Empty results do not prove absent markers, closed bars or valid trading
+signals; they are bounded observations of currently loaded data.

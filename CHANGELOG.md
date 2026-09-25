@@ -45,6 +45,7 @@ package version omits the leading `v`.
   Legacy watchlist specs expose active-list targeting, fallback and bulk partial outcomes.
   Legacy price-alert specs expose notification defaults and source-dependent confirmation.
   Pine indicator-alert specs explain source/version, input selection and preview limits.
+  Pine shape specs explain per-study scan windows, activity values and OHLC alignment limits.
   Other semantic coverage is explicitly unannotated.
 
 - `tv mcp --timeout <SECONDS>` selects a 1–180 second total deadline for provider
