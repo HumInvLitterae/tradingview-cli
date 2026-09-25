@@ -10,6 +10,12 @@ visible-panel state. Honor an explicit source selection. Establish binary/auth
 availability with [connection guidance](references/mcp-connection.md) when needed;
 do not ask for source permission on each authenticated operation.
 
+When supported by the installed binary, `tv spec <command path>` provides
+argument metadata without connecting. `tv spec mcp alert history` also describes
+source, limits and symbol discovery. Respect partial validation and unavailable
+semantic annotations; use `--help` on older binaries. Do not fetch the whole
+index when the command is already known.
+
 | User needs | First command | Continue when |
 | --- | --- | --- |
 | Find a watchlist | `tv mcp watchlist list` | Select the requested ID from the result; do not guess. |

@@ -16,7 +16,8 @@ through the public service with an explicit 90-second budget; default-deadline
 success remains unqualified. Technical snapshots have no usable provider response
 evidence and no longer block this release.
 The owner also accepted single-source skill distribution and offline command
-specifications. Skill relocation is implemented; `tv spec` is next.
+specifications. Skill relocation and `tv spec` are implemented; current-candidate qualification
+remains open.
 The active record owns evidence and resumption conditions. Heavy local hooks are
 opt-in; current-candidate cross-platform CI and release qualification remain open.
 

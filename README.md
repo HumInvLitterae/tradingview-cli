@@ -305,6 +305,12 @@ contents. See the [read deadline and history reference](https://github.com/HumIn
 for contracts and limits. The dedicated technical snapshot command is deferred
 and is not available in this checkout.
 
+The development checkout also provides offline JSON command discovery:
+`tv spec` lists command paths; `tv spec mcp alert history` describes one command's
+arguments and available semantic annotations. See the
+[specification contract and coverage limits](docs/cli-spec.md). This command
+requires neither Desktop nor credentials and is not in released v0.32.0.
+
 Runtime agent skills are maintained in [`skills/`](skills/), with self-contained
 references in each skill. After this layout is published, install a selected
 skill using `gh skill install HumInvLitterae/tradingview-cli market-data --agent codex`

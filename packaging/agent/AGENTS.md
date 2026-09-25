@@ -10,7 +10,10 @@ subscription, exchange-data, or script-ownership requirements.
 Use `tv` on PATH, or `./tv` (macOS/Linux) / `.\tv.exe` (Windows) from the unpacked
 archive. Run `tv --version` when first identifying a binary. Use
 `tv --version --verbose` when commit, build time, dirty state, or platform
-matters. Check `tv <family> --help` for uncertain arguments.
+matters. On binaries supporting `spec`, use `tv spec <command path>` for JSON
+argument metadata; read its coverage limits and unknown semantics. Use
+`tv <family> --help` on older binaries or for additional prose. Specification
+lookup is offline and does not establish provider or account availability.
 
 | Task | Start here |
 | --- | --- |

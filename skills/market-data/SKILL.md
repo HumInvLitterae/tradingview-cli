@@ -18,6 +18,12 @@ Desktop-free unless the row says otherwise. Do not run the whole table or load
 all references. Use `tv --version` when the binary is new or build identity
 matters; use `tv <family> --help` when arguments are uncertain.
 
+When supported by the installed binary, `tv spec <command path>` provides
+argument metadata without connecting. `tv spec mcp alert history` also describes
+source, limits and symbol discovery. Respect partial validation and unavailable
+semantic annotations; use `--help` on older binaries. Do not fetch the whole
+index when the command is already known.
+
 ## Choose the first command and the next step
 
 | User needs | First command | Continue only when |
