@@ -24,6 +24,7 @@ package version omits the leading `v`.
   Selected-chart capture specs describe count handling, viewport effects and file writes.
   Credential-free search/bars specs distinguish symbol resolution and count/range coverage.
   Quote specs describe routing/restoration and batch failures; scanner metainfo describes field discovery.
+  Chart-analysis specs describe study identity, strategy selection and report/series limits.
   Other semantic coverage is explicitly unannotated.
 
 - `tv mcp --timeout <SECONDS>` selects a 1–180 second total deadline for provider

@@ -1494,3 +1494,29 @@ read metadata follow analysis workflows unless they block one. This supersedes
 the preceding next-action order; it does not change any command contract.
 Documentation-only validation: diff and public-hygiene checks; no Rust build,
 provider call or Desktop operation is needed for this priority correction.
+
+
+### Core chart-analysis specifications (2026-09-25)
+
+Added values and data strategy/trades/equity, reaching 90 documented leaves of
+169. Values describes formatted observations, omitted/hidden rows and optional
+identity. Strategy reads expose shared candidate selection and unavailable
+payloads inside successful envelopes. Specific reader readiness and DOM report
+identity are not guaranteed by selection context.
+
+Equity inspection found existing Buy & Hold precedence without a reliable series
+provenance discriminator and zero-to-null drawdown shaping. Specifications and
+standalone strategy guidance disclose these limitations. Correcting the payload
+needs a separate consumer-compatible contract proposal; this change does not
+alter execution or imply a verified strategy return series. Chart-analysis and
+strategy-report references remain self-contained. No production JavaScript or
+study identity helper changed.
+
+Validation passed: 23 spec unit tests, 14 existing strategy selection/reader
+fixtures and one offline CLI test covering the four added paths. Scoped CLI
+Clippy, formatting/diff checks, 12 package self-tests, guidance staging and both
+updated skill metadata checks passed. Cargo ran serially with one build job.
+Embedded JavaScript was inspected but unchanged; its separate execution gates
+were not rerun. No live chart/provider operation, full-workspace test or release
+build was performed. Supporting Pine chart outputs (lines/labels/tables) are the
+next analysis-oriented metadata candidates, before lower-priority administration.

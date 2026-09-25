@@ -15,7 +15,7 @@ Contracts, approvals and dated evidence:
 | 7 | Stabilize affected fixtures | Scoped serial regression passed; no new timing defect was established. Current-candidate default-concurrency and cross-platform CI remain pending. Correct concrete failures if observed; do not weaken production deadlines or assertions. |
 | 8 | Integrate documentation and standalone skills | Complete for implemented behavior: help, usage, source taxonomy and standalone MCP references updated and checked. Add technical snapshot guidance only after its implementation. |
 | 9 | Distribute standalone skills from one source | Implemented: root `skills/` owns seven runtime skills; local agent links reuse them and archives copy real files. gh local install and npm discovery confirmed seven skills. Remote installation of this unpublished layout and Windows execution remain unverified. |
-| 10 | Add offline command specifications | Implemented: offline `tv spec` index and clap-derived command detail, with primary MCP read/history and watchlist/alert mutation semantics, shared validation constants and conditional Desktop chart-control variants plus launch, tab changes, chart comparison, Replay, UI, indicator, drawing, pane, saved-layout, Pine, selected-chart capture and credential-free search/bars and quote/scanner-field operations. Unannotated paths and partial validation remain explicit. Schema export and offline request validation follow separately. See the active work record. |
+| 10 | Add offline command specifications | Implemented: offline `tv spec` index and clap-derived command detail, with primary MCP read/history and watchlist/alert mutation semantics, shared validation constants and conditional Desktop chart-control variants plus launch, tab changes, chart comparison, Replay, UI, indicator, drawing, pane, saved-layout, Pine, selected-chart capture and credential-free search/bars and quote/scanner-field and core chart-analysis operations. Unannotated paths and partial validation remain explicit. Schema export and offline request validation follow separately. See the active work record. |
 | 11 | Qualify and prepare release | Pending. Qualify the updated dependency graph, review remaining native limits, obtain current-candidate platform/CI evidence, then prepare version and notes separately. Publishing remains separately authorized. |
 
 ## Completed operating prerequisite
@@ -67,8 +67,8 @@ evidence or a provider explanation.
 ## Remaining command-specification order
 
 A 2026-09-25 offline inventory found 169 executable paths, excluding 26 command
-groups. After quote/quotes/scanner-metainfo annotations, 86 paths have semantics
-and 83 do not. Validation coverage remains partial even for annotated paths.
+groups. After core chart-analysis annotations, 90 paths have semantics
+and 79 do not. Validation coverage remains partial even for annotated paths.
 Use the current development binary's `tv spec` to reproduce the path inventory.
 
 The owner requested priority by command importance on 2026-09-25. The order below
@@ -81,7 +81,7 @@ merely to raise the coverage count.
 
 | Priority | Remaining surface | Reason and acceptance focus |
 | --- | --- | --- |
-| 1 | Chart values, strategy/trades/equity, then supporting chart-data reads | Prioritize chart analysis. Explain study identity, formatted values, ambiguous strategy selection, report availability and missing data. Check downstream call sites and recorded runs before ordering supporting reads. |
+| 1 | Supporting chart-data reads; values and strategy/trades/equity metadata complete | Prioritize chart analysis. Explain study identity, formatted values, ambiguous strategy selection, report availability and missing data. Check downstream call sites and recorded runs before ordering supporting reads. |
 | 2 | Scanner scan, compare/snapshot and analysis-related MCP reads | Support symbol selection and chart analysis with pagination completeness, partial-result, source and freshness guidance. |
 | 3 | MCP login/status/logout, watchlist list/get and alert list/get | Clarify browser/credential effects, readiness and ID discovery. Advance a command if it blocks an actual chart-analysis workflow. |
 | 4 | Legacy account and Desktop Screener mutations | Expose account/storage/UI effects and existing MCP alternatives where equivalent. Advance earlier if a live workflow depends on them. |
@@ -92,3 +92,11 @@ Replay/UI/indicator/drawing/pane/layout/Pine, selected-chart capture, search/bar
 quote/quotes and scanner field discovery. Schema export and request validation
 remain separate follow-ups. This inventory authorizes metadata work for existing
 commands, not new commands, changed execution guarantees or live operations.
+
+
+Chart-analysis follow-up finding: current `data equity` does not distinguish its
+Buy & Hold, equityData and strategy-bar paths in a reliable series discriminator.
+Its bars path also maps zero drawdown to null. Metadata and standalone guidance
+now disclose these limits. Treat correction as a separate contract proposal with
+before/after payloads and consumer impact, not an implicit behavior change inside
+specification work.
