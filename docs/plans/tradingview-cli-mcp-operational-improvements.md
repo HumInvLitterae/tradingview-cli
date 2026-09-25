@@ -1683,3 +1683,26 @@ constructors. Scoped CLI Clippy, formatting/diff checks, 12 package self-tests,
 guidance staging and market-data skill metadata passed. Cargo ran serially with
 one build job. No live provider/authentication action, Desktop operation,
 full-workspace suite or release build was performed.
+
+
+### Chart observation specifications (2026-09-25)
+
+Read-only downstream inspection found documented direct observe-chart use and
+historical bounded smoke evidence, distinct from an integrated observation-artifact
+consumer. Added observe chart, reaching 111 documented leaves of 169. No private
+consumer contents were copied into public files.
+
+Specs use the existing bars-stream interval default and distinguish readiness,
+samples, heartbeats, errors and summary. Max-events is deduplicated sample count,
+not a wall-time bound. Duration excludes setup and is checked between reads;
+continued sample errors are not counted in summary. External chart changes and
+volume defaulting are explicit. Both standalone observation references retain
+these details. Runtime loops and JSONL contracts are unchanged. Next examine
+lower-level stream reads used by chart analysis, especially values/quote/bars.
+
+Validation passed: 31 spec unit tests, the observe-name-filtered fixture run
+(18 tests, including seven existing observation adapter/event tests), two stream
+deduplication fixtures and the focused offline CLI test. Scoped CLI Clippy,
+formatting/diff checks, 12 package self-tests, guidance staging and both updated
+skill metadata checks passed. Cargo ran serially with one build job. No live
+observation, provider call, full-workspace suite or release build was performed.

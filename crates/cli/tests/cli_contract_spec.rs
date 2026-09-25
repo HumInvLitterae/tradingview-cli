@@ -560,3 +560,25 @@ fn economics_specs_do_not_fetch_events_or_refresh_credentials() {
         assert_eq!(semantics["effects"]["account_mutation"], false);
     }
 }
+
+#[test]
+fn observe_spec_does_not_start_an_unbounded_observation() {
+    let output = Command::cargo_bin("tv")
+        .unwrap()
+        .env("TV_CDP_PORT", "invalid")
+        .args(["spec", "observe", "chart"])
+        .assert()
+        .success()
+        .get_output()
+        .clone();
+    assert!(output.stderr.is_empty());
+    let value: Value = serde_json::from_slice(&output.stdout).unwrap();
+    assert_eq!(
+        value["data"]["semantics"]["output_contract"],
+        "observe_chart.v1"
+    );
+    assert_eq!(
+        value["data"]["semantics"]["effects"]["chart_mutation"],
+        false
+    );
+}

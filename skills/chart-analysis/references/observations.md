@@ -16,3 +16,17 @@ For Desktop commands, first resolve the
 `tv values` and `tv stream values` identify studies by `entity_id` and compact
 inputs, not row order; optional identity fields can be null and `study_kind`
 can be `unknown`. These fields do not authorize changing a study.
+
+
+For `observe chart`, use `tv spec observe chart` for offline details when available
+and help otherwise. Max-events counts emitted distinct samples, not polls,
+heartbeats or errors. Unchanged data can prevent that count from being reached;
+include duration-ms when the run must end within a bounded observation window.
+Setup time and in-flight reads are outside that window's strict deadline checks.
+
+Monitor stderr error envelopes as well as stdout JSONL: sample failures continue
+the loop, and heartbeats or a successful final summary do not prove error-free
+collection. Summary has no error count. Broken output pipes or interruption can
+omit it. Inspect each sample's symbol/resolution because external chart changes
+are not prevented. `_ts` is client milliseconds; `bar_time` is the chart timestamp,
+not a closed-bar assertion. The current reader can default missing volume to zero.
