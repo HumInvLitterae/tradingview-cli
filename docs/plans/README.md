@@ -52,7 +52,9 @@ formatted values and chart last-bar samples from provider quote feeds. Graphics
 streams expose lossy extraction and filter differences; stream all describes
 layout-pane OHLCV and per-pane failures rather than combined stream kinds.
 Account list/get specs distinguish ID types, filters, unreported alerts and
-unknown completeness without activating lists or changing alerts.
+unknown completeness without activating lists or changing alerts. Authorization
+specs separate local credential inspection, conditional browser login and local
+logout from provider acceptance and remote revocation.
 The active record owns evidence and resumption conditions. Heavy local hooks are
 opt-in; current-candidate cross-platform CI and release qualification remain open.
 

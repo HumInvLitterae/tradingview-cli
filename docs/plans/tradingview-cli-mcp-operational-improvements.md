@@ -1776,3 +1776,27 @@ example syntax were checked against actual request constructors and clap. Scoped
 CLI Clippy, formatting/diff checks, 12 package self-tests, guidance staging and
 account-management skill metadata passed. Cargo ran serially with one build job.
 No live account/provider operation, workspace suite or release build was run.
+
+
+### Authorization lifecycle specifications (2026-09-26)
+
+Added MCP status/login/logout, reaching 125 documented leaves of 169. Status
+observes saved credentials without refreshing or checking provider acceptance.
+Login discovers metadata and can reuse/refresh credentials before deciding whether
+browser authorization is needed. Logout removes only the dedicated local record.
+The specs distinguish credential effects, conditional browser interaction,
+local lock/state access and unsupported timeout overrides. Success payloads have
+no separate versioned data contract; no market-data source was invented for them.
+
+All three independently distributed MCP connection references explain unknown
+expiry, unconfirmed provider acceptance and terminal-only login guidance. Runtime
+authentication and storage are unchanged. Next reassess the remaining Desktop
+Screener and legacy account paths for practical analysis workflows, documenting
+explicit official-MCP alternatives where they provide equivalent operations.
+
+Validation passed: 34 spec unit tests, one offline CLI test covering all three
+paths, scoped CLI Clippy, formatting/diff checks, 12 package self-tests, guidance
+staging and three skill metadata checks. Current authentication and storage paths
+were inspected; no login, logout, credential-store access, browser interaction or
+provider smoke was performed. Cargo ran serially with one build job, without a
+workspace suite or release build.
