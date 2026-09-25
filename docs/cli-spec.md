@@ -31,16 +31,17 @@ with `contract_version: cli_spec.v1` and `binary_version` (including build ident
 - `coverage.syntax` is `clap_metadata`; `coverage.validation` is `partial`.
   Conditional requirements and adapter checks are not fully represented. Read
   the command description and skill guidance for remaining conditions.
-- `coverage.semantics` is `documented` for alert history and `unavailable` for
-  other commands. `semantics: null` means not annotated, never no side effects.
+- `coverage.semantics` is `documented` for MCP search, columns, symbol, symbols,
+  bars and alert history; it is `unavailable` for other commands.
+  `semantics: null` means not annotated, never no side effects.
   More commands can acquire annotations without changing how they execute.
-- History semantics contain source, prerequisites, account/provider effects,
+- Documented read semantics contain source, prerequisites, account/provider effects,
   output contract, static constraints, dynamic discovery instructions and argv
   examples. The default read deadline and cap reuse execution constants.
   Authenticated reads can refresh local credentials; `account_mutation: false`
   does not promise zero local state changes.
 - Dynamic account IDs or symbols are not fetched by specification lookup.
-  History's `discovery` points to `tv mcp search <query>` and
+  Symbol discovery points to `tv mcp search <query>` and
   `data.symbols[].symbol` in its output. Placeholders require caller input;
   examples do not prove access, data availability or scope authorization.
 
@@ -52,3 +53,28 @@ The index may be larger than root help because it includes nested commands.
 
 `tv schema` and `tv validate` are not implemented. Existing `tv discover` remains
 a Desktop-backed API diagnostic and is unrelated to offline specification lookup.
+
+
+## Qualified MCP read details
+
+| Path after `tv spec` | Constraints and next-step guidance |
+| --- | --- |
+| `mcp search` | Query tokens are joined with spaces; the UTF-8 byte limit and allowed `--type` values come from request validation. Results remain candidates. |
+| `mcp columns` | Market choices and group/search byte limits; overview without group/search, detail otherwise. Group discovery uses `data.groups[].group`. |
+| `mcp symbol` | Qualified symbol syntax, unique column names, per-name byte limit and the actual default column set. Discover columns via `data.columns[].name` from a detail query. |
+| `mcp symbols` | The same field constraints plus 1–50 unique symbols; ordered returned/missing/unreported outcomes. No automatic chunking. |
+| `mcp bars` | Actual timeframe list, count bounds and unsupported date-range inputs. Count satisfaction does not establish calendar coverage or legacy-source equivalence. |
+| `mcp alert history` | Shared symbol syntax, history bounds, timeout and symbol discovery. Coverage and notification delivery remain unconfirmed. |
+
+`max_bytes` counts UTF-8 bytes, not characters. `nonblank` rejects whitespace-only
+text and `control_characters: false` rejects control characters. Symbol patterns
+are ASCII and case-preserving; duplicate checks compare exact strings. Column
+names must be unique; omitted columns resolve to `default_when_empty`, not all
+available fields. These annotations describe client checks, not provider field
+availability. Default argument values remain in clap-derived `arguments`.
+
+Search receipt time is not market-data time. Single-symbol identity may remain
+unconfirmed; batch missing and unreported outcomes have different meanings.
+Absent fields and explicit nulls are not interchangeable or zero. `limits`
+records these distinctions. All six operations can update local authorization
+through token refresh without mutating account watchlists or alerts.

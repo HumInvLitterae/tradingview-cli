@@ -5,10 +5,10 @@ use std::{any::TypeId, path::PathBuf};
 use clap::{Arg, Command, CommandFactory};
 use serde_json::{Value, json};
 use tradingview_core::{AppError, ErrorKind};
-use tradingview_mcp::Operation;
-use tradingview_model::mcp_account::Request;
 
 use crate::{build_info, cli::Cli};
+
+mod mcp_reads;
 
 pub(super) fn describe(path: &[String]) -> Result<Value, AppError> {
     let mut root = Cli::command();
@@ -69,9 +69,9 @@ pub(super) fn describe(path: &[String]) -> Result<Value, AppError> {
         "Defaults and examples are not observations of provider or account state."
     ]);
     data["semantics"] = Value::Null;
-    if canonical == ["mcp", "alert", "history"] {
+    if let Some(semantics) = mcp_reads::describe(&canonical) {
         data["coverage"]["semantics"] = json!("documented");
-        data["semantics"] = history();
+        data["semantics"] = semantics;
     }
     Ok(data)
 }
@@ -157,42 +157,11 @@ fn value_type(arg: &Arg) -> Option<&'static str> {
     (!arg.get_possible_values().is_empty()).then_some("enum")
 }
 
-fn history() -> Value {
-    json!({
-        "source": "tradingview_mcp",
-        "requires": {"authentication": true, "desktop": false},
-        "effects": {"account_mutation": false, "provider_request": true},
-        "output_contract": Request::ALERT_HISTORY_CONTRACT,
-        "constraints": {
-            "symbol": {"format": "exchange-qualified-symbol"},
-            "days": {"minimum": 1, "maximum": u32::MAX},
-            "limit": {"minimum": 1, "maximum": Request::ALERT_HISTORY_MAX_LIMIT},
-            "timeout": {
-                "minimum": 1,
-                "maximum": Operation::MAX_READ_TIMEOUT_SECONDS,
-                "default": Operation::DEFAULT_READ_TIMEOUT_SECONDS,
-                "unit": "seconds"
-            }
-        },
-        "discovery": [{
-            "argument": "symbol", "argv": ["tv", "mcp", "search", "<query>"],
-            "result_path": "data.symbols[].symbol"
-        }],
-        "examples": [[
-            "tv", "mcp", "--timeout", "90", "alert", "history",
-            "--symbol", "NASDAQ:AAPL", "--days", "7", "--limit", "100"
-        ]],
-        "limits": [
-            "Coverage is unconfirmed even when the request succeeds.",
-            "Notification messages and webhook contents are excluded.",
-            "Credential refresh can update local authorization state."
-        ]
-    })
-}
-
 #[cfg(test)]
 mod tests {
+    use super::mcp_reads::history;
     use super::*;
+    use tradingview_model::mcp_account::Request;
 
     #[test]
     fn nested_details_include_inherited_options_and_model_bounds() {

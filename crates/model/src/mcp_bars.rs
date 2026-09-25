@@ -3,6 +3,11 @@
 use serde_json::{Value, json};
 use tradingview_core::{AppError, ErrorKind};
 
+pub const TIMEFRAMES: &[&str] = &["1m", "5m", "15m", "30m", "1h", "4h", "1D", "1W", "1M"];
+pub const MAX_COUNT: u32 = 5000;
+pub const MAX_SYMBOL_BYTES: usize = 128;
+pub const CONTRACT: &str = "mcp_bars.v1";
+
 #[derive(Clone, Debug)]
 pub struct Request {
     symbol: String,
@@ -13,13 +18,10 @@ pub struct Request {
 impl Request {
     pub fn new(symbol: &str, timeframe: &str, count: u32) -> Result<Self, AppError> {
         validate_symbol(symbol)?;
-        if !matches!(
-            timeframe,
-            "1m" | "5m" | "15m" | "30m" | "1h" | "4h" | "1D" | "1W" | "1M"
-        ) {
+        if !TIMEFRAMES.contains(&timeframe) {
             return Err(unsupported("timeframe"));
         }
-        if !(1..=5000).contains(&count) {
+        if !(1..=MAX_COUNT).contains(&count) {
             return Err(error(
                 ErrorKind::Validation,
                 "invalid_request",
@@ -75,7 +77,7 @@ pub(crate) fn validate_symbol(symbol: &str) -> Result<(), AppError> {
     };
     if exchange.is_empty()
         || ticker.is_empty()
-        || symbol.len() > 128
+        || symbol.len() > MAX_SYMBOL_BYTES
         || !exchange
             .bytes()
             .all(|b| b.is_ascii_alphanumeric() || b == b'_')
@@ -219,7 +221,7 @@ pub fn normalize(request: &Request, value: Value, received_ms: u64) -> Result<Va
     }
     let unknown = evidence(Value::Null);
     Ok(json!({
-        "contract_version": "mcp_bars.v1",
+        "contract_version": CONTRACT,
         "source": "tradingview_mcp",
         "source_category": "desktop_free_read",
         "requires_desktop": false,

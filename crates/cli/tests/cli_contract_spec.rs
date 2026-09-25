@@ -3,22 +3,37 @@ use serde_json::Value;
 
 #[test]
 fn spec_is_offline_even_with_invalid_desktop_configuration() {
-    let output = Command::cargo_bin("tv")
-        .unwrap()
-        .env("TV_CDP_PORT", "invalid")
-        .args(["spec", "mcp", "alert", "history"])
-        .assert()
-        .success()
-        .get_output()
-        .clone();
-    assert!(output.stderr.is_empty());
-    let envelope: Value = serde_json::from_slice(&output.stdout).unwrap();
-    assert_eq!(envelope["data"]["contract_version"], "cli_spec.v1");
-    assert_eq!(envelope["data"]["semantics"]["requires"]["desktop"], false);
-    assert_eq!(
-        envelope["data"]["semantics"]["output_contract"],
-        "mcp_alert_history.v1"
-    );
+    for path in [
+        vec!["mcp", "search"],
+        vec!["mcp", "columns"],
+        vec!["mcp", "symbol"],
+        vec!["mcp", "symbols"],
+        vec!["mcp", "bars"],
+        vec!["mcp", "alert", "history"],
+    ] {
+        let output = Command::cargo_bin("tv")
+            .unwrap()
+            .env("TV_CDP_PORT", "invalid")
+            .arg("spec")
+            .args(&path)
+            .assert()
+            .success()
+            .get_output()
+            .clone();
+        assert!(output.stderr.is_empty());
+        let envelope: Value = serde_json::from_slice(&output.stdout).unwrap();
+        let data = &envelope["data"];
+        assert_eq!(data["contract_version"], "cli_spec.v1");
+        assert_eq!(data["semantics"]["requires"]["desktop"], false);
+        assert_eq!(data["semantics"]["effects"]["account_mutation"], false);
+        assert_eq!(data["coverage"]["validation"], "partial");
+        assert!(
+            data["semantics"]["output_contract"]
+                .as_str()
+                .unwrap()
+                .starts_with("mcp_")
+        );
+    }
 }
 
 #[test]

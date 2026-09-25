@@ -1138,3 +1138,42 @@ and public hygiene passed. Package validator self-tests (12), staged runtime
 guidance and both changed skill metadata checks passed. The index contains 195
 paths. These checks used the updated lockfile (including rmcp 3.4.1); no full
 workspace test, release build, live provider probe or platform CI was run.
+
+
+### Primary MCP read specifications (2026-09-25)
+
+The owner accepted staged semantic coverage: primary MCP reads first, then
+account mutations, then Desktop/other commands. Implemented this first stage for
+search, columns, symbol, symbols and bars; history retains its contract and now
+shares the same symbol/discovery/deadline helpers. Other semantic annotations
+remain unavailable, and validation coverage remains partial. This is not a
+schema export or an offline invocation validator.
+
+Before: `tv spec mcp bars` returned clap syntax with null semantics. After: it
+also returns `mcp_bars.v1`, authenticated Desktop-free read effects, supported
+timeframes/count, rejected date ranges, symbol discovery and an executable argv
+example, with source/coverage limitations. Symbol reads expose actual default
+columns and field discovery; batch reads distinguish returned/missing/unreported.
+Column catalog mode depends on group/search presence, not market alone. Search
+query tokens join with spaces before the UTF-8 byte limit is checked.
+
+The model owns shared limits, accepted enumerations, default columns and output
+contract identifiers; normalizers and request validation use those same values.
+This preserves current request acceptance, source semantics and existing output
+contracts. CLI-specific discovery and interpretation live in the spec adapter,
+separate from clap metadata extraction. No dependency, account access or provider
+probe is needed. Skills and the public spec reference describe the new coverage.
+
+Targeted tests compare declared boundaries with actual model constructors,
+including multibyte query length, batch uniqueness/caps and default fields.
+All examples parse using the real CLI. Subprocess coverage queries all six
+annotated reads with invalid Desktop configuration. Existing model MCP fixtures
+cover normalization and request behavior after extracting shared constants.
+
+Validation passed: five spec unit tests, 50 existing model MCP tests, two CLI
+subprocess tests (covering all six annotated read paths), scoped CLI Clippy with
+warnings denied, package validator self-tests and staging, updated skill metadata,
+formatting and diff checks. All Cargo execution was serial with one build job.
+No full-workspace suite, release build, provider access or installed-binary
+replacement was performed. Remaining semantic stages are account mutations and
+Desktop/other commands; unannotated MCP families remain explicitly unavailable.

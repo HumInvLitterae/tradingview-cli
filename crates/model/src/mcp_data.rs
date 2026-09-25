@@ -7,6 +7,27 @@ pub use screener::ScreenerOptions;
 use serde_json::{Value, json};
 use tradingview_core::{AppError, ErrorKind};
 
+pub const MAX_TEXT_BYTES: usize = 256;
+pub const MAX_COLUMN_BYTES: usize = 128;
+pub const MAX_COLUMNS: usize = 50;
+pub const MAX_SYMBOLS: usize = 50;
+pub const SEARCH_TYPES: &[&str] = &[
+    "all", "stock", "etf", "bond", "forex", "index", "futures", "crypto",
+];
+pub const COLUMN_MARKETS: &[&str] = &["all", "stock", "etf", "crypto", "bond"];
+pub const DEFAULT_COLUMNS: &[&str] = &[
+    "name",
+    "description",
+    "close",
+    "change",
+    "change_abs",
+    "volume",
+    "market_cap_basic",
+    "price_earnings_ttm",
+    "sector",
+    "industry",
+];
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Kind {
     Search,
@@ -14,6 +35,18 @@ pub enum Kind {
     Symbol,
     Symbols,
     Screener,
+}
+
+impl Kind {
+    pub fn contract(self) -> &'static str {
+        match self {
+            Kind::Search => "mcp_search.v1",
+            Kind::Columns => "mcp_columns.v1",
+            Kind::Symbol => "mcp_symbol.v1",
+            Kind::Symbols => "mcp_symbols.v1",
+            Kind::Screener => "mcp_screener.v1",
+        }
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -24,13 +57,8 @@ pub struct Request {
 
 impl Request {
     pub fn search(query: &str, type_filter: Option<&str>) -> Result<Self, AppError> {
-        text(query, 256, "query")?;
-        if type_filter.is_some_and(|v| {
-            !matches!(
-                v,
-                "all" | "stock" | "etf" | "bond" | "forex" | "index" | "futures" | "crypto"
-            )
-        }) {
+        text(query, MAX_TEXT_BYTES, "query")?;
+        if type_filter.is_some_and(|v| !SEARCH_TYPES.contains(&v)) {
             return Err(invalid_request("type_filter"));
         }
         let mut arguments = json!({"query": query});
@@ -48,13 +76,13 @@ impl Request {
         group: Option<&str>,
         search: Option<&str>,
     ) -> Result<Self, AppError> {
-        if market.is_some_and(|v| !matches!(v, "all" | "stock" | "etf" | "crypto" | "bond")) {
+        if market.is_some_and(|v| !COLUMN_MARKETS.contains(&v)) {
             return Err(invalid_request("market"));
         }
         let mut arguments = json!({});
         for (name, value) in [("market", market), ("group", group), ("search", search)] {
             if let Some(value) = value {
-                text(value, 256, name)?;
+                text(value, MAX_TEXT_BYTES, name)?;
                 arguments[name] = json!(value);
             }
         }
@@ -74,7 +102,7 @@ impl Request {
     }
 
     pub fn symbols(symbols: &[String], columns: &[String]) -> Result<Self, AppError> {
-        if symbols.is_empty() || symbols.len() > 50 {
+        if symbols.is_empty() || symbols.len() > MAX_SYMBOLS {
             return Err(invalid_request("symbols_count"));
         }
         let mut unique = std::collections::HashSet::new();
@@ -100,29 +128,18 @@ impl Request {
 }
 
 fn column_arguments(columns: &[String]) -> Result<Value, AppError> {
-    if columns.len() > 50 {
+    if columns.len() > MAX_COLUMNS {
         return Err(invalid_request("columns"));
     }
     let mut unique = std::collections::HashSet::new();
     for column in columns {
-        text(column, 128, "columns")?;
+        text(column, MAX_COLUMN_BYTES, "columns")?;
         if !unique.insert(column) {
             return Err(invalid_request("duplicate_column"));
         }
     }
     Ok(if columns.is_empty() {
-        json!([
-            "name",
-            "description",
-            "close",
-            "change",
-            "change_abs",
-            "volume",
-            "market_cap_basic",
-            "price_earnings_ttm",
-            "sector",
-            "industry"
-        ])
+        json!(DEFAULT_COLUMNS)
     } else {
         json!(columns)
     })
@@ -164,15 +181,8 @@ pub fn normalize(request: &Request, value: Value, received_ms: u64) -> Result<Va
         Some(Value::Bool(true)) | None => {}
         _ => return Err(invalid_response("invalid_success_flag")),
     }
-    let contract = match request.kind {
-        Kind::Search => "mcp_search.v1",
-        Kind::Columns => "mcp_columns.v1",
-        Kind::Symbol => "mcp_symbol.v1",
-        Kind::Symbols => "mcp_symbols.v1",
-        Kind::Screener => "mcp_screener.v1",
-    };
     let mut data = json!({
-        "contract_version": contract,
+        "contract_version": request.kind.contract(),
         "source": "tradingview_mcp",
         "source_category": "desktop_free_read",
         "requires_desktop": false,
