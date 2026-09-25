@@ -586,3 +586,26 @@ unique symbols and rejects market/date/limit arguments; market mode requires a
 market and accepts limit 1–200, default 50. Unreported symbol outcomes do not
 establish no dividend. Market results and calendar events retain unconfirmed
 coverage, even when nonempty, with no automatic paging or fallback.
+
+
+## Bounded chart observation
+
+Observe chart emits observe_chart.v1 JSONL envelopes: readiness first, then
+changed last-bar samples and optional heartbeats, followed by a normal summary.
+Each stdout line is an envelope, not part of one JSON array. Sample errors go to
+stderr and the loop continues. Initial readiness/connection failures, broken
+pipes or interruption can prevent a summary; a normal summary does not count
+errors or certify complete/error-free data.
+
+Interval defaults to the shared bars-stream default of 500 ms with a 100 ms
+minimum. Duration and max-events must be positive when present. Heartbeats are
+optional and at least 100 ms. Max-events counts emitted samples after deduplication,
+excluding readiness, heartbeats, errors and summary. It alone cannot bound wall
+time under unchanged data or repeated failures. Duration starts after setup and
+is checked between operations; setup and an in-flight read can extend wall time.
+
+Polling does not capture every tick or guarantee closed bars. `_ts` is client
+milliseconds and bar_time is the chart timestamp. Volume follows the existing
+reader's zero default. External chart changes are not prevented; inspect symbol
+and resolution per sample. No symbol switch, tab activation, screenshot or source
+fallback is performed by observation itself.
