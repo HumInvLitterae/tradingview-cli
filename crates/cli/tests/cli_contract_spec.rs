@@ -92,6 +92,11 @@ fn desktop_specs_do_not_connect_or_resolve_effects_without_arguments() {
         vec!["state"],
         vec!["readiness"],
         vec!["tab", "list"],
+        vec!["launch"],
+        vec!["tab", "switch"],
+        vec!["tab", "new"],
+        vec!["tab", "close"],
+        vec!["chart", "compare"],
     ] {
         let output = Command::cargo_bin("tv")
             .unwrap()

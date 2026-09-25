@@ -5,7 +5,7 @@ use tradingview_core::AppError;
 
 use super::quote;
 
-const CHART_COMPARE_CONTRACT_VERSION: &str = "chart_compare.v1";
+pub(crate) const CHART_COMPARE_CONTRACT_VERSION: &str = "chart_compare.v1";
 
 pub async fn chart_compare(
     runtime: &mut impl RuntimeEvaluator,

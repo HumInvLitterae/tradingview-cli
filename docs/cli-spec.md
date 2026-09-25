@@ -116,7 +116,8 @@ Desktop semantics cover `symbol`, `timeframe`, `type`, `range`, `info`, `state`,
 `readiness` and `tab list`. `variants` describes argument-dependent behavior;
 `tv spec` does not accept an invocation's values or select a variant for you.
 Each `when` uses clap argument IDs: `present`, `absent`, or
-`exactly_one_present`. A null common effect or requirement means that callers
+`exactly_one_present`; lifecycle paths also use `flag_true`, `flag_false` and
+`runtime` observations that spec lookup cannot evaluate. A null common effect or requirement means that callers
 must inspect the variants, not that the effect is absent.
 
 | Path | Behavior |
@@ -133,4 +134,30 @@ lookup never obtains one or changes the chart. Desktop authentication is left
 unknown because session/data access belongs to the running application; these
 commands do not use MCP OAuth. A null output contract means no versioned contract
 is advertised here. Other Desktop commands remain explicitly unannotated,
-including launch, chart compare, UI actions, drawings, indicators and Replay.
+including UI actions, drawings, indicators and Replay.
+
+
+## Desktop lifecycle and comparison
+
+| Path | Effect and follow-up |
+| --- | --- |
+| `launch` | Reuses a responding CDP endpoint. Otherwise may start the app and, with `--kill-existing`, terminate an existing session first. Inspect readiness and warnings. |
+| `tab switch` | Activates a chart target using `data.tabs[].index` from tab list. |
+| `tab new` | Activates the source chart, then opens an app tab. `--from` uses `data.tabs[].index`; omission requires exactly one chart tab. |
+| `tab close` | Closes an app tab using `data.app_tabs[].index`, not the chart index. Refuses the last app tab. |
+| `chart compare` | Visits 2–10 symbols on the selected chart, attempts restoration after each read, and stops on an item error. Restoration is not guaranteed. |
+
+A responding CDP endpoint is reused even if `--kill-existing` was passed.
+Starting an app requires an installation or a valid explicit executable file;
+process startup does not prove chart readiness. Specs do not probe processes,
+paths or endpoint availability.
+
+Tab indices can change between listing and execution. Select from the correct
+list, and inspect the new list after a mutation. App-tab operations also need
+a usable app-window UI. `--target-id` cannot substitute for their index arguments.
+If creation or closure returns an error, inspect the application before retrying.
+
+Chart comparison is an operation with temporary changes, not a read-only query.
+The output retains per-item status and restoration evidence, final chart context
+and a summary. Successful JSON can contain partial results. Desktop-free
+`tv compare` remains a separate scanner-backed workflow, never a fallback.

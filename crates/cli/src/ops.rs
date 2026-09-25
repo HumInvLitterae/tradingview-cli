@@ -1,7 +1,6 @@
 mod alert;
 mod chart;
 mod common;
-pub(crate) use common::CHART_TYPES;
 mod data;
 mod data_depth;
 mod desktop;
@@ -33,6 +32,9 @@ mod renderer_foreground_measurement;
 
 #[cfg(test)]
 mod test_support;
+
+pub(crate) use common::CHART_TYPES;
+pub(crate) use market::CHART_COMPARE_CONTRACT_VERSION;
 
 pub use alert::{
     IndicatorAlertRequest, alert_create, alert_create_indicator, alert_delete, alert_delete_all,

@@ -1233,3 +1233,30 @@ all eight Desktop paths under invalid Desktop configuration), scoped CLI Clippy,
 formatting/diff checks, the 12 package-validator self-tests, staged seven-skill
 roots and updated skill metadata. Cargo ran serially with one build job. No
 Desktop/provider operation, full-workspace suite or release build was run.
+
+
+### Desktop lifecycle and chart comparison specifications (2026-09-25)
+
+Added launch, tab switch/new/close and chart compare. Launch metadata distinguishes
+reuse of a responding CDP endpoint from startup and optional process termination.
+kill-existing is not a guarantee of termination: reuse happens first. No process,
+path or endpoint is probed by spec lookup.
+
+Inspection established separate index domains: switch and new-from select chart
+tabs, while close selects app tabs. Discovery points to the corresponding tab-list
+field. New activates its source and requires explicit from with multiple charts;
+close refuses the final app tab. Neither mutation is blindly retried after errors.
+The existing tab-list source annotation was corrected to desktop_target_list.
+
+Chart comparison shares its execution cap and contract identifier with specs.
+It permits repeated symbols, trims inputs, attempts symbol restoration after
+each read and stops at an item error. Metadata explicitly denies a restoration
+guarantee and directs callers to per-item, summary and final-context evidence.
+No lifecycle implementation or provider/desktop behavior was changed.
+
+Validation passed: 11 spec unit tests and four CLI subprocess tests, including
+all five added paths under invalid Desktop configuration; scoped CLI Clippy;
+package validator self-tests (12), staged runtime skills and updated skill
+metadata. Final formatting/diff and public hygiene checks accompany the commit.
+No process launch/termination, tab operation, chart switching, provider access,
+full-workspace test or release build was performed. Cargo remained serial.

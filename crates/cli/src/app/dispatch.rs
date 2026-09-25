@@ -1278,7 +1278,7 @@ pub async fn dispatch(
     }
 }
 
-const MAX_CHART_COMPARE_SYMBOLS: usize = 10;
+pub(super) const MAX_CHART_COMPARE_SYMBOLS: usize = 10;
 const MAX_EVENTS_COMPARE_SYMBOLS: usize = 25;
 
 fn validate_events_compare_symbols(symbols: &[String]) -> Result<(), AppError> {
@@ -1327,7 +1327,7 @@ fn validate_events_compare_symbols(symbols: &[String]) -> Result<(), AppError> {
     Ok(())
 }
 
-fn validate_chart_compare_symbols(symbols: &[String]) -> Result<(), AppError> {
+pub(super) fn validate_chart_compare_symbols(symbols: &[String]) -> Result<(), AppError> {
     if symbols.len() < 2 {
         return Err(AppError::new(
             ErrorKind::Validation,

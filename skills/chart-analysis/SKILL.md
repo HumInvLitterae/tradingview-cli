@@ -13,7 +13,10 @@ new, uncertain, or changed; reuse a confirmed target across the workflow.
 On binaries with `spec`, inspect `tv spec <command path>` when arguments or
 effects are uncertain. Symbol, timeframe, chart type, range and info have
 argument-dependent variants: null common effects do not mean read-only. Use
-`tv tab list` to select a target ID before actual Desktop operations. Older
+`tv tab list` to select a target ID before actual Desktop operations.
+Lifecycle specs cover `launch`, tab changes and `chart compare`. Switch/new use
+chart-tab indices; close uses app-tab indices. Chart comparison can fail to
+restore the original symbol, so inspect restoration evidence. Older
 binaries still use `--help`; specification lookup itself never connects.
 
 ## Choose the evidence
