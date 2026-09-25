@@ -21,6 +21,7 @@ mod pine;
 mod pine_graphics;
 mod quotes;
 mod replay;
+mod scanner;
 mod ui;
 
 pub(super) fn describe(path: &[String]) -> Result<Value, AppError> {
@@ -96,6 +97,7 @@ pub(super) fn describe(path: &[String]) -> Result<Value, AppError> {
         .or_else(|| quotes::describe(&canonical))
         .or_else(|| analysis::describe(&canonical))
         .or_else(|| pine_graphics::describe(&canonical))
+        .or_else(|| scanner::describe(&canonical))
     {
         data["coverage"]["semantics"] = json!("documented");
         data["semantics"] = semantics;

@@ -26,6 +26,7 @@ package version omits the leading `v`.
   Quote specs describe routing/restoration and batch failures; scanner metainfo describes field discovery.
   Chart-analysis specs describe study identity, strategy selection and report/series limits.
   Pine graphics specs explain filtering, rounding, label limits and lossy table rows.
+  Scanner scan specs distinguish page/aggregate modes, field choices and filter constraints.
   Other semantic coverage is explicitly unannotated.
 
 - `tv mcp --timeout <SECONDS>` selects a 1–180 second total deadline for provider

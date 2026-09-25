@@ -435,3 +435,19 @@ fn pine_graphics_specs_do_not_read_chart_primitives() {
         );
     }
 }
+
+#[test]
+fn scanner_scan_spec_is_offline_without_issuing_pages() {
+    let output = Command::cargo_bin("tv")
+        .unwrap()
+        .env("TV_CDP_PORT", "invalid")
+        .args(["spec", "scanner", "scan"])
+        .assert()
+        .success()
+        .get_output()
+        .clone();
+    assert!(output.stderr.is_empty());
+    let value: Value = serde_json::from_slice(&output.stdout).unwrap();
+    assert_eq!(value["data"]["semantics"]["requires"]["desktop"], false);
+    assert_eq!(value["data"]["semantics"]["source"], "scanner_scan_rest");
+}

@@ -16,6 +16,19 @@ metadata. It is sequential observation, not an atomic snapshot. A failed page
 returns an error, not a successful partial aggregate. Use `--offset` only for
 one diagnostic page, not together with aggregate mode.
 
+`tv spec scanner scan` describes the three modes and supported fields offline;
+use help on older binaries. Normal `--limit` defaults to 20, rejects zero and
+clamps above 100. Aggregate `--max-results` is a population ceiling, not a top-N
+request: a larger reported population fails. It accepts 1–10000, page size
+1–100 (default 100), and at most 100 planned pages. Missing totals or incomplete
+pages fail instead of producing a successful partial population. Unchanged total
+counts do not prove unchanged membership or ordering.
+
+Column/sort fields must belong to the CLI allowlist even if metainfo knows more.
+Min/max filters use provider greater/less operators, not guaranteed inclusive
+thresholds. RSI inputs accept 0–100 and recommendations -1–1; invalid ordering
+between min and max is not checked locally. Review the returned filters.
+
 For known symbols, choose quote-only `tv quotes` or richer `tv compare`.
 `tv snapshot` supplies the same sort of detail for one symbol. Quotes, compare,
 and events compare accept at most 25 symbols and preserve input order.
