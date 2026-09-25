@@ -54,7 +54,9 @@ layout-pane OHLCV and per-pane failures rather than combined stream kinds.
 Account list/get specs distinguish ID types, filters, unreported alerts and
 unknown completeness without activating lists or changing alerts. Authorization
 specs separate local credential inspection, conditional browser login and local
-logout from provider acceptance and remote revocation.
+logout from provider acceptance and remote revocation. Visible Screener reads
+now describe temporary panel changes and display-data limits; Desktop watchlist
+read specs distinguish rendered rows from official account-list contents.
 The active record owns evidence and resumption conditions. Heavy local hooks are
 opt-in; current-candidate cross-platform CI and release qualification remain open.
 

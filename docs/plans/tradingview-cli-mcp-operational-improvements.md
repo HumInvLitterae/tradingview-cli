@@ -1800,3 +1800,28 @@ staging and three skill metadata checks. Current authentication and storage path
 were inspected; no login, logout, credential-store access, browser interaction or
 provider smoke was performed. Cargo ran serially with one build job, without a
 workspace suite or release build.
+
+
+### Visible Screener and watchlist read specifications (2026-09-26)
+
+Added Screener status/get, screens active, filters list, columns list and legacy
+watchlist get, reaching 131 documented leaves of 169. Status leaves panel state
+alone; the other Screener reads can temporarily open and close it. The existing
+restored_open_state field stores the initial open boolean, not a restoration
+success flag. Captured open state is distinct from final UI state.
+
+Specs expose DOM row limits, localized text, duplicate/missing header mapping,
+non-stable screen titles and positional column indexes. Desktop watchlist get
+can return empty success for closed panels and heuristic quote/ticker fields.
+Official MCP is an explicit alternative for account-list contents and suitable
+data-only screening, not a reconstruction of visible Desktop state. Runtime
+readers and public payloads are unchanged. Standalone skills retain the boundaries.
+Next inspect saved-screen/action discovery and storage-column metadata needed
+before deliberate Screener edits; mutation behavior remains a separate scope.
+
+Validation passed: 35 spec unit tests, eight existing Screener state fixtures,
+one offline CLI test covering all six paths, scoped CLI Clippy, formatting/diff
+checks, 12 package self-tests, guidance staging and both skill metadata checks.
+Examples parse through clap and row bounds match the execution validator. Cargo
+ran serially with one build job. No Desktop/provider access, full-workspace suite
+or release build was performed.

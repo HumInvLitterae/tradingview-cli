@@ -652,3 +652,32 @@ fn authorization_specs_do_not_run_credential_lifecycle_operations() {
         );
     }
 }
+
+#[test]
+fn visible_read_specs_do_not_open_desktop_panels() {
+    for path in [
+        vec!["screener", "status"],
+        vec!["screener", "get"],
+        vec!["screener", "screens", "active"],
+        vec!["screener", "filters", "list"],
+        vec!["screener", "columns", "list"],
+        vec!["watchlist", "get"],
+    ] {
+        let output = Command::cargo_bin("tv")
+            .unwrap()
+            .env("TV_CDP_PORT", "invalid")
+            .arg("spec")
+            .args(path)
+            .assert()
+            .success()
+            .get_output()
+            .clone();
+        assert!(output.stderr.is_empty());
+        let value: Value = serde_json::from_slice(&output.stdout).unwrap();
+        assert_eq!(value["data"]["coverage"]["semantics"], "documented");
+        assert_eq!(
+            value["data"]["semantics"]["effects"]["account_mutation"],
+            false
+        );
+    }
+}

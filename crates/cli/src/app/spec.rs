@@ -29,6 +29,7 @@ mod pine_graphics;
 mod quotes;
 mod replay;
 mod scanner;
+mod screener;
 mod stream;
 mod ui;
 
@@ -108,6 +109,7 @@ pub(super) fn describe(path: &[String]) -> Result<Value, AppError> {
         .or_else(|| analysis::describe(&canonical))
         .or_else(|| pine_graphics::describe(&canonical))
         .or_else(|| scanner::describe(&canonical))
+        .or_else(|| screener::describe(&canonical))
         .or_else(|| packets::describe(&canonical))
         .or_else(|| mcp_financials::describe(&canonical))
         .or_else(|| mcp_research::describe(&canonical))

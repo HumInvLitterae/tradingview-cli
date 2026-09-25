@@ -714,3 +714,44 @@ nor revokes remote grants, changes account objects or resets provider limits.
 It does not authorize OS interaction: a required deletion prompt produces an
 error and needs a separately arranged credential-manager action. Default budgets
 are 300 seconds for login and 30 for status/logout. None accepts `--timeout`.
+
+
+## Visible read limits
+
+When supported, inspect the chosen `tv spec screener` command path before use.
+Status reads current state without opening the panel. Get, screens active,
+filters list and columns list can temporarily open a closed panel, then attempt
+to close it with Escape. `opened_for_read` records the opening;
+`restored_open_state` is the initial open boolean, not a success flag. False is
+expected after a successful closed-to-open-to-closed read. Returned `open` is the
+captured state, not necessarily the final state. After errors, check actual UI
+state because opening or cleanup can fail.
+
+Get defaults to 20 rows and clamps positive limits to 100; zero is rejected. It
+does not scroll or paginate. `visible_row_count` counts DOM table rows, not total
+matches or strictly viewport-visible rows. Cells contain localized display text.
+`field_values` uses displayed column labels, so duplicate labels overwrite keys
+and missing headers can misalign values. Row `text` is truncated to 500 characters.
+
+Screens active returns title text, not a saved-screen ID. Filter pills are not a
+full filter definition. Columns list returns displayed names and positional
+indexes, not storage column IDs. Inspect config/actions before editing. For
+data-only screening use official MCP when it meets the requested criteria; it
+does not reproduce saved Desktop screen state. Never silently substitute sources.
+
+
+## Existing Desktop watchlist read
+
+Use `tv spec watchlist get` when available to inspect this distinct Desktop
+operation. It reads rendered right-panel content without selecting a list by ID.
+Closed/missing panels can return successful empty rows. Extracted symbols are
+deduplicated; rendered content does not establish full account-list coverage.
+The `source` field reports panel_closed, no_container, data_attributes, text_scan
+or empty. Data-attribute reads infer last/change/change_percent from numeric
+cell strings; text scans can return unqualified ticker-like names with null
+prices. Neither confirms symbol identity or freshness.
+
+Prefer explicit `tv mcp watchlist list` followed by `get <ID>` for account-list
+contents. MCP preserves sections and ordering but does not reproduce visible
+quote cells or establish which list is selected in Desktop. Do not switch
+sources after a failure without deciding that the alternative meets the request.
