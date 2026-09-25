@@ -1753,3 +1753,26 @@ staged guidance parity and both skill metadata checks passed. Prior stream-reade
 fixture evidence remains applicable because execution code is unchanged. Cargo
 ran serially with one build job; no live Desktop/provider operations, workspace
 suite or release build was performed.
+
+
+### Official account discovery specifications (2026-09-26)
+
+Added official watchlist/alert list/get, reaching 122 documented leaves of 169.
+Specs distinguish decimal-string watchlist IDs from positive integer alert IDs,
+explicit inactive filters from omission, list order from requested detail order,
+and unreported alerts from deletion. Returned counts exclude detail placeholders.
+Known filter conflicts fail while unknown fields retain null. Watchlist sections,
+limited condition projections and unconfirmed completeness remain explicit.
+
+Account-management guidance now links an independent read reference alongside
+mutation guidance. Runtime acquisition and JSON contracts are unchanged. Next
+review MCP status/login/logout semantics so agents can distinguish local credential
+presence, provider acceptance and explicit browser/credential effects before
+attempting account or analysis reads.
+
+Validation passed: 33 spec unit tests, four existing account normalization/request
+fixtures and one offline CLI test for the four command paths. ID bounds and
+example syntax were checked against actual request constructors and clap. Scoped
+CLI Clippy, formatting/diff checks, 12 package self-tests, guidance staging and
+account-management skill metadata passed. Cargo ran serially with one build job.
+No live account/provider operation, workspace suite or release build was run.

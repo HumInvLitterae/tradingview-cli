@@ -51,6 +51,8 @@ termination limits. Primary stream specs distinguish numeric study values from
 formatted values and chart last-bar samples from provider quote feeds. Graphics
 streams expose lossy extraction and filter differences; stream all describes
 layout-pane OHLCV and per-pane failures rather than combined stream kinds.
+Account list/get specs distinguish ID types, filters, unreported alerts and
+unknown completeness without activating lists or changing alerts.
 The active record owns evidence and resumption conditions. Heavy local hooks are
 opt-in; current-candidate cross-platform CI and release qualification remain open.
 

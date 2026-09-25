@@ -12,7 +12,9 @@ do not ask for source permission on each authenticated operation.
 
 When supported by the installed binary, `tv spec <command path>` provides
 argument metadata without connecting. `tv spec mcp alert history` also describes
-source, limits and symbol discovery. Watchlist/alert mutation paths describe
+source, limits and symbol discovery. List/get paths describe ID formats, filters
+and partial results; see [read guidance](references/reads.md).
+Watchlist/alert mutation paths describe
 ID discovery, side effects and readback. For example, inspect
 `tv spec mcp alert update` before deciding whether reactivation is intended.
 Respect partial validation and unavailable semantic annotations; use `--help` on older binaries. Do not fetch the whole
