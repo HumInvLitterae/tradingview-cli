@@ -1638,3 +1638,25 @@ and market-data skill metadata passed. Cargo ran serially with one build job.
 No live provider/authentication action, full-workspace suite or release build
 was performed. News/company-document metadata is the next contextual-analysis
 candidate, for investigating the background of chart moves.
+
+
+### Official news and document specifications (2026-09-25)
+
+Added news/news-story/documents/document, reaching 106 documented leaves of 169.
+Specs distinguish news item IDs from document view IDs, one-page news offsets
+from non-paged document lists, and recognized body presence from full-text
+availability. Accepted language/category values are checked through model request
+constructors. Canonical timestamp and ID rules preserve source references.
+
+Standalone market guidance covers missing pagination, access/attribution and
+untrusted body/AST content without relying on repository docs. Execution and
+provider contracts are unchanged. Next reassess analysis needs around official
+economic/calendar reads before lower-priority administration metadata.
+
+Validation passed: 29 spec unit tests, four existing research model fixtures and
+one offline CLI test covering all four paths. Language/category choices, paging
+bounds and reference-ID restrictions were checked through actual request
+constructors. Scoped CLI Clippy, formatting/diff checks, 12 package self-tests,
+guidance staging and market-data skill metadata passed. Cargo ran serially with
+one build job. No live provider/authentication action, browser navigation,
+full-workspace suite or release build was performed.

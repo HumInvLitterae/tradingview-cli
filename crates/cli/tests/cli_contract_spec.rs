@@ -510,3 +510,28 @@ fn financial_specs_are_offline_and_do_not_refresh_credentials() {
         assert!(semantics["constraints"]["timeout"]["maximum"].is_number());
     }
 }
+
+#[test]
+fn research_specs_do_not_fetch_content_or_open_links() {
+    for action in ["news", "news-story", "documents", "document"] {
+        let output = Command::cargo_bin("tv")
+            .unwrap()
+            .env("TV_CDP_PORT", "invalid")
+            .args(["spec", "mcp", action])
+            .assert()
+            .success()
+            .get_output()
+            .clone();
+        assert!(output.stderr.is_empty());
+        let value: Value = serde_json::from_slice(&output.stdout).unwrap();
+        let semantics = &value["data"]["semantics"];
+        assert_eq!(semantics["requires"]["desktop"], false);
+        assert_eq!(semantics["requires"]["authentication"], true);
+        if action == "document" {
+            assert_eq!(
+                semantics["discovery"][0]["result_path"],
+                "data.items[].views[].id"
+            );
+        }
+    }
+}

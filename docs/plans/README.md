@@ -44,6 +44,7 @@ Snapshot/compare specs distinguish partial sections, coverage limits and advisor
 follow-up hints. Official MCP screener specs now describe filter forms, preset
 choices and reported-count coverage without implying pagination. Official
 financial specs preserve fiscal periods, unknown units and unreported events.
+News/document specs cover reference IDs, paging limits and content availability.
 The active record owns evidence and resumption conditions. Heavy local hooks are
 opt-in; current-candidate cross-platform CI and release qualification remain open.
 
