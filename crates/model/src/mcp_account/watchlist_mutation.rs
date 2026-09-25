@@ -20,6 +20,11 @@ pub struct WatchlistMutation {
 }
 
 impl WatchlistMutation {
+    pub const MAX_NAME_CHARS: usize = 500;
+    pub const MAX_DESCRIPTION_CHARS: usize = 4096;
+    pub const MAX_SYMBOLS: usize = 100;
+    pub const CONTRACT: &str = "mcp_watchlist_mutation.v1";
+
     pub fn create(name: &str, symbols: &[String]) -> Result<Self, AppError> {
         name_value(name)?;
         symbols_value(symbols, true)?;
@@ -43,7 +48,9 @@ impl WatchlistMutation {
             arguments["name"] = json!(name);
         }
         if let Some(description) = description {
-            if description.chars().count() > 4096 || description.contains('\0') {
+            if description.chars().count() > Self::MAX_DESCRIPTION_CHARS
+                || description.contains('\0')
+            {
                 return Err(invalid_request("description"));
             }
             arguments["description"] = json!(description);
@@ -208,7 +215,7 @@ impl WatchlistMutation {
 
     pub fn report(&self, target: Option<&str>, readback: Value) -> Value {
         json!({
-            "contract_version": "mcp_watchlist_mutation.v1",
+            "contract_version": Self::CONTRACT,
             "source": "tradingview_mcp",
             "source_category": "desktop_free_mutation",
             "requires_desktop": false,
@@ -226,14 +233,17 @@ impl WatchlistMutation {
 }
 
 fn name_value(name: &str) -> Result<(), AppError> {
-    if name.trim().is_empty() || name.chars().count() > 500 || name.chars().any(char::is_control) {
+    if name.trim().is_empty()
+        || name.chars().count() > WatchlistMutation::MAX_NAME_CHARS
+        || name.chars().any(char::is_control)
+    {
         return Err(invalid_request("name"));
     }
     Ok(())
 }
 
 fn symbols_value(symbols: &[String], allow_empty: bool) -> Result<(), AppError> {
-    if (!allow_empty && symbols.is_empty()) || symbols.len() > 100 {
+    if (!allow_empty && symbols.is_empty()) || symbols.len() > WatchlistMutation::MAX_SYMBOLS {
         return Err(invalid_request("symbols_count"));
     }
     let mut unique = std::collections::HashSet::new();

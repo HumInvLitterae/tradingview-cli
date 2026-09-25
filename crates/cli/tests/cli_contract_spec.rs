@@ -51,3 +51,32 @@ fn unknown_spec_path_uses_validation_error_without_connecting() {
     assert_eq!(error["command"], "spec");
     assert!(error.to_string().contains("Unknown spec command path"));
 }
+
+#[test]
+fn mutation_specs_are_offline_descriptions_not_account_operations() {
+    for (family, actions) in [
+        ("watchlist", ["create", "update", "add", "remove", "delete"]),
+        ("alert", ["create", "update", "stop", "restart", "delete"]),
+    ] {
+        for action in actions {
+            let output = Command::cargo_bin("tv")
+                .unwrap()
+                .env("TV_CDP_PORT", "invalid")
+                .args(["spec", "mcp", family, action])
+                .assert()
+                .success()
+                .get_output()
+                .clone();
+            assert!(output.stderr.is_empty());
+            let value: Value = serde_json::from_slice(&output.stdout).unwrap();
+            assert_eq!(
+                value["data"]["semantics"]["effects"]["account_mutation"],
+                true
+            );
+            assert_eq!(
+                value["data"]["semantics"]["execution"]["automatic_retry"],
+                false
+            );
+        }
+    }
+}

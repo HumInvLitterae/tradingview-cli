@@ -26,6 +26,9 @@ pub struct Request {
 }
 
 impl Request {
+    pub const MAX_ALERT_IDS: usize = 100;
+    pub const MAX_ALERT_ID: u64 = i64::MAX as u64;
+
     /// Maximum number of firing-history events accepted by the client.
     pub const ALERT_HISTORY_MAX_LIMIT: u32 = 2000;
     /// Output contract shared by history normalization and command discovery.
@@ -84,10 +87,10 @@ impl Request {
     pub fn alert_details(ids: &[u64]) -> Result<Self, AppError> {
         let mut unique = std::collections::HashSet::new();
         if ids.is_empty()
-            || ids.len() > 100
+            || ids.len() > Self::MAX_ALERT_IDS
             || ids
                 .iter()
-                .any(|id| *id == 0 || *id > i64::MAX as u64 || !unique.insert(id))
+                .any(|id| *id == 0 || *id > Self::MAX_ALERT_ID || !unique.insert(id))
         {
             return Err(invalid_request("alert_ids"));
         }

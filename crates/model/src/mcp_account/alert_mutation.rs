@@ -27,7 +27,7 @@ impl AlertSettings {
         let mut value = json!({});
         if let Some(name) = &self.name {
             if name.trim().is_empty()
-                || name.chars().count() > 300
+                || name.chars().count() > AlertMutation::MAX_NAME_CHARS
                 || name.chars().any(char::is_control)
             {
                 return Err(invalid_request("name"));
@@ -75,6 +75,11 @@ pub struct AlertMutation {
 }
 
 impl AlertMutation {
+    pub const MAX_NAME_CHARS: usize = 300;
+    pub const CONDITIONS: &[&str] = &["cross", "cross_up", "cross_down", "greater", "less"];
+    pub const RESOLUTIONS: &[&str] = &["1", "5", "15", "30", "60", "240", "1D", "1W", "1M"];
+    pub const CONTRACT: &str = "mcp_alert_mutation.v1";
+
     pub fn create(
         symbol: &str,
         price: f64,
@@ -86,16 +91,10 @@ impl AlertMutation {
         if !price.is_finite() {
             return Err(invalid_request("price"));
         }
-        if !matches!(
-            condition,
-            "cross" | "cross_up" | "cross_down" | "greater" | "less"
-        ) {
+        if !Self::CONDITIONS.contains(&condition) {
             return Err(invalid_request("condition"));
         }
-        if !matches!(
-            resolution,
-            "1" | "5" | "15" | "30" | "60" | "240" | "1D" | "1W" | "1M"
-        ) {
+        if !Self::RESOLUTIONS.contains(&resolution) {
             return Err(invalid_request("resolution"));
         }
         if settings.name.is_none() {
@@ -389,7 +388,7 @@ impl AlertMutation {
 
     pub fn report(&self, ids: &[u64], readback: Value) -> Value {
         json!({
-            "contract_version": "mcp_alert_mutation.v1",
+            "contract_version": Self::CONTRACT,
             "source": "tradingview_mcp",
             "source_category": "desktop_free_mutation",
             "requires_desktop": false,
