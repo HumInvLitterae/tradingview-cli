@@ -584,8 +584,10 @@ fn observe_spec_does_not_start_an_unbounded_observation() {
 }
 
 #[test]
-fn primary_stream_specs_do_not_start_polling() {
-    for action in ["values", "quote", "bars"] {
+fn stream_specs_do_not_start_polling() {
+    for action in [
+        "values", "quote", "bars", "lines", "labels", "tables", "all",
+    ] {
         let output = Command::cargo_bin("tv")
             .unwrap()
             .env("TV_CDP_PORT", "invalid")

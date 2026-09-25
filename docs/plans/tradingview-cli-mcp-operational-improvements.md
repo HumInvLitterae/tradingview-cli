@@ -1728,3 +1728,28 @@ tests and is not counted as coverage. Scoped CLI Clippy, formatting/diff checks,
 12 package self-tests, staged guidance parity and both updated skill metadata
 checks passed. Cargo ran serially with one build job. No live Desktop/provider
 operation, full-workspace suite or release build was performed.
+
+
+### Pine graphics and layout stream specifications (2026-09-26)
+
+Added stream lines/labels/tables/all, reaching 118 documented leaves of 169.
+Graphics streams use trimmed, case-insensitive chart-name filters, unlike the
+single-read data adapters. Specs expose endpoint reduction for sloped lines,
+first-50 label selection without truncation counts, nested table text and missing
+study identity/context. Silent per-study omissions cannot prove absent graphics.
+
+Stream all means current-layout pane OHLCV, not combined stream kinds. Positional
+indexes, per-pane error rows and sequential sampling do not establish complete
+or atomic cross-symbol observations. Both independently distributed observation
+references retain these distinctions. Runtime readers and contracts are unchanged.
+After these chart-analysis streams, reassess remaining read paths against actual
+workflow need; account list/get discovery can support selecting monitored symbols
+before lower-priority administrative or mutation metadata.
+
+Validation passed: 32 spec unit tests and one focused offline CLI test covering
+all seven stream kinds. Examples parse with the real CLI and defaults agree with
+StreamRequest. Scoped CLI Clippy, formatting/diff checks, 12 package self-tests,
+staged guidance parity and both skill metadata checks passed. Prior stream-reader
+fixture evidence remains applicable because execution code is unchanged. Cargo
+ran serially with one build job; no live Desktop/provider operations, workspace
+suite or release build was performed.
