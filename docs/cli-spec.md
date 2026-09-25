@@ -609,3 +609,24 @@ milliseconds and bar_time is the chart timestamp. Volume follows the existing
 reader's zero default. External chart changes are not prevented; inspect symbol
 and resolution per sample. No symbol switch, tab activation, screenshot or source
 fallback is performed by observation itself.
+
+
+## Primary chart streams
+
+Stream values, quote and bars emit stream.v1 JSONL without an initial readiness
+event. They share observe chart's deduplicated sample counting, continued sample
+errors on stderr and termination limits. Quote defaults to 300 ms; bars and
+values default to 500 ms. The minimum interval is 100 ms.
+
+Values reads numeric properties from studies' internal last-bar data rather than
+repeating the formatted data-window read used by values. Explicitly hidden
+studies are skipped when visibility is readable; unavailable studies and
+per-study failures can be omitted. Unknown visibility remains unknown. Identity
+and compact input changes affect deduplication. There is no study filter,
+explicit timeframe field or guaranteed per-study timestamp in these samples.
+
+Quote and bars both read the current main-series last-bar OHLCV. Quote uses time
+and omits resolution/bar_index; bars uses bar_time and includes those fields.
+Neither is a scanner/MCP quote feed or a historical bars export, and polling can
+miss intervening changes. Missing/falsy volume follows the existing zero default.
+Verify chart context before collecting; external chart changes remain possible.

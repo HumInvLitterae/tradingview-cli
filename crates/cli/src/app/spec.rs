@@ -27,6 +27,7 @@ mod pine_graphics;
 mod quotes;
 mod replay;
 mod scanner;
+mod stream;
 mod ui;
 
 pub(super) fn describe(path: &[String]) -> Result<Value, AppError> {
@@ -108,6 +109,7 @@ pub(super) fn describe(path: &[String]) -> Result<Value, AppError> {
         .or_else(|| mcp_research::describe(&canonical))
         .or_else(|| mcp_economics::describe(&canonical))
         .or_else(|| observe::describe(&canonical))
+        .or_else(|| stream::describe(&canonical))
     {
         data["coverage"]["semantics"] = json!("documented");
         data["semantics"] = semantics;

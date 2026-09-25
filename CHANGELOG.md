@@ -33,6 +33,7 @@ package version omits the leading `v`.
   Official news/document specs describe IDs, paging bounds and content/access limitations.
   Official economics/dividend specs distinguish catalogs, release values and lookup modes.
   Chart observation specs describe JSONL lifecycle, deduplication and termination limits.
+  Primary chart stream specs distinguish numeric study values and current-bar samples.
   Other semantic coverage is explicitly unannotated.
 
 - `tv mcp --timeout <SECONDS>` selects a 1–180 second total deadline for provider

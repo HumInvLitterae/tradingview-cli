@@ -30,3 +30,20 @@ collection. Summary has no error count. Broken output pipes or interruption can
 omit it. Inspect each sample's symbol/resolution because external chart changes
 are not prevented. `_ts` is client milliseconds; `bar_time` is the chart timestamp,
 not a closed-bar assertion. The current reader can default missing volume to zero.
+
+
+For `stream values`, `stream quote` and `stream bars`, use `tv spec stream <kind>`
+when available and help otherwise. These streams share the deduplicated count
+and error/termination limits above, but emit no initial readiness event.
+
+`stream values` reads numeric internal last-bar properties rather than the
+formatted strings returned by `values`. Explicitly hidden studies are skipped
+when visibility is readable; missing data and individual study failures can
+omit rows. Unknown visibility stays unknown. Samples have no explicit timeframe
+or guaranteed per-study timestamp. Verify chart context before collecting.
+
+`stream quote` and `stream bars` read the chart's current last-bar OHLCV, including
+an unfinished bar. They are not scanner or official-MCP price feeds. Quote uses
+`time` and omits resolution/bar_index; bars uses `bar_time` and includes both.
+Quote does not supply scanner-style extended-hours fields. Polling can miss
+intervening updates; neither command exports historical bars.

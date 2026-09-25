@@ -47,7 +47,8 @@ financial specs preserve fiscal periods, unknown units and unreported events.
 News/document specs cover reference IDs, paging limits and content availability.
 Economics/dividend specs distinguish catalog modes, date forms and unreported
 symbol outcomes. Observe chart specs describe JSONL channels, deduplication and
-termination limits.
+termination limits. Primary stream specs distinguish numeric study values from
+formatted values and chart last-bar samples from provider quote feeds.
 The active record owns evidence and resumption conditions. Heavy local hooks are
 opt-in; current-candidate cross-platform CI and release qualification remain open.
 
