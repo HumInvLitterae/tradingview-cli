@@ -23,7 +23,8 @@ side effects and readback. Selected Desktop chart controls now describe
 argument-dependent effects. Launch, tab changes and chart comparison describe
 process/UI effects and restoration limits. Replay specs include practice-state
 changes and conditional attachments. UI specs distinguish observations, input
-and arbitrary evaluation; other command semantics remain unannotated.
+and arbitrary evaluation. Indicator specs include ID discovery, input rules and
+verification; other command semantics remain unannotated.
 The active record owns evidence and resumption conditions. Heavy local hooks are
 opt-in; current-candidate cross-platform CI and release qualification remain open.
 

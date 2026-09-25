@@ -5,6 +5,8 @@ use tradingview_core::{AppError, ErrorKind};
 
 use super::common::{CHART_API, js_string};
 
+pub(crate) const MAX_SAFE_INTEGER: i64 = 9_007_199_254_740_991;
+
 pub fn parse_indicator_inputs(raw: &str) -> Result<Value, AppError> {
     let value: Value = serde_json::from_str(raw).map_err(|err| {
         AppError::new(
@@ -30,7 +32,6 @@ pub fn parse_indicator_inputs(raw: &str) -> Result<Value, AppError> {
 }
 
 pub fn parse_indicator_add_inputs(raw: &str) -> Result<Value, AppError> {
-    const MAX_SAFE_INTEGER: i64 = 9_007_199_254_740_991;
     let value = parse_indicator_inputs(raw)?;
     let object = value
         .as_object()

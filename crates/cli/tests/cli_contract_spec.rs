@@ -171,3 +171,32 @@ fn ui_specs_remain_offline_with_arbitrary_eval_disabled() {
         }
     }
 }
+
+#[test]
+fn indicator_specs_are_offline_and_do_not_create_or_modify_studies() {
+    for path in [
+        vec!["indicator", "add"],
+        vec!["indicator", "get"],
+        vec!["indicator", "set"],
+        vec!["indicator", "toggle"],
+        vec!["indicator", "remove"],
+        vec!["data", "indicator"],
+    ] {
+        let output = Command::cargo_bin("tv")
+            .unwrap()
+            .env("TV_CDP_PORT", "invalid")
+            .arg("spec")
+            .args(&path)
+            .assert()
+            .success()
+            .get_output()
+            .clone();
+        assert!(output.stderr.is_empty());
+        let value: Value = serde_json::from_slice(&output.stdout).unwrap();
+        assert_eq!(value["data"]["coverage"]["semantics"], "documented");
+        assert_eq!(
+            value["data"]["semantics"]["effects"]["chart_mutation"],
+            path[0] == "indicator" && path[1] != "get"
+        );
+    }
+}

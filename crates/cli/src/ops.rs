@@ -34,6 +34,7 @@ mod renderer_foreground_measurement;
 mod test_support;
 
 pub(crate) use common::CHART_TYPES;
+pub(crate) use indicator::MAX_SAFE_INTEGER;
 pub(crate) use market::CHART_COMPARE_CONTRACT_VERSION;
 
 pub use alert::{
