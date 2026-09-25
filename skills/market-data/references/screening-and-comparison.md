@@ -74,8 +74,9 @@ state. Do not add them as a routine final step of analysis.
 For official-source screening, `tv mcp screener` performs one query
 and returns `mcp_screener.v1`, independent of scanner REST and Desktop Screener.
 Use `tv mcp columns` to find field names. Supply numeric filters as a JSON object
-of `[min,max]` bounds (null is unbounded); optional presets are provider-defined
-selection rules, not trading recommendations. Never treat a preset label as an
+of `[min,max]` bounds (null is unbounded, min must not exceed max). The fields
+index, sector, industry and analyst_rating also accept string values. Optional
+presets are provider-defined selection rules, not trading recommendations. Never treat a preset label as an
 independent assessment of the returned companies.
 
 Keep provider row order, requested fields and their missing/null distinctions.
@@ -97,3 +98,13 @@ counts primarily cover fundamentals. Inspect the sections and freshness fields.
 Top-level symbol selection prefers quote, then fundamentals, then info; it does
 not establish cross-section identity agreement or a synchronized observation.
 Snapshot group/field options affect fundamentals only; compare uses defaults.
+
+
+`tv spec mcp screener` lists supported preset names and input bounds offline;
+use help on older binaries. Filters allow at most 50 fields and 16384 UTF-8 bytes.
+Columns default when omitted and reject duplicates. `--types` and `--symbolset`
+accept up to 50 unique nonblank strings each; local validation does not establish
+provider support for those values. The market argument uses regional names, not
+the category catalog used by `mcp columns`. Do not assume scanner REST filter
+semantics apply to this official path. OAuth refresh can update local credentials
+even though the provider operation is read-only.

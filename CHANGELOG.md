@@ -28,6 +28,7 @@ package version omits the leading `v`.
   Pine graphics specs explain filtering, rounding, label limits and lossy table rows.
   Scanner scan specs distinguish page/aggregate modes, field choices and filter constraints.
   Snapshot/compare specs describe section coverage, field selection and follow-up limitations.
+  Official MCP screener specs describe filters, presets, selection limits and count coverage.
   Other semantic coverage is explicitly unannotated.
 
 - `tv mcp --timeout <SECONDS>` selects a 1–180 second total deadline for provider

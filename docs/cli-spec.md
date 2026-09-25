@@ -496,3 +496,23 @@ Follow-up hints do not execute or authorize actions. In particular, existing
 non_mutating hints can name chart_quote or screenshot despite chart switching or
 file output. Inspect the hinted command's own specification before executing it.
 Correcting that legacy hint contract remains a separate consumer-facing change.
+
+
+## Official MCP screener
+
+MCP screener requires authentication and remains Desktop-free. Its specification
+uses mcp_screener.v1 and the common read timeout metadata. Filters are a JSON
+object with up to 50 fields and 16384 input bytes. Numeric bounds are two finite
+numbers or nulls with min <= max; index, sector, industry and analyst_rating also
+accept strings. Columns use shared defaults and uniqueness limits. Types and
+symbolset are optional exact-unique string lists; their provider meaning is not
+validated by local shape checks. Presets are explicit accepted names, not trading
+judgments or a replacement for technical indicator observations.
+
+The single read has no paging/offset. Empty success is valid, while inconsistent
+counts, duplicate symbols and malformed identities fail normalization. Count
+coverage limited/all_reported/unconfirmed does not establish exhaustive market
+coverage; item missing fields remain distinct from explicit nulls. Data time,
+delay and session remain unconfirmed. Regional screener market syntax is separate
+from column-discovery categories. Credential refresh may update local state;
+specification lookup itself reads no credentials or provider data.

@@ -471,3 +471,21 @@ fn packet_specs_do_not_collect_sections_or_execute_hints() {
         assert_eq!(semantics["output_contract"], format!("{action}.v1"));
     }
 }
+
+#[test]
+fn mcp_screener_spec_needs_no_credentials_or_provider_call() {
+    let output = Command::cargo_bin("tv")
+        .unwrap()
+        .env("TV_CDP_PORT", "invalid")
+        .args(["spec", "mcp", "screener"])
+        .assert()
+        .success()
+        .get_output()
+        .clone();
+    assert!(output.stderr.is_empty());
+    let value: Value = serde_json::from_slice(&output.stdout).unwrap();
+    let semantics = &value["data"]["semantics"];
+    assert_eq!(semantics["requires"]["authentication"], true);
+    assert_eq!(semantics["requires"]["desktop"], false);
+    assert_eq!(semantics["output_contract"], "mcp_screener.v1");
+}
