@@ -582,3 +582,23 @@ fn observe_spec_does_not_start_an_unbounded_observation() {
         false
     );
 }
+
+#[test]
+fn primary_stream_specs_do_not_start_polling() {
+    for action in ["values", "quote", "bars"] {
+        let output = Command::cargo_bin("tv")
+            .unwrap()
+            .env("TV_CDP_PORT", "invalid")
+            .args(["spec", "stream", action])
+            .assert()
+            .success()
+            .get_output()
+            .clone();
+        assert!(output.stderr.is_empty());
+        let value: Value = serde_json::from_slice(&output.stdout).unwrap();
+        let semantics = &value["data"]["semantics"];
+        assert_eq!(semantics["output_contract"], "stream.v1");
+        assert_eq!(semantics["output"]["readiness_event"], false);
+        assert_eq!(semantics["effects"]["chart_mutation"], false);
+    }
+}

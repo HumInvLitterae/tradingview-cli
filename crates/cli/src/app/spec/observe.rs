@@ -13,13 +13,7 @@ pub(super) fn describe(path: &[&str]) -> Option<Value> {
         "output_contract": "observe_chart.v1",
         "requires": {"desktop": true, "authentication": null},
         "effects": {"chart_mutation": false, "activates_tab": false, "captures_screenshot": false, "local_file_write": false},
-        "constraints": {
-            "interval": {"minimum": 100, "default": StreamKind::Bars.default_interval_ms(), "unit": "milliseconds"},
-            "duration_ms": {"minimum": 1, "optional": true},
-            "max_events": {"minimum": 1, "optional": true, "counts": "emitted distinct samples only"},
-            "heartbeat_ms": {"minimum": 100, "optional": true, "default": null},
-            "termination": "first duration or sample-count bound reached; no bound means open-ended"
-        },
+        "constraints": controls(StreamKind::Bars),
         "discovery": [{"argument": "target-id", "argv": ["tv", "tab", "list"], "result_path": "data.tabs[].id"}],
         "output": {
             "format": "JSONL envelopes, not one JSON document",
@@ -39,6 +33,16 @@ pub(super) fn describe(path: &[&str]) -> Option<Value> {
         ],
         "examples": [["tv", "--target-id", "<target_id>", "observe", "chart", "--duration-ms", "5000", "--max-events", "10", "--heartbeat-ms", "1000"]]
     }))
+}
+
+pub(super) fn controls(kind: StreamKind) -> Value {
+    json!({
+        "interval": {"minimum": 100, "default": kind.default_interval_ms(), "unit": "milliseconds"},
+        "duration_ms": {"minimum": 1, "optional": true},
+        "max_events": {"minimum": 1, "optional": true, "counts": "emitted distinct samples only"},
+        "heartbeat_ms": {"minimum": 100, "optional": true, "default": null},
+        "termination": "first duration or sample-count bound reached; no bound means open-ended"
+    })
 }
 
 #[cfg(test)]

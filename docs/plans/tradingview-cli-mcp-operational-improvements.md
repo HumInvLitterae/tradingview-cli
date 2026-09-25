@@ -1706,3 +1706,25 @@ deduplication fixtures and the focused offline CLI test. Scoped CLI Clippy,
 formatting/diff checks, 12 package self-tests, guidance staging and both updated
 skill metadata checks passed. Cargo ran serially with one build job. No live
 observation, provider call, full-workspace suite or release build was performed.
+
+
+### Primary chart stream specifications (2026-09-26)
+
+Added stream values/quote/bars, reaching 114 documented leaves of 169. Numeric
+internal study values are distinct from formatted data-window values; hidden or
+unavailable studies can be omitted. Quote and bars sample current chart OHLCV,
+not provider quote feeds or historical exports. Timestamp/context differences,
+volume defaulting and lack of an initial readiness event are explicit.
+
+Observation and stream specs share private control metadata while retaining
+kind-specific interval defaults. Runtime readers, loops and JSONL contracts are
+unchanged. Both standalone observation references carry the relevant boundaries.
+Next examine Pine graphics streams and combined chart sampling for chart-analysis
+benefit before lower-priority administrative coverage.
+
+Validation passed: 32 spec unit tests, 12 existing stream fixtures and one focused
+offline CLI test covering all three paths. The app::stream filter selected no
+tests and is not counted as coverage. Scoped CLI Clippy, formatting/diff checks,
+12 package self-tests, staged guidance parity and both updated skill metadata
+checks passed. Cargo ran serially with one build job. No live Desktop/provider
+operation, full-workspace suite or release build was performed.
