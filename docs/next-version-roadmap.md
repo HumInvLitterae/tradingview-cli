@@ -1,6 +1,6 @@
 # v0.33.0 roadmap
 
-Status: offline specification work added before release qualification, 2026-09-25.
+Status: offline specification implemented; release qualification open, 2026-09-25.
 Alert history, login guidance, command-local connection reuse and the explicit read timeout are implemented.
 The owner deferred technical snapshots on 2026-09-25; they no longer block
 this release. Baseline: [released v0.32.0](plans/archives/tradingview-cli-official-mcp-client.md#publication-closeout-2026-09-22).

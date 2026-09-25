@@ -42,6 +42,11 @@ pub struct Cli {
 #[derive(Debug, Subcommand)]
 #[allow(clippy::large_enum_variant)]
 pub enum Command {
+    #[command(about = "Describe CLI commands as offline JSON; does not connect to TradingView")]
+    Spec {
+        #[arg(value_name = "COMMAND")]
+        path: Vec<String>,
+    },
     #[command(
         about = "Use the official TradingView MCP service",
         long_about = "Explicit official MCP commands, separate from tv bars. \
@@ -1398,6 +1403,7 @@ pub enum McpCommand {
 impl Command {
     pub fn name(&self) -> &'static str {
         match self {
+            Self::Spec { .. } => "spec",
             Self::Mcp { .. } => "mcp",
             Self::Status => "status",
             Self::Readiness => "readiness",

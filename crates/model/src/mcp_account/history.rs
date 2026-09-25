@@ -61,7 +61,7 @@ pub(super) fn normalize(
         })
         .collect::<Result<Vec<_>, AppError>>()?;
     Ok(json!({
-        "contract_version": "mcp_alert_history.v1",
+        "contract_version": Request::ALERT_HISTORY_CONTRACT,
         "source": "tradingview_mcp",
         "requested": request.arguments,
         "retrieved_at_unix_ms": received_ms,

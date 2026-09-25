@@ -26,12 +26,17 @@ pub struct Request {
 }
 
 impl Request {
+    /// Maximum number of firing-history events accepted by the client.
+    pub const ALERT_HISTORY_MAX_LIMIT: u32 = 2000;
+    /// Output contract shared by history normalization and command discovery.
+    pub const ALERT_HISTORY_CONTRACT: &str = "mcp_alert_history.v1";
+
     pub fn alert_history(symbol: &str, days: u32, limit: u32) -> Result<Self, AppError> {
         crate::mcp_bars::validate_symbol(symbol)?;
         if days == 0 {
             return Err(invalid_request("days"));
         }
-        if !(1..=2000).contains(&limit) {
+        if !(1..=Self::ALERT_HISTORY_MAX_LIMIT).contains(&limit) {
             return Err(invalid_request("limit"));
         }
         Ok(Self {

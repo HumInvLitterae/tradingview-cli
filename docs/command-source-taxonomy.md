@@ -14,6 +14,13 @@ downstream use.
 
 ## Categories
 
+### Offline command metadata
+
+`tv spec` reads compiled CLI metadata and static annotations only. It does not
+access Desktop, credentials, account state or providers. Metadata describing a
+command's source/effects is not an observation of provider availability. See
+[command specifications](cli-spec.md) for coverage and unknown semantics.
+
 ### Authenticated official MCP
 
 `tv mcp bars`, `search`, `columns`, `symbol`, `symbols` and `screener` are explicit

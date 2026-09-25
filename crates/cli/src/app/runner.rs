@@ -85,6 +85,10 @@ async fn async_main() -> ExitCode {
         return terminal_error("tv", app_error);
     };
 
+    if let Command::Spec { path } = command {
+        return standard_exit("spec", super::spec::describe(&path));
+    }
+
     if let Command::Mcp { command, timeout } = command {
         if cli.target_id.is_some() {
             return terminal_error(

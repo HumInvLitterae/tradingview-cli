@@ -34,15 +34,18 @@ pub enum Operation {
 }
 
 impl Operation {
+    pub const DEFAULT_READ_TIMEOUT_SECONDS: u64 = 30;
+    pub const MAX_READ_TIMEOUT_SECONDS: u64 = 180;
+
     pub(crate) fn timeout_duration(&self, seconds: Option<u64>) -> Result<Duration, AppError> {
         let Some(seconds) = seconds else {
             return Ok(Duration::from_secs(if matches!(self, Self::Login) {
                 300
             } else {
-                30
+                Self::DEFAULT_READ_TIMEOUT_SECONDS
             }));
         };
-        if !(1..=180).contains(&seconds) {
+        if !(1..=Self::MAX_READ_TIMEOUT_SECONDS).contains(&seconds) {
             return Err(
                 AppError::new(ErrorKind::Validation, "MCP timeout must be 1-180 seconds")
                     .with_details(json!({

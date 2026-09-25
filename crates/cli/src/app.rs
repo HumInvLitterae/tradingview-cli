@@ -6,6 +6,7 @@ mod replay_log;
 mod runner;
 mod runtime;
 mod safety;
+mod spec;
 mod stream;
 mod watch;
 
