@@ -139,3 +139,35 @@ fn replay_specs_do_not_advance_practice_or_create_attachments() {
         );
     }
 }
+
+#[test]
+fn ui_specs_remain_offline_with_arbitrary_eval_disabled() {
+    for action in [
+        "find",
+        "click",
+        "hover",
+        "keyboard",
+        "type",
+        "scroll",
+        "panel",
+        "fullscreen",
+        "mouse",
+        "eval",
+    ] {
+        let output = Command::cargo_bin("tv")
+            .unwrap()
+            .env("TV_CDP_PORT", "invalid")
+            .env_remove("TV_ALLOW_UNSAFE_UI_EVAL")
+            .args(["spec", "ui", action])
+            .assert()
+            .success()
+            .get_output()
+            .clone();
+        assert!(output.stderr.is_empty());
+        let value: Value = serde_json::from_slice(&output.stdout).unwrap();
+        assert_eq!(value["data"]["coverage"]["semantics"], "documented");
+        if action == "eval" {
+            assert!(value["data"]["semantics"]["effects"]["ui_mutation"].is_null());
+        }
+    }
+}

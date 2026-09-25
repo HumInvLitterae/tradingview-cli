@@ -134,7 +134,7 @@ lookup never obtains one or changes the chart. Desktop authentication is left
 unknown because session/data access belongs to the running application; these
 commands do not use MCP OAuth. A null output contract means no versioned contract
 is advertised here. Other Desktop commands remain explicitly unannotated,
-including UI actions, drawings and indicators.
+including drawings and indicators.
 
 
 ## Desktop lifecycle and comparison
@@ -190,3 +190,30 @@ Attachments follow successful steps; an attachment failure does not repeat the
 step. Specs describe conditional file effects rather than classifying logging
 as a read. Specification lookup writes no attachments and always returns its own
 normal JSON envelope, even when describing this JSONL command.
+
+
+## UI operations
+
+All ten `ui` commands have semantic details. `find` observes elements; click,
+hover, keyboard, type, scroll, panel, fullscreen and mouse can change the UI.
+`eval` has unknown effects because it runs arbitrary JavaScript. Spec lookup
+never connects to the page or enables `TV_ALLOW_UNSAFE_UI_EVAL`; actual eval
+requires that variable to equal `1`.
+
+Find supports text, aria-label and CSS queries. Click/hover support text,
+aria-label, data-name and class-contains, but not CSS. Discovery results are
+observations, not stable identifiers; inspect the first matching target before
+acting. Hover can change a menu or tooltip. Find returns at most 20 rows and does
+not prove complete UI coverage.
+
+Keyboard shortcuts and typed text go to the current focus. Type output includes
+a text prefix, so it is not a credential-entry workflow. Coordinate clicks use
+the current page geometry. Scroll amounts must be finite but may be negative;
+scrolling does not establish a requested date range. Panel actions default to
+toggle, and fullscreen also toggles. Repeating these calls can reverse state.
+
+UI mutation does not imply a known account effect: the focused element or page
+code determines that. Specs leave account effects unknown except for find.
+Prefer a dedicated operation when available and inspect the result before
+retrying a UI input. Names in examples require the user's selected UI target;
+examples do not authorize account changes.
