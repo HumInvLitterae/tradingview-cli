@@ -37,3 +37,14 @@ commands. Native three-point `parallel_channel` needs paired `--price3` and
 `--time3`, with the third time equal to the first point's time. Preserve the
 verified returned entity ID for inspection/removal. Do not infer authority to
 change studies or drawings from their appearance in a read result.
+
+
+## Indicator command details
+
+On binaries with `spec`, use `tv spec indicator <action>` for chart-local IDs,
+input constraints and readback. Get IDs from `tv state` on the selected target.
+`indicator toggle` with no flags shows the study; it does not invert visibility.
+Add requires an exact metainfo name and verifies scalar inputs. Set can update
+matched keys while reporting unmatched keys, so read actual inputs afterward.
+There is no dedicated metainfo search command, and failed insertion cleanup is
+not a rollback guarantee. Older binaries retain textual help.

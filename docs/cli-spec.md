@@ -134,7 +134,7 @@ lookup never obtains one or changes the chart. Desktop authentication is left
 unknown because session/data access belongs to the running application; these
 commands do not use MCP OAuth. A null output contract means no versioned contract
 is advertised here. Other Desktop commands remain explicitly unannotated,
-including drawings and indicators.
+including drawings.
 
 
 ## Desktop lifecycle and comparison
@@ -217,3 +217,28 @@ code determines that. Specs leave account effects unknown except for find.
 Prefer a dedicated operation when available and inspect the result before
 retrying a UI input. Names in examples require the user's selected UI target;
 examples do not authorize account changes.
+
+
+## Chart indicators
+
+Specs cover indicator add/get/set/toggle/remove and the equivalent `data indicator`
+read. Resolve chart-local entity IDs from `data.studies[].id` in `tv state` on
+the selected target. Names are not IDs. Get may omit long string inputs and leave
+visibility/inputs unknown; it is not a complete export.
+
+Add resolves a trimmed, case-sensitive metainfo description with exactly one
+candidate. There is no dedicated metainfo search command. Supplied inputs must
+be a nonempty JSON object with scalar values and JavaScript-safe integers;
+keys must match that metainfo. Insertion is awaited and one new study with the
+requested name/inputs must be verified. Failure can attempt cleanup, but does
+not guarantee rollback. Inspect mutation and cleanup evidence before retrying.
+
+Set accepts a nonempty object and updates matching input IDs. Other keys can
+remain unmatched even on success; no match fails. Its local validator does not
+apply add's scalar restriction. Returned updated values are requested values,
+not verified persistence; inspect unmatched inputs and read the study again.
+
+Toggle is a setter despite its name: no flags or `--visible` shows the study,
+`--hidden` hides it, and both flags are rejected. The operation reads visibility
+back. Remove checks absence of the same entity ID after removal. Specification
+queries do not perform any of these operations.

@@ -1308,3 +1308,27 @@ and eval disabled. Scoped CLI Clippy, formatting/diff checks, package validation
 (12 self-tests and staging) and updated skill metadata passed. Cargo ran serially
 with one build job. No actual UI, eval or account operation, full-workspace test,
 release build or installed-binary replacement was performed.
+
+
+### Indicator specifications (2026-09-25)
+
+Added add/get/set/toggle/remove plus data indicator. Entity discovery uses the
+selected chart's state inventory. No nonexistent metainfo search is advertised.
+Add's exact-name resolution, scalar input checks, JavaScript-safe integer bound,
+awaited insertion/readback and uncertain cleanup are distinct from set's nonempty
+object validator and partial matching behavior. The numeric bound now shares
+its execution constant. Existing indicator execution was not changed.
+
+Toggle is explicitly a visibility setter: omission shows, hidden hides, and
+visible plus hidden rejects. Get's filtered inputs are not a full export;
+set's updated_inputs is not persistence evidence. Specs guide same-target
+readback without performing any Desktop operation. Drawings remain the next
+Desktop family; other unannotated paths retain unavailable semantics.
+
+Validation passed: 15 spec unit tests, 11 indicator fixture tests and seven CLI
+subprocess tests, including all six added paths with invalid Desktop settings.
+The existing ignored Node insertion contract was not rerun because its production
+JavaScript was unchanged. Scoped CLI Clippy, formatting/diff checks, package
+validation (12 self-tests and staging) and skill metadata passed. Cargo remained
+serial with one build job. No Desktop/provider operation, full-workspace test,
+release build or installed-binary replacement was performed.
