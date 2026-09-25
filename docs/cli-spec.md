@@ -422,3 +422,28 @@ bars path maps zero drawdown to null. A nonzero data_points count therefore does
 not establish a strategy equity curve. Confirm provenance before calculating
 returns; equity_summary with data_points=0 remains summary-only. Changing this
 legacy output requires a separate consumer-compatible contract decision.
+
+
+## Pine graphics summaries
+
+Data lines/labels/tables/boxes read Pine primitives on the selected Desktop chart.
+Their filter is a case-sensitive name substring without trimming; an empty filter
+selects all readable studies. Rows lack study entity IDs, so duplicate names can
+remain ambiguous. Missing primitives and suppressed per-study errors can omit
+rows. These commands neither filter by visibility nor read hand-drawn objects.
+
+Lines round y endpoints to two decimals before horizontal comparison, deduplicate
+levels and sort descending. Boxes similarly round/deduplicate high/low zones.
+Verbose output adds primitive detail but does not restore precision or establish
+coordinate units. Neither summary validates a trading level.
+
+Labels omit entries lacking both text and numeric y. Max defaults to 500 per
+study, accepts zero, and keeps the last readable entries in primitive iteration
+order. Counts distinguish extracted, readable and returned labels. This is not a
+chronological/pagination guarantee or a Desktop collection limit.
+
+Tables group and sort integer table/row/column keys, default missing keys to zero
+and overwrite duplicate coordinates. Output contains only row strings joined
+with ` | `, dropping empty cells/rows and original coordinates/IDs. Delimiters in
+text are not escaped; the result cannot reliably reconstruct a typed rectangle.
+There is no tables verbose or max option.

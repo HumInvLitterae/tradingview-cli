@@ -1520,3 +1520,25 @@ Embedded JavaScript was inspected but unchanged; its separate execution gates
 were not rerun. No live chart/provider operation, full-workspace test or release
 build was performed. Supporting Pine chart outputs (lines/labels/tables) are the
 next analysis-oriented metadata candidates, before lower-priority administration.
+
+
+### Pine graphics specifications (2026-09-25)
+
+Added data lines/labels/tables/boxes, reaching 94 documented leaves of 169.
+Boxes share the same collection adapter and support chart zone inspection, so
+are included with lines rather than deferred for family bookkeeping. Metadata
+and standalone chart guidance expose case-sensitive name matching, absent study
+IDs, suppressed per-study failures and unknown coordinate interpretation.
+
+Rounded/deduplicated levels and zones remain derived observations. Labels retain
+last-in-iteration entries with post-extraction per-study limits. Table output is
+lossy formatted text, not a reconstructable matrix. Execution, public payloads
+and embedded JavaScript are unchanged. With these core chart reads covered,
+scanner scan is the next planned symbol-selection aid; reassess remaining chart
+reads against concrete consumer needs rather than automatically covering all.
+
+Validation passed: 24 spec unit tests, six existing Pine graphics fixtures and
+one offline CLI subprocess test covering all four paths. Scoped CLI Clippy,
+formatting/diff checks, 12 package self-tests, guidance staging and chart-analysis
+skill metadata passed. Cargo ran serially with one build job. No live chart,
+provider request, full-workspace suite or release build was performed.

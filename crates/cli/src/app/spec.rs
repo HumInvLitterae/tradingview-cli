@@ -18,6 +18,7 @@ mod market;
 mod mcp_mutations;
 mod mcp_reads;
 mod pine;
+mod pine_graphics;
 mod quotes;
 mod replay;
 mod ui;
@@ -94,6 +95,7 @@ pub(super) fn describe(path: &[String]) -> Result<Value, AppError> {
         .or_else(|| market::describe(&canonical))
         .or_else(|| quotes::describe(&canonical))
         .or_else(|| analysis::describe(&canonical))
+        .or_else(|| pine_graphics::describe(&canonical))
     {
         data["coverage"]["semantics"] = json!("documented");
         data["semantics"] = semantics;
