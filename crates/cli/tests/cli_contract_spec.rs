@@ -226,3 +226,35 @@ fn drawing_specs_never_create_or_clear_chart_objects() {
         }
     }
 }
+
+#[test]
+fn layout_specs_do_not_connect_focus_or_navigate() {
+    for path in [
+        ["pane", "list"],
+        ["pane", "layout"],
+        ["pane", "focus"],
+        ["pane", "symbol"],
+        ["layout", "list"],
+        ["layout", "switch"],
+    ] {
+        let output = Command::cargo_bin("tv")
+            .unwrap()
+            .env("TV_CDP_PORT", "invalid")
+            .args(["spec", path[0], path[1]])
+            .assert()
+            .success()
+            .get_output()
+            .clone();
+        assert!(output.stderr.is_empty());
+        let value: Value = serde_json::from_slice(&output.stdout).unwrap();
+        let semantics = &value["data"]["semantics"];
+        assert_eq!(semantics["requires"]["desktop"], true);
+        if path == ["layout", "switch"] {
+            assert!(semantics["effects"]["chart_mutation"].is_null());
+            assert_eq!(semantics["variants"][0]["effects"]["chart_mutation"], false);
+            assert_eq!(semantics["variants"][1]["effects"]["chart_mutation"], true);
+        } else {
+            assert_eq!(semantics["effects"]["chart_mutation"], path[1] != "list");
+        }
+    }
+}
