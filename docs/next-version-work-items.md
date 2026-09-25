@@ -15,7 +15,7 @@ Contracts, approvals and dated evidence:
 | 7 | Stabilize affected fixtures | Scoped serial regression passed; no new timing defect was established. Current-candidate default-concurrency and cross-platform CI remain pending. Correct concrete failures if observed; do not weaken production deadlines or assertions. |
 | 8 | Integrate documentation and standalone skills | Complete for implemented behavior: help, usage, source taxonomy and standalone MCP references updated and checked. Add technical snapshot guidance only after its implementation. |
 | 9 | Distribute standalone skills from one source | Implemented: root `skills/` owns seven runtime skills; local agent links reuse them and archives copy real files. gh local install and npm discovery confirmed seven skills. Remote installation of this unpublished layout and Windows execution remain unverified. |
-| 10 | Add offline command specifications | Implemented: offline `tv spec` index and clap-derived command detail, with primary MCP read/history and watchlist/alert mutation semantics, shared validation constants and conditional Desktop chart-control variants plus launch, tab changes, chart comparison, Replay, UI, indicator, drawing, pane and saved-layout operations. Unannotated paths and partial validation remain explicit. Schema export and offline request validation follow separately. See the active work record. |
+| 10 | Add offline command specifications | Implemented: offline `tv spec` index and clap-derived command detail, with primary MCP read/history and watchlist/alert mutation semantics, shared validation constants and conditional Desktop chart-control variants plus launch, tab changes, chart comparison, Replay, UI, indicator, drawing, pane, saved-layout and Pine operations. Unannotated paths and partial validation remain explicit. Schema export and offline request validation follow separately. See the active work record. |
 | 11 | Qualify and prepare release | Pending. Qualify the updated dependency graph, review remaining native limits, obtain current-candidate platform/CI evidence, then prepare version and notes separately. Publishing remains separately authorized. |
 
 ## Completed operating prerequisite
@@ -67,13 +67,14 @@ evidence or a provider explanation.
 ## Remaining command-specification order
 
 A 2026-09-25 offline inventory found 169 executable paths, excluding 26 command
-groups. After pane/layout annotations, 64 paths have semantics and 105 do not.
+groups. After Pine annotations, 77 paths have semantics and 92 do not.
 Validation coverage remains partial even for annotated paths. Use `tv spec`
 from the current development binary to reproduce the path inventory.
 
 Continue in this order, with source inspection and focused offline tests for each:
 
-1. Pine: distinguish local file/static checks from Editor mutations and compile/save.
+1. Pine: complete for all 13 paths; local checks, source transmission, Editor
+   mutation and compile/save limits are documented.
 2. Data and capture: credential-free bars/quotes/scanner reads, chart data/export,
    screenshots and scroll; retain source, file-write and viewport distinctions.
 3. Remaining MCP reads and authentication: account discovery, screener, economic,

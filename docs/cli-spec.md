@@ -134,7 +134,7 @@ lookup never obtains one or changes the chart. Desktop authentication is left
 unknown because session/data access belongs to the running application; these
 commands do not use MCP OAuth. A null output contract means no versioned contract
 is advertised here. Other Desktop commands remain explicitly unannotated,
-including Pine and other data/export paths.
+including other data/export paths.
 
 
 ## Desktop lifecycle and comparison
@@ -292,3 +292,28 @@ selection through Desktop without loading it. Normal execution can navigate;
 unsaved-change dialogs without dismissing them. Refresh targets after navigation
 and inspect the intended chart before continuing. `layout list` is inventory,
 not active-layout readback; inspect `data.error` even with a successful envelope.
+
+
+## Pine source and Editor operations
+
+All thirteen Pine paths have semantic details. Analyze and alertconditions read
+UTF-8 source from `--file` or non-terminal stdin and run locally. Check uses the
+same input selection but sends source to the credential-free Pine facade; it is
+neither offline nor official MCP. No source-input command implicitly reads the
+Editor, and none writes a local file. Static findings and best-effort alert
+condition indices do not establish successful TradingView compilation.
+
+Desktop get/errors/console may open the Editor. Set and new replace and verify
+text without creating a new saved-script binding. In particular, new writes a
+template into the current Editor; saving afterward can affect the existing
+script. Open resolves a unique saved name and verifies identity/version binding
+without source-only fallback, saving or compilation.
+
+Compile may add or update a chart study and returns markers and study counts;
+those observations are not exact study identity or runtime correctness proof.
+Raw-compile can also invoke a save action and returns no diagnostic verification.
+Save requires explicit saved/clean UI evidence for an already named script; it
+does not handle naming a new script or independently retrieve a saved revision.
+Errors reads current markers without compiling, while console reads visible log
+entries. Empty markers or logs do not establish a fresh successful execution.
+Saved-script list can return `data.error` inside a successful envelope.

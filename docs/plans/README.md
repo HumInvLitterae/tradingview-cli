@@ -26,7 +26,9 @@ changes and conditional attachments. UI specs distinguish observations, input
 and arbitrary evaluation. Indicator specs include ID discovery, input rules and
 verification. Drawing specs cover geometry and clear/dry-run behavior; other
 command semantics remain unannotated. Pane and saved-layout specs distinguish
-selection from observed state; the inventory now orders the remaining families.
+selection from observed state. Pine specs distinguish local analysis, source
+transmission, Editor changes and compile/save evidence. The inventory orders
+the remaining families.
 The active record owns evidence and resumption conditions. Heavy local hooks are
 opt-in; current-candidate cross-platform CI and release qualification remain open.
 
