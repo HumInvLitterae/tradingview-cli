@@ -1660,3 +1660,26 @@ constructors. Scoped CLI Clippy, formatting/diff checks, 12 package self-tests,
 guidance staging and market-data skill metadata passed. Cargo ran serially with
 one build job. No live provider/authentication action, browser navigation,
 full-workspace suite or release build was performed.
+
+
+### Official economics and dividend specifications (2026-09-25)
+
+Added economic-symbols/data/calendar and dividends, reaching 110 documented
+leaves of 169. Specs distinguish overview, indicator codes and qualified symbols,
+separate category vocabularies, exact country/currency lists and optional date
+formats. Calendar mixed-format comparison is date-only, rather than a stronger
+instant-order guarantee. Explicit dividend symbols cannot mix with screen flags.
+
+Provider release/reference values, units and nulls remain separate. Returned
+series extrema and event rows do not establish coverage; unreported dividends
+do not establish absence. Standalone market guidance retains these boundaries.
+Execution and provider contracts are unchanged. Next review remaining chart
+observation commands against downstream use before administration-only gaps.
+
+Validation passed: 30 spec unit tests, seven existing economics model fixtures
+and one offline CLI test covering all four paths. Catalog/calendar category
+choices and rejected mixed dividend modes were checked through real request
+constructors. Scoped CLI Clippy, formatting/diff checks, 12 package self-tests,
+guidance staging and market-data skill metadata passed. Cargo ran serially with
+one build job. No live provider/authentication action, Desktop operation,
+full-workspace suite or release build was performed.

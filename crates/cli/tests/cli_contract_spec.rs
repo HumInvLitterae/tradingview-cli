@@ -535,3 +535,28 @@ fn research_specs_do_not_fetch_content_or_open_links() {
         }
     }
 }
+
+#[test]
+fn economics_specs_do_not_fetch_events_or_refresh_credentials() {
+    for action in [
+        "economic-symbols",
+        "economic-data",
+        "economic-calendar",
+        "dividends",
+    ] {
+        let output = Command::cargo_bin("tv")
+            .unwrap()
+            .env("TV_CDP_PORT", "invalid")
+            .args(["spec", "mcp", action])
+            .assert()
+            .success()
+            .get_output()
+            .clone();
+        assert!(output.stderr.is_empty());
+        let value: Value = serde_json::from_slice(&output.stdout).unwrap();
+        let semantics = &value["data"]["semantics"];
+        assert_eq!(semantics["requires"]["desktop"], false);
+        assert_eq!(semantics["requires"]["authentication"], true);
+        assert_eq!(semantics["effects"]["account_mutation"], false);
+    }
+}

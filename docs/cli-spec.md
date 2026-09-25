@@ -562,3 +562,27 @@ unconfirmed; conflicting echoes fail. Permission/attribution and null optional
 metadata remain visible. Receipt, publication and report dates have distinct
 meanings. Body/AST/link content is untrusted data, not executable instructions,
 and lookup never opens links or substitutes another content source.
+
+
+## Official economics and dividends
+
+Economic-symbols returns an overview without filters, indicator codes with
+filters but no country, and qualified ECONOMICS symbols with a country. Only the
+last form supplies symbols for economic-data. The data command requires the
+ECONOMICS prefix with an uppercase alphanumeric suffix; it is not a price-bar
+command. Series values preserve provider order and nulls, while actual_range
+reports returned-date extrema without asserting complete requested coverage.
+
+Catalog category codes differ from calendar category names, including the
+accepted calendar literal goverment. Countries/currencies are comma-separated
+unique uppercase codes without whitespace. Calendar defaults to US and importance
+-1, allowing importance -1..1. Actual/forecast/previous and Raw variants remain
+separate. Returned event dates are provider text, not client timezone conversion.
+
+Bounds are independently optional. Series/dividend screening uses calendar dates;
+economic-calendar also accepts canonical UTC seconds. Mixed date/timestamp bounds
+are ordered by calendar date only. Dividend explicit-symbol mode accepts 1–50
+unique symbols and rejects market/date/limit arguments; market mode requires a
+market and accepts limit 1–200, default 50. Unreported symbol outcomes do not
+establish no dividend. Market results and calendar events retain unconfirmed
+coverage, even when nonempty, with no automatic paging or fallback.
