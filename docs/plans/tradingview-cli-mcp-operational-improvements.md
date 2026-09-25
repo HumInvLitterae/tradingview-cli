@@ -2125,5 +2125,13 @@ workspace suite or release build was performed.
 Drafted v0.33.0 release notes and condensed the changelog. The five remaining
 spec annotations are follow-ups, not release blockers. Host dependency-tree
 resolution and SDK HTTP compatibility passed with lock update `c72c2ad`;
-guidance/package checks also passed. Candidate CI, final versioning and binary/archive checks
-remain pending as listed in the inventory. Workspace version remains 0.32.0.
+guidance/package checks also passed. Candidate `59106e9` passed CI on all three
+platforms (run 36184890185). Prepared version 0.33.0 and updated public wording;
+locked metadata confirms all eight workspace package versions agree. Final
+release binaries/archives and publication remain pending. Unchanged tests were
+not repeated locally for version-only preparation.
+The first release run (36189250713) failed four MCP fixtures on Intel macOS.
+Their response/dispatch checks now use a separate 30-second test budget;
+production deadlines and deadline-specific tests are unchanged. The four
+fixtures and a stalled-response deadline test passed locally; Intel release
+verification remains pending.

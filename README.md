@@ -291,8 +291,8 @@ for authentication and platform prerequisites. The
 [full MCP reference](https://github.com/HumInvLitterae/tradingview-cli/blob/main/docs/official-mcp.md)
 covers command contracts and the remaining Linux desktop OAuth verification limit.
 
-The development checkout additionally supports alert firing history and an
-explicit read timeout (planned for v0.33.0; not included in released v0.32.0):
+Starting with v0.33.0, alert firing history and an explicit read timeout are
+available:
 
 ```sh
 tv mcp --timeout 90 alert history --symbol NASDAQ:AAPL --days 7 --limit 100
@@ -305,11 +305,11 @@ contents. See the [read deadline and history reference](https://github.com/HumIn
 for contracts and limits. The dedicated technical snapshot command is deferred
 and is not available in this checkout.
 
-The development checkout also provides offline JSON command discovery:
+Starting with v0.33.0, offline JSON command discovery is also available:
 `tv spec` lists command paths; `tv spec mcp alert history` describes one command's
 arguments and available semantic annotations. See the
 [specification contract and coverage limits](docs/cli-spec.md). This command
-requires neither Desktop nor credentials and is not in released v0.32.0.
+requires neither Desktop nor credentials and is available in v0.33.0 and later.
 
 Runtime agent skills are maintained in [`skills/`](skills/), with self-contained
 references in each skill. After this layout is published, install a selected

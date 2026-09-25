@@ -7,6 +7,8 @@ package version omits the leading `v`.
 
 ## Unreleased
 
+## v0.33.0
+
 ### Added
 
 - `tv spec [COMMAND...]` provides an offline JSON command index and clap-derived

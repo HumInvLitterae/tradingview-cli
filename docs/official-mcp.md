@@ -22,7 +22,9 @@ reads need no repeated source approval. For setup and errors, the portable
 [connection reference](../.agents/skills/market-data/references/mcp-connection.md)
 also ships with the independently attachable data/account skills.
 
-## Read deadlines (next version)
+<a id="read-deadlines-next-version"></a>
+
+## Read deadlines (v0.33.0 and later)
 
 Provider reads default to a 30-second total deadline. When the caller chooses
 to wait longer, specify seconds explicitly:
@@ -720,7 +722,9 @@ For example, a timeout after attempted dispatch has
 For an uncertain create without an ID, inspect the list and resolve ownership;
 do not create another list or pick a same-named list automatically.
 
-## Alert firing history (next version)
+<a id="alert-firing-history-next-version"></a>
+
+## Alert firing history (v0.33.0 and later)
 
 ```sh
 tv mcp alert history --symbol NASDAQ:EXAMPLE --days 7 --limit 100
@@ -945,7 +949,7 @@ A successful durable update replaces that snapshot; a failed update invalidates
 it. A new command reads the OS store again. There is no cross-process token cache.
 
 Provider reads default to one 30-second deadline spanning lock wait, credential
-work, discovery, pacing, response and cleanup. In the next version, callers can
+work, discovery, pacing, response and cleanup. In v0.33.0 and later, callers can
 explicitly select 1..180 seconds with [read deadlines](#read-deadlines-next-version)
 using `--timeout`; it does not reset the budget for each request. Mutations and
 local status retain their existing deadlines and reject the override. Login has

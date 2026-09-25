@@ -1,8 +1,7 @@
 # Offline command specifications
 
-The development checkout provides `tv spec` (planned for v0.33.0). Released
-v0.32.0 does not include it. It describes the running binary, without Desktop,
-credentials or provider access. It does not validate a proposed invocation or
+`tv spec` is available in v0.33.0 and later. It describes the running binary
+without Desktop, credentials or provider access. It does not validate a proposed invocation or
 claim that the provider is currently available.
 
 ```sh
