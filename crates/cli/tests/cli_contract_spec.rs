@@ -730,3 +730,24 @@ fn saved_screen_specs_do_not_execute_mutations() {
         assert_eq!(spec["effects"]["ui_mutation"], action != "delete");
     }
 }
+
+#[test]
+fn saved_column_specs_do_not_access_or_modify_storage() {
+    for action in ["add", "remove", "reorder"] {
+        let output = Command::cargo_bin("tv")
+            .unwrap()
+            .env("TV_CDP_PORT", "invalid")
+            .args(["spec", "screener", "columns", action])
+            .assert()
+            .success()
+            .get_output()
+            .clone();
+        assert!(output.stderr.is_empty());
+        let value: Value = serde_json::from_slice(&output.stdout).unwrap();
+        let spec = &value["data"]["semantics"];
+        assert_eq!(spec["scope"], "screen_storage_api");
+        assert_eq!(spec["effects"]["provider_request"], true);
+        assert_eq!(spec["variants"][0]["effects"]["account_mutation"], false);
+        assert_eq!(spec["variants"][1]["effects"]["account_mutation"], true);
+    }
+}
