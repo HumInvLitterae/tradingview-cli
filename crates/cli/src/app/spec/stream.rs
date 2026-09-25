@@ -1,17 +1,25 @@
-//! Primary chart streams: periodic samples rather than source-interchangeable ticks.
+//! Chart streams: periodic samples and lossy graphics summaries.
 
 use serde_json::{Value, json};
 
 use crate::ops::StreamKind;
 
 pub(super) fn describe(path: &[&str]) -> Option<Value> {
-    let ["stream", action @ ("values" | "quote" | "bars")] = path else {
+    let [
+        "stream",
+        action @ ("values" | "quote" | "bars" | "lines" | "labels" | "tables" | "all"),
+    ] = path
+    else {
         return None;
     };
     let kind = match *action {
         "values" => StreamKind::Values,
         "quote" => StreamKind::Quote,
-        _ => StreamKind::Bars,
+        "bars" => StreamKind::Bars,
+        "lines" => StreamKind::Lines,
+        "labels" => StreamKind::Labels,
+        "tables" => StreamKind::Tables,
+        _ => StreamKind::All,
     };
     let mut result = json!({
         "source": "desktop_chart_stream",
@@ -43,7 +51,7 @@ pub(super) fn describe(path: &[&str]) -> Option<Value> {
             json!("Same-name rows remain separate with optional entity_id, short_name, study_kind, compact inputs and visible. Identity/input/visibility changes participate in deduplication; no entity-ID or name filter option is accepted."),
             json!("Samples carry symbol but not an explicit timeframe field. Verify chart state before interpreting values across external timeframe changes; do not assume stream values and values are interchangeable.")
         ]);
-    } else {
+    } else if matches!(*action, "quote" | "bars") {
         result["limits"].as_array_mut().unwrap().extend([
             json!("Reads current main-series last-bar OHLCV, not scanner quote fields, Desktop quote-data or official MCP. It can update within an unfinished bar and does not provide every market tick."),
             json!("Falsy/missing volume defaults to zero in the existing reader; zero is not independent evidence of no trading.")
@@ -58,6 +66,50 @@ pub(super) fn describe(path: &[&str]) -> Option<Value> {
             .unwrap()
             .push(json!(timestamp_limit));
     }
+    if matches!(*action, "lines" | "labels" | "tables") {
+        result["constraints"]["filter"] = json!({
+            "optional": true,
+            "trimmed": true,
+            "empty": "all readable studies",
+            "matching": "case-insensitive substring of chart study name",
+            "entity_id_selector": false
+        });
+        result["examples"].as_array_mut().unwrap().push(json!([
+            "tv",
+            "--target-id",
+            "<target_id>",
+            "stream",
+            action,
+            "--filter",
+            "<study_name_fragment>",
+            "--duration-ms",
+            "5000"
+        ]));
+        result["limits"].as_array_mut().unwrap().extend([
+            json!("Reads Pine-generated graphics, not hand-drawn objects. Unlike data graphics commands, filter matches the chart study name case-insensitively after trimming; it does not select an entity ID."),
+            json!("Rows identify studies by name only; same-name instances remain ambiguous. No visibility filter is applied. Unavailable primitives and per-study failures can silently omit rows; study_count counts returned rows, not all studies."),
+            json!("Samples include symbol but no resolution or per-primitive timestamp. Verify chart and script coordinate context; returned numeric levels do not establish price meaning, bar closure or trading signals.")
+        ]);
+        let limit = match *action {
+            "lines" => {
+                "levels deduplicates selected raw endpoint prices and sorts descending, without two-decimal rounding. Sloped lines are also reduced to an endpoint; this is not horizontal-line detection. Endpoint fallback uses truthiness, so zero can select the other endpoint. Coordinates, primitive IDs and styles are omitted."
+            }
+            "labels" => {
+                "Only nonempty text (text or t) is retained, with at most the first 50 labels per study in primitive iteration order. No truncation count, configurable max or verbose mode is provided. Price uses the first point or a truthy y fallback; zero y can become null. No label ID or x coordinate is returned."
+            }
+            _ => {
+                "Tables expose nested text rows from the available internal collection, with empty-string fallback. They do not provide primitive IDs, styling or verified table completeness, and are not the pipe-joined data tables summary. Unsupported internal structures can yield omissions."
+            }
+        };
+        result["limits"].as_array_mut().unwrap().push(json!(limit));
+    } else if *action == "all" {
+        result["limits"].as_array_mut().unwrap().extend([
+            json!("all means current-layout chart panes, not all stream kinds: it returns last-bar OHLCV only, without study values or graphics. It does not switch saved layouts or tabs."),
+            json!("Returns layout, pane_count and panes in current widget order, bounded by the available widget and inline-chart counts. Pane index is positional, not a stable identity; pane_count includes error rows."),
+            json!("Inspect every pane for error: no-bar rows can retain symbol, while other failures can supply only index/error. Successful sample envelopes can contain failed panes; they are not all-pane success or coverage proof."),
+            json!("Successful panes carry symbol, resolution and time with OHLCV; falsy/missing volume defaults to zero. Panes are read sequentially within one evaluation, not an atomic cross-symbol market snapshot. _ts is one client receipt time for the sample.")
+        ]);
+    }
     Some(result)
 }
 
@@ -68,15 +120,21 @@ mod tests {
     use clap::Parser;
 
     #[test]
-    fn primary_stream_examples_and_defaults_match_requests() {
+    fn stream_examples_and_defaults_match_requests() {
         for (action, kind) in [
             ("quote", StreamKind::Quote),
             ("bars", StreamKind::Bars),
             ("values", StreamKind::Values),
+            ("lines", StreamKind::Lines),
+            ("labels", StreamKind::Labels),
+            ("tables", StreamKind::Tables),
+            ("all", StreamKind::All),
         ] {
             let spec = describe(&["stream", action]).unwrap();
-            let argv = spec["examples"][0].as_array().unwrap();
-            assert!(Cli::try_parse_from(argv.iter().map(|v| v.as_str().unwrap())).is_ok());
+            for example in spec["examples"].as_array().unwrap() {
+                let argv = example.as_array().unwrap();
+                assert!(Cli::try_parse_from(argv.iter().map(|v| v.as_str().unwrap())).is_ok());
+            }
             let request = StreamRequest::new(kind, None, None).unwrap();
             assert_eq!(
                 spec["constraints"]["interval"]["default"],

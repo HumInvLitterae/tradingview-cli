@@ -630,3 +630,34 @@ and omits resolution/bar_index; bars uses bar_time and includes those fields.
 Neither is a scanner/MCP quote feed or a historical bars export, and polling can
 miss intervening changes. Missing/falsy volume follows the existing zero default.
 Verify chart context before collecting; external chart changes remain possible.
+
+
+## Pine graphics and layout streams
+
+Use `stream lines`, `stream labels` or `stream tables` for repeated Pine graphics
+reads. Their optional `--filter` is a trimmed, case-insensitive substring of the
+chart study name, unlike the single-read `data` commands. Rows have study names
+but no entity IDs, so same-name instances remain ambiguous. Hidden studies are
+not excluded. Unreadable primitives and individual study failures can omit rows;
+`study_count` is the returned row count. Samples lack resolution and primitive
+timestamps. Verify chart and script coordinate context before interpretation.
+
+- Lines returns unique raw endpoint levels sorted descending. Sloped lines also
+  contribute an endpoint; these are not verified horizontal levels. Truthy
+  endpoint fallback can replace zero, and coordinates/IDs/styles are omitted.
+- Labels keeps nonempty text and the first 50 entries per study in internal
+  iteration order, without truncation counts or configurable limits. A zero y
+  fallback can become null. Label IDs and x coordinates are absent.
+- Tables returns nested text rows rather than the pipe-joined `data tables`
+  summary. Styling, primitive IDs and proof of complete extraction are absent.
+
+`stream all` reads last-bar OHLCV from chart panes in the current layout; it does
+not combine the other stream kinds. Inspect each pane's `error` even when the
+sample succeeds. `pane_count` includes failed panes and indexes describe current
+widget order, not stable identities. Successful rows have symbol, resolution and
+`time`; missing volume can default to zero. Panes are read sequentially, without
+an atomic cross-symbol snapshot guarantee or a saved-layout/tab switch.
+
+Defaults are 1000 ms for lines/labels, 2000 ms for tables and 500 ms for all.
+Use `tv spec stream <kind>` when available and help otherwise. The same JSONL
+error channels, deduplication and duration/count limits described above apply.
