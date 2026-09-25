@@ -751,3 +751,22 @@ fn saved_column_specs_do_not_access_or_modify_storage() {
         assert_eq!(spec["variants"][1]["effects"]["account_mutation"], true);
     }
 }
+
+#[test]
+fn filter_edit_specs_do_not_open_or_change_filters() {
+    for action in ["add", "modify", "remove", "clear"] {
+        let output = Command::cargo_bin("tv")
+            .unwrap()
+            .env("TV_CDP_PORT", "invalid")
+            .args(["spec", "screener", "filters", action])
+            .assert()
+            .success()
+            .get_output()
+            .clone();
+        assert!(output.stderr.is_empty());
+        let value: Value = serde_json::from_slice(&output.stdout).unwrap();
+        let spec = &value["data"]["semantics"];
+        assert_eq!(spec["effects"]["ui_mutation"], true);
+        assert_eq!(spec["variants"][0]["effects"]["account_mutation"], false);
+    }
+}

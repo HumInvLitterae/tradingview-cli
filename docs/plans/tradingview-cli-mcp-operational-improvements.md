@@ -1895,3 +1895,27 @@ JSON-object, index and test-name boundaries. Scoped CLI Clippy, formatting/diff
 checks, 12 package self-tests, guidance staging and skill metadata validation
 passed. Cargo ran serially with one build job. No Desktop/storage mutation,
 provider access, workspace suite or release build was performed.
+
+
+### Filter-edit specifications (2026-09-26)
+
+Added filters add/modify/remove/clear, reaching 149 documented leaves of 169.
+Specs distinguish UI catalog/preset/option actions from saved-storage removal,
+clear and conditional range modification. Test-name guards apply to storage
+execution, not UI add/modify. Preview can omit checks performed only on execution,
+and option selection can clear other selected options.
+
+Numeric modification retains its narrow preset vocabulary, unlike add's broader
+label matchers. Storage fallback has explicit preconditions and does not follow
+a failed post-write check. Remove/clear refresh checks only filter count; range
+storage modification merely requests reload. Equal visible/storage counts do not
+establish identity. Runtime behavior and JSON contracts are unchanged; standalone
+guidance explains the distinctions. Next review remaining legacy account changes
+and route equivalent work toward explicit official-MCP operations where possible.
+
+Validation passed: 38 spec unit tests, 17 existing filter fixtures and one offline
+CLI test covering all four paths. Preset choices and clear confirmation were
+checked with actual validators. Scoped CLI Clippy, formatting/diff checks,
+12 package self-tests, guidance staging and skill metadata validation passed.
+Cargo ran serially with one build job. No Desktop/account changes, provider
+access, full-workspace suite or release build was performed.

@@ -50,8 +50,10 @@ alone does not authorize changing screens, filters, columns, or watchlists.
   test-name restriction. Read [saved-screen guidance](references/saved-screens.md)
   for dry-run effects and what post-checks establish. Save only to the verified
   intended screen.
-- Use filter add/modify/remove/clear with target checks. Broad multi-option and
-  free-text editing are not genericized.
+- Use filter add/modify/remove/clear with target checks. UI and storage paths
+  have different test-name guards, preview effects and readback; consult
+  [filter-change guidance](references/filters.md). Option changes can clear other
+  selections; broad multi-option and free-text editing are not genericized.
 - Inspect column config before add/remove/reorder. Add requires a known storage
   column ID and optional JSON-object params, not display-name search. These writes
   require a test-named active screen and verify storage, not refreshed UI; read

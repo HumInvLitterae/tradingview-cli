@@ -61,7 +61,9 @@ Screener edit-discovery specs expose menu side effects, probe-specific capabilit
 flags and positional storage-column name mapping. Saved-screen specs distinguish
 enforced test-name restrictions, live dry-run UI effects and limited post-checks.
 Column-edit specs describe positional selectors, custom storage writes and
-ordered ID/params verification without claiming refreshed UI.
+ordered ID/params verification without claiming refreshed UI. Filter specs
+distinguish UI presets/options from guarded storage writes and count-only refresh
+evidence, including live dry-run limits.
 The active record owns evidence and resumption conditions. Heavy local hooks are
 opt-in; current-candidate cross-platform CI and release qualification remain open.
 
