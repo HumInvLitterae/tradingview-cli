@@ -1,8 +1,11 @@
-//! Visible Screener context and legacy watchlist reads.
+//! Desktop Screener lifecycle, visible context and legacy watchlist reads.
 
 use serde_json::{Value, json};
 
 pub(super) fn describe(path: &[&str]) -> Option<Value> {
+    if let Some(result) = lifecycle(path) {
+        return Some(result);
+    }
     if let Some(result) = discovery(path) {
         return Some(result);
     }
@@ -87,6 +90,52 @@ pub(super) fn describe(path: &[&str]) -> Option<Value> {
     Some(result)
 }
 
+fn lifecycle(path: &[&str]) -> Option<Value> {
+    let ["screener", action @ ("open" | "close")] = path else {
+        return None;
+    };
+    let mut result = json!({
+        "source": "ui_screener_dialog",
+        "output_contract": null,
+        "requires": {"desktop": true, "authentication": null},
+        "effects": {"ui_mutation": true, "account_mutation": false, "local_file_write": false},
+        "discovery": [{"argument": "target-id", "argv": ["tv", "tab", "list"],
+            "result_path": "data.screener_targets[].target_cli_args"}],
+        "readback": {"argv": ["tv", "--target-id", "<target_id>", "screener", "status"]},
+        "examples": [["tv", "--target-id", "<target_id>", "screener", action]],
+        "limits": [
+            "Operates Desktop UI, not scanner REST or official MCP. Does not edit saved screens, filters or columns. DOM open/closed detection is not data readiness, complete row coverage or authorization for further edits."
+        ]
+    });
+    if *action == "open" {
+        result["variants"] = json!([
+            {"when": {"full_page": false}, "operation": "open dialog on selected runtime target"},
+            {"when": {"full_page": true}, "operation": "reuse or create and activate a Screener tab",
+                "effects": {"target_activation": true, "target_creation": "when no Screener target is found"}}
+        ]);
+        result["examples"].as_array_mut().unwrap().push(json!([
+            "tv",
+            "screener",
+            "open",
+            "--full-page"
+        ]));
+        result["limits"].as_array_mut().unwrap().extend([
+            json!("Default mode requires the selected target's screener-dialog-button even when a panel is detected. An already open panel returns opened=false/already_open=true; otherwise it clicks the button and polls for a detected panel. Missing button or absent panel after waiting fails, without rolling back the click."),
+            json!("--full-page bypasses selected-runtime connection and does not use --target-id to choose the Screener. It activates the first matching target in enumeration order without checking uniqueness. Use tab list to inspect existing targets; do not assume the supplied target ID was honored by this variant."),
+            json!("If none exists, --full-page tries CDP target creation, then TradingView new-tab tile fallback on creation error. It can create/use a new-tab surface and dispatch tile clicks. Post-check prefers the created ID but can accept another matching Screener target."),
+            json!("Full-page success reports target_id/target_cli_args, created, reused and creation_method after activation. These describe the branch taken, not proof of a unique newly created tab, loaded rows or restored previous focus. source remains ui_screener_dialog even for full-page mode."),
+            json!("Creation, fallback, post-check or activation errors can leave tabs/focus changed; no cleanup rollback is performed. Inspect tab list before retrying. Use the returned target_cli_args for subsequent status/data operations.")
+        ]);
+    } else {
+        result["limits"].as_array_mut().unwrap().extend([
+            json!("Acts on the selected runtime target. If no panel is detected, returns action=already_closed, open=false and closed=false without sending Escape; closed=false is not a failure in this case."),
+            json!("When open, sends Escape and polls panel detection. Success returns action=close, open=false, closed=true; a still-detected panel fails. Escape may dismiss a popup instead of the panel, and errors do not restore prior UI state."),
+            json!("This is not tab close and has no --full-page variant. It does not close the target created by open --full-page. A full-page panel can remain detected after Escape; do not infer tab closure or automatically replace this with tab close.")
+        ]);
+    }
+    Some(result)
+}
+
 fn discovery(path: &[&str]) -> Option<Value> {
     let (scope, detail) = match path {
         ["screener", "screens", "list"] => (
@@ -159,6 +208,8 @@ mod tests {
     #[test]
     fn visible_read_examples_and_limits_match_execution() {
         for path in [
+            vec!["screener", "open"],
+            vec!["screener", "close"],
             vec!["screener", "status"],
             vec!["screener", "get"],
             vec!["screener", "screens", "active"],

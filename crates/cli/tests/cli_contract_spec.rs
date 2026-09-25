@@ -888,3 +888,20 @@ fn analysis_support_specs_are_available_offline() {
         );
     }
 }
+
+#[test]
+fn screener_lifecycle_specs_do_not_operate_desktop() {
+    for action in ["open", "close"] {
+        let output = Command::cargo_bin("tv")
+            .unwrap()
+            .env("TV_CDP_PORT", "invalid")
+            .args(["spec", "screener", action])
+            .assert()
+            .success()
+            .get_output()
+            .clone();
+        assert!(output.stderr.is_empty());
+        let value: Value = serde_json::from_slice(&output.stdout).unwrap();
+        assert_eq!(value["data"]["semantics"]["effects"]["ui_mutation"], true);
+    }
+}

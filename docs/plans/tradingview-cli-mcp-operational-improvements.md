@@ -2095,3 +2095,27 @@ seven-skill package staging and market-data skill validation passed. Cargo ran
 serially with one build job and one test thread. No live provider/Desktop access,
 workspace test suite or release build was used. Current-candidate cross-platform
 CI and release qualification remain separate pending work.
+
+### Screener lifecycle specifications (2026-09-26)
+
+Added screener open/close semantics, reaching 164 annotated executable paths of
+169. Default open requires a dialog button on the selected runtime target;
+full-page open bypasses that selection, reuses the first matching Screener or
+tries tab creation and new-tab tile fallback. Its post-check can accept another
+matching target. Activation and creation failures do not roll back UI changes.
+Close sends Escape and checks panel disappearance; it does not close a tab.
+The standalone Screener skill and reference now explain these distinctions.
+
+Actual target selection, UI execution and payloads are unchanged. The full-page
+selection/fallback limits are disclosed existing behavior, not permission for a
+silent behavior correction. Remaining diagnostic/discovery annotations should
+be assessed for workflow value before release qualification; full coverage is
+not a release gate. Current-candidate CI and dependency qualification remain open.
+
+Validation passed: 41 spec tests, eight existing Screener state fixtures, one
+CLI test covering both offline spec paths, scoped CLI Clippy, formatting/diff
+checks, 12 package self-tests, seven-skill staging and Screener skill validation.
+Fixtures cover state shaping and selected failure cases; fallback/activation
+limits are established by source inspection, not live Desktop proof. Cargo ran
+serially with one build job and one test thread. No Desktop/provider operation,
+workspace suite or release build was performed.

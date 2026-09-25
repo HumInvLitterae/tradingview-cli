@@ -48,6 +48,7 @@ package version omits the leading `v`.
   Pine shape specs explain per-study scan windows, activity values and OHLC alignment limits.
   Status/UI-state specs distinguish target selection and heuristic UI observations from readiness.
   Scanner comparison, event and fundamentals specs explain partial results and polling limits.
+  Screener lifecycle specs distinguish dialog operations from tab creation/activation.
   Other semantic coverage is explicitly unannotated.
 
 - `tv mcp --timeout <SECONDS>` selects a 1–180 second total deadline for provider
