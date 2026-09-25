@@ -19,8 +19,11 @@ Reuse a confirmed Screener target. Otherwise use `tv tab list` and its
 `screener_targets`, then pass the intended target's `target_cli_args` to later
 commands. If connection is unclear, consult
 [Desktop session guidance](references/desktop-session.md).
-If no target exists, `tv screener open --full-page` opens one; use it only when
-opening a Screener is part of the requested workflow.
+If no target exists, `tv screener open --full-page` can create and activate one;
+use it only when opening a Screener is part of the requested workflow. This mode
+can reuse the first matching target and does not select by `--target-id`. Read
+[opening and closing limits](references/discovery.md#opening-and-closing-the-screener)
+before use; `screener close` closes a panel with Escape, not the full-page tab.
 
 | Need | First command | Read next when needed |
 | --- | --- | --- |

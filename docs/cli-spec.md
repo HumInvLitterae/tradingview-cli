@@ -1102,3 +1102,27 @@ fails, its outer response can succeed: inspect item status, failure details and
 fields rather than a full calendar. `no_events_returned` does not prove absence
 of events. Preserve raw readback and source availability; do not infer timezone,
 market session or confirmed/estimated status.
+
+## Opening and closing the Screener
+
+Inspect `tv spec screener open` or `tv spec screener close` offline when
+available. Default open operates the selected target's dialog and requires its
+Screener button, even if a panel is already detected. It either reports the
+existing open state or clicks and waits for panel detection. This does not prove
+rows are loaded or authorize saved-screen edits.
+
+`open --full-page` instead activates the first matching Screener target; it does
+not use `--target-id` to select that target or reject multiple matches. If none
+exists, it tries CDP tab creation, then a TradingView new-tab tile fallback on
+creation error. Post-check can accept another matching target. Inspect `tab list`
+first and use the returned `target_cli_args` for subsequent operations. The
+created/reused flags describe the path taken, not unique tab ownership or data
+readiness. Previous focus is not restored; failures can leave tabs or UI changed.
+Inspect actual state before retrying rather than assuming nothing happened.
+
+`close` sends Escape to the selected target only when a panel is detected. It
+waits for panel disappearance and fails if still open; Escape may dismiss a
+popup instead. An already closed panel returns `action=already_closed` and
+`closed=false`, which is a successful no-op. This command does not close a tab
+and has no full-page option. A full-page panel may remain detected after Escape;
+do not automatically substitute a tab-close operation.
