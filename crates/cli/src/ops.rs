@@ -1,6 +1,7 @@
 mod alert;
 mod chart;
 mod common;
+pub(crate) use common::CHART_TYPES;
 mod data;
 mod data_depth;
 mod desktop;

@@ -8,6 +8,7 @@ use tradingview_core::{AppError, ErrorKind};
 
 use crate::{build_info, cli::Cli};
 
+mod desktop;
 mod mcp_mutations;
 mod mcp_reads;
 
@@ -70,8 +71,9 @@ pub(super) fn describe(path: &[String]) -> Result<Value, AppError> {
         "Defaults and examples are not observations of provider or account state."
     ]);
     data["semantics"] = Value::Null;
-    if let Some(semantics) =
-        mcp_reads::describe(&canonical).or_else(|| mcp_mutations::describe(&canonical))
+    if let Some(semantics) = mcp_reads::describe(&canonical)
+        .or_else(|| mcp_mutations::describe(&canonical))
+        .or_else(|| desktop::describe(&canonical))
     {
         data["coverage"]["semantics"] = json!("documented");
         data["semantics"] = semantics;

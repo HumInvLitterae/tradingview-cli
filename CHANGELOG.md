@@ -13,7 +13,8 @@ package version omits the leading `v`.
   argument details. MCP search, columns, symbol, symbols, bars and alert history
   include source, prerequisites, shared constraints and discovery examples;
   watchlist/alert mutation details include ID discovery, side effects and readback.
-  Other semantic coverage is explicitly unannotated.
+  Desktop chart controls describe conditional reads/changes and target discovery;
+  other semantic coverage is explicitly unannotated.
 
 - `tv mcp --timeout <SECONDS>` selects a 1–180 second total deadline for provider
   reads. The default remains 30 seconds; login, logout, status and mutations

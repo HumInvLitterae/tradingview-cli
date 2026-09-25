@@ -1209,3 +1209,27 @@ Clippy passed with warnings denied. Package validation (12 self-tests and staged
 seven-skill roots), skill metadata, formatting and diff checks passed. Cargo ran
 serially with one build job. No provider reads/mutations, full-workspace suite,
 release build, installed-binary replacement or remote publication was performed.
+
+
+### Conditional Desktop specifications (2026-09-25)
+
+Added eight Desktop/dual-source paths: symbol, timeframe, type, range, info,
+state, readiness and tab list. Setter-capable commands no longer require agents
+to infer effects from argument prose alone: their specs expose conditional
+variants and null common mutation flags. Info distinguishes selected-chart reads
+from explicit-symbol HTTP reads. No request is executed or variant resolved by
+spec lookup. Chart-type values come from the same table as execution.
+
+Target discovery uses tab-list IDs rather than tab-switch indices. Range notes
+retain bounded history loading, viewport changes and incomplete coverage. These
+are descriptions of existing behavior; no Desktop source, target selection or
+mutation path changed. Remaining Desktop families are unannotated and are not
+represented as safe reads. Launch, chart comparison, UI, drawings, indicators
+and Replay require further effect review. Account read/other MCP coverage and
+schema/validation follow-ons remain separate unfinished work.
+
+Validation passed: ten scoped spec unit tests, four CLI subprocess tests (including
+all eight Desktop paths under invalid Desktop configuration), scoped CLI Clippy,
+formatting/diff checks, the 12 package-validator self-tests, staged seven-skill
+roots and updated skill metadata. Cargo ran serially with one build job. No
+Desktop/provider operation, full-workspace suite or release build was run.

@@ -10,7 +10,7 @@ pub(super) const DEFAULT_OHLCV_COUNT: usize = 100;
 pub(super) const MAX_OHLCV_COUNT: usize = 500;
 pub(super) const MAX_TRADES_COUNT: usize = 20;
 pub(super) const DESKTOP_BACKED_READ_CATEGORY: &str = "desktop_backed_read";
-pub(super) const CHART_TYPES: [&str; 10] = [
+pub(crate) const CHART_TYPES: [&str; 10] = [
     "Bars",
     "Candles",
     "Line",
