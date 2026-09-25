@@ -681,3 +681,33 @@ fn visible_read_specs_do_not_open_desktop_panels() {
         );
     }
 }
+
+#[test]
+fn screener_discovery_specs_do_not_open_menus_or_fetch_storage() {
+    for (family, action) in [
+        ("screens", "list"),
+        ("screens", "actions"),
+        ("filters", "actions"),
+        ("columns", "actions"),
+        ("columns", "config"),
+    ] {
+        let output = Command::cargo_bin("tv")
+            .unwrap()
+            .env("TV_CDP_PORT", "invalid")
+            .args(["spec", "screener", family, action])
+            .assert()
+            .success()
+            .get_output()
+            .clone();
+        assert!(output.stderr.is_empty());
+        let value: Value = serde_json::from_slice(&output.stdout).unwrap();
+        let effects = &value["data"]["semantics"]["effects"];
+        assert_eq!(effects["account_mutation"], false);
+        assert_eq!(effects["ui_mutation"], action != "config");
+        if action == "config" {
+            assert_eq!(effects["provider_request"], true);
+        } else {
+            assert!(effects["provider_request"].is_null());
+        }
+    }
+}

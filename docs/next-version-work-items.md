@@ -67,8 +67,8 @@ evidence or a provider explanation.
 ## Remaining command-specification order
 
 A 2026-09-25 offline inventory found 169 executable paths, excluding 26 command
-groups. After visible Screener/watchlist annotations, 131 paths have semantics
-and 38 do not. Validation coverage remains partial even for annotated paths.
+groups. After Screener edit-discovery annotations, 136 paths have semantics
+and 33 do not. Validation coverage remains partial even for annotated paths.
 Use the current development binary's `tv spec` to reproduce the path inventory.
 
 The owner requested priority by command importance on 2026-09-25. The order below
@@ -84,7 +84,7 @@ merely to raise the coverage count.
 | 1 | Remaining analysis-critical chart reads; values, strategy/trades/equity and Pine lines/labels/tables/boxes and observe chart plus all seven stream kinds metadata complete | Prioritize chart analysis. Explain study identity, formatted values, ambiguous strategy selection, report availability and missing data. Check downstream call sites and recorded runs before ordering supporting reads. |
 | 2 | Analysis-related MCP reads; compare/snapshot, scanner scan and MCP screener and financial/earnings, news/document and economics/dividend metadata complete | Support symbol selection and chart analysis with pagination completeness, partial-result, source and freshness guidance. |
 | 3 | MCP login/status/logout and watchlist/alert list/get metadata complete; reassess remaining setup needs | Clarify browser/credential effects, readiness and ID discovery. Advance a command if it blocks an actual chart-analysis workflow. |
-| 4 | Legacy account and Desktop Screener mutations; status/get, active screen, filter/column lists and Desktop watchlist get metadata complete | Expose account/storage/UI effects and existing MCP alternatives where equivalent. Advance earlier if a live workflow depends on them. |
+| 4 | Legacy account and Desktop Screener mutations; status/get, active screen, filter/column lists and Desktop watchlist get plus screen/action/storage-column discovery metadata complete | Expose account/storage/UI effects and existing MCP alternatives where equivalent. Advance earlier if a live workflow depends on them. |
 | 5 | Remaining research reads, hotlists, observation/streaming and diagnostics | Use downstream evidence to identify analysis-critical commands and advance them; audit lower-priority gaps afterward. |
 
 Completed groups include primary MCP reads/mutations, common chart controls,

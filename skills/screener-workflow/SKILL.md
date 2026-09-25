@@ -34,6 +34,10 @@ Report source, screen/filters, columns, sort, and coverage relevant to the task.
 Explain why rows matched using returned filter, column, source and coverage
 evidence. Preserve missing values; do not assert criteria unsupported by those fields.
 
+For menu probes and storage-column identity, read
+[discovery limits](references/discovery.md). Capability flags describe the probe,
+not every operation implemented by the CLI.
+
 ## Saved-state changes
 
 Get the concrete target and requested effect clear, reuse existing authorization,

@@ -1825,3 +1825,27 @@ checks, 12 package self-tests, guidance staging and both skill metadata checks.
 Examples parse through clap and row bounds match the execution validator. Cargo
 ran serially with one build job. No Desktop/provider access, full-workspace suite
 or release build was performed.
+
+
+### Screener edit-discovery specifications (2026-09-26)
+
+Added screens list/actions, filters actions and columns actions/config, reaching
+136 documented leaves of 169. Menu and catalog probes change UI without applying
+saved-setting edits. Early errors can bypass cleanup. Their capability flags
+describe each probe: filter add is not catalog-verified here, and column header
+actions remain empty despite a separate storage-based remove command.
+
+Columns config requires an open screen and fetches storage through the Desktop
+session, with exact title checking and possible init-data fallback. Column names
+are paired by visible position, not verified by ID. No network-free guarantee is
+made for UI menu probes. Standalone Screener guidance links these details; runtime
+readers and JSON contracts are unchanged. Next review explicit saved-screen and
+column/filter mutations, prioritizing target resolution, dry-run effects and
+post-change evidence over generic UI expansion.
+
+Validation passed: 35 spec unit tests, six focused existing discovery fixtures,
+one offline CLI test covering all five paths, scoped CLI Clippy, formatting/diff
+checks, 12 package self-tests, guidance staging and skill metadata validation.
+The focused CLI test checks the final provider/UI effect distinctions. Cargo ran
+serially with one build job. No Desktop/provider operation, workspace suite or
+release build was performed.
