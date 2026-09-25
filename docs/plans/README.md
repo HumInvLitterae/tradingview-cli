@@ -21,7 +21,8 @@ remains open. Primary MCP read semantics now cover search, columns, symbol,
 symbols, bars and alert history. Watchlist/alert mutation semantics include
 side effects and readback. Selected Desktop chart controls now describe
 argument-dependent effects. Launch, tab changes and chart comparison describe
-process/UI effects and restoration limits; other command semantics remain unannotated.
+process/UI effects and restoration limits. Replay specs include practice-state
+changes and conditional attachments; other command semantics remain unannotated.
 The active record owns evidence and resumption conditions. Heavy local hooks are
 opt-in; current-candidate cross-platform CI and release qualification remain open.
 

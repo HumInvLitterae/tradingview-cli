@@ -15,7 +15,8 @@ package version omits the leading `v`.
   watchlist/alert mutation details include ID discovery, side effects and readback.
   Desktop chart controls describe conditional reads/changes and target discovery;
   lifecycle and chart-comparison specs describe process/UI effects and restoration;
-  other semantic coverage is explicitly unannotated.
+  Replay specs describe toggles, practice actions and conditional log attachments.
+  Other semantic coverage is explicitly unannotated.
 
 - `tv mcp --timeout <SECONDS>` selects a 1–180 second total deadline for provider
   reads. The default remains 30 seconds; login, logout, status and mutations

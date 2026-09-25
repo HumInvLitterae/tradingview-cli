@@ -2,7 +2,8 @@ use serde_json::{Value, json};
 
 use tradingview_core::{AppError, ErrorKind};
 
-const VALID_AUTOPLAY_DELAYS: [u64; 9] = [100, 143, 200, 300, 1000, 2000, 3000, 5000, 10000];
+pub const VALID_AUTOPLAY_DELAYS: [u64; 9] = [100, 143, 200, 300, 1000, 2000, 3000, 5000, 10000];
+pub const REPLAY_TRADE_ACTIONS: &[&str] = &["buy", "sell", "close"];
 pub const MAX_REPLAY_LOG_STEPS: u64 = 100;
 
 pub fn validate_replay_date(date: &str) -> Result<(), AppError> {
@@ -32,16 +33,14 @@ pub fn validate_replay_autoplay_speed(speed: u64) -> Result<(), AppError> {
 }
 
 pub fn validate_replay_trade_action(action: &str) -> Result<(), AppError> {
-    match action {
-        "buy" | "sell" | "close" => Ok(()),
-        _ => Err(AppError::new(
+    if REPLAY_TRADE_ACTIONS.contains(&action) {
+        Ok(())
+    } else {
+        Err(AppError::new(
             ErrorKind::Validation,
             "Invalid replay trade action. Use buy, sell, or close.",
         )
-        .with_details(json!({
-            "action": action,
-            "supported": ["buy", "sell", "close"],
-        }))),
+        .with_details(json!({"action": action, "supported": REPLAY_TRADE_ACTIONS})))
     }
 }
 
