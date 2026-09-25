@@ -8,6 +8,7 @@ use tradingview_core::{AppError, ErrorKind};
 
 use crate::{build_info, cli::Cli};
 
+mod alerts;
 mod analysis;
 mod capture;
 mod desktop;
@@ -97,6 +98,7 @@ pub(super) fn describe(path: &[String]) -> Result<Value, AppError> {
     ]);
     data["semantics"] = Value::Null;
     if let Some(semantics) = mcp_reads::describe(&canonical)
+        .or_else(|| alerts::describe(&canonical))
         .or_else(|| mcp_mutations::describe(&canonical))
         .or_else(|| mcp_accounts::describe(&canonical))
         .or_else(|| mcp_auth::describe(&canonical))

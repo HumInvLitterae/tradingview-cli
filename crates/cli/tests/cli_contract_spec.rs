@@ -790,3 +790,20 @@ fn legacy_watchlist_specs_do_not_mutate_account_lists() {
         assert_eq!(spec["constraints"]["dry_run"]["supported"], false);
     }
 }
+
+#[test]
+fn legacy_alert_specs_do_not_access_or_change_alerts() {
+    for action in ["list", "create", "delete"] {
+        let output = Command::cargo_bin("tv")
+            .unwrap()
+            .env("TV_CDP_PORT", "invalid")
+            .args(["spec", "alert", action])
+            .assert()
+            .success()
+            .get_output()
+            .clone();
+        assert!(output.stderr.is_empty());
+        let value: Value = serde_json::from_slice(&output.stdout).unwrap();
+        assert_eq!(value["data"]["semantics"]["requires"]["desktop"], true);
+    }
+}
