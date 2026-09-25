@@ -1614,3 +1614,27 @@ Clippy, formatting/diff checks, 12 package self-tests, guidance staging and
 market-data skill metadata passed. Cargo ran serially with one build job. No
 live authentication/provider operation, full-workspace suite or release build
 was performed.
+
+
+### Official financial specifications (2026-09-25)
+
+Added financials/financial-history/forecasts/earnings, reaching 102 documented
+leaves of 169. Shared read prerequisites and timeout metadata are reused without
+public API changes. Specs distinguish snapshot versus history period choices,
+independently optional date bounds, metric selection and provider metadata.
+
+History labels remain fiscal observations, estimates remain provider opinions,
+and earnings preserve multiple events and unreported symbols. Unknown units and
+coverage are not inferred; projected omission-to-null behavior is explicit.
+Standalone market-data guidance carries the same limits. Execution and provider
+contracts are unchanged. No authentication or live financial read is required
+for this metadata step.
+
+Validation passed: 28 spec unit tests, five existing financial model fixtures and
+one offline CLI test covering all four paths. Period choices, leap-date handling,
+reversed dates and duplicate symbols were checked through real request validators.
+Scoped CLI Clippy, formatting/diff checks, 12 package self-tests, guidance staging
+and market-data skill metadata passed. Cargo ran serially with one build job.
+No live provider/authentication action, full-workspace suite or release build
+was performed. News/company-document metadata is the next contextual-analysis
+candidate, for investigating the background of chart moves.

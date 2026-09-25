@@ -67,8 +67,8 @@ evidence or a provider explanation.
 ## Remaining command-specification order
 
 A 2026-09-25 offline inventory found 169 executable paths, excluding 26 command
-groups. After official-MCP screener annotations, 98 paths have semantics
-and 71 do not. Validation coverage remains partial even for annotated paths.
+groups. After official-MCP financial annotations, 102 paths have semantics
+and 67 do not. Validation coverage remains partial even for annotated paths.
 Use the current development binary's `tv spec` to reproduce the path inventory.
 
 The owner requested priority by command importance on 2026-09-25. The order below
@@ -82,7 +82,7 @@ merely to raise the coverage count.
 | Priority | Remaining surface | Reason and acceptance focus |
 | --- | --- | --- |
 | 1 | Remaining analysis-critical chart reads; values, strategy/trades/equity and Pine lines/labels/tables/boxes metadata complete | Prioritize chart analysis. Explain study identity, formatted values, ambiguous strategy selection, report availability and missing data. Check downstream call sites and recorded runs before ordering supporting reads. |
-| 2 | Analysis-related MCP reads; compare/snapshot, scanner scan and MCP screener metadata complete | Support symbol selection and chart analysis with pagination completeness, partial-result, source and freshness guidance. |
+| 2 | Analysis-related MCP reads; compare/snapshot, scanner scan and MCP screener and financial/earnings metadata complete | Support symbol selection and chart analysis with pagination completeness, partial-result, source and freshness guidance. |
 | 3 | MCP login/status/logout, watchlist list/get and alert list/get | Clarify browser/credential effects, readiness and ID discovery. Advance a command if it blocks an actual chart-analysis workflow. |
 | 4 | Legacy account and Desktop Screener mutations | Expose account/storage/UI effects and existing MCP alternatives where equivalent. Advance earlier if a live workflow depends on them. |
 | 5 | Remaining research reads, hotlists, observation/streaming and diagnostics | Use downstream evidence to identify analysis-critical commands and advance them; audit lower-priority gaps afterward. |

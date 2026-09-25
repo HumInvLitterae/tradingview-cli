@@ -516,3 +516,26 @@ coverage; item missing fields remain distinct from explicit nulls. Data time,
 delay and session remain unconfirmed. Regional screener market syntax is separate
 from column-discovery categories. Credential refresh may update local state;
 specification lookup itself reads no credentials or provider data.
+
+
+## Official financial data
+
+Financials, financial-history, forecasts and earnings share authenticated read
+prerequisites and timeout metadata. Financial snapshots accept fy/fq/ttm/fh/current
+and up to 50 unique metric names; omission leaves selection to the provider.
+History accepts fy/fq. Its dates and earnings dates are independently optional,
+strict YYYY-MM-DD calendar dates with from <= to when both are present.
+
+Provider metadata remains distinct from the request. Missing identity is
+unconfirmed; a returned conflicting symbol or reporting period rejects a
+single-symbol response. Completeness, metric selection and requested-window
+coverage are not inferred. Currency, unit, scale and as_of are unknown unless
+returned. Financial fields retain scalar types; projected absent optional values
+can normalize to null, so not every output distinguishes omission from null.
+
+History preserves fiscal labels and aligned series without converting labels
+to dates or calculating missing growth rates. Forecasts contain provider opinions
+and estimates rather than realized earnings or trading instructions. Earnings
+preserves provider event order and multiple events per requested symbol, while
+symbol_results follows request order and links returned events by item_indices.
+Unreported is not proof of no event. No paging or source fallback is implied.
