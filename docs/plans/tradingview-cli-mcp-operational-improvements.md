@@ -2119,3 +2119,11 @@ Fixtures cover state shaping and selected failure cases; fallback/activation
 limits are established by source inspection, not live Desktop proof. Cargo ran
 serially with one build job and one test thread. No Desktop/provider operation,
 workspace suite or release build was performed.
+
+### Release preparation (2026-09-26)
+
+Drafted v0.33.0 release notes and condensed the changelog. The five remaining
+spec annotations are follow-ups, not release blockers. Host dependency-tree
+resolution and SDK HTTP compatibility passed with lock update `c72c2ad`;
+guidance/package checks also passed. Candidate CI, final versioning and binary/archive checks
+remain pending as listed in the inventory. Workspace version remains 0.32.0.

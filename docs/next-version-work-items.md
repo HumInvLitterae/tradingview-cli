@@ -15,8 +15,8 @@ Contracts, approvals and dated evidence:
 | 7 | Stabilize affected fixtures | Scoped serial regression passed; no new timing defect was established. Current-candidate default-concurrency and cross-platform CI remain pending. Correct concrete failures if observed; do not weaken production deadlines or assertions. |
 | 8 | Integrate documentation and standalone skills | Complete for implemented behavior: help, usage, source taxonomy and standalone MCP references updated and checked. Add technical snapshot guidance only after its implementation. |
 | 9 | Distribute standalone skills from one source | Implemented: root `skills/` owns seven runtime skills; local agent links reuse them and archives copy real files. gh local install and npm discovery confirmed seven skills. Remote installation of this unpublished layout and Windows execution remain unverified. |
-| 10 | Add offline command specifications | Implemented with clap-derived syntax and explicit partial validation. The 2026-09-26 audit plus subsequent annotations accounts for 164 of 169 annotated leaves; the 5 remaining paths and priorities are below. Further annotations do not change runtime contracts. Schema export and request validation remain separate. |
-| 11 | Qualify and prepare release | Pending. Qualify the updated dependency graph, review remaining native limits, obtain current-candidate platform/CI evidence, then prepare version and notes separately. Publishing remains separately authorized. |
+| 10 | Add offline command specifications | Implemented with clap-derived syntax and explicit partial validation. The 2026-09-26 audit plus subsequent annotations accounts for 164 of 169 annotated leaves; the 5 remaining paths and priorities are below. The five low-priority paths are follow-ups, not release blockers. Further annotations do not change runtime contracts. Schema export and request validation remain separate. |
+| 11 | Qualify and prepare release | Release notes drafted. Current-lockfile platform/CI evidence and final binary/archive checks remain pending; prepare version separately after qualification. Publishing remains separately authorized. |
 
 ## Completed operating prerequisite
 
@@ -41,10 +41,12 @@ version remains 0.32.0. The owner updated rmcp to 3.4.1 and thiserror to
   establish current-candidate platform success. No push is implied by this list.
 - Release scope: the owner explicitly deferred technical snapshots on 2026-09-25.
   Finish qualification of implemented changes; do not add replacement features.
-- Next order: reassess remaining diagnostic/discovery value before freezing
-  scope; 100% semantic annotation is not a newly imposed release
-  condition. Then qualify the dependency graph/current candidate, finish
-  docs/package checks and prepare version/notes separately. Reuse evidence whose inputs remain unchanged.
+- Next order: review candidate-SHA CI after the owner pushes. Keep the five
+  remaining metadata paths as follow-ups unless a concrete workflow requires
+  them; no current incident makes quote-data diagnostics a release prerequisite.
+  Prepare version metadata after qualification, then verify final binaries and
+  archives. [Release notes](releases/v0.33.0.md) are a draft, not publication proof.
+  Reuse evidence whose inputs remain unchanged.
 
 No credentials, account-local payloads or machine paths belong in tracked
 records. Keep private downstream collection policy and analytical admission
@@ -64,7 +66,7 @@ are stopped, and the technical implementation still awaits usable response
 evidence or a provider explanation.
 
 
-## Remaining command-specification order
+## Command-specification follow-ups
 
 A 2026-09-26 audit queried every executable path through the cached development
 binary with an invalid CDP port. All 169 leaf queries returned valid JSON without
@@ -98,10 +100,10 @@ validation remain separate follow-ups.
   workspace Clippy, script/package checks and four JavaScript contract jobs.
   Obtain candidate-SHA results after the owner pushes; do not duplicate broad
   suites locally by default or trigger a workflow without authorization.
-- Dependency constraints changed from v0.32.0: rmcp 3.4.0 to 3.4.1 and thiserror
-  2.0.20 to 2.0.21. Lock changes also affect encoding_rs, hyper-util, platform
-  verification and zerocopy. Review relevant regression evidence against this
-  graph; the current audit is not a dependency security or platform qualification.
+- Candidate CI must cover the current lockfile, including dependency update
+  `c72c2ad`. Host dependency-tree resolution and the SDK HTTP compatibility
+  fixture passed on that lockfile; platform coverage remains pending. Direct
+  constraints changed from v0.32.0: rmcp 3.4.0 to 3.4.1 and thiserror 2.0.20 to 2.0.21.
 - Preserve native limits: alert history succeeded with an explicit 90-second
   budget and empty history; default-deadline/nonempty native behavior remains
   unqualified. Linux graphical OAuth and remote skill installation remain
