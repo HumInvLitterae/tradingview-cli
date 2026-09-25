@@ -134,7 +134,7 @@ lookup never obtains one or changes the chart. Desktop authentication is left
 unknown because session/data access belongs to the running application; these
 commands do not use MCP OAuth. A null output contract means no versioned contract
 is advertised here. Other Desktop commands remain explicitly unannotated,
-including UI actions, drawings, indicators and Replay.
+including UI actions, drawings and indicators.
 
 
 ## Desktop lifecycle and comparison
@@ -161,3 +161,32 @@ Chart comparison is an operation with temporary changes, not a read-only query.
 The output retains per-item status and restoration evidence, final chart context
 and a summary. Successful JSON can contain partial results. Desktop-free
 `tv compare` remains a separate scanner-backed workflow, never a fallback.
+
+
+## Replay practice
+
+Specs cover all seven Replay commands: start, step, stop, status, autoplay,
+trade and log. Status is read-only; the others change Replay or practice-position
+state on the selected Desktop chart. Replay trades are not broker orders.
+
+`start --date` accepts a calendar date; omission selects the first available date.
+Availability depends on the chart and timeframe. Startup failure can attempt to
+stop Replay, so an error does not establish unchanged state. Step, autoplay,
+trade and log require an already-started session. Stop handles an already-stopped
+session without starting it.
+
+`autoplay` toggles playback on every call. A positive `--speed` changes the delay
+in milliseconds before toggling. Zero or omission keeps the delay and still
+toggles; zero does not mean stop. Specs use the model's accepted delays and
+practice-trade actions.
+
+`log` advances 1–100 steps and emits `replay_step_log.v1` JSONL on stdout.
+Its summary reports actual progress and the end state; the command does not
+start or stop the session. OHLCV summary attachment is optional, and an explicit
+count requires its attachment flag. Chart screenshots require both the flag and
+output directory. They use deterministic `replay-step-0001.png` names without
+overwrite. Setup can create the directory before session readiness is known.
+Attachments follow successful steps; an attachment failure does not repeat the
+step. Specs describe conditional file effects rather than classifying logging
+as a read. Specification lookup writes no attachments and always returns its own
+normal JSON envelope, even when describing this JSONL command.

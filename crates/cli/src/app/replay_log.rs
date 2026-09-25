@@ -17,7 +17,7 @@ use crate::{
     ops,
 };
 
-const REPLAY_STEP_LOG_CONTRACT_VERSION: &str = "replay_step_log.v1";
+pub(super) const REPLAY_STEP_LOG_CONTRACT_VERSION: &str = "replay_step_log.v1";
 const REPLAY_STEP_LOG_SOURCE: &str = "internal_api";
 const REPLAY_STEP_LOG_SOURCE_CATEGORY: &str = "desktop_backed_operation";
 const REPLAY_STEP_LOG_LABEL: &str = "log";
@@ -25,8 +25,8 @@ const REPLAY_LOG_OHLCV_ATTACHMENT_CONTRACT_VERSION: &str = "replay_log_ohlcv_sum
 const REPLAY_LOG_OHLCV_ATTACHMENT_SOURCE: &str = "selected_chart_cdp";
 const REPLAY_LOG_SCREENSHOT_ATTACHMENT_CONTRACT_VERSION: &str =
     "replay_log_chart_screenshot_attachment.v1";
-const DEFAULT_REPLAY_LOG_OHLCV_COUNT: usize = 100;
-const MAX_REPLAY_LOG_OHLCV_COUNT: usize = 500;
+pub(super) const DEFAULT_REPLAY_LOG_OHLCV_COUNT: usize = 100;
+pub(super) const MAX_REPLAY_LOG_OHLCV_COUNT: usize = 500;
 
 #[derive(Debug, Clone, Copy)]
 struct ReplayLogAttachmentControls {

@@ -11,6 +11,10 @@ For a historical dataset, use the existing bars command and inspect coverage:
 skill provides further data interpretation; Replay itself is not a dataset export.
 Resolve the [Desktop session](references/desktop-session.md)
 only when needed. Inspect `tv replay status` and chart context before mutation.
+On binaries supporting `spec`, `tv spec replay <action>` gives offline argument,
+state-change and attachment guidance. Autoplay toggles on every call, including
+with speed zero; log advances Replay and can write screenshots. Respect the
+conditional effects and partial validation. Use `--help` on older binaries.
 
 | Requested action | Command |
 | --- | --- |

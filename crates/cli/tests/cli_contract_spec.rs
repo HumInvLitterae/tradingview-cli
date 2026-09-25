@@ -115,3 +115,27 @@ fn desktop_specs_do_not_connect_or_resolve_effects_without_arguments() {
         }
     }
 }
+
+#[test]
+fn replay_specs_do_not_advance_practice_or_create_attachments() {
+    for action in [
+        "start", "step", "stop", "status", "autoplay", "trade", "log",
+    ] {
+        let output = Command::cargo_bin("tv")
+            .unwrap()
+            .env("TV_CDP_PORT", "invalid")
+            .args(["spec", "replay", action])
+            .assert()
+            .success()
+            .get_output()
+            .clone();
+        assert!(output.stderr.is_empty());
+        let value: Value = serde_json::from_slice(&output.stdout).unwrap();
+        let spec = &value["data"]["semantics"];
+        assert_eq!(spec["effects"]["replay_state_mutation"], action != "status");
+        assert_eq!(
+            spec["output_format"],
+            if action == "log" { "jsonl" } else { "json" }
+        );
+    }
+}

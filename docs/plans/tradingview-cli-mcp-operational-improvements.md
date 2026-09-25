@@ -1260,3 +1260,28 @@ package validator self-tests (12), staged runtime skills and updated skill
 metadata. Final formatting/diff and public hygiene checks accompany the commit.
 No process launch/termination, tab operation, chart switching, provider access,
 full-workspace test or release build was performed. Cargo remained serial.
+
+
+### Replay specifications (2026-09-25)
+
+Added start/step/stop/status/autoplay/trade/log semantics. Status is read-only;
+other operations modify practice state. Autoplay always toggles: positive speed
+sets delay first, while zero/omission retains delay. Trade is a Replay position
+operation, not a broker order. Start date availability is chart-dependent and
+failure can attempt stop cleanup. The metadata describes these effects without
+executing any Replay operation.
+
+Log is an advancing JSONL workflow, not a passive read. Counts and output contract
+share existing execution definitions. Screenshot flags/paths are paired; setup
+may create a directory before readiness, and existing destination files are
+rejected. Attachment errors remain separate and do not repeat a completed step.
+Specs preserve conditional file effects and the requested end state. No Replay
+implementation behavior changed; accepted trade actions now share a definition
+between validation and specification.
+
+Validation passed: 13 spec unit tests, ten Replay model tests, 15 existing Replay
+log tests and five CLI subprocess tests (all seven Replay spec paths included),
+plus scoped CLI Clippy. Package validator self-tests (12), staged runtime skills,
+updated skill metadata, formatting and diff checks passed. Cargo ran serially
+with one build job. No actual Replay, Desktop/provider access, installed-binary
+replacement, full-workspace suite or release build was performed.

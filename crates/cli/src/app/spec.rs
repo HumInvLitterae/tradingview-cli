@@ -11,6 +11,7 @@ use crate::{build_info, cli::Cli};
 mod desktop;
 mod mcp_mutations;
 mod mcp_reads;
+mod replay;
 
 pub(super) fn describe(path: &[String]) -> Result<Value, AppError> {
     let mut root = Cli::command();
@@ -74,6 +75,7 @@ pub(super) fn describe(path: &[String]) -> Result<Value, AppError> {
     if let Some(semantics) = mcp_reads::describe(&canonical)
         .or_else(|| mcp_mutations::describe(&canonical))
         .or_else(|| desktop::describe(&canonical))
+        .or_else(|| replay::describe(&canonical))
     {
         data["coverage"]["semantics"] = json!("documented");
         data["semantics"] = semantics;
