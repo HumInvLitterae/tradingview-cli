@@ -13,6 +13,7 @@ mod desktop;
 mod drawing;
 mod indicator;
 mod layout;
+mod market;
 mod mcp_mutations;
 mod mcp_reads;
 mod pine;
@@ -88,6 +89,7 @@ pub(super) fn describe(path: &[String]) -> Result<Value, AppError> {
         .or_else(|| layout::describe(&canonical))
         .or_else(|| pine::describe(&canonical))
         .or_else(|| capture::describe(&canonical))
+        .or_else(|| market::describe(&canonical))
     {
         data["coverage"]["semantics"] = json!("documented");
         data["semantics"] = semantics;

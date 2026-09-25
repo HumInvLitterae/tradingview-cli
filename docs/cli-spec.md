@@ -342,3 +342,28 @@ millisecond bound and 5000 millisecond default. A timeout argument requires the
 wait flag. Stable observations do not guarantee every pixel or fresh market data.
 Wait failure precedes capture/write, but a file-write failure is not atomic.
 Replay screenshot attachments retain their separate no-overwrite behavior.
+
+
+## Credential-free symbol search and bars
+
+Search returns up to 15 candidates, not an exhaustive list. Choose a qualified
+`data.results[].full_name` when the exchange matters. Bare-symbol bars lookup
+selects the first exact symbol match from search rather than rejecting multiple
+exchanges. Inspect requested_symbol and resolved_symbol. Symbol resolution can
+perform network I/O before later bars validation; specification lookup stays
+offline even when an execution would fail validation.
+
+Bars uses the undocumented, unauthenticated WebSocket route with split adjustment
+requested. It does not imply MCP/Desktop equivalence, verified entitlements or
+realtime data. Recent mode defaults to 100 bars and accepts 1–500. Date-range mode
+requires both dates, defaults to a 500-bar cap and permits up to 5000. Range mode
+supports fewer timeframes than recent mode; exact choices and aliases are in the
+specification. Filtering uses period-start timestamps and includes the entire
+UTC `to` date, without expanding weekly/monthly bars into daily coverage.
+
+Count fulfillment and period coverage are separate. A complete range can contain
+fewer bars than its cap, while reaching a cap need not cover the requested period.
+Read range_coverage_status, range_fetch_summary and data_quality.completed;
+summary.coverage_status and data_quality.partial_result describe count fulfillment.
+Timestamp-bound coverage is not a trading-calendar gap audit. A failure stage
+locates the error but does not authorize repeated requests or provider fallback.
