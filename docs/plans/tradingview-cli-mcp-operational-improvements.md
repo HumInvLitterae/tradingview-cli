@@ -1919,3 +1919,27 @@ checked with actual validators. Scoped CLI Clippy, formatting/diff checks,
 12 package self-tests, guidance staging and skill metadata validation passed.
 Cargo ran serially with one build job. No Desktop/account changes, provider
 access, full-workspace suite or release build was performed.
+
+
+### Legacy watchlist mutation specifications (2026-09-26)
+
+Added add/add-bulk/remove, reaching 152 documented leaves of 169. These legacy
+commands target the active list through Desktop, not an explicit account list
+ID. Specs expose API-to-DOM fallback, readback's active-list fallback, rendered
+DOM limits and un-restored panel state. Bulk processing continues after errors;
+allow_partial changes final error handling only. Existing-member add skips in
+the legacy path but moves the member to the end through official MCP.
+
+Standalone account guidance prefers explicit official-MCP targeting where it
+meets the requested effects. Runtime behavior and contracts remain unchanged.
+The legacy mutation-failure fallback and non-strict same-list readback remain
+behavioral follow-ups, not fixed by documentation; changing them needs concrete
+before/after contract review. Next inspect remaining legacy alert operations,
+including which Pine-specific behavior cannot be replaced by simple MCP alerts.
+
+Validation passed: 39 spec unit tests, 19 existing watchlist fixtures and one
+offline CLI test covering all three paths. Unique-symbol and delay bounds match
+actual validators. Scoped CLI Clippy, formatting/diff checks, 12 package
+self-tests, guidance staging and skill metadata validation passed. Cargo ran
+serially with one build job. No Desktop/account mutation, provider access,
+full-workspace suite or release build was performed.
