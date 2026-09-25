@@ -12,17 +12,17 @@ Contracts, approvals and dated evidence:
 | 4 | Implement alert history | Implemented and fixture-verified. Nonempty provider structure was observed; the public service succeeded with explicit 90 seconds and empty history. Default-30-second native success and nonempty native normalization remain unqualified; coverage is always unconfirmed. |
 | 5 | Defer official technical snapshot | Owner deferred implementation on 2026-09-25. Not a v0.33.0 release prerequisite. Preserve the design and provider failure evidence; resume only when the owner resumes work with usable evidence or a concrete provider explanation. |
 | 6 | Measure and optimize transport | Implemented and measured. A single-page mutation/readback flow uses one initialization/catalog instead of two. Lazy pagination, admission, deadlines and separate readback failures are fixture-verified. No live latency improvement is claimed. |
-| 7 | Stabilize affected fixtures | Scoped serial regression passed; no new timing defect was established. Current-candidate default-concurrency and cross-platform CI remain pending. Correct concrete failures if observed; do not weaken production deadlines or assertions. |
+| 7 | Stabilize affected fixtures | Scoped serial regression passed; no new timing defect was established. Candidate 59106e9 passed default-concurrency and cross-platform CI. Correct concrete failures if observed; do not weaken production deadlines or assertions. |
 | 8 | Integrate documentation and standalone skills | Complete for implemented behavior: help, usage, source taxonomy and standalone MCP references updated and checked. Add technical snapshot guidance only after its implementation. |
 | 9 | Distribute standalone skills from one source | Implemented: root `skills/` owns seven runtime skills; local agent links reuse them and archives copy real files. gh local install and npm discovery confirmed seven skills. Remote installation of this unpublished layout and Windows execution remain unverified. |
 | 10 | Add offline command specifications | Implemented with clap-derived syntax and explicit partial validation. The 2026-09-26 audit plus subsequent annotations accounts for 164 of 169 annotated leaves; the 5 remaining paths and priorities are below. The five low-priority paths are follow-ups, not release blockers. Further annotations do not change runtime contracts. Schema export and request validation remain separate. |
-| 11 | Qualify and prepare release | Release notes drafted. Current-lockfile platform/CI evidence and final binary/archive checks remain pending; prepare version separately after qualification. Publishing remains separately authorized. |
+| 11 | Qualify and prepare release | Candidate 59106e9 passed CI. Version 0.33.0 and release notes are prepared; Intel release verification after the fixture timing fix, final archives and publication remain pending. Publishing remains separately authorized. |
 
 ## Completed operating prerequisite
 
 Heavy local pre-push checks are opt-in. Local Cargo uses one build job and one
 test thread, with existing artifacts and focused checks. The current workspace
-version remains 0.32.0. The owner updated rmcp to 3.4.1 and thiserror to
+version is prepared as 0.33.0. The owner updated rmcp to 3.4.1 and thiserror to
 2.0.21; affected regression checks must use the updated lockfile.
 
 ## Next actions and boundaries
@@ -36,17 +36,14 @@ version remains 0.32.0. The owner updated rmcp to 3.4.1 and thiserror to
   credential/provider access. The explicit-90-second native history result is
   separate from the earlier default timeout; longer waiting does not cure the
   technical application's received failure.
-- CI: once the owner makes the candidate available to CI, inspect its results.
-  Existing macOS focused checks and prior-release Windows/Linux evidence do not
-  establish current-candidate platform success. No push is implied by this list.
+- CI: candidate `59106e9` passed macOS/Windows/Linux tests, Clippy, script and
+  JavaScript contract checks. Reuse this evidence for unchanged implementation.
 - Release scope: the owner explicitly deferred technical snapshots on 2026-09-25.
   Finish qualification of implemented changes; do not add replacement features.
-- Next order: review candidate-SHA CI after the owner pushes. Keep the five
-  remaining metadata paths as follow-ups unless a concrete workflow requires
-  them; no current incident makes quote-data diagnostics a release prerequisite.
-  Prepare version metadata after qualification, then verify final binaries and
-  archives. [Release notes](releases/v0.33.0.md) are a draft, not publication proof.
-  Reuse evidence whose inputs remain unchanged.
+- Next order: review the prepared version/notes, then publish only with owner
+  authorization. Final native binaries and archives are built by the release
+  workflow; local guidance staging does not substitute for those artifacts.
+  Keep the five remaining metadata paths as follow-ups.
 
 No credentials, account-local payloads or machine paths belong in tracked
 records. Keep private downstream collection policy and analytical admission
@@ -92,18 +89,11 @@ This inventory authorizes metadata for existing commands, not changed execution
 guarantees, live operations or new commands. Schema export and offline request
 validation remain separate follow-ups.
 
-## Candidate qualification still required
+## Qualification and publication
 
-- Latest observed CI success is for released `54dabec`, not the current candidate:
-  [CI run](https://github.com/HumInvLitterae/tradingview-cli/actions/runs/35682348029).
-  Current CI defines tests on macOS/Windows/Linux, Linux Secret Service integration,
-  workspace Clippy, script/package checks and four JavaScript contract jobs.
-  Obtain candidate-SHA results after the owner pushes; do not duplicate broad
-  suites locally by default or trigger a workflow without authorization.
-- Candidate CI must cover the current lockfile, including dependency update
-  `c72c2ad`. Host dependency-tree resolution and the SDK HTTP compatibility
-  fixture passed on that lockfile; platform coverage remains pending. Direct
-  constraints changed from v0.32.0: rmcp 3.4.0 to 3.4.1 and thiserror 2.0.20 to 2.0.21.
+- [Candidate CI](https://github.com/HumInvLitterae/tradingview-cli/actions/runs/36184890185)
+  passed at `59106e9`, including current lock update `c72c2ad`. Version-only
+  preparation does not require repeating unchanged implementation tests locally.
 - Preserve native limits: alert history succeeded with an explicit 90-second
   budget and empty history; default-deadline/nonempty native behavior remains
   unqualified. Linux graphical OAuth and remote skill installation remain
@@ -111,8 +101,8 @@ validation remain separate follow-ups.
   further native checks require concrete targets and any uncovered authority.
 - Finish current-candidate distribution checks when executable/package inputs
   are final. Guidance fixture staging is not release-binary validation. Version
-  remains 0.32.0 until qualification; version/notes preparation stays separate
-  from features. Publication is not authorized by this inventory.
+  0.33.0 is prepared separately from features. Publication is not authorized by
+  this inventory.
 
 ## Behavioral findings kept separate from annotations
 
