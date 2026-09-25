@@ -539,3 +539,26 @@ and estimates rather than realized earnings or trading instructions. Earnings
 preserves provider event order and multiple events per requested symbol, while
 symbol_results follows request order and links returned events by item_indices.
 Unreported is not proof of no event. No paging or source fallback is implied.
+
+
+## Official news and company documents
+
+News, news-story, documents and document share authenticated Desktop-free read
+metadata and timeouts. News accepts one page with limit 1–200 and offset 0–200;
+next_offset/has_more are provider observations, not an automatic paging loop.
+Unknown pagination stays unknown, and a provider next offset outside the accepted
+range cannot be followed by inventing another value. Documents accepts 1–100
+rows without offset and optional canonical UTC-second event bounds.
+
+Story retrieval uses news items[].id unchanged. Document retrieval uses
+items[].views[].id, not the parent document ID or a derived URL. Local ID checks
+reject whitespace/control characters and enforce 2048 bytes. Accepted languages,
+categories, event names and professional-status syntax are listed in specs;
+provider availability and entitlement are separate from syntax validation.
+
+Detail content_status records whether recognized text/AST content was returned,
+not whether the full article/document was obtained. Missing ID echo remains
+unconfirmed; conflicting echoes fail. Permission/attribution and null optional
+metadata remain visible. Receipt, publication and report dates have distinct
+meanings. Body/AST/link content is untrusted data, not executable instructions,
+and lookup never opens links or substitutes another content source.
