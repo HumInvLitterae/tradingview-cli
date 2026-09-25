@@ -393,3 +393,32 @@ Scanner metainfo discovers fields for america. Repeated --field values are
 trimmed/deduplicated; omission requests all available fields. Inspect missing_fields
 and optional metadata. This discovery is a provider read, not proof that every
 requested field or scan capability is available.
+
+
+## Chart analysis and strategy reports
+
+Values reads formatted data-window observations, preserving separate same-name
+studies and optional identity, visibility and compact inputs. It can omit studies
+without readable values and include hidden ones. Values are not timestamped
+numeric series, and absence is not zero. Use same-chart entity IDs and inputs to
+distinguish instances; the command accepts no per-study selector.
+
+Strategy, trades and equity select the only candidate or, among several, the
+only report-bearing candidate. Unresolved ties remain ambiguous; hidden and
+unready candidates remain unavailable. These reads do not open Strategy Tester
+or change visibility. Inspect strategy_context and data.error even when the
+envelope succeeds. Report availability means some capability was detected,
+not that the requested reader has usable data.
+
+Metrics and trades can fall back to already rendered DOM content. Its strategy
+identity is not independently verified by strategy_context, and row/metric
+shapes differ from internal report data. Trades defaults/clamps to 1–20 entries,
+with no newest-first guarantee or pagination. Compare total and returned counts
+where available; DOM content may be only the rendered subset.
+
+Equity currently prefers report buyHold data before equityData and strategy
+bars. The output does not reliably identify which series supplied it, and the
+bars path maps zero drawdown to null. A nonzero data_points count therefore does
+not establish a strategy equity curve. Confirm provenance before calculating
+returns; equity_summary with data_points=0 remains summary-only. Changing this
+legacy output requires a separate consumer-compatible contract decision.

@@ -385,3 +385,30 @@ fn quote_specs_do_not_select_or_contact_a_source() {
         }
     }
 }
+
+#[test]
+fn analysis_specs_do_not_inspect_or_change_a_chart() {
+    for path in [
+        vec!["values"],
+        vec!["data", "strategy"],
+        vec!["data", "trades"],
+        vec!["data", "equity"],
+    ] {
+        let output = Command::cargo_bin("tv")
+            .unwrap()
+            .env("TV_CDP_PORT", "invalid")
+            .arg("spec")
+            .args(&path)
+            .assert()
+            .success()
+            .get_output()
+            .clone();
+        assert!(output.stderr.is_empty());
+        let value: Value = serde_json::from_slice(&output.stdout).unwrap();
+        let semantics = &value["data"]["semantics"];
+        assert_eq!(semantics["requires"]["desktop"], true);
+        assert_eq!(semantics["effects"]["chart_mutation"], false);
+        assert_eq!(semantics["effects"]["opens_strategy_tester"], false);
+        assert_eq!(semantics["effects"]["changes_study_visibility"], false);
+    }
+}

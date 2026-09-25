@@ -35,7 +35,9 @@ expose argument-dependent routing and restoration; scanner field discovery is
 also described. Remaining work is ordered by workflow importance and effect
 severity rather than command-family completion. Chart-analysis reads are first;
 downstream call sites and recorded runs are usage evidence even without an
-aggregated frequency count.
+aggregated frequency count. Values and strategy/trades/equity semantics now
+describe identity, availability and output limits, including unresolved equity
+series provenance.
 The active record owns evidence and resumption conditions. Heavy local hooks are
 opt-in; current-candidate cross-platform CI and release qualification remain open.
 

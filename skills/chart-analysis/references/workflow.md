@@ -58,3 +58,13 @@ present. Resolve IDs through `draw list` on the same target. Position drawings
 are not trades. Three-point parallel channels have stricter validation than
 generic shapes; inspect geometry/readback after creation instead of assuming
 that a returned ID proves every property. Use help on older binaries.
+
+
+## Interpreting study values
+
+`tv spec values` describes the read when supported; use help on older binaries.
+Values are formatted data-window observations, not numeric time series with a
+per-value timestamp or closed-bar guarantee. Rows without readable values can
+be omitted, while hidden studies can still return values. Missing output is not
+zero. Compact inputs are not a complete parameter export. Read `data indicator`
+with a confirmed chart-local entity ID when more input detail is needed.
