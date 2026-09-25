@@ -1567,3 +1567,27 @@ execution allowlist in an explicit comparison. Scoped CLI Clippy, formatting/
 diff checks, 12 package self-tests, guidance staging and market-data skill
 metadata passed. Cargo ran serially with one build job. No live scan, Desktop
 operation, full-workspace test or release build was performed.
+
+
+### Comparison and snapshot specifications (2026-09-25)
+
+Added compare/snapshot, reaching 97 documented leaves of 169. Specs distinguish
+section success, item success and limited field-coverage accounting; complete
+is not a full field audit or synchronized observation. Top-level symbol identity
+is a precedence choice, not cross-section agreement. Snapshot selection names
+are checked through the existing I/O-free fundamentals validator.
+
+Existing hints mark chart_quote/screenshot non_mutating despite chart switching
+or file output. Specs and standalone market guidance disclose this and require
+checking the hinted command's own effects. The packet contract is unchanged;
+consumer-visible correction needs a separate before/after agreement. Field/default
+metadata mirrors the market crate's private catalog without a new public API.
+Next prioritize analysis-related official MCP reads according to downstream need.
+
+Validation passed: 26 spec unit tests, eight snapshot and 11 comparison fixtures,
+and the focused offline CLI subprocess test. Supported/default field lists were
+compared directly with execution definitions; supported group/field names also
+passed the public validator. Scoped CLI Clippy, formatting/diff checks, 12 package
+self-tests, guidance staging and market-data skill metadata passed. Cargo ran
+serially with one build job. No provider/Desktop read, full-workspace suite or
+release build was performed.

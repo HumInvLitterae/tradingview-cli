@@ -451,3 +451,23 @@ fn scanner_scan_spec_is_offline_without_issuing_pages() {
     assert_eq!(value["data"]["semantics"]["requires"]["desktop"], false);
     assert_eq!(value["data"]["semantics"]["source"], "scanner_scan_rest");
 }
+
+#[test]
+fn packet_specs_do_not_collect_sections_or_execute_hints() {
+    for action in ["snapshot", "compare"] {
+        let output = Command::cargo_bin("tv")
+            .unwrap()
+            .env("TV_CDP_PORT", "invalid")
+            .args(["spec", action])
+            .assert()
+            .success()
+            .get_output()
+            .clone();
+        assert!(output.stderr.is_empty());
+        let value: Value = serde_json::from_slice(&output.stdout).unwrap();
+        let semantics = &value["data"]["semantics"];
+        assert_eq!(semantics["requires"]["desktop"], false);
+        assert_eq!(semantics["effects"]["executes_follow_up_hints"], false);
+        assert_eq!(semantics["output_contract"], format!("{action}.v1"));
+    }
+}
