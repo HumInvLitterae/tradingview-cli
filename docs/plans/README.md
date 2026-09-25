@@ -28,7 +28,8 @@ verification. Drawing specs cover geometry and clear/dry-run behavior; other
 command semantics remain unannotated. Pane and saved-layout specs distinguish
 selection from observed state. Pine specs distinguish local analysis, source
 transmission, Editor changes and compile/save evidence. The inventory orders
-the remaining families.
+the remaining families. Selected-chart capture specs distinguish file writes,
+viewport changes and returned-range limits.
 The active record owns evidence and resumption conditions. Heavy local hooks are
 opt-in; current-candidate cross-platform CI and release qualification remain open.
 

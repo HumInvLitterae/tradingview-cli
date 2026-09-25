@@ -21,6 +21,7 @@ package version omits the leading `v`.
   Drawing specs describe geometry constraints, chart-local IDs and clear/dry-run effects.
   Pane/saved-layout specs distinguish selection, dry-run and observed state.
   Pine specs distinguish local analysis, remote checks and Editor/compile/save effects.
+  Selected-chart capture specs describe count handling, viewport effects and file writes.
   Other semantic coverage is explicitly unannotated.
 
 - `tv mcp --timeout <SECONDS>` selects a 1–180 second total deadline for provider

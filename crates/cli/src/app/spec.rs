@@ -8,6 +8,7 @@ use tradingview_core::{AppError, ErrorKind};
 
 use crate::{build_info, cli::Cli};
 
+mod capture;
 mod desktop;
 mod drawing;
 mod indicator;
@@ -86,6 +87,7 @@ pub(super) fn describe(path: &[String]) -> Result<Value, AppError> {
         .or_else(|| drawing::describe(&canonical))
         .or_else(|| layout::describe(&canonical))
         .or_else(|| pine::describe(&canonical))
+        .or_else(|| capture::describe(&canonical))
     {
         data["coverage"]["semantics"] = json!("documented");
         data["semantics"] = semantics;
