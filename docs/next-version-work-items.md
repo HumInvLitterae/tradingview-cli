@@ -72,18 +72,20 @@ and 83 do not. Validation coverage remains partial even for annotated paths.
 Use the current development binary's `tv spec` to reproduce the path inventory.
 
 The owner requested priority by command importance on 2026-09-25. The order below
-uses documented agent workflows, effect severity and missing decision guidance;
-there is no measured command-usage telemetry. Reassess when a concrete downstream
+uses downstream call sites and recorded executions, documented agent workflows,
+effect severity and missing decision guidance. Usage evidence exists even though
+command frequencies have not been aggregated. Chart analysis is the owner's
+primary workflow. Reassess when a concrete downstream
 need or unsafe ambiguity changes the ranking. Do not finish a low-value family
 merely to raise the coverage count.
 
 | Priority | Remaining surface | Reason and acceptance focus |
 | --- | --- | --- |
-| 1 | MCP login/status/logout, watchlist list/get and alert list/get | Authentication and account discovery support existing MCP workflows. Clarify browser/credential effects, readiness and ID discovery before mutation. |
-| 2 | Scanner scan; chart values and strategy/trades/equity | Screening and chart/strategy analysis are documented agent workflows. Explain pagination completeness, study identity, ambiguous selection and missing data. |
-| 3 | Compare/snapshot/fundamentals and remaining MCP research reads | Multi-symbol analysis and contextual data need partial-result, source and freshness guidance. Prioritize concrete consumer needs within this group. |
+| 1 | Chart values, strategy/trades/equity, then supporting chart-data reads | Prioritize chart analysis. Explain study identity, formatted values, ambiguous strategy selection, report availability and missing data. Check downstream call sites and recorded runs before ordering supporting reads. |
+| 2 | Scanner scan, compare/snapshot and analysis-related MCP reads | Support symbol selection and chart analysis with pagination completeness, partial-result, source and freshness guidance. |
+| 3 | MCP login/status/logout, watchlist list/get and alert list/get | Clarify browser/credential effects, readiness and ID discovery. Advance a command if it blocks an actual chart-analysis workflow. |
 | 4 | Legacy account and Desktop Screener mutations | Expose account/storage/UI effects and existing MCP alternatives where equivalent. Advance earlier if a live workflow depends on them. |
-| 5 | Other chart data, hotlists, observation/streaming and diagnostics | Add lifecycle, output and source guidance when needed by a workflow; audit remaining leaf paths after higher-priority gaps. |
+| 5 | Remaining research reads, hotlists, observation/streaming and diagnostics | Use downstream evidence to identify analysis-critical commands and advance them; audit lower-priority gaps afterward. |
 
 Completed groups include primary MCP reads/mutations, common chart controls,
 Replay/UI/indicator/drawing/pane/layout/Pine, selected-chart capture, search/bars,
