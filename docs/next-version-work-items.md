@@ -15,7 +15,7 @@ Contracts, approvals and dated evidence:
 | 7 | Stabilize affected fixtures | Scoped serial regression passed; no new timing defect was established. Current-candidate default-concurrency and cross-platform CI remain pending. Correct concrete failures if observed; do not weaken production deadlines or assertions. |
 | 8 | Integrate documentation and standalone skills | Complete for implemented behavior: help, usage, source taxonomy and standalone MCP references updated and checked. Add technical snapshot guidance only after its implementation. |
 | 9 | Distribute standalone skills from one source | Implemented: root `skills/` owns seven runtime skills; local agent links reuse them and archives copy real files. gh local install and npm discovery confirmed seven skills. Remote installation of this unpublished layout and Windows execution remain unverified. |
-| 10 | Add offline command specifications | Implemented with clap-derived syntax and explicit partial validation. A 2026-09-26 executable audit found 156 of 169 leaves annotated; the 13 remaining paths and priorities are below. Further annotations do not change runtime contracts. Schema export and request validation remain separate. |
+| 10 | Add offline command specifications | Implemented with clap-derived syntax and explicit partial validation. The 2026-09-26 audit plus data-shapes work accounts for 157 of 169 annotated leaves; the 12 remaining paths and priorities are below. Further annotations do not change runtime contracts. Schema export and request validation remain separate. |
 | 11 | Qualify and prepare release | Pending. Qualify the updated dependency graph, review remaining native limits, obtain current-candidate platform/CI evidence, then prepare version and notes separately. Publishing remains separately authorized. |
 
 ## Completed operating prerequisite
@@ -41,8 +41,7 @@ version remains 0.32.0. The owner updated rmcp to 3.4.1 and thiserror to
   establish current-candidate platform success. No push is implied by this list.
 - Release scope: the owner explicitly deferred technical snapshots on 2026-09-25.
   Finish qualification of implemented changes; do not add replacement features.
-- Next order: annotate `data shapes`, then chart setup observations and analysis
-  support as ordered below. Reassess lower-priority gaps before freezing scope;
+- Next order: chart setup observations, then analysis support as ordered below. Reassess lower-priority gaps before freezing scope;
   100% semantic annotation is not a newly imposed release condition. Then qualify
   the dependency graph/current candidate, finish docs/package checks and prepare
   version/notes separately. Reuse evidence whose inputs remain unchanged.
@@ -69,23 +68,24 @@ evidence or a provider explanation.
 
 A 2026-09-26 audit queried every executable path through the cached development
 binary with an invalid CDP port. All 169 leaf queries returned valid JSON without
-stderr; 156 have semantic annotations and the following 13 do not. The root
+stderr; 156 had semantic annotations at that checkpoint. The subsequent data-shapes
+change brings coverage to 157, leaving the following 12 unannotated. The root
 contains 195 paths including 26 groups. This proves offline lookup, not runtime
 behavior. Validation coverage remains partial for annotated paths too.
 
 Chart analysis remains first. Prior downstream call sites and recorded runs are
 usage evidence, although no aggregate frequency ranking exists. The ordering
 below uses current source inspection and workflow relevance, not a claim that
-all remaining commands are actively used downstream.
+all remaining commands are actively used downstream. `data shapes` is now
+annotated with window, activity-value, rounding and missing-data limits.
 
 | Priority | Exact remaining paths | Acceptance focus |
 | --- | --- | --- |
-| 1 | `data shapes` | Pine shape/character observations: bar window, plotted values, filtering and lossy summaries. Distinguish from hand-drawn objects. |
-| 2 | `status`, `ui-state` | Connection versus chart readiness; observed UI state versus permission or ability to execute later actions. |
-| 3 | `watch compare`, `events compare`, `fundamentals` | Bounded repeated observations, event coverage and source-dependent financial interpretation. |
-| 4 | `screener open`, `screener close` | Explicit UI/target effects and full-page versus dialog behavior; do not infer opening from a read request. |
-| 5 | `diagnose quote-data` | Advance when diagnosing a concrete quote-data problem; state network/subscription effects and evidence limits. |
-| 6 | `scanner hotlist`, `data depth`, `discover`, `spec` | Remaining discovery/self-description; depth is a heuristic DOM read, not authenticated exchange depth proof. Review value before treating annotation completion as a release gate. |
+| 1 | `status`, `ui-state` | Connection versus chart readiness; observed UI state versus permission or ability to execute later actions. |
+| 2 | `watch compare`, `events compare`, `fundamentals` | Bounded repeated observations, event coverage and source-dependent financial interpretation. |
+| 3 | `screener open`, `screener close` | Explicit UI/target effects and full-page versus dialog behavior; do not infer opening from a read request. |
+| 4 | `diagnose quote-data` | Advance when diagnosing a concrete quote-data problem; state network/subscription effects and evidence limits. |
+| 5 | `scanner hotlist`, `data depth`, `discover`, `spec` | Remaining discovery/self-description; depth is a heuristic DOM read, not authenticated exchange depth proof. Review value before treating annotation completion as a release gate. |
 
 This inventory authorizes metadata for existing commands, not changed execution
 guarantees, live operations or new commands. Schema export and offline request

@@ -36,8 +36,8 @@ including contributor workflows. Add an offline `tv spec` index and selected
 command details from the running binary, reusing clap definitions instead of
 maintaining duplicate argument catalogs. Mark incomplete semantic coverage
 explicitly and route dynamic values to existing discovery commands. Current
-offline evidence covers 156 of 169 executable paths; the inventory prioritizes
-the remaining 13, starting with Pine shapes. Full annotation coverage is not a
+offline evidence covers 157 of 169 executable paths; the inventory prioritizes
+the remaining 12, starting with chart setup observations. Full annotation coverage is not a
 new release gate, and disclosed legacy behavior findings are separate contract
 work rather than implicit fixes in this version.
 
