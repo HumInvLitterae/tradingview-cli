@@ -317,3 +317,28 @@ does not handle naming a new script or independently retrieve a saved revision.
 Errors reads current markers without compiling, while console reads visible log
 entries. Empty markers or logs do not establish a fresh successful execution.
 Saved-script list can return `data.error` inside a successful envelope.
+
+
+## Selected-chart data and capture
+
+Ohlcv reads recent loaded chart bars without moving the viewport. Count defaults
+to 100 and clamps to 1–500, so zero requests one bar. Export chart-bars instead
+rejects counts outside 1–500 and defaults to 500. It changes the visible range
+before reading recent bars; the output is JSON on stdout, not a file or a
+range-filtered historical dataset. Inspect requested and returned ranges and the
+range-match diagnostics. The previous viewport is not restored on completion
+or a later read failure. Summaries are derived aggregates; missing numeric
+fields can be skipped or defaulted by the current summarizer.
+
+Scroll uses loaded bars and an approximate time window around the date. It does
+not request older history or verify that the final viewport is centered exactly
+there. Its date/window fields describe the request; use range for readback.
+
+Screenshot writes a local file, creates missing parent directories and overwrites
+an existing output. Full captures the page, while chart and strategy capture a
+visible region; the operation does not open Strategy Tester. Clipped capture can
+fall back to a crop of the full page. Render waiting is optional, with a 500–30000
+millisecond bound and 5000 millisecond default. A timeout argument requires the
+wait flag. Stable observations do not guarantee every pixel or fresh market data.
+Wait failure precedes capture/write, but a file-write failure is not atomic.
+Replay screenshot attachments retain their separate no-overwrite behavior.

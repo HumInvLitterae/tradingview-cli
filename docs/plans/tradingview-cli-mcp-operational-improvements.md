@@ -1405,3 +1405,28 @@ Scoped CLI Clippy, formatting and diff checks passed. Cargo remained serial with
 one build job. Existing Pine execution/JavaScript fixtures and package checks
 were not repeated because those inputs were unchanged. No provider request,
 Editor operation, full-workspace test or release build was performed.
+
+
+### Selected-chart capture specifications (2026-09-25)
+
+Added ohlcv, export chart-bars, scroll and screenshot. Coverage is now 81 of 169
+leaf paths, with 88 unannotated. Ohlcv count clamping and export count rejection
+remain distinct, sharing the existing count constants through crate-private
+exports. Export changes the viewport and reads recent bars without range
+filtering or local file output. Scroll works on loaded bars and reports request
+coordinates rather than verified final bounds.
+
+Screenshot describes overwrite/parent-directory effects, visible regions,
+clipped-capture fallback and render-wait validation. Replay attachments retain
+their separate no-overwrite behavior. Summary defaulting is explicit rather than
+presented as lossless data. Existing execution logic, runtime skills and package
+inputs are unchanged. Continue with Desktop-free bars/quotes/scanner reads and
+remaining chart-data paths.
+
+Validation passed: 20 spec unit tests and 11 offline CLI subprocess tests. The
+new paths resolve without valid CDP settings, required operation arguments or
+file writes; export and render-wait bounds are checked against execution
+validators. Scoped CLI Clippy, formatting and diff checks passed. Cargo used
+one build job and serial tests. Unchanged capture/JavaScript fixtures and runtime
+package inputs were not revalidated. No chart operation, provider request,
+screenshot capture, full-workspace test or release build was performed.

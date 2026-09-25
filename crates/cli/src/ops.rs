@@ -37,6 +37,8 @@ pub(crate) use common::CHART_TYPES;
 pub(crate) use indicator::MAX_SAFE_INTEGER;
 pub(crate) use market::CHART_COMPARE_CONTRACT_VERSION;
 
+pub(crate) use common::{DEFAULT_OHLCV_COUNT, MAX_OHLCV_COUNT};
+
 pub use alert::{
     IndicatorAlertRequest, alert_create, alert_create_indicator, alert_delete, alert_delete_all,
     alert_list,

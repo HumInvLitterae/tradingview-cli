@@ -304,3 +304,34 @@ fn pine_specs_never_read_source_connect_or_compile() {
         );
     }
 }
+
+#[test]
+fn capture_specs_do_not_connect_move_viewport_or_write_files() {
+    for path in [
+        vec!["ohlcv"],
+        vec!["export", "chart-bars"],
+        vec!["scroll"],
+        vec!["screenshot"],
+    ] {
+        let output = Command::cargo_bin("tv")
+            .unwrap()
+            .env("TV_CDP_PORT", "invalid")
+            .arg("spec")
+            .args(&path)
+            .assert()
+            .success()
+            .get_output()
+            .clone();
+        assert!(output.stderr.is_empty());
+        let value: Value = serde_json::from_slice(&output.stdout).unwrap();
+        let effects = &value["data"]["semantics"]["effects"];
+        assert_eq!(effects["local_file_write"], path[0] == "screenshot");
+        assert_eq!(
+            effects["chart_mutation"],
+            ["export", "scroll"].contains(&path[0])
+        );
+        if path[0] == "screenshot" {
+            assert_eq!(effects["overwrites_existing_file"], true);
+        }
+    }
+}
