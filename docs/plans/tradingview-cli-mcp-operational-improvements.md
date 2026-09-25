@@ -1849,3 +1849,26 @@ checks, 12 package self-tests, guidance staging and skill metadata validation.
 The focused CLI test checks the final provider/UI effect distinctions. Cargo ran
 serially with one build job. No Desktop/provider operation, workspace suite or
 release build was performed.
+
+
+### Saved-screen mutation specifications (2026-09-26)
+
+Added switch/save/create/rename/save-as/delete, reaching 142 documented leaves
+of 169. Specs distinguish live dry-run discovery from final submission, exact
+name resolution from title-only readback, and save_requested from durable save
+confirmation. Delete uses storage and can succeed before a failed absence check;
+active-target rejection applies to execution, not preview.
+
+Corrected runtime guidance: create/copy/rename/delete test-name restrictions are
+code-enforced, not merely recommended fixture naming. Rename requires both names
+to satisfy the guard during execution. Save and switch are not test-name limited.
+A self-contained saved-screen reference describes these boundaries. Runtime
+mutation behavior is unchanged. Next review filter/column edits, including
+selector ambiguity, storage writes, confirmation gates and actual readback.
+
+Validation passed: 36 spec unit tests, 18 existing saved-screen fixtures and one
+offline CLI test covering all six operations. Dispatch validation functions
+verify the documented test-name and confirmation boundaries. Scoped CLI Clippy,
+formatting/diff checks, 12 package self-tests, guidance staging and skill metadata
+validation passed. Cargo ran serially with one build job. No Desktop/account
+mutation, provider access, full-workspace suite or release build was performed.

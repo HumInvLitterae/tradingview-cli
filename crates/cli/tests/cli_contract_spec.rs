@@ -711,3 +711,22 @@ fn screener_discovery_specs_do_not_open_menus_or_fetch_storage() {
         }
     }
 }
+
+#[test]
+fn saved_screen_specs_do_not_execute_mutations() {
+    for action in ["switch", "save", "create", "rename", "save-as", "delete"] {
+        let output = Command::cargo_bin("tv")
+            .unwrap()
+            .env("TV_CDP_PORT", "invalid")
+            .args(["spec", "screener", "screens", action])
+            .assert()
+            .success()
+            .get_output()
+            .clone();
+        assert!(output.stderr.is_empty());
+        let value: Value = serde_json::from_slice(&output.stdout).unwrap();
+        let spec = &value["data"]["semantics"];
+        assert_eq!(spec["variants"][0]["effects"]["account_mutation"], false);
+        assert_eq!(spec["effects"]["ui_mutation"], action != "delete");
+    }
+}
