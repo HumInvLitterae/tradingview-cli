@@ -60,6 +60,81 @@ pub(super) fn describe(path: &[&str]) -> Option<Value> {
                 "Coverage remains unconfirmed; receipt time is not market-data time."
             ]),
         ),
+        "screener" => (
+            mcp_data::Kind::Screener.contract(),
+            json!({
+                "market": {"max_bytes": 64, "pattern": "^[a-z_-]+$", "default": "america", "catalog": "provider-dependent"},
+                "filters": {
+                    "format": "JSON object",
+                    "max_bytes": 16384,
+                    "max_fields": 50,
+                    "field": text_constraint(128),
+                    "numeric_range": {"length": 2, "finite_or_null": true, "ordering": "min <= max when both present", "null": "unbounded"},
+                    "string_fields": ["index", "sector", "industry", "analyst_rating"],
+                    "string_value": text_constraint(256)
+                },
+                "sort_by": text_constraint(128),
+                "sort_order": {"choices": ["asc", "desc"], "default": "desc"},
+                "limit": {"minimum": 1, "maximum": 1000, "default": 100},
+                "columns": {
+                    "max_items": mcp_data::MAX_COLUMNS,
+                    "unique": true,
+                    "item": text_constraint(mcp_data::MAX_COLUMN_BYTES),
+                    "default_when_empty": mcp_data::DEFAULT_COLUMNS
+                },
+                "symbol_types": {
+                    "cli_option": "--types",
+                    "when_present": {"min_items": 1, "max_items": 50, "unique": true, "item": text_constraint(256)}
+                },
+                "symbolset": {
+                    "when_present": {"min_items": 1, "max_items": 50, "unique": true, "item": text_constraint(256)}
+                },
+                "filter_preset": {
+                    "cli_option": "--preset",
+                    "choices": [
+                        "pullback_with_reversal", "breakout_with_volume", "oversold_healthy",
+                        "earnings_runup", "relative_strength", "new_highs"
+                    ]
+                }
+            }),
+            json!([{
+                "argument": "columns",
+                "argv": ["tv", "mcp", "columns", "--search", "<field>"],
+                "result_path": "data.columns[].name",
+                "limit": "column discovery categories are not the screener's regional market argument"
+            }]),
+            json!([
+                [
+                    "tv",
+                    "mcp",
+                    "screener",
+                    "--columns",
+                    "close,volume",
+                    "--limit",
+                    "20"
+                ],
+                [
+                    "tv",
+                    "mcp",
+                    "screener",
+                    "--filters",
+                    "{\"close\":[10,null],\"sector\":\"Technology\"}",
+                    "--sort-by",
+                    "volume",
+                    "--preset",
+                    "relative_strength"
+                ]
+            ]),
+            json!([
+                "One authenticated read with no offset, paging, automatic chunking or source fallback. limit is a returned-row cap, not a complete-population request.",
+                "Empty success is valid. Compare client_observation.returned_count with provider_observation.total_count.value; limited/all_reported/unconfirmed describe reported counts, not exhaustive market coverage.",
+                "Items retain provider row order and distinguish missing requested fields from explicit nulls. Duplicate or invalid symbol identities and inconsistent counts reject the response.",
+                "Data time, delay and session remain unconfirmed. Receipt time is not market-data time; official source does not establish realtime access.",
+                "Market syntax, field names and selection strings pass local shape checks, not provider capability validation. Nonblank text is not trimmed; selection uniqueness is exact-string uniqueness.",
+                "Presets are provider selection rules, not independently verified technical indicators or trading recommendations. Their interaction with explicit filters is provider-owned.",
+                "--types maps to symbol_types and --preset to filter_preset. Omitted type/symbolset lists are not sent. Use explicit symbols/fields according to provider semantics rather than assuming Desktop scanner equivalence."
+            ]),
+        ),
         "columns" => (
             mcp_data::Kind::Columns.contract(),
             json!({"market": {"choices": mcp_data::COLUMN_MARKETS},
@@ -215,8 +290,55 @@ mod tests {
     use clap::Parser;
 
     #[test]
+    fn screener_metadata_matches_request_validation() {
+        let spec = describe(&["mcp", "screener"]).unwrap();
+        let max = spec["constraints"]["limit"]["maximum"].as_u64().unwrap() as u32;
+        for (limit, valid) in [(0, false), (max, true), (max + 1, false)] {
+            assert_eq!(
+                mcp_data::Request::screener(mcp_data::ScreenerOptions {
+                    limit,
+                    ..Default::default()
+                })
+                .is_ok(),
+                valid
+            );
+        }
+        for preset in spec["constraints"]["filter_preset"]["choices"]
+            .as_array()
+            .unwrap()
+        {
+            assert!(
+                mcp_data::Request::screener(mcp_data::ScreenerOptions {
+                    filter_preset: Some(preset.as_str().unwrap().into()),
+                    ..Default::default()
+                })
+                .is_ok()
+            );
+        }
+        for field in spec["constraints"]["filters"]["string_fields"]
+            .as_array()
+            .unwrap()
+        {
+            assert!(
+                mcp_data::Request::screener(mcp_data::ScreenerOptions {
+                    filters: json!({field.as_str().unwrap(): "Example"}),
+                    ..Default::default()
+                })
+                .is_ok()
+            );
+        }
+        assert!(
+            mcp_data::Request::screener(mcp_data::ScreenerOptions {
+                filters: json!({"close": [20, 10]}),
+                ..Default::default()
+            })
+            .is_err()
+        );
+    }
+
+    #[test]
     fn examples_parse_and_constraints_match_real_request_boundaries() {
-        for name in ["search", "columns", "symbol", "symbols", "bars"] {
+        for name in ["search", "columns", "symbol", "symbols", "bars", "screener"] {
             let spec = describe(&["mcp", name]).unwrap();
             for example in spec["examples"].as_array().unwrap() {
                 assert!(

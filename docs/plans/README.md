@@ -41,7 +41,8 @@ series provenance. Pine graphics specs explain name-filter ambiguity, rounding,
 label truncation and lossy table formatting. Scanner scan specs distinguish
 page reads from bounded sequential population reads and expose their limits.
 Snapshot/compare specs distinguish partial sections, coverage limits and advisory
-follow-up hints.
+follow-up hints. Official MCP screener specs now describe filter forms, preset
+choices and reported-count coverage without implying pagination.
 The active record owns evidence and resumption conditions. Heavy local hooks are
 opt-in; current-candidate cross-platform CI and release qualification remain open.
 

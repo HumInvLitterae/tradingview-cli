@@ -1591,3 +1591,26 @@ passed the public validator. Scoped CLI Clippy, formatting/diff checks, 12 packa
 self-tests, guidance staging and market-data skill metadata passed. Cargo ran
 serially with one build job. No provider/Desktop read, full-workspace suite or
 release build was performed.
+
+
+### Official MCP screener specifications (2026-09-25)
+
+Added mcp screener within the shared MCP read metadata, reaching 98 documented
+leaves of 169. Filters expose finite/null ranges and four string-capable fields;
+selection uniqueness, preset names, field limits and regional market syntax
+match the existing model. Column defaults and bounds reuse public model constants.
+
+Single-query reported-count coverage is distinct from exhaustive coverage or
+freshness. Missing fields and explicit nulls remain distinct; invalid identities,
+duplicates and contradictory counts reject normalization. Standalone market-data
+guidance includes input forms and limits without depending on repository docs.
+Execution, credentials, provider behavior and public response contracts are
+unchanged. No technical-indicator implementation or provider probe is resumed.
+
+Validation passed: 27 spec unit tests, five existing MCP screener model fixtures
+and the focused offline CLI subprocess test. Preset/string-filter choices and
+limit boundaries were checked against the real request validator. Scoped CLI
+Clippy, formatting/diff checks, 12 package self-tests, guidance staging and
+market-data skill metadata passed. Cargo ran serially with one build job. No
+live authentication/provider operation, full-workspace suite or release build
+was performed.
