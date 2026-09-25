@@ -134,7 +134,7 @@ lookup never obtains one or changes the chart. Desktop authentication is left
 unknown because session/data access belongs to the running application; these
 commands do not use MCP OAuth. A null output contract means no versioned contract
 is advertised here. Other Desktop commands remain explicitly unannotated,
-including drawings.
+including Pine, layout, panes and other data/export paths.
 
 
 ## Desktop lifecycle and comparison
@@ -242,3 +242,30 @@ Toggle is a setter despite its name: no flags or `--visible` shows the study,
 `--hidden` hides it, and both flags are rejected. The operation reads visibility
 back. Remove checks absence of the same entity ID after removal. Specification
 queries do not perform any of these operations.
+
+
+## Drawings
+
+Specs cover shape/position/list/get/remove/clear on the selected chart. Position
+drawings are visual objects, not broker orders. List supplies `data.shapes[].id`
+for get/remove; IDs from another chart are not interchangeable.
+
+Shape coordinates must be finite. Second and third points each require both
+price and time. A third point requires a second point, type parallel_channel,
+`time3 == time`, and no nonblank text. That path has dedicated point/identity
+verification; ordinary one/two-point creation observes IDs/counts rather than
+verifying every property. Generic shape types remain runtime-dependent, not an
+invented local enumeration. Overrides must be a JSON object, which may be empty.
+
+Position direction is either positional or `--direction`, never both. Long
+requires `stop_loss < entry_price < take_profit`; short reverses those bounds.
+Prices/time must be finite and optional account-size/risk/lot-size values must
+be positive. Without entry-time, execution uses the visible-range end or current
+Unix time. Levels round to the selected symbol's pricescale; inspect the drawing
+rather than assuming exact geometry from input prices.
+
+Clear defaults to deleting every drawing on the selected chart and checks an
+empty inventory afterward. `--dry-run` reports targets/counts without deletion;
+it does not freeze the set for a later invocation. Empty inventory is a no-op.
+Remove checks absence of the selected ID. Errors after mutation require reading
+current state before retrying; no rollback is guaranteed by specification lookup.
