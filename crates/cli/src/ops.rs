@@ -107,6 +107,10 @@ pub use stream::{
     stream_summary,
 };
 pub use tab::{tab_close, tab_list, tab_new, tab_switch};
+pub(crate) use ui::{
+    DEFAULT_SCROLL_AMOUNT, ELEMENT_STRATEGIES, FIND_STRATEGIES, PANEL_ACTIONS, SCROLL_DIRECTIONS,
+};
+
 pub use ui::{
     ui_click, ui_eval, ui_find, ui_fullscreen, ui_hover, ui_keyboard, ui_mouse, ui_panel,
     ui_scroll, ui_type,

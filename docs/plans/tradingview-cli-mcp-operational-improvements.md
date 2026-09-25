@@ -1285,3 +1285,26 @@ plus scoped CLI Clippy. Package validator self-tests (12), staged runtime skills
 updated skill metadata, formatting and diff checks passed. Cargo ran serially
 with one build job. No actual Replay, Desktop/provider access, installed-binary
 replacement, full-workspace suite or release build was performed.
+
+
+### UI operation specifications (2026-09-25)
+
+Added find/click/hover/keyboard/type/scroll/panel/fullscreen/mouse/eval. Find is
+read-only; input and toggles can change UI and account effects depend on context.
+Eval effects remain unknown and its existing environment gate remains unchanged.
+Specs can describe eval while it is disabled, without enabling or running it.
+
+Selectors share execution lists: find accepts CSS, click/hover do not. Scroll
+directions/default amount and panel actions also share validation definitions.
+Known keys and page panel names are described with partial validation coverage;
+runtime element presence, focus, UI geometry and authenticated-page effects
+remain unverified. Type's text echo, negative scroll amounts, first-match
+selection and toggle semantics are explicit. No UI execution behavior changed.
+Drawings and indicator operations remain the next unannotated Desktop families.
+
+Validation passed: 14 spec unit tests, 14 existing UI fixture tests and six CLI
+subprocess tests, including all ten UI spec paths with invalid Desktop settings
+and eval disabled. Scoped CLI Clippy, formatting/diff checks, package validation
+(12 self-tests and staging) and updated skill metadata passed. Cargo ran serially
+with one build job. No actual UI, eval or account operation, full-workspace test,
+release build or installed-binary replacement was performed.

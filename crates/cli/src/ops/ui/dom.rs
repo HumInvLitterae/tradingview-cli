@@ -4,14 +4,16 @@ use tradingview_cdp::RuntimeEvaluator;
 use tradingview_core::{AppError, ErrorKind};
 
 use super::super::common::js_string;
-use super::selectors::validate_selector_strategy;
+use super::selectors::{ELEMENT_STRATEGIES, FIND_STRATEGIES, validate_selector_strategy};
+
+pub(crate) const PANEL_ACTIONS: &[&str] = &["open", "close", "toggle"];
 
 pub async fn ui_click(
     runtime: &mut impl RuntimeEvaluator,
     by: &str,
     value: &str,
 ) -> Result<Value, AppError> {
-    validate_selector_strategy(by, &["text", "aria-label", "data-name", "class-contains"])?;
+    validate_selector_strategy(by, ELEMENT_STRATEGIES)?;
     if value.trim().is_empty() {
         return Err(AppError::new(
             ErrorKind::Validation,
@@ -97,7 +99,7 @@ pub async fn ui_find(
         ));
     }
     let strategy = strategy.unwrap_or("text").trim();
-    validate_selector_strategy(strategy, &["text", "aria-label", "css"])?;
+    validate_selector_strategy(strategy, FIND_STRATEGIES)?;
     let query_literal = js_string(query)?;
     let strategy_literal = js_string(strategy)?;
     let results = runtime
@@ -170,7 +172,7 @@ pub async fn ui_panel(
             "Panel must not be empty",
         ));
     }
-    if !matches!(action, "open" | "close" | "toggle") {
+    if !PANEL_ACTIONS.contains(&action) {
         return Err(AppError::new(
             ErrorKind::Validation,
             "Panel action must be one of: open, close, toggle",

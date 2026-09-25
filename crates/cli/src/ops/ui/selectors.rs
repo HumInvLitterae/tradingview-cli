@@ -5,6 +5,10 @@ use tradingview_core::{AppError, ErrorKind};
 
 use super::super::common::{js_string, require_finite};
 
+pub(crate) const ELEMENT_STRATEGIES: &[&str] =
+    &["text", "aria-label", "data-name", "class-contains"];
+pub(crate) const FIND_STRATEGIES: &[&str] = &["text", "aria-label", "css"];
+
 #[derive(Debug)]
 pub(super) struct ElementCoordinates {
     pub(super) x: f64,
@@ -17,7 +21,7 @@ pub(super) async fn ui_element_coordinates(
     by: &str,
     value: &str,
 ) -> Result<ElementCoordinates, AppError> {
-    validate_selector_strategy(by, &["text", "aria-label", "data-name", "class-contains"])?;
+    validate_selector_strategy(by, ELEMENT_STRATEGIES)?;
     if value.trim().is_empty() {
         return Err(AppError::new(
             ErrorKind::Validation,

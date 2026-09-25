@@ -6,6 +6,9 @@ use tradingview_core::{AppError, ErrorKind};
 use super::super::common::require_finite;
 use super::selectors::{number_field, ui_element_coordinates};
 
+pub(crate) const SCROLL_DIRECTIONS: &[&str] = &["up", "down", "left", "right"];
+pub(crate) const DEFAULT_SCROLL_AMOUNT: f64 = 300.0;
+
 pub async fn ui_keyboard(
     runtime: &mut impl RuntimeEvaluator,
     key: &str,
@@ -83,13 +86,13 @@ pub async fn ui_scroll(
     amount: Option<f64>,
 ) -> Result<Value, AppError> {
     let direction = direction.trim().to_ascii_lowercase();
-    if !matches!(direction.as_str(), "up" | "down" | "left" | "right") {
+    if !SCROLL_DIRECTIONS.contains(&direction.as_str()) {
         return Err(AppError::new(
             ErrorKind::Validation,
             "Scroll direction must be one of: up, down, left, right",
         ));
     }
-    let amount = amount.unwrap_or(300.0);
+    let amount = amount.unwrap_or(DEFAULT_SCROLL_AMOUNT);
     require_finite(amount, "amount")?;
     let center = runtime
         .evaluate(

@@ -12,6 +12,7 @@ mod desktop;
 mod mcp_mutations;
 mod mcp_reads;
 mod replay;
+mod ui;
 
 pub(super) fn describe(path: &[String]) -> Result<Value, AppError> {
     let mut root = Cli::command();
@@ -76,6 +77,7 @@ pub(super) fn describe(path: &[String]) -> Result<Value, AppError> {
         .or_else(|| mcp_mutations::describe(&canonical))
         .or_else(|| desktop::describe(&canonical))
         .or_else(|| replay::describe(&canonical))
+        .or_else(|| ui::describe(&canonical))
     {
         data["coverage"]["semantics"] = json!("documented");
         data["semantics"] = semantics;

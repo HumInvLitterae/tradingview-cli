@@ -16,8 +16,9 @@ argument-dependent variants: null common effects do not mean read-only. Use
 `tv tab list` to select a target ID before actual Desktop operations.
 Lifecycle specs cover `launch`, tab changes and `chart compare`. Switch/new use
 chart-tab indices; close uses app-tab indices. Chart comparison can fail to
-restore the original symbol, so inspect restoration evidence. Older
-binaries still use `--help`; specification lookup itself never connects.
+restore the original symbol, so inspect restoration evidence. UI specs distinguish
+find from input/toggle operations; eval has unknown effects and remains explicitly
+gated. Inspect focus and the current target before input. Older binaries still use `--help`; specification lookup itself never connects.
 
 ## Choose the evidence
 

@@ -1,6 +1,6 @@
 use tradingview_core::{AppError, ErrorKind};
 
-const UNSAFE_UI_EVAL_ENV: &str = "TV_ALLOW_UNSAFE_UI_EVAL";
+pub(super) const UNSAFE_UI_EVAL_ENV: &str = "TV_ALLOW_UNSAFE_UI_EVAL";
 
 pub fn require_unsafe_ui_eval_enabled() -> Result<(), AppError> {
     if unsafe_ui_eval_enabled_from(std::env::var_os(UNSAFE_UI_EVAL_ENV).as_deref()) {
