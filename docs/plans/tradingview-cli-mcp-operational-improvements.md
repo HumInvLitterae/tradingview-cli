@@ -1477,3 +1477,20 @@ checks passed. Only the new CLI test was rerun; unchanged command-spec subproces
 coverage and runtime package checks were reused. Cargo ran serially with one
 build job. No provider/Desktop operation, full-workspace suite or release build
 was performed.
+
+
+### Chart-analysis priority clarification (2026-09-25)
+
+The owner clarified that downstream projects and session records provide usage
+evidence and that chart analysis should lead. Read-only inspection confirmed a
+current consumer's OHLCV/range calls and a historical record of values readback.
+Those are distinct evidence types: current integration and dated execution,
+not a measured frequency ranking or proof of current provider availability.
+No downstream files or session records were modified or copied into this repo.
+
+The inventory now starts with values and strategy/trades/equity, followed by
+supporting chart data according to consumer evidence. Authentication and account
+read metadata follow analysis workflows unless they block one. This supersedes
+the preceding next-action order; it does not change any command contract.
+Documentation-only validation: diff and public-hygiene checks; no Rust build,
+provider call or Desktop operation is needed for this priority correction.
