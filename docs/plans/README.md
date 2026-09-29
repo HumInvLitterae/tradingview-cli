@@ -12,7 +12,7 @@
 The owner approved a focus on MCP diagnostics, chart-analysis meaning and
 follow-up effects. The three initial contracts are implemented and locally
 validated. Legacy-account corrections are also implemented. Downstream adoption
-and release qualification remain. Offline schema export and invocation validation
+and publication/asset verification remain; CI passed at a48013a. Offline schema export and invocation validation
 for values and MCP bars are implemented, with focused checks.
 Official technical snapshots are implemented under the approved contract; daily
 response qualification and remaining live limits are recorded in the active

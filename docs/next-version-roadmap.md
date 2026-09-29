@@ -4,14 +4,13 @@ Status: the three initial contracts are implemented and locally validated.
 Legacy-account corrections are implemented; downstream adoption and release
 qualification remain. Offline schema/validation for values and MCP bars is
 implemented. Official technical snapshots are implemented with daily live
-qualification; candidate CI and final release preparation remain.
-Recommended version: v0.34.0 for the three additive commands.
-[Release-note draft](releases/v0.34.0.md) is ready for owner review.
+qualification. Candidate CI passed at a48013a; v0.34.0 is approved and prepared.
+[Release notes](releases/v0.34.0.md) describe the final scope. Publication remains
+owner-controlled.
 Baseline: [released v0.33.0](releases/v0.33.0.md). The
 [inventory](next-version-work-items.md) orders work; the
 [analysis-reliability plan](plans/tradingview-cli-analysis-reliability.md)
-owns contracts and acceptance. Version selection follows scope review;
-keep the workspace at 0.33.0 during development.
+owns contracts and acceptance. The workspace version is 0.34.0; publication is not yet verified.
 
 ## Outcome
 

@@ -1,7 +1,8 @@
 # Analysis reliability after v0.33.0
 
 Status: approved analysis, legacy-account and offline-tool changes are implemented.
-Candidate CI, downstream adoption and release qualification remain. The PM is
+Candidate CI passed at a48013a; v0.34.0 is prepared. Downstream adoption, release
+assets and publication remain. The PM is
 the sole executor; no additional agents or sessions are authorized for this work.
 
 ## Outcome and scope
@@ -422,7 +423,7 @@ three strings plus a number. Four model tests, four MCP technical/proof tests,
 41 spec tests and two focused CLI contract tests passed. Native evidence is
 daily-only; no weekly retry, monthly/two-hour call or account mutation followed.
 Scoped CLI/model/MCP Clippy, formatting, public hygiene, standalone skill
-validation and placeholder package staging also passed. Platform CI remains pending.
+validation and placeholder package staging also passed. Candidate CI passed at a48013a.
 
 ## Work and validation
 
@@ -437,10 +438,9 @@ Implement the approved legacy-account corrections above before schema design.
 The two-command schema/validation implementation is authorized. No production
 dependency change is needed.
 
-Recommend v0.34.0 for the three additive commands. The
-[release-note draft](../releases/v0.34.0.md) covers the settled scope. The workspace
-version remains 0.33.0 until owner confirmation; keep final version preparation
-after candidate CI. Publication, provider inquiries, new live checks and downstream edits need their applicable
+The owner approved v0.34.0 for the three additive commands.
+[Release notes](../releases/v0.34.0.md) cover the settled scope. Candidate CI passed
+at a48013a; final version preparation follows that evidence. Publication, provider inquiries, new live checks and downstream edits need their applicable
 explicit authorization. Do not repeat provider probes while the known failure
 persists merely to advance this plan.
 
@@ -507,6 +507,12 @@ persists merely to advance this plan.
   skill/placeholder-package checks passed. These are local fixture checks, not
   platform CI or live Desktop/provider acceptance.
 - Release-scope review: the approved implementation slices are complete with
-  focused evidence. Candidate CI remains pending; the latest remote success still covers
-  v0.33.0. The v0.34.0 notes are a draft, not publication evidence. Preserve the
+  focused evidence. Candidate CI passed at a48013a and v0.34.0 is approved.
+  Final version/notes preparation is complete; publication and release assets
+  are not yet verified. Preserve the
   known native/platform limits rather than restarting unrelated live probes.
+- Final preparation checks: locked metadata reports 0.34.0 for all eight workspace
+  crates. The dependency graph differs only in those workspace versions. Public
+  hygiene, diff hygiene and placeholder archive staging passed. CI evidence at
+  a48013a is reused for unchanged production code; no local full suite or release
+  rebuild was repeated. Real assets and publication await the release workflow.
