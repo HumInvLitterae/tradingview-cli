@@ -2,7 +2,7 @@
 
 Status: three approved contracts implemented and locally validated 2026-09-29.
 Legacy-account corrections are implemented; downstream adoption and release
-qualification remain. The offline-schema/validation proposal awaits review.
+qualification remain. Offline-schema/validation implementation is approved.
 The PM is the sole executor; no additional agents or
 sessions are authorized for this work.
 
@@ -242,7 +242,7 @@ Use the existing pinned Node contract-gate pattern and one Cargo job/test thread
 No native/provider action is required for these deterministic failure contracts;
 actual availability and successful live mutations remain unverified separately.
 
-## Proposed offline schemas and invocation validation
+## Approved offline schemas and invocation validation
 
 The initial consumers are the downstream bridge's `fetch_values_summary` /
 `fetch_values_rows` and MCP-bars observation decoder. Current code also calls
@@ -251,7 +251,7 @@ part of the first slice. No usage-frequency ranking was measured. Keep chart
 analysis first by shipping `values` alongside `mcp bars`, then expand from
 concrete consumer needs rather than all-command coverage.
 
-### Public surface for owner review
+### Approved public surface
 
 Add two offline commands without changing data output or existing spec fields.
 The clap-derived spec index naturally gains the two new command paths:
@@ -382,7 +382,7 @@ library for the first two Value-based outputs. The maintenance cost is explicit
 schema/fixture review when producers change. Adding all schemas to `tv spec`
 would avoid one command but inflate routine lookups. Fully typed output models
 or generated argument schemas are larger alternatives without a current need.
-These two new CLI/JSON contracts require owner approval before implementation.
+The owner approved these two CLI/JSON contracts; implementation is in progress.
 
 ## Work and validation
 
@@ -394,8 +394,8 @@ executable JavaScript fixture gate needed for equity. Use candidate CI for broad
 platform checks; native/live acceptance remains separately scoped.
 
 Implement the approved legacy-account corrections above before schema design.
-The two-command schema/validation proposal above is ready for owner review;
-no production implementation or dependency change is authorized yet.
+The two-command schema/validation implementation is authorized. No production
+dependency change is needed.
 
 A minor release is likely if these additive contracts ship together, but no
 next version is committed yet. Keep version/notes preparation last. Publication,
@@ -434,3 +434,8 @@ persists merely to advance this plan.
   pinned-Node account gates, scoped CLI/model Clippy, formatting, public hygiene
   and standalone/package skill checks. No live mutation, full local workspace
   suite, platform CI or release build was run for these corrections.
+- Schema export is implemented for values and MCP bars. Embedded documents are
+  used because these producers build Value outputs; serde-derived schema alone
+  would leave their payloads unspecified. No custom schema engine or production
+  dependency was added. python-jsonschema 4.26.0 was verified against PyPI and is
+  pinned only for fixture validation.

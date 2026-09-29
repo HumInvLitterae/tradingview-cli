@@ -73,3 +73,9 @@ Compare using the user's criteria. Input order, coverage summaries, and
 recommendations. `auto_execute: false` means the CLI did not run the hint; an
 agent may choose a separate needed read within the task's authority. Explain
 observations and inferences separately and stop when the question is answered.
+
+When the installed binary supports it, `tv schema` lists available output
+schemas. Use `tv schema values` for chart study values or `tv schema mcp bars`
+for official bars; the JSON Schema is in `data.schema`. This is offline lookup,
+not acquisition or proof of data quality. Keep unknown/null/partial observations
+and honor `unchecked`; older binaries retain spec/help guidance.

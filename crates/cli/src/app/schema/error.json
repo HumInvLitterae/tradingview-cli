@@ -1,0 +1,29 @@
+{
+  "type": "object",
+  "required": [
+    "kind",
+    "message",
+    "details"
+  ],
+  "properties": {
+    "kind": {
+      "enum": [
+        "validation",
+        "connection",
+        "internal_api_unavailable",
+        "timeout",
+        "target_ambiguous",
+        "internal"
+      ]
+    },
+    "message": {
+      "type": "string"
+    },
+    "details": {
+      "type": [
+        "object",
+        "null"
+      ]
+    }
+  }
+}

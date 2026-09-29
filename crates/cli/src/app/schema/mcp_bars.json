@@ -1,0 +1,348 @@
+{
+  "type": "object",
+  "required": [
+    "contract_version",
+    "source",
+    "source_category",
+    "requires_desktop",
+    "request",
+    "provider_observation",
+    "client_observation",
+    "transport",
+    "bars"
+  ],
+  "properties": {
+    "contract_version": {
+      "const": "mcp_bars.v1"
+    },
+    "source": {
+      "const": "tradingview_mcp"
+    },
+    "source_category": {
+      "const": "desktop_free_read"
+    },
+    "requires_desktop": {
+      "const": false
+    },
+    "request": {
+      "type": "object",
+      "required": [
+        "symbol",
+        "timeframe",
+        "mode",
+        "count"
+      ],
+      "properties": {
+        "symbol": {
+          "type": "string"
+        },
+        "timeframe": {
+          "type": "string"
+        },
+        "mode": {
+          "const": "recent_count"
+        },
+        "count": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+    "provider_observation": {
+      "type": "object",
+      "required": [
+        "symbol",
+        "interval",
+        "data_as_of",
+        "delay_seconds",
+        "adjustment",
+        "session",
+        "timestamp_semantics"
+      ],
+      "properties": {
+        "symbol": {
+          "type": "object",
+          "required": [
+            "evidence",
+            "value"
+          ],
+          "properties": {
+            "evidence": {
+              "enum": [
+                "unconfirmed",
+                "provider_response"
+              ]
+            },
+            "value": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          }
+        },
+        "interval": {
+          "type": "object",
+          "required": [
+            "evidence",
+            "value"
+          ],
+          "properties": {
+            "evidence": {
+              "enum": [
+                "unconfirmed",
+                "provider_response"
+              ]
+            },
+            "value": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          }
+        },
+        "data_as_of": {
+          "type": "object",
+          "required": [
+            "evidence",
+            "value"
+          ],
+          "properties": {
+            "evidence": {
+              "enum": [
+                "unconfirmed",
+                "provider_response"
+              ]
+            },
+            "value": {
+              "type": "null"
+            }
+          }
+        },
+        "delay_seconds": {
+          "type": "object",
+          "required": [
+            "evidence",
+            "value"
+          ],
+          "properties": {
+            "evidence": {
+              "enum": [
+                "unconfirmed",
+                "provider_response"
+              ]
+            },
+            "value": {
+              "type": "null"
+            }
+          }
+        },
+        "adjustment": {
+          "type": "object",
+          "required": [
+            "evidence",
+            "value"
+          ],
+          "properties": {
+            "evidence": {
+              "enum": [
+                "unconfirmed",
+                "provider_response"
+              ]
+            },
+            "value": {
+              "type": "null"
+            }
+          }
+        },
+        "session": {
+          "type": "object",
+          "required": [
+            "evidence",
+            "value"
+          ],
+          "properties": {
+            "evidence": {
+              "enum": [
+                "unconfirmed",
+                "provider_response"
+              ]
+            },
+            "value": {
+              "type": "null"
+            }
+          }
+        },
+        "timestamp_semantics": {
+          "type": "object",
+          "required": [
+            "evidence",
+            "value"
+          ],
+          "properties": {
+            "evidence": {
+              "enum": [
+                "unconfirmed",
+                "provider_response"
+              ]
+            },
+            "value": {
+              "type": "null"
+            }
+          }
+        }
+      }
+    },
+    "client_observation": {
+      "type": "object",
+      "required": [
+        "received_at",
+        "bar_count",
+        "returned_range",
+        "time_order",
+        "identity_match",
+        "interval_match",
+        "count_status",
+        "calendar_coverage",
+        "missing_fields"
+      ],
+      "properties": {
+        "received_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "bar_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "returned_range": {
+          "type": "object",
+          "required": [
+            "first_time",
+            "last_time"
+          ],
+          "properties": {
+            "first_time": {
+              "type": [
+                "integer",
+                "null"
+              ]
+            },
+            "last_time": {
+              "type": [
+                "integer",
+                "null"
+              ]
+            }
+          }
+        },
+        "time_order": {
+          "enum": [
+            "ascending",
+            "unconfirmed"
+          ]
+        },
+        "identity_match": {
+          "enum": [
+            "matched",
+            "unconfirmed"
+          ]
+        },
+        "interval_match": {
+          "enum": [
+            "matched",
+            "unconfirmed"
+          ]
+        },
+        "count_status": {
+          "enum": [
+            "empty",
+            "short",
+            "met"
+          ]
+        },
+        "calendar_coverage": {
+          "const": "unconfirmed"
+        },
+        "missing_fields": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "bar_index",
+              "field"
+            ],
+            "properties": {
+              "bar_index": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "field": {
+                "const": "volume"
+              }
+            }
+          }
+        }
+      }
+    },
+    "transport": {
+      "type": "object",
+      "required": [
+        "status",
+        "tool_attempts"
+      ],
+      "properties": {
+        "status": {
+          "const": "succeeded"
+        },
+        "tool_attempts": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "bars": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "time",
+          "open",
+          "high",
+          "low",
+          "close",
+          "volume",
+          "finality"
+        ],
+        "properties": {
+          "time": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "open": {
+            "type": "number"
+          },
+          "high": {
+            "type": "number"
+          },
+          "low": {
+            "type": "number"
+          },
+          "close": {
+            "type": "number"
+          },
+          "volume": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "finality": {
+            "const": "unconfirmed"
+          }
+        }
+      }
+    }
+  }
+}

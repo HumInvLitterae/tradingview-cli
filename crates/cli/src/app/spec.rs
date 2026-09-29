@@ -2,11 +2,11 @@
 
 use std::{any::TypeId, path::PathBuf};
 
-use clap::{Arg, Command, CommandFactory};
+use clap::{Arg, Command};
 use serde_json::{Value, json};
 use tradingview_core::{AppError, ErrorKind};
 
-use crate::{build_info, cli::Cli};
+use crate::build_info;
 
 mod alerts;
 mod analysis;
@@ -40,22 +40,10 @@ mod ui;
 mod watchlist;
 
 pub(super) fn describe(path: &[String]) -> Result<Value, AppError> {
-    let mut root = Cli::command();
-    root.build();
-    let mut command = &root;
-    let mut canonical = Vec::new();
-    for segment in path {
-        command = command
-            .get_subcommands()
-            .find(|child| {
-                !child.is_hide_set()
-                    && child.get_name() != "help"
-                    && (child.get_name() == segment
-                        || child.get_all_aliases().any(|alias| alias == segment))
-            })
-            .ok_or_else(|| AppError::new(ErrorKind::Validation, "Unknown spec command path"))?;
-        canonical.push(command.get_name());
-    }
+    let (command, canonical) = super::command_path::resolve(path)
+        .ok_or_else(|| AppError::new(ErrorKind::Validation, "Unknown spec command path"))?;
+    let command = &command;
+    let canonical = canonical.iter().map(String::as_str).collect::<Vec<_>>();
 
     let mut data = json!({
         "contract_version": "cli_spec.v1",
@@ -69,7 +57,7 @@ pub(super) fn describe(path: &[String]) -> Result<Value, AppError> {
     });
     if path.is_empty() {
         let mut entries = Vec::new();
-        index(&root, &mut Vec::new(), &mut entries);
+        index(command, &mut Vec::new(), &mut entries);
         data["commands"] = json!(entries);
         return Ok(data);
     }
@@ -248,6 +236,7 @@ mod tests {
 
     #[test]
     fn enumerations_and_examples_are_accepted_by_the_parser() {
+        use crate::cli::Cli;
         use clap::Parser;
 
         let detail = describe(&["quote".into()]).unwrap();

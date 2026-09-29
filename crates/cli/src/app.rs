@@ -1,3 +1,4 @@
+mod command_path;
 mod dispatch;
 mod input;
 mod observe;
@@ -6,6 +7,7 @@ mod replay_log;
 mod runner;
 mod runtime;
 mod safety;
+mod schema;
 mod spec;
 mod stream;
 mod watch;

@@ -44,3 +44,9 @@ Lead with the chart finding and its evidence. Distinguish observed bars/studies,
 visual observations, and inference. Do not invent indicator values, rankings,
 or buy/sell recommendations. A chart image or viewport change alone does not
 prove historical export completeness.
+
+When the installed binary supports it, `tv schema` lists available output
+schemas. Use `tv schema values` for chart study values or `tv schema mcp bars`
+for official bars; the JSON Schema is in `data.schema`. This is offline lookup,
+not acquisition or proof of data quality. Keep unknown/null/partial observations
+and honor `unchecked`; older binaries retain spec/help guidance.

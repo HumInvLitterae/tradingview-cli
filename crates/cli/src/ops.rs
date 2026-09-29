@@ -31,7 +31,7 @@ mod latency_measurement;
 mod renderer_foreground_measurement;
 
 #[cfg(test)]
-mod test_support;
+pub(crate) mod test_support;
 
 pub(crate) use common::CHART_TYPES;
 pub(crate) use indicator::MAX_SAFE_INTEGER;

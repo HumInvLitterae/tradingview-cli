@@ -12,8 +12,8 @@
 The owner approved a focus on MCP diagnostics, chart-analysis meaning and
 follow-up effects. The three initial contracts are implemented and locally
 validated. Legacy-account corrections are also implemented. Downstream adoption
-and release qualification remain. Concrete offline schema/validation contracts
-for values and MCP bars await owner review.
+and release qualification remain. Offline schema/validation contracts
+for values and MCP bars are approved; implementation is in progress.
 Official technical snapshots remain deferred; provider availability is not
 established by a past release or fixture. Version 0.33.0 is published, and its
 record preserves historical verification rather than current execution authority.

@@ -89,6 +89,15 @@ async fn async_main() -> ExitCode {
         return standard_exit("spec", super::spec::describe(&path));
     }
 
+    if let Command::Schema { path } = command {
+        let result = if cli.target_id.is_some() {
+            Err(super::schema::failure("unsupported_target"))
+        } else {
+            super::schema::describe(&path)
+        };
+        return standard_exit("schema", result);
+    }
+
     if let Command::Mcp { command, timeout } = command {
         if cli.target_id.is_some() {
             return terminal_error(

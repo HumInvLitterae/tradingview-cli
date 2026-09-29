@@ -51,9 +51,33 @@ search result when necessary, then invoke history under the user's authority.
 This reduces guessing; it does not guarantee fewer tokens than short help.
 The index may be larger than root help because it includes nested commands.
 
-`tv schema` and `tv validate` are not implemented. Existing `tv discover` remains
+`tv schema` exports the supported output schemas described below.
+`tv validate` is not implemented yet. Existing `tv discover` remains
 a Desktop-backed API diagnostic and is unrelated to offline specification lookup.
 
+
+## Output schemas
+
+`tv schema` lists supported paths; `tv schema values` and `tv schema mcp bars`
+export their JSON Schema 2020-12 descriptions without connecting to Desktop or
+MCP. Successful output uses the normal envelope with command `schema` and
+`data.contract_version=cli_schema.v1`; `binary_version` identifies the build.
+The index has `commands` as path arrays. Details have canonical `command`,
+`coverage=documented_fields`, `unchecked`, and the schema in `data.schema`.
+
+Validate the actual success or error envelope against `data.schema`, not the
+schema command's wrapper. Schemas preserve legitimate nulls, empty/short bar
+results, unknown study identity and arbitrary dynamic study values. Additional
+object properties are allowed. Error details and runtime meaning are not fully
+specified. Structural conformance does not prove series meaning, freshness,
+complete history or consistency between counts and arrays. Date formats are
+annotations, not a market-time guarantee. References are local to the document.
+
+Unknown paths fail with `unknown_command`; known unsupported paths fail with
+`unsupported_command` in cli_schema.v1 error details (validation exit 1).
+Outer `--target-id` is rejected as `unsupported_target`. No existing values or
+MCP output format changes, and schemas are descriptions for the current binary,
+not a new version marker inside unversioned command output.
 
 ## Qualified MCP read details
 

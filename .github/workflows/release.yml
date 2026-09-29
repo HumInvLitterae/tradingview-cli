@@ -29,6 +29,14 @@ jobs:
           python3 scripts/check-study-values-js-contract.py
           python3 scripts/check-equity-js-contract.py
           python3 scripts/check-account-js-contract.py
+      - name: Install schema test runtime
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Check output schemas against production fixtures
+        run: |
+          python -m pip install jsonschema==4.26.0
+          python scripts/check-output-schemas.py
 
   pine-open-js-contract:
     name: Pine open JavaScript contract

@@ -6,7 +6,7 @@ use serde_json::Value;
 use tradingview_cdp::{KeyEvent, MouseEvent, RuntimeEvaluator, ScreenshotClip};
 use tradingview_core::{AppError, ErrorKind};
 
-pub(super) struct FakeRuntime {
+pub(crate) struct FakeRuntime {
     pub(super) evaluated: Vec<(String, bool)>,
     responses: VecDeque<Value>,
     screenshot: Vec<u8>,
@@ -22,7 +22,7 @@ pub(super) struct FakeRuntime {
 }
 
 impl FakeRuntime {
-    pub(super) fn new(responses: impl Into<VecDeque<Value>>) -> Self {
+    pub(crate) fn new(responses: impl Into<VecDeque<Value>>) -> Self {
         Self {
             evaluated: Vec::new(),
             responses: responses.into(),
