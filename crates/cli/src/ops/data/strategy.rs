@@ -195,8 +195,15 @@ fn strategy_equity_expression(entity_id: &str) -> String {
             try {{
                 var chart = {CHART_API}._chartWidget;
                 var strat = __findStrategyByEntityId(chart.model().model().dataSources(), {entity_id});
-                if (!strat) return {{ data_points: 0, source: "internal_api", data: [], error: "Selected strategy is no longer available on chart." }};
+                if (!strat) {{
+                    return {{
+                        data_points: 0, source: "internal_api", data: [],
+                        series_source: "unavailable", series_kind: "unavailable",
+                        error: "Selected strategy is no longer available on chart."
+                    }};
+                }}
                 var data = [];
+                var seriesSource = "unavailable";
                 if (strat._reportData && Array.isArray(strat._reportData.buyHold)) {{
                     var buyHold = strat._reportData.buyHold;
                     for (var bi = 0; bi < buyHold.length; bi++) {{
@@ -208,11 +215,19 @@ fn strategy_equity_expression(entity_id: &str) -> String {
                             data.push(row);
                         }}
                     }}
-                    if (data.length > 0) return {{ data_points: data.length, source: "internal_api", data: data }};
+                    if (data.length > 0) {{
+                        return {{
+                            data_points: data.length, source: "internal_api", data: data,
+                            series_source: "report_buy_hold", series_kind: "buy_and_hold"
+                        }};
+                    }}
                 }}
                 if (strat.equityData) {{
                     var eq = __unwrapValue(typeof strat.equityData === "function" ? strat.equityData() : strat.equityData);
-                    if (Array.isArray(eq)) data = eq;
+                    if (Array.isArray(eq)) {{
+                        data = eq;
+                        if (data.length > 0) seriesSource = "equity_data";
+                    }}
                 }}
                 if (data.length === 0 && strat.bars) {{
                     var bars = typeof strat.bars === "function" ? strat.bars() : strat.bars;
@@ -221,8 +236,9 @@ fn strategy_equity_expression(entity_id: &str) -> String {
                         var start = bars.firstIndex();
                         for (var i = start; i <= end; i++) {{
                             var v = bars.valueAt(i);
-                            if (v) data.push({{ time: v[0], equity: v[1], drawdown: v[2] || null }});
+                            if (v) data.push({{ time: v[0], equity: v[1], drawdown: v[2] ?? null }});
                         }}
+                        if (data.length > 0) seriesSource = "strategy_bars";
                     }}
                 }}
                 if (data.length === 0) {{
@@ -243,14 +259,24 @@ fn strategy_equity_expression(entity_id: &str) -> String {
                             data_points: 0,
                             source: "internal_api",
                             data: [],
+                            series_source: "performance_summary",
+                            series_kind: "unavailable",
                             equity_summary: perfData,
                             note: "Full equity curve not available via API; equity summary metrics returned instead."
                         }};
                     }}
                 }}
-                return {{ data_points: data.length, source: "internal_api", data: data }};
+                return {{
+                    data_points: data.length, source: "internal_api", data: data,
+                    series_source: seriesSource,
+                    series_kind: data.length > 0 ? "unconfirmed" : "unavailable"
+                }};
             }} catch(e) {{
-                return {{ data_points: 0, source: "internal_api", data: [], error: e.message }};
+                return {{
+                    data_points: 0, source: "internal_api", data: [],
+                    series_source: "unavailable", series_kind: "unavailable",
+                    error: e.message
+                }};
             }}
         }})()
         "#
@@ -364,6 +390,79 @@ mod tests {
 
     use super::super::super::test_support::FakeRuntime;
     use super::*;
+
+    #[test]
+    #[ignore = "run through scripts/check-equity-js-contract.py with pinned Node.js"]
+    fn javascript_equity_preserves_branch_identity_and_zero() {
+        let expression = serde_json::to_string(&strategy_equity_expression("study-1")).unwrap();
+        let script = format!(
+            r#"
+            const expression = {expression};
+            let sources = [];
+            const chartModel = {{ dataSources: () => sources }};
+            const chartWidget = {{ model: () => ({{ model: () => chartModel }}) }};
+            global.window = {{
+                TradingViewApi: {{
+                    _activeChartWidgetWV: {{ value: () => ({{ _chartWidget: chartWidget }}) }}
+                }}
+            }};
+            const source = fields => Object.assign({{ id: () => 'study-1' }}, fields);
+            const bars = {{
+                firstIndex: () => 0,
+                lastIndex: () => 1,
+                valueAt: i => i === 0 ? [1, 1000, 0] : [2, 1100]
+            }};
+            function collect(fields) {{
+                sources = fields === null ? [] : [source(fields)];
+                return eval(expression);
+            }}
+            const results = [
+                collect({{
+                    _reportData: {{ buyHold: [10, {{ value: 20 }}] }},
+                    equityData: [[3, 9]],
+                    bars
+                }}),
+                collect({{ equityData: [[3, 9]], bars }}),
+                collect({{ equityData: [], bars }}),
+                collect({{ _reportData: {{ performance: {{ profit: 10 }} }} }}),
+                collect({{ equityData: [] }}),
+                collect(null),
+                collect({{ bars: {{ ...bars, valueAt: () => {{ throw new Error('fixture'); }} }} }})
+            ];
+            console.log(JSON.stringify(results));
+            "#
+        );
+        let output = std::process::Command::new("node")
+            .args(["-e", &script])
+            .output()
+            .expect("Node.js is required for the equity JavaScript contract");
+        assert!(
+            output.status.success(),
+            "{}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+        let results: Vec<Value> = serde_json::from_slice(&output.stdout).unwrap();
+        for (result, source, kind) in [
+            (&results[0], "report_buy_hold", "buy_and_hold"),
+            (&results[1], "equity_data", "unconfirmed"),
+            (&results[2], "strategy_bars", "unconfirmed"),
+            (&results[3], "performance_summary", "unavailable"),
+            (&results[4], "unavailable", "unavailable"),
+            (&results[5], "unavailable", "unavailable"),
+            (&results[6], "unavailable", "unavailable"),
+        ] {
+            assert_eq!(result["series_source"], source);
+            assert_eq!(result["series_kind"], kind);
+        }
+        assert_eq!(results[0]["data"][0], json!({"index": 0, "value": 10}));
+        assert_eq!(results[1]["data"], json!([[3, 9]]));
+        assert_eq!(results[2]["data"][0]["drawdown"], 0);
+        assert!(results[2]["data"][1]["drawdown"].is_null());
+        assert_eq!(results[3]["equity_summary"]["profit"], 10);
+        assert_eq!(results[3]["data_points"], 0);
+        assert!(results[5]["error"].is_string());
+        assert_eq!(results[6]["error"], "fixture");
+    }
 
     fn ready_candidate() -> Value {
         json!({
@@ -535,6 +634,8 @@ mod tests {
 
         assert_eq!(runtime.evaluated.len(), 1);
         assert_eq!(result["data_points"], 0);
+        assert_eq!(result["series_source"], "unavailable");
+        assert_eq!(result["series_kind"], "unavailable");
         assert!(result["error"].as_str().is_some());
         assert_eq!(result["strategy_context"]["availability_status"], "unknown");
     }

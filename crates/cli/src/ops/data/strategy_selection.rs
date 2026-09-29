@@ -118,6 +118,8 @@ pub(super) fn unavailable_payload(kind: StrategyReadKind, selection: StrategySel
             "trades": [],
         }),
         StrategyReadKind::Equity => json!({
+            "series_source": "unavailable",
+            "series_kind": "unavailable",
             "data_points": 0,
             "source": "internal_api",
             "data": [],
