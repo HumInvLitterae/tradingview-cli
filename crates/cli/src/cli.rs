@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::{ffi::OsString, path::PathBuf};
 
 use clap::{ArgAction, Args, Parser, Subcommand, ValueEnum};
 
@@ -51,6 +51,14 @@ pub enum Command {
     Schema {
         #[arg(value_name = "COMMAND")]
         path: Vec<String>,
+    },
+    #[command(
+        about = "Check candidate argv offline; pass arguments after -- without tv",
+        long_about = "Check candidate argv offline with clap and supported local request rules. Pass -- followed by argv without the tv executable name. Supports values and mcp bars; other valid command paths report unsupported. Does not execute commands, read candidate files, access credentials, or establish runtime availability."
+    )]
+    Validate {
+        #[arg(last = true, value_name = "ARG", num_args = 0..)]
+        args: Vec<OsString>,
     },
     #[command(
         about = "Use the official TradingView MCP service",
@@ -1410,6 +1418,7 @@ impl Command {
         match self {
             Self::Spec { .. } => "spec",
             Self::Schema { .. } => "schema",
+            Self::Validate { .. } => "validate",
             Self::Mcp { .. } => "mcp",
             Self::Status => "status",
             Self::Readiness => "readiness",

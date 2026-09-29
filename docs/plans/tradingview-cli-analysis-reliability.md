@@ -1,10 +1,8 @@
 # Analysis reliability after v0.33.0
 
-Status: three approved contracts implemented and locally validated 2026-09-29.
-Legacy-account corrections are implemented; downstream adoption and release
-qualification remain. Offline-schema/validation implementation is approved.
-The PM is the sole executor; no additional agents or
-sessions are authorized for this work.
+Status: approved analysis, legacy-account and offline-tool changes are implemented.
+Candidate CI, downstream adoption and release qualification remain. The PM is
+the sole executor; no additional agents or sessions are authorized for this work.
 
 ## Outcome and scope
 
@@ -382,7 +380,7 @@ library for the first two Value-based outputs. The maintenance cost is explicit
 schema/fixture review when producers change. Adding all schemas to `tv spec`
 would avoid one command but inflate routine lookups. Fully typed output models
 or generated argument schemas are larger alternatives without a current need.
-The owner approved these two CLI/JSON contracts; implementation is in progress.
+The owner approved these two CLI/JSON contracts; both are implemented.
 
 ## Work and validation
 
@@ -427,9 +425,9 @@ persists merely to advance this plan.
 - Price-alert creation now uses only the verified API path; preflight failures
   do not evaluate dialog code. Existing successful API payloads, conditions and
   notification defaults remain unchanged. Next: downstream duplicate-matching
-  corrections and adoption, candidate CI, then release qualification. Broader
-  schema/validation contracts now have a concrete proposal above; saved-Pine
-  identity work remains a separate candidate.
+  corrections and adoption, candidate CI, then release qualification. The first
+  schema/validation slice is implemented below; saved-Pine identity work remains
+  a separate candidate.
 - Legacy corrections passed focused alert/watchlist/model/spec tests, both
   pinned-Node account gates, scoped CLI/model Clippy, formatting, public hygiene
   and standalone/package skill checks. No live mutation, full local workspace
@@ -439,3 +437,17 @@ persists merely to advance this plan.
   would leave their payloads unspecified. No custom schema engine or production
   dependency was added. python-jsonschema 4.26.0 was verified against PyPI and is
   pinned only for fixture validation.
+- Invocation validation reuses clap and the execution-path bars/target/deadline
+  rules. Native clap partial matches identify malformed outer validate requests
+  so diagnostics can omit input values; no handwritten argv scanner or second
+  command definition was introduced. Request preparation remains before client
+  construction and execution deadlines remain after it, preserving error order.
+- Both offline commands are implemented. Candidate CI, downstream adoption and
+  next-release qualification remain; further schema/command coverage is deferred
+  until a concrete consumer needs it.
+- Offline validation passed three unit tests and five executable contract tests;
+  all 41 spec and ten MCP execution-contract tests passed. The schema gate passed
+  with production fixtures, field mutations and self-contained standard schema
+  references. Scoped CLI/MCP Clippy, formatting, public hygiene and standalone
+  skill/placeholder-package checks passed. These are local fixture checks, not
+  platform CI or live Desktop/provider acceptance.

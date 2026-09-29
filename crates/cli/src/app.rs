@@ -10,6 +10,7 @@ mod safety;
 mod schema;
 mod spec;
 mod stream;
+mod validate;
 mod watch;
 
 pub use output::startup_error;

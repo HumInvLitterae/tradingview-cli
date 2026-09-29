@@ -52,8 +52,9 @@ This reduces guessing; it does not guarantee fewer tokens than short help.
 The index may be larger than root help because it includes nested commands.
 
 `tv schema` exports the supported output schemas described below.
-`tv validate` is not implemented yet. Existing `tv discover` remains
-a Desktop-backed API diagnostic and is unrelated to offline specification lookup.
+`tv validate` checks candidate argv without executing it, as described below.
+Existing `tv discover` remains a Desktop-backed API diagnostic and is unrelated
+to offline specification lookup.
 
 
 ## Output schemas
@@ -78,6 +79,44 @@ Unknown paths fail with `unknown_command`; known unsupported paths fail with
 Outer `--target-id` is rejected as `unsupported_target`. No existing values or
 MCP output format changes, and schemas are descriptions for the current binary,
 not a new version marker inside unversioned command output.
+
+## Offline invocation validation
+
+Pass argv after a required separator, without an executable name:
+
+```sh
+tv validate -- values
+tv validate -- --target-id example-target values
+tv validate -- mcp bars NASDAQ:EXAMPLE --timeframe 1D --count 20
+```
+
+Only `values` and `mcp bars` have local validation support initially. The real
+clap parser checks syntax; MCP bars reuse execution's request preparation,
+Desktop-target rejection and deadline rules. Values have no command-specific
+arguments. Target existence, environment configuration, credentials, provider
+availability and data quality remain unchecked. Validation neither executes
+the candidate nor reads its files, and does not initialize tracing or accounts.
+It is optional preparation, not permission to perform the operation.
+
+Success uses command `validate`, `data.contract_version=cli_validate.v1`, the
+canonical command path, status `valid` and checks syntax/local_constraints
+`passed`, runtime `not_checked`. Input values are not echoed. Errors use stderr,
+exit 1, kind `validation` and cli_validate.v1 details with nullable command/field:
+
+| Outcome | status / code | checks.syntax / local_constraints |
+| --- | --- | --- |
+| Invalid syntax, empty input or missing separator | invalid / invalid_syntax | failed / not_checked |
+| Invalid local request | invalid / invalid_request or unsupported_capability | passed / failed |
+| Known command without local support | unsupported / unsupported_command | passed / not_checked |
+| Candidate help/version or spec/schema/validate | unsupported / non_executable_request | passed or not_checked / not_checked |
+| Target option on the outer validate invocation | invalid / unsupported_target | not_checked / not_checked |
+
+Runtime is always `not_checked`. For example, count 5001 fails locally with
+field `count`; a syntactically valid `data equity` invocation is unsupported,
+not approved for execution. Use target options inside candidate argv. Keep
+credentials, account IDs and file contents out of shared examples; diagnostics
+omit candidate values and raw clap messages. Existing commands retain their
+normal errors and execution ordering; this tool adds no retry or source fallback.
 
 ## Qualified MCP read details
 

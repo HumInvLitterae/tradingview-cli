@@ -73,6 +73,7 @@ pub use market::{
     snapshot_symbol, symbol_info_direct, symbol_search, validate_export_chart_bars_request,
 };
 pub use mcp::run_mcp;
+pub(crate) use mcp::{prepare_mcp_bars, validate_mcp_target};
 pub use observe::{observe_chart_event, observe_readiness_event};
 pub use pine::{
     pine_alertconditions, pine_analyze, pine_check, pine_compile, pine_console, pine_errors,

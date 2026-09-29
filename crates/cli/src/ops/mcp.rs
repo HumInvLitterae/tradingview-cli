@@ -229,12 +229,13 @@ pub async fn run_mcp(command: McpCommand, timeout: Option<u64>) -> Result<Value,
             count,
             from,
             to,
-        } => {
-            if from.is_some() || to.is_some() {
-                return Err(unsupported("date_range"));
-            }
-            Operation::Bars(Request::new(&symbol, &timeframe, count)?)
-        }
+        } => Operation::Bars(prepare_mcp_bars(
+            &symbol,
+            &timeframe,
+            count,
+            from.as_deref(),
+            to.as_deref(),
+        )?),
     };
     Client::current_user()?
         .run_with_timeout(operation, timeout)
@@ -251,5 +252,26 @@ fn alert_settings(
         email: settings.email,
         mobile_push: settings.mobile_push,
         popup: settings.popup,
+    }
+}
+
+pub(crate) fn prepare_mcp_bars(
+    symbol: &str,
+    timeframe: &str,
+    count: u32,
+    from: Option<&str>,
+    to: Option<&str>,
+) -> Result<Request, AppError> {
+    if from.is_some() || to.is_some() {
+        return Err(unsupported("date_range"));
+    }
+    Request::new(symbol, timeframe, count)
+}
+
+pub(crate) fn validate_mcp_target(target_id: Option<&str>) -> Result<(), AppError> {
+    if target_id.is_some() {
+        Err(unsupported("desktop_target"))
+    } else {
+        Ok(())
     }
 }
