@@ -16,6 +16,9 @@ package version omits the leading `v`.
 
 - `data equity` identifies its extraction branch and series meaning, preserves
   zero drawdown, and keeps unknown series and unavailable curves explicit.
+- Snapshot/compare hints now mark chart quotes as potentially mutating chart
+  state and distinguish chart changes from screenshot file writes through
+  `effects`, while preserving existing Rust hint construction.
 
 ## v0.33.0
 

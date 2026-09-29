@@ -494,10 +494,13 @@ failure retains the packet in outer error details. Use sections, errors and
 missing_evidence alongside summary. The top-level symbol uses quote, then
 fundamentals, then info rather than requiring cross-section agreement.
 
-Follow-up hints do not execute or authorize actions. In particular, existing
-non_mutating hints can name chart_quote or screenshot despite chart switching or
-file output. Inspect the hinted command's own specification before executing it.
-Correcting that legacy hint contract remains a separate consumer-facing change.
+Follow-up hints do not execute or authorize actions. Their `non_mutating` flag
+means no chart mutation: `chart_quote` is false because it can switch/restore a
+symbol, while `screenshot` remains true. `effects.chart_mutation` and
+`effects.local_file_write` describe those possible effects separately; screenshot
+has the file flag true. Read-only hints have both false. Packet-level
+`non_mutating` remains true because producing hints executes none of them.
+Inspect the hinted command's own specification before acting.
 
 
 ## Official MCP screener
