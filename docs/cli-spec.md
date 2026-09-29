@@ -912,12 +912,12 @@ Desktop and targets the active list; it has no list-ID or dry-run option.
 Use `tv spec watchlist <action>` when available to inspect its behavior offline.
 Do not silently replace a requested source or target.
 
-The legacy path first tries the Desktop-session internal API, then uses DOM
-when the error allows fallback. Some transport/HTTP mutation failures allow
-that fallback, so an uncertain write can precede a DOM action. Post-check
-failures disable fallback. API readback prefers the original list but can use
-the current active list if it disappears; membership is not strict same-list
-proof. DOM paths can open the panel and alter focus/input without restoring it.
+The legacy path first tries the Desktop-session internal API. DOM fallback is
+limited to recognized pre-dispatch list failures; once a POST is attempted,
+transport, HTTP and readback failures stop without a second DOM mutation.
+Readback requires the original list ID and readable symbols, even if another
+list becomes active. Failure does not imply rollback. Older binaries can replay
+uncertain writes through DOM or check another list; inspect the installed spec. DOM paths can open the panel and alter focus/input without restoring it.
 Rendered-row counts and presence/absence are not complete account-list evidence.
 
 Symbols are trimmed and must be nonempty, with no case normalization or strict

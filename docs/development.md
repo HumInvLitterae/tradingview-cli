@@ -804,7 +804,8 @@ The equity gate executes the generated expression for every extraction branch,
 branch precedence, empty/error outcomes and zero versus missing drawdown.
 The account gate executes shared alert-list validation and generated list,
 create and delete expressions against synthetic fetch responses; missing or
-malformed readback cannot stand in for an empty account.
+malformed readback cannot stand in for an empty account. It also executes
+watchlist mutation expressions to check lost responses and original-list identity.
 The Pine-open gate executes the generated asynchronous page expression against
 synthetic Pine facade, Pine-owned Monaco, overlay-menu, and Save-bound store
 objects, including hidden stale editors, ambiguous visible editors, missing

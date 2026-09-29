@@ -278,3 +278,6 @@ persists merely to advance this plan.
 
 - Legacy alert-list validation is shared across read and mutation paths; generated
   JavaScript fixtures distinguish valid empty lists from failed/malformed reads.
+- Watchlist fallback now requires a known pre-dispatch failure. Readback requires
+  the original list; generated-JavaScript fixtures cover lost responses and
+  changing/missing targets, and adapter fixtures reject contradictory flags.

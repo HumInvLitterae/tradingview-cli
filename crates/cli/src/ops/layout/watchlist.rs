@@ -547,7 +547,7 @@ async fn watchlist_mutate_via_api(
                     target_list: publicList(beforeActive),
                     before_count: beforeCount,
                     matched_before: matchedBefore,
-                    api_fallback_allowed: true
+                    api_fallback_allowed: false
                 }};
             }}
 
@@ -564,7 +564,7 @@ async fn watchlist_mutate_via_api(
                     target_list: publicList(beforeActive),
                     before_count: beforeCount,
                     matched_before: matchedBefore,
-                    api_fallback_allowed: true
+                    api_fallback_allowed: false
                 }};
             }}
 
@@ -583,7 +583,22 @@ async fn watchlist_mutate_via_api(
 
             const afterActive = (afterResult.lists || []).find(function(list) {{
                 return sameList(list, beforeActive);
-            }}) || activeList(afterResult.lists);
+            }});
+            if (!afterActive || !Array.isArray(afterActive.symbols)) {{
+                return {{
+                    error: 'Original watchlist unavailable during mutation readback',
+                    error_kind: 'internal_api_unavailable',
+                    phase: 'post_check_failed',
+                    symbol: requestedSymbol,
+                    requested_symbol: requestedSymbol,
+                    source,
+                    target_list: publicList(beforeActive),
+                    before_count: beforeCount,
+                    matched_before: matchedBefore,
+                    matched_after: null,
+                    api_fallback_allowed: false
+                }};
+            }}
             const afterCount = Array.isArray(afterActive && afterActive.symbols) ? afterActive.symbols.length : null;
             const matchedAfter = hasSymbol(afterActive, requestedSymbol);
 
@@ -966,6 +981,110 @@ mod tests {
 
     use super::super::super::test_support::FakeRuntime;
     use super::*;
+
+    #[tokio::test]
+    async fn watchlist_post_dispatch_failures_never_fall_back_even_with_true_flag() {
+        for phase in [
+            "mutation_unavailable",
+            "post_check_unavailable",
+            "post_check_failed",
+            "unknown",
+        ] {
+            for remove in [false, true] {
+                let mut runtime = FakeRuntime::new([json!({
+                    "error": "fixture failure", "error_kind": "internal_api_unavailable",
+                    "phase": phase, "api_fallback_allowed": true, "source": "watchlist_api"
+                })]);
+                let result = if remove {
+                    watchlist_remove(&mut runtime, "NASDAQ:EXAMPLE").await
+                } else {
+                    watchlist_add(&mut runtime, "NASDAQ:EXAMPLE").await
+                };
+                assert!(result.is_err());
+                assert_eq!(runtime.evaluated.len(), 1);
+                assert!(runtime.inserted_text.is_empty());
+                assert!(runtime.mouse_events.is_empty());
+                assert!(runtime.key_events.is_empty());
+            }
+        }
+    }
+
+    #[tokio::test]
+    #[ignore = "run through scripts/check-account-js-contract.py with pinned Node.js"]
+    async fn javascript_account_watchlist_checks_dispatch_and_original_identity() {
+        let mut runtime = FakeRuntime::new([]);
+        let _ = watchlist_add_via_api(&mut runtime, "NASDAQ:EXAMPLE").await;
+        let add = runtime.evaluated[0].0.clone();
+        let mut runtime = FakeRuntime::new([]);
+        let _ = watchlist_remove_via_api(&mut runtime, "NASDAQ:EXAMPLE").await;
+        let remove = runtime.evaluated[0].0.clone();
+        let expressions = serde_json::to_string(&[add, remove]).unwrap();
+        let script = format!(
+            r#"
+            const expressions = {expressions};
+            const assert = require('node:assert/strict');
+            global.setTimeout = callback => callback();
+            (async () => {{
+                for (const [index, expression] of expressions.entries()) {{
+                    const initial = index === 0 ? [] : ['NASDAQ:EXAMPLE'];
+                    const desired = index === 0 ? ['NASDAQ:EXAMPLE'] : [];
+                    for (const mode of ['preflight', 'network', 'body', 'http', 'missing', 'malformed', 'switched', 'verified']) {{
+                        let writes = 0;
+                        let reads = 0;
+                        global.fetch = async (_, options) => {{
+                            if (options.method === 'POST') {{
+                                writes++;
+                                if (mode === 'network') throw new Error('response lost after write');
+                                return {{
+                                    ok: mode !== 'http', status: mode === 'http' ? 500 : 200,
+                                    text: async () => {{
+                                        if (mode === 'body') throw new Error('body lost after write');
+                                        return '';
+                                    }}
+                                }};
+                            }}
+                            reads++;
+                            if (mode === 'preflight') throw new Error('read failed');
+                            let lists;
+                            if (reads === 1) {{
+                                lists = [{{id: 12, name: 'original', type: 'custom', active: true, symbols: initial}}];
+                            }} else {{
+                                const original = {{id: 12, name: 'original', type: 'custom', active: mode !== 'switched', symbols: desired}};
+                                const other = {{id: 13, name: 'other', type: 'custom', active: true, symbols: mode === 'missing' ? desired : initial}};
+                                if (mode === 'malformed') delete original.symbols;
+                                lists = mode === 'missing' ? [other] : [original, other];
+                            }}
+                            return {{ok: true, text: async () => JSON.stringify(lists)}};
+                        }};
+                        const result = await eval(expression);
+                        assert.equal(writes, mode === 'preflight' ? 0 : 1);
+                        if (mode === 'preflight') {{
+                            assert.equal(result.api_fallback_allowed, true);
+                        }} else if (['verified', 'switched'].includes(mode)) {{
+                            assert.equal(result.error, undefined);
+                            assert.equal(result.action, index === 0 ? 'added' : 'removed');
+                            assert.equal(result.target_list.name, 'original');
+                        }} else {{
+                            assert.equal(typeof result.error, 'string');
+                            assert.equal(result.api_fallback_allowed, false);
+                            assert.equal(result.phase, ['missing', 'malformed'].includes(mode)
+                                ? 'post_check_failed' : 'mutation_unavailable');
+                        }}
+                    }}
+                }}
+            }})().catch(error => {{ console.error(error); process.exitCode = 1; }});
+            "#
+        );
+        let output = std::process::Command::new("node")
+            .args(["-e", &script])
+            .output()
+            .expect("Node.js is required for the account JavaScript contract");
+        assert!(
+            output.status.success(),
+            "{}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+    }
 
     fn watchlist_api_fallback() -> serde_json::Value {
         json!({
