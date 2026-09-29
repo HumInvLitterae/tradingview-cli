@@ -3,7 +3,10 @@
 use crate::{Failure, Result, admission::Admission, http::Http, sse, tools::Tool};
 use rmcp::{
     ServiceExt,
-    model::{CallToolRequestParams, CallToolResponse, CallToolResult, PaginatedRequestParams},
+    model::{
+        CallToolRequestParams, CallToolResponse, CallToolResult, ClientConfig,
+        PaginatedRequestParams, ProtocolVersion,
+    },
     transport::{
         StreamableHttpClientTransport, common::client_side_sse::NeverRetry,
         streamable_http_client::StreamableHttpClientTransportConfig,
@@ -52,7 +55,7 @@ pub(crate) async fn call(
 /// One command owns the connection and lazy catalog pages; nothing survives it.
 pub(crate) struct Session {
     http: Http,
-    service: rmcp::service::RunningService<rmcp::RoleClient, ()>,
+    service: rmcp::service::RunningService<rmcp::RoleClient, ClientConfig>,
     pages: Vec<Vec<rmcp::model::Tool>>,
     next_cursor: Option<String>,
 }
@@ -61,7 +64,9 @@ impl Session {
     pub(crate) async fn connect(http: &Http, token: String) -> Result<Self> {
         let transport =
             StreamableHttpClientTransport::with_client(http.clone(), transport_config(http, token));
-        let service = timeout_at(http.deadline, ().serve(transport))
+        // Preserve the existing handshake rather than following SDK protocol-default changes.
+        let client = ClientConfig::default().with_protocol_version(ProtocolVersion::V_2025_11_25);
+        let service = timeout_at(http.deadline, client.serve(transport))
             .await
             .map_err(|_| Failure::Timeout)?
             .map_err(|_| http.failure())?;
@@ -486,6 +491,25 @@ pub(crate) fn result_value(result: CallToolResult) -> Result<Value> {
 mod tests {
     use super::*;
     use serde_json::json;
+
+    #[test]
+    fn sdk_result_decoding_preserves_explicit_null_and_empty_cache_scope() {
+        let content = json!([{"type": "text", "text": "{\"bars\":[]}"}]);
+        let absent: CallToolResult = serde_json::from_value(json!({
+            "content": content, "cacheScope": ""
+        }))
+        .unwrap();
+        assert_eq!(result_value(absent).unwrap(), json!({"bars": []}));
+
+        let explicit_null: CallToolResult = serde_json::from_value(json!({
+            "content": content, "structuredContent": null
+        }))
+        .unwrap();
+        let value = result_value(explicit_null).unwrap();
+        assert!(value.is_null());
+        let request = Request::new("NASDAQ:EXAMPLE", "1D", 20).unwrap();
+        assert!(tradingview_model::mcp_bars::normalize(&request, value, 1).is_err());
+    }
 
     #[test]
     fn schema_outline_excludes_values_and_free_text() {

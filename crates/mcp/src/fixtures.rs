@@ -865,6 +865,16 @@ async fn three_timeframes_share_discovery_and_never_repeat_a_tool_request() {
     assert_eq!(report["all_reads_completed"], true);
     assert_eq!(report["observations"].as_array().unwrap().len(), 3);
     assert_eq!(server.calls("initialize"), 1);
+    assert_eq!(server.calls("server/discover"), 0);
+    let initialize = server
+        .requests
+        .lock()
+        .unwrap()
+        .iter()
+        .filter_map(|r| serde_json::from_slice::<Value>(&r.body).ok())
+        .find(|v| v["method"] == "initialize")
+        .unwrap();
+    assert_eq!(initialize["params"]["protocolVersion"], "2025-11-25");
     assert_eq!(server.calls("tools/list"), 1);
     assert_eq!(server.calls("tools/call"), 3);
     assert!(
