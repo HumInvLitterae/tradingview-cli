@@ -37,7 +37,9 @@ impl Operation {
     pub const DEFAULT_READ_TIMEOUT_SECONDS: u64 = 30;
     pub const MAX_READ_TIMEOUT_SECONDS: u64 = 180;
 
-    pub(crate) fn timeout_duration(&self, seconds: Option<u64>) -> Result<Duration, AppError> {
+    /// Pure deadline validation shared with the CLI's offline request checks.
+    /// This remains part of the internal workspace service, not a stable external API.
+    pub fn timeout_duration(&self, seconds: Option<u64>) -> Result<Duration, AppError> {
         let Some(seconds) = seconds else {
             return Ok(Duration::from_secs(if matches!(self, Self::Login) {
                 300

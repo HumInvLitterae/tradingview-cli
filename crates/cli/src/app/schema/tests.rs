@@ -41,7 +41,12 @@ fn fixture_case(path: &[&str], samples: Vec<Value>, invalid_pointers: &[&str]) -
     valid.push(extra);
     for pointer in invalid_pointers {
         let mut wrong_type = valid[0].clone();
-        *wrong_type.pointer_mut(pointer).unwrap() = json!("wrong type");
+        let field = wrong_type.pointer_mut(pointer).unwrap();
+        *field = if field.is_string() {
+            json!(false)
+        } else {
+            json!("wrong type")
+        };
         invalid.push(wrong_type);
         let (parent, name) = pointer.rsplit_once('/').unwrap();
         let mut missing = valid[0].clone();
@@ -96,6 +101,8 @@ async fn output_schemas_match_production_fixtures() {
         &[
             "/data/study_count",
             "/data/studies",
+            "/data/studies/0/name",
+            "/data/studies/0/study_kind",
             "/data/studies/0/visible",
             "/data/studies/0/inputs",
         ],
@@ -103,14 +110,21 @@ async fn output_schemas_match_production_fixtures() {
 
     let request = tradingview_model::mcp_bars::Request::new("NASDAQ:EXAMPLE", "1D", 2).unwrap();
     let mut samples = Vec::new();
-    for rows in [
+    for (index, rows) in [
         json!([{ "t": 1, "o": 1, "h": 2, "l": 0, "c": 1, "v": null },
                { "t": 2, "o": 1, "h": 2, "l": 0, "c": 1, "v": 0 }]),
         json!([{ "t": 1, "o": 1, "h": 2, "l": 0, "c": 1 }]),
         json!([]),
-    ] {
-        let data =
-            tradingview_model::mcp_bars::normalize(&request, json!({"bars": rows}), 0).unwrap();
+    ]
+    .into_iter()
+    .enumerate()
+    {
+        let mut response = json!({"bars": rows});
+        if index == 0 {
+            response["symbol"] = json!("NASDAQ:EXAMPLE");
+            response["interval"] = json!("1D");
+        }
+        let data = tradingview_model::mcp_bars::normalize(&request, response, 0).unwrap();
         samples.push(serde_json::to_value(SuccessEnvelope::new("mcp", data)).unwrap());
     }
     let error = tradingview_model::mcp_bars::normalize(

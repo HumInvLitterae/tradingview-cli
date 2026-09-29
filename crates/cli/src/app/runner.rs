@@ -58,6 +58,15 @@ async fn async_main() -> ExitCode {
             return ExitCode::SUCCESS;
         }
         Err(err) => {
+            // Clap's partial matches identify a malformed validate invocation without
+            // manually scanning argv or echoing candidate values in diagnostics.
+            if Cli::command()
+                .ignore_errors(true)
+                .try_get_matches_from(std::env::args_os())
+                .is_ok_and(|matches| matches.subcommand_name() == Some("validate"))
+            {
+                return terminal_error("validate", super::validate::syntax_error());
+            }
             let app_error = AppError::new(ErrorKind::Validation, err.to_string());
             return terminal_error("tv", app_error);
         }
@@ -98,12 +107,18 @@ async fn async_main() -> ExitCode {
         return standard_exit("schema", result);
     }
 
+    if let Command::Validate { args } = command {
+        let result = if cli.target_id.is_some() {
+            Err(super::validate::outer_target_error())
+        } else {
+            super::validate::check(&args)
+        };
+        return standard_exit("validate", result);
+    }
+
     if let Command::Mcp { command, timeout } = command {
-        if cli.target_id.is_some() {
-            return terminal_error(
-                "mcp",
-                tradingview_model::mcp_bars::unsupported("desktop_target"),
-            );
+        if let Err(error) = crate::ops::validate_mcp_target(cli.target_id.as_deref()) {
+            return terminal_error("mcp", error);
         }
         // No tracing subscriber for account-bearing MCP flows, even with
         // RUST_LOG=trace. Other command groups retain their existing logging.

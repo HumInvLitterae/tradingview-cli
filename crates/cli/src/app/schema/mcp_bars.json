@@ -61,136 +61,25 @@
       ],
       "properties": {
         "symbol": {
-          "type": "object",
-          "required": [
-            "evidence",
-            "value"
-          ],
-          "properties": {
-            "evidence": {
-              "enum": [
-                "unconfirmed",
-                "provider_response"
-              ]
-            },
-            "value": {
-              "type": [
-                "string",
-                "null"
-              ]
-            }
-          }
+          "$ref": "#providerIdentity"
         },
         "interval": {
-          "type": "object",
-          "required": [
-            "evidence",
-            "value"
-          ],
-          "properties": {
-            "evidence": {
-              "enum": [
-                "unconfirmed",
-                "provider_response"
-              ]
-            },
-            "value": {
-              "type": [
-                "string",
-                "null"
-              ]
-            }
-          }
+          "$ref": "#providerIdentity"
         },
         "data_as_of": {
-          "type": "object",
-          "required": [
-            "evidence",
-            "value"
-          ],
-          "properties": {
-            "evidence": {
-              "enum": [
-                "unconfirmed",
-                "provider_response"
-              ]
-            },
-            "value": {
-              "type": "null"
-            }
-          }
+          "$ref": "#unknownObservation"
         },
         "delay_seconds": {
-          "type": "object",
-          "required": [
-            "evidence",
-            "value"
-          ],
-          "properties": {
-            "evidence": {
-              "enum": [
-                "unconfirmed",
-                "provider_response"
-              ]
-            },
-            "value": {
-              "type": "null"
-            }
-          }
+          "$ref": "#unknownObservation"
         },
         "adjustment": {
-          "type": "object",
-          "required": [
-            "evidence",
-            "value"
-          ],
-          "properties": {
-            "evidence": {
-              "enum": [
-                "unconfirmed",
-                "provider_response"
-              ]
-            },
-            "value": {
-              "type": "null"
-            }
-          }
+          "$ref": "#unknownObservation"
         },
         "session": {
-          "type": "object",
-          "required": [
-            "evidence",
-            "value"
-          ],
-          "properties": {
-            "evidence": {
-              "enum": [
-                "unconfirmed",
-                "provider_response"
-              ]
-            },
-            "value": {
-              "type": "null"
-            }
-          }
+          "$ref": "#unknownObservation"
         },
         "timestamp_semantics": {
-          "type": "object",
-          "required": [
-            "evidence",
-            "value"
-          ],
-          "properties": {
-            "evidence": {
-              "enum": [
-                "unconfirmed",
-                "provider_response"
-              ]
-            },
-            "value": {
-              "type": "null"
-            }
-          }
+          "$ref": "#unknownObservation"
         }
       }
     },
@@ -343,6 +232,49 @@
           }
         }
       }
+    }
+  },
+  "$defs": {
+    "provider_identity": {
+      "type": "object",
+      "required": [
+        "evidence",
+        "value"
+      ],
+      "properties": {
+        "evidence": {
+          "enum": [
+            "unconfirmed",
+            "provider_response"
+          ]
+        },
+        "value": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "$anchor": "providerIdentity"
+    },
+    "unknown_observation": {
+      "type": "object",
+      "required": [
+        "evidence",
+        "value"
+      ],
+      "properties": {
+        "evidence": {
+          "enum": [
+            "unconfirmed",
+            "provider_response"
+          ]
+        },
+        "value": {
+          "type": "null"
+        }
+      },
+      "$anchor": "unknownObservation"
     }
   }
 }

@@ -837,6 +837,12 @@ CI and release qualification install this test-only package; the binary embeds
 schemas and has no Python or schema-validator runtime dependency. The gate uses
 one Cargo job/test thread locally and is ignored in the ordinary Rust suite.
 
+For offline invocation changes, run `cli_contract_offline`, the `app::validate`
+unit tests, and affected execution-contract tests. Shared request preparation
+must preserve execution error ordering. Candidate parsing uses clap without
+calling dispatch; do not use speculative connections, file reads or credential
+setup to classify input. Keep diagnostics independent of candidate values.
+
 For focused command work, also run the relevant module or contract tests. For
 example:
 
