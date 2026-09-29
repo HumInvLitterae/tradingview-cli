@@ -6,7 +6,7 @@ use tradingview_model::{mcp_account, mcp_bars, mcp_data};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) enum Tool {
-    TechnicalSnapshotProof,
+    Technicals,
     AlertHistory,
     EconomicSymbols,
     EconomicData,
@@ -45,9 +45,7 @@ pub(crate) enum Tool {
 impl Tool {
     pub fn names(self) -> &'static [&'static str] {
         match self {
-            Self::TechnicalSnapshotProof => {
-                &["mcp-tv-get-technicals-rating", "get_technicals_rating"]
-            }
+            Self::Technicals => &["mcp-tv-get-technicals-rating", "get_technicals_rating"],
             Self::AlertHistory => &["mcp-tv-get-alerts-log", "get_alerts_log"],
             Self::EconomicSymbols => &["mcp-tv-get-economic-symbols", "get_economic_symbols"],
             Self::EconomicData => &["mcp-tv-get-economic-data", "get_economic_data"],
@@ -89,7 +87,7 @@ impl Tool {
 
     pub fn fields(self) -> &'static [(&'static str, &'static str)] {
         match self {
-            Self::TechnicalSnapshotProof => &[("symbol", "string"), ("interval", "string")],
+            Self::Technicals => &[("symbol", "string"), ("interval", "string")],
             Self::AlertHistory => &[
                 ("symbol", "string"),
                 ("days", "integer"),
@@ -225,7 +223,7 @@ impl Tool {
 
     pub fn from_name(name: &str) -> Result<Self> {
         [
-            Self::TechnicalSnapshotProof,
+            Self::Technicals,
             Self::AlertHistory,
             Self::EconomicSymbols,
             Self::EconomicData,
@@ -289,30 +287,20 @@ impl Tool {
                 .and_then(|v| u32::try_from(v).ok())
                 .ok_or(Failure::UnsupportedCapability)
         };
-        // Development-only requests stay within the approved observation scope.
-        // Public CLI support will use model-owned validation after qualification.
-        match self {
-            Self::TechnicalSnapshotProof => {
-                let interval = string("interval")?;
-                if matches!(interval, "1D" | "1W" | "1M" | "2h")
-                    && *args == serde_json::json!({"symbol": "NASDAQ:AAPL", "interval": interval})
-                {
-                    return Ok(());
-                }
-                return Err(Failure::UnsupportedCapability);
-            }
-            Self::AlertHistory if !object.contains_key("symbol") => {
-                // Only the explicit account-wide schema investigation uses this form.
-                return if *args == serde_json::json!({"days": 7, "limit": 100}) {
-                    Ok(())
-                } else {
-                    Err(Failure::UnsupportedCapability)
-                };
-            }
-            _ => {}
+        // Only the explicit account-wide history probe uses this form.
+        if self == Self::AlertHistory && !object.contains_key("symbol") {
+            return if *args == serde_json::json!({"days": 7, "limit": 100}) {
+                Ok(())
+            } else {
+                Err(Failure::UnsupportedCapability)
+            };
         }
         let validated = match self {
-            Self::TechnicalSnapshotProof => unreachable!(),
+            Self::Technicals => tradingview_model::mcp_technicals::Request::new(
+                string("symbol")?,
+                string("interval")?,
+            )
+            .map(|r| r.arguments()),
             Self::AlertHistory => mcp_account::Request::alert_history(
                 string("symbol")?,
                 number("days")?,

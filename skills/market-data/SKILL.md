@@ -31,6 +31,7 @@ index when the command is already known.
 | User needs | First command | Continue only when |
 | --- | --- | --- |
 | Official MCP discovery / symbol fields | `tv mcp search "<QUERY>"`, `tv mcp columns --search <FIELD>`, `tv mcp symbol <EXCHANGE:SYMBOL> --columns <FIELDS>` | Prefer this path when it meets the task and the binary supports it. Preserve candidates, missing fields and unknown identity/freshness; see [MCP field semantics](references/quotes-and-events.md#official-mcp-discovery-and-fields). |
+| Official technical indicators / ratings | `tv mcp technicals <EXCHANGE:SYMBOL> --timeframe <TF>` | A current single-timeframe snapshot meets the task; see [technical semantics](references/quotes-and-events.md#official-technical-snapshots). |
 | Multiple symbols through MCP | `tv mcp symbols <EXCHANGE:SYMBOL>... --columns <FIELDS>` | Preserve input order and returned/missing/unreported outcomes; at most 50 distinct symbols. |
 | Official MCP screening | `tv mcp screener --market <MARKET> --filters <JSON> --limit <N>` | Preserve provider order and distinguish returned rows from the reported total. See [MCP screen semantics](references/screening-and-comparison.md#official-mcp-screens). |
 | Official MCP financial data | `tv mcp financials`, `financial-history`, `forecasts`, `earnings` | Preserve provider periods, currencies, nulls and unreported symbols. See [financial semantics](references/quotes-and-events.md#official-mcp-financial-data). |

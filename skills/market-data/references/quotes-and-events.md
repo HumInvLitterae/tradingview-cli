@@ -170,3 +170,18 @@ fails, its outer response can succeed: inspect item status, failure details and
 fields rather than a full calendar. `no_events_returned` does not prove absence
 of events. Preserve raw readback and source availability; do not infer timezone,
 market session or confirmed/estimated status.
+
+## Official technical snapshots
+
+Use `tv mcp technicals EXCHANGE:SYMBOL --timeframe 1D` for the official current
+indicator snapshot; check `tv spec mcp technicals` or help on the installed binary.
+The ten intervals include 2h, which is not supported by MCP bars. The result is
+not a historical indicator series or a reading of a selected chart/Pine study.
+`indicators` has 23 named slots; absent values are null, including EMA30/SMA30
+when unreported. `summary` keeps official recommendation/value/ma/other; do not
+turn those provider assessments into trade authorization or locally recalculate
+missing values. `available` means some data exists, not complete coverage;
+`empty` is distinct from provider failure. Inspect provider identity evidence,
+keep unknown data time/delay/adjustment/session/finality unknown, and distinguish
+client receipt time from data time. A provider error does not authorize repeated
+calls or a silent switch to chart/column data.

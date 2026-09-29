@@ -223,6 +223,9 @@ pub async fn run_mcp(command: McpCommand, timeout: Option<u64>) -> Result<Value,
             filter_preset,
             symbolset: (!symbolset.is_empty()).then_some(symbolset),
         })?),
+        McpCommand::Technicals { symbol, timeframe } => Operation::Technicals(
+            tradingview_model::mcp_technicals::Request::new(&symbol, &timeframe)?,
+        ),
         McpCommand::Bars {
             symbol,
             timeframe,

@@ -27,7 +27,7 @@ session export, or account mutation.
 
 `tradingview-mcp` is an internal workspace service for `tv mcp`, not a stable
 external Rust API. Its client owns OAuth, native credentials, admission and
-transport; `tradingview-model::mcp_bars` and `mcp_data` own pure request/response
+transport; `tradingview-model::mcp_bars`, `mcp_data` and `mcp_technicals` own pure request/response
 shaping. Consumers should use the separate CLI and versioned MCP contracts in
 [Official MCP commands](official-mcp.md). This does not change the credential-free
 market/scanner APIs or the existing `tv bars` contract.

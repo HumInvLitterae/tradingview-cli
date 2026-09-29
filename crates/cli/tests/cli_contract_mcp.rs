@@ -172,6 +172,8 @@ fn invalid_mcp_requests_fail_before_cdp_state_store_or_provider_access() {
             "--columns",
             "close,close",
         ],
+        vec!["mcp", "technicals", "AAPL"],
+        vec!["mcp", "technicals", "NASDAQ:EXAMPLE", "--timeframe", "M"],
         vec!["mcp", "bars", "AAPL"],
         vec!["mcp", "bars", "NASDAQ:EXAMPLE", "--timeframe", "2h"],
         vec!["mcp", "bars", "NASDAQ:EXAMPLE", "--count", "0"],
@@ -495,4 +497,31 @@ fn mcp_timeout_rejects_invalid_or_non_read_requests_before_access() {
     tv().args(["mcp", "--timeout-secs", "90", "status"])
         .assert()
         .failure();
+}
+
+#[test]
+fn technicals_parse_without_desktop_and_remain_separate_from_bars() {
+    tv().args(["mcp", "technicals", "--help"])
+        .assert()
+        .success();
+    for timeframe in ["1D", "1W", "1M", "2h"] {
+        let output = tv()
+            .args([
+                "mcp",
+                "technicals",
+                "NASDAQ:EXAMPLE",
+                "--timeframe",
+                timeframe,
+            ])
+            .env("TV_CDP_PORT", "invalid")
+            .env("HOME", "relative-home")
+            .env("LOCALAPPDATA", "relative-state")
+            .env("XDG_STATE_HOME", "relative-state")
+            .assert()
+            .code(1)
+            .get_output()
+            .clone();
+        let error: Value = serde_json::from_slice(&output.stderr).unwrap();
+        assert_eq!(error["error"]["details"]["code"], "local_state_unavailable");
+    }
 }

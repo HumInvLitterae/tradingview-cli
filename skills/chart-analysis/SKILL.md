@@ -7,6 +7,13 @@ description: Inspect a TradingView Desktop chart with tv when the user needs cha
 
 Use the selected Desktop chart as the source. For Desktop-free prices, symbol
 comparison, or historical bars, use the optional `market-data` skill.
+For an explicitly requested official indicator snapshot independent of the chart,
+`tv mcp technicals EXCHANGE:SYMBOL --timeframe 1D` is Desktop-free on supporting
+binaries. It does not inspect Pine studies or historical signals. Preserve null
+indicator slots, official `summary` ratings and unconfirmed freshness; `available`
+does not mean complete. Honor the selected source instead of falling back after
+an error. Use `tv spec mcp technicals` for its interval and result constraints.
+
 Resolve the [Desktop session](references/desktop-session.md) when the target is
 new, uncertain, or changed; reuse a confirmed target across the workflow.
 

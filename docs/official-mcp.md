@@ -22,6 +22,50 @@ reads need no repeated source approval. For setup and errors, the portable
 [connection reference](../.agents/skills/market-data/references/mcp-connection.md)
 also ships with the independently attachable data/account skills.
 
+## Official technical snapshots (next version)
+
+```sh
+tv mcp technicals NASDAQ:EXAMPLE --timeframe 1D
+tv spec mcp technicals
+```
+
+This calls the official technical-rating tool for one qualified symbol and one
+interval. Supported intervals are `1m`, `5m`, `15m`, `30m`, `1h`, `2h`, `4h`,
+`1D` (default), `1W`, `1M`. Technical `2h` does not expand `mcp bars` support.
+There is no history, range, batch, local calculation or fallback to columns/CDP.
+The usual MCP read timeout, credential handling and no-replay rules apply.
+
+The `mcp_technicals.v1` payload uses the existing official source/category fields,
+`request.symbol/timeframe`, `provider_observation` evidence and
+`client_observation.received_at`. Symbol/interval echoes are checked when present;
+missing echoes remain unconfirmed. Market-data time, delay, adjustment, session
+and finality remain `{"value":null,"evidence":"unconfirmed"}` because the qualified
+response does not provide them. Client receipt time is not market-data time.
+
+`indicators` is an array of `{"name":"rsi","value":52.5}` objects (synthetic
+example). Names preserve the provider's keys: rsi, stoch_k, stoch_d, cci20, adx,
+macd, macd_signal, momentum, ao; ema10/20/30/50/100/200,
+sma10/20/30/50/100/200, vwma and hullma9. All 23 slots are present; missing or
+explicitly null values remain null. Zero remains zero. The daily sample supplied
+21 values; ema30 and sma30 were absent. Unknown fields and unrelated price data
+are omitted.
+
+`summary` preserves the official structure, for example:
+
+```json
+{"recommendation":"BUY","value":0.2,"ma":"STRONG_BUY","other":"SELL"}
+```
+
+These are provider evaluations, not CLI calculations or trading instructions.
+Missing members are null. `status:available` means at least one known indicator
+or summary member is non-null, not that every slot is complete; otherwise status
+is `empty`. Required containers must still exist as objects. Malformed field
+types, contradictory identity and missing containers produce invalid_response.
+Provider failures, including application-level 429, remain errors rather than
+empty observations. Successful daily qualification does not establish other
+intervals' availability or data freshness. `schema`/`validate` support remains
+limited to their existing command set; use `spec` for this command's metadata.
+
 <a id="read-deadlines-next-version"></a>
 
 ## Read deadlines (v0.33.0 and later)

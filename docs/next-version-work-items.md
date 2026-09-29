@@ -11,15 +11,14 @@ Direction approved 2026-09-29. [Roadmap](next-version-roadmap.md) ·
 | 4 | Follow-up effects | Implemented with serialized chart/file effects and existing Rust struct construction retained. Market fixtures pass; downstream must update its stale chart_quote expectation when adopting. |
 | 5 | Legacy account operations | All three approved corrections implemented with focused Rust and generated-JavaScript fixtures. Downstream duplicate matching and provider migration remain owner follow-ups. See the existing plan for contracts and acceptance. |
 | 6 | Output schemas and offline validation | Implemented for values and mcp bars: schema export and argv validation, with explicit structural/runtime limits. See the existing plan for argv/JSON examples, unsupported coverage and zero-I/O acceptance. Candidate CI and downstream adoption remain. |
-| 7 | Qualify next release | Choose version after contracts settle; use focused local checks and candidate CI, then a separate final version/notes commit. |
+| 7 | Official technical snapshots | Implemented under the approved contract: official summary, 23 indicator slots and existing evidence fields. Daily shape qualified; weekly returned provider-internal 429. Focused validation and live public-path qualification are recorded in the active plan. |
+| 8 | Qualify next release | Choose version after contracts settle; use focused local checks and candidate CI, then a separate final version/notes commit. |
 
 ## Follow-ups, not release gates
 
 - Remaining spec annotations: diagnose quote-data, scanner hotlist, data depth,
   discover and spec. The v0.33.0 semantic-annotation baseline was 164/169;
   advance for a concrete workflow rather than a completion percentage.
-- Official technical snapshots are deferred; current provider failure evidence
-  is not permission to implement a guessed decoder or silently change source.
 - Alert-history nonempty native normalization/default-deadline success, graphical
   Linux OAuth and Windows skill-manager execution remain unverified. Reuse
   fixtures and existing platform evidence without broadening their claims.

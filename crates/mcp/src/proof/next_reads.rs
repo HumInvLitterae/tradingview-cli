@@ -19,7 +19,7 @@ pub(super) async fn inspect(
             token,
             &[
                 (
-                    Tool::TechnicalSnapshotProof,
+                    Tool::Technicals,
                     json!({"symbol": "NASDAQ:AAPL", "interval": "1D"}),
                 ),
                 (
@@ -53,7 +53,7 @@ pub(super) async fn inspect(
                 _ => "1D",
             };
             (
-                Tool::TechnicalSnapshotProof,
+                Tool::Technicals,
                 json!({"symbol": "NASDAQ:AAPL", "interval": interval}),
             )
         }
@@ -72,14 +72,19 @@ pub(super) async fn inspect(
 }
 
 fn observation(tool: Tool, arguments: &Value, value: &Value) -> Value {
+    let identity = if tool == Tool::Technicals {
+        value.get("data").unwrap_or(&Value::Null)
+    } else {
+        value
+    };
     let mut report = json!({
         "tool": tool.names()[0],
         "requested_interval": arguments.get("interval"),
         "provider_success": value.get("success").and_then(Value::as_bool),
         "shape": safe_shape(value, 0),
-        "symbol_echo_matches": value.get("symbol").and_then(Value::as_str)
+        "symbol_echo_matches": identity.get("symbol").and_then(Value::as_str)
             .map(|symbol| symbol == "NASDAQ:AAPL"),
-        "interval_echo_matches": value.get("interval").and_then(Value::as_str)
+        "interval_echo_matches": identity.get("interval").and_then(Value::as_str)
             .map(|interval| arguments.get("interval").and_then(Value::as_str) == Some(interval))
     });
     if tool == Tool::AlertHistory {
@@ -210,6 +215,33 @@ fn safe_shape(value: &Value, depth: usize) -> Value {
                         | "SMA200"
                         | "VWMA"
                         | "HullMA9"
+                        | "price"
+                        | "change"
+                        | "ma"
+                        | "other"
+                        | "rsi"
+                        | "stoch_k"
+                        | "stoch_d"
+                        | "cci20"
+                        | "adx"
+                        | "macd"
+                        | "macd_signal"
+                        | "momentum"
+                        | "ao"
+                        | "ema10"
+                        | "ema20"
+                        | "ema30"
+                        | "ema50"
+                        | "ema100"
+                        | "ema200"
+                        | "sma10"
+                        | "sma20"
+                        | "sma30"
+                        | "sma50"
+                        | "sma100"
+                        | "sma200"
+                        | "vwma"
+                        | "hullma9"
                         | "name"
                         | "value"
                         | "timestamp"
@@ -255,6 +287,31 @@ fn safe_shape(value: &Value, depth: usize) -> Value {
         Value::Bool(_) => json!("boolean"),
         Value::Number(_) => json!("number"),
         Value::String(_) => json!("string"),
+    }
+}
+
+pub(super) async fn verify_technical_command(
+    directory: &std::path::Path,
+    worker: Option<&std::path::Path>,
+) -> Result<Value> {
+    let worker = worker.ok_or(Failure::UnsupportedCapability)?;
+    let request = tradingview_model::mcp_technicals::Request::new("NASDAQ:AAPL", "1D")
+        .map_err(|_| Failure::UnsupportedCapability)?;
+    match crate::Client::with_paths(directory.to_owned(), worker.to_owned())
+        .run(crate::Operation::Technicals(request))
+        .await
+    {
+        Ok(data) => Ok(json!({
+            "success": true, "contract_version": data["contract_version"],
+            "status": data["status"], "tool_attempts": data["transport"]["tool_attempts"],
+            "indicator_count": data["indicators"].as_array().map(Vec::len),
+            "present_indicator_count": data["indicators"].as_array().map(|items|
+                items.iter().filter(|item| !item["value"].is_null()).count()),
+            "summary_shape": safe_shape(&data["summary"], 0),
+            "identity_confirmed": data["provider_observation"]["symbol"]["evidence"] == "provider_response",
+            "interval_confirmed": data["provider_observation"]["interval"]["evidence"] == "provider_response"
+        })),
+        Err(error) => Ok(json!({"success": false, "details": error.details})),
     }
 }
 
@@ -320,6 +377,36 @@ mod tests {
     }
 
     #[test]
+    fn technical_snapshot_observes_nested_identity_without_retaining_values() {
+        let report = observation(
+            Tool::Technicals,
+            &json!({"symbol": "NASDAQ:AAPL", "interval": "1D"}),
+            &json!({"success": true, "data": {
+                "symbol": "NASDAQ:AAPL", "interval": "1D",
+                "oscillators": {"rsi": 52.5, "private-key": "secret"},
+                "moving_averages": {"ema10": null},
+                "summary": {"ma": "BUY", "other": "SELL", "value": 0.25}
+            }}),
+        );
+        assert_eq!(report["symbol_echo_matches"], true);
+        assert_eq!(report["interval_echo_matches"], true);
+        let data = &report["shape"]["fields"]["data"]["fields"];
+        assert_eq!(data["oscillators"]["fields"]["rsi"], "number");
+        assert_eq!(data["moving_averages"]["fields"]["ema10"], "null");
+        assert_eq!(data["summary"]["fields"]["ma"], "string");
+        for omitted in [
+            "NASDAQ:AAPL",
+            "52.5",
+            "BUY",
+            "SELL",
+            "private-key",
+            "secret",
+        ] {
+            assert!(!report.to_string().contains(omitted));
+        }
+    }
+
+    #[test]
     fn technical_control_preserves_shape_and_failure_without_values() {
         let arguments =
             json!({"symbol": "NASDAQ:AAPL", "columns": ["close", "volume", "market_cap_basic"]});
@@ -350,7 +437,7 @@ mod tests {
     #[test]
     fn next_reads_provider_failure_is_not_successful_data() {
         let report = observation(
-            Tool::TechnicalSnapshotProof,
+            Tool::Technicals,
             &json!({"symbol": "NASDAQ:AAPL", "interval": "1D"}),
             &json!({"success": false, "error": "private provider detail"}),
         );
@@ -388,7 +475,7 @@ mod tests {
     fn next_reads_technical_scope_and_history_inputs_stay_validated() {
         for interval in ["1D", "1W", "1M", "2h"] {
             assert!(
-                Tool::TechnicalSnapshotProof
+                Tool::Technicals
                     .validate_arguments(&json!({"symbol": "NASDAQ:AAPL", "interval": interval}))
                     .is_ok()
             );
@@ -405,12 +492,12 @@ mod tests {
         );
         for (tool, arguments) in [
             (
-                Tool::TechnicalSnapshotProof,
-                json!({"symbol": "NASDAQ:OTHER", "interval": "1D"}),
+                Tool::Technicals,
+                json!({"symbol": "OTHER", "interval": "1D"}),
             ),
             (
-                Tool::TechnicalSnapshotProof,
-                json!({"symbol": "NASDAQ:AAPL", "interval": "1m"}),
+                Tool::Technicals,
+                json!({"symbol": "NASDAQ:AAPL", "interval": "3h"}),
             ),
             (Tool::AlertHistory, json!({"days": 8, "limit": 100})),
             (

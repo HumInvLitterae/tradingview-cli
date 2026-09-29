@@ -8,6 +8,7 @@ pub mod mcp_economics;
 pub mod mcp_error;
 pub mod mcp_financials;
 pub mod mcp_research;
+pub mod mcp_technicals;
 pub mod replay;
 pub mod screener;
 pub mod visible_range;
