@@ -1,7 +1,7 @@
 # Post-v0.33.0 roadmap
 
 Status: the three initial contracts are implemented and locally validated.
-Next: review legacy account operations against demonstrated workflows.
+Next: approve the reviewed legacy-account failure and fallback corrections.
 Baseline: [released v0.33.0](releases/v0.33.0.md). The
 [inventory](next-version-work-items.md) orders work; the
 [analysis-reliability plan](plans/tradingview-cli-analysis-reliability.md)

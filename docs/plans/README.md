@@ -11,7 +11,8 @@
 
 The owner approved a focus on MCP diagnostics, chart-analysis meaning and
 follow-up effects. The three initial contracts are implemented and locally
-validated; legacy-account review and schema design remain next candidates.
+validated. Legacy-account review has produced concrete corrections awaiting
+contract approval; schema design follows that cleanup.
 Official technical snapshots remain deferred; provider availability is not
 established by a past release or fixture. Version 0.33.0 is published, and its
 record preserves historical verification rather than current execution authority.
