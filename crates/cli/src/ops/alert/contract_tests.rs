@@ -16,7 +16,7 @@ async fn javascript_account_alert_lists_reject_failed_reads() {
     let _ = alert_delete_all(&mut runtime, false).await;
     let delete_all = runtime.evaluated[0].0.clone();
     let mut runtime = FakeRuntime::new([]);
-    let _ = super::create::alert_create_via_api(&mut runtime, 100.0, "crossing", None).await;
+    let _ = super::alert_create(&mut runtime, 100.0, "crossing", None).await;
     let create = runtime.evaluated[0].0.clone();
     let mut runtime = FakeRuntime::new([
         json!({"match_count": 1, "match": {

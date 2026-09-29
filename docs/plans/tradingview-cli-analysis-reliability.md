@@ -1,8 +1,9 @@
 # Analysis reliability after v0.33.0
 
 Status: three approved contracts implemented and locally validated 2026-09-29.
-Legacy-account corrections approved; implementation is in progress. The PM is the
-sole executor; no additional agents or sessions are authorized for this work.
+Legacy-account corrections are implemented; downstream adoption and release
+qualification remain. The PM is the sole executor; no additional agents or
+sessions are authorized for this work.
 
 ## Outcome and scope
 
@@ -275,9 +276,17 @@ persists merely to advance this plan.
   the equity gate passed with pinned Node 24.18.0. Scoped Clippy, formatting,
   public hygiene, standalone skill references and placeholder package staging
   passed. CI/platform and live Desktop/provider execution were not rerun.
-
 - Legacy alert-list validation is shared across read and mutation paths; generated
   JavaScript fixtures distinguish valid empty lists from failed/malformed reads.
 - Watchlist fallback now requires a known pre-dispatch failure. Readback requires
   the original list; generated-JavaScript fixtures cover lost responses and
   changing/missing targets, and adapter fixtures reject contradictory flags.
+- Price-alert creation now uses only the verified API path; preflight failures
+  do not evaluate dialog code. Existing successful API payloads, conditions and
+  notification defaults remain unchanged. Next: downstream duplicate-matching
+  corrections and adoption, candidate CI, then release qualification. Broader
+  schema design and saved-Pine identity work remain separate candidates.
+- Legacy corrections passed focused alert/watchlist/model/spec tests, both
+  pinned-Node account gates, scoped CLI/model Clippy, formatting, public hygiene
+  and standalone/package skill checks. No live mutation, full local workspace
+  suite, platform CI or release build was run for these corrections.

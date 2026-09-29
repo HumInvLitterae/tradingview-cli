@@ -9,8 +9,8 @@ alerts are a separate workflow, not a simple price-alert substitute.
 List returns an error for failed reads or malformed row collections; a valid
 empty collection still succeeds. Creation/deletion checks use the same strict
 reader, so unavailable readback cannot confirm success. Older binaries can
-return outer success with `data.error`; never treat that as an empty account. Missing active state defaults to true. Provider timestamps are not
-normalized and projected conditions cannot reconstruct complex Pine alerts.
+return outer success with `data.error`; never treat that as an empty account.
+Missing active state defaults to true. Provider timestamps are not normalized and projected conditions cannot reconstruct complex Pine alerts.
 Messages remain in legacy output, so keep account details private.
 
 Create uses the active chart symbol/timeframe. Conditions crossing, greater_than
@@ -20,12 +20,13 @@ are enabled, email/SMS are disabled and webhook is null. Currency can fall back
 to USD and resolution to 1. These are different defaults from official MCP.
 There is no dry-run.
 
-The API path checks for a new matching ID, symbol marker, message, condition type
-and approximate price. Only pre-create failures can fall back to DOM; after an
-API creation attempt, request/readback failures do not. DOM fallback sets a
-price field and optionally message, but does not set the requested condition UI.
-Its returned condition is an echo and `created: true` means Create was clicked,
-not that the alert persisted. Check source before reporting success or retrying.
+Creation uses the internal API and checks a new matching ID, symbol marker,
+message, condition type and approximate price. API preflight failure returns an
+error without opening a dialog. There is no automatic DOM or MCP fallback;
+failed readback can still follow account creation, so inspect before retrying.
+Older binaries can report `source: dom_fallback` and `created: true` after a
+button click without verifying conditions or persistence; that is not proof
+of a correctly saved alert.
 
 Delete requires exactly one of `--id` and `--all`. Dry-run is supported only
 with all and performs a fresh account read. Execution of all targets every alert

@@ -14,12 +14,12 @@ package version omits the leading `v`.
 
 ### Fixed
 
+- Legacy price-alert creation no longer falls back to an unverified dialog click.
+  API preflight failures return errors without changing the dialog state.
 - Legacy watchlist mutations no longer replay uncertain writes through DOM and
   require the original list during readback.
-
 - Legacy alert reads now fail on unavailable or malformed lists. Shared mutation
   preflight/readback checks no longer interpret invalid responses as empty lists.
-
 - `data equity` identifies its extraction branch and series meaning, preserves
   zero drawdown, and keeps unknown series and unavailable curves explicit.
 - Snapshot/compare hints now mark chart quotes as potentially mutating chart

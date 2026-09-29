@@ -7,11 +7,11 @@ pub(super) fn describe(path: &[&str]) -> Option<Value> {
         return None;
     };
     let mut result = json!({
-        "source": if *action == "create" { Value::Null } else { json!("internal_api") },
+        "source": "internal_api",
         "output_contract": null,
         "requires": {"desktop": true, "authentication": null},
         "effects": {"provider_request": true, "local_file_write": false,
-            "ui_mutation": if *action == "create" { Value::Null } else { json!(false) },
+            "ui_mutation": false,
             "account_mutation": if *action == "list" { json!(false) } else { Value::Null }},
         "discovery": [{"argument": "target-id", "argv": ["tv", "tab", "list"], "result_path": "data.tabs[].id"}],
         "limits": [
@@ -41,9 +41,8 @@ pub(super) fn describe(path: &[&str]) -> Option<Value> {
             result["limits"].as_array_mut().unwrap().extend([
                 json!("Symbol and resolution come from the active chart, with resolution fallback 1 and currency fallback USD. Internal API uses split adjustment, about 30-day expiration, on_first_fire and auto_deactivate; popup/mobile_push are true, email/SMS are false and webhook is null. These are not the MCP notification defaults."),
                 json!("greater_than/less_than map to crossing-up/down conditions, not generalized persistent inequalities. The internal API verifies a new ID with matching symbol marker, message, condition type and price tolerance; it does not independently confirm every notification/expiration field."),
-                json!("Only pre-create API failures marked fallback-allowed lead to DOM. Once the API creation request is attempted, request/post-check failures do not retry via DOM."),
-                json!("DOM fallback opens an alert dialog, sets a candidate price field and optionally message, then clicks Create. It does not set the requested condition UI: returned condition is an echo, and created true records a click, not a persisted alert or condition verification. Inspect source before claiming success."),
-                json!("The dialog is not guaranteed to be restored. Failed readback can follow account creation; inspect the account before retrying to avoid duplicates.")
+                json!("API preflight failures return an error without opening a dialog. No automatic DOM or MCP fallback is performed, before or after dispatch."),
+                json!("Failed readback can follow account creation; inspect the account before retrying to avoid duplicates.")
             ]);
             json!([[
                 "tv",
