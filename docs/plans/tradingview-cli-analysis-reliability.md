@@ -445,12 +445,18 @@ persists merely to advance this plan.
 - Both offline commands are implemented. Candidate CI, downstream adoption and
   next-release qualification remain; further schema/command coverage is deferred
   until a concrete consumer needs it.
-- Dependency refresh: rmcp 3.5.0 and tokio-rustls 0.26.6. The SDK's new protocol
-  default would change initialization, so its native ClientConfig explicitly
-  retains 2025-11-25; a wire fixture checks this. SDK null-result decoding now
-  preserves null instead of using text content. Other direct Rust dependencies
-  are current; crypto-common requires generic-array exactly 0.14.7. MCP tests
-  and targeted protocol/decoder regressions passed without live access.
+- Dependency refresh: rmcp 3.5.0 and tokio-rustls 0.26.6. The initial protocol pin
+  was removed after owner review: preserving old behavior alone did not establish
+  a compatibility requirement. The SDK now advertises 2026-07-28; fixtures verify
+  both older-server negotiation and current-version replies with request metadata.
+  The existing initialize lifecycle remains; discovery-first behavior is not
+  selected automatically. SDK null-result decoding preserves null instead of
+  using text content. Other direct Rust dependencies are current; crypto-common
+  requires generic-array exactly 0.14.7.
+  Both negotiation fixtures and scoped MCP Clippy passed. A live batch read with
+  the SDK default returned both valid symbols and marked the invalid control
+  missing, with one tool attempt. This verifies retrieval with the updated
+  client, not the negotiated server version or the cause of earlier 429 failures.
 - Offline validation passed three unit tests and five executable contract tests;
   all 41 spec and ten MCP execution-contract tests passed. The schema gate passed
   with production fixtures, field mutations and self-contained standard schema

@@ -18,8 +18,8 @@ package version omits the leading `v`.
 
 ### Changed
 
-- Updated rmcp to 3.5.0 and tokio-rustls to 0.26.6, retaining the existing MCP
-  initialization protocol. Explicit null structured results are no longer
+- Updated rmcp to 3.5.0 and tokio-rustls to 0.26.6, adopting the SDK's default
+  protocol negotiation. Explicit null structured results are no longer
   replaced by text content during SDK decoding.
 - MCP data/bar provider-declared failures retain their existing error contracts
   and add public-safe textual clues without claiming HTTP status or retry timing.

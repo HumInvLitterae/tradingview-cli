@@ -293,7 +293,11 @@ fn respond(ep: &Endpoints, r: &Request, mode: &str) -> Response {
     let result = match request["method"].as_str().unwrap() {
         "initialize" => {
             json!({
-                "protocolVersion": "2025-06-18",
+                "protocolVersion": if mode == "current-protocol" {
+                    "2026-07-28"
+                } else {
+                    "2025-06-18"
+                },
                 "capabilities": {"tools": {}},
                 "serverInfo": {"name": "synthetic-server", "version": "1"}
             })
@@ -874,7 +878,7 @@ async fn three_timeframes_share_discovery_and_never_repeat_a_tool_request() {
         .filter_map(|r| serde_json::from_slice::<Value>(&r.body).ok())
         .find(|v| v["method"] == "initialize")
         .unwrap();
-    assert_eq!(initialize["params"]["protocolVersion"], "2025-11-25");
+    assert_eq!(initialize["params"]["protocolVersion"], "2026-07-28");
     assert_eq!(server.calls("tools/list"), 1);
     assert_eq!(server.calls("tools/call"), 3);
     assert!(
@@ -904,6 +908,29 @@ async fn three_timeframes_share_discovery_and_never_repeat_a_tool_request() {
     assert_eq!(report["failure"], "budget_exhausted");
     assert_eq!(report["observations"].as_array().unwrap().len(), 1);
     assert_eq!(server.calls("tools/call"), 4);
+}
+
+#[tokio::test]
+async fn current_protocol_reply_supports_catalog_and_tool_calls() {
+    let server = Server::start("current-protocol").await;
+    let (_root, _guard, _budget, http, _store) = context(&server, 5).await;
+    let report = proof::read_intervals(&http, "synthetic-access".into(), &["1D"], None)
+        .await
+        .unwrap();
+    assert_eq!(report["all_reads_completed"], true);
+    assert_eq!(server.calls("initialize"), 1);
+    assert_eq!(server.calls("tools/list"), 1);
+    assert_eq!(server.calls("tools/call"), 1);
+    let requests = server.requests.lock().unwrap();
+    let tool = requests
+        .iter()
+        .filter_map(|r| serde_json::from_slice::<Value>(&r.body).ok())
+        .find(|v| v["method"] == "tools/call")
+        .unwrap();
+    assert_eq!(
+        tool["params"]["_meta"]["io.modelcontextprotocol/protocolVersion"],
+        "2026-07-28"
+    );
 }
 
 #[tokio::test]
