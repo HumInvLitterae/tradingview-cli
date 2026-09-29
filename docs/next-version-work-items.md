@@ -10,9 +10,9 @@ Direction approved 2026-09-29. [Roadmap](next-version-roadmap.md) ·
 | 3 | Equity meaning and zero values | Implemented: extraction/meaning labels and zero drawdown preservation, with generated-JavaScript fixtures for branch selection and missing data. |
 | 4 | Follow-up effects | Implemented with serialized chart/file effects and existing Rust struct construction retained. Market fixtures pass; downstream must update its stale chart_quote expectation when adopting. |
 | 5 | Legacy account operations | All three approved corrections implemented with focused Rust and generated-JavaScript fixtures. Downstream duplicate matching and provider migration remain owner follow-ups. See the existing plan for contracts and acceptance. |
-| 6 | Output schemas and offline validation | Implemented for values and mcp bars: schema export and argv validation, with explicit structural/runtime limits. See the existing plan for argv/JSON examples, unsupported coverage and zero-I/O acceptance. Candidate CI and downstream adoption remain. |
+| 6 | Output schemas and offline validation | Implemented for values and mcp bars: schema export and argv validation, with explicit structural/runtime limits. See the existing plan for argv/JSON examples, unsupported coverage and zero-I/O acceptance. Candidate CI passed; downstream adoption remains. |
 | 7 | Official technical snapshots | Implemented under the approved contract: official summary, 23 indicator slots and existing evidence fields. Daily shape qualified; weekly returned provider-internal 429. Focused validation and live public-path qualification are recorded in the active plan. |
-| 8 | Qualify next release | Recommended v0.34.0; release-note draft prepared. Candidate HEAD has no CI result yet. After owner version confirmation and successful CI, make the separate final version/notes commit. |
+| 8 | Qualify next release | v0.34.0 approved and prepared. CI passed at a48013a; only notes/records changed afterward before version preparation. Release workflow, native assets and publication remain pending. |
 
 ## Follow-ups, not release gates
 

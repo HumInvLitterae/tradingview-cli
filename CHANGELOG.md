@@ -5,7 +5,7 @@ All notable changes to this project are recorded here.
 This project uses Git tags such as `v0.2.0` for public releases. The Cargo
 package version omits the leading `v`.
 
-## Unreleased
+## v0.34.0
 
 ### Added
 
