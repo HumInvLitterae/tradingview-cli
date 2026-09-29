@@ -1,0 +1,90 @@
+{
+  "type": "object",
+  "required": [
+    "study_count",
+    "studies"
+  ],
+  "properties": {
+    "study_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "studies": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "name",
+          "values",
+          "entity_id",
+          "short_name",
+          "study_kind",
+          "inputs",
+          "visible"
+        ],
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "values": {
+            "type": "object"
+          },
+          "entity_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "short_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "study_kind": {
+            "enum": [
+              "indicator",
+              "strategy",
+              "unknown"
+            ]
+          },
+          "inputs": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": [
+                    "string",
+                    "number",
+                    "boolean",
+                    "null"
+                  ]
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "type": [
+                      "string",
+                      "number",
+                      "boolean",
+                      "null"
+                    ]
+                  }
+                }
+              ]
+            }
+          },
+          "visible": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          }
+        }
+      }
+    }
+  }
+}

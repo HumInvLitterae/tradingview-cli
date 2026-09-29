@@ -26,6 +26,11 @@ description = "Run account JavaScript contracts with pinned Node.js"
 run = "python3 scripts/check-account-js-contract.py"
 run_windows = "python scripts/check-account-js-contract.py"
 
+[tasks."check:output-schemas"]
+description = "Check output schemas with jsonschema 4.26.0 installed in Python"
+run = "python3 scripts/check-output-schemas.py"
+run_windows = "python scripts/check-output-schemas.py"
+
 [tasks."check:pine-open-js"]
 description = "Run the Pine open JavaScript contract with pinned Node.js"
 run = "python3 scripts/check-pine-open-js-contract.py"

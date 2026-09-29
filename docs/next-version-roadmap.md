@@ -3,7 +3,7 @@
 Status: the three initial contracts are implemented and locally validated.
 Legacy-account corrections are implemented; downstream adoption and release
 qualification remain. Offline schema/validation contracts for values and MCP
-bars are proposed for owner review.
+bars are approved and being implemented.
 Baseline: [released v0.33.0](releases/v0.33.0.md). The
 [inventory](next-version-work-items.md) orders work; the
 [analysis-reliability plan](plans/tradingview-cli-analysis-reliability.md)

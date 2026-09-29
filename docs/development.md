@@ -829,6 +829,14 @@ ignored during ordinary `cargo test --workspace`; CI and the release workflow
 install the pinned Node version and run each gate explicitly. Node.js is not a
 runtime dependency of `tv`.
 
+Changes to offline output schemas or their producers require
+`python scripts/check-output-schemas.py` using `jsonschema==4.26.0` in a test
+Python environment. The gate runs production adapter/normalizer fixtures through
+the exported JSON Schema, including nulls, partial bars and rejected field types.
+CI and release qualification install this test-only package; the binary embeds
+schemas and has no Python or schema-validator runtime dependency. The gate uses
+one Cargo job/test thread locally and is ignored in the ordinary Rust suite.
+
 For focused command work, also run the relevant module or contract tests. For
 example:
 

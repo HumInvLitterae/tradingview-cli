@@ -38,6 +38,7 @@ pub async fn dispatch(
 ) -> Result<serde_json::Value, AppError> {
     match command {
         Command::Spec { path } => super::spec::describe(&path),
+        Command::Schema { path } => super::schema::describe(&path),
         Command::Mcp { command, timeout } => ops::run_mcp(command, timeout).await,
         Command::Status => ops::status(config).await,
         Command::Readiness => ops::readiness(config).await,

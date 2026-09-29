@@ -7,6 +7,11 @@ package version omits the leading `v`.
 
 ## Unreleased
 
+### Added
+
+- `tv schema` lists and exports offline output schemas for `values` and
+  `mcp bars`, with explicit unchecked semantics and unchanged data output.
+
 ### Changed
 
 - MCP data/bar provider-declared failures retain their existing error contracts
