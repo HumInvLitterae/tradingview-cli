@@ -1,12 +1,11 @@
 # MCP operational improvements and two additional reads
 
-Status: **login guidance, history, connection reuse and read timeout implemented;
-technical snapshots deferred; skill layout and offline spec implemented**,
-2026-09-25.
-Direction and priority live in the [roadmap](../next-version-roadmap.md) and
-[inventory](../next-version-work-items.md). This is the single work record for
-v0.33.0; the [v0.32.0 record](archives/tradingview-cli-official-mcp-client.md)
-is closed historical evidence.
+Status: **completed and released as v0.33.0**. Published at `bdede76` on
+2026-09-25 UTC (2026-09-26 JST); [release workflow](https://github.com/HumInvLitterae/tradingview-cli/actions/runs/36193338691)
+succeeded for all four native targets. [Release](https://github.com/HumInvLitterae/tradingview-cli/releases/tag/v0.33.0)
+contains the four archives and SHA256SUMS. This record preserves scoped evidence
+and the deferred technical-snapshot proposal, not current provider availability.
+Next work is tracked in [analysis reliability](../tradingview-cli-analysis-reliability.md).
 
 ## Outcome, consumers and authority
 
@@ -19,7 +18,7 @@ CLI consumers keep their commands, envelopes and source semantics.
 
 The PM remains the sole executor; no additional agent/session is authorized.
 The owner approved the CLI/JSON proposals below and the bundled new live-read
-scope on 2026-09-22 under [AGENTS.md](../../AGENTS.md). Their values are synthetic client-output proposals,
+scope on 2026-09-22 under [AGENTS.md](../../../AGENTS.md). Their values are synthetic client-output proposals,
 not observed provider payloads. No new Rust dependency or persisted format is
 proposed. Local documentation commits are within the established PM authority;
 push/tag/workflow/release and downstream edits are not authorized here.

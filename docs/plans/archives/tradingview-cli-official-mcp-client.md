@@ -25,7 +25,7 @@ below describe initial integration, not the current dependency policy.
 The dated preparation and verification sections below are frozen history.
 Their pending/publication/authority statements do not describe current state.
 New work follows the [v0.33.0 roadmap](../../next-version-roadmap.md) and
-[operational-improvements plan](../tradingview-cli-mcp-operational-improvements.md).
+[operational-improvements plan](tradingview-cli-mcp-operational-improvements.md).
 
 ## Historical implementation and preparation record
 

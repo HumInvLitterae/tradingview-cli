@@ -1,83 +1,49 @@
-# v0.33.0 roadmap
+# Post-v0.33.0 roadmap
 
-Status: offline specification implemented; release qualification open, 2026-09-26.
-Alert history, login guidance, command-local connection reuse and the explicit read timeout are implemented.
-The owner deferred technical snapshots on 2026-09-25; they no longer block
-this release. Baseline: [released v0.32.0](plans/archives/tradingview-cli-official-mcp-client.md#publication-closeout-2026-09-22).
-The [inventory](next-version-work-items.md) owns order; the
-[operational-improvements plan](plans/tradingview-cli-mcp-operational-improvements.md)
-owns contracts, decisions and acceptance.
+Status: direction approved on 2026-09-29; concrete contracts await review.
+Baseline: [released v0.33.0](releases/v0.33.0.md). The
+[inventory](next-version-work-items.md) orders work; the
+[analysis-reliability plan](plans/tradingview-cli-analysis-reliability.md)
+owns proposals and acceptance. Version selection follows contract review;
+keep the workspace at 0.33.0 during development.
 
-## Outcome and selected scope
+## Outcome
 
-Make the independent MCP commands easier to operate after installation or
-upgrade, and deliver alert history with qualified operational improvements:
+Make chart-analysis results and failure reports easier to interpret correctly.
+Prioritize MCP failure diagnostics, equity-series identity and truthful effects
+on follow-up commands. Preserve explicit providers, existing command routing,
+unknown values and downstream ownership of analysis/collection policy.
 
-- Read alert firing history without changing account state.
-- Improve explicit login guidance and credential reuse across supported OSes,
-  preserving noninteractive ordinary commands and structured output.
-- Measure repeated initialization within one command; reuse a connection for
-  mutation/readback only if the measured benefit warrants the change.
-- Allow an explicit `--timeout` for provider reads while retaining the 30-second
-  default and unchanged mutation deadlines. This addition was separately approved.
-- Diagnose time-sensitive MCP fixtures and fix demonstrated synchronization
-  problems without relaxing production deadlines or hiding failed assertions.
+Each implementation slice includes its consumers, focused tests, docs and
+standalone skill references. No production dependency is currently proposed.
+macOS, Windows and Linux remain supported; use CI for broad platform coverage
+and serial, scoped local checks to limit host load.
 
-Deferred technical snapshots would complement arbitrary `mcp symbol`/`symbols`
-columns and selected-chart/Pine observations. Compare overlapping data without promising
-identical sources, values or timing. Official aggregate ratings remain provider
-observations, not CLI trading recommendations or backtest admission.
+## Sequence
 
-## Agent usability addition (accepted 2026-09-25)
+1. Add bounded, public-safe clues to provider-declared MCP failures without
+   changing existing error codes or interpreting textual clues as HTTP status.
+2. Identify the data source and confirmed meaning of `data equity` results;
+   preserve zero drawdown and expose unknown semantics rather than invent them.
+3. Correct chart-mutation hints and separately describe file writes. Retain
+   advisory-only behavior and existing Rust/JSON consumers in the design.
+4. Review legacy account operations against official MCP capabilities. Promote
+   a fix or deprecation only for a demonstrated workflow, with concrete contracts.
+5. Design output-schema discovery and offline request validation for frequently
+   used commands after the first three slices settle. Do not require all 169
+   commands to reach complete semantic/schema coverage before delivering value.
 
-Maintain portable runtime skills in root `skills/`, with repository agent links
-and real-file distribution. Support standard skill-manager discovery without
-including contributor workflows. Add an offline `tv spec` index and selected
-command details from the running binary, reusing clap definitions instead of
-maintaining duplicate argument catalogs. Mark incomplete semantic coverage
-explicitly and route dynamic values to existing discovery commands. Current
-offline evidence covers 164 of 169 executable paths; the inventory prioritizes
-the remaining 5 diagnostic/discovery paths as follow-ups. Full annotation
-coverage is not a new release gate, and disclosed legacy behavior findings are
-separate contract work rather than implicit fixes in this version.
+## Deferred work
 
-Output schemas and offline request validation are subsequent stages after their
-contract coverage is established; they are not silently included in the first
-spec implementation. No MCP server or provider access is part of specification
-queries. The active work record owns staged acceptance.
+Official technical snapshots retain their [existing proposal](plans/archives/tradingview-cli-mcp-operational-improvements.md#official-technical-snapshot).
+On 2026-09-29 a directly connected Codex MCP price read still returned a provider
+error mentioning the Screener endpoint and 429. Resume technical qualification
+only with usable response evidence or a provider explanation and owner resumption;
+no polling or provider workaround is implied.
 
-## Delivery boundaries
-
-Keep existing commands, defaults and versioned contracts. New reads remain
-under `tv mcp`. No implicit provider switch, retry, persistent metadata cache,
-background service, broker or cross-process shared session is planned.
-Keep arbitrary tool forwarding, webhook editing, active-watchlist activation,
-Pine reconstruction and automatic trading outside this version.
-
-No dependency additions are currently proposed. macOS, Windows and Linux stay
-in scope; reuse accepted Windows evidence and distinguish Linux service/CI
-coverage from unverified graphical OAuth. Signing/notarization is a separate
-cost and distribution decision, not an implied fix for OS consent.
-
-## Version and release decision
-
-Target v0.33.0 for additive alert history, the read timeout and qualified
-operational improvements.
-A separately useful fix can ship as v0.32.1, but a patch-first sequence is not
-required. Keep the workspace at the released version until feature qualification
-is complete. Technical snapshots are explicitly deferred by the owner, not a
-release prerequisite. Resume their existing design when usable response evidence
-or a concrete provider explanation becomes available and the owner resumes work.
-
-## Retained evidence triggers
-
-The [CDP strategy](notes/cdp-stability-and-autonomous-operation-strategy.md) still
-owns retry/reconnect, renderer lifecycle and shared-service triggers. Reopen
-chart-read latency attribution when a current workload reproduces the problem.
-Higher bar caps and more legacy intraday date ranges need concrete consumers;
-drawing geometry and Windows MSIX activation keep their existing triggers.
-
-Old calendar and alert pause/resume candidates must be assessed against the
-already released MCP capabilities, not automatically re-promoted as missing
-features. Downstream source-aware caching, collection policy and analytical
-admission remain downstream responsibilities.
+The [CDP strategy](notes/cdp-stability-and-autonomous-operation-strategy.md)
+retains its evidence gates for retry/reconnect, renderer readiness and connection
+sharing. Do not add a broker/daemon or generalized recovery metadata without
+measured need. Bar-cap/timeframe expansion, drawing geometry and Windows MSIX
+activation still require concrete consumers. Source-aware caching, sealed
+collection policy and admission to research/backtests remain downstream work.
