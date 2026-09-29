@@ -14,6 +14,9 @@ package version omits the leading `v`.
 
 ### Fixed
 
+- Legacy alert reads now fail on unavailable or malformed lists. Shared mutation
+  preflight/readback checks no longer interpret invalid responses as empty lists.
+
 - `data equity` identifies its extraction branch and series meaning, preserves
   zero drawdown, and keeps unknown series and unavailable curves explicit.
 - Snapshot/compare hints now mark chart quotes as potentially mutating chart

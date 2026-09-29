@@ -8,6 +8,7 @@ use super::{
         common::js_string,
         pine::{PineAlertconditionCandidate, pine_alertcondition_candidates},
     },
+    ALERT_LIST_READER,
     payload::normalize_indicator_alert_create_payload,
 };
 
@@ -463,39 +464,11 @@ async fn alert_create_indicator_via_api(
                     }};
                 }}
 
-                function normalizeRows(data) {{
-                    return Array.isArray(data && data.r) ? data.r : [];
-                }}
-
+                {ALERT_LIST_READER}
                 async function listAlerts() {{
-                    let response;
-                    let data;
-                    try {{
-                        response = await fetch('https://pricealerts.tradingview.com/list_alerts', {{
-                            credentials: 'include',
-                            headers: {{ 'accept': 'application/json' }}
-                        }});
-                        data = await response.json();
-                    }} catch (error) {{
-                        return {{
-                            ok: false,
-                            error: error && error.message ? error.message : String(error)
-                        }};
-                    }}
-                    if (!response.ok) {{
-                        return {{
-                            ok: false,
-                            error: 'HTTP ' + response.status + ': ' + response.statusText
-                        }};
-                    }}
-                    if (data && data.err) {{
-                        return {{
-                            ok: false,
-                            error: data.errmsg || (data.err && data.err.code) || 'Alert list failed'
-                        }};
-                    }}
-                    const rows = normalizeRows(data);
-                    return {{ ok: true, rows, alerts: rows.map(publicAlert) }};
+                    const result = await __readAlertRows();
+                    if (!result.ok) return result;
+                    return {{ ok: true, rows: result.alerts, alerts: result.alerts.map(publicAlert) }};
                 }}
 
                 function readChartMetadata() {{

@@ -5,6 +5,7 @@ use tradingview_core::AppError;
 
 use super::{
     super::common::{js_string, require_finite},
+    ALERT_LIST_READER,
     payload::{alert_api_error_allows_fallback, normalize_alert_create_payload},
 };
 use tradingview_model::alert::{
@@ -55,39 +56,11 @@ pub async fn alert_create_via_api(
                     }};
                 }}
 
-                function normalizeRows(data) {{
-                    const rows = Array.isArray(data && data.r) ? data.r : [];
-                    return rows.map(publicAlert);
-                }}
-
+                {ALERT_LIST_READER}
                 async function listAlerts() {{
-                    let response;
-                    let data;
-                    try {{
-                        response = await fetch('https://pricealerts.tradingview.com/list_alerts', {{
-                            credentials: 'include',
-                            headers: {{ 'accept': 'application/json' }}
-                        }});
-                        data = await response.json();
-                    }} catch (error) {{
-                        return {{
-                            ok: false,
-                            error: error && error.message ? error.message : String(error)
-                        }};
-                    }}
-                    if (!response.ok) {{
-                        return {{
-                            ok: false,
-                            error: 'HTTP ' + response.status + ': ' + response.statusText
-                        }};
-                    }}
-                    if (data && data.err) {{
-                        return {{
-                            ok: false,
-                            error: data.errmsg || (data.err && data.err.code) || 'Alert list failed'
-                        }};
-                    }}
-                    return {{ ok: true, alerts: normalizeRows(data) }};
+                    const result = await __readAlertRows();
+                    if (!result.ok) return result;
+                    return {{ ok: true, alerts: result.alerts.map(publicAlert) }};
                 }}
 
                 function readChartMetadata() {{
