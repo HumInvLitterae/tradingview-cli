@@ -12,7 +12,7 @@ Direction approved 2026-09-29. [Roadmap](next-version-roadmap.md) ·
 | 5 | Legacy account operations | All three approved corrections implemented with focused Rust and generated-JavaScript fixtures. Downstream duplicate matching and provider migration remain owner follow-ups. See the existing plan for contracts and acceptance. |
 | 6 | Output schemas and offline validation | Implemented for values and mcp bars: schema export and argv validation, with explicit structural/runtime limits. See the existing plan for argv/JSON examples, unsupported coverage and zero-I/O acceptance. Candidate CI and downstream adoption remain. |
 | 7 | Official technical snapshots | Implemented under the approved contract: official summary, 23 indicator slots and existing evidence fields. Daily shape qualified; weekly returned provider-internal 429. Focused validation and live public-path qualification are recorded in the active plan. |
-| 8 | Qualify next release | Choose version after contracts settle; use focused local checks and candidate CI, then a separate final version/notes commit. |
+| 8 | Qualify next release | Recommended v0.34.0; release-note draft prepared. Candidate HEAD has no CI result yet. After owner version confirmation and successful CI, make the separate final version/notes commit. |
 
 ## Follow-ups, not release gates
 

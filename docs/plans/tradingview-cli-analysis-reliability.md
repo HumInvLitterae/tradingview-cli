@@ -437,9 +437,10 @@ Implement the approved legacy-account corrections above before schema design.
 The two-command schema/validation implementation is authorized. No production
 dependency change is needed.
 
-A minor release is likely if these additive contracts ship together, but no
-next version is committed yet. Keep version/notes preparation last. Publication,
-provider inquiries, new live checks and downstream edits need their applicable
+Recommend v0.34.0 for the three additive commands. The
+[release-note draft](../releases/v0.34.0.md) covers the settled scope. The workspace
+version remains 0.33.0 until owner confirmation; keep final version preparation
+after candidate CI. Publication, provider inquiries, new live checks and downstream edits need their applicable
 explicit authorization. Do not repeat provider probes while the known failure
 persists merely to advance this plan.
 
@@ -505,3 +506,7 @@ persists merely to advance this plan.
   references. Scoped CLI/MCP Clippy, formatting, public hygiene and standalone
   skill/placeholder-package checks passed. These are local fixture checks, not
   platform CI or live Desktop/provider acceptance.
+- Release-scope review: the approved implementation slices are complete with
+  focused evidence. Candidate CI remains pending; the latest remote success still covers
+  v0.33.0. The v0.34.0 notes are a draft, not publication evidence. Preserve the
+  known native/platform limits rather than restarting unrelated live probes.
