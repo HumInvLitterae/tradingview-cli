@@ -2,7 +2,8 @@
 
 Status: three approved contracts implemented and locally validated 2026-09-29.
 Legacy-account corrections are implemented; downstream adoption and release
-qualification remain. The PM is the sole executor; no additional agents or
+qualification remain. The offline-schema/validation proposal awaits review.
+The PM is the sole executor; no additional agents or
 sessions are authorized for this work.
 
 ## Outcome and scope
@@ -241,6 +242,148 @@ Use the existing pinned Node contract-gate pattern and one Cargo job/test thread
 No native/provider action is required for these deterministic failure contracts;
 actual availability and successful live mutations remain unverified separately.
 
+## Proposed offline schemas and invocation validation
+
+The initial consumers are the downstream bridge's `fetch_values_summary` /
+`fetch_values_rows` and MCP-bars observation decoder. Current code also calls
+`ohlcv --summary` and Pine graphics reads; those are the next candidates, not
+part of the first slice. No usage-frequency ranking was measured. Keep chart
+analysis first by shipping `values` alongside `mcp bars`, then expand from
+concrete consumer needs rather than all-command coverage.
+
+### Public surface for owner review
+
+Add two offline commands without changing data output or existing spec fields.
+The clap-derived spec index naturally gains the two new command paths:
+
+```sh
+tv schema
+tv schema values
+tv schema mcp bars
+tv validate -- values
+tv validate -- mcp bars NASDAQ:EXAMPLE --timeframe 1D --count 20
+tv validate -- --target-id example-target values
+```
+
+`schema` with no path lists only supported command paths. A path exports the
+running binary's schema; it does not fetch a sample. Unknown paths and known
+unsupported paths use a validation error with distinct `unknown_command` and
+`unsupported_command` codes in cli_schema.v1 details. The index returns
+commands as path arrays; a detail returns command, coverage, unchecked and schema.
+Successful detail metadata (the schema document is omitted from this fragment):
+
+```json
+{
+  "success": true,
+  "command": "schema",
+  "data": {
+    "contract_version": "cli_schema.v1",
+    "binary_version": "<build identity>",
+    "command": ["values"],
+    "coverage": "documented_fields",
+    "unchecked": ["dynamic_study_values", "runtime_semantics", "error_details"]
+  }
+}
+```
+
+The additional `data.schema` object supplies success/error branches for the existing
+CLI envelope; consumers validate stdout success or stderr error JSON against
+`data.schema`. Preserve the actual command markers (`values` versus `mcp`) and
+startup-error variants. Exported schema versioning does not introduce a new
+`values` payload contract or change `mcp_bars.v1`.
+
+Use [JSON Schema 2020-12](https://json-schema.org/draft/2020-12/json-schema-core).
+Keep references local to the document and allow additive object properties.
+For `values`, describe study_count, studies, name and the normalized identity
+fields including nullable inputs/visibility; dynamic values stay unconstrained
+where the current reader does not enforce a scalar type. Do not force legacy
+provider values into a narrower schema by changing production output.
+For MCP bars, describe request/source, bars, provider/client observations,
+nullability, count-status alternatives and transport fields. Both short and
+empty successful acquisitions must validate. Error envelopes describe common
+kind/message fields and object-or-null details, without claiming complete
+per-error detail coverage. Date-format annotations are not evidence of market
+freshness. Schema conformance never proves series meaning, completeness or
+cross-field invariants such as bar_count matching array length.
+
+`validate` requires `--` followed by argv tokens **without** the executable name.
+It does not shell-split a command string, execute the target, read input files,
+load Desktop configuration, initialize credentials or contact a provider.
+No stdin/JSON request form or saved-output validation is included initially.
+Target selection belongs inside the candidate argv; reject outer target flags.
+Nested help/version and recursive offline commands return a validation error
+with code non_executable_request instead of executing them or printing help.
+Empty invocations fail syntax validation.
+
+The same argv can be passed to the real command after an explicit decision to
+execute it. A valid result means only that implemented local checks passed:
+
+```json
+{"success":true,"command":"validate","data":{"contract_version":"cli_validate.v1","command":["mcp","bars"],"status":"valid","checks":{"syntax":"passed","local_constraints":"passed","runtime":"not_checked"}}}
+```
+
+Before, `--count 5001` is assembled from prose and rejected during normal
+invocation. After, `tv validate -- mcp bars NASDAQ:EXAMPLE --count 5001` returns
+exit 1 and stderr JSON without touching credentials:
+
+```json
+{"success":false,"command":"validate","error":{"kind":"validation","message":"Invalid command input","details":{"contract_version":"cli_validate.v1","command":["mcp","bars"],"status":"invalid","code":"invalid_request","field":"count","checks":{"syntax":"passed","local_constraints":"failed","runtime":"not_checked"}}}}
+```
+
+A known but unsupported candidate, such as `tv validate -- data equity`, returns
+exit 1 with status `unsupported`, code `unsupported_command`, syntax `passed`,
+local_constraints `not_checked`, and runtime `not_checked`; it never claims the
+input is invalid merely because validation is unsupported. Syntax failures use
+status `invalid`, code `invalid_syntax`, syntax `failed`, local_constraints
+`not_checked`, and a nullable canonical command/field. Do not echo argv, user
+values, account IDs, source text, file paths or raw clap diagnostics. Error
+messages use a small stable vocabulary; failed queries are not persisted.
+A valid request can still fail during execution or lack user authorization.
+
+### Implementation and acceptance
+
+1. Add schema export for these two paths in the CLI, backed by embedded schema
+   documents and the current output producers. Keep `tv spec` compact and
+   unchanged; route schema lookup in the runner before configuration/credentials,
+   as spec already does. Do not generate schemas from prose annotations or turn
+   every Value-based output into a new typed public Rust API.
+2. Add argv validation for the same paths using the real clap tree and pure
+   request construction. Extract/reuse MCP-bars request preparation, including
+   date-range rejection, qualified symbols, timeframe/count limits, Desktop
+   target rejection and timeout rules. Execution and validation must share
+   these checks rather than duplicate constants or maintain a second parser.
+   The current MCP client validates its deadline after constructing the client;
+   reuse the pure deadline rule before that point without moving auth work into
+   validation. Preserve existing execution error ordering when extracting it.
+3. Update offline help, `docs/cli-spec.md` and standalone market-data/chart-analysis
+   references in each feature commit. Downstream adoption is optional: consumers
+   can cache schemas by binary identity and retain help/spec fallback on older
+   binaries. Do not add an extra validation process to every downstream read by
+   default, change its data admission, or replace its decoders automatically.
+
+Use actual normalizer/adapter fixtures for schemas, including same-name/hidden
+studies, unknown identity, malformed dynamic values, short/empty bars and error
+envelopes. Validate the schema documents and samples with a standards-compliant
+test-only validator; no new production dependency is proposed. Select and pin
+test tooling against current versions during implementation. Mutation tests
+must reject wrong known-field types and missing required fields while allowing
+extra fields and legitimate nulls. Do not build a partial JSON Schema engine.
+
+Invocation tests compare shared request preparation with real execution paths
+for counts, timeframes, date bounds, deadlines, aliases and globals. Prove zero
+Desktop/provider calls, credential-worker launches and candidate file reads for
+valid, invalid and unsupported requests, including --help/--version, nested
+validate and a malformed Desktop environment. Test output streams/exit status
+and secret-like argument redaction. Keep one Cargo job/test thread and use CI
+for broad platform coverage; none of these tests requires live account access.
+
+Embedding schema documents is preferable to a new runtime schema-generation
+library for the first two Value-based outputs. The maintenance cost is explicit
+schema/fixture review when producers change. Adding all schemas to `tv spec`
+would avoid one command but inflate routine lookups. Fully typed output models
+or generated argument schemas are larger alternatives without a current need.
+These two new CLI/JSON contracts require owner approval before implementation.
+
 ## Work and validation
 
 Implement the three reviewed contracts as separate usable slices in the order
@@ -251,8 +394,8 @@ executable JavaScript fixture gate needed for equity. Use candidate CI for broad
 platform checks; native/live acceptance remains separately scoped.
 
 Implement the approved legacy-account corrections above before schema design.
-Output schemas/offline input validation are later design work, starting with
-real high-value chart/data consumers rather than all-command coverage.
+The two-command schema/validation proposal above is ready for owner review;
+no production implementation or dependency change is authorized yet.
 
 A minor release is likely if these additive contracts ship together, but no
 next version is committed yet. Keep version/notes preparation last. Publication,
@@ -285,7 +428,8 @@ persists merely to advance this plan.
   do not evaluate dialog code. Existing successful API payloads, conditions and
   notification defaults remain unchanged. Next: downstream duplicate-matching
   corrections and adoption, candidate CI, then release qualification. Broader
-  schema design and saved-Pine identity work remain separate candidates.
+  schema/validation contracts now have a concrete proposal above; saved-Pine
+  identity work remains a separate candidate.
 - Legacy corrections passed focused alert/watchlist/model/spec tests, both
   pinned-Node account gates, scoped CLI/model Clippy, formatting, public hygiene
   and standalone/package skill checks. No live mutation, full local workspace
