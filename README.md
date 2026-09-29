@@ -24,7 +24,7 @@ non-developer walkthrough from download to first checks, read the
 [getting-started guide](docs/getting-started.md) or the
 [Japanese getting-started guide](docs/ja/getting-started.md).
 
-Version tags such as `v0.32.0` publish native archives like:
+Each GitHub Release provides the following native archives:
 
 - `tv-<tag>-x86_64-unknown-linux-gnu.tar.gz`
 - `tv-<tag>-x86_64-apple-darwin.tar.gz`
@@ -111,8 +111,9 @@ commands.
 `tv snapshot` and `tv compare` may include `follow_up_hints[]`. These are
 machine-readable descriptions of possible next evidence checks, including
 whether the follow-up requires TradingView Desktop and the source category it
-would read. They are not automatic actions, ranking, source mixing, or trading
-recommendations.
+would read. Inspect `effects` for chart changes and screenshot file writes; a
+chart quote can change the selected chart. They are not automatic actions,
+ranking, source mixing, or trading recommendations.
 
 `tv watch compare` is a bounded JSONL workflow for a known candidate set. It
 polls the same Desktop-free scanner-backed quote source used by `tv quotes`,
@@ -257,7 +258,6 @@ tv mcp login
 tv mcp status
 tv mcp search Apple
 tv mcp columns --search volume
-tv mcp technicals NASDAQ:AAPL --timeframe 1D
 tv mcp symbol NASDAQ:AAPL --columns close,volume
 tv mcp symbols NASDAQ:AAPL NASDAQ:MSFT --columns close,volume
 tv mcp screener --market america --limit 20 --columns name,close,volume
@@ -303,8 +303,7 @@ tv mcp --timeout 90 alert history --symbol NASDAQ:AAPL --days 7 --limit 100
 setup. It is not accepted for login/logout/status or account mutations. History
 keeps coverage unconfirmed and excludes notification messages and webhook
 contents. See the [read deadline and history reference](https://github.com/HumInvLitterae/tradingview-cli/blob/main/docs/official-mcp.md#read-deadlines-next-version)
-for contracts and limits. The dedicated technical snapshot command is deferred
-and is not available in this checkout.
+for contracts and limits.
 
 Starting with v0.33.0, offline JSON command discovery is also available:
 `tv spec` lists command paths; `tv spec mcp alert history` describes one command's
@@ -312,9 +311,36 @@ arguments and available semantic annotations. See the
 [specification contract and coverage limits](docs/cli-spec.md). This command
 requires neither Desktop nor credentials and is available in v0.33.0 and later.
 
+Starting with v0.34.0, official technical snapshots and two offline helpers are
+available:
+
+```sh
+tv mcp technicals NASDAQ:AAPL --timeframe 1D
+tv spec mcp technicals
+tv schema values
+tv schema mcp bars
+tv validate -- values
+tv validate -- mcp bars NASDAQ:AAPL --timeframe 1D --count 20
+```
+
+`technicals` returns a current single-timeframe snapshot as `mcp_technicals.v1`.
+It preserves official indicator values and the `summary` ratings, with nulls for
+missing indicators and explicit unknown data conditions. Daily live retrieval
+has been verified; other intervals' availability and freshness are not inferred
+from that result. It does not read selected-chart/Pine studies or calculate a
+historical indicator series. See the
+[technical snapshot contract](https://github.com/HumInvLitterae/tradingview-cli/blob/main/docs/official-mcp.md#official-technical-snapshots-next-version).
+
+`schema` exports JSON Schema 2020-12 for `values` and `mcp bars` output.
+`validate` checks candidate argv after `--`, without an executable name, for the
+same two command paths. Both are offline. Unsupported paths are reported
+explicitly; successful validation establishes local input validity, not runtime
+readiness, authorization or data quality. They do not execute the candidate.
+See [offline contracts and limits](https://github.com/HumInvLitterae/tradingview-cli/blob/main/docs/cli-spec.md).
+
 Runtime agent skills are maintained in [`skills/`](skills/), with self-contained
-references in each skill. After this layout is published, install a selected
-skill using `gh skill install HumInvLitterae/tradingview-cli market-data --agent codex`
+references in each skill. Install a selected skill using
+`gh skill install HumInvLitterae/tradingview-cli market-data --agent codex`
 or `npx skills add HumInvLitterae/tradingview-cli --skill market-data`.
 Choose a release/ref matching your binary; see the
 [skill installation guidance](docs/release-packaging.md#skill-installation).
@@ -397,7 +423,9 @@ evidence only; use `tv data strategy`, `tv data trades`, and `tv data equity`
 for structured strategy fields when TradingView exposes them. These reads now
 return the same additive `strategy_context`, including candidate count,
 selection reason, visibility, report availability, and an explicit unavailable
-state. They do not open Strategy Tester or unhide a strategy.
+state. They do not open Strategy Tester or unhide a strategy. `data equity` also
+reports its extraction branch and confirmed series meaning, preserves zero
+drawdown, and keeps unknown or unavailable series explicit.
 
 Use `tv --help` for the full command list and `tv <COMMAND> --help` for command
 details. See `docs/observation-workflows.md` for practical command sequences
@@ -424,6 +452,10 @@ exact follow-up with `tv draw get` or `tv draw remove`.
 - Hybrid commands: commands with explicit source or fallback behavior, such as
   `tv quote <SYMBOL> --source auto`.
 - Browserless historical bars: bounded Desktop-free `tv bars`.
+- Authenticated official MCP: Desktop-free data and account reads, plus explicit
+  watchlist and price-alert mutations with separate readback evidence.
+- Offline helpers: command specifications, supported output schemas and local
+  invocation checks.
 
 See `docs/command-source-taxonomy.md` for the durable command classification
 and source/fallback semantics.

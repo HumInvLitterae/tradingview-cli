@@ -22,7 +22,9 @@ reads need no repeated source approval. For setup and errors, the portable
 [connection reference](../.agents/skills/market-data/references/mcp-connection.md)
 also ships with the independently attachable data/account skills.
 
-## Official technical snapshots (next version)
+<a id="official-technical-snapshots-next-version"></a>
+
+## Official technical snapshots (v0.34.0 and later)
 
 ```sh
 tv mcp technicals NASDAQ:EXAMPLE --timeframe 1D
