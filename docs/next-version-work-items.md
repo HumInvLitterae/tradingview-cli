@@ -6,9 +6,9 @@ Direction approved 2026-09-29. [Roadmap](next-version-roadmap.md) ·
 | Order | Work | State / completion condition |
 | --- | --- | --- |
 | 1 | Close v0.33.0 | Release and successful four-target workflow verified; completed record archived. Repository notes example is corrected in b147bc1; public Release-body correction is still pending authorization. |
-| 2 | MCP provider-failure diagnostics | Proposal ready for review. Preserve mcp_error.v1/code/stage/attempts; add safe textual clues only for a provider-declared failure. No automatic retry. |
-| 3 | Equity meaning and zero values | Proposal ready for review. Label observed source separately from confirmed series meaning; preserve raw layout/selection and zero drawdown. |
-| 4 | Follow-up effects | Proposal ready for review. Correct chart_quote non_mutating, retain its chart-only meaning, and describe file effects separately. Check public Rust struct compatibility. |
+| 2 | MCP provider-failure diagnostics | Implemented with focused normalization/privacy and shared-classifier fixtures. Existing mcp_error.v1/code/stage/attempts and retry policy remain unchanged. |
+| 3 | Equity meaning and zero values | Approved; implementation in progress. Label observed source separately from confirmed series meaning; preserve raw layout/selection and zero drawdown. |
+| 4 | Follow-up effects | Approved; implementation in progress. Correct chart_quote non_mutating, retain its chart-only meaning, and describe file effects separately. Check public Rust struct compatibility. |
 | 5 | Legacy account operations | Review candidate, not implementation scope. Prioritize actual use of uncertain-write fallback, alert condition/persistence and saved-indicator identity; prefer explicit MCP for supported workflows. |
 | 6 | Output schemas and offline validation | Design candidate after contract cleanup. Start with actual chart/data consumers; no schema catalog or validation command is approved yet. |
 | 7 | Qualify next release | Choose version after contracts settle; use focused local checks and candidate CI, then a separate final version/notes commit. |

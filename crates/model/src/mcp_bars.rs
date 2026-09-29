@@ -138,12 +138,17 @@ pub fn normalize(request: &Request, value: Value, received_ms: u64) -> Result<Va
         .ok_or_else(|| invalid("unsupported_wrapper"))?;
     match object.get("success") {
         Some(Value::Bool(false)) => {
-            return Err(error(
+            let mut failure = error(
                 ErrorKind::InternalApiUnavailable,
                 "provider_error",
                 "TradingView did not return a successful result",
                 "provider_failure",
-            ));
+            );
+            if let Some(details) = failure.details.as_mut() {
+                details["provider_error_hints"] =
+                    crate::mcp_error::provider_error_hints(object.get("error"));
+            }
+            return Err(failure);
         }
         Some(Value::Bool(true)) | None => {}
         _ => return Err(invalid("invalid_success_flag")),

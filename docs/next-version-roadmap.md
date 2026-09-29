@@ -1,6 +1,6 @@
 # Post-v0.33.0 roadmap
 
-Status: direction approved on 2026-09-29; concrete contracts await review.
+Status: direction and three initial contracts approved on 2026-09-29; implementation in progress.
 Baseline: [released v0.33.0](releases/v0.33.0.md). The
 [inventory](next-version-work-items.md) orders work; the
 [analysis-reliability plan](plans/tradingview-cli-analysis-reliability.md)

@@ -10,7 +10,7 @@
 | Completed work | [Archive catalog](archives/README.md) |
 
 The owner approved a focus on MCP diagnostics, chart-analysis meaning and
-follow-up effects. Contract examples await review before production changes.
+follow-up effects. The three initial output contracts are approved; implementation is in progress.
 Official technical snapshots remain deferred; provider availability is not
 established by a past release or fixture. Version 0.33.0 is published, and its
 record preserves historical verification rather than current execution authority.

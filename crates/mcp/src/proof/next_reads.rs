@@ -1,5 +1,7 @@
 //! Fixed, opt-in reads for qualifying the next public contracts.
 
+use tradingview_model::mcp_error::provider_error_hints;
+
 use super::ProofOperation;
 use crate::{Failure, Result, admission::Admission, auth::Auth, tools::Tool, transport};
 use serde_json::{Value, json};
@@ -85,7 +87,7 @@ fn observation(tool: Tool, arguments: &Value, value: &Value) -> Value {
     }
     if value.get("success") == Some(&Value::Bool(false)) {
         report["failure"] = json!(Failure::ProviderError);
-        report["provider_error_hints"] = error_hints(value.get("error"));
+        report["provider_error_hints"] = provider_error_hints(value.get("error"));
     }
     report
 }
@@ -146,56 +148,6 @@ fn history_fields(value: &Value) -> Value {
             })
             .collect(),
     )
-}
-
-// These are textual clues, not HTTP statuses or verified root causes.
-// Never retain the provider's arbitrary error string or nested private values.
-fn error_hints(error: Option<&Value>) -> Value {
-    let text = error
-        .and_then(Value::as_str)
-        .unwrap_or("")
-        .to_ascii_lowercase();
-    let groups: &[(&str, &[&str])] = &[
-        ("rate_limit", &["429", "rate limit", "too many requests"]),
-        // This is an error-text reference, not proof of a request made by this client.
-        ("screener_endpoint", &["scanner.tradingview.com"]),
-        (
-            "authorization",
-            &["401", "403", "unauthorized", "forbidden", "permission"],
-        ),
-        (
-            "entitlement",
-            &["subscription", "premium", "paid plan", "entitlement"],
-        ),
-        ("timeout", &["timeout", "timed out"]),
-        (
-            "symbol",
-            &["invalid symbol", "unknown symbol", "symbol not found"],
-        ),
-        (
-            "interval",
-            &["unsupported interval", "invalid interval", "timeframe"],
-        ),
-        (
-            "implementation",
-            &[
-                "typeerror",
-                "nameerror",
-                "keyerror",
-                "attributeerror",
-                "not defined",
-                "unexpected keyword",
-                "internal server",
-            ],
-        ),
-        ("not_found", &["404", "not found"]),
-    ];
-    let matched: Vec<_> = groups
-        .iter()
-        .filter(|(_, needles)| needles.iter().any(|needle| text.contains(needle)))
-        .map(|(name, _)| *name)
-        .collect();
-    json!({"textual_clues": matched, "root_cause": "unconfirmed"})
 }
 
 // Names are a closed observation vocabulary, not arbitrary provider/account keys.
@@ -346,10 +298,10 @@ mod tests {
 
     #[test]
     fn next_reads_error_hints_do_not_retain_messages_or_claim_http_status() {
-        let hints = error_hints(Some(&json!("429 rate limit for private-account")));
+        let hints = provider_error_hints(Some(&json!("429 rate limit for private-account")));
         assert_eq!(hints["textual_clues"], json!(["rate_limit"]));
         assert_eq!(hints["root_cause"], "unconfirmed");
-        let upstream = error_hints(Some(&json!(
+        let upstream = provider_error_hints(Some(&json!(
             "429 Client Error for https://scanner.tradingview.com/private?token=secret"
         )));
         assert_eq!(
@@ -362,7 +314,7 @@ mod tests {
 
         assert!(!hints.to_string().contains("private-account"));
         assert_eq!(
-            error_hints(Some(&json!({"secret": "429"})))["textual_clues"],
+            provider_error_hints(Some(&json!({"secret": "429"})))["textual_clues"],
             json!([])
         );
     }

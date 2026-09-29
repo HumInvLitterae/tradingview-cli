@@ -964,3 +964,9 @@ credentials may refresh for the next explicit invocation, but that request is
 not replayed. `auth_refreshed_retry_required` asks the caller to repeat the
 explicit read. There is no automatic fallback, session reinitialization, SSE
 reconnect or retry of a rejected/failed tool call.
+
+For data and bars responses that explicitly declare `success:false`,
+`provider_error_hints.textual_clues` lists only recognized error-text clues.
+`root_cause` stays `unconfirmed`; these clues are not HTTP status, quota/reset
+information or permission to retry. Unrecognized or non-string error content
+produces an empty list. Existing error codes and rejection behavior remain intact.

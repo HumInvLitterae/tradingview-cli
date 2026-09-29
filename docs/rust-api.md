@@ -32,6 +32,12 @@ shaping. Consumers should use the separate CLI and versioned MCP contracts in
 [Official MCP commands](official-mcp.md). This does not change the credential-free
 market/scanner APIs or the existing `tv bars` contract.
 
+`tradingview_model::mcp_error::provider_error_hints` classifies an optional
+provider error string into a closed, public-safe clue list with unconfirmed root
+cause. It is I/O-free and does not preserve arbitrary strings or nested values.
+Data/bar normalizers use it for declared failures; transport error policy is
+unchanged.
+
 ## Market reads
 
 Prefer the typed functions from `tradingview-market` for Rust callers:

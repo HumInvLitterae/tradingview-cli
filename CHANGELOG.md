@@ -7,6 +7,11 @@ package version omits the leading `v`.
 
 ## Unreleased
 
+### Changed
+
+- MCP data/bar provider-declared failures retain their existing error contracts
+  and add public-safe textual clues without claiming HTTP status or retry timing.
+
 ## v0.33.0
 
 ### Added
