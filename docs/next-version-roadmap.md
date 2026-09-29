@@ -4,7 +4,9 @@ Status: the three initial contracts are implemented and locally validated.
 Legacy-account corrections are implemented; downstream adoption and release
 qualification remain. Offline schema/validation for values and MCP bars is
 implemented. Official technical snapshots are implemented with daily live
-qualification; broader acceptance and release scope remain.
+qualification; candidate CI and final release preparation remain.
+Recommended version: v0.34.0 for the three additive commands.
+[Release-note draft](releases/v0.34.0.md) is ready for owner review.
 Baseline: [released v0.33.0](releases/v0.33.0.md). The
 [inventory](next-version-work-items.md) orders work; the
 [analysis-reliability plan](plans/tradingview-cli-analysis-reliability.md)
@@ -39,11 +41,9 @@ and serial, scoped local checks to limit host load.
 
 ## Deferred work
 
-Official technical snapshots retain their [existing proposal](plans/archives/tradingview-cli-mcp-operational-improvements.md#official-technical-snapshot).
-On 2026-09-29 a directly connected Codex MCP price read still returned a provider
-error mentioning the Screener endpoint and 429. Resume technical qualification
-only with usable response evidence or a provider explanation and owner resumption;
-no polling or provider workaround is implied.
+Technical snapshots are implemented and daily-qualified. Further live interval
+qualification can resume when provider availability permits; weekly 429 evidence
+is retained and does not authorize polling or source substitution.
 
 The [CDP strategy](notes/cdp-stability-and-autonomous-operation-strategy.md)
 retains its evidence gates for retry/reconnect, renderer readiness and connection
