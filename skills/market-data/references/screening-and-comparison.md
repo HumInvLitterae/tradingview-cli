@@ -54,12 +54,15 @@ For regular-session movement, use
 
 `follow_up_hints[]` identify possible evidence surfaces (`snapshot`,
 `chart_quote`, `observe_chart`, `screenshot`). Check `requires_desktop`,
-`source_category`, `non_mutating`, `evidence_role`, and `auto_execute` before
-choosing a relevant follow-up. `chart_quote` is the stable kind; `quote_chart`
-is not an alias. Hints neither execute reads nor rank candidates. Existing hints can label
-chart_quote and screenshot `non_mutating` even though the command can switch a
-chart symbol or write a file. Consult the command's own spec/help and obtain the
-needed intent; that flag is not a complete side-effect declaration.
+`source_category`, `non_mutating`, `effects`, `evidence_role`, and `auto_execute`
+before choosing a follow-up. `chart_quote` is the stable kind; `quote_chart`
+is not an alias. Hints neither execute reads nor rank candidates. `non_mutating`
+means no chart mutation: chart_quote is false because it can switch/restore a
+symbol; screenshot is true but `effects.local_file_write` is true. The separate
+`effects.chart_mutation` flag makes the chart effect explicit. These describe
+possible effects, not completed actions or permission. Older binaries can lack
+`effects` and incorrectly mark chart_quote non_mutating. Consult the command's
+own spec/help and obtain the needed intent before executing it.
 
 Stay with the known set for a requested bounded watch. Move to
 the optional `chart-analysis` skill only when chart-specific evidence

@@ -1,6 +1,7 @@
 # Analysis reliability after v0.33.0
 
-Status: contracts approved 2026-09-29; implementation in progress. The PM is the
+Status: three approved contracts implemented and locally validated 2026-09-29.
+Legacy-account review and schema design remain next candidates. The PM is the
 sole executor; no additional agents or sessions are authorized for this work.
 
 ## Outcome and scope
@@ -177,3 +178,10 @@ persists merely to advance this plan.
 - Equity extraction and unavailable outcomes now identify source/meaning; zero
   drawdown is preserved. Generated-JavaScript fixtures cover branch precedence,
   all output paths and missing values without asserting live series semantics.
+- Snapshot/compare hints serialize chart/file effects without new required Rust
+  fields. Market fixtures cover every built-in kind, partial packets and existing
+  construction. Downstream adoption still needs its stale hint fixture updated.
+- Scoped model, MCP service/proof, CLI spec/strategy and market tests passed;
+  the equity gate passed with pinned Node 24.18.0. Scoped Clippy, formatting,
+  public hygiene, standalone skill references and placeholder package staging
+  passed. CI/platform and live Desktop/provider execution were not rerun.

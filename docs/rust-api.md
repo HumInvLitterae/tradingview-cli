@@ -69,6 +69,14 @@ Desktop-free market typed results expose `source_category:
 bounded historical OHLCV reads; typed bars structs are intentionally not a
 stable Rust API yet.
 
+Snapshot and comparison follow-up hints serialize an additive `effects` object
+without adding required fields to `SnapshotFollowUpHint` or `CompareFollowUpHint`.
+Existing struct-literal construction remains valid. `chart_mutation` is the
+inverse of the hint's chart-only `non_mutating` flag; built-in `chart_quote`
+hints now set that flag false. `local_file_write` is true for screenshot, false
+for other built-in kinds, and null for unknown caller-defined kinds. Producing
+a packet does not execute its hints or authorize those effects.
+
 ## Scanner reads
 
 Prefer the typed functions from `tradingview-scanner` for Rust callers:

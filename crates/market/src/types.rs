@@ -520,7 +520,7 @@ pub struct SnapshotSectionError {
     pub details: Option<Value>,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize)]
+#[derive(Debug, Clone, PartialEq)]
 /// Machine-readable follow-up surface for a snapshot packet.
 pub struct SnapshotFollowUpHint {
     /// Stable hint kind.
@@ -719,7 +719,7 @@ pub struct CompareMovement {
     pub missing_reason: Option<String>,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize)]
+#[derive(Debug, Clone, PartialEq)]
 /// Machine-readable follow-up surface for one comparison item.
 pub struct CompareFollowUpHint {
     /// Stable hint kind.
@@ -781,4 +781,76 @@ pub struct CompareItemError {
     pub message: String,
     /// Optional structured error details.
     pub details: Option<Value>,
+}
+
+#[derive(Serialize)]
+struct FollowUpHintOutput<'a> {
+    kind: &'a str,
+    command: &'a str,
+    reason: &'a str,
+    requires_desktop: bool,
+    source_category: &'a str,
+    non_mutating: bool,
+    effects: FollowUpEffects,
+    evidence_role: &'a str,
+    auto_execute: bool,
+}
+
+#[derive(Serialize)]
+struct FollowUpEffects {
+    chart_mutation: bool,
+    local_file_write: Option<bool>,
+}
+
+impl FollowUpEffects {
+    fn for_hint(kind: &str, non_mutating: bool) -> Self {
+        Self {
+            chart_mutation: !non_mutating,
+            local_file_write: match kind {
+                "screenshot" => Some(true),
+                "chart_quote" | "observe_chart" | "snapshot" => Some(false),
+                _ => None,
+            },
+        }
+    }
+}
+
+impl Serialize for SnapshotFollowUpHint {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        FollowUpHintOutput {
+            kind: &self.kind,
+            command: &self.command,
+            reason: &self.reason,
+            requires_desktop: self.requires_desktop,
+            source_category: &self.source_category,
+            non_mutating: self.non_mutating,
+            effects: FollowUpEffects::for_hint(&self.kind, self.non_mutating),
+            evidence_role: &self.evidence_role,
+            auto_execute: self.auto_execute,
+        }
+        .serialize(serializer)
+    }
+}
+
+impl Serialize for CompareFollowUpHint {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        FollowUpHintOutput {
+            kind: &self.kind,
+            command: &self.command,
+            reason: &self.reason,
+            requires_desktop: self.requires_desktop,
+            source_category: &self.source_category,
+            non_mutating: self.non_mutating,
+            effects: FollowUpEffects::for_hint(&self.kind, self.non_mutating),
+            evidence_role: &self.evidence_role,
+            auto_execute: self.auto_execute,
+        }
+        .serialize(serializer)
+    }
 }

@@ -1,10 +1,11 @@
 # Post-v0.33.0 roadmap
 
-Status: direction and three initial contracts approved on 2026-09-29; implementation in progress.
+Status: the three initial contracts are implemented and locally validated.
+Next: review legacy account operations against demonstrated workflows.
 Baseline: [released v0.33.0](releases/v0.33.0.md). The
 [inventory](next-version-work-items.md) orders work; the
 [analysis-reliability plan](plans/tradingview-cli-analysis-reliability.md)
-owns proposals and acceptance. Version selection follows contract review;
+owns contracts and acceptance. Version selection follows scope review;
 keep the workspace at 0.33.0 during development.
 
 ## Outcome

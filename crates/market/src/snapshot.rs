@@ -287,7 +287,7 @@ fn follow_up_hints(symbol: &Value) -> Vec<SnapshotFollowUpHint> {
             reason: "single_symbol_chart_quote".to_string(),
             requires_desktop: true,
             source_category: DESKTOP_BACKED_READ_CATEGORY.to_string(),
-            non_mutating: true,
+            non_mutating: false,
             evidence_role: "single_symbol_chart_quote".to_string(),
             auto_execute: false,
         },
@@ -552,20 +552,30 @@ mod tests {
     #[test]
     fn snapshot_follow_up_hints_are_machine_readable_without_recommendation() {
         let hints = follow_up_hints(&json!("NASDAQ:AAPL"));
+        for hint in &hints {
+            let value = serde_json::to_value(hint).unwrap();
+            assert_eq!(
+                value["effects"]["chart_mutation"],
+                hint.kind == FOLLOW_UP_CHART_QUOTE
+            );
+            assert_eq!(
+                value["effects"]["local_file_write"],
+                hint.kind == FOLLOW_UP_SCREENSHOT
+            );
+            assert_eq!(value["auto_execute"], false);
+        }
         assert_eq!(hints.len(), 3);
         assert_eq!(hints[0].kind, FOLLOW_UP_CHART_QUOTE);
         assert_eq!(hints[0].command, "tv quote NASDAQ:AAPL --source chart");
         assert_eq!(hints[0].reason, "single_symbol_chart_quote");
         assert!(hints[0].requires_desktop);
         assert_eq!(hints[0].source_category, DESKTOP_BACKED_READ_CATEGORY);
-        assert!(hints[0].non_mutating);
+        assert!(!hints[0].non_mutating);
         assert_eq!(hints[0].evidence_role, "single_symbol_chart_quote");
         assert!(!hints[0].auto_execute);
-        assert!(
-            hints
-                .iter()
-                .all(|hint| hint.non_mutating && !hint.auto_execute)
-        );
+        assert!(hints.iter().all(
+            |hint| hint.non_mutating == (hint.kind != FOLLOW_UP_CHART_QUOTE) && !hint.auto_execute
+        ));
         let kinds = hints
             .iter()
             .map(|hint| hint.kind.as_str())

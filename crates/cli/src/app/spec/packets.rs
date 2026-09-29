@@ -22,7 +22,7 @@ pub(super) fn describe(path: &[&str]) -> Option<Value> {
             "Complete coverage means successful sections with no tracked fundamentals missing fields. Quote/info missing-field counts are not exhaustive field audits; complete does not guarantee freshness, entitlements or all values populated.",
             "Top-level symbol identity uses quote, then fundamentals, then info. It does not verify agreement across sections; inspect underlying section identities before combining them.",
             "Follow-up hints are advisory, not ranking or authority to run commands. auto_execute=false; inspect the hinted command's own spec and supply the intended target.",
-            "Existing hints can label chart_quote/screenshot non_mutating despite chart symbol switching or file writes. Do not use that flag as proof of no side effects; quote --source chart can switch/restore a symbol and screenshot writes a file.",
+            "Hint non_mutating describes chart mutation only. effects.chart_mutation is true for chart_quote, which can switch/restore a symbol; screenshot keeps non_mutating=true but effects.local_file_write=true. These describe possible effects, not completed actions.",
             "No implied recommendation, missing-value imputation or automatic Desktop/MCP fallback is performed."
         ]
     });
