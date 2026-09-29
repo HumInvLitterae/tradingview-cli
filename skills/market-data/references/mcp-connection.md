@@ -73,3 +73,9 @@ nor revokes remote grants, changes account objects or resets provider limits.
 It does not authorize OS interaction: a required deletion prompt produces an
 error and needs a separately arranged credential-manager action. Default budgets
 are 300 seconds for login and 30 for status/logout. None accepts `--timeout`.
+
+For data and bars responses that explicitly declare `success:false`,
+`provider_error_hints.textual_clues` lists only recognized error-text clues.
+`root_cause` stays `unconfirmed`; these clues are not HTTP status, quota/reset
+information or permission to retry. Unrecognized or non-string error content
+produces an empty list. Existing error codes and rejection behavior remain intact.

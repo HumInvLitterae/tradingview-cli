@@ -247,6 +247,7 @@ pub(super) fn describe(path: &[&str]) -> Option<Value> {
     result["limits"].as_array_mut().unwrap().extend([
         json!("Credential refresh can update local authorization state."),
         json!("No implicit source fallback; transport success does not prove complete data."),
+        json!("Provider-declared failures can include provider_error_hints: closed textual clues with root_cause unconfirmed, not HTTP status, reset timing or permission to retry."),
     ]);
     Some(result)
 }

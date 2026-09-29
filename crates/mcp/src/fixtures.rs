@@ -1957,6 +1957,41 @@ async fn economic_service_keeps_nulls_and_single_dispatch_failures() {
 }
 
 #[tokio::test]
+async fn data_and_bars_keep_failure_clues_without_retry_or_cooldown() {
+    use crate::client::{Operation, execute};
+    use tradingview_model::{mcp_bars, mcp_data};
+
+    for operation in [
+        Operation::Bars(mcp_bars::Request::new("NASDAQ:EXAMPLE", "1D", 20).unwrap()),
+        Operation::Data(mcp_data::Request::symbol("NASDAQ:EXAMPLE", &["close".into()]).unwrap()),
+    ] {
+        let server = Server::start("application-429").await;
+        let (_root, mut guard, budget, http, store) = context(&server, 8).await;
+        fixture_login(&http, &store, &budget).await;
+        let error = execute(operation, &mut guard, store, http, budget, true)
+            .await
+            .unwrap_err();
+        let details = error.details.unwrap();
+
+        assert_eq!(details["contract_version"], "mcp_error.v1");
+        assert_eq!(details["source"], "tradingview_mcp");
+        assert_eq!(details["code"], "provider_error");
+        assert_eq!(details["stage"], "tool_response");
+        assert_eq!(details["tool_attempts"], 1);
+        assert_eq!(server.calls("tools/call"), 1);
+        assert_eq!(
+            details["provider_error_hints"]["textual_clues"],
+            json!(["rate_limit"])
+        );
+        assert_eq!(details["provider_error_hints"]["root_cause"], "unconfirmed");
+        assert!(details.get("retry_after_seconds").is_none());
+        assert!(details.get("local_cooldown_seconds").is_none());
+        assert_eq!(guard.check_cooldown(), Ok(()));
+        assert!(!details.to_string().contains("synthetic-secret"));
+    }
+}
+
+#[tokio::test]
 async fn dividend_service_distinguishes_http_throttling_from_application_errors() {
     use crate::client::{Operation, execute};
     use tradingview_model::mcp_economics::{DividendOptions, Request};

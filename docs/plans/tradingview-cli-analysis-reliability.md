@@ -1,7 +1,6 @@
 # Analysis reliability after v0.33.0
 
-Status: direction approved 2026-09-29; the contract examples below are proposals
-awaiting owner review. No production implementation has started. The PM is the
+Status: contracts approved 2026-09-29; implementation in progress. The PM is the
 sole executor; no additional agents or sessions are authorized for this work.
 
 ## Outcome and scope
@@ -14,7 +13,7 @@ The [roadmap](../next-version-roadmap.md) owns direction and the
 retains prior evidence and the deferred technical-snapshot design.
 
 No new dependency, persisted format or live operation is proposed. Keep existing
-commands and defaults. Agree on the following output changes before coding;
+commands and defaults. The owner approved the following output changes;
 this plan is not approval to repair every legacy behavior found during spec work.
 
 ## Consumers inspected
@@ -37,7 +36,7 @@ Upstream owners are [MCP data normalization](../../crates/model/src/mcp_data.rs)
 [equity extraction](../../crates/cli/src/ops/data/strategy.rs), and
 [snapshot/compare hint types](../../crates/market/src/types.rs).
 
-## Proposed contracts
+## Approved contracts
 
 Examples are synthetic fragments, not complete envelopes or observed price data.
 
@@ -173,4 +172,5 @@ persists merely to advance this plan.
 
 - v0.33.0 publication verified and historical record archived.
 - Current source and downstream error/hint consumers inspected read-only.
-- Contract proposals and focused acceptance are ready for owner review.
+- Owner approved all three output contracts. MCP diagnostics implemented; focused
+  normalization/privacy and private-proof checks cover the shared classifier.

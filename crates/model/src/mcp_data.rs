@@ -175,7 +175,8 @@ pub fn normalize(request: &Request, value: Value, received_ms: u64) -> Result<Va
             .with_details(json!({
                 "contract_version": "mcp_error.v1",
                 "source": "tradingview_mcp",
-                "code": "provider_error"
+                "code": "provider_error",
+                "provider_error_hints": crate::mcp_error::provider_error_hints(object.get("error"))
             })));
         }
         Some(Value::Bool(true)) | None => {}
