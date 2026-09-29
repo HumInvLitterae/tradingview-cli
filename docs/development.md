@@ -684,7 +684,7 @@ operations with fixed approved requests; they do not add public CLI commands.
 read timeout, equivalent to `tv mcp --timeout 90 alert history` for that target.
 Both print only contract,
 count and coverage or structured failure details. The
-[active plan](plans/tradingview-cli-mcp-operational-improvements.md) owns
+[v0.33.0 qualification record](plans/archives/tradingview-cli-mcp-operational-improvements.md) owns
 qualification. Output contains only a closed field-name/type vocabulary,
 array counts and echo comparisons; unknown keys and scalar values are omitted.
 Use an explicitly selected, already authorized credential worker without
