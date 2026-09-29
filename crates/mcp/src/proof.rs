@@ -24,6 +24,7 @@ use tokio::time::Instant;
 pub enum ProofOperation {
     NextReadCatalog,
     TechnicalDailyShape,
+    TechnicalDailyCommand,
     TechnicalControlShape,
     TechnicalWeeklyShape,
     TechnicalMonthlyShape,
@@ -90,6 +91,9 @@ pub async fn run_proof_with_worker(
     operation: ProofOperation,
     worker: Option<&Path>,
 ) -> Result<Value> {
+    if matches!(operation, ProofOperation::TechnicalDailyCommand) {
+        return next_reads::verify_technical_command(directory, worker).await;
+    }
     if matches!(
         operation,
         ProofOperation::AlertHistoryCommand | ProofOperation::AlertHistoryExtendedCommand

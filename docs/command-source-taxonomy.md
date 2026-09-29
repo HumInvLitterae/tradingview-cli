@@ -40,6 +40,11 @@ account IDs are local to the authenticated account, not portable identities.
 See [MCP usage and contracts](official-mcp.md). Existing `tv bars` remains an
 independent command and contract; no implicit source migration occurs.
 
+`tv mcp technicals` is another authenticated Desktop-free read. Its
+`mcp_technicals.v1` snapshot preserves official indicator values and the provider's
+summary; it neither reads chart/Pine studies nor calculates historical signals.
+See [technical snapshots](official-mcp.md#official-technical-snapshots-next-version).
+
 `tv mcp financials/financial-history/forecasts/earnings` also uses this read
 source, with distinct `mcp_financials.v1`, `mcp_financial_history.v1`,
 `mcp_forecasts.v1` and `mcp_earnings.v1` contracts. Currency, period metadata,

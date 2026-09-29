@@ -331,6 +331,7 @@ fn respond(ep: &Endpoints, r: &Request, mode: &str) -> Response {
                 "inputSchema": schema
             })];
             for tool in [
+                crate::tools::Tool::Technicals,
                 crate::tools::Tool::EconomicSymbols,
                 crate::tools::Tool::EconomicData,
                 crate::tools::Tool::EconomicCalendar,
@@ -504,6 +505,17 @@ fn respond(ep: &Endpoints, r: &Request, mode: &str) -> Response {
             });
             let args = &request["params"]["arguments"];
             match request["params"]["name"].as_str() {
+                Some("mcp-tv-get-technicals-rating") => {
+                    result["structuredContent"] = if mode == "technicals-provider-error" {
+                        json!({"success": false, "error": "429 synthetic provider failure"})
+                    } else {
+                        json!({"success": true, "data": {
+                            "symbol": args["symbol"], "interval": args["interval"],
+                            "oscillators": {"rsi": 50.0}, "moving_averages": {},
+                            "summary": {"recommendation": "NEUTRAL", "value": 0}
+                        }})
+                    };
+                }
                 Some("mcp-tv-get-economic-symbols") => {
                     result["structuredContent"] = json!({
                         "success": true, "count": 1,
@@ -2288,5 +2300,53 @@ async fn explicit_read_timeout_bounds_the_entire_operation_without_replay() {
             assert_eq!(server.calls("tools/call"), 1);
         }
         assert_eq!(server.calls("initialize"), 1);
+    }
+}
+
+#[tokio::test]
+async fn technicals_use_the_public_service_without_replay() {
+    for mode in [
+        "json",
+        "technicals-provider-error",
+        "429",
+        "401",
+        "malformed",
+        "tool-error",
+    ] {
+        let server = Server::start(mode).await;
+        let (_root, mut guard, budget, http, store) =
+            context(&server, RESPONSE_TEST_TIMEOUT_SECS).await;
+        fixture_login(&http, &store, &budget).await;
+        let result = crate::client::execute(
+            crate::Operation::Technicals(
+                tradingview_model::mcp_technicals::Request::new("NASDAQ:EXAMPLE", "2h").unwrap(),
+            ),
+            &mut guard,
+            store,
+            http,
+            budget,
+            true,
+        )
+        .await;
+        assert_eq!(server.calls("tools/call"), 1);
+        if mode == "json" {
+            let data = result.unwrap();
+            assert_eq!(data["contract_version"], "mcp_technicals.v1");
+            assert_eq!(data["request"]["timeframe"], "2h");
+            assert_eq!(data["indicators"].as_array().unwrap().len(), 23);
+            assert_eq!(data["transport"]["tool_attempts"], 1);
+        } else {
+            let details = result.unwrap_err().details.unwrap();
+            assert_eq!(
+                details["code"],
+                match mode {
+                    "429" => "rate_limited",
+                    "401" => "auth_refreshed_retry_required",
+                    "malformed" => "invalid_response",
+                    _ => "provider_error",
+                }
+            );
+            assert_eq!(details["tool_attempts"], 1);
+        }
     }
 }

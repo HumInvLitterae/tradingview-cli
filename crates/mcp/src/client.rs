@@ -27,6 +27,7 @@ pub enum Operation {
     Research(tradingview_model::mcp_research::Request),
     Financial(tradingview_model::mcp_financials::Request),
     Bars(Request),
+    Technicals(tradingview_model::mcp_technicals::Request),
     Data(tradingview_model::mcp_data::Request),
     Account(tradingview_model::mcp_account::Request),
     AlertMutation(tradingview_model::mcp_account::AlertMutation),
@@ -59,6 +60,7 @@ impl Operation {
         if !matches!(
             self,
             Self::Bars(_)
+                | Self::Technicals(_)
                 | Self::Data(_)
                 | Self::Financial(_)
                 | Self::Research(_)
@@ -108,6 +110,7 @@ impl Client {
         if matches!(
             operation,
             Operation::Bars(_)
+                | Operation::Technicals(_)
                 | Operation::Data(_)
                 | Operation::Financial(_)
                 | Operation::Research(_)
@@ -251,6 +254,7 @@ pub(crate) async fn execute(
         }
         let (tool, arguments) = match &operation {
             Operation::Bars(request) => (crate::tools::Tool::Bars, request.arguments()),
+            Operation::Technicals(request) => (crate::tools::Tool::Technicals, request.arguments()),
             Operation::Data(request) => (request.kind().into(), request.arguments()),
             Operation::Financial(request) => (request.kind().into(), request.arguments()),
             Operation::Research(request) => (request.kind().into(), request.arguments()),
@@ -275,6 +279,9 @@ pub(crate) async fn execute(
         let received_ms = now_ms().map_err(AppError::from)?;
         match &operation {
             Operation::Bars(request) => mcp_bars::normalize(request, value, received_ms),
+            Operation::Technicals(request) => {
+                tradingview_model::mcp_technicals::normalize(request, value, received_ms)
+            }
             Operation::Economic(request) => {
                 tradingview_model::mcp_economics::normalize(request, value, received_ms)
             }

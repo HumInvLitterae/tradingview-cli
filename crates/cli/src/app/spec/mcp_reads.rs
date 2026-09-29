@@ -48,6 +48,28 @@ pub(super) fn describe(path: &[&str]) -> Option<Value> {
     }
     let ["mcp", name] = path else { return None };
     let (contract, constraints, discovery, examples, interpretation) = match *name {
+        "technicals" => (
+            "mcp_technicals.v1",
+            json!({
+                "symbol": symbol_constraint(),
+                "timeframe": {"choices": tradingview_model::mcp_technicals::TIMEFRAMES, "default": "1D"}
+            }),
+            json!([symbol_discovery("symbol")]),
+            json!([[
+                "tv",
+                "mcp",
+                "technicals",
+                "NASDAQ:EXAMPLE",
+                "--timeframe",
+                "1D"
+            ]]),
+            json!([
+                "Single-timeframe snapshot, not historical or locally calculated indicators. No Desktop or columns fallback.",
+                "Known indicator slots are null when unreported; available does not imply complete. Empty means no known non-null indicator or summary value.",
+                "summary preserves official recommendation/value/ma/other without local scoring. Unknown market time, delay, adjustment, session and finality remain unconfirmed.",
+                "2h applies only to technicals and does not expand bars timeframes."
+            ]),
+        ),
         "search" => (
             mcp_data::Kind::Search.contract(),
             json!({"query": text_constraint(mcp_data::MAX_TEXT_BYTES),
@@ -339,7 +361,15 @@ mod tests {
 
     #[test]
     fn examples_parse_and_constraints_match_real_request_boundaries() {
-        for name in ["search", "columns", "symbol", "symbols", "bars", "screener"] {
+        for name in [
+            "search",
+            "columns",
+            "symbol",
+            "symbols",
+            "bars",
+            "screener",
+            "technicals",
+        ] {
             let spec = describe(&["mcp", name]).unwrap();
             for example in spec["examples"].as_array().unwrap() {
                 assert!(

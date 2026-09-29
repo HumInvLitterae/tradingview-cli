@@ -9,6 +9,10 @@ package version omits the leading `v`.
 
 ### Added
 
+- `tv mcp technicals` reads official single-timeframe indicator snapshots as
+  mcp_technicals.v1, preserving summary ratings, null indicators and unknown
+  data conditions without local calculation or source fallback.
+
 - `tv validate -- ...` checks argv for `values` and `mcp bars` offline using
   execution's parser and local rules, with distinct invalid/unsupported results
   and no credential, provider or candidate-file access.

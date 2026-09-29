@@ -382,6 +382,48 @@ would avoid one command but inflate routine lookups. Fully typed output models
 or generated argument schemas are larger alternatives without a current need.
 The owner approved these two CLI/JSON contracts; both are implemented.
 
+## Resumed official technical snapshots
+
+The owner reopened this deferred feature on 2026-09-30. Reuse the original
+[scope and live authorization](archives/tradingview-cli-mcp-operational-improvements.md#official-technical-snapshot),
+not its old failure evidence as current availability. Keep the implementation in
+this active record; the archived record remains historical.
+
+Daily AAPL qualification succeeded through the updated Rust SDK and the direct
+MCP connector. The response is `success:true` with a `data` object containing
+symbol, interval, oscillators, moving_averages and summary. Nine oscillator
+numbers and twelve moving-average numbers were returned. EMA30/SMA30 were absent
+despite the broader official tool description. Summary contains three rating
+strings (`recommendation`, `ma`, `other`) and one numeric `value`. No market-data
+timestamp, adjustment, delay, session or finality evidence was supplied.
+A weekly connector request returned an application-level 429 referring to the
+screener provider; no monthly/two-hour calls or repeated weekly attempts followed.
+Successful daily retrieval does not establish availability at other intervals.
+
+The owner approved `tv mcp technicals SYMBOL --timeframe 1D` and the concrete
+`mcp_technicals.v1` contract. Keep the provider's `summary` object together
+(recommendation/value/ma/other); do not introduce ratings/rating_value mappings.
+Reuse provider_observation evidence and client_observation.received_at rather
+than another timestamp/conditions format. Emit 23 indicator slots using provider
+keys, null for missing values, and available/empty status. Requested and reported
+identity stay separate; malformed containers/types or contradictory echoes fail.
+See [the complete contract](../official-mcp.md#official-technical-snapshots-next-version).
+
+Implementation uses one model-owned request/normalizer and the existing MCP
+service. The production tool replaces the proof-only validator; fixed opt-in
+proof operations remain bounded. CLI, spec and standalone guidance are updated.
+Focused fixtures cover null/missing/empty/zero, malformed fields/identity,
+provider failures and no replay. Preserve existing bars timeframes and routes;
+no historical series or local indicator calculation is introduced.
+
+The public-service daily proof succeeded with one tool attempt: identity and
+interval echoes matched, 21 of 23 indicator slots held values, and summary kept
+three strings plus a number. Four model tests, four MCP technical/proof tests,
+41 spec tests and two focused CLI contract tests passed. Native evidence is
+daily-only; no weekly retry, monthly/two-hour call or account mutation followed.
+Scoped CLI/model/MCP Clippy, formatting, public hygiene, standalone skill
+validation and placeholder package staging also passed. Platform CI remains pending.
+
 ## Work and validation
 
 Implement the three reviewed contracts as separate usable slices in the order

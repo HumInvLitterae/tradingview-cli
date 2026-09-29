@@ -257,6 +257,7 @@ tv mcp login
 tv mcp status
 tv mcp search Apple
 tv mcp columns --search volume
+tv mcp technicals NASDAQ:AAPL --timeframe 1D
 tv mcp symbol NASDAQ:AAPL --columns close,volume
 tv mcp symbols NASDAQ:AAPL NASDAQ:MSFT --columns close,volume
 tv mcp screener --market america --limit 20 --columns name,close,volume

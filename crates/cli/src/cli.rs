@@ -1392,6 +1392,12 @@ pub enum McpCommand {
         #[arg(long, value_delimiter = ',')]
         symbolset: Vec<String>,
     },
+    #[command(about = "Read an official technical snapshot; no history or local calculation")]
+    Technicals {
+        symbol: String,
+        #[arg(long, default_value = "1D")]
+        timeframe: String,
+    },
     #[command(
         about = "Read recent intraday, daily, weekly or monthly OHLCV",
         long_about = "Read recent bars through the official TradingView MCP service as mcp_bars.v1. \

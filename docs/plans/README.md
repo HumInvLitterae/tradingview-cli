@@ -14,6 +14,7 @@ follow-up effects. The three initial contracts are implemented and locally
 validated. Legacy-account corrections are also implemented. Downstream adoption
 and release qualification remain. Offline schema export and invocation validation
 for values and MCP bars are implemented, with focused checks.
-Official technical snapshots remain deferred; provider availability is not
-established by a past release or fixture. Version 0.33.0 is published, and its
+Official technical snapshots are implemented under the approved contract; daily
+response qualification and remaining live limits are recorded in the active
+plan. Version 0.33.0 is published, and its
 record preserves historical verification rather than current execution authority.
