@@ -3,10 +3,7 @@
 use crate::{Failure, Result, admission::Admission, http::Http, sse, tools::Tool};
 use rmcp::{
     ServiceExt,
-    model::{
-        CallToolRequestParams, CallToolResponse, CallToolResult, ClientConfig,
-        PaginatedRequestParams, ProtocolVersion,
-    },
+    model::{CallToolRequestParams, CallToolResponse, CallToolResult, PaginatedRequestParams},
     transport::{
         StreamableHttpClientTransport, common::client_side_sse::NeverRetry,
         streamable_http_client::StreamableHttpClientTransportConfig,
@@ -55,7 +52,7 @@ pub(crate) async fn call(
 /// One command owns the connection and lazy catalog pages; nothing survives it.
 pub(crate) struct Session {
     http: Http,
-    service: rmcp::service::RunningService<rmcp::RoleClient, ClientConfig>,
+    service: rmcp::service::RunningService<rmcp::RoleClient, ()>,
     pages: Vec<Vec<rmcp::model::Tool>>,
     next_cursor: Option<String>,
 }
@@ -64,9 +61,7 @@ impl Session {
     pub(crate) async fn connect(http: &Http, token: String) -> Result<Self> {
         let transport =
             StreamableHttpClientTransport::with_client(http.clone(), transport_config(http, token));
-        // Preserve the existing handshake rather than following SDK protocol-default changes.
-        let client = ClientConfig::default().with_protocol_version(ProtocolVersion::V_2025_11_25);
-        let service = timeout_at(http.deadline, client.serve(transport))
+        let service = timeout_at(http.deadline, ().serve(transport))
             .await
             .map_err(|_| Failure::Timeout)?
             .map_err(|_| http.failure())?;
