@@ -28,6 +28,7 @@ jobs:
         run: |
           python3 scripts/check-study-values-js-contract.py
           python3 scripts/check-equity-js-contract.py
+          python3 scripts/check-account-js-contract.py
 
   pine-open-js-contract:
     name: Pine open JavaScript contract

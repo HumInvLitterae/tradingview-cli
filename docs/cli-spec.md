@@ -948,9 +948,10 @@ and private account endpoints. It is not interchangeable with the MCP contract;
 use `tv spec alert <action>` when available before choosing it. Pine indicator
 alerts are a separate workflow, not a simple price-alert substitute.
 
-List can return outer success with `data.error` and empty alerts. Malformed or
-missing collections can also become empty results; do not infer no account
-alerts. Missing active state defaults to true. Provider timestamps are not
+List returns an error for failed reads or malformed row collections; a valid
+empty collection still succeeds. Creation/deletion checks use the same strict
+reader, so unavailable readback cannot confirm success. Older binaries can
+return outer success with `data.error`; never treat that as an empty account. Missing active state defaults to true. Provider timestamps are not
 normalized and projected conditions cannot reconstruct complex Pine alerts.
 Messages remain in legacy output, so keep account details private.
 

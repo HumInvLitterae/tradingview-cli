@@ -1,7 +1,7 @@
 # Analysis reliability after v0.33.0
 
 Status: three approved contracts implemented and locally validated 2026-09-29.
-Legacy-account review is complete; the corrections below await contract approval. The PM is the
+Legacy-account corrections approved; implementation is in progress. The PM is the
 sole executor; no additional agents or sessions are authorized for this work.
 
 ## Outcome and scope
@@ -148,7 +148,7 @@ packets, explicit chart_quote/screenshot distinctions, stable public struct
 construction and unchanged auto_execute=false. Update the downstream stale
 fixture through its owner and sync relevant standalone guidance with the change.
 
-## Legacy-account review and proposed corrections
+## Approved legacy-account corrections
 
 Reviewed current upstream and downstream sources on 2026-09-29. This is source
 inspection, not evidence that an account was changed or a failure occurred live.
@@ -162,7 +162,7 @@ current invocation frequency remains unmeasured.
 | 2 | [Watchlist mutation](../../crates/cli/src/ops/layout/watchlist.rs) permits DOM fallback after a POST failure and can verify membership against another active list when the original disappears. Downstream applies missing symbols through these commands. | Permit fallback only before dispatch; verify only the original list ID. Keep successful output, already-present behavior and bulk partial-result policy. |
 | 3 | [Price-alert creation](../../crates/cli/src/ops/alert/create.rs) can fall back to a dialog that never selects the requested condition; created=true means a button click. The downstream decoder does not require a persisted ID. | Remove this automatic DOM creation path. Preserve verified internal-API creation and return its preflight error when unavailable. Do not silently substitute MCP. |
 
-Proposed contract fragments (not full envelopes):
+Approved contract fragments (not full envelopes):
 
 - Failed alert list, before: `success:true` with
   `data:{alert_count:0,alerts:[],error:"HTTP 403: Forbidden"}`. After:
@@ -185,8 +185,7 @@ Proposed contract fragments (not full envelopes):
   legacy availability when the private API is unavailable; it removes an
   unverified success path rather than claiming a replacement source.
 
-These changes need owner approval because failure exits and fallback behavior
-are public contracts. No dependency or persisted-format change is proposed.
+The owner approved these failure-exit and fallback changes. No dependency or persisted-format change is proposed.
 An alternative is fully verifying the DOM condition, identity and persistence;
 that would require more UI maintenance and separately authorized native writes.
 Do not implement that larger path merely to preserve a misleading success.
@@ -250,8 +249,7 @@ no full local workspace suite or release rebuild by default. Run the smallest
 executable JavaScript fixture gate needed for equity. Use candidate CI for broad
 platform checks; native/live acceptance remains separately scoped.
 
-The legacy-account review above proposes the next corrections; implementation
-awaits owner approval of those public behavior changes.
+Implement the approved legacy-account corrections above before schema design.
 Output schemas/offline input validation are later design work, starting with
 real high-value chart/data consumers rather than all-command coverage.
 
@@ -277,3 +275,6 @@ persists merely to advance this plan.
   the equity gate passed with pinned Node 24.18.0. Scoped Clippy, formatting,
   public hygiene, standalone skill references and placeholder package staging
   passed. CI/platform and live Desktop/provider execution were not rerun.
+
+- Legacy alert-list validation is shared across read and mutation paths; generated
+  JavaScript fixtures distinguish valid empty lists from failed/malformed reads.

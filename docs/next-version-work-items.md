@@ -9,7 +9,7 @@ Direction approved 2026-09-29. [Roadmap](next-version-roadmap.md) ·
 | 2 | MCP provider-failure diagnostics | Implemented with focused normalization/privacy and shared-classifier fixtures. Existing mcp_error.v1/code/stage/attempts and retry policy remain unchanged. |
 | 3 | Equity meaning and zero values | Implemented: extraction/meaning labels and zero drawdown preservation, with generated-JavaScript fixtures for branch selection and missing data. |
 | 4 | Follow-up effects | Implemented with serialized chart/file effects and existing Rust struct construction retained. Market fixtures pass; downstream must update its stale chart_quote expectation when adopting. |
-| 5 | Legacy account operations | Review complete. Proposed order: honest alert-list failures, no post-dispatch watchlist fallback plus same-list readback, then removal of unverified price-alert DOM creation. Public behavior approval pending; see the existing plan. |
+| 5 | Legacy account operations | Approved; strict alert-list validation implemented. Remaining order: no post-dispatch watchlist fallback plus same-list readback, then removal of unverified price-alert DOM creation. See the existing plan for contracts and acceptance. |
 | 6 | Output schemas and offline validation | Design candidate after contract cleanup. Start with actual chart/data consumers; no schema catalog or validation command is approved yet. |
 | 7 | Qualify next release | Choose version after contracts settle; use focused local checks and candidate CI, then a separate final version/notes commit. |
 

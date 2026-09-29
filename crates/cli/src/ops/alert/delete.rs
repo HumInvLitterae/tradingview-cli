@@ -5,6 +5,7 @@ use tradingview_core::{AppError, ErrorKind};
 
 use super::{
     super::common::js_string,
+    ALERT_LIST_READER,
     payload::{normalize_alert_delete_all_payload, normalize_alert_delete_payload},
 };
 
@@ -43,28 +44,11 @@ pub async fn alert_delete(
                     }};
                 }}
 
+                {ALERT_LIST_READER}
                 async function listAlerts() {{
-                    const response = await fetch('https://pricealerts.tradingview.com/list_alerts', {{
-                        credentials: 'include',
-                        headers: {{ 'accept': 'application/json' }}
-                    }});
-                    if (!response.ok) {{
-                        return {{
-                            ok: false,
-                            error: 'HTTP ' + response.status + ': ' + response.statusText,
-                            alerts: []
-                        }};
-                    }}
-                    const data = await response.json();
-                    if (data.err) {{
-                        return {{
-                            ok: false,
-                            error: data.errmsg || (data.err && data.err.code) || 'Alert list failed',
-                            alerts: []
-                        }};
-                    }}
-                    const rows = Array.isArray(data.r) ? data.r : [];
-                    return {{ ok: true, alerts: rows.map(normalizeAlert) }};
+                    const result = await __readAlertRows();
+                    if (!result.ok) return result;
+                    return {{ ok: true, alerts: result.alerts.map(normalizeAlert) }};
                 }}
 
                 function findAlert(alerts) {{
@@ -228,28 +212,11 @@ pub async fn alert_delete_all(
                     }};
                 }}
 
+                {ALERT_LIST_READER}
                 async function listAlerts() {{
-                    const response = await fetch('https://pricealerts.tradingview.com/list_alerts', {{
-                        credentials: 'include',
-                        headers: {{ 'accept': 'application/json' }}
-                    }});
-                    if (!response.ok) {{
-                        return {{
-                            ok: false,
-                            error: 'HTTP ' + response.status + ': ' + response.statusText,
-                            alerts: []
-                        }};
-                    }}
-                    const data = await response.json();
-                    if (data.err) {{
-                        return {{
-                            ok: false,
-                            error: data.errmsg || (data.err && data.err.code) || 'Alert list failed',
-                            alerts: []
-                        }};
-                    }}
-                    const rows = Array.isArray(data.r) ? data.r : [];
-                    return {{ ok: true, alerts: rows.map(normalizeAlert) }};
+                    const result = await __readAlertRows();
+                    if (!result.ok) return result;
+                    return {{ ok: true, alerts: result.alerts.map(normalizeAlert) }};
                 }}
 
                 function alertIds(alerts) {{

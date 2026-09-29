@@ -23,8 +23,8 @@ pub(super) fn describe(path: &[&str]) -> Option<Value> {
     let examples = match *action {
         "list" => {
             result["limits"].as_array_mut().unwrap().extend([
-                json!("HTTP/fetch errors may be returned inside data.error with an outer success envelope and an empty alerts list. Inspect error; empty data alone is not proof that the account has no alerts."),
-                json!("Missing/malformed row collections can normalize to empty results. Missing active defaults to true; timestamps preserve provider values without canonical normalization. No completeness or pagination guarantee is supplied.")
+                json!("Failed reads return an error, not a successful empty list. A valid empty collection remains successful; list failures use internal_api_unavailable with sanitized source/phase details."),
+                json!("Missing/malformed row collections are errors, including mutation preflight/readback. Missing active defaults to true; timestamps preserve provider values without canonical normalization. No completeness or pagination guarantee is supplied.")
             ]);
             json!([["tv", "--target-id", "<target_id>", "alert", "list"]])
         }
