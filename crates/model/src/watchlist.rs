@@ -173,7 +173,7 @@ pub fn normalize_watchlist_api_payload(data: Value) -> Result<Value, AppError> {
         )
         .with_details(json!({
             "phase": "unrecognized_response",
-            "api_fallback_allowed": true,
+            "api_fallback_allowed": false,
             "source": data.get("source").cloned().unwrap_or(Value::Null),
         })));
     }
@@ -182,12 +182,15 @@ pub fn normalize_watchlist_api_payload(data: Value) -> Result<Value, AppError> {
 }
 
 pub fn watchlist_api_error_allows_fallback(error: &AppError) -> bool {
-    error
-        .details
-        .as_ref()
-        .and_then(|details| details.get("api_fallback_allowed"))
-        .and_then(Value::as_bool)
-        .unwrap_or(false)
+    let Some(details) = error.details.as_ref() else {
+        return false;
+    };
+    error.kind == ErrorKind::InternalApiUnavailable
+        && details.get("api_fallback_allowed").and_then(Value::as_bool) == Some(true)
+        && matches!(
+            details.get("phase").and_then(Value::as_str),
+            Some("list_unavailable" | "active_list_missing" | "active_list_unsupported")
+        )
 }
 
 pub fn normalize_watchlist_remove_payload(data: Value) -> Result<Value, AppError> {
@@ -317,6 +320,7 @@ mod tests {
     #[test]
     fn watchlist_api_payload_normalization_maps_error_kind_and_fallback_flag() {
         let error = normalize_watchlist_api_payload(json!({
+            "phase": "list_unavailable",
             "error": "Watchlist API unavailable",
             "error_kind": "internal_api_unavailable",
             "api_fallback_allowed": true,
@@ -344,7 +348,8 @@ mod tests {
         let error = normalize_watchlist_api_payload(json!({"source": "dom_row"})).unwrap_err();
 
         assert_eq!(error.kind, ErrorKind::InternalApiUnavailable);
-        assert_eq!(error.details.unwrap()["api_fallback_allowed"], true);
+        assert!(!watchlist_api_error_allows_fallback(&error));
+        assert_eq!(error.details.unwrap()["api_fallback_allowed"], false);
     }
 
     #[test]

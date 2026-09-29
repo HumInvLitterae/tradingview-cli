@@ -14,6 +14,9 @@ package version omits the leading `v`.
 
 ### Fixed
 
+- Legacy watchlist mutations no longer replay uncertain writes through DOM and
+  require the original list during readback.
+
 - Legacy alert reads now fail on unavailable or malformed lists. Shared mutation
   preflight/readback checks no longer interpret invalid responses as empty lists.
 
