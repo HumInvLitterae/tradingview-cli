@@ -77,7 +77,7 @@ Retain the current branch order and row shape in the first correction. Add
 observed extraction path separately from series meaning; do not rename an
 unverified legacy array into a guaranteed strategy-equity curve.
 
-| Existing branch | Proposed series_source | Proposed series_kind |
+| Existing branch | series_source | series_kind |
 | --- | --- | --- |
 | `_reportData.buyHold` | `report_buy_hold` | `buy_and_hold` |
 | `equityData` | `equity_data` | `unconfirmed` |
@@ -174,3 +174,6 @@ persists merely to advance this plan.
 - Current source and downstream error/hint consumers inspected read-only.
 - Owner approved all three output contracts. MCP diagnostics implemented; focused
   normalization/privacy and private-proof checks cover the shared classifier.
+- Equity extraction and unavailable outcomes now identify source/meaning; zero
+  drawdown is preserved. Generated-JavaScript fixtures cover branch precedence,
+  all output paths and missing values without asserting live series semantics.

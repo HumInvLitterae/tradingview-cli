@@ -415,12 +415,15 @@ shapes differ from internal report data. Trades defaults/clamps to 1–20 entrie
 with no newest-first guarantee or pagination. Compare total and returned counts
 where available; DOM content may be only the rendered subset.
 
-Equity currently prefers report buyHold data before equityData and strategy
-bars. The output does not reliably identify which series supplied it, and the
-bars path maps zero drawdown to null. A nonzero data_points count therefore does
-not establish a strategy equity curve. Confirm provenance before calculating
-returns; equity_summary with data_points=0 remains summary-only. Changing this
-legacy output requires a separate consumer-compatible contract decision.
+Equity retains report buyHold, equityData, then strategy-bars precedence.
+`series_source` records that branch as `report_buy_hold`, `equity_data` or
+`strategy_bars`. `series_kind` identifies Buy & Hold as `buy_and_hold`; other
+series remain `unconfirmed`, not guaranteed strategy equity. Rows retain their
+existing shape; strategy bars preserve zero drawdown and use null for missing
+values. Performance-only output reports `performance_summary` with
+`series_kind=unavailable`; empty/error output uses `unavailable` for both labels.
+Confirm series meaning before calculating returns. `equity_summary` with
+`data_points=0` remains summary-only.
 
 
 ## Pine graphics summaries

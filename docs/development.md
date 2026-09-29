@@ -784,12 +784,13 @@ git diff --check
 ```
 
 The regular Cargo baseline remains Rust-only. Changes to the production
-study-value JavaScript identity helper, saved-script binding helper,
-indicator-insertion expression, or native three-point drawing probe/production expression
-also require separate executable contract gates:
+study-value JavaScript identity helper, strategy-equity extraction, saved-script
+binding helper, indicator-insertion expression, or native three-point drawing
+probe/production expression also require separate executable contract gates:
 
 ```bash
 mise run check:study-values-js
+mise run check:equity-js
 mise run check:pine-open-js
 mise run check:indicator-insertion-js
 mise run check:three-point-drawing-js
@@ -798,6 +799,8 @@ mise run check:three-point-drawing-js
 These gates use Node.js `24.18.0`, pinned in their scripts and CI independently
 of the default development version in `mise.toml`. The study-value gate
 executes the exact helper with synthetic sources and throwing Proxy fixtures.
+The equity gate executes the generated expression for every extraction branch,
+branch precedence, empty/error outcomes and zero versus missing drawdown.
 The Pine-open gate executes the generated asynchronous page expression against
 synthetic Pine facade, Pine-owned Monaco, overlay-menu, and Save-bound store
 objects, including hidden stale editors, ambiguous visible editors, missing

@@ -61,8 +61,8 @@ pub(super) fn describe(path: &[&str]) -> Option<Value> {
         }
         "equity" => {
             result["limits"].as_array_mut().unwrap().extend([
-                json!("Current extraction prefers _reportData.buyHold before equityData or strategy bars. source=internal_api alone does not identify which series was returned; data_points is not proof of a strategy equity curve."),
-                json!("Rows can be index/value, provider-shaped objects or time/equity/drawdown. The bars path converts zero drawdown to null. Do not infer currency, timestamps or strategy returns from unlabeled values."),
+                json!("Extraction prefers _reportData.buyHold before equityData or strategy bars. series_source identifies the observed branch; series_kind labels report_buy_hold as buy_and_hold, other series as unconfirmed, and no curve as unavailable. data_points is not proof of strategy equity."),
+                json!("Rows can be index/value, provider-shaped objects or time/equity/drawdown. The bars path preserves zero drawdown and leaves missing drawdown null. Do not infer currency, timestamps or strategy returns from unlabeled values."),
                 json!("If no series is available, equity_summary can contain performance metrics with data_points=0. Keep the curve unavailable; do not synthesize it from the summary. Independent series provenance is required before calculating strategy performance from this output.")
             ]);
         }

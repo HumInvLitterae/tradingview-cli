@@ -12,6 +12,11 @@ package version omits the leading `v`.
 - MCP data/bar provider-declared failures retain their existing error contracts
   and add public-safe textual clues without claiming HTTP status or retry timing.
 
+### Fixed
+
+- `data equity` identifies its extraction branch and series meaning, preserves
+  zero drawdown, and keeps unknown series and unavailable curves explicit.
+
 ## v0.33.0
 
 ### Added

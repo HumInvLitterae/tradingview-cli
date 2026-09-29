@@ -31,9 +31,13 @@ entries, without a newest-first or complete-history guarantee. Compare returned
 and total counts where available; DOM rows cover only rendered content.
 
 Do not label `data equity` as a strategy equity curve solely from its command
-name or `source: internal_api`. The current reader prefers Buy & Hold data when
-available, then tries equity data or strategy bars; output lacks a reliable series
-provenance discriminator. Rows and time fields vary by path, and the bars path
-converts zero drawdown to null. Confirm series meaning independently before
-calculating strategy returns. `equity_summary` with zero data points is a summary,
-not a curve. Keep unknown series identity explicit.
+name or `source: internal_api`. The reader prefers Buy & Hold, then equity data
+or strategy bars. When present, `series_source` identifies the observed branch
+(`report_buy_hold`, `equity_data`, `strategy_bars`); `series_kind=buy_and_hold`
+confirms the first branch, while the other two remain `unconfirmed`. Rows and
+time fields vary by path. Current strategy-bars extraction preserves zero
+drawdown and leaves missing values null. Older binaries lack these labels and
+can turn zero drawdown into null; do not reconstruct a zero from that null.
+Confirm meaning before calculating strategy returns. `performance_summary` or
+`unavailable` with `series_kind=unavailable` provides no curve. An
+`equity_summary` with zero data points remains a summary.

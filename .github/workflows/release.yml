@@ -13,7 +13,7 @@ env:
 
 jobs:
   study-values-js-contract:
-    name: Study-values JavaScript contract
+    name: Study-values and equity JavaScript contracts
     runs-on: ubuntu-24.04
     steps:
       - name: Checkout
@@ -24,8 +24,10 @@ jobs:
           node-version: "24.18.0"
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
-      - name: Run study-values JavaScript contract
-        run: python3 scripts/check-study-values-js-contract.py
+      - name: Run study-values and equity JavaScript contracts
+        run: |
+          python3 scripts/check-study-values-js-contract.py
+          python3 scripts/check-equity-js-contract.py
 
   pine-open-js-contract:
     name: Pine open JavaScript contract
