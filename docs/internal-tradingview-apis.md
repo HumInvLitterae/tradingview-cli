@@ -481,12 +481,11 @@ Current implementation split:
 
 Safety boundary:
 
-- reads preserve endpoint error details with an empty list when appropriate
+- failed/malformed list reads return errors; only a valid empty collection means
+  no listed alerts. Read, create and delete share strict list-response validation
 - creates and deletes require post-mutation readback before success
-- create only falls back to visible dialog automation if the API path fails
-  before the create request is sent
-- post-create ambiguity must not trigger DOM fallback, because retries can
-  create duplicate alerts
+- create never falls back to visible dialog automation or MCP; preflight
+  failure returns an error, and uncertain writes are not replayed
 - deletes support dry-run where applicable and require post-delete absence
 - alert list/create/delete payloads sanitize condition details and must not
   expose raw Pine series, saved-script identifiers, input maps, or endpoint
@@ -611,12 +610,12 @@ Replacement classification:
   user wants the current visible watchlist.
 - `watchlist add` and `watchlist remove` are API-backed account mutations when
   TradingView's logged-in symbols-list API is available for the active custom
-  watchlist. They still verify presence or absence by re-fetching the active
-  list before reporting success.
+  watchlist. They verify presence or absence against the original list ID
+  before reporting success, even if a different list becomes active.
 - `watchlist add-bulk` inherits the API-backed path because it calls the
   single-symbol add operation sequentially.
 - DOM fallback remains for add/remove only when the API list or active list
-  cannot be used before mutation. Post-check failures do not fall back.
+  cannot be used before mutation. POST and readback failures do not fall back.
 
 Endpoint category:
 

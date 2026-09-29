@@ -6,13 +6,13 @@ use tradingview_core::AppError;
 use super::{
     super::common::{js_string, require_finite},
     ALERT_LIST_READER,
-    payload::{alert_api_error_allows_fallback, normalize_alert_create_payload},
+    payload::normalize_alert_create_payload,
 };
 use tradingview_model::alert::{
     alert_condition_type, normalize_alert_condition, validate_alert_condition,
 };
 
-pub async fn alert_create_via_api(
+pub async fn alert_create(
     runtime: &mut impl RuntimeEvaluator,
     price: f64,
     condition: &str,
@@ -141,7 +141,7 @@ pub async fn alert_create_via_api(
                         error: chartMeta.error,
                         error_kind: 'internal_api_unavailable',
                         phase: 'chart_metadata_unavailable',
-                        api_fallback_allowed: true,
+                        api_fallback_allowed: false,
                         price: requestedPrice,
                         condition: requestedCondition,
                         message: requestedMessage,
@@ -157,7 +157,7 @@ pub async fn alert_create_via_api(
                         error: before.error,
                         error_kind: 'internal_api_unavailable',
                         phase: 'pre_list_unavailable',
-                        api_fallback_allowed: true,
+                        api_fallback_allowed: false,
                         price: requestedPrice,
                         condition: requestedCondition,
                         message: requestedMessage,
@@ -215,7 +215,7 @@ pub async fn alert_create_via_api(
                         error: error && error.message ? error.message : String(error),
                         error_kind: 'internal_api_unavailable',
                         phase: 'create_request_unavailable',
-                        api_fallback_allowed: true,
+                        api_fallback_allowed: false,
                         price: requestedPrice,
                         condition: requestedCondition,
                         message: requestedMessage,
@@ -315,231 +315,15 @@ pub async fn alert_create_via_api(
     normalize_alert_create_payload(result)
 }
 
-pub async fn alert_create(
-    runtime: &mut impl RuntimeEvaluator,
-    price: f64,
-    condition: &str,
-    message: Option<&str>,
-) -> Result<Value, AppError> {
-    require_finite(price, "price")?;
-    validate_alert_condition(condition)?;
-
-    match alert_create_via_api(runtime, price, condition, message).await {
-        Ok(data) => return Ok(data),
-        Err(error) if alert_api_error_allows_fallback(&error) => {}
-        Err(error) => return Err(error),
-    }
-
-    let condition = normalize_alert_condition(condition)?;
-    let price_text = price.to_string();
-    let price_literal = js_string(&price_text)?;
-    let condition_literal = js_string(&condition)?;
-    let message_text = message
-        .filter(|value| !value.trim().is_empty())
-        .unwrap_or("(none)");
-    let message_literal = js_string(message_text)?;
-    let should_set_message = message_text != "(none)";
-
-    let result = runtime
-        .evaluate(
-            &format!(
-                r#"
-            (async function() {{
-                function sleep(ms) {{
-                    return new Promise(function(resolve) {{ setTimeout(resolve, ms); }});
-                }}
-
-                function setInputValue(input, value) {{
-                    var setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set;
-                    setter.call(input, value);
-                    input.dispatchEvent(new Event('input', {{ bubbles: true }}));
-                    input.dispatchEvent(new Event('change', {{ bubbles: true }}));
-                }}
-
-                function setTextAreaValue(textarea, value) {{
-                    var setter = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value').set;
-                    setter.call(textarea, value);
-                    textarea.dispatchEvent(new Event('input', {{ bubbles: true }}));
-                    textarea.dispatchEvent(new Event('change', {{ bubbles: true }}));
-                }}
-
-                function visibleRect(element) {{
-                    var rect = element.getBoundingClientRect();
-                    return rect.width > 0 && rect.height > 0 ? rect : null;
-                }}
-
-                function textOf(element) {{
-                    return (element.textContent || element.innerText || '').trim();
-                }}
-
-                function findAlertDialog() {{
-                    var dialogs = Array.from(document.querySelectorAll('[role="dialog"], [class*="dialog"], [class*="popup"]'));
-                    for (var i = 0; i < dialogs.length; i++) {{
-                        if (visibleRect(dialogs[i]) && /アラート|alert/i.test(textOf(dialogs[i]))) {{
-                            return dialogs[i];
-                        }}
-                    }}
-                    return document;
-                }}
-
-                var openButton = document.querySelector('[data-name="set-alert-button"]')
-                    || document.querySelector('[aria-label="Create Alert"]')
-                    || document.querySelector('[aria-label="アラート作成"]')
-                    || document.querySelector('[data-name="alerts"]');
-                var opened = false;
-                var openSelector = null;
-                if (openButton) {{
-                    var ariaLabel = openButton.getAttribute('aria-label');
-                    var dataName = openButton.getAttribute('data-name');
-                    if (dataName === 'set-alert-button') {{
-                        openSelector = '[data-name="set-alert-button"]';
-                    }} else if (ariaLabel === 'Create Alert') {{
-                        openSelector = '[aria-label="Create Alert"]';
-                    }} else if (ariaLabel === 'アラート作成') {{
-                        openSelector = '[aria-label="アラート作成"]';
-                    }} else {{
-                        openSelector = '[data-name="alerts"]';
-                    }}
-                    openButton.click();
-                    opened = true;
-                }}
-
-                await sleep(1000);
-
-                var scope = findAlertDialog();
-                var inputs = Array.from(scope.querySelectorAll('input'));
-                var priceInput = null;
-                for (var i = 0; i < inputs.length; i++) {{
-                    var value = inputs[i].value || '';
-                    if (/^-?\d+([.,]\d+)?$/.test(value.trim())) {{
-                        priceInput = inputs[i];
-                        break;
-                    }}
-                }}
-                if (!priceInput && inputs.length > 0) {{
-                    priceInput = inputs[inputs.length - 1];
-                }}
-
-                var priceSet = false;
-                if (priceInput) {{
-                    setInputValue(priceInput, {price_literal});
-                    priceSet = true;
-                }}
-
-                var messageSet = false;
-                if ({should_set_message}) {{
-                    scope = findAlertDialog();
-                    var textarea = scope.querySelector('textarea');
-                    if (!textarea) {{
-                        var labels = Array.from(scope.querySelectorAll('*'));
-                        var messageLabel = null;
-                        for (var k = 0; k < labels.length; k++) {{
-                            if (/^(message|メッセージ)$/i.test(textOf(labels[k]))) {{
-                                messageLabel = labels[k];
-                                break;
-                            }}
-                        }}
-                        if (messageLabel) {{
-                            var labelRect = visibleRect(messageLabel);
-                            var candidates = Array.from(scope.querySelectorAll('button')).filter(function(button) {{
-                                var rect = visibleRect(button);
-                                if (!rect || !labelRect || rect.top <= labelRect.top) return false;
-                                return !/^(create|作成|cancel|キャンセル|apply|適用)$/i.test(textOf(button));
-                            }}).sort(function(left, right) {{
-                                return left.getBoundingClientRect().top - right.getBoundingClientRect().top;
-                            }});
-                            if (candidates.length > 0) {{
-                                candidates[0].click();
-                                await sleep(300);
-                            }}
-                        }}
-                    }}
-
-                    scope = findAlertDialog();
-                    textarea = scope.querySelector('textarea')
-                        || document.querySelector('textarea[placeholder*="message"], textarea[placeholder*="メッセージ"]');
-                    if (textarea) {{
-                        setTextAreaValue(textarea, {message_literal});
-                        messageSet = true;
-                        await sleep(100);
-                        var applyButton = Array.from(scope.querySelectorAll('button[data-name="submit"], button')).find(function(button) {{
-                            return /^(apply|適用)$/i.test(textOf(button));
-                        }});
-                        if (applyButton) {{
-                            applyButton.click();
-                            await sleep(300);
-                        }}
-                    }}
-                }}
-
-                await sleep(500);
-
-                var createButton = null;
-                scope = findAlertDialog();
-                var buttons = Array.from(scope.querySelectorAll('button[data-name="submit"], button'));
-                for (var j = 0; j < buttons.length; j++) {{
-                    if (/^(create|作成)$/i.test(textOf(buttons[j]))) {{
-                        createButton = buttons[j];
-                        break;
-                    }}
-                }}
-                if (!createButton) {{
-                    createButton = buttons.find(function(button) {{
-                        return button.getAttribute('type') === 'submit' && !/^(apply|適用)$/i.test(textOf(button));
-                    }});
-                }}
-
-                var created = false;
-                if (createButton) {{
-                    createButton.click();
-                    created = true;
-                }}
-
-                return {{
-                    opened: opened,
-                    open_selector: openSelector,
-                    price: {price},
-                    condition: {condition_literal},
-                    message: {message_literal},
-                    price_set: priceSet,
-                    message_set: messageSet,
-                    created: created,
-                    source: 'dom_fallback'
-                }};
-            }})()
-            "#
-            ),
-            true,
-        )
-        .await?;
-
-    normalize_alert_create_payload(result)
-}
-
 #[cfg(test)]
 mod tests {
     use std::collections::VecDeque;
 
-    use serde_json::{Value, json};
+    use serde_json::json;
     use tradingview_core::ErrorKind;
 
     use super::super::super::test_support::FakeRuntime;
     use super::*;
-
-    fn alert_create_api_fallback() -> Value {
-        json!({
-            "error": "Alert create API unavailable in test",
-            "error_kind": "internal_api_unavailable",
-            "phase": "pre_list_unavailable",
-            "api_fallback_allowed": true,
-            "price": 100.0,
-            "condition": "crossing",
-            "message": "(none)",
-            "price_set": false,
-            "created": false,
-            "source": "internal_api"
-        })
-    }
 
     #[tokio::test]
     async fn alert_create_returns_practical_old_cli_fields() {
@@ -584,35 +368,25 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn alert_create_falls_back_to_dom_when_api_is_unavailable_before_mutation() {
-        let mut runtime = FakeRuntime::new(VecDeque::from([
-            alert_create_api_fallback(),
-            json!({
-                "opened": true,
-                "open_selector": "[aria-label=\"Create Alert\"]",
-                "price": 123.45,
-                "condition": "crossing",
-                "message": "Breakout",
-                "price_set": true,
-                "message_set": true,
-                "created": true,
-                "source": "dom_fallback"
-            }),
-        ]));
-
-        let data = alert_create(&mut runtime, 123.45, "crossing", Some("Breakout"))
-            .await
-            .unwrap();
-
-        assert_eq!(data["price"], 123.45);
-        assert_eq!(data["condition"], "crossing");
-        assert_eq!(data["message"], "Breakout");
-        assert_eq!(data["price_set"], true);
-        assert_eq!(data["source"], "dom_fallback");
-        assert!(runtime.evaluated[1].0.contains("Create Alert"));
-        assert!(runtime.evaluated[1].0.contains("set-alert-button"));
-        assert!(runtime.evaluated[1].0.contains("\"Breakout\""));
-        assert!(runtime.evaluated[1].1);
+    async fn alert_create_preflight_failure_never_opens_dialog() {
+        for phase in ["chart_metadata_unavailable", "pre_list_unavailable"] {
+            let mut runtime = FakeRuntime::new([json!({
+                "error": "API preflight unavailable", "error_kind": "internal_api_unavailable",
+                "phase": phase, "api_fallback_allowed": true, "source": "internal_api"
+            })]);
+            let error = alert_create(&mut runtime, 100.0, "crossing", None)
+                .await
+                .unwrap_err();
+            assert_eq!(error.kind, ErrorKind::InternalApiUnavailable);
+            assert_eq!(error.details.unwrap()["phase"], phase);
+            assert_eq!(runtime.evaluated.len(), 1);
+            let expression = &runtime.evaluated[0].0;
+            assert!(!expression.contains("document.querySelector"));
+            assert!(!expression.contains("api_fallback_allowed: true"));
+            assert!(runtime.inserted_text.is_empty());
+            assert!(runtime.mouse_events.is_empty());
+            assert!(runtime.key_events.is_empty());
+        }
     }
 
     #[tokio::test]
@@ -660,50 +434,6 @@ mod tests {
 
         assert_eq!(error.kind, ErrorKind::Validation);
         assert!(runtime.evaluated.is_empty());
-    }
-
-    #[tokio::test]
-    async fn alert_create_fails_when_price_was_not_set() {
-        let mut runtime = FakeRuntime::new(VecDeque::from([
-            alert_create_api_fallback(),
-            json!({
-                "price": 100.0,
-                "condition": "crossing",
-                "message": "(none)",
-                "price_set": false,
-                "created": true,
-                "source": "dom_fallback"
-            }),
-        ]));
-
-        let error = alert_create(&mut runtime, 100.0, "crossing", None)
-            .await
-            .unwrap_err();
-
-        assert_eq!(error.kind, ErrorKind::InternalApiUnavailable);
-        assert_eq!(error.message, "Alert price input could not be set");
-    }
-
-    #[tokio::test]
-    async fn alert_create_fails_when_create_button_was_not_clicked() {
-        let mut runtime = FakeRuntime::new(VecDeque::from([
-            alert_create_api_fallback(),
-            json!({
-                "price": 100.0,
-                "condition": "crossing",
-                "message": "(none)",
-                "price_set": true,
-                "created": false,
-                "source": "dom_fallback"
-            }),
-        ]));
-
-        let error = alert_create(&mut runtime, 100.0, "crossing", None)
-            .await
-            .unwrap_err();
-
-        assert_eq!(error.kind, ErrorKind::InternalApiUnavailable);
-        assert_eq!(error.message, "Alert create button could not be clicked");
     }
 
     #[tokio::test]

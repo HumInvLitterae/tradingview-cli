@@ -1,7 +1,8 @@
 # Post-v0.33.0 roadmap
 
 Status: the three initial contracts are implemented and locally validated.
-In progress: approved legacy-account failure and fallback corrections.
+Legacy-account corrections are implemented; downstream adoption and release
+qualification remain. Output-schema design is the next development candidate.
 Baseline: [released v0.33.0](releases/v0.33.0.md). The
 [inventory](next-version-work-items.md) orders work; the
 [analysis-reliability plan](plans/tradingview-cli-analysis-reliability.md)
