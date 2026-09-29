@@ -30,9 +30,9 @@ with `contract_version: cli_spec.v1` and `binary_version` (including build ident
 - `coverage.syntax` is `clap_metadata`; `coverage.validation` is `partial`.
   Conditional requirements and adapter checks are not fully represented. Read
   the command description and skill guidance for remaining conditions.
-- `coverage.semantics` is `documented` for MCP search, columns, symbol, symbols,
-  bars, alert history and the ten watchlist/alert mutations; it is `unavailable`
-  for other commands except the Desktop paths listed below.
+- `coverage.semantics` is `documented` for the annotated command paths described
+  below, including official technical snapshots. Inspect the running binary's
+  coverage field for the selected path; unannotated paths report `unavailable`.
   `semantics: null` means not annotated, never no side effects.
   More commands can acquire annotations without changing how they execute.
 - Documented read semantics contain source, prerequisites, account/provider effects,
@@ -59,7 +59,8 @@ to offline specification lookup.
 
 ## Output schemas
 
-`tv schema` lists supported paths; `tv schema values` and `tv schema mcp bars`
+In v0.34.0 and later, `tv schema` lists supported paths;
+`tv schema values` and `tv schema mcp bars`
 export their JSON Schema 2020-12 descriptions without connecting to Desktop or
 MCP. Successful output uses the normal envelope with command `schema` and
 `data.contract_version=cli_schema.v1`; `binary_version` identifies the build.
@@ -82,7 +83,8 @@ not a new version marker inside unversioned command output.
 
 ## Offline invocation validation
 
-Pass argv after a required separator, without an executable name:
+In v0.34.0 and later, pass argv after a required separator, without an executable
+name:
 
 ```sh
 tv validate -- values
