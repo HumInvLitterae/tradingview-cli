@@ -17,6 +17,11 @@ package version omits the leading `v`.
 
 ### Changed
 
+- Legacy Desktop alert rows expose the threshold of an exact simple-price
+  condition as condition.value when that field is absent. Genuine zero is
+  preserved; ambiguous/study conditions remain unprojected and raw series stay
+  private. Symbol-marker identity is unchanged.
+
 - Selected-chart OHLCV preserves missing numeric cells as null. Incomplete
   extrema/volume and unavailable endpoint-derived changes remain null rather
   than zero or aggregates over only known entries. Zero-open change_pct is null.

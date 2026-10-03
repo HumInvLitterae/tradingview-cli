@@ -17,6 +17,7 @@ pub(super) fn describe(path: &[&str]) -> Option<Value> {
         "limits": [
             "Uses the selected Desktop session and private alert endpoints, not official MCP. Account listing/deletion is not limited to the current chart symbol.",
             "Legacy payloads can include alert messages and account-local details. Condition projections omit study internals and cannot reconstruct complex Pine alerts; keep results private.",
+            "Absent condition.value is projected only from an exact simple cross/cross_up/cross_down condition with ordered barset/value series and one finite numeric threshold. Extra entry fields or ambiguous shapes are not projected; zero and existing values are preserved. Raw series stay omitted and symbol markers are not decoded or normalized.",
             "Prefer official MCP for supported explicit-symbol price alerts and explicit-ID account management. Compare notification, expiry, condition and readback semantics first; no silent MCP fallback is performed. Pine alertcondition workflows require separate assessment."
         ]
     });

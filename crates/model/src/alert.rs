@@ -40,6 +40,31 @@ pub fn alert_condition_type(condition: &str) -> &'static str {
     }
 }
 
+fn simple_price_threshold(condition: &Value) -> Option<&Value> {
+    if !matches!(
+        condition.get("type")?.as_str()?,
+        "cross" | "cross_up" | "cross_down"
+    ) {
+        return None;
+    }
+
+    let [barset, threshold] = condition.get("series")?.as_array()?.as_slice() else {
+        return None;
+    };
+    let barset = barset.as_object()?;
+    let threshold = threshold.as_object()?;
+    if barset.len() != 1
+        || barset.get("type")?.as_str()? != "barset"
+        || threshold.len() != 2
+        || threshold.get("type")?.as_str()? != "value"
+    {
+        return None;
+    }
+
+    let value = threshold.get("value")?;
+    value.as_f64()?.is_finite().then_some(value)
+}
+
 fn sanitize_alert_condition_value(condition: &Value) -> Value {
     let Some(object) = condition.as_object() else {
         return condition.clone();
@@ -59,8 +84,11 @@ fn sanitize_alert_condition_value(condition: &Value) -> Value {
     if let Some(value) = object.get("operator").cloned() {
         sanitized.insert("operator".to_string(), value);
     }
-    if let Some(value) = object.get("value").cloned() {
-        sanitized.insert("value".to_string(), value);
+    if let Some(value) = object
+        .get("value")
+        .or_else(|| simple_price_threshold(condition))
+    {
+        sanitized.insert("value".to_string(), value.clone());
     }
 
     if let Some(series) = object.get("series").and_then(Value::as_array) {
@@ -431,6 +459,116 @@ mod tests {
         assert!(condition.get("series").is_none());
         assert!(condition.get("pine_id").is_none());
         assert!(condition.get("inputs").is_none());
+    }
+
+    #[test]
+    fn simple_price_threshold_is_projected_in_all_public_alert_rows() {
+        for (condition_type, price, symbol) in [
+            ("cross", json!(12.34), "EXCHANGE:EXAMPLE"),
+            ("cross_up", json!(0), "EXCHANGE:EXAMPLE"),
+            ("cross_down", json!(-1.5), "EXCHANGE:EXAMPLE"),
+            (
+                "cross",
+                json!(12.34),
+                r#"={"symbol":"EXCHANGE:EXAMPLE","adjustment":"splits"}"#,
+            ),
+        ] {
+            let alert = json!({
+                "alert_id": "example",
+                "symbol": symbol,
+                "condition": {
+                    "type": condition_type,
+                    "series": [{"type": "barset"}, {"type": "value", "value": price}]
+                }
+            });
+            let payload = sanitize_alert_payload(json!({
+                "alerts": [alert.clone()],
+                "target_alerts": [alert.clone()],
+                "matched_alert": alert
+            }));
+
+            for row in [
+                &payload["alerts"][0],
+                &payload["target_alerts"][0],
+                &payload["matched_alert"],
+            ] {
+                assert_eq!(row["symbol"], symbol);
+                assert_eq!(row["condition"]["value"], price);
+                assert_eq!(row["condition"]["series_count"], 2);
+                assert_eq!(row["condition"]["has_study_series"], false);
+                assert!(row["condition"].get("series").is_none());
+            }
+        }
+    }
+
+    #[test]
+    fn price_projection_rejects_unsupported_or_ambiguous_conditions() {
+        let conditions = [
+            json!({
+                "type": "alert_cond",
+                "series": [{"type": "barset"}, {"type": "value", "value": 12}]
+            }),
+            json!({
+                "type": "cross",
+                "series": [{"type": "value", "value": 12}, {"type": "barset"}]
+            }),
+            json!({
+                "type": "cross",
+                "series": [
+                    {"type": "barset"},
+                    {"type": "value", "value": 12},
+                    {"type": "value", "value": 13}
+                ]
+            }),
+            json!({
+                "type": "cross",
+                "series": [{"type": "barset", "offset": 1}, {"type": "value", "value": 12}]
+            }),
+            json!({
+                "type": "cross",
+                "series": [{"type": "barset"}, {"type": "value", "value": 12, "offset": 1}]
+            }),
+            json!({
+                "type": "cross",
+                "series": [
+                    {"type": "study", "pine_id": "synthetic-private-script"},
+                    {"type": "value", "value": 12}
+                ]
+            }),
+            json!({"type": "cross"}),
+            json!({"type": "cross", "series": []}),
+            json!({"type": "cross", "series": [{"type": "barset"}]}),
+        ];
+        for condition in conditions {
+            let sanitized = sanitize_alert_condition_value(&condition);
+            assert!(sanitized.get("value").is_none(), "{condition}");
+            assert!(sanitized.get("series").is_none());
+            assert!(!sanitized.to_string().contains("synthetic-private-script"));
+        }
+
+        for value in [Value::Null, json!("12"), json!(true), json!({"price": 12})] {
+            let condition = json!({
+                "type": "cross",
+                "series": [{"type": "barset"}, {"type": "value", "value": value}]
+            });
+            assert!(
+                sanitize_alert_condition_value(&condition)
+                    .get("value")
+                    .is_none()
+            );
+        }
+    }
+
+    #[test]
+    fn existing_condition_value_takes_precedence_over_series_projection() {
+        for value in [Value::Null, json!(0), json!(99), json!("legacy value")] {
+            let condition = json!({
+                "type": "cross",
+                "value": value,
+                "series": [{"type": "barset"}, {"type": "value", "value": 12}]
+            });
+            assert_eq!(sanitize_alert_condition_value(&condition)["value"], value);
+        }
     }
 
     #[test]

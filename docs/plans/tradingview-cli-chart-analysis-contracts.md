@@ -3,7 +3,8 @@
 Status: direction and missing-value examples approved 2026-10-03.
 OHLCV is implemented and locally validated. The owner deferred CI and approved
 continuing other work. Pine lines/boxes offline support is implemented and
-locally validated; alert-price projection remains a proposal.
+locally validated. Legacy alert-price projection is implemented and locally
+validated.
 The PM is the sole executor. Version selection and release preparation are
 separate. The [roadmap](../next-version-roadmap.md) and
 [inventory](../next-version-work-items.md) own direction and priority.
@@ -129,23 +130,32 @@ schema catalog 1 test and the standard production-fixture schema gate passed.
 Scoped CLI Clippy, formatting and standalone/package parity checks passed.
 Acquisition/output and dependencies are unchanged; CI remains owner-deferred.
 
-## Legacy alert price proposal — pending owner review
+## Approved legacy alert price projection
 
 The creator emits a simple condition with type cross/cross_up/cross_down and
-series exactly `[ {type:barset}, {type:value,value:12.34} ]`. The public sanitizer
-removes series and does not copy its threshold into the existing condition.value.
-The exported condition therefore omits a known threshold.
+series exactly `[ {type:barset}, {type:value,value:12.34} ]`. Before this change,
+the public sanitizer removed series without copying its threshold into the
+existing condition.value, leaving the exported condition without its known
+threshold.
 
-Propose a scalar projection only when condition.value is absent and the condition
-matches this creator shape: supported condition type, exactly those two entries
-in that order, no extra entry fields, and one finite JSON number. Preserve zero;
-leave unsupported, study-based, ambiguous or malformed shapes without a projected
+The owner approved a scalar projection only when condition.value is absent and
+the condition matches this creator shape: supported condition type, exactly
+those two entries in that order, no extra entry fields, and one finite JSON number.
+Preserve zero; leave unsupported, study-based, ambiguous or malformed shapes without a projected
 value. Existing top-level value behavior is unchanged. Never restore raw series.
 
 Synthetic before: `{type:cross,series_count:2,has_study_series:false}`.
-Proposed after: `{type:cross,value:12.34,series_count:2,has_study_series:false}`.
-This is an additive public-contract change requiring agreement before code edits.
+Approved after: `{type:cross,value:12.34,series_count:2,has_study_series:false}`.
 It does not decode symbol markers or establish currency/adjustment/session
 identity. A marker-based symbol may still prevent safe duplicate matching;
 keep that identity decision separate rather than guess or change the public symbol.
+
+Projection is implemented in the existing public-row sanitizer. Focused model
+checks cover all three public row locations, supported condition types, real
+zero, malformed/ambiguous shapes, private study removal, existing values
+including null, and unchanged symbol markers. Model alert tests and the CLI
+alert-spec test passed, as did scoped model Clippy, formatting, public/diff
+hygiene and standalone/package skill parity. Package staging used the existing
+installed binary solely for guidance validation, not candidate-binary acceptance.
+No provider/account operation or dependency was added; CI remains owner-deferred.
 

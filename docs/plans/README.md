@@ -12,6 +12,7 @@
 v0.34.0 is published. The owner approved chart-analysis schema and invocation
 support next, starting with the OHLCV summary output. The missing-value
 examples are approved and validated locally. CI is deferred by the owner while
-Pine lines/boxes offline support is locally validated. Alert-price projection remains a
-proposal. Completed release records preserve evidence for their recorded inputs; they are not current
+Pine lines/boxes offline support and legacy simple-price projection are locally
+validated. Completed
+release records preserve evidence for their recorded inputs; they are not current
 checkout, runtime acceptance or authorization for new live operations.

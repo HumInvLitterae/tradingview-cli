@@ -14,9 +14,12 @@ v0.34.0 is published; its completed scope is in the
 
 ## Bounded follow-ups
 
-- Legacy alert price projection: The public sanitizer drops series without projecting its threshold
-  into condition.value. Investigate a safe scalar/identity contract separately;
-  no raw series restoration or automatic MCP migration is approved.
+- Legacy alert price projection: the owner approved projecting a finite scalar
+  into condition.value
+  only for the exact simple-price creator shape when value is absent. Implemented
+  with focused model/CLI acceptance; CI deferred. Existing values and zero remain
+  intact; symbol-marker identity stays unresolved. No raw series restoration or
+  automatic MCP migration is approved.
 
 - Official technical snapshots: daily live success established; weekly previously
   returned provider-internal 429. Monthly/two-hour success remains unverified.

@@ -25,8 +25,11 @@ contracts and acceptance.
    labels/tables are the next coverage candidates. Continue from actual chart
    analysis consumers rather than all-command coverage. The owner deferred CI.
 
-Keep raw study-series and account message content private. MCP technical snapshots are already implemented;
-further interval qualification is a bounded verification task, not a new feature.
+The owner also approved exposing the scalar threshold of an exact legacy
+simple-price condition when condition.value is absent, without restoring raw
+study-series or changing symbol identity. MCP technical snapshots are already
+implemented; further interval qualification is a bounded verification task,
+not a new feature.
 
 ## Working limits and deferred work
 

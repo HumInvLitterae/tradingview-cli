@@ -1063,7 +1063,15 @@ List returns an error for failed reads or malformed row collections; a valid
 empty collection still succeeds. Creation/deletion checks use the same strict
 reader, so unavailable readback cannot confirm success. Older binaries can
 return outer success with `data.error`; never treat that as an empty account.
-Missing active state defaults to true. Provider timestamps are not normalized and projected conditions cannot reconstruct complex Pine alerts.
+Missing active state defaults to true. Provider timestamps are not normalized.
+When condition.value is absent, a simple cross/cross_up/cross_down condition
+with exactly two series entries, `{type:barset}` then `{type:value,value:N}`,
+projects its finite numeric threshold into condition.value. Extra entry fields,
+study conditions, reversed or additional entries and nonnumeric thresholds are
+not projected. Real zero and existing value fields (including null) are preserved.
+Raw series remain omitted; projected conditions cannot reconstruct complex Pine
+alerts. Symbols are not decoded or normalized, so a projected price does not
+establish symbol-marker identity, currency, adjustment or session equivalence.
 Messages remain in legacy output, so keep account details private.
 
 Create uses the active chart symbol/timeframe. Conditions crossing, greater_than
