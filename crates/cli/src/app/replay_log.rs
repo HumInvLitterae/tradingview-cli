@@ -840,6 +840,24 @@ mod tests {
         );
     }
 
+    #[tokio::test]
+    async fn replay_ohlcv_attachment_keeps_unknown_volume() {
+        let mut runtime = crate::ops::test_support::FakeRuntime::new([json!({
+            "symbol": "NASDAQ:EXAMPLE",
+            "bars": [{"time": 1, "open": 1, "high": 2, "low": 0, "close": 2, "volume": null}]
+        })]);
+        let attachment = replay_log_ohlcv_summary_attachment(&mut runtime, 1)
+            .await
+            .unwrap();
+        assert!(attachment["ohlcv_summary"]["volume"].is_null());
+        assert!(attachment["ohlcv_summary"]["avg_volume"].is_null());
+        assert_eq!(attachment["ohlcv_summary"]["close"], 2.0);
+        assert_eq!(
+            attachment["contract_version"],
+            REPLAY_LOG_OHLCV_ATTACHMENT_CONTRACT_VERSION
+        );
+    }
+
     #[test]
     fn step_event_can_include_ohlcv_summary_attachment() {
         let attachment = replay_log_ohlcv_summary_attachment_ok(json!({

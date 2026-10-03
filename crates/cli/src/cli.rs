@@ -218,7 +218,7 @@ pub enum Command {
     UiState,
     #[command(
         about = "Get OHLCV summary data",
-        long_about = "Get OHLCV chart bar data from the selected chart target.\n\nBy default this returns recent bars from the current chart. Use `--count <N>` for raw bars and `--summary` for an aggregate summary. If more than one TradingView target is open, run `tv tab list` and pass `tv --target-id <ID> ohlcv ...`. If bars are unavailable, inspect the structured error details, then rerun `tv tab list`, `tv --target-id <ID> state`, and `tv --target-id <ID> ohlcv --count 1` against the active chart target."
+        long_about = "Get OHLCV chart bar data from the selected chart target.\n\nBy default this returns recent bars from the current chart. Use `--count <N>` for raw bars and `--summary` for an aggregate summary. Missing numeric cells remain null; incomplete extrema or volume leave their aggregates null, and a zero open leaves change_pct null. If more than one TradingView target is open, run `tv tab list` and pass `tv --target-id <ID> ohlcv ...`. If bars are unavailable, inspect the structured error details, then rerun `tv tab list`, `tv --target-id <ID> state`, and `tv --target-id <ID> ohlcv --count 1` against the active chart target."
     )]
     Ohlcv {
         #[arg(long, short)]

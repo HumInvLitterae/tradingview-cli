@@ -33,7 +33,7 @@ gated. Inspect focus and the current target before input. Older binaries still u
 | --- | --- | --- |
 | Chart identity and current state | `tv state` | Confirm symbol and resolution on the intended target. |
 | Main-series quote | `tv quote --source chart` | A supplied different symbol may switch and restore the chart. |
-| Chart bars | `tv ohlcv --summary` or `tv ohlcv --count <N>` | After an authorized symbol/timeframe change, confirm fresh data before interpreting it. |
+| Chart bars | `tv ohlcv --summary` or `tv ohlcv --count <N>` | After an authorized symbol/timeframe change, confirm fresh data before interpreting it. Preserve unknown aggregates; see [OHLCV interpretation](references/workflow.md#ohlcv-missing-values). |
 | Visible study values | `tv values` | Use entity identity and inputs for same-name studies. |
 | Drawing-derived data | `tv data lines`, `labels`, `tables`, or `boxes` | Report returned values only. |
 | Chart image | `tv screenshot --region chart --output <PATH>` | Add `--wait-for-render` after state changes when stable context is needed. |
@@ -53,15 +53,16 @@ or buy/sell recommendations. A chart image or viewport change alone does not
 prove historical export completeness.
 
 When the installed binary supports it, `tv schema` lists available output
-schemas. Use `tv schema values` for chart study values or `tv schema mcp bars`
-for official bars; the JSON Schema is in `data.schema`. This is offline lookup,
+schemas. Use `tv schema values` for chart study values, `tv schema ohlcv` for
+selected-chart bars/summaries or `tv schema mcp bars` for official bars; the JSON Schema is in `data.schema`. This is offline lookup,
 not acquisition or proof of data quality. Keep unknown/null/partial observations
 and honor `unchecked`; older binaries retain spec/help guidance.
 
-For supported binaries, `tv validate -- values` or
+For supported binaries, `tv validate -- values`,
+`tv validate -- ohlcv --summary --count 100` or
 `tv validate -- mcp bars EXCHANGE:SYMBOL --count 20` checks candidate argv without
 executing it. Substitute the requested qualified symbol; omit the executable
-name after `--`. Only these two paths have local validation initially. A valid
+name after `--`. Support depends on the installed version. A valid
 result does not establish credentials, target readiness, data availability or
 permission; unsupported is not valid. Use validation when constructing uncertain
 arguments, not as a mandatory extra process before every read.

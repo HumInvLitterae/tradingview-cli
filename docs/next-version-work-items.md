@@ -8,8 +8,8 @@ v0.34.0 is published; its completed scope is in the
 | Order | Work | State / completion condition |
 | --- | --- | --- |
 | 1 | Close v0.34.0 | Complete: publication, successful tag workflow and four native asset entries verified. Record archived and current entry points updated. No artifact rebuild or download repeated. |
-| 2 | OHLCV missing-value contract | Proposal ready for owner review. Existing chart reader coerces missing volume to zero; aggregates also substitute zero or ignore missing entries. Numeric-only consumers must handle nulls explicitly if introduced. |
-| 3 | OHLCV schema and offline validation | Direction approved. Implement after the missing-value decision, covering raw/summary mode through existing facilities, unchanged count normalization and zero-I/O validation. |
+| 2 | OHLCV missing-value contract | Concrete examples approved. Implementation preserves unknown cells/aggregates as null and real zero. Consumers must handle nulls explicitly; focused local checks passed, normal CI pending. |
+| 3 | OHLCV schema and offline validation | Implemented for raw/summary mode through existing facilities, unchanged count normalization and zero-I/O validation. Focused fixture/schema/CLI checks passed; normal CI pending. |
 | 4 | Pine graphics schema/validation | Next candidate, not an approved concrete contract. Inspect actual consumer needs after OHLCV. |
 
 ## Bounded follow-ups

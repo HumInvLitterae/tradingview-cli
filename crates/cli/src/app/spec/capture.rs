@@ -31,7 +31,7 @@ pub(super) fn describe(path: &[&str]) -> Option<Value> {
             result["variants"] = summary_variants();
             result["limits"].as_array_mut().unwrap().extend([
                 json!("Reads recent loaded chart bars, not only bars inside the viewport. count is clamped, including zero to one; fewer bars can be returned."),
-                json!("Summary is a derived aggregate, not a lossless bar export. Missing numeric fields can be skipped or defaulted by the existing summarizer; inspect raw bars when values matter."),
+                json!("Summary is a derived aggregate, not a lossless bar export. Missing numeric cells remain null. Extrema and volume aggregates require every returned bar; missing endpoints leave dependent changes null. A zero open leaves change_pct null."),
                 json!("Unavailable bars produce structured readiness errors. Read state on the same target before retrying.")
             ]);
             json!(["tv", "ohlcv", "--count", "10"])
@@ -56,7 +56,7 @@ pub(super) fn describe(path: &[&str]) -> Option<Value> {
             result["limits"].as_array_mut().unwrap().extend([
                 json!("Moves the selected chart viewport, then reads recent loaded bars. This is not a symbol-targeted historical query or a range-filtered bars export."),
                 json!("Inspect range_operation, returned_bars_range and selected_chart_range_match separately from envelope success. Requested viewport and returned bars can differ."),
-                json!("Prints a JSON envelope to stdout without writing a file. Summary omits last_5_bars. A later read failure does not undo the earlier viewport change.")
+                json!("Prints a JSON envelope to stdout without writing a file. Summary omits last_5_bars and preserves unknown aggregates as null. A later read failure does not undo the earlier viewport change.")
             ]);
             json!([
                 "tv",

@@ -55,7 +55,7 @@ pub(super) fn check(args: &[OsString]) -> Result<Value, AppError> {
         return Err(syntax_error());
     };
     let result = match command {
-        Command::Values => Ok(()),
+        Command::Values | Command::Ohlcv { .. } => Ok(()),
         Command::Mcp {
             command:
                 McpCommand::Bars {

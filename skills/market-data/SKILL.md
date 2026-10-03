@@ -84,7 +84,7 @@ and honor `unchecked`; older binaries retain spec/help guidance.
 For supported binaries, `tv validate -- values` or
 `tv validate -- mcp bars EXCHANGE:SYMBOL --count 20` checks candidate argv without
 executing it. Substitute the requested qualified symbol; omit the executable
-name after `--`. Only these two paths have local validation initially. A valid
+name after `--`. Supported paths depend on the installed version. A valid
 result does not establish credentials, target readiness, data availability or
 permission; unsupported is not valid. Use validation when constructing uncertain
 arguments, not as a mandatory extra process before every read.

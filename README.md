@@ -332,8 +332,14 @@ historical indicator series. See the
 [technical snapshot contract](https://github.com/HumInvLitterae/tradingview-cli/blob/main/docs/official-mcp.md#official-technical-snapshots-next-version).
 
 `schema` exports JSON Schema 2020-12 for `values` and `mcp bars` output.
-`validate` checks candidate argv after `--`, without an executable name, for the
-same two command paths. Both are offline. Unsupported paths are reported
+Development builds also support `tv schema ohlcv` and
+`tv validate -- ohlcv --summary --count 100`. The OHLCV schema describes raw
+bars and aggregate summaries from the selected chart. Missing numbers remain
+null, and genuine zero values are retained.
+Consumers of OHLCV, export summaries and Replay attachments must allow those
+nulls; see the [migration details](docs/cli-spec.md#selected-chart-ohlcv-missing-values).
+`validate` checks candidate argv after `--`, without an executable name.
+Both helpers are offline. Unsupported paths are reported
 explicitly; successful validation establishes local input validity, not runtime
 readiness, authorization or data quality. They do not execute the candidate.
 See [offline contracts and limits](https://github.com/HumInvLitterae/tradingview-cli/blob/main/docs/cli-spec.md).

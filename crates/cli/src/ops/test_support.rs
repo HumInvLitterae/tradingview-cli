@@ -7,7 +7,7 @@ use tradingview_cdp::{KeyEvent, MouseEvent, RuntimeEvaluator, ScreenshotClip};
 use tradingview_core::{AppError, ErrorKind};
 
 pub(crate) struct FakeRuntime {
-    pub(super) evaluated: Vec<(String, bool)>,
+    pub(crate) evaluated: Vec<(String, bool)>,
     responses: VecDeque<Value>,
     screenshot: Vec<u8>,
     clipped_screenshot: Result<Vec<u8>, ErrorKind>,

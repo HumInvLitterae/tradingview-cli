@@ -5,6 +5,20 @@ All notable changes to this project are recorded here.
 This project uses Git tags such as `v0.2.0` for public releases. The Cargo
 package version omits the leading `v`.
 
+## Unreleased
+
+### Added
+
+- Offline `schema ohlcv` and `validate -- ohlcv ...` support for selected-chart
+  raw/summary modes, without Desktop or provider access during those checks.
+
+### Changed
+
+- Selected-chart OHLCV preserves missing numeric cells as null. Incomplete
+  extrema/volume and unavailable endpoint-derived changes remain null rather
+  than zero or aggregates over only known entries. Zero-open change_pct is null.
+  Consumers of OHLCV, export summaries and Replay attachments must allow nulls.
+
 ## v0.34.0
 
 ### Added

@@ -11,6 +11,6 @@
 
 v0.34.0 is published. The owner approved chart-analysis schema and invocation
 support next, starting with the OHLCV summary output. The missing-value
-proposal requires concrete contract review before producer changes. Completed
+examples are approved; producer/schema/validation checks passed locally; normal CI is pending. Completed
 release records preserve evidence for their recorded inputs; they are not current
 checkout, runtime acceptance or authorization for new live operations.

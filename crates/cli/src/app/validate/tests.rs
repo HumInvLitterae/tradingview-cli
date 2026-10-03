@@ -13,6 +13,9 @@ fn argv(parts: &[&str]) -> Vec<OsString> {
 fn supported_requests_apply_only_local_checks() {
     for parts in [
         vec!["values"],
+        vec!["ohlcv", "--summary", "--count", "0"],
+        vec!["ohlcv", "--count", "501"],
+        vec!["--target-id", "synthetic-target", "ohlcv"],
         vec!["--target-id", "synthetic-target", "values"],
         vec!["mcp", "bars", "NASDAQ:EXAMPLE"],
         vec![
@@ -39,6 +42,12 @@ fn supported_requests_apply_only_local_checks() {
 fn errors_report_coverage_without_echoing_candidate_values() {
     for (parts, code, status) in [
         (vec![], "invalid_syntax", "invalid"),
+        (
+            vec!["ohlcv", "--count", "private-secret"],
+            "invalid_syntax",
+            "invalid",
+        ),
+        (vec!["ohlcv", "--count", "-1"], "invalid_syntax", "invalid"),
         (vec!["private-secret"], "invalid_syntax", "invalid"),
         (
             vec!["mcp", "bars", "NASDAQ:EXAMPLE", "--count", "private-secret"],

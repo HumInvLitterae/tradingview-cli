@@ -1,8 +1,8 @@
 # Chart-analysis output contracts after v0.34.0
 
-Status: direction approved 2026-10-03; missing-value contract proposed, not yet
-approved or implemented. The PM is the sole executor. Version selection and
-release preparation are separate. The [roadmap](../next-version-roadmap.md) and
+Status: direction and missing-value examples approved 2026-10-03.
+Implementation and focused local validation are complete; normal CI is pending.
+The PM is the sole executor. Version selection and release preparation are separate. The [roadmap](../next-version-roadmap.md) and
 [inventory](../next-version-work-items.md) own direction and priority.
 
 ## Outcome and consumers
@@ -15,12 +15,12 @@ The [producer](../../crates/cli/src/ops/market/ohlcv.rs) reads recent loaded
 chart bars, not just visible bars. Its summary helper is shared by `export
 chart-bars --summary` and Replay OHLCV attachments.
 
-Current raw extraction uses `volume: v[5] || 0`; aggregation substitutes zero
-for missing endpoint prices, drops missing extrema/volume from aggregation and
-uses "0%" when opening price is zero. These are source-inspection findings,
+In v0.34.0, raw extraction used `volume: v[5] || 0`; aggregation substituted zero
+for missing endpoint prices, dropped missing extrema/volume from aggregation and
+used "0%" when opening price is zero. These are source-inspection findings,
 not observed live missing-data cases. Empty/unavailable chart errors stay errors.
 
-## Proposed missing-value contract — owner decision required
+## Approved missing-value contract
 
 Keep field names, real zeros and complete numeric results, including rounding.
 Missing/non-finite numeric cells become null in raw bars and last_5_bars.
@@ -46,7 +46,7 @@ numeric-only success shape, but discard valid prices when volume is unavailable.
 Nulls are recommended. Consumers must support optional numeric/string fields
 and handle unavailable values explicitly; do not default null to
 zero. Producer changes also affect export summaries and Replay attachments.
-Agree on these changes under AGENTS.md's public-contract rule before implementation.
+The owner approved these concrete examples before implementation.
 No dependency or new persisted format is proposed here.
 
 ## Approved offline direction and work
@@ -90,5 +90,13 @@ these deterministic contracts.
 - Producer, export/Replay callers, offline facilities inspected on 2026-10-03.
 - v0.34.0 publication/workflow/asset metadata verified and record archived.
   Existing implementation evidence was not rerun.
-- Next: owner review of the missing-value examples. No production changes or
-  dependencies have been added; no push is implied.
+- Owner approved missing-value examples. Extraction, aggregation, schema and
+  offline validation are implemented. OHLCV/export/Replay fixtures: 15 passed;
+  validator unit tests: 3 passed; offline CLI contracts: 5 passed; capture-spec
+  execution-bounds fixture: 1 passed. The standard
+  schema gate passed, executing the production JavaScript with Node 24.18.0
+  and validating raw/summary/partial/error outputs with jsonschema 4.26.0.
+- Standalone skill metadata/references and disposable package parity passed
+  (seven runtime skills per root). Scoped CLI Clippy (`--lib --tests`, warnings
+  denied), formatting, public hygiene and staged-diff checks passed.
+  No dependency or live operation was added. Normal CI remains pending.

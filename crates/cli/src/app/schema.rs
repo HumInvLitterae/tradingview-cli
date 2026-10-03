@@ -16,7 +16,7 @@ pub(super) fn describe(path: &[String]) -> Result<Value, AppError> {
         "command": canonical
     });
     if path.is_empty() {
-        data["commands"] = json!([["values"], ["mcp", "bars"]]);
+        data["commands"] = json!([["values"], ["mcp", "bars"], ["ohlcv"]]);
         return Ok(data);
     }
     let path = canonical.iter().map(String::as_str).collect::<Vec<_>>();
@@ -25,6 +25,15 @@ pub(super) fn describe(path: &[String]) -> Result<Value, AppError> {
             include_str!("schema/values.json"),
             "values",
             vec!["dynamic_study_values", "runtime_semantics", "error_details"],
+        ),
+        ["ohlcv"] => (
+            include_str!("schema/ohlcv.json"),
+            "ohlcv",
+            vec![
+                "cross_field_invariants",
+                "runtime_semantics",
+                "error_details",
+            ],
         ),
         ["mcp", "bars"] => (
             include_str!("schema/mcp_bars.json"),

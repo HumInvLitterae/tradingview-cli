@@ -62,8 +62,9 @@ to offline specification lookup.
 In v0.34.0 and later, `tv schema` lists supported paths;
 `tv schema values` and `tv schema mcp bars`
 export their JSON Schema 2020-12 descriptions without connecting to Desktop or
-MCP. Successful output uses the normal envelope with command `schema` and
-`data.contract_version=cli_schema.v1`; `binary_version` identifies the build.
+MCP. Development builds also support `tv schema ohlcv` for both selected-chart
+raw bars and summaries. Successful output uses the normal envelope with command
+`schema` and `data.contract_version=cli_schema.v1`; `binary_version` identifies the build.
 The index has `commands` as path arrays. Details have canonical `command`,
 `coverage=documented_fields`, `unchecked`, and the schema in `data.schema`.
 
@@ -77,9 +78,36 @@ annotations, not a market-time guarantee. References are local to the document.
 
 Unknown paths fail with `unknown_command`; known unsupported paths fail with
 `unsupported_command` in cli_schema.v1 error details (validation exit 1).
-Outer `--target-id` is rejected as `unsupported_target`. No existing values or
-MCP output format changes, and schemas are descriptions for the current binary,
-not a new version marker inside unversioned command output.
+Outer `--target-id` is rejected as `unsupported_target`. Schemas describe the
+current binary; they do not add a version marker to unversioned command output.
+OHLCV missing-value changes are described below; values and MCP output are unchanged.
+
+## Selected-chart OHLCV missing values
+
+In development builds after v0.34.0, `ohlcv` preserves missing, non-numeric and
+non-finite numeric cells as null; genuine zero remains zero. Malformed bar
+structure or timestamp is an error. Unavailable/empty chart bars remain errors.
+The same summary rules apply to `export chart-bars --summary` and Replay's
+OHLCV attachments; their source and operation effects do not change.
+
+`ohlcv --summary` aggregates recent loaded bars, not only visible bars. open is
+the first open and close the last close. high/low require that field in every
+returned bar; range requires both. volume/avg_volume require volume in every
+bar. change requires both endpoints; change_pct also requires nonzero open.
+Dependent unknowns become null while other known fields remain available.
+Finite complete results keep existing rounding. Arithmetic overflow is unknown,
+not an infinite value or formatted percentage.
+
+For example, volumes 10 and missing now yield volume:null and avg_volume:null,
+rather than volume:10 and avg_volume:5. Volumes 10 and genuine zero still yield
+10 and 5. With a genuine zero open, change remains available but change_pct is
+null. Raw bars and last_5_bars retain null cells. Client success and schema
+conformance do not prove closed bars, freshness or complete requested history.
+
+Consumers requiring numeric prices/aggregates or a string change_pct must use
+optional fields and handle unavailable values before calculation or display.
+Do not coerce null back to zero. Check the shared export and Replay summaries
+as well as the direct OHLCV decoder. No existing provider is substituted.
 
 ## Offline invocation validation
 
@@ -92,7 +120,10 @@ tv validate -- --target-id example-target values
 tv validate -- mcp bars NASDAQ:EXAMPLE --timeframe 1D --count 20
 ```
 
-Only `values` and `mcp bars` have local validation support initially. The real
+v0.34.0 supports `values` and `mcp bars`; development builds also support
+`ohlcv` with or without `--summary`. OHLCV count retains execution's default
+100 and clamp to 1..500, so 0 and 501 are accepted, not rejected.
+`tv validate -- ohlcv --summary --count 100` does not read chart bars. The real
 clap parser checks syntax; MCP bars reuse execution's request preparation,
 Desktop-target rejection and deadline rules. Values have no command-specific
 arguments. Target existence, environment configuration, credentials, provider
@@ -113,8 +144,8 @@ exit 1, kind `validation` and cli_validate.v1 details with nullable command/fiel
 | Candidate help/version or spec/schema/validate | unsupported / non_executable_request | passed or not_checked / not_checked |
 | Target option on the outer validate invocation | invalid / unsupported_target | not_checked / not_checked |
 
-Runtime is always `not_checked`. For example, count 5001 fails locally with
-field `count`; a syntactically valid `data equity` invocation is unsupported,
+Runtime is always `not_checked`. For example, MCP bars count 5001 fails locally
+with field `count`; a syntactically valid `data equity` invocation is unsupported,
 not approved for execution. Use target options inside candidate argv. Keep
 credentials, account IDs and file contents out of shared examples; diagnostics
 omit candidate values and raw clap messages. Existing commands retain their
@@ -391,8 +422,9 @@ rejects counts outside 1–500 and defaults to 500. It changes the visible range
 before reading recent bars; the output is JSON on stdout, not a file or a
 range-filtered historical dataset. Inspect requested and returned ranges and the
 range-match diagnostics. The previous viewport is not restored on completion
-or a later read failure. Summaries are derived aggregates; missing numeric
-fields can be skipped or defaulted by the current summarizer.
+or a later read failure. Summaries preserve unknown aggregates as null; see
+[OHLCV missing values](#selected-chart-ohlcv-missing-values) for dependencies
+and consumer migration.
 
 Scroll uses loaded bars and an approximate time window around the date. It does
 not request older history or verify that the final viewport is centered exactly

@@ -1,0 +1,323 @@
+{
+  "type": "object",
+  "required": [
+    "bar_count",
+    "symbol",
+    "resolution",
+    "timeframe",
+    "source",
+    "source_category",
+    "requires_desktop",
+    "non_mutating",
+    "chart_context",
+    "returned_bars_range",
+    "selected_chart_range_match"
+  ],
+  "properties": {
+    "bar_count": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "symbol": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "resolution": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "timeframe": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "source": {
+      "const": "direct_bars"
+    },
+    "source_category": {
+      "const": "desktop_backed_read"
+    },
+    "requires_desktop": {
+      "const": true
+    },
+    "non_mutating": {
+      "const": true
+    },
+    "chart_context": {
+      "type": "object",
+      "required": [
+        "symbol",
+        "timeframe",
+        "resolution",
+        "visible_range",
+        "bars_range",
+        "source",
+        "source_category",
+        "requires_desktop",
+        "non_mutating"
+      ],
+      "properties": {
+        "symbol": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "timeframe": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "resolution": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "visible_range": {
+          "type": [
+            "object",
+            "null"
+          ]
+        },
+        "bars_range": {
+          "type": [
+            "object",
+            "null"
+          ]
+        },
+        "source": {
+          "const": "direct_bars"
+        },
+        "source_category": {
+          "const": "desktop_backed_read"
+        },
+        "requires_desktop": {
+          "const": true
+        },
+        "non_mutating": {
+          "const": true
+        }
+      }
+    },
+    "returned_bars_range": {
+      "type": "object",
+      "required": [
+        "first_time",
+        "last_time",
+        "bar_count"
+      ],
+      "properties": {
+        "first_time": {
+          "type": "number"
+        },
+        "last_time": {
+          "type": "number"
+        },
+        "bar_count": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+    "selected_chart_range_match": {
+      "enum": [
+        "unknown",
+        "overlaps_visible_range",
+        "outside_visible_range"
+      ]
+    }
+  },
+  "$defs": {
+    "bar": {
+      "$anchor": "ohlcvBar",
+      "type": "object",
+      "required": [
+        "time",
+        "open",
+        "high",
+        "low",
+        "close",
+        "volume"
+      ],
+      "properties": {
+        "time": {
+          "type": "number"
+        },
+        "open": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "high": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "low": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "close": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "volume": {
+          "type": [
+            "number",
+            "null"
+          ]
+        }
+      }
+    }
+  },
+  "oneOf": [
+    {
+      "required": [
+        "bars",
+        "total_available"
+      ],
+      "properties": {
+        "bars": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#ohlcvBar"
+          },
+          "maxItems": 500
+        },
+        "total_available": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        }
+      },
+      "not": {
+        "required": [
+          "last_5_bars"
+        ]
+      }
+    },
+    {
+      "required": [
+        "open",
+        "close",
+        "high",
+        "low",
+        "range",
+        "change",
+        "avg_volume",
+        "volume",
+        "period",
+        "first_time",
+        "last_time",
+        "change_pct",
+        "last_5_bars"
+      ],
+      "properties": {
+        "open": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "close": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "high": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "low": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "range": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "change": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "avg_volume": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "volume": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "period": {
+          "type": "object",
+          "required": [
+            "from",
+            "to"
+          ],
+          "properties": {
+            "from": {
+              "type": "number"
+            },
+            "to": {
+              "type": "number"
+            }
+          }
+        },
+        "first_time": {
+          "type": "number"
+        },
+        "last_time": {
+          "type": "number"
+        },
+        "change_pct": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "last_5_bars": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#ohlcvBar"
+          },
+          "maxItems": 5
+        }
+      },
+      "not": {
+        "required": [
+          "bars"
+        ]
+      }
+    }
+  ]
+}

@@ -66,7 +66,12 @@ fn fixture_case(path: &[&str], samples: Vec<Value>, invalid_pointers: &[&str]) -
         ErrorKind::TargetAmbiguous,
         ErrorKind::Internal,
     ] {
-        let target_command = if path[0] == "mcp" { "mcp" } else { "values" };
+        let target_command = match path[0].as_str() {
+            "mcp" => "mcp",
+            "values" => "values",
+            "ohlcv" => "ohlcv",
+            _ => unreachable!("fixture command needs a static envelope name"),
+        };
         for command in [target_command, "tv"] {
             let error = AppError::new(kind, "Synthetic error");
             valid.push(serde_json::to_value(ErrorEnvelope::new(command, error.into())).unwrap());
@@ -145,6 +150,119 @@ async fn output_schemas_match_production_fixtures() {
             "/data/requires_desktop",
         ],
     );
+    let mut probe = crate::ops::test_support::FakeRuntime::new([json!({})]);
+    crate::ops::ohlcv_bars(&mut probe, Some(2)).await.unwrap();
+    let expression = serde_json::to_string(&probe.evaluated[0].0).unwrap();
+    let script = format!(
+        r#"
+        const expression = {expression};
+        let rows = [];
+        const bars = {{
+            firstIndex: () => 0,
+            lastIndex: () => rows.length - 1,
+            size: () => rows.length,
+            valueAt: i => rows[i]
+        }};
+        const chart = {{
+            symbol: () => 'NASDAQ:EXAMPLE',
+            resolution: () => 'D',
+            getVisibleRange: () => ({{ from: 1, to: 2 }}),
+            getVisibleBarsRange: () => ({{ from: 0, to: 1 }}),
+            _chartWidget: {{
+                model: () => ({{ mainSeries: () => ({{ bars: () => bars }}) }})
+            }}
+        }};
+        global.window = {{
+            TradingViewApi: {{ _activeChartWidgetWV: {{ value: () => chart }} }}
+        }};
+        function read(input) {{
+            rows = input;
+            return eval(expression);
+        }}
+        console.log(JSON.stringify([
+            read([[1, 1, 3, 0, 2, 10], [2, 2, 4, 1, 3, 0]]),
+            read([[1, undefined, 3, 0, 2, 10], [2, 2, NaN, 1, 3]]),
+            read([[1, 0, 3, 0, 2, 0]]),
+            read([[1, Infinity, 3, 0, 2, '0']]),
+            read([new Float64Array([1, 1, 3, 0, 2, 0])]),
+            read([[NaN, 1, 3, 0, 2, 10]]),
+            read([{{ time: 1 }}]),
+            read([])
+        ]));
+        "#
+    );
+    let output = Command::new("node").args(["-e", &script]).output().unwrap();
+    assert!(
+        output.status.success(),
+        "{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let raw: Vec<Value> = serde_json::from_slice(&output.stdout).unwrap();
+    assert_eq!(raw[0]["bars"][1]["volume"], 0);
+    assert!(raw[1]["bars"][0]["open"].is_null());
+    assert!(raw[1]["bars"][1]["high"].is_null());
+    assert!(raw[1]["bars"][1]["volume"].is_null());
+    assert!(raw[3]["bars"][0]["open"].is_null());
+    assert!(raw[3]["bars"][0]["volume"].is_null());
+    assert_eq!(raw[4]["bars"][0]["volume"], 0);
+    for malformed in &raw[5..] {
+        let mut runtime = crate::ops::test_support::FakeRuntime::new([malformed.clone()]);
+        assert!(crate::ops::ohlcv_bars(&mut runtime, Some(2)).await.is_err());
+    }
+    let mut ohlcv_samples = Vec::new();
+    for (index, data) in raw[..5].iter().enumerate() {
+        let mut runtime = crate::ops::test_support::FakeRuntime::new([data.clone()]);
+        let summary = crate::ops::ohlcv_summary(&mut runtime, Some(2))
+            .await
+            .unwrap();
+        if index == 0 {
+            assert_eq!(summary["volume"], 10.0);
+            assert_eq!(summary["avg_volume"], 5.0);
+        } else if index == 1 {
+            for field in [
+                "open",
+                "high",
+                "range",
+                "volume",
+                "avg_volume",
+                "change",
+                "change_pct",
+            ] {
+                assert!(summary[field].is_null(), "{field}");
+            }
+            assert_eq!(summary["close"], 3.0);
+            assert_eq!(summary["low"], 0.0);
+        } else if index == 2 {
+            assert_eq!(summary["open"], 0.0);
+            assert_eq!(summary["volume"], 0.0);
+            assert_eq!(summary["change"], 2.0);
+            assert!(summary["change_pct"].is_null());
+        }
+        ohlcv_samples
+            .push(serde_json::to_value(SuccessEnvelope::new("ohlcv", data.clone())).unwrap());
+        ohlcv_samples.push(serde_json::to_value(SuccessEnvelope::new("ohlcv", summary)).unwrap());
+    }
+    let summary_case = fixture_case(
+        &["ohlcv"],
+        ohlcv_samples[1..].iter().step_by(2).cloned().collect(),
+        &[
+            "/data/open",
+            "/data/volume",
+            "/data/change_pct",
+            "/data/period/from",
+            "/data/last_5_bars/0/volume",
+        ],
+    );
+    let raw_case = fixture_case(
+        &["ohlcv"],
+        ohlcv_samples.iter().step_by(2).cloned().collect(),
+        &[
+            "/data/bars/0/time",
+            "/data/bars/0/volume",
+            "/data/bar_count",
+            "/data/source",
+        ],
+    );
     let python =
         std::env::var_os("TV_SCHEMA_TEST_PYTHON").expect("schema gate sets Python interpreter");
     let mut child = Command::new(python)
@@ -162,7 +280,9 @@ async fn output_schemas_match_production_fixtures() {
         .stdin
         .take()
         .unwrap()
-        .write_all(&serde_json::to_vec(&json!([values_case, bars_case])).unwrap())
+        .write_all(
+            &serde_json::to_vec(&json!([values_case, bars_case, raw_case, summary_case])).unwrap(),
+        )
         .unwrap();
     let output = child.wait_with_output().unwrap();
     assert!(

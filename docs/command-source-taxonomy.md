@@ -201,6 +201,11 @@ observation. Screenshots are non-mutating visual evidence reads, but they do
 write a local output file and report `writes_file: true`. Their optional
 `--wait-for-render` phase is a bounded read of the same selected-chart context;
 it does not change the screenshot source or mutate chart state.
+Selected-chart `ohlcv` keeps missing numeric cells as null. Its extrema and
+volume summaries require all returned bars for each aggregate; endpoint-derived
+changes remain null when their inputs are unknown. A zero open makes change_pct
+unknown. Export summaries and Replay OHLCV attachments share these rules.
+
 Core Desktop-backed reads report `source_category: "desktop_backed_read"`,
 `requires_desktop: true`, and `non_mutating` so agents can distinguish them
 from scanner REST reads and account/page operations.

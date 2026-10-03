@@ -118,6 +118,9 @@ pub async fn ohlcv_bars(
                     if (!bars || typeof bars.lastIndex !== 'function' || typeof bars.firstIndex !== 'function') {{
                         return readinessFailure("bars_index_api_unavailable", chart, bars, null);
                     }}
+                    function numericCell(value) {{
+                        return typeof value === 'number' && Number.isFinite(value) ? value : null;
+                    }}
                     var result = [];
                     var first = safeCall(function() {{ return bars.firstIndex(); }});
                     var end = safeCall(function() {{ return bars.lastIndex(); }});
@@ -127,7 +130,21 @@ pub async fn ohlcv_bars(
                     var start = Math.max(first, end - {limit} + 1);
                     for (var i = start; i <= end; i++) {{
                         var v = bars.valueAt(i);
-                        if (v) result.push({{time: v[0], open: v[1], high: v[2], low: v[3], close: v[4], volume: v[5] || 0}});
+                        if (v == null) continue;
+                        if (
+                            typeof v[0] !== 'number' ||
+                            !Number.isFinite(v[0])
+                        ) {{
+                            return readinessFailure("bars_row_invalid", chart, bars, null);
+                        }}
+                        result.push({{
+                            time: v[0],
+                            open: numericCell(v[1]),
+                            high: numericCell(v[2]),
+                            low: numericCell(v[3]),
+                            close: numericCell(v[4]),
+                            volume: numericCell(v[5])
+                        }});
                     }}
                     if (result.length === 0) {{
                         return readinessFailure("bars_empty", chart, bars, {{
@@ -366,6 +383,16 @@ fn export_chart_bars_error(
     err
 }
 
+fn finite_number(value: f64) -> Option<f64> {
+    value.is_finite().then_some(value)
+}
+
+fn numeric_field(bar: &Value, field: &str) -> Option<f64> {
+    bar.get(field)
+        .and_then(Value::as_f64)
+        .and_then(finite_number)
+}
+
 fn summarize_ohlcv(data: Value) -> Result<Value, AppError> {
     let bars = data.get("bars").and_then(Value::as_array).ok_or_else(|| {
         AppError::new(
@@ -380,34 +407,39 @@ fn summarize_ohlcv(data: Value) -> Result<Value, AppError> {
         )
     })?;
     let last = bars.last().expect("non-empty bars should have last bar");
-    let highs = bars
+    if bars.iter().any(|bar| numeric_field(bar, "time").is_none()) {
+        return Err(AppError::new(
+            ErrorKind::InternalApiUnavailable,
+            "OHLCV data included an invalid bar timestamp",
+        ));
+    }
+    let open = numeric_field(first, "open");
+    let close = numeric_field(last, "close");
+    let high = bars.iter().try_fold(f64::NEG_INFINITY, |value, bar| {
+        Some(value.max(numeric_field(bar, "high")?))
+    });
+    let low = bars.iter().try_fold(f64::INFINITY, |value, bar| {
+        Some(value.min(numeric_field(bar, "low")?))
+    });
+    let volume = bars
         .iter()
-        .filter_map(|bar| bar.get("high").and_then(Value::as_f64))
-        .collect::<Vec<_>>();
-    let lows = bars
-        .iter()
-        .filter_map(|bar| bar.get("low").and_then(Value::as_f64))
-        .collect::<Vec<_>>();
-    let volumes = bars
-        .iter()
-        .filter_map(|bar| bar.get("volume").and_then(Value::as_f64))
-        .collect::<Vec<_>>();
-    let open = first.get("open").and_then(Value::as_f64).unwrap_or(0.0);
-    let close = last.get("close").and_then(Value::as_f64).unwrap_or(0.0);
-    let high = highs.iter().copied().reduce(f64::max).unwrap_or(0.0);
-    let low = lows.iter().copied().reduce(f64::min).unwrap_or(0.0);
-    let volume: f64 = volumes.iter().sum();
-    let avg_volume = if volumes.is_empty() {
-        0.0
-    } else {
-        (volume / volumes.len() as f64).round()
-    };
-    let change = round2(close - open);
-    let change_pct = if open == 0.0 {
-        "0%".to_string()
-    } else {
-        format!("{}%", round2(((close - open) / open) * 100.0))
-    };
+        .try_fold(0.0, |value, bar| {
+            Some(value + numeric_field(bar, "volume")?)
+        })
+        .and_then(finite_number);
+    let avg_volume = volume.map(|value| (value / bars.len() as f64).round());
+    let range = high
+        .zip(low)
+        .and_then(|(high, low)| finite_number(round2(high - low)));
+    let change = open
+        .zip(close)
+        .and_then(|(open, close)| finite_number(round2(close - open)));
+    let change_pct = open.zip(close).and_then(|(open, close)| {
+        if open == 0.0 {
+            return None;
+        }
+        finite_number(round2(((close - open) / open) * 100.0)).map(|value| format!("{value}%"))
+    });
     let last_5_bars = bars
         .iter()
         .skip(bars.len().saturating_sub(5))
@@ -425,7 +457,7 @@ fn summarize_ohlcv(data: Value) -> Result<Value, AppError> {
         "close": close,
         "high": high,
         "low": low,
-        "range": round2(high - low),
+        "range": range,
         "change": change,
         "change_pct": change_pct,
         "avg_volume": avg_volume,
@@ -693,7 +725,7 @@ mod tests {
                 "selected_chart_range_match": "overlaps_visible_range",
                 "bars": [
                     {"time": 1.0, "open": 100.0, "high": 110.0, "low": 95.0, "close": 105.0, "volume": 10.0},
-                    {"time": 2.0, "open": 105.0, "high": 120.0, "low": 101.0, "close": 115.0, "volume": 20.0}
+                    {"time": 2.0, "open": 105.0, "high": 120.0, "low": 101.0, "close": 115.0, "volume": null}
                 ]
             }),
         ]);
@@ -705,6 +737,9 @@ mod tests {
         assert_eq!(result["contract_version"], "export_chart_bars.v1");
         assert_eq!(result["output_mode"], "summary");
         assert_eq!(result["bar_count"], 2);
+        assert!(result["volume"].is_null());
+        assert!(result["avg_volume"].is_null());
+        assert_eq!(result["close"], 115.0);
         assert!(result.get("bars").is_none());
         assert!(result.get("last_5_bars").is_none());
         assert_eq!(result["chart_context"]["symbol"], "NASDAQ:AAPL");
@@ -717,6 +752,55 @@ mod tests {
         assert!(validate_export_chart_bars_request(1.0, 2.0, Some(0)).is_err());
         assert!(validate_export_chart_bars_request(1.0, 2.0, Some(501)).is_err());
         assert!(validate_export_chart_bars_request(1.0, 2.0, Some(500)).is_ok());
+    }
+
+    #[test]
+    fn ohlcv_summary_preserves_missing_cells_and_real_zero() {
+        let complete = json!({"bars": [
+            {"time": 1, "open": 1, "high": 3, "low": 0, "close": 2, "volume": 10},
+            {"time": 2, "open": 2, "high": 4, "low": 1, "close": 3, "volume": 0}
+        ]});
+        let summary = summarize_ohlcv(complete.clone()).unwrap();
+        assert_eq!(summary["volume"], 10.0);
+        assert_eq!(summary["avg_volume"], 5.0);
+        for field in ["open", "close", "high", "low", "volume"] {
+            let mut missing = complete.clone();
+            let index = if field == "open" { 0 } else { 1 };
+            missing["bars"][index][field] = Value::Null;
+            let summary = summarize_ohlcv(missing).unwrap();
+            assert!(summary[field].is_null(), "{field}");
+            match field {
+                "open" | "close" => {
+                    assert!(summary["change"].is_null());
+                    assert!(summary["change_pct"].is_null());
+                }
+                "high" | "low" => assert!(summary["range"].is_null()),
+                "volume" => assert!(summary["avg_volume"].is_null()),
+                _ => unreachable!(),
+            }
+        }
+        let mut zero = complete;
+        zero["bars"][0]["open"] = json!(0);
+        let summary = summarize_ohlcv(zero).unwrap();
+        assert_eq!(summary["open"], 0.0);
+        assert_eq!(summary["change"], 3.0);
+        assert!(summary["change_pct"].is_null());
+    }
+
+    #[test]
+    fn ohlcv_summary_rejects_bad_timestamps_and_keeps_overflow_unknown() {
+        for time in [Value::Null, json!("1")] {
+            let data = json!({"bars": [{"time": time, "open": 1}]});
+            assert!(summarize_ohlcv(data).is_err());
+        }
+        let summary = summarize_ohlcv(json!({"bars": [
+            {"time": 1, "open": -1e308, "high": 1e308, "low": -1e308, "close": 1e308, "volume": 1e308},
+            {"time": 2, "open": 1, "high": 1e308, "low": -1e308, "close": 1e308, "volume": 1e308}
+        ]})).unwrap();
+        for field in ["range", "change", "change_pct", "volume", "avg_volume"] {
+            assert!(summary[field].is_null(), "{field}");
+        }
+        assert_eq!(summary["high"], 1e308);
     }
 
     #[test]

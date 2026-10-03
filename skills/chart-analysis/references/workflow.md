@@ -19,6 +19,21 @@ historical input, use the existing bars command and inspect returned coverage:
 `tv bars <EXCHANGE:SYMBOL> --from <YYYY-MM-DD> --to <YYYY-MM-DD>`.
 Do not silently substitute one source for another.
 
+## OHLCV missing values
+
+On binaries supporting `tv schema ohlcv`, missing numeric cells in raw bars and
+last_5_bars remain null; real zero remains zero. The summary covers recent loaded
+bars, not only the viewport. high/low require that field in every returned bar;
+range requires both. volume/avg_volume require volume in every bar. Endpoint
+changes need the first open and last close; change_pct is null when open is zero.
+Other complete fields remain usable. Empty/unavailable chart bars are errors.
+Export summaries and Replay OHLCV attachments share the same missing-value rules.
+
+Do not turn an unknown volume into zero or interpret a partial set of highs as
+a confirmed whole-sample maximum. Summary success does not prove bar finality,
+freshness or history completeness. Older binaries can substitute zero or skip
+missing cells; inspect raw bars before making claims from their aggregates.
+
 ## Screenshots and study identity
 
 Use `tv screenshot --region chart` for the chart, `full` for the page, and

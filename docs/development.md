@@ -833,6 +833,9 @@ Changes to offline output schemas or their producers require
 `python scripts/check-output-schemas.py` using `jsonschema==4.26.0` in a test
 Python environment. The gate runs production adapter/normalizer fixtures through
 the exported JSON Schema, including nulls, partial bars and rejected field types.
+The gate also executes the exact OHLCV extraction expression with synthetic
+missing/zero/non-finite cells using Node.js 24.18.0, already pinned in CI's
+JavaScript lane. Local invocation needs that Node version on PATH.
 CI and release qualification install this test-only package; the binary embeds
 schemas and has no Python or schema-validator runtime dependency. The gate uses
 one Cargo job/test thread locally and is ignored in the ordinary Rust suite.
