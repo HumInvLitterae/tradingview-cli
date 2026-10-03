@@ -13,7 +13,7 @@ v0.34.0 is published; its completed scope is in the
 | 4 | Pine graphics schema/validation | Lines/boxes/labels/tables schema and validation implemented; focused fixture/schema/CLI checks passed, acquisition/output unchanged. CI deferred by owner. |
 | 5 | Pre-release dependency refresh | Required by owner on 2026-10-04. All direct/dev dependencies checked against current stable releases; Tokio and nine transitive packages updated; focused CLI/MCP/schema verification passed. The upstream generic-array exact constraint remains documented. Recheck immediately before release and validate any further changes. |
 | 6 | Candidate CI | Pending; owner deferred this while implementation continued. Run normal CI on the refreshed dependency graph before release. |
-| 7 | Scope/version and release preparation | v0.35.0 preparation approved 2026-10-04. Notes/guidance are prepared; version update and candidate execution checks follow. Normal CI and native archive acceptance remain pending. Keep dependency updates before the release-version commit. |
+| 7 | Scope/version and release preparation | v0.35.0 preparation approved 2026-10-04. Notes/guidance and all eight workspace/lock versions are prepared. Focused execution evidence is reused; candidate version verification follows this commit. Normal CI and native archive acceptance remain pending. Keep dependency updates before the release-version commit. |
 
 ## Bounded follow-ups
 

@@ -7,6 +7,8 @@ package version omits the leading `v`.
 
 ## Unreleased
 
+## v0.35.0
+
 ### Added
 
 - Offline `schema ohlcv` and `validate -- ohlcv ...` support for selected-chart

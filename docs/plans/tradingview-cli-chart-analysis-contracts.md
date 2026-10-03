@@ -262,3 +262,11 @@ passed; disposable staging passed with seven standalone skills per root.
 Staging used an existing binary only for documentation/resource validation.
 Full optimized/native archives and broad CI remain pending; do not call the
 release published or fully qualified from these checks.
+
+All eight workspace packages and their local lock entries are prepared as
+0.35.0; external locked packages/checksums are unchanged by versioning. The
+CHANGELOG entry and curated notes agree. Locked no-dependency Cargo metadata,
+formatting and public/diff hygiene confirm source preparation. A single local
+debug build/version smoke follows the preparation commit using the existing
+target cache; report its identity without a new evidence-only commit. Optimized
+archives, full/platform CI and publication remain pending.
