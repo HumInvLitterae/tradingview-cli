@@ -192,3 +192,47 @@ standalone references, package parity and public/diff hygiene passed. Staging us
 the existing installed binary for guidance validation only. Existing acquisition,
 consumer output and dependencies are unchanged; no live operation was performed.
 CI remains owner-deferred.
+
+## Pre-release dependency refresh
+
+On 2026-10-04 the owner required all dependencies to be updated before formal
+release. Review current stable versions for every existing direct/dev dependency,
+refresh Cargo.lock transitively and check changed behavior before adopting
+compatibility overrides. Repeat the freshness check immediately before release;
+any later dependency changes need affected verification and candidate CI. Keep
+this work before the release-version commit. Version selection remains separate.
+
+All 24 direct/dev requirements were checked against crates.io metadata. Tokio
+1.53.1 -> 1.53.2 is the only direct update; its upstream changes include Windows
+child-process cleanup and runtime/sync/timer fixes. These upstream fixes are
+adopted without compatibility overrides. The lock refresh also updates
+async-recursion, cc, lazy_static, libc, quinn-proto, quinn-udp, uuid and yoke-derive.
+cc changes build-environment caching/diagnostics; libc's time64 change is opt-in
+and no new cfg is enabled. async-recursion now uses the existing syn 3 dependency.
+No public command, output format, credential policy or dependency feature was
+changed. The same macOS/Windows/Linux distribution scope remains intended.
+
+The refreshed resolver leaves generic-array 0.14.7 because crypto-common 0.1.7
+requires exactly that version in the oauth2/sha2 chain used by rmcp. Newer 0.14.x
+versions exist, but the current stable rmcp release resolves this pinned OAuth
+chain. No override was introduced for this upstream constraint. The update
+therefore uses the latest resolvable stable graph, not each transitive package
+independently at its latest release.
+
+Check affected offline CLI/schema fixtures and MCP deadline/protocol behavior
+with one Cargo job/test thread. Do not repeat the full local suite; normal CI
+owns broad/platform coverage and remains owner-deferred.
+
+Proposed release scope: truthful selected-chart OHLCV nulls across raw/summary,
+export summaries and Replay attachments; offline OHLCV and four Pine graphics
+schemas/invocation checks; exact legacy simple-price threshold projection; and
+the dependency refresh. No additional data backend, default routing change or
+new live-qualification claim is included.
+
+Dependency acceptance on 2026-10-04: all 24 direct/dev stable versions checked;
+locked metadata and the resolver dry-run verified. Offline CLI contracts (5),
+loopback MCP protocol cases (2), whole-operation deadline fixture (1) and the
+standard output-schema gate passed on the refreshed graph. Formatting and
+public/diff hygiene passed. No new native/platform or live-provider acceptance
+is claimed; normal CI remains owner-deferred. Clippy was not rerun locally for
+this manifest/lock refresh.

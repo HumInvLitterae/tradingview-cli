@@ -25,9 +25,15 @@ contracts and acceptance.
    selected-chart inspection workflow. All four paths are implemented
    with local acceptance. Continue from actual chart-analysis consumers rather
    than all-command coverage. CI remains owner-deferred.
-4. Confirm the candidate scope/version, complete normal CI and prepare release
-   notes/version/distribution as a separate coherent stage. Reuse unchanged
-   acceptance evidence; new live checks require their applicable authority.
+4. Refresh every existing direct/dev dependency and the transitive lock graph
+   before release, as required by the owner on 2026-10-04. Check current stable
+   releases and the reasons/effects of relevant changes; record upstream
+   resolution constraints instead of adding unjustified overrides. Recheck
+   immediately before release and validate any further updates.
+5. Complete normal CI on the refreshed graph,
+   then prepare notes/version/distribution as a separate coherent stage. Keep
+   dependency updates before the version commit. Reuse unchanged evidence;
+   new live checks require their applicable authority.
 
 The owner also approved exposing the scalar threshold of an exact legacy
 simple-price condition when condition.value is absent, without restoring raw
@@ -39,8 +45,8 @@ not a new feature.
 
 The PM works alone. Local Cargo checks use one build job and one test thread;
 prefer affected fixtures and normal CI over repeated full builds. No next-version
-number, dependency, new authentication, Desktop/account mutation, implicit
-retry/source switch or push/publication is authorized by this direction.
+number, new dependency addition, new authentication, Desktop/account mutation,
+implicit retry/source switch or push/publication is authorized by this direction.
 
 The [CDP strategy](notes/cdp-stability-and-autonomous-operation-strategy.md)
 retains its measured-need triggers for retry/reconnect, renderer readiness and

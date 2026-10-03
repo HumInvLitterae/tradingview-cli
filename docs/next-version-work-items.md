@@ -11,8 +11,9 @@ v0.34.0 is published; its completed scope is in the
 | 2 | OHLCV missing-value contract | Concrete examples approved. Implementation preserves unknown cells/aggregates as null and real zero. Consumers must handle nulls explicitly; focused local checks passed, normal CI deferred by owner. |
 | 3 | OHLCV schema and offline validation | Implemented for raw/summary mode through existing facilities, unchanged count normalization and zero-I/O validation. Focused fixture/schema/CLI checks passed; normal CI deferred by owner. |
 | 4 | Pine graphics schema/validation | Lines/boxes/labels/tables schema and validation implemented; focused fixture/schema/CLI checks passed, acquisition/output unchanged. CI deferred by owner. |
-| 5 | Candidate CI | Pending; owner deferred this while implementation continued. Validate the accumulated candidate through normal CI before release. |
-| 6 | Scope/version and release preparation | Version not selected. Confirm included work, update version/notes and complete distribution checks after candidate CI; reuse unchanged evidence. |
+| 5 | Pre-release dependency refresh | Required by owner on 2026-10-04. All direct/dev dependencies checked against current stable releases; Tokio and eight transitive packages updated; focused CLI/MCP/schema verification passed. The upstream generic-array exact constraint remains documented. Recheck immediately before release and validate any further changes. |
+| 6 | Candidate CI | Pending; owner deferred this while implementation continued. Run normal CI on the refreshed dependency graph before release. |
+| 7 | Scope/version and release preparation | Version not selected. Confirm included work, update version/notes and complete distribution checks; reuse unchanged evidence. Keep dependency updates before the release-version commit. |
 
 ## Bounded follow-ups
 
@@ -39,5 +40,6 @@ v0.34.0 is published; its completed scope is in the
 
 One PM/executor; preserve unrelated work and stashes. Use scoped serial checks,
 no automatic heavy pre-push tests, no new authentication, Desktop/account changes,
-dependency additions or push/publication. Public-contract
-changes require agreed concrete examples; the OHLCV plan identifies that decision.
+new dependency additions or push/publication. Updating existing
+direct/dev and transitive dependencies before release is explicitly authorized.
+Public-contract changes require agreed concrete examples; the OHLCV plan identifies that decision.

@@ -13,6 +13,7 @@ v0.34.0 is published. The owner approved chart-analysis schema and invocation
 support next, starting with the OHLCV summary output. The missing-value
 examples are approved and validated locally. CI is deferred by the owner while
 Pine lines/boxes/labels/tables offline support and legacy simple-price projection
-are locally validated. Candidate CI and scope/version selection remain.
+are locally validated. The required dependency refresh has passed focused
+verification; freshness must be rechecked before release. CI and scope/version selection remain.
 Completed release records preserve evidence for their recorded inputs; they are not current
 checkout, runtime acceptance or authorization for new live operations.
