@@ -129,8 +129,8 @@ Check that exactly the seven runtime skills are present and each works alone.
 
 Staging runs `scripts/check-runtime-package.py` with the same allowlist. It
 checks guide/resource parity, exact skill membership, and local Markdown links
-transitively from the guides and skills, including document paths written as
-inline code in skills. Each skill is also checked in isolation, rejecting sibling
+transitively from README, CHANGELOG, the guides and skills, including document
+paths written as inline code in skills. Each skill is also checked in isolation, rejecting sibling
 references even when the sibling is present in the archive. A missing or escaping reference fails
 staging. Online links are not fetched. CI also exercises the checker and stages
 a disposable placeholder binary, proving guidance packaging without claiming a

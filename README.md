@@ -287,7 +287,7 @@ create/update/stop/restart/delete commands return separate
 mutation and readback evidence, verified with native disposable-object lifecycles.
 These commands preserve unknown data conditions and require
 an eligible paid account. Read the packaged
-[MCP connection guide](skills/market-data/references/mcp-connection.md)
+[MCP connection guide](https://github.com/HumInvLitterae/tradingview-cli/blob/main/skills/market-data/references/mcp-connection.md)
 for authentication and platform prerequisites. The
 [full MCP reference](https://github.com/HumInvLitterae/tradingview-cli/blob/main/docs/official-mcp.md)
 covers command contracts and the remaining Linux desktop OAuth verification limit.
@@ -308,7 +308,7 @@ for contracts and limits.
 Starting with v0.33.0, offline JSON command discovery is also available:
 `tv spec` lists command paths; `tv spec mcp alert history` describes one command's
 arguments and available semantic annotations. See the
-[specification contract and coverage limits](docs/cli-spec.md). This command
+[specification contract and coverage limits](https://github.com/HumInvLitterae/tradingview-cli/blob/main/docs/cli-spec.md). This command
 requires neither Desktop nor credentials and is available in v0.33.0 and later.
 
 Starting with v0.34.0, official technical snapshots and two offline helpers are
@@ -332,27 +332,29 @@ historical indicator series. See the
 [technical snapshot contract](https://github.com/HumInvLitterae/tradingview-cli/blob/main/docs/official-mcp.md#official-technical-snapshots-next-version).
 
 `schema` exports JSON Schema 2020-12 for `values` and `mcp bars` output.
-Development builds also support `tv schema ohlcv` and
+v0.35.0 also supports `tv schema ohlcv` and
 `tv validate -- ohlcv --summary --count 100`. The OHLCV schema describes raw
 bars and aggregate summaries from the selected chart. Missing numbers remain
 null, and genuine zero values are retained.
 Consumers of OHLCV, export summaries and Replay attachments must allow those
-nulls; see the [migration details](docs/cli-spec.md#selected-chart-ohlcv-missing-values).
-Development builds also describe and validate `data lines` and `data boxes`,
-including verbose outputs. These helpers preserve the graphics' coordinate,
-identity and coverage limits; they do not establish trading levels.
+nulls; see the [migration details](https://github.com/HumInvLitterae/tradingview-cli/blob/main/docs/cli-spec.md#selected-chart-ohlcv-missing-values).
+
+v0.35.0 adds schemas and validation for Pine graphics `data lines`, `data boxes`,
+`data labels` and `data tables`. Labels accepts `--max` and `--verbose`; tables
+has neither option. These helpers describe the existing output and preserve
+their coordinate, identity and coverage limits; they do not establish trading levels.
+
 `validate` checks candidate argv after `--`, without an executable name.
-Both helpers are offline. Unsupported paths are reported
-explicitly; successful validation establishes local input validity, not runtime
+Both helpers are offline. Unsupported paths are reported explicitly; successful validation establishes local input validity, not runtime
 readiness, authorization or data quality. They do not execute the candidate.
 See [offline contracts and limits](https://github.com/HumInvLitterae/tradingview-cli/blob/main/docs/cli-spec.md).
 
-Runtime agent skills are maintained in [`skills/`](skills/), with self-contained
+Runtime agent skills are maintained in [`skills/`](https://github.com/HumInvLitterae/tradingview-cli/tree/main/skills/), with self-contained
 references in each skill. Install a selected skill using
 `gh skill install HumInvLitterae/tradingview-cli market-data --agent codex`
 or `npx skills add HumInvLitterae/tradingview-cli --skill market-data`.
 Choose a release/ref matching your binary; see the
-[skill installation guidance](docs/release-packaging.md#skill-installation).
+[skill installation guidance](https://github.com/HumInvLitterae/tradingview-cli/blob/main/docs/release-packaging.md#skill-installation).
 
 Browserless historical bars are Desktop-free and bounded:
 
@@ -548,26 +550,26 @@ details, see `docs/breaking-changes-from-js-cli.md`.
 
 ## Documentation
 
-- [docs/command-source-taxonomy.md](docs/command-source-taxonomy.md): command
+- [docs/command-source-taxonomy.md](https://github.com/HumInvLitterae/tradingview-cli/blob/main/docs/command-source-taxonomy.md): command
   source categories, fallback
   boundaries, mutation expectations, and recommended agent use.
-- [docs/observation-workflows.md](docs/observation-workflows.md): practical
+- [docs/observation-workflows.md](https://github.com/HumInvLitterae/tradingview-cli/blob/main/docs/observation-workflows.md): practical
   read sequences for screening,
   chart observation, screenshots, browserless bars, and fundamentals.
-- [docs/architecture.md](docs/architecture.md): workspace architecture, crate
+- [docs/architecture.md](https://github.com/HumInvLitterae/tradingview-cli/blob/main/docs/architecture.md): workspace architecture, crate
   boundaries, operation
   adapters, JSON contract, and safety model.
-- [docs/rust-api.md](docs/rust-api.md): currently documented typed Rust API
+- [docs/rust-api.md](https://github.com/HumInvLitterae/tradingview-cli/blob/main/docs/rust-api.md): currently documented typed Rust API
   boundary for internal
   reusable read crates.
-- [docs/development.md](docs/development.md): coding style, validation, tests,
+- [docs/development.md](https://github.com/HumInvLitterae/tradingview-cli/blob/main/docs/development.md): coding style, validation, tests,
   and contribution
   workflow.
-- [docs/history-rewrite-recovery.md](docs/history-rewrite-recovery.md):
+- [docs/history-rewrite-recovery.md](https://github.com/HumInvLitterae/tradingview-cli/blob/main/docs/history-rewrite-recovery.md):
   existing-clone recovery guidance after the completed canonical history
   rewrite.
-- [docs/release-packaging.md](docs/release-packaging.md): release archive contents and packaging checks.
-- [docs/internal-tradingview-apis.md](docs/internal-tradingview-apis.md):
+- [docs/release-packaging.md](https://github.com/HumInvLitterae/tradingview-cli/blob/main/docs/release-packaging.md): release archive contents and packaging checks.
+- [docs/internal-tradingview-apis.md](https://github.com/HumInvLitterae/tradingview-cli/blob/main/docs/internal-tradingview-apis.md):
   public-safe reference for non-public
   TradingView dependencies.
 - [docs/getting-started.md](docs/getting-started.md): user-facing setup, first

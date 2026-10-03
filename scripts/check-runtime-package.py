@@ -54,6 +54,10 @@ def check_package(package, expected_skills):
 
     trees = []
     documents = [p for p in guides if p.is_file()]
+    for name in ("README.md", "CHANGELOG.md"):
+        document = package / name
+        if document.is_file():
+            documents.append(document)
     for prefix in (".agents/skills", ".claude/skills"):
         root = package / prefix
         names = {p.name for p in root.iterdir() if p.is_dir()} if root.is_dir() else set()
@@ -140,6 +144,15 @@ class PackageReferenceTests(unittest.TestCase):
 
     def test_self_contained_skills_are_complete(self):
         self.assertEqual(self.check(), [])
+
+    def test_packaged_readme_and_changelog_references_are_checked(self):
+        for name in ("README.md", "CHANGELOG.md"):
+            with self.subTest(document=name):
+                document = self.root / name
+                document.write_text("[missing](docs/repository-only.md)\n")
+                self.assertTrue(any("repository-only.md" in e for e in self.check()))
+                document.write_text("[guide](AGENTS.md)\n")
+                self.assertEqual(self.check(), [])
 
     def test_archive_rejects_links_even_with_internal_targets(self):
         link = self.root / "guide-link.md"

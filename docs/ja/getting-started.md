@@ -291,3 +291,28 @@ GNOME Keyringなどの永続的なSecret Serviceが必要です。コンテナ�
 `status`はサーバーによるトークン受入れを確認せず、`logout`はローカル記録だけを
 削除します。本数不足や取得条件の不明点はそのまま扱ってください。期間指定履歴や
 チャート・Pineの観察には、引き続き対応する既存の経路を使います。
+
+
+## v0.35.0のオフライン確認
+
+チャートを読む前に、出力の構造やコマンドの引数を確認できます。
+
+```sh
+tv schema ohlcv
+tv validate -- ohlcv --summary --count 100
+tv schema data labels
+tv validate -- data labels --filter Example --max 20 --verbose
+tv schema data tables
+tv validate -- data tables --filter Example
+```
+
+Pineのlinesとboxesも対応しています。tablesにはmaxやverboseはありません。
+これらの確認にはDesktopや認証は不要です。引数が正しくても、チャートの準備状態、
+一致するstudyの存在、データの完全性まで確認できたことにはなりません。
+schemaは構造を記述するもので、値の意味や取得範囲を保証しません。
+
+選択チャートのOHLCVは、数値が不明ならnullを返します。足の生データ、要約、
+チャート足のexport要約、ReplayのOHLCV添付に共通する変更です。一部の値が
+不明な高値・安値・出来高の集計や、始点・終点から計算できない値もnullになります。
+実際のゼロは維持しますが、始値がゼロのchange_pctはnullです。取り込み側は
+nullを受け入れ、不明をゼロに置き換えず、表示や計算で明示的に扱ってください。

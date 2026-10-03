@@ -62,7 +62,7 @@ to offline specification lookup.
 In v0.34.0 and later, `tv schema` lists supported paths;
 `tv schema values` and `tv schema mcp bars`
 export their JSON Schema 2020-12 descriptions without connecting to Desktop or
-MCP. Development builds also support `tv schema ohlcv` for both selected-chart
+MCP. v0.35.0 also supports `tv schema ohlcv` for both selected-chart
 raw bars and summaries, plus `tv schema data <lines|boxes|labels|tables>`
 for Pine graphics. Successful output uses the normal envelope with command
 `schema` and `data.contract_version=cli_schema.v1`; `binary_version` identifies the build.
@@ -97,7 +97,7 @@ output and acquisition behavior are unchanged.
 
 ## Selected-chart OHLCV missing values
 
-In development builds after v0.34.0, `ohlcv` preserves missing, non-numeric and
+In v0.35.0 and later, `ohlcv` preserves missing, non-numeric and
 non-finite numeric cells as null; genuine zero remains zero. Malformed bar
 structure or timestamp is an error. Unavailable/empty chart bars remain errors.
 The same summary rules apply to `export chart-bars --summary` and Replay's
@@ -133,11 +133,11 @@ tv validate -- --target-id example-target values
 tv validate -- mcp bars NASDAQ:EXAMPLE --timeframe 1D --count 20
 ```
 
-v0.34.0 supports `values` and `mcp bars`; development builds also support
+v0.34.0 supports `values` and `mcp bars`; v0.35.0 also supports
 `ohlcv` with or without `--summary`. OHLCV count retains execution's default
 100 and clamp to 1..500, so 0 and 501 are accepted, not rejected.
 `tv validate -- ohlcv --summary --count 100` does not read chart bars.
-Development builds also validate `data lines`, `data boxes`, `data labels` and
+v0.35.0 also validates `data lines`, `data boxes`, `data labels` and
 `data tables`. All accept `--filter`; lines/boxes/labels accept `--verbose` and
 labels also accepts `--max` (including zero). Tables has neither verbose nor max.
 An empty filter retains its existing meaning of all readable studies.

@@ -297,3 +297,29 @@ changes and readback. Each skill can be attached independently with its director
 `status` does not test remote token acceptance; `logout` deletes only local
 credentials. Short results and unknown data conditions remain explicit. Date-range
 history and chart/Pine observations retain their existing separate workflows.
+
+
+## Offline chart contracts in v0.35.0
+
+Inspect output structure or check arguments before a chart read:
+
+```sh
+tv schema ohlcv
+tv validate -- ohlcv --summary --count 100
+tv schema data labels
+tv validate -- data labels --filter Example --max 20 --verbose
+tv schema data tables
+tv validate -- data tables --filter Example
+```
+
+The same helpers support Pine lines and boxes. Tables has neither max nor
+verbose. These checks run without Desktop or credentials; successful validation
+does not establish chart readiness, matching studies or complete data. Schemas
+describe structure and leave runtime meaning and coverage unchecked.
+
+Selected-chart OHLCV now preserves missing numeric cells as null. Raw bars,
+aggregate summaries, chart-bar export summaries and Replay OHLCV attachments
+share that behavior. Incomplete extrema/volume and unavailable endpoint changes
+remain null; genuine zero is retained. A zero opening price makes change_pct
+null. Update numeric-only consumers and handle unavailable values explicitly
+instead of converting null to zero.

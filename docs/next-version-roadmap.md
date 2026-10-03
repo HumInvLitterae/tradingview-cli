@@ -1,10 +1,10 @@
-# Post-v0.34.0 roadmap
+# v0.35.0 roadmap
 
 Baseline: [released v0.34.0](releases/v0.34.0.md), at 62d85b2. Publication and
 the successful release workflow were verified on 2026-10-03; the
 [completed record](plans/archives/tradingview-cli-analysis-reliability.md)
 preserves implementation evidence and remaining qualification limits.
-The next version number is not selected.
+The owner approved preparing v0.35.0 on 2026-10-04. Publication is pending.
 
 ## Outcome and sequence
 
@@ -44,9 +44,10 @@ not a new feature.
 ## Working limits and deferred work
 
 The PM works alone. Local Cargo checks use one build job and one test thread;
-prefer affected fixtures and normal CI over repeated full builds. No next-version
-number, new dependency addition, new authentication, Desktop/account mutation,
-implicit retry/source switch or push/publication is authorized by this direction.
+prefer affected fixtures and normal CI over repeated full builds. v0.35.0
+preparation is approved; new dependency additions, new authentication,
+Desktop/account mutations, implicit retries/source switches and push/publication
+are not authorized by this direction.
 
 The [CDP strategy](notes/cdp-stability-and-autonomous-operation-strategy.md)
 retains its measured-need triggers for retry/reconnect, renderer readiness and

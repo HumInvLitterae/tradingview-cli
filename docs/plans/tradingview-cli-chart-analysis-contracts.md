@@ -3,8 +3,8 @@
 Status: direction and missing-value examples approved 2026-10-03.
 OHLCV, Pine lines/boxes/labels/tables offline support and legacy alert-price
 projection are implemented and locally validated. CI is owner-deferred.
-The PM is the sole executor. Version selection and release preparation are
-separate. The [roadmap](../next-version-roadmap.md) and
+The PM is the sole executor. The owner approved v0.35.0 preparation on
+2026-10-04; publication remains separate. The [roadmap](../next-version-roadmap.md) and
 [inventory](../next-version-work-items.md) own direction and priority.
 
 ## Outcome and consumers
@@ -245,3 +245,20 @@ update retained the existing Windows dependency edges after selective update
 had temporarily resolved broad windows-sys ranges to 0.52. No override was
 added; the final lock diff changes only Mio's version/checksum. Platform CI
 remains pending.
+
+## v0.35.0 preparation
+
+The owner approved the proposed scope/version on 2026-10-04. Curated notes are
+in [v0.35.0.md](../releases/v0.35.0.md). README, CLI specification and both
+packaged getting-started guides describe the released command paths and null
+migration. Documentation precedes the version commit; no feature is added.
+
+Package review found README links to repository-only documents and the source
+skills tree, neither included at those paths in archives. Those links now point
+to the online repository while bundled getting-started links stay local. The
+existing transitive package checker now starts from README/CHANGELOG as well as
+agent guides and skills. Its missing-reference fixture and all 13 self-tests
+passed; disposable staging passed with seven standalone skills per root.
+Staging used an existing binary only for documentation/resource validation.
+Full optimized/native archives and broad CI remain pending; do not call the
+release published or fully qualified from these checks.

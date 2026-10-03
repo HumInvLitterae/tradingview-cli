@@ -2,7 +2,7 @@
 
 | Purpose | Record |
 | --- | --- |
-| Post-v0.34.0 direction | [Roadmap](../next-version-roadmap.md) |
+| v0.35.0 direction | [Roadmap](../next-version-roadmap.md) |
 | Priority and remaining work | [Inventory](../next-version-work-items.md) |
 | Current contracts and acceptance | [Chart-analysis contracts](tradingview-cli-chart-analysis-contracts.md) |
 | Released baseline and evidence | [v0.34.0 closeout](archives/tradingview-cli-analysis-reliability.md) |
@@ -14,6 +14,7 @@ support next, starting with the OHLCV summary output. The missing-value
 examples are approved and validated locally. CI is deferred by the owner while
 Pine lines/boxes/labels/tables offline support and legacy simple-price projection
 are locally validated. The required dependency refresh has passed focused
-verification; freshness must be rechecked before release. CI and scope/version selection remain.
+verification; freshness must be rechecked before release. The owner approved
+v0.35.0 preparation; candidate CI and publication remain pending.
 Completed release records preserve evidence for their recorded inputs; they are not current
 checkout, runtime acceptance or authorization for new live operations.
