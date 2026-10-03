@@ -93,6 +93,13 @@ older binaries retain help. These read Pine graphics, not hand-drawn objects.
 Rows lack study IDs, so same-name instances can remain ambiguous. Empty results
 can reflect inaccessible primitives; hidden studies are not automatically excluded.
 
+On binaries supporting these paths, `tv schema data lines` / `data boxes`
+describe default and verbose outputs. `tv validate -- data lines --filter
+Example --verbose` (or `data boxes`) checks argv offline. A valid request does
+not establish matching studies, target readiness or permission. Schemas leave
+primitive identity, coverage and internal coordinates/styles unchecked and
+preserve empty/null observations; labels/tables may still be unsupported.
+
 Line levels and box zones use two-decimal rounding and deduplication; a rounded
 horizontal line or zone is not independently established support/resistance.
 Verbose coordinates are internal values, not guaranteed timestamps or prices.

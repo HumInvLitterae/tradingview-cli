@@ -1,0 +1,97 @@
+{
+  "type": "object",
+  "required": [
+    "study_count",
+    "studies"
+  ],
+  "properties": {
+    "study_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "studies": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "name",
+          "total_boxes",
+          "zones"
+        ],
+        "properties": {
+          "name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "total_boxes": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "zones": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "high",
+                "low"
+              ],
+              "properties": {
+                "high": {
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                },
+                "low": {
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                }
+              }
+            }
+          },
+          "all_boxes": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "id",
+                "high",
+                "low",
+                "x1",
+                "x2",
+                "borderColor",
+                "bgColor"
+              ],
+              "properties": {
+                "id": {},
+                "high": {
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                },
+                "low": {
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                },
+                "x1": {},
+                "x2": {},
+                "borderColor": {},
+                "bgColor": {}
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

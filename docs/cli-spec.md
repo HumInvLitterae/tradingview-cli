@@ -63,7 +63,8 @@ In v0.34.0 and later, `tv schema` lists supported paths;
 `tv schema values` and `tv schema mcp bars`
 export their JSON Schema 2020-12 descriptions without connecting to Desktop or
 MCP. Development builds also support `tv schema ohlcv` for both selected-chart
-raw bars and summaries. Successful output uses the normal envelope with command
+raw bars and summaries, plus `tv schema data lines` and `tv schema data boxes`
+for Pine graphics. Successful output uses the normal envelope with command
 `schema` and `data.contract_version=cli_schema.v1`; `binary_version` identifies the build.
 The index has `commands` as path arrays. Details have canonical `command`,
 `coverage=documented_fields`, `unchecked`, and the schema in `data.schema`.
@@ -81,6 +82,15 @@ Unknown paths fail with `unknown_command`; known unsupported paths fail with
 Outer `--target-id` is rejected as `unsupported_target`. Schemas describe the
 current binary; they do not add a version marker to unversioned command output.
 OHLCV missing-value changes are described below; values and MCP output are unchanged.
+
+Pine lines/boxes schemas cover default and verbose outputs. Zero observations,
+null coordinates and omitted verbose arrays remain valid structural results.
+Primitive IDs, internal x coordinates and style fields retain arbitrary JSON
+types; `unchecked` records those limits along with study identity and coverage.
+Extraction errors can omit studies, and malformed raw collections currently
+become empty results. Conformance does not prove that graphics are absent or
+that a rounded level/zone is a price, support or resistance. Existing graphics
+output and acquisition behavior are unchanged.
 
 ## Selected-chart OHLCV missing values
 
@@ -123,7 +133,11 @@ tv validate -- mcp bars NASDAQ:EXAMPLE --timeframe 1D --count 20
 v0.34.0 supports `values` and `mcp bars`; development builds also support
 `ohlcv` with or without `--summary`. OHLCV count retains execution's default
 100 and clamp to 1..500, so 0 and 501 are accepted, not rejected.
-`tv validate -- ohlcv --summary --count 100` does not read chart bars. The real
+`tv validate -- ohlcv --summary --count 100` does not read chart bars.
+Development builds also validate `data lines` and `data boxes`, including their
+`--filter` and `--verbose` options; an empty filter retains its existing meaning
+of all readable studies. Matching-study availability and target readiness remain
+unchecked. Labels and tables still return unsupported in these helpers. The real
 clap parser checks syntax; MCP bars reuse execution's request preparation,
 Desktop-target rejection and deadline rules. Values have no command-specific
 arguments. Target existence, environment configuration, credentials, provider

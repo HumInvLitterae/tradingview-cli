@@ -16,7 +16,13 @@ pub(super) fn describe(path: &[String]) -> Result<Value, AppError> {
         "command": canonical
     });
     if path.is_empty() {
-        data["commands"] = json!([["values"], ["mcp", "bars"], ["ohlcv"]]);
+        data["commands"] = json!([
+            ["values"],
+            ["mcp", "bars"],
+            ["ohlcv"],
+            ["data", "lines"],
+            ["data", "boxes"]
+        ]);
         return Ok(data);
     }
     let path = canonical.iter().map(String::as_str).collect::<Vec<_>>();
@@ -31,6 +37,22 @@ pub(super) fn describe(path: &[String]) -> Result<Value, AppError> {
             "ohlcv",
             vec![
                 "cross_field_invariants",
+                "runtime_semantics",
+                "error_details",
+            ],
+        ),
+        ["data", "lines"] | ["data", "boxes"] => (
+            if path[1] == "lines" {
+                include_str!("schema/pine_lines.json")
+            } else {
+                include_str!("schema/pine_boxes.json")
+            },
+            "data",
+            vec![
+                "cross_field_invariants",
+                "study_identity",
+                "primitive_coverage",
+                "internal_coordinates_and_styles",
                 "runtime_semantics",
                 "error_details",
             ],

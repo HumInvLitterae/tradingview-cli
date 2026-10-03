@@ -8,7 +8,7 @@ use tradingview_core::{AppError, ErrorKind};
 use tradingview_mcp::Operation;
 
 use crate::{
-    cli::{Cli, Command, McpCommand},
+    cli::{Cli, Command, DataCommand, McpCommand},
     ops,
 };
 
@@ -55,7 +55,11 @@ pub(super) fn check(args: &[OsString]) -> Result<Value, AppError> {
         return Err(syntax_error());
     };
     let result = match command {
-        Command::Values | Command::Ohlcv { .. } => Ok(()),
+        Command::Values
+        | Command::Ohlcv { .. }
+        | Command::Data {
+            command: DataCommand::Lines { .. } | DataCommand::Boxes { .. },
+        } => Ok(()),
         Command::Mcp {
             command:
                 McpCommand::Bars {

@@ -338,6 +338,9 @@ bars and aggregate summaries from the selected chart. Missing numbers remain
 null, and genuine zero values are retained.
 Consumers of OHLCV, export summaries and Replay attachments must allow those
 nulls; see the [migration details](docs/cli-spec.md#selected-chart-ohlcv-missing-values).
+Development builds also describe and validate `data lines` and `data boxes`,
+including verbose outputs. These helpers preserve the graphics' coordinate,
+identity and coverage limits; they do not establish trading levels.
 `validate` checks candidate argv after `--`, without an executable name.
 Both helpers are offline. Unsupported paths are reported
 explicitly; successful validation establishes local input validity, not runtime

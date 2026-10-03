@@ -8,11 +8,15 @@ v0.34.0 is published; its completed scope is in the
 | Order | Work | State / completion condition |
 | --- | --- | --- |
 | 1 | Close v0.34.0 | Complete: publication, successful tag workflow and four native asset entries verified. Record archived and current entry points updated. No artifact rebuild or download repeated. |
-| 2 | OHLCV missing-value contract | Concrete examples approved. Implementation preserves unknown cells/aggregates as null and real zero. Consumers must handle nulls explicitly; focused local checks passed, normal CI pending. |
-| 3 | OHLCV schema and offline validation | Implemented for raw/summary mode through existing facilities, unchanged count normalization and zero-I/O validation. Focused fixture/schema/CLI checks passed; normal CI pending. |
-| 4 | Pine graphics schema/validation | Next candidate, not an approved concrete contract. Inspect actual consumer needs after OHLCV. |
+| 2 | OHLCV missing-value contract | Concrete examples approved. Implementation preserves unknown cells/aggregates as null and real zero. Consumers must handle nulls explicitly; focused local checks passed, normal CI deferred by owner. |
+| 3 | OHLCV schema and offline validation | Implemented for raw/summary mode through existing facilities, unchanged count normalization and zero-I/O validation. Focused fixture/schema/CLI checks passed; normal CI deferred by owner. |
+| 4 | Pine graphics schema/validation | Lines/boxes schema and validation implemented; focused local checks passed, acquisition/output unchanged. Labels/tables are next candidates; CI deferred by owner. |
 
 ## Bounded follow-ups
+
+- Legacy alert price projection: The public sanitizer drops series without projecting its threshold
+  into condition.value. Investigate a safe scalar/identity contract separately;
+  no raw series restoration or automatic MCP migration is approved.
 
 - Official technical snapshots: daily live success established; weekly previously
   returned provider-internal 429. Monthly/two-hour success remains unverified.

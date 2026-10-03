@@ -1,0 +1,88 @@
+{
+  "type": "object",
+  "required": [
+    "study_count",
+    "studies"
+  ],
+  "properties": {
+    "study_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "studies": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "name",
+          "total_lines",
+          "horizontal_levels"
+        ],
+        "properties": {
+          "name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "total_lines": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "horizontal_levels": {
+            "type": "array",
+            "items": {
+              "type": [
+                "number",
+                "null"
+              ]
+            }
+          },
+          "all_lines": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "id",
+                "y1",
+                "y2",
+                "x1",
+                "x2",
+                "horizontal",
+                "style",
+                "width",
+                "color"
+              ],
+              "properties": {
+                "id": {},
+                "y1": {
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                },
+                "y2": {
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                },
+                "x1": {},
+                "x2": {},
+                "horizontal": {
+                  "type": "boolean"
+                },
+                "style": {},
+                "width": {},
+                "color": {}
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

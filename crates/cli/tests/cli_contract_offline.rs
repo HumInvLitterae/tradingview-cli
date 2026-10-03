@@ -3,7 +3,14 @@ use serde_json::Value;
 
 #[test]
 fn schema_exports_without_desktop_configuration_or_provider_access() {
-    for path in [vec![], vec!["values"], vec!["mcp", "bars"], vec!["ohlcv"]] {
+    for path in [
+        vec![],
+        vec!["values"],
+        vec!["mcp", "bars"],
+        vec!["ohlcv"],
+        vec!["data", "lines"],
+        vec!["data", "boxes"],
+    ] {
         let output = Command::cargo_bin("tv")
             .unwrap()
             .env("TV_CDP_PORT", "invalid")
@@ -18,7 +25,7 @@ fn schema_exports_without_desktop_configuration_or_provider_access() {
         assert_eq!(value["command"], "schema");
         assert_eq!(value["data"]["contract_version"], "cli_schema.v1");
         if path.is_empty() {
-            assert_eq!(value["data"]["commands"].as_array().unwrap().len(), 3);
+            assert_eq!(value["data"]["commands"].as_array().unwrap().len(), 5);
         } else {
             assert_eq!(value["data"]["coverage"], "documented_fields");
             assert_eq!(
@@ -58,6 +65,16 @@ fn schema_errors_distinguish_unknown_from_unsupported_without_echoing_paths() {
 fn validate_is_offline_and_retains_candidate_globals() {
     for args in [
         vec!["validate", "--", "values"],
+        vec![
+            "validate",
+            "--",
+            "data",
+            "lines",
+            "--filter",
+            "Example",
+            "--verbose",
+        ],
+        vec!["validate", "--", "data", "boxes", "--filter", ""],
         vec!["validate", "--", "ohlcv", "--summary", "--count", "0"],
         vec![
             "validate",

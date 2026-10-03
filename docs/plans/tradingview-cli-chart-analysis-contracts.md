@@ -1,13 +1,17 @@
 # Chart-analysis output contracts after v0.34.0
 
 Status: direction and missing-value examples approved 2026-10-03.
-Implementation and focused local validation are complete; normal CI is pending.
-The PM is the sole executor. Version selection and release preparation are separate. The [roadmap](../next-version-roadmap.md) and
+OHLCV is implemented and locally validated. The owner deferred CI and approved
+continuing other work. Pine lines/boxes offline support is implemented and
+locally validated; alert-price projection remains a proposal.
+The PM is the sole executor. Version selection and release preparation are
+separate. The [roadmap](../next-version-roadmap.md) and
 [inventory](../next-version-work-items.md) own direction and priority.
 
 ## Outcome and consumers
 
-Extend existing offline schema/validation to selected-chart OHLCV without
+Extend existing offline schema/validation to selected-chart OHLCV and Pine
+lines/boxes without
 changing its Desktop/CDP source or fetching data during discovery/validation.
 This supports an existing command; it is not a new data backend or analysis service.
 
@@ -99,4 +103,49 @@ these deterministic contracts.
 - Standalone skill metadata/references and disposable package parity passed
   (seven runtime skills per root). Scoped CLI Clippy (`--lib --tests`, warnings
   denied), formatting, public hygiene and staged-diff checks passed.
-  No dependency or live operation was added. Normal CI remains pending.
+  No dependency or live operation was added. Normal upstream CI remains pending.
+
+## Pine lines and boxes offline support
+
+The owner approved continuing after the two-path proposal. Add `schema data
+lines`, `schema data boxes` and matching `validate -- data ...` support with
+existing cli_schema.v1 / cli_validate.v1 envelopes. Keep acquisition, filtering,
+rounding, deduplication and output unchanged. Before: these paths are unsupported
+by the offline helpers. After: schema returns a structural description; valid
+argv returns status:valid with runtime:not_checked. Lines/boxes have only the
+real parser's string filter and verbose options; empty filter still selects all
+readable studies. Labels/tables remain unsupported by these helpers for now.
+
+Cover default/verbose, real zero, null coordinates, opaque primitive
+IDs/styles, empty observations and existing malformed-collection-to-empty
+behavior with production adapter fixtures. Schemas do not validate study identity,
+primitive coverage, coordinate/scale meaning, rounding arithmetic or style types.
+Empty output is not proof of absent graphics. Use the existing standard schema
+gate, validator/offline CLI tests and focused Clippy. No live Desktop operation,
+new dependency or full local suite is needed.
+
+Pine acceptance: validator 3 tests, offline CLI 5 tests, graphics adapter 6 tests,
+schema catalog 1 test and the standard production-fixture schema gate passed.
+Scoped CLI Clippy, formatting and standalone/package parity checks passed.
+Acquisition/output and dependencies are unchanged; CI remains owner-deferred.
+
+## Legacy alert price proposal — pending owner review
+
+The creator emits a simple condition with type cross/cross_up/cross_down and
+series exactly `[ {type:barset}, {type:value,value:12.34} ]`. The public sanitizer
+removes series and does not copy its threshold into the existing condition.value.
+The exported condition therefore omits a known threshold.
+
+Propose a scalar projection only when condition.value is absent and the condition
+matches this creator shape: supported condition type, exactly those two entries
+in that order, no extra entry fields, and one finite JSON number. Preserve zero;
+leave unsupported, study-based, ambiguous or malformed shapes without a projected
+value. Existing top-level value behavior is unchanged. Never restore raw series.
+
+Synthetic before: `{type:cross,series_count:2,has_study_series:false}`.
+Proposed after: `{type:cross,value:12.34,series_count:2,has_study_series:false}`.
+This is an additive public-contract change requiring agreement before code edits.
+It does not decode symbol markers or establish currency/adjustment/session
+identity. A marker-based symbol may still prevent safe duplicate matching;
+keep that identity decision separate rather than guess or change the public symbol.
+

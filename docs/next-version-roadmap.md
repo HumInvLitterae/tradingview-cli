@@ -21,8 +21,9 @@ contracts and acceptance.
 2. Add `tv schema ohlcv` and offline `tv validate -- ohlcv ...`, reusing the
    existing standard schema exporter, clap parser and execution rules. Include
    raw and summary modes, their focused fixtures and standalone skill guidance.
-3. Consider Pine graphics coverage after the OHLCV slice, against actual chart
-   analysis consumers. Do not use all-command coverage as the product goal.
+3. Pine lines/boxes offline support is implemented with local acceptance;
+   labels/tables are the next coverage candidates. Continue from actual chart
+   analysis consumers rather than all-command coverage. The owner deferred CI.
 
 Keep raw study-series and account message content private. MCP technical snapshots are already implemented;
 further interval qualification is a bounded verification task, not a new feature.

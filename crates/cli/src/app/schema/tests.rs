@@ -70,6 +70,7 @@ fn fixture_case(path: &[&str], samples: Vec<Value>, invalid_pointers: &[&str]) -
             "mcp" => "mcp",
             "values" => "values",
             "ohlcv" => "ohlcv",
+            "data" => "data",
             _ => unreachable!("fixture command needs a static envelope name"),
         };
         for command in [target_command, "tv"] {
@@ -263,6 +264,70 @@ async fn output_schemas_match_production_fixtures() {
             "/data/source",
         ],
     );
+    let graphics_raw = json!([{
+        "name": "Example", "count": 3,
+        "items": [
+            {"id": "synthetic-1", "raw": {"y1": 10.001, "y2": 10.002, "x1": 1, "x2": 2}},
+            {"id": 2, "raw": {"y1": 0, "y2": 0, "x1": null}},
+            {"id": null, "raw": {"y1": null, "y2": 20, "x1": "unknown"}}
+        ]
+    }]);
+    let mut graphics_cases = Vec::new();
+    for kind in ["lines", "boxes"] {
+        let mut samples = Vec::new();
+        for raw in [
+            graphics_raw.clone(),
+            json!([]),
+            json!({"unavailable": true}),
+        ] {
+            for verbose in [true, false] {
+                let mut runtime = crate::ops::test_support::FakeRuntime::new([raw.clone()]);
+                let output = if kind == "lines" {
+                    crate::ops::data_lines(&mut runtime, Some("Example"), verbose).await
+                } else {
+                    crate::ops::data_boxes(&mut runtime, Some("Example"), verbose).await
+                }
+                .unwrap();
+                if !raw.is_array() || raw.as_array().unwrap().is_empty() {
+                    assert_eq!(output["study_count"], 0);
+                } else if kind == "lines" {
+                    assert_eq!(
+                        output["studies"][0]["horizontal_levels"],
+                        json!([10.0, 0.0])
+                    );
+                    if verbose {
+                        assert!(output["studies"][0]["all_lines"][2]["y1"].is_null());
+                        assert_eq!(output["studies"][0]["all_lines"][2]["x1"], "unknown");
+                    }
+                } else {
+                    assert_eq!(
+                        output["studies"][0]["zones"],
+                        json!([
+                            {"high": 10.0, "low": 10.0}, {"high": 0.0, "low": 0.0}
+                        ])
+                    );
+                }
+                samples.push(serde_json::to_value(SuccessEnvelope::new("data", output)).unwrap());
+            }
+        }
+        let field = if kind == "lines" {
+            "/data/studies/0/horizontal_levels"
+        } else {
+            "/data/studies/0/zones"
+        };
+        let verbose_field = if kind == "lines" {
+            "/data/studies/0/all_lines/0/horizontal"
+        } else {
+            "/data/studies/0/all_boxes/0/high"
+        };
+        let count_field = format!("/data/studies/0/total_{kind}");
+        let case = fixture_case(
+            &["data", kind],
+            samples,
+            &["/data/study_count", &count_field, field, verbose_field],
+        );
+        graphics_cases.push(case);
+    }
     let python =
         std::env::var_os("TV_SCHEMA_TEST_PYTHON").expect("schema gate sets Python interpreter");
     let mut child = Command::new(python)
@@ -276,13 +341,13 @@ async fn output_schemas_match_production_fixtures() {
         .stderr(Stdio::piped())
         .spawn()
         .unwrap();
+    let mut cases = vec![values_case, bars_case, raw_case, summary_case];
+    cases.extend(graphics_cases);
     child
         .stdin
         .take()
         .unwrap()
-        .write_all(
-            &serde_json::to_vec(&json!([values_case, bars_case, raw_case, summary_case])).unwrap(),
-        )
+        .write_all(&serde_json::to_vec(&cases).unwrap())
         .unwrap();
     let output = child.wait_with_output().unwrap();
     assert!(

@@ -56,7 +56,8 @@ When the installed binary supports it, `tv schema` lists available output
 schemas. Use `tv schema values` for chart study values, `tv schema ohlcv` for
 selected-chart bars/summaries or `tv schema mcp bars` for official bars; the JSON Schema is in `data.schema`. This is offline lookup,
 not acquisition or proof of data quality. Keep unknown/null/partial observations
-and honor `unchecked`; older binaries retain spec/help guidance.
+and honor `unchecked`; older binaries retain spec/help guidance. Pine graphics
+schema/validation details are in [the workflow reference](references/workflow.md#pine-generated-lines-labels-tables-and-boxes).
 
 For supported binaries, `tv validate -- values`,
 `tv validate -- ohlcv --summary --count 100` or

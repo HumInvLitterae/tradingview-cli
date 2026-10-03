@@ -13,6 +13,15 @@ fn argv(parts: &[&str]) -> Vec<OsString> {
 fn supported_requests_apply_only_local_checks() {
     for parts in [
         vec!["values"],
+        vec!["data", "lines", "--filter", "private-secret", "--verbose"],
+        vec![
+            "--target-id",
+            "synthetic-target",
+            "data",
+            "boxes",
+            "--filter",
+            "",
+        ],
         vec!["ohlcv", "--summary", "--count", "0"],
         vec!["ohlcv", "--count", "501"],
         vec!["--target-id", "synthetic-target", "ohlcv"],
@@ -34,6 +43,7 @@ fn supported_requests_apply_only_local_checks() {
         assert_eq!(value["status"], "valid");
         assert_eq!(value["checks"]["runtime"], "not_checked");
         assert!(!value.to_string().contains("synthetic-target"));
+        assert!(!value.to_string().contains("private-secret"));
         assert!(!value.to_string().contains("NASDAQ:EXAMPLE"));
     }
 }
@@ -97,6 +107,12 @@ fn errors_report_coverage_without_echoing_candidate_values() {
             "invalid",
         ),
         (vec!["data", "equity"], "unsupported_command", "unsupported"),
+        (vec!["data", "labels"], "unsupported_command", "unsupported"),
+        (
+            vec!["data", "lines", "--max", "0"],
+            "invalid_syntax",
+            "invalid",
+        ),
         (vec!["mcp", "login"], "unsupported_command", "unsupported"),
         (vec!["--help"], "non_executable_request", "unsupported"),
         (
