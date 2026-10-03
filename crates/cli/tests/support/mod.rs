@@ -1,6 +1,6 @@
 use assert_cmd::{Command, assert::Assert};
 use serde_json::Value;
-use std::io::{ErrorKind, Read};
+use std::io::ErrorKind;
 use std::net::TcpListener;
 use std::ops::{Deref, DerefMut};
 use std::sync::Arc;
@@ -64,23 +64,7 @@ pub fn tv_with_cdp_disconnect() -> CdpDisconnectCommand {
     let server = std::thread::spawn(move || {
         while !server_stop.load(Ordering::Acquire) {
             match listener.accept() {
-                Ok((mut stream, _)) => {
-                    stream
-                        .set_nonblocking(false)
-                        .expect("make fixture stream blocking");
-                    stream
-                        .set_read_timeout(Some(Duration::from_secs(5)))
-                        .expect("set fixture read timeout");
-                    let mut request = Vec::new();
-                    let mut chunk = [0_u8; 1024];
-                    while !request.windows(4).any(|window| window == b"\r\n\r\n") {
-                        let read = stream.read(&mut chunk).expect("read CLI request");
-                        if read == 0 {
-                            break;
-                        }
-                        request.extend_from_slice(&chunk[..read]);
-                    }
-                }
+                Ok((stream, _)) => drop(stream),
                 Err(error) if error.kind() == ErrorKind::WouldBlock => {
                     std::thread::sleep(Duration::from_millis(10));
                 }

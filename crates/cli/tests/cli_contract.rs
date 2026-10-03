@@ -266,6 +266,21 @@ fn connection_failure_uses_structured_json_and_exit_code_2() {
 }
 
 #[test]
+fn cdp_disconnect_fixture_does_not_wait_for_http_headers() {
+    let mut command = tv_with_cdp_disconnect();
+    let idle_connection = std::net::TcpStream::connect(("127.0.0.1", command.port()))
+        .expect("connect without sending request headers");
+    let output = command.arg("status").output().expect("run tv status");
+    drop(idle_connection);
+
+    assert_eq!(output.status.code(), Some(2));
+    assert!(output.stdout.is_empty());
+    let value: serde_json::Value = serde_json::from_slice(&output.stderr).unwrap();
+    assert_eq!(value["error"]["kind"], "connection");
+    assert_eq!(value["error"]["details"]["failure_stage"], "target_list");
+}
+
+#[test]
 fn readiness_connection_failure_uses_structured_json_and_exit_code_2() {
     let mut command = tv_with_cdp_disconnect();
     let port = command.port();
