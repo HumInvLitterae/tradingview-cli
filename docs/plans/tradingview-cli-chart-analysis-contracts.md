@@ -1,10 +1,8 @@
 # Chart-analysis output contracts after v0.34.0
 
 Status: direction and missing-value examples approved 2026-10-03.
-OHLCV is implemented and locally validated. The owner deferred CI and approved
-continuing other work. Pine lines/boxes offline support is implemented and
-locally validated. Legacy alert-price projection is implemented and locally
-validated.
+OHLCV, Pine lines/boxes/labels/tables offline support and legacy alert-price
+projection are implemented and locally validated. CI is owner-deferred.
 The PM is the sole executor. Version selection and release preparation are
 separate. The [roadmap](../next-version-roadmap.md) and
 [inventory](../next-version-work-items.md) own direction and priority.
@@ -12,8 +10,8 @@ separate. The [roadmap](../next-version-roadmap.md) and
 ## Outcome and consumers
 
 Extend existing offline schema/validation to selected-chart OHLCV and Pine
-lines/boxes without
-changing its Desktop/CDP source or fetching data during discovery/validation.
+lines/boxes/labels/tables without changing its Desktop/CDP source or fetching
+data during discovery/validation.
 This supports an existing command; it is not a new data backend or analysis service.
 
 The [producer](../../crates/cli/src/ops/market/ohlcv.rs) reads recent loaded
@@ -115,7 +113,8 @@ rounding, deduplication and output unchanged. Before: these paths are unsupporte
 by the offline helpers. After: schema returns a structural description; valid
 argv returns status:valid with runtime:not_checked. Lines/boxes have only the
 real parser's string filter and verbose options; empty filter still selects all
-readable studies. Labels/tables remain unsupported by these helpers for now.
+readable studies. At that stage, labels/tables remained unsupported by these helpers; their
+subsequent support is recorded below.
 
 Cover default/verbose, real zero, null coordinates, opaque primitive
 IDs/styles, empty observations and existing malformed-collection-to-empty
@@ -159,3 +158,37 @@ hygiene and standalone/package skill parity. Package staging used the existing
 installed binary solely for guidance validation, not candidate-binary acceptance.
 No provider/account operation or dependency was added; CI remains owner-deferred.
 
+## Pine labels and tables offline support
+
+The owner approved proceeding on 2026-10-04. Before: labels/tables are unsupported
+by schema/validate. After: `schema data labels` / `schema data tables` return
+cli_schema.v1 documented-fields descriptions, and valid candidate argv returns
+cli_validate.v1 status:valid with runtime:not_checked. Existing data output and
+Desktop extraction remain unchanged. Reuse the embedded
+standard schemas, clap parser and zero-I/O validator; no custom engine or
+dependency is needed.
+
+Labels preserve text, nullable price, extracted/readable/returned counts and
+truncation state, plus opaque verbose identity/coordinates/styles. Default max
+is 500 per study, zero is allowed and larger values retain the parser's usize
+bound without an invented cap. Tables returns only string rows: grouping,
+coordinate overwrite, dropped empty cells and unescaped delimiters remain
+existing lossy behavior. Schema conformance does not establish count arithmetic,
+chronology, primitive coverage, study identity or a rectangular typed table.
+
+Cover production normalization with
+fixtures for default/verbose labels, genuine zero/null, max zero/truncation,
+empty/malformed collections, missing metadata and lossy table row formatting.
+Reject wrong field types through the standard schema gate and exercise parser
+acceptance/rejection, target arguments and no Desktop connections through the
+existing offline CLI contract tests. Update the standalone chart-analysis skill
+and check package parity. Local checks remain serial; CI is owner-deferred.
+
+Labels/tables acceptance: validator unit tests (3), offline CLI contracts (5),
+graphics adapter tests (6), schema catalog (1) and graphics spec (1) passed.
+The standard schema gate passed, including production-normalizer fixtures and
+wrong-type/missing-field rejection. Scoped CLI Clippy, formatting, skill metadata,
+standalone references, package parity and public/diff hygiene passed. Staging used
+the existing installed binary for guidance validation only. Existing acquisition,
+consumer output and dependencies are unchanged; no live operation was performed.
+CI remains owner-deferred.

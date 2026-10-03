@@ -10,6 +10,8 @@ fn schema_exports_without_desktop_configuration_or_provider_access() {
         vec!["ohlcv"],
         vec!["data", "lines"],
         vec!["data", "boxes"],
+        vec!["data", "labels"],
+        vec!["data", "tables"],
     ] {
         let output = Command::cargo_bin("tv")
             .unwrap()
@@ -25,7 +27,7 @@ fn schema_exports_without_desktop_configuration_or_provider_access() {
         assert_eq!(value["command"], "schema");
         assert_eq!(value["data"]["contract_version"], "cli_schema.v1");
         if path.is_empty() {
-            assert_eq!(value["data"]["commands"].as_array().unwrap().len(), 5);
+            assert_eq!(value["data"]["commands"].as_array().unwrap().len(), 7);
         } else {
             assert_eq!(value["data"]["coverage"], "documented_fields");
             assert_eq!(
@@ -75,6 +77,16 @@ fn validate_is_offline_and_retains_candidate_globals() {
             "--verbose",
         ],
         vec!["validate", "--", "data", "boxes", "--filter", ""],
+        vec![
+            "validate",
+            "--",
+            "data",
+            "labels",
+            "--max",
+            "0",
+            "--verbose",
+        ],
+        vec!["validate", "--", "data", "tables", "--filter", ""],
         vec!["validate", "--", "ohlcv", "--summary", "--count", "0"],
         vec![
             "validate",
@@ -155,6 +167,25 @@ fn validate_rejects_input_without_leaking_values_or_executing_it() {
             vec![
                 "validate",
                 "--",
+                "data",
+                "labels",
+                "--max",
+                "private-secret",
+            ],
+            "invalid_syntax",
+        ),
+        (
+            vec!["validate", "--", "data", "tables", "--verbose"],
+            "invalid_syntax",
+        ),
+        (
+            vec!["validate", "--", "data", "tables", "--max", "0"],
+            "invalid_syntax",
+        ),
+        (
+            vec![
+                "validate",
+                "--",
                 "--target-id",
                 "private-secret",
                 "mcp",
@@ -230,15 +261,22 @@ fn validate_does_not_read_candidate_files_or_connect_to_desktop() {
 
     let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
     listener.set_nonblocking(true).unwrap();
-    Command::cargo_bin("tv")
-        .unwrap()
-        .env(
-            "TV_CDP_PORT",
-            listener.local_addr().unwrap().port().to_string(),
-        )
-        .args(["validate", "--", "values"])
-        .assert()
-        .success();
+    for candidate in [
+        vec!["values"],
+        vec!["data", "labels", "--max", "0"],
+        vec!["--target-id", "synthetic-target", "data", "tables"],
+    ] {
+        Command::cargo_bin("tv")
+            .unwrap()
+            .env(
+                "TV_CDP_PORT",
+                listener.local_addr().unwrap().port().to_string(),
+            )
+            .args(["validate", "--"])
+            .args(candidate)
+            .assert()
+            .success();
+    }
     assert_eq!(
         listener.accept().unwrap_err().kind(),
         std::io::ErrorKind::WouldBlock

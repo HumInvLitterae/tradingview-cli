@@ -10,7 +10,9 @@ v0.34.0 is published; its completed scope is in the
 | 1 | Close v0.34.0 | Complete: publication, successful tag workflow and four native asset entries verified. Record archived and current entry points updated. No artifact rebuild or download repeated. |
 | 2 | OHLCV missing-value contract | Concrete examples approved. Implementation preserves unknown cells/aggregates as null and real zero. Consumers must handle nulls explicitly; focused local checks passed, normal CI deferred by owner. |
 | 3 | OHLCV schema and offline validation | Implemented for raw/summary mode through existing facilities, unchanged count normalization and zero-I/O validation. Focused fixture/schema/CLI checks passed; normal CI deferred by owner. |
-| 4 | Pine graphics schema/validation | Lines/boxes schema and validation implemented; focused local checks passed, acquisition/output unchanged. Labels/tables are next candidates; CI deferred by owner. |
+| 4 | Pine graphics schema/validation | Lines/boxes/labels/tables schema and validation implemented; focused fixture/schema/CLI checks passed, acquisition/output unchanged. CI deferred by owner. |
+| 5 | Candidate CI | Pending; owner deferred this while implementation continued. Validate the accumulated candidate through normal CI before release. |
+| 6 | Scope/version and release preparation | Version not selected. Confirm included work, update version/notes and complete distribution checks after candidate CI; reuse unchanged evidence. |
 
 ## Bounded follow-ups
 

@@ -58,7 +58,11 @@ pub(super) fn check(args: &[OsString]) -> Result<Value, AppError> {
         Command::Values
         | Command::Ohlcv { .. }
         | Command::Data {
-            command: DataCommand::Lines { .. } | DataCommand::Boxes { .. },
+            command:
+                DataCommand::Lines { .. }
+                | DataCommand::Boxes { .. }
+                | DataCommand::Labels { .. }
+                | DataCommand::Tables { .. },
         } => Ok(()),
         Command::Mcp {
             command:

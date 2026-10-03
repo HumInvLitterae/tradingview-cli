@@ -63,7 +63,7 @@ In v0.34.0 and later, `tv schema` lists supported paths;
 `tv schema values` and `tv schema mcp bars`
 export their JSON Schema 2020-12 descriptions without connecting to Desktop or
 MCP. Development builds also support `tv schema ohlcv` for both selected-chart
-raw bars and summaries, plus `tv schema data lines` and `tv schema data boxes`
+raw bars and summaries, plus `tv schema data <lines|boxes|labels|tables>`
 for Pine graphics. Successful output uses the normal envelope with command
 `schema` and `data.contract_version=cli_schema.v1`; `binary_version` identifies the build.
 The index has `commands` as path arrays. Details have canonical `command`,
@@ -83,13 +83,16 @@ Outer `--target-id` is rejected as `unsupported_target`. Schemas describe the
 current binary; they do not add a version marker to unversioned command output.
 OHLCV missing-value changes are described below; values and MCP output are unchanged.
 
-Pine lines/boxes schemas cover default and verbose outputs. Zero observations,
-null coordinates and omitted verbose arrays remain valid structural results.
+Pine graphics schemas cover lines/boxes/labels default and verbose outputs,
+and tables row strings. Zero observations, null coordinates and omitted verbose
+fields remain valid structural results.
 Primitive IDs, internal x coordinates and style fields retain arbitrary JSON
 types; `unchecked` records those limits along with study identity and coverage.
 Extraction errors can omit studies, and malformed raw collections currently
 become empty results. Conformance does not prove that graphics are absent or
-that a rounded level/zone is a price, support or resistance. Existing graphics
+that a rounded level/zone is a price, support or resistance. Label count
+relationships and truncation arithmetic remain unchecked. Table rows do not
+restore cell types, coordinates or a rectangular layout. Existing graphics
 output and acquisition behavior are unchanged.
 
 ## Selected-chart OHLCV missing values
@@ -134,10 +137,11 @@ v0.34.0 supports `values` and `mcp bars`; development builds also support
 `ohlcv` with or without `--summary`. OHLCV count retains execution's default
 100 and clamp to 1..500, so 0 and 501 are accepted, not rejected.
 `tv validate -- ohlcv --summary --count 100` does not read chart bars.
-Development builds also validate `data lines` and `data boxes`, including their
-`--filter` and `--verbose` options; an empty filter retains its existing meaning
-of all readable studies. Matching-study availability and target readiness remain
-unchecked. Labels and tables still return unsupported in these helpers. The real
+Development builds also validate `data lines`, `data boxes`, `data labels` and
+`data tables`. All accept `--filter`; lines/boxes/labels accept `--verbose` and
+labels also accepts `--max` (including zero). Tables has neither verbose nor max.
+An empty filter retains its existing meaning of all readable studies.
+Matching-study availability and target readiness remain unchecked. The real
 clap parser checks syntax; MCP bars reuse execution's request preparation,
 Desktop-target rejection and deadline rules. Values have no command-specific
 arguments. Target existence, environment configuration, credentials, provider

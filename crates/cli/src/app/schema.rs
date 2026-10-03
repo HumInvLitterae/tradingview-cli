@@ -21,7 +21,9 @@ pub(super) fn describe(path: &[String]) -> Result<Value, AppError> {
             ["mcp", "bars"],
             ["ohlcv"],
             ["data", "lines"],
-            ["data", "boxes"]
+            ["data", "boxes"],
+            ["data", "labels"],
+            ["data", "tables"]
         ]);
         return Ok(data);
     }
@@ -41,18 +43,24 @@ pub(super) fn describe(path: &[String]) -> Result<Value, AppError> {
                 "error_details",
             ],
         ),
-        ["data", "lines"] | ["data", "boxes"] => (
-            if path[1] == "lines" {
-                include_str!("schema/pine_lines.json")
-            } else {
-                include_str!("schema/pine_boxes.json")
+        ["data", "lines" | "boxes" | "labels" | "tables"] => (
+            match path[1] {
+                "lines" => include_str!("schema/pine_lines.json"),
+                "boxes" => include_str!("schema/pine_boxes.json"),
+                "labels" => include_str!("schema/pine_labels.json"),
+                "tables" => include_str!("schema/pine_tables.json"),
+                _ => unreachable!(),
             },
             "data",
             vec![
                 "cross_field_invariants",
                 "study_identity",
                 "primitive_coverage",
-                "internal_coordinates_and_styles",
+                if path[1] == "tables" {
+                    "table_layout_and_cell_types"
+                } else {
+                    "internal_coordinates_and_styles"
+                },
                 "runtime_semantics",
                 "error_details",
             ],

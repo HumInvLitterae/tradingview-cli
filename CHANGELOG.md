@@ -12,8 +12,9 @@ package version omits the leading `v`.
 - Offline `schema ohlcv` and `validate -- ohlcv ...` support for selected-chart
   raw/summary modes, without Desktop or provider access during those checks.
 
-- Offline schemas and invocation validation for `data lines` and `data boxes`,
-  preserving current default/verbose outputs and explicit graphics evidence limits.
+- Offline schemas and invocation validation for Pine graphics `data lines`,
+  `boxes`, `labels` and `tables`, preserving current output, label limits and
+  explicit graphics evidence limits.
 
 ### Changed
 

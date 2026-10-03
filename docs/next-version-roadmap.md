@@ -21,9 +21,13 @@ contracts and acceptance.
 2. Add `tv schema ohlcv` and offline `tv validate -- ohlcv ...`, reusing the
    existing standard schema exporter, clap parser and execution rules. Include
    raw and summary modes, their focused fixtures and standalone skill guidance.
-3. Pine lines/boxes offline support is implemented with local acceptance;
-   labels/tables are the next coverage candidates. Continue from actual chart
-   analysis consumers rather than all-command coverage. The owner deferred CI.
+3. Extend Pine graphics offline support to lines/boxes/labels/tables for the
+   selected-chart inspection workflow. All four paths are implemented
+   with local acceptance. Continue from actual chart-analysis consumers rather
+   than all-command coverage. CI remains owner-deferred.
+4. Confirm the candidate scope/version, complete normal CI and prepare release
+   notes/version/distribution as a separate coherent stage. Reuse unchanged
+   acceptance evidence; new live checks require their applicable authority.
 
 The owner also approved exposing the scalar threshold of an exact legacy
 simple-price condition when condition.value is absent, without restoring raw

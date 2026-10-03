@@ -328,6 +328,126 @@ async fn output_schemas_match_production_fixtures() {
         );
         graphics_cases.push(case);
     }
+
+    let labels_raw = json!([{
+        "name": "Example", "count": 3,
+        "items": [
+            {"id": false, "raw": {"t": "", "y": 0, "x": "unknown", "yl": {"mode": "unknown"}}},
+            {"id": "note", "raw": {"t": "Text only", "y": null}},
+            {"id": null, "raw": {"t": "", "y": null}}
+        ]
+    }]);
+    let mut label_samples = Vec::new();
+    for (raw, limit) in [
+        (labels_raw.clone(), None),
+        (labels_raw.clone(), Some(0)),
+        (labels_raw, Some(1)),
+        (json!([]), None),
+        (json!({"unavailable": true}), None),
+        (json!([{"items": []}]), None),
+    ] {
+        for verbose in [true, false] {
+            let mut runtime = crate::ops::test_support::FakeRuntime::new([raw.clone()]);
+            let output = crate::ops::data_labels(&mut runtime, Some("Example"), limit, verbose)
+                .await
+                .unwrap();
+            if raw[0]["name"] == "Example" {
+                let study = &output["studies"][0];
+                assert_eq!(study["total_labels"], 3);
+                assert_eq!(study["available_labels"], 2);
+                assert_eq!(study["limit"], limit.unwrap_or(500));
+                if limit == Some(0) {
+                    assert_eq!(study["showing"], 0);
+                    assert_eq!(study["truncated"], true);
+                    assert_eq!(study["labels"], json!([]));
+                } else if limit == Some(1) {
+                    assert_eq!(study["showing"], 1);
+                    assert_eq!(study["labels"][0]["text"], "Text only");
+                    assert!(study["labels"][0]["price"].is_null());
+                } else {
+                    assert_eq!(study["showing"], 2);
+                    assert_eq!(study["truncated"], false);
+                    assert_eq!(study["labels"][0]["price"], 0.0);
+                    assert!(study["labels"][1]["price"].is_null());
+                    if verbose {
+                        assert_eq!(study["labels"][0]["id"], false);
+                        assert_eq!(study["labels"][0]["x"], "unknown");
+                        assert_eq!(study["labels"][0]["yloc"], json!({"mode": "unknown"}));
+                    } else {
+                        assert!(study["labels"][0].get("id").is_none());
+                    }
+                }
+            } else if !raw.is_array() || raw.as_array().unwrap().is_empty() {
+                assert_eq!(output["study_count"], 0);
+            } else {
+                assert!(output["studies"][0]["name"].is_null());
+                assert!(output["studies"][0]["total_labels"].is_null());
+            }
+            label_samples.push(serde_json::to_value(SuccessEnvelope::new("data", output)).unwrap());
+        }
+    }
+    graphics_cases.push(fixture_case(
+        &["data", "labels"],
+        label_samples,
+        &[
+            "/data/study_count",
+            "/data/studies/0/total_labels",
+            "/data/studies/0/available_labels",
+            "/data/studies/0/limit",
+            "/data/studies/0/showing",
+            "/data/studies/0/truncated",
+            "/data/studies/0/labels/0/text",
+            "/data/studies/0/labels/0/price",
+        ],
+    ));
+
+    let tables_raw = json!([{
+        "name": "Example", "count": 5,
+        "items": [
+            {"raw": {"tid": 1, "row": 0, "col": 1, "t": "Risk | note"}},
+            {"raw": {"tid": 1, "row": 0, "col": 0, "t": "old"}},
+            {"raw": {"tid": 1, "row": 0, "col": 0, "t": "replacement"}},
+            {"raw": {"tid": 1, "row": 1, "col": 0, "t": ""}},
+            {"raw": {"t": "0"}}
+        ]
+    }]);
+    let mut table_samples = Vec::new();
+    for raw in [
+        tables_raw,
+        json!([]),
+        json!({"unavailable": true}),
+        json!([{"items": []}]),
+    ] {
+        let mut runtime = crate::ops::test_support::FakeRuntime::new([raw.clone()]);
+        let output = crate::ops::data_tables(&mut runtime, Some("Example"))
+            .await
+            .unwrap();
+        if raw[0]["name"] == "Example" {
+            assert_eq!(
+                output["studies"][0]["tables"],
+                json!([{"rows": ["0"]}, {"rows": ["replacement | Risk | note"]}])
+            );
+        } else if !raw.is_array() || raw.as_array().unwrap().is_empty() {
+            assert_eq!(output["study_count"], 0);
+        } else {
+            assert!(output["studies"][0]["name"].is_null());
+            assert_eq!(output["studies"][0]["tables"], json!([]));
+        }
+        table_samples.push(serde_json::to_value(SuccessEnvelope::new("data", output)).unwrap());
+    }
+    let mut tables_case = fixture_case(
+        &["data", "tables"],
+        table_samples,
+        &["/data/study_count", "/data/studies/0/tables/0/rows"],
+    );
+    let mut numeric_row = tables_case["valid"][0].clone();
+    numeric_row["data"]["studies"][0]["tables"][0]["rows"][0] = json!(0);
+    tables_case["invalid"]
+        .as_array_mut()
+        .unwrap()
+        .push(numeric_row);
+    graphics_cases.push(tables_case);
+
     let python =
         std::env::var_os("TV_SCHEMA_TEST_PYTHON").expect("schema gate sets Python interpreter");
     let mut child = Command::new(python)

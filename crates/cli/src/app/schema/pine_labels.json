@@ -1,0 +1,85 @@
+{
+  "type": "object",
+  "required": [
+    "study_count",
+    "studies"
+  ],
+  "properties": {
+    "study_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "studies": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "name",
+          "total_labels",
+          "available_labels",
+          "limit",
+          "showing",
+          "truncated",
+          "labels"
+        ],
+        "properties": {
+          "name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "total_labels": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "available_labels": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "showing": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "truncated": {
+            "type": "boolean"
+          },
+          "labels": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "text",
+                "price"
+              ],
+              "properties": {
+                "text": {
+                  "type": "string"
+                },
+                "price": {
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                },
+                "id": {},
+                "x": {},
+                "yloc": {},
+                "size": {},
+                "textColor": {},
+                "color": {}
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

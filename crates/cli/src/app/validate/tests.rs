@@ -14,6 +14,17 @@ fn supported_requests_apply_only_local_checks() {
     for parts in [
         vec!["values"],
         vec!["data", "lines", "--filter", "private-secret", "--verbose"],
+        vec!["data", "labels"],
+        vec!["data", "labels", "--max", "0", "--verbose"],
+        vec![
+            "data",
+            "labels",
+            "--max",
+            "501",
+            "--filter",
+            "private-secret",
+        ],
+        vec!["data", "tables", "--filter", ""],
         vec![
             "--target-id",
             "synthetic-target",
@@ -107,7 +118,26 @@ fn errors_report_coverage_without_echoing_candidate_values() {
             "invalid",
         ),
         (vec!["data", "equity"], "unsupported_command", "unsupported"),
-        (vec!["data", "labels"], "unsupported_command", "unsupported"),
+        (
+            vec!["data", "labels", "--max", "private-secret"],
+            "invalid_syntax",
+            "invalid",
+        ),
+        (
+            vec!["data", "labels", "--max", "-1"],
+            "invalid_syntax",
+            "invalid",
+        ),
+        (
+            vec!["data", "tables", "--max", "0"],
+            "invalid_syntax",
+            "invalid",
+        ),
+        (
+            vec!["data", "tables", "--verbose"],
+            "invalid_syntax",
+            "invalid",
+        ),
         (
             vec!["data", "lines", "--max", "0"],
             "invalid_syntax",
