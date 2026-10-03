@@ -18,7 +18,7 @@ package version omits the leading `v`.
 
 ### Changed
 
-- Updated Tokio to 1.53.2 and refreshed eight compatible transitive dependencies.
+- Updated Tokio to 1.53.2 and refreshed nine compatible transitive dependencies.
 
 - Legacy Desktop alert rows expose the threshold of an exact simple-price
   condition as condition.value when that field is absent. Genuine zero is

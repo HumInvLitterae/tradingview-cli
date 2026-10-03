@@ -236,3 +236,12 @@ standard output-schema gate passed on the refreshed graph. Formatting and
 public/diff hygiene passed. No new native/platform or live-provider acceptance
 is claimed; normal CI remains owner-deferred. Clippy was not rerun locally for
 this manifest/lock refresh.
+
+Release preparation refresh on 2026-10-04 found Mio 1.2.4 after the earlier
+refresh. All 24 direct/dev requirements remain current. Adopt Mio's Windows
+named-pipe lifetime fix and FreeBSD/libc compatibility fix; loopback protocol
+cases (2) and the whole-operation deadline fixture (1) passed. A full Cargo
+update retained the existing Windows dependency edges after selective update
+had temporarily resolved broad windows-sys ranges to 0.52. No override was
+added; the final lock diff changes only Mio's version/checksum. Platform CI
+remains pending.
