@@ -54,7 +54,12 @@ pub enum Command {
     },
     #[command(
         about = "Check candidate argv offline; pass arguments after -- without tv",
-        long_about = "Check candidate argv offline with clap and supported local request rules. Pass -- followed by argv without the tv executable name. Supports values and mcp bars; other valid command paths report unsupported. Does not execute commands, read candidate files, access credentials, or establish runtime availability."
+        long_about = "Check candidate argv offline with clap and supported local request rules. \
+                      Pass -- followed by argv without the tv executable name. \
+                      Supports values, mcp bars, ohlcv, and data lines/boxes/labels/tables; \
+                      other valid command paths report unsupported. \
+                      Does not execute commands, read candidate files, access credentials, \
+                      or establish runtime availability."
     )]
     Validate {
         #[arg(last = true, value_name = "ARG", num_args = 0..)]
