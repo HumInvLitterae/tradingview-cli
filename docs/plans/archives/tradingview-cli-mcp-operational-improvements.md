@@ -5,7 +5,7 @@ Status: **completed and released as v0.33.0**. Published at `bdede76` on
 succeeded for all four native targets. [Release](https://github.com/HumInvLitterae/tradingview-cli/releases/tag/v0.33.0)
 contains the four archives and SHA256SUMS. This record preserves scoped evidence
 and the deferred technical-snapshot proposal, not current provider availability.
-Next work is tracked in [analysis reliability](../tradingview-cli-analysis-reliability.md).
+Next work is tracked in [analysis reliability](tradingview-cli-analysis-reliability.md).
 
 ## Outcome, consumers and authority
 

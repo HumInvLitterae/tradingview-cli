@@ -1,52 +1,42 @@
-# Post-v0.33.0 roadmap
+# Post-v0.34.0 roadmap
 
-Status: the three initial contracts are implemented and locally validated.
-Legacy-account corrections are implemented; downstream adoption and release
-qualification remain. Offline schema/validation for values and MCP bars is
-implemented. Official technical snapshots are implemented with daily live
-qualification. Candidate CI passed at a48013a; v0.34.0 is approved and prepared.
-[Release notes](releases/v0.34.0.md) describe the final scope. Publication remains
-owner-controlled.
-Baseline: [released v0.33.0](releases/v0.33.0.md). The
-[inventory](next-version-work-items.md) orders work; the
-[analysis-reliability plan](plans/tradingview-cli-analysis-reliability.md)
-owns contracts and acceptance. The workspace version is 0.34.0; publication is not yet verified.
+Baseline: [released v0.34.0](releases/v0.34.0.md), at 62d85b2. Publication and
+the successful release workflow were verified on 2026-10-03; the
+[completed record](plans/archives/tradingview-cli-analysis-reliability.md)
+preserves implementation evidence and remaining qualification limits.
+The next version number is not selected.
 
-## Outcome
+## Outcome and sequence
 
-Make chart-analysis results and failure reports easier to interpret correctly.
-Prioritize MCP failure diagnostics, equity-series identity and truthful effects
-on follow-up commands. Preserve explicit providers, existing command routing,
-unknown values and downstream ownership of analysis/collection policy.
+Make frequently used chart-analysis commands easier for agents and other
+programs to invoke and interpret. The owner approved extending offline schema
+and invocation support to `ohlcv`, starting with its existing summary output.
+The [inventory](next-version-work-items.md) owns order and the
+[chart-analysis plan](plans/tradingview-cli-chart-analysis-contracts.md) owns
+contracts and acceptance.
 
-Each implementation slice includes its consumers, focused tests, docs and
-standalone skill references. No production dependency is currently proposed.
-macOS, Windows and Linux remain supported; use CI for broad platform coverage
-and serial, scoped local checks to limit host load.
+1. Establish truthful missing-value behavior for selected-chart OHLCV before
+   publishing its output schema. Agree on the concrete contract and affected
+   consumer migration; do not silently replace unknown data with zero.
+2. Add `tv schema ohlcv` and offline `tv validate -- ohlcv ...`, reusing the
+   existing standard schema exporter, clap parser and execution rules. Include
+   raw and summary modes, their focused fixtures and standalone skill guidance.
+3. Consider Pine graphics coverage after the OHLCV slice, against actual chart
+   analysis consumers. Do not use all-command coverage as the product goal.
 
-## Sequence
+Keep raw study-series and account message content private. MCP technical snapshots are already implemented;
+further interval qualification is a bounded verification task, not a new feature.
 
-1. Add bounded, public-safe clues to provider-declared MCP failures without
-   changing existing error codes or interpreting textual clues as HTTP status.
-2. Identify the data source and confirmed meaning of `data equity` results;
-   preserve zero drawdown and expose unknown semantics rather than invent them.
-3. Correct chart-mutation hints and separately describe file writes. Retain
-   advisory-only behavior and existing Rust/JSON consumers in the design.
-4. Review legacy account operations against official MCP capabilities. Promote
-   a fix or deprecation only for a demonstrated workflow, with concrete contracts.
-5. Design output-schema discovery and offline request validation for frequently
-   used commands after the first three slices settle. Do not require all 169
-   commands to reach complete semantic/schema coverage before delivering value.
+## Working limits and deferred work
 
-## Deferred work
-
-Technical snapshots are implemented and daily-qualified. Further live interval
-qualification can resume when provider availability permits; weekly 429 evidence
-is retained and does not authorize polling or source substitution.
+The PM works alone. Local Cargo checks use one build job and one test thread;
+prefer affected fixtures and normal CI over repeated full builds. No next-version
+number, dependency, new authentication, Desktop/account mutation, implicit
+retry/source switch or push/publication is authorized by this direction.
 
 The [CDP strategy](notes/cdp-stability-and-autonomous-operation-strategy.md)
-retains its evidence gates for retry/reconnect, renderer readiness and connection
-sharing. Do not add a broker/daemon or generalized recovery metadata without
-measured need. Bar-cap/timeframe expansion, drawing geometry and Windows MSIX
-activation still require concrete consumers. Source-aware caching, sealed
-collection policy and admission to research/backtests remain downstream work.
+retains its measured-need triggers for retry/reconnect, renderer readiness and
+connection sharing. Bar-cap/timeframe expansion, drawing geometry and Windows
+MSIX activation require concrete consumers. Saved-Pine source identity is a
+separate candidate. Source-aware caching, collection policy and
+research/backtest admission are outside this CLI's scope.

@@ -8,14 +8,19 @@ remain at their original paths. Use [current work](../README.md) to resume.
 
 Recently completed:
 
+- [Analysis reliability and v0.34.0](tradingview-cli-analysis-reliability.md):
+  official technical snapshots, chart-result semantics, legacy-account
+  corrections and offline schemas/validation shipped at 62d85b2. Publication,
+  successful release workflow and native asset entries verified on 2026-10-03;
+  live-qualification limits remain explicit.
+
 - [MCP operational improvements and v0.33.0](tradingview-cli-mcp-operational-improvements.md):
   published at bdede76; alert history, read deadlines, connection reuse, portable
   skills and offline command specifications shipped. Technical snapshots remain
   deferred; native acceptance limits remain scoped to their recorded evidence.
 
 - [Official MCP client and v0.32.0 release](tradingview-cli-official-mcp-client.md):
-  published 2026-09-22 at 54dabec; release workflow success and downstream
-  adoption reported. Historical preparation evidence and platform limits remain
+  published 2026-09-22 at 54dabec; release workflow success verified. Historical preparation evidence and platform limits remain
   scoped to their recorded checks.
 
 - [v0.31.4 release](tradingview-cli-v0.31.4-release-readiness.md): publication

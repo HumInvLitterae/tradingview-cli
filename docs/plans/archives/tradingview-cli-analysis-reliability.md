@@ -1,42 +1,29 @@
 # Analysis reliability after v0.33.0
 
-Status: approved analysis, legacy-account and offline-tool changes are implemented.
-Candidate CI passed at a48013a; v0.34.0 is prepared. Downstream adoption, release
-assets and publication remain. The PM is
-the sole executor; no additional agents or sessions are authorized for this work.
+Status: completed and shipped in v0.34.0 at 62d85b2. Publication, successful
+release workflow and the four native asset entries were verified on 2026-10-03.
+Earlier checks below remain historical evidence for their recorded inputs;
+unverified live cases are not completed by publication.
 
 ## Outcome and scope
 
 Help agents distinguish provider failure clues, equity-series meaning and
 operation effects without changing providers or inferring missing evidence.
-The [roadmap](../next-version-roadmap.md) owns direction and the
-[inventory](../next-version-work-items.md) owns priority. The completed
-[v0.33.0 record](archives/tradingview-cli-mcp-operational-improvements.md)
+The [roadmap](../../next-version-roadmap.md) owns direction and the
+[inventory](../../next-version-work-items.md) owns priority. The completed
+[v0.33.0 record](tradingview-cli-mcp-operational-improvements.md)
 retains prior evidence and the deferred technical-snapshot design.
 
 No new dependency, persisted format or live operation is proposed. Keep existing
 commands and defaults. The owner approved the following output changes;
 this plan is not approval to repair every legacy behavior found during spec work.
 
-## Consumers inspected
+## Implementation owners
 
-In the downstream repository, `tradingview_mcp_bars_observe/inspect.rs` reads
-mcp_error.v1, source, code, tool_attempts and optional automatic_retry. It does
-not reject additional detail keys. Preserve those values and error exit status;
-new clues must not change its rejection/admission decision.
-
-The downstream bridge stores snapshot follow_up_hints as `Vec<Value>` and
-`analyze/tradingview_snapshot.rs` forwards them. Its fixture still includes
-chart_quote/non_mutating=true. Update consumer expectations when the correction
-is adopted; forwarding JSON is not proof that every external consumer is safe.
-No typed downstream `data equity` decoder was found in the inspected Rust tree.
-Runtime skills and agent workflows remain consumers even without a typed decoder.
-Downstream files were read only and will not be changed by this plan.
-
-Upstream owners are [MCP data normalization](../../crates/model/src/mcp_data.rs),
-[bar normalization](../../crates/model/src/mcp_bars.rs),
-[equity extraction](../../crates/cli/src/ops/data/strategy.rs), and
-[snapshot/compare hint types](../../crates/market/src/types.rs).
+Implementation owners are [MCP data normalization](../../../crates/model/src/mcp_data.rs),
+[bar normalization](../../../crates/model/src/mcp_bars.rs),
+[equity extraction](../../../crates/cli/src/ops/data/strategy.rs), and
+[snapshot/compare hint types](../../../crates/market/src/types.rs).
 
 ## Approved contracts
 
@@ -70,8 +57,7 @@ normalizers are outside this first slice unless review expands it explicitly.
 Acceptance: fixture success=false with recognized and unrecognized strings,
 non-string/nested errors and secret-like input; no leaked text, no code/attempt
 changes, and unchanged success normalization. Share classification with the
-private proof instead of maintaining two vocabularies. Downstream rejection
-fixtures must remain valid. A live request is not needed to validate this logic.
+private proof instead of maintaining two vocabularies. A live request is not needed to validate this logic.
 
 ### Equity observations
 
@@ -146,22 +132,18 @@ Do not redefine source_category or add automatic execution/fallback.
 
 Acceptance: synthetic snapshots/comparisons covering all hint kinds and partial
 packets, explicit chart_quote/screenshot distinctions, stable public struct
-construction and unchanged auto_execute=false. Update the downstream stale
-fixture through its owner and sync relevant standalone guidance with the change.
+construction and unchanged auto_execute=false. Sync relevant standalone guidance with the change.
 
 ## Approved legacy-account corrections
 
-Reviewed current upstream and downstream sources on 2026-09-29. This is source
-inspection, not evidence that an account was changed or a failure occurred live.
-The downstream bridge still calls legacy watchlist add/add-bulk and alert
-list/create. Its archived mutation-adoption record confirms historical adoption;
-current invocation frequency remains unmeasured.
+Reviewed the CLI adapters on 2026-09-29. This is source inspection,
+not evidence that an account was changed or a failure occurred live.
 
 | Priority | Finding and consumer consequence | Recommended action |
 | --- | --- | --- |
-| 1 | [Alert listing](../../crates/cli/src/ops/alert/list.rs) returns transport errors inside successful data; malformed row collections become empty arrays. The downstream alert-create workflow reads that list before deciding what to create, and its decoder ignores data.error. | Return a real CLI error for failed or malformed reads. Apply the same row-validation rule to private list readers used before/after create, indicator-create and delete so malformed readback cannot confirm a mutation. |
-| 2 | [Watchlist mutation](../../crates/cli/src/ops/layout/watchlist.rs) permits DOM fallback after a POST failure and can verify membership against another active list when the original disappears. Downstream applies missing symbols through these commands. | Permit fallback only before dispatch; verify only the original list ID. Keep successful output, already-present behavior and bulk partial-result policy. |
-| 3 | [Price-alert creation](../../crates/cli/src/ops/alert/create.rs) can fall back to a dialog that never selects the requested condition; created=true means a button click. The downstream decoder does not require a persisted ID. | Remove this automatic DOM creation path. Preserve verified internal-API creation and return its preflight error when unavailable. Do not silently substitute MCP. |
+| 1 | [Alert listing](../../../crates/cli/src/ops/alert/list.rs) returns transport errors inside successful data; malformed row collections become empty arrays. | Return a real CLI error for failed or malformed reads. Apply the same row-validation rule to private list readers used before/after create, indicator-create and delete so malformed readback cannot confirm a mutation. |
+| 2 | [Watchlist mutation](../../../crates/cli/src/ops/layout/watchlist.rs) permits DOM fallback after a POST failure and can verify membership against another active list when the original disappears. | Permit fallback only before dispatch; verify only the original list ID. Keep successful output, already-present behavior and bulk partial-result policy. |
+| 3 | [Price-alert creation](../../../crates/cli/src/ops/alert/create.rs) can fall back to a dialog that never selects the requested condition; created=true means a button click. | Remove this automatic DOM creation path. Preserve verified internal-API creation and return its preflight error when unavailable. Do not silently substitute MCP. |
 
 Approved contract fragments (not full envelopes):
 
@@ -200,7 +182,7 @@ can activate/create a list despite its read-only label; it is unsuitable for
 non-mutating target discovery. Use list/get and an explicit owner-selected ID.
 The documented price-alert surface does not replace Pine alertcondition creation.
 
-Current [tv MCP contracts](../official-mcp.md#explicit-alert-changes)
+Current [tv MCP contracts](../../official-mcp.md#explicit-alert-changes)
 already support explicit symbol/condition and lifecycle operations. Legacy
 `greater_than`/`less_than` mean `cross_up`/`cross_down`; mapping them to MCP
 `greater`/`less` would change intent. Legacy notifications and one-shot behavior
@@ -209,21 +191,14 @@ editing even though the provider has those inputs. Retain legacy API access
 for consumers needing those fields; do not add message support or drop fields
 without a separate consumer/privacy contract.
 
-Downstream must own provider selection, list-ID binding and migration of its
-saved results. Its current duplicate-alert matching has a separate mismatch:
-`AlertCondition::target_price` reads condition.series[].value, but upstream
-sanitization removes raw series. It also does not map cross_up/cross_down in
-`normalize_live_condition`. Missing evidence must block duplicate-sensitive
-creation rather than imply no match. MCP outputs omit message text, so replacing
-that decoder alone cannot preserve its message-based matching policy. No raw
-study-series restoration or message retention is proposed upstream. Downstream
-files and policies remain unchanged by this review.
+Provider selection and list-ID binding stay explicit. MCP outputs omit message
+text; consumers needing message-based matching must account for that difference.
+No raw study-series restoration or message retention is proposed.
 
 Saved Pine script/source equivalence is still unverified in
-[indicator creation](../../crates/cli/src/ops/alert/indicator.rs): local source
+[indicator creation](../../../crates/cli/src/ops/alert/indicator.rs): local source
 selects alertcondition metadata while saved metadata supplies the script ID and
-version. No direct consumer was found in the inspected downstream Rust bridge.
-Keep this as a separate investigation, with verified saved-source identity as
+version. Keep this as a separate investigation, with verified saved-source identity as
 its trigger; MCP simple-price alerts are not a substitute.
 
 ### Acceptance and implementation order
@@ -243,10 +218,9 @@ actual availability and successful live mutations remain unverified separately.
 
 ## Approved offline schemas and invocation validation
 
-The initial consumers are the downstream bridge's `fetch_values_summary` /
-`fetch_values_rows` and MCP-bars observation decoder. Current code also calls
-`ohlcv --summary` and Pine graphics reads; those are the next candidates, not
-part of the first slice. No usage-frequency ranking was measured. Keep chart
+The first supported paths are `values` and `mcp bars`. Selected-chart
+`ohlcv --summary` and Pine graphics reads are later candidates.
+No usage-frequency ranking was measured. Keep chart
 analysis first by shipping `values` alongside `mcp bars`, then expand from
 concrete consumer needs rather than all-command coverage.
 
@@ -355,9 +329,9 @@ A valid request can still fail during execution or lack user authorization.
    reuse the pure deadline rule before that point without moving auth work into
    validation. Preserve existing execution error ordering when extracting it.
 3. Update offline help, `docs/cli-spec.md` and standalone market-data/chart-analysis
-   references in each feature commit. Downstream adoption is optional: consumers
+   references in each feature commit. Consumers
    can cache schemas by binary identity and retain help/spec fallback on older
-   binaries. Do not add an extra validation process to every downstream read by
+   binaries. Do not add an extra validation process to every read by
    default, change its data admission, or replace its decoders automatically.
 
 Use actual normalizer/adapter fixtures for schemas, including same-name/hidden
@@ -386,7 +360,7 @@ The owner approved these two CLI/JSON contracts; both are implemented.
 ## Resumed official technical snapshots
 
 The owner reopened this deferred feature on 2026-09-30. Reuse the original
-[scope and live authorization](archives/tradingview-cli-mcp-operational-improvements.md#official-technical-snapshot),
+[scope and live authorization](tradingview-cli-mcp-operational-improvements.md#official-technical-snapshot),
 not its old failure evidence as current availability. Keep the implementation in
 this active record; the archived record remains historical.
 
@@ -408,7 +382,7 @@ Reuse provider_observation evidence and client_observation.received_at rather
 than another timestamp/conditions format. Emit 23 indicator slots using provider
 keys, null for missing values, and available/empty status. Requested and reported
 identity stay separate; malformed containers/types or contradictory echoes fail.
-See [the complete contract](../official-mcp.md#official-technical-snapshots-next-version).
+See [the complete contract](../../official-mcp.md#official-technical-snapshots-next-version).
 
 Implementation uses one model-owned request/normalizer and the existing MCP
 service. The production tool replaces the proof-only validator; fixed opt-in
@@ -439,15 +413,15 @@ The two-command schema/validation implementation is authorized. No production
 dependency change is needed.
 
 The owner approved v0.34.0 for the three additive commands.
-[Release notes](../releases/v0.34.0.md) cover the settled scope. Candidate CI passed
-at a48013a; final version preparation follows that evidence. Publication, provider inquiries, new live checks and downstream edits need their applicable
+[Release notes](../../releases/v0.34.0.md) cover the settled scope. Candidate CI passed
+at a48013a; final version preparation follows that evidence. Publication, provider inquiries, new live checks need their applicable
 explicit authorization. Do not repeat provider probes while the known failure
 persists merely to advance this plan.
 
 ## Progress
 
 - v0.33.0 publication verified and historical record archived.
-- Current source and downstream error/hint consumers inspected read-only.
+- Current source and public error/hint contracts inspected.
 - Owner approved all three output contracts. MCP diagnostics implemented; focused
   normalization/privacy and private-proof checks cover the shared classifier.
 - Equity extraction and unavailable outcomes now identify source/meaning; zero
@@ -455,7 +429,7 @@ persists merely to advance this plan.
   all output paths and missing values without asserting live series semantics.
 - Snapshot/compare hints serialize chart/file effects without new required Rust
   fields. Market fixtures cover every built-in kind, partial packets and existing
-  construction. Downstream adoption still needs its stale hint fixture updated.
+  construction. Consumers must use the corrected hint semantics.
 - Scoped model, MCP service/proof, CLI spec/strategy and market tests passed;
   the equity gate passed with pinned Node 24.18.0. Scoped Clippy, formatting,
   public hygiene, standalone skill references and placeholder package staging
@@ -467,8 +441,7 @@ persists merely to advance this plan.
   changing/missing targets, and adapter fixtures reject contradictory flags.
 - Price-alert creation now uses only the verified API path; preflight failures
   do not evaluate dialog code. Existing successful API payloads, conditions and
-  notification defaults remain unchanged. Next: downstream duplicate-matching
-  corrections and adoption, candidate CI, then release qualification. The first
+  notification defaults remain unchanged. Next: candidate CI, then release qualification. The first
   schema/validation slice is implemented below; saved-Pine identity work remains
   a separate candidate.
 - Legacy corrections passed focused alert/watchlist/model/spec tests, both
@@ -485,7 +458,7 @@ persists merely to advance this plan.
   so diagnostics can omit input values; no handwritten argv scanner or second
   command definition was introduced. Request preparation remains before client
   construction and execution deadlines remain after it, preserving error order.
-- Both offline commands are implemented. Candidate CI, downstream adoption and
+- Both offline commands are implemented. Candidate CI and
   next-release qualification remain; further schema/command coverage is deferred
   until a concrete consumer needs it.
 - Dependency refresh: rmcp 3.5.0 and tokio-rustls 0.26.6. The initial protocol pin
@@ -516,3 +489,18 @@ persists merely to advance this plan.
   hygiene, diff hygiene and placeholder archive staging passed. CI evidence at
   a48013a is reused for unchanged production code; no local full suite or release
   rebuild was repeated. Real assets and publication await the release workflow.
+
+## Release closeout (2026-10-03)
+
+[v0.34.0](https://github.com/HumInvLitterae/tradingview-cli/releases/tag/v0.34.0)
+was published on 2026-09-29 UTC (2026-09-30 JST). HEAD, origin/main and the tag
+resolve to 62d85b2. The
+[release workflow](https://github.com/HumInvLitterae/tradingview-cli/actions/runs/36618912396)
+succeeded for that commit. The Release lists SHA256SUMS and macOS ARM64/x86_64,
+Windows x86_64 and Linux x86_64 archives. This closeout inspected metadata;
+it did not download or execute those artifacts again.
+
+Weekly/monthly/two-hour technical reads, nonempty native alert history,
+graphical Linux OAuth and Windows skill-manager execution retain their recorded
+qualification limits. Publication does not prove those cases or a fix for 429.
+The next work is tracked in [chart-analysis contracts](../tradingview-cli-chart-analysis-contracts.md).

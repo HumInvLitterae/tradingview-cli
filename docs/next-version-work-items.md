@@ -1,33 +1,34 @@
-# Post-v0.33.0 ordered work inventory
+# Post-v0.34.0 ordered work inventory
 
-Direction approved 2026-09-29. [Roadmap](next-version-roadmap.md) ·
-[Contracts and acceptance](plans/tradingview-cli-analysis-reliability.md).
+Direction approved 2026-10-03. [Roadmap](next-version-roadmap.md) ·
+[Contracts and acceptance](plans/tradingview-cli-chart-analysis-contracts.md).
+v0.34.0 is published; its completed scope is in the
+[archived record](plans/archives/tradingview-cli-analysis-reliability.md).
 
 | Order | Work | State / completion condition |
 | --- | --- | --- |
-| 1 | Close v0.33.0 | Release and successful four-target workflow verified; completed record archived. Repository notes example is corrected in b147bc1; public Release-body correction is still pending authorization. |
-| 2 | MCP provider-failure diagnostics | Implemented with focused normalization/privacy and shared-classifier fixtures. Existing mcp_error.v1/code/stage/attempts and retry policy remain unchanged. |
-| 3 | Equity meaning and zero values | Implemented: extraction/meaning labels and zero drawdown preservation, with generated-JavaScript fixtures for branch selection and missing data. |
-| 4 | Follow-up effects | Implemented with serialized chart/file effects and existing Rust struct construction retained. Market fixtures pass; downstream must update its stale chart_quote expectation when adopting. |
-| 5 | Legacy account operations | All three approved corrections implemented with focused Rust and generated-JavaScript fixtures. Downstream duplicate matching and provider migration remain owner follow-ups. See the existing plan for contracts and acceptance. |
-| 6 | Output schemas and offline validation | Implemented for values and mcp bars: schema export and argv validation, with explicit structural/runtime limits. See the existing plan for argv/JSON examples, unsupported coverage and zero-I/O acceptance. Candidate CI passed; downstream adoption remains. |
-| 7 | Official technical snapshots | Implemented under the approved contract: official summary, 23 indicator slots and existing evidence fields. Daily shape qualified; weekly returned provider-internal 429. Focused validation and live public-path qualification are recorded in the active plan. |
-| 8 | Qualify next release | v0.34.0 approved and prepared. CI passed at a48013a; only notes/records changed afterward before version preparation. Release workflow, native assets and publication remain pending. |
+| 1 | Close v0.34.0 | Complete: publication, successful tag workflow and four native asset entries verified. Record archived and current entry points updated. No artifact rebuild or download repeated. |
+| 2 | OHLCV missing-value contract | Proposal ready for owner review. Existing chart reader coerces missing volume to zero; aggregates also substitute zero or ignore missing entries. Numeric-only consumers must handle nulls explicitly if introduced. |
+| 3 | OHLCV schema and offline validation | Direction approved. Implement after the missing-value decision, covering raw/summary mode through existing facilities, unchanged count normalization and zero-I/O validation. |
+| 4 | Pine graphics schema/validation | Next candidate, not an approved concrete contract. Inspect actual consumer needs after OHLCV. |
 
-## Follow-ups, not release gates
+## Bounded follow-ups
 
-- Remaining spec annotations: diagnose quote-data, scanner hotlist, data depth,
-  discover and spec. The v0.33.0 semantic-annotation baseline was 164/169;
-  advance for a concrete workflow rather than a completion percentage.
-- Alert-history nonempty native normalization/default-deadline success, graphical
-  Linux OAuth and Windows skill-manager execution remain unverified. Reuse
-  fixtures and existing platform evidence without broadening their claims.
+- Official technical snapshots: daily live success established; weekly previously
+  returned provider-internal 429. Monthly/two-hour success remains unverified.
+  Resume only the needed cases; stop on 429, with no polling or source fallback.
+- Nonempty native alert history, graphical Linux OAuth and Windows skill-manager
+  execution remain unverified. Existing fixtures/platform evidence are scoped.
+- Saved-Pine source identity needs a concrete indicator-alert workflow before
+  promotion. MCP simple-price alerts do not replace Pine alertconditions.
+- Remaining spec annotations (diagnose quote-data, scanner hotlist, data depth,
+  discover and spec) advance only for demonstrated workflow benefit.
+- The older v0.33.0 public Release example correction remains an owner follow-up;
+  its repository example is already corrected. No remote edit is included here.
 
 ## Working limits
 
-The PM works alone. Use one Cargo build job and one test thread, no automatic
-heavy pre-push checks or repeated release builds. Preserve unrelated work and
-stashes. No live Desktop/account changes, new authentication, provider probes,
-dependencies, downstream edits or push/publication are implied by this plan.
-Existing applicable approvals remain valid; concrete public-contract proposals
-must be agreed before implementation. Keep tracked records concise and public-safe.
+One PM/executor; preserve unrelated work and stashes. Use scoped serial checks,
+no automatic heavy pre-push tests, no new authentication, Desktop/account changes,
+dependency additions or push/publication. Public-contract
+changes require agreed concrete examples; the OHLCV plan identifies that decision.

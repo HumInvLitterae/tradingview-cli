@@ -1,0 +1,94 @@
+# Chart-analysis output contracts after v0.34.0
+
+Status: direction approved 2026-10-03; missing-value contract proposed, not yet
+approved or implemented. The PM is the sole executor. Version selection and
+release preparation are separate. The [roadmap](../next-version-roadmap.md) and
+[inventory](../next-version-work-items.md) own direction and priority.
+
+## Outcome and consumers
+
+Extend existing offline schema/validation to selected-chart OHLCV without
+changing its Desktop/CDP source or fetching data during discovery/validation.
+This supports an existing command; it is not a new data backend or analysis service.
+
+The [producer](../../crates/cli/src/ops/market/ohlcv.rs) reads recent loaded
+chart bars, not just visible bars. Its summary helper is shared by `export
+chart-bars --summary` and Replay OHLCV attachments.
+
+Current raw extraction uses `volume: v[5] || 0`; aggregation substitutes zero
+for missing endpoint prices, drops missing extrema/volume from aggregation and
+uses "0%" when opening price is zero. These are source-inspection findings,
+not observed live missing-data cases. Empty/unavailable chart errors stay errors.
+
+## Proposed missing-value contract — owner decision required
+
+Keep field names, real zeros and complete numeric results, including rounding.
+Missing/non-finite numeric cells become null in raw bars and last_5_bars.
+Malformed bar structure or missing/non-finite timestamp remains an error.
+
+| Case (synthetic fragments) | Before | Proposed after |
+| --- | --- | --- |
+| Volumes 10 and missing | volume:10, avg_volume:5 after raw zero substitution | volume:null, avg_volume:null; missing raw volume:null |
+| Volumes 10 and genuine zero | volume:10, avg_volume:5 | Unchanged |
+| First open missing, last close 12 | open:0, close:12, change:12, change_pct:"0%" | open:null, close:12, change:null, change_pct:null |
+| Genuine open 0, close 12 | open:0, change:12, change_pct:"0%" | open:0, change:12, change_pct:null |
+| Highs 11 and missing | high:11 from the known row only | high:null, range:null; complete low retained |
+
+open/close use the first open/last close respectively. high/low require the
+corresponding value in every returned bar; range requires both. volume and
+avg_volume require volume in every returned bar. change requires both endpoints;
+change_pct also requires nonzero open. Retain unrelated complete fields rather
+than discard the entire observation. No synthetic replacement, completeness
+score or implicit reread is added.
+
+Failing the whole observation on any missing numeric field would preserve a
+numeric-only success shape, but discard valid prices when volume is unavailable.
+Nulls are recommended. Consumers must support optional numeric/string fields
+and handle unavailable values explicitly; do not default null to
+zero. Producer changes also affect export summaries and Replay attachments.
+Agree on these changes under AGENTS.md's public-contract rule before implementation.
+No dependency or new persisted format is proposed here.
+
+## Approved offline direction and work
+
+The owner approved `tv schema ohlcv` and
+`tv validate -- ohlcv --summary --count 100`. Reuse the
+[schema exporter](../../crates/cli/src/app/schema.rs) and
+[validator](../../crates/cli/src/app/validate.rs); no custom engine or duplicate
+parser is needed. Command-path schema discovery covers raw and summary outputs.
+Runtime quality, target readiness, finality and arithmetic remain unchecked.
+
+1. Settle the missing-value contract and consumer compatibility requirements.
+2. Correct extraction/aggregation with shared export and Replay fixtures.
+3. Add the standard embedded schema and offline validation for both modes.
+   Reuse execution count normalization: default 100, clamped 1..500. Do not
+   reject count 0 or 501 in validation while execution clamps it. Runtime stays
+   not_checked even with an explicit target ID.
+4. Update CLI docs/spec and standalone chart-analysis guidance; skill references
+   must stay inside each distributed skill directory.
+
+## Acceptance
+
+Cover complete observations, genuine zero versus missing/null, incomplete
+endpoints/extrema/volume, zero-open percentage, malformed/non-finite cells,
+empty/unavailable bars and raw/summary agreement. Exercise generated extraction
+JavaScript with synthetic bars so FakeRuntime cannot conceal coercion. Include
+export-summary and Replay-attachment outcomes.
+
+Run affected OHLCV/export/Replay tests serially, the standard schema gate with
+production fixtures and invalid field types, cli_contract_offline and validator
+unit tests. Verify no target discovery, Desktop/provider access or input-file
+read during validation, for both modes, malformed argv and clamped counts.
+Finish with scoped Clippy, formatting and public/diff hygiene; validate standalone
+skills and package staging if they change. Use one Cargo job/test thread and
+normal CI for broad coverage, with no repeated full local suite/release build.
+Live Desktop/provider acceptance is separate; no new live action is needed for
+these deterministic contracts.
+
+## Progress
+
+- Producer, export/Replay callers, offline facilities inspected on 2026-10-03.
+- v0.34.0 publication/workflow/asset metadata verified and record archived.
+  Existing implementation evidence was not rerun.
+- Next: owner review of the missing-value examples. No production changes or
+  dependencies have been added; no push is implied.
