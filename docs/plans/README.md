@@ -2,19 +2,17 @@
 
 | Purpose | Record |
 | --- | --- |
-| v0.35.0 direction | [Roadmap](../next-version-roadmap.md) |
-| Priority and remaining work | [Inventory](../next-version-work-items.md) |
-| Current contracts and acceptance | [Chart-analysis contracts](tradingview-cli-chart-analysis-contracts.md) |
-| Released baseline and evidence | [v0.34.0 closeout](archives/tradingview-cli-analysis-reliability.md) |
+| Proposed direction after v0.35.0 | [Roadmap](../next-version-roadmap.md) |
+| Candidate priority and qualification gaps | [Inventory](../next-version-work-items.md) |
+| Released baseline and acceptance | [v0.35.0 closeout](archives/tradingview-cli-chart-analysis-contracts.md) |
 | CDP stability triggers | [Strategy](../notes/cdp-stability-and-autonomous-operation-strategy.md) |
 | Completed work | [Archive catalog](archives/README.md) |
 
-v0.34.0 is published. The owner approved chart-analysis schema and invocation
-support next, starting with the OHLCV summary output. The missing-value
-examples are approved and validated locally. CI is deferred by the owner while
-Pine lines/boxes/labels/tables offline support and legacy simple-price projection
-are locally validated. The required dependency refresh has passed focused
-verification; freshness must be rechecked before release. The owner approved
-v0.35.0 preparation; candidate CI and publication remain pending.
-Completed release records preserve evidence for their recorded inputs; they are not current
-checkout, runtime acceptance or authorization for new live operations.
+v0.35.0 is published. Release metadata and workflow success were rechecked on
+2026-10-05. Before this documentation closeout, the only post-tag commit was
+9cba16e, a test-fixture repair with successful CI. There is no active feature
+ExecPlan. The next version and scope
+await owner review of the roadmap proposal.
+
+Completed records preserve evidence for their recorded inputs. They are not
+current runtime acceptance or authorization for new live operations.

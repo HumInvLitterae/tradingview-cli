@@ -503,4 +503,4 @@ it did not download or execute those artifacts again.
 Weekly/monthly/two-hour technical reads, nonempty native alert history,
 graphical Linux OAuth and Windows skill-manager execution retain their recorded
 qualification limits. Publication does not prove those cases or a fix for 429.
-The next work is tracked in [chart-analysis contracts](../tradingview-cli-chart-analysis-contracts.md).
+The next work is tracked in [chart-analysis contracts](tradingview-cli-chart-analysis-contracts.md).

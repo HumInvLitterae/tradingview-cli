@@ -1,11 +1,50 @@
-# Chart-analysis output contracts after v0.34.0
+# Chart-analysis output contracts and v0.35.0 closeout
 
-Status: direction and missing-value examples approved 2026-10-03.
-OHLCV, Pine lines/boxes/labels/tables offline support and legacy alert-price
-projection are implemented and locally validated. CI is owner-deferred.
-The PM is the sole executor. The owner approved v0.35.0 preparation on
-2026-10-04; publication remains separate. The [roadmap](../next-version-roadmap.md) and
-[inventory](../next-version-work-items.md) own direction and priority.
+Status: completed and archived on 2026-10-05.
+v0.35.0 is published at `d71fd532b42384257f395f8e0c001b75ae34c12b`.
+The [roadmap](../../next-version-roadmap.md) and
+[inventory](../../next-version-work-items.md) track proposed follow-ups.
+No next version or feature scope is approved by this closeout.
+
+## Publication and CI closeout
+
+GitHub metadata was rechecked on 2026-10-05:
+
+- [v0.35.0](https://github.com/HumInvLitterae/tradingview-cli/releases/tag/v0.35.0)
+  is the latest published release, neither draft nor prerelease. Publication
+  occurred at 2026-10-03 18:36:43 UTC, or 2026-10-04 03:36:43 JST.
+  Four native archives and SHA256SUMS are uploaded, matching the distribution
+  targets in the [packaging contract](../../release-packaging.md).
+- The [release workflow](https://github.com/HumInvLitterae/tradingview-cli/actions/runs/37143745698)
+  succeeded at the release tag. The [branch CI](https://github.com/HumInvLitterae/tradingview-cli/actions/runs/37143708535)
+  also succeeded. A separate [tag CI](https://github.com/HumInvLitterae/tradingview-cli/actions/runs/37143745681)
+  failed in a macOS connection-failure fixture.
+- The subsequent [CI](https://github.com/HumInvLitterae/tradingview-cli/actions/runs/37157273416)
+  succeeded at `9cba16e86fee10303ffea8732d480328fc21b057`.
+  Before this documentation closeout, that was the sole commit after the tag.
+  It changes two CLI test files, with no product, dependency, or
+  distribution-document change.
+
+The fixture previously waited up to five seconds for HTTP headers before
+closing, beyond the command's three-second deadline. The repair closes accepted
+connections immediately and adds a connection-without-headers regression.
+It preserves the product timeout and expected connection-error exit code 2.
+The CI logs do not establish why the preceding connection occurred.
+This test-only change does not by itself justify a patch release.
+
+This closeout verifies Git, release metadata, workflow conclusions, and the
+source allowlist of seven runtime skills. It does not redownload or execute
+release archives, establish installed-binary equality with those archives, or
+repeat historical fixture and live checks. Native alert-history, Linux graphical
+OAuth, Windows skill-manager, and additional technicals-interval qualification
+limits remain in the inventory. Offline schema and validation success does not
+establish runtime availability, completeness, meaning, or freshness.
+
+## Historical implementation and preparation evidence
+
+The following sections retain their original scope and evidence. References to
+pending publication or owner-deferred CI describe those preparation stages.
+The closeout above supersedes them for release status.
 
 ## Outcome and consumers
 
@@ -14,7 +53,7 @@ lines/boxes/labels/tables without changing its Desktop/CDP source or fetching
 data during discovery/validation.
 This supports an existing command; it is not a new data backend or analysis service.
 
-The [producer](../../crates/cli/src/ops/market/ohlcv.rs) reads recent loaded
+The [producer](../../../crates/cli/src/ops/market/ohlcv.rs) reads recent loaded
 chart bars, not just visible bars. Its summary helper is shared by `export
 chart-bars --summary` and Replay OHLCV attachments.
 
@@ -56,8 +95,8 @@ No dependency or new persisted format is proposed here.
 
 The owner approved `tv schema ohlcv` and
 `tv validate -- ohlcv --summary --count 100`. Reuse the
-[schema exporter](../../crates/cli/src/app/schema.rs) and
-[validator](../../crates/cli/src/app/validate.rs); no custom engine or duplicate
+[schema exporter](../../../crates/cli/src/app/schema.rs) and
+[validator](../../../crates/cli/src/app/validate.rs); no custom engine or duplicate
 parser is needed. Command-path schema discovery covers raw and summary outputs.
 Runtime quality, target readiness, finality and arithmetic remain unchecked.
 
@@ -249,7 +288,7 @@ remains pending.
 ## v0.35.0 preparation
 
 The owner approved the proposed scope/version on 2026-10-04. Curated notes are
-in [v0.35.0.md](../releases/v0.35.0.md). README, CLI specification and both
+in [v0.35.0.md](../../releases/v0.35.0.md). README, CLI specification and both
 packaged getting-started guides describe the released command paths and null
 migration. Documentation precedes the version commit; no feature is added.
 

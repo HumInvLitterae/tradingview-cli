@@ -8,6 +8,13 @@ remain at their original paths. Use [current work](../README.md) to resume.
 
 Recently completed:
 
+- [Chart-analysis contracts and v0.35.0](tradingview-cli-chart-analysis-contracts.md):
+  nullable OHLCV, offline OHLCV and Pine graphics support, legacy alert-price
+  projection, dependency refresh, and standalone distribution guidance shipped
+  at d71fd532. Publication and release workflow success were rechecked on
+  2026-10-05. Post-tag test-fixture repair 9cba16e has successful CI.
+  Archive execution and live-qualification limits remain explicit.
+
 - [Analysis reliability and v0.34.0](tradingview-cli-analysis-reliability.md):
   official technical snapshots, chart-result semantics, legacy-account
   corrections and offline schemas/validation shipped at 62d85b2. Publication,
