@@ -28,5 +28,7 @@ current runtime acceptance or authorization for new live operations.
 
 The 2026-10-05 task/dependency checkpoint is in the inventory. Existing CI and
 JavaScript test dependencies were refreshed; release qualification and retained
-live gaps remain separate. Work stops at the owner-requested report before any
-performance or stability analysis.
+live gaps remain separate. The owner then approved the performance/stability
+follow-up. It reproduced and fixed a malformed bars-frame panic with local
+fixtures; the inventory records
+acceptance. No performance optimization was promoted.

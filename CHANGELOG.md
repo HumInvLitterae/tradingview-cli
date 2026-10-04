@@ -19,6 +19,13 @@ package version omits the leading `v`.
   only. Missing identity/source and mismatches stop before alert operations;
   saved-version guessing is removed.
 
+### Fixed
+
+- Pine Editor opening prefers the dedicated panel button when available, so an
+  inactive legacy widget API no longer prevents opening the editor.
+- Desktop-free bars rejects overflowing or invalid UTF-8 frame boundaries with
+  the existing protocol error instead of panicking.
+
 ## v0.35.0
 
 ### Added

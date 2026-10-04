@@ -59,7 +59,9 @@ addition; do not expand its scope merely to fill a version.
 
 The PM works alone. The next-work request also covered repair of the observed
 Pine Editor opening failure; focused and live acceptance are in the inventory.
-Work beyond these diagnostic, source-verification, and Pine opening slices
+The subsequent performance/stability follow-up reproduced and fixed a malformed
+Desktop-free bars frame panic. Its bounded acceptance is in the inventory; no
+performance optimization was promoted. Work beyond these completed slices
 needs scope review.
 New live targets, authentication, provider/Desktop/account operations, dependency
 additions, push, tags, workflow dispatch, and Release edits need their applicable

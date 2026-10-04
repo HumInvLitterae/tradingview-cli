@@ -89,14 +89,12 @@ fn parse_text_packets(raw: &str) -> Result<Vec<WsPacket>, AppError> {
             )
         })?;
         let payload_start = len_end + 3;
-        let payload_end = payload_start + length;
-        if payload_end > raw.len() {
-            return Err(AppError::new(
+        let payload = raw[payload_start..].get(..length).ok_or_else(|| {
+            AppError::new(
                 ErrorKind::InternalApiUnavailable,
                 "TradingView WebSocket frame was truncated",
-            ));
-        }
-        let payload = &raw[payload_start..payload_end];
+            )
+        })?;
         if let Some(rest) = payload.strip_prefix("~h~") {
             let value = rest.trim_end_matches('~').parse::<i64>().map_err(|err| {
                 AppError::new(
@@ -114,7 +112,7 @@ fn parse_text_packets(raw: &str) -> Result<Vec<WsPacket>, AppError> {
             })?;
             packets.push(WsPacket::Message(value));
         }
-        index = payload_end;
+        index = payload_start + payload.len();
     }
     Ok(packets)
 }
@@ -241,6 +239,46 @@ mod tests {
             assert_eq!(error.kind, ErrorKind::InternalApiUnavailable);
             assert!(!error.message.is_empty());
             assert!(error.details.is_none());
+        }
+    }
+
+    #[test]
+    fn rejects_frame_length_that_overflows_payload_end() {
+        let raw = format!("~m~{}~m~{{}}", usize::MAX);
+        let error = parse_packets(Message::Text(raw.into())).unwrap_err();
+        assert_eq!(error.kind, ErrorKind::InternalApiUnavailable);
+        assert!(error.details.is_none());
+    }
+
+    #[test]
+    fn rejects_frame_length_that_splits_utf8() {
+        let error = parse_packets(Message::Text("~m~2~m~\"é\"".into())).unwrap_err();
+        assert_eq!(error.kind, ErrorKind::InternalApiUnavailable);
+        assert!(error.details.is_none());
+    }
+
+    #[test]
+    fn parses_unicode_payloads_in_text_and_binary_frames() {
+        let first = json!({"description": "日本語 é 🦀"});
+        let second = json!({"m": "series_completed", "p": ["cs", "s1"]});
+        let raw = format!(
+            "{}{}{}",
+            frame(&first.to_string()),
+            pong_frame(42),
+            frame(&second.to_string())
+        );
+        for message in [
+            Message::Text(raw.clone().into()),
+            Message::Binary(raw.as_bytes().to_vec().into()),
+        ] {
+            assert_eq!(
+                parse_packets(message).unwrap(),
+                vec![
+                    WsPacket::Message(first.clone()),
+                    WsPacket::Ping(42),
+                    WsPacket::Message(second.clone()),
+                ]
+            );
         }
     }
 

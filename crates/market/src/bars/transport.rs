@@ -1033,6 +1033,25 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn malformed_frame_lengths_return_protocol_errors() {
+        let request = validate_bars_request("NASDAQ:AAPL", "1D", 5).unwrap();
+        for raw in [
+            format!("~m~{}~m~{{}}", usize::MAX),
+            "~m~2~m~\"é\"".to_string(),
+        ] {
+            let (endpoint, server) = scripted_endpoint(Some(Message::Text(raw.into()))).await;
+            let error = fetch_bars_ws_from_endpoint(&request, &endpoint)
+                .await
+                .unwrap_err();
+            assert_eq!(error.kind, ErrorKind::InternalApiUnavailable);
+            let details = error.details.unwrap();
+            assert_eq!(details["source_failure_stage"], "protocol");
+            assert_eq!(details["availability_status"], "unavailable");
+            server.await.unwrap();
+        }
+    }
+
+    #[tokio::test]
     async fn pending_send_maps_to_timeout() {
         let mut pending = NeverReadySink;
         let error = send_ws(

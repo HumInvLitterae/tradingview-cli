@@ -242,6 +242,46 @@ checks passed. No full workspace suite or optimized build was required because
 Rust source and the resolved crate graph did not change. The owner-requested
 checkpoint is complete; stop for review before further analysis.
 
+## Performance and stability follow-up, 2026-10-05
+
+The owner approved analysis and demonstrated improvements after the dependency
+checkpoint. One executor continues without additional agents. Inspect existing
+measurement and boundary behavior first, reproduce concrete failures with local
+fixtures, and apply bounded repairs. New live targets, public contracts, shared
+sessions, retries, and publication are not implied by this scope.
+
+Source review revisited the prior chart-read/topology deferrals, current CDP
+HTTP and WebSocket deadlines/event limits, MCP session reuse/deadlines, launcher
+behavior, and Desktop-free bars parsing. No new chart-read timing evidence
+justifies promoting a broker, retry policy, or status snapshot change. macOS
+pkill excludes ancestors by default, so a launcher self-kill is not established
+by the full-argument match alone. The earlier launch observation remains
+unresolved; no restart was performed.
+
+The bars parser calculates an unchecked payload end from a remote length and
+then slices a UTF-8 string. Before the fix, both new parser regressions failed:
+a maximum usize length panicked with "attempt to add with overflow", and a
+length ending within a multi-byte character panicked with "not a char boundary".
+The production fetch path also panicked when the existing loopback fixture sent
+the oversized frame. These are synthetic-provider reproductions, not observed
+TradingView service incidents.
+
+The repair uses str::get on the remaining payload instead of calculating an
+unchecked absolute end. This standard facility validates both range and UTF-8
+boundaries before the parser advances. It reuses the existing truncated-frame
+error, InternalApiUnavailable kind, and protocol-stage propagation without a
+new guard service, dependency, source fallback, or public field.
+
+Acceptance: all 42 deterministic bars tests passed, including both regressions,
+the loopback production-fetch test, valid Unicode in text and binary frames,
+combined frames, heartbeat handling, and existing availability/range contracts.
+The live heartbeat test stayed ignored. Scoped market Clippy with warnings
+denied, formatting, and public/diff hygiene passed. Tests ran serially with one
+build job and one test thread. No live provider/Desktop operation, optimized
+build, full workspace suite, or performance benchmark was run. No speedup or
+new service-wide stability rate is claimed. The bounded follow-up is complete;
+normal candidate CI and native package qualification remain the next gates.
+
 ## Working limits
 
 One PM/executor; preserve unrelated work, staged changes, and stashes. Use scoped
