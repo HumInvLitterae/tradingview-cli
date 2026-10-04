@@ -5,7 +5,7 @@ import subprocess
 import sys
 
 
-EXPECTED_NODE_VERSION = "v24.18.0"
+EXPECTED_NODE_VERSION = "v24.21.0"
 TEST_NAME = (
     "ops::indicator::tests::"
     "javascript_indicator_add_contract_verifies_immediate_name_and_inputs"

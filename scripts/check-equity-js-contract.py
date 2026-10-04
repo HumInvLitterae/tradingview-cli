@@ -5,7 +5,7 @@ import subprocess
 import sys
 
 
-EXPECTED_NODE_VERSION = "v24.18.0"
+EXPECTED_NODE_VERSION = "v24.21.0"
 TEST_NAME = (
     "ops::data::strategy::tests::"
     "javascript_equity_preserves_branch_identity_and_zero"

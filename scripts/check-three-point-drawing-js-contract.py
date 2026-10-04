@@ -5,7 +5,7 @@ import subprocess
 import sys
 
 
-EXPECTED_NODE_VERSION = "v24.18.0"
+EXPECTED_NODE_VERSION = "v24.21.0"
 TEST_NAMES = [
     "javascript_three_point_probe_contract_is_bounded_and_verified",
     "javascript_three_point_production_contract_is_bounded_and_verified",

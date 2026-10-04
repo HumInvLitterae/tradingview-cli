@@ -176,6 +176,72 @@ run for this bounded fix.
 - The older v0.33.0 public Release example correction remains an owner follow-up.
   Its repository example is already corrected. Remote editing is separate.
 
+## Task and dependency checkpoint, 2026-10-05
+
+The owner requested an inventory and existing-dependency refresh, followed by a
+stop and report. Performance and stability analysis are a later decision, not
+part of this checkpoint. The three approved code changes are implemented and
+have their scoped acceptance evidence above. No unfinished implementation was
+identified in those slices; this is not a new repository-wide defect audit.
+
+Remaining work is separated by purpose:
+
+- Release qualification: normal candidate CI across platforms, optimized native
+  archives and package checks, version selection, changelog/release notes, and
+  publication remain outstanding. No workflow was dispatched or pushed here.
+- Retained live gaps: normal indicator-alert creation/readback, nonempty native
+  alert history, graphical Linux OAuth, Windows skill-manager execution, and
+  two-hour technicals remain unverified. These are not newly demonstrated bugs.
+- Unresolved observations: the earlier technicals 429 and legacy alert symbol
+  identity remain unexplained. The earlier launcher returned cdp_ready:false;
+  the subsequent manual restart restored connectivity, but no launch defect
+  was established. The demonstrated Pine Editor opener defect is fixed.
+- Public documentation: reading the v0.33.0 GitHub Release again confirmed it
+  still uses tv spec data values. The repository has tv spec values. Remote
+  correction remains separate and was not performed.
+- Deferred candidates: broader command annotations, chart-read performance,
+  transport recovery, and the other candidates above remain unpromoted. No
+  optimization or stability-improvement investigation was started here.
+
+Dependency results:
+
+- All 24 direct/dev Cargo requirements match current crates.io stable metadata.
+  Cargo update --dry-run resolves zero changes under Rust 1.99.0. Cargo.toml and
+  Cargo.lock stay unchanged. generic-array 0.14.9 exists, but crypto-common 0.1.7
+  requires exactly 0.14.7 in the rmcp/oauth2/sha2 chain. The installed upstream
+  manifest and reverse dependency tree confirm that constraint; no override was
+  added. jsonschema 4.26.0 is also current on PyPI.
+- JavaScript test pins move from Node 24.18.0 to the current 24.x LTS,
+  [24.21.0](https://nodejs.org/en/blog/release/v24.21.0), matching mise.toml.
+  Scripts, CI, release workflows, and current development guidance change
+  together; earlier acceptance records retain their original versions.
+- Existing action refs move to checkout@v7, setup-node@v7, setup-python@v7,
+  upload-artifact@v7, and download-artifact@v8. Observed latest releases were
+  respectively 7.0.1, 7.0.0, 7.0.0, 7.0.1, and 8.0.1. Existing major-tag style
+  is retained; no new action or permissions are added.
+
+Upstream review covered [checkout credential and trigger changes](https://github.com/actions/checkout/tree/v7.0.1),
+[setup-node cache and input changes](https://github.com/actions/setup-node/tree/v7.0.0),
+[setup-python changes](https://github.com/actions/setup-python/tree/v7.0.0),
+[upload archive behavior](https://github.com/actions/upload-artifact/tree/v7.0.1),
+and [download extraction and digest behavior](https://github.com/actions/download-artifact/tree/v8.0.1).
+These workflows use hosted runners, push/pull_request triggers, no Docker action
+or npm package manifest, and no removed inputs. The upload default still wraps
+the already-built archive; pattern downloads still merge those files into dist.
+The new download digest-mismatch error is adopted without an override. Release
+asset names and package formats are unchanged. Native action execution remains
+an upstream CI/release check, not a result of local YAML inspection.
+
+Validation: all six JavaScript gates passed under Node 24.21.0, covering ten
+executable contracts. YAML parsing and live action manifests confirmed all used
+inputs remain supported. Parsed workflow comparison confirmed that only action
+refs and Node versions changed, with triggers, permissions, job dependencies,
+and artifact paths preserved. Output-schema validation passed with jsonschema
+4.26.0 and Node 24.21.0. Public-hygiene self-test, public-hygiene scan, and diff
+checks passed. No full workspace suite or optimized build was required because
+Rust source and the resolved crate graph did not change. The owner-requested
+checkpoint is complete; stop for review before further analysis.
+
 ## Working limits
 
 One PM/executor; preserve unrelated work, staged changes, and stashes. Use scoped

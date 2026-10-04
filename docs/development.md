@@ -797,7 +797,7 @@ mise run check:indicator-insertion-js
 mise run check:three-point-drawing-js
 ```
 
-These gates use Node.js `24.18.0`, pinned in their scripts and CI independently
+These gates use Node.js `24.21.0`, pinned in their scripts and CI independently
 of the default development version in `mise.toml`. The study-value gate
 executes the exact helper with synthetic sources and throwing Proxy fixtures.
 The equity gate executes the generated expression for every extraction branch,
@@ -838,7 +838,7 @@ Changes to offline output schemas or their producers require
 Python environment. The gate runs production adapter/normalizer fixtures through
 the exported JSON Schema, including nulls, partial bars and rejected field types.
 The gate also executes the exact OHLCV extraction expression with synthetic
-missing/zero/non-finite cells using Node.js 24.18.0, already pinned in CI's
+missing/zero/non-finite cells using Node.js 24.21.0, already pinned in CI's
 JavaScript lane. Local invocation needs that Node version on PATH.
 CI and release qualification install this test-only package; the binary embeds
 schemas and has no Python or schema-validator runtime dependency. The gate uses

@@ -26,7 +26,7 @@ jobs:
           - windows-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
       - name: Check public hygiene
         run: |
           python scripts/check-public-hygiene.py --self-test
@@ -65,7 +65,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
         with:
@@ -78,7 +78,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
         with:
@@ -91,11 +91,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
       - name: Install Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
-          node-version: "24.18.0"
+          node-version: "24.21.0"
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
       - name: Run study-values and equity JavaScript contracts
@@ -104,7 +104,7 @@ jobs:
           python3 scripts/check-equity-js-contract.py
           python3 scripts/check-account-js-contract.py
       - name: Install schema test runtime
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
         with:
           python-version: "3.12"
       - name: Check output schemas against production fixtures
@@ -117,11 +117,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
       - name: Install Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
-          node-version: "24.18.0"
+          node-version: "24.21.0"
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
       - name: Run Pine open JavaScript contract
@@ -132,11 +132,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
       - name: Install Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
-          node-version: "24.18.0"
+          node-version: "24.21.0"
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
       - name: Run indicator insertion JavaScript contract
@@ -147,11 +147,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
       - name: Install Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
-          node-version: "24.18.0"
+          node-version: "24.21.0"
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
       - name: Run three-point drawing JavaScript contract
@@ -169,7 +169,7 @@ jobs:
           - windows-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
       - name: Run tests

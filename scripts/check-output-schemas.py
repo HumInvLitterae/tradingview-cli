@@ -38,12 +38,12 @@ def main():
         return 0
     executable = shutil.which("node")
     if executable is None:
-        parser.error("production OHLCV fixtures require Node.js v24.18.0")
+        parser.error("production OHLCV fixtures require Node.js v24.21.0")
     node = subprocess.run(
         [executable, "--version"], capture_output=True, text=True, check=False
     )
-    if node.returncode != 0 or node.stdout.strip() != "v24.18.0":
-        parser.error("production OHLCV fixtures require Node.js v24.18.0")
+    if node.returncode != 0 or node.stdout.strip() != "v24.21.0":
+        parser.error("production OHLCV fixtures require Node.js v24.21.0")
     env = os.environ.copy()
     env["TV_SCHEMA_TEST_PYTHON"] = sys.executable
     env.setdefault("CARGO_BUILD_JOBS", "1")
