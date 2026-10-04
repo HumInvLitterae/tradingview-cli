@@ -19,7 +19,9 @@ inventory records the contract and evidence. No release version or broader
 feature scope beyond these slices is selected. The approved Pine source-verification
 change is implemented with focused local acceptance and bounded live dry-run
 qualification: exact source and CRLF passed; a textual mismatch was rejected.
-Normal alert creation was not exercised.
+Normal alert creation was not exercised. The subsequent Pine Editor opening
+repair also passed focused tests and live verification from a closed panel;
+its evidence is in the inventory.
 
 Completed records preserve evidence for their recorded inputs. They are not
 current runtime acceptance or authorization for new live operations.

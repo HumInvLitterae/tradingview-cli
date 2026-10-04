@@ -57,8 +57,10 @@ addition; do not expand its scope merely to fill a version.
 
 ## Boundaries
 
-The PM works alone. Work beyond the approved diagnostic and source-verification
-slices needs scope review.
+The PM works alone. The next-work request also covered repair of the observed
+Pine Editor opening failure; focused and live acceptance are in the inventory.
+Work beyond these diagnostic, source-verification, and Pine opening slices
+needs scope review.
 New live targets, authentication, provider/Desktop/account operations, dependency
 additions, push, tags, workflow dispatch, and Release edits need their applicable
 authority. Any release must refresh existing direct/dev dependencies and the

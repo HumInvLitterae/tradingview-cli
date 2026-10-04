@@ -27,6 +27,7 @@ or execution was repeated for this inventory update.
 | 1 | Needed technicals interval qualification | Complete for the approved weekly/monthly requests; see the bounded evidence below. Two-hour remains unverified. | One request per interval, no retry or fallback. This evidence does not require a release. |
 | 2 | `spec diagnose quote-data` semantics | Concrete examples approved. Implemented in the existing [quote spec module](../crates/cli/src/app/spec/quotes.rs); focused local verification passed; not yet released. | Match actual requests/effects, status variants, and source separation. Spec remains offline; acquisition, schemas, and recovery are unchanged. |
 | 3 | Saved-Pine source identity | [Approved contract and acceptance](plans/tradingview-cli-indicator-source-verification.md). Implemented; focused Rust and generated-JavaScript fixtures passed. | Bounded live dry-run passed for an authorized saved revision after the owner restarted Desktop: exact source and CRLF passed; a textual mismatch was rejected. Normal alert creation was not exercised. Upstream CI and release packaging remain separate gates. |
+| 4 | Pine Editor opening repair | A live pine open timed out before saved-script selection. The generic legacy widget API returned without opening the current Pine panel; the existing dedicated button succeeded. | Prefer the dedicated button when present, retain legacy APIs when absent, and preserve the public contract and readiness deadline. Regression failed before the fix and passed after it. Live pine open from a closed editor succeeded with opened_editor:true, slot_rebound:true, and binding_verified:true. |
 
 Priority 1 qualifies existing timeframe support. Priority 2 covers one diagnostic
 path, not all spec gaps. A reproduced analysis defect takes priority over
@@ -120,6 +121,36 @@ not archive/binary equality, universal availability, a resolution of the earlier
 429 cause, or current/final data qualification. No raw response or credential
 state is retained in this record. The [model](../crates/model/src/mcp_technicals.rs)
 and [transport fixture](../crates/mcp/src/fixtures.rs) remain unchanged.
+
+## Pine Editor opening repair
+
+The next-work request on 2026-10-05 was applied to the observed Pine opening
+failure. One executor investigated and repaired it without additional agents.
+The current page retained bottomWidgetBar.showWidget but had no pine-editor
+widget registered. The opener returned after that call and never reached the
+existing dedicated Pine button. Clicking that button opened the editor, and
+saved-script binding verification succeeded. Source inspection also confirmed
+that this API-first ordering predates the source-verification change.
+
+The [shared editor opener](../crates/cli/src/ops/pine/editor/runtime.rs) now
+prefers the dedicated button. Legacy APIs remain available when the button is
+absent. This preserves the public CLI/JSON contract, existing editor selection,
+source checks, and ten-second readiness budget. No new timeout, retry policy,
+provider, dependency, or general UI facility was introduced.
+
+The regression executed the production JavaScript under pinned Node 24.18.0.
+Before the fix it returned method:showWidget and opened:false despite a working
+Pine button. After the fix, the button path and the button-absent legacy path
+both passed. The existing Pine JavaScript gate now runs both contract tests.
+All 47 non-ignored Pine editor tests, both JavaScript contracts, scoped CLI
+Clippy with warnings denied, formatting, and public/diff hygiene passed.
+
+Live verification used the local debug binary and the authorized test script.
+Starting with a closed panel, pine open returned editor_open_before:false,
+opened_editor:true, slot_rebound:true, and binding_verified:true. No source
+editing, save, compile, or alert creation occurred. The installed binary remains
+unchanged. Full workspace tests, upstream CI, and release packaging were not
+run for this bounded fix.
 
 ## Retained qualification gaps and deferrals
 

@@ -94,6 +94,12 @@ pub(super) const FIND_MONACO: &str = r#"
 
 const OPEN_PINE_PANEL_EXPRESSION: &str = r#"
 (function() {
+    var btn = document.querySelector('[aria-label="Pine"]')
+        || document.querySelector('[data-name="pine-dialog-button"]');
+    if (btn) {
+        btn.click();
+        return 'button-click';
+    }
     var bwb = window.TradingView && window.TradingView.bottomWidgetBar;
     if (bwb) {
         if (typeof bwb.activateScriptEditorTab === 'function') {
@@ -112,12 +118,6 @@ const OPEN_PINE_PANEL_EXPRESSION: &str = r#"
             bwb.show('pine-editor');
             return 'show';
         }
-    }
-    var btn = document.querySelector('[aria-label="Pine"]')
-        || document.querySelector('[data-name="pine-dialog-button"]');
-    if (btn) {
-        btn.click();
-        return 'button-click';
     }
     return null;
 })()
@@ -277,11 +277,53 @@ pub(super) async fn dispatch_key(
 
 #[cfg(test)]
 mod tests {
+    use std::process::Command;
+
     use serde_json::json;
 
     use crate::ops::test_support::FakeRuntime;
 
     use super::*;
+
+    #[test]
+    #[ignore = "run through scripts/check-pine-open-js-contract.py with pinned Node.js"]
+    fn javascript_pine_panel_opens_when_legacy_widget_is_unregistered() {
+        for has_button in [true, false] {
+            let script = format!(
+                r#"
+                let opened = false;
+                let legacyCalls = 0;
+                global.window = {{ TradingView: {{ bottomWidgetBar: {{
+                    showWidget: function() {{
+                        legacyCalls++;
+                        if (!{has_button}) opened = true;
+                    }}
+                }} }} }};
+                global.document = {{ querySelector: function() {{
+                    return {has_button} ? {{ click: function() {{ opened = true; }} }} : null;
+                }} }};
+                const method = {OPEN_PINE_PANEL_EXPRESSION};
+                process.stdout.write(JSON.stringify({{ opened, legacyCalls, method }}));
+                "#
+            );
+            let output = Command::new("node")
+                .args(["-e", &script])
+                .output()
+                .expect("Node.js is required for the Pine panel fixture");
+            assert!(output.status.success());
+            let result: Value = serde_json::from_slice(&output.stdout).unwrap();
+            assert_eq!(result["opened"], true, "Pine panel did not open: {result}");
+            assert_eq!(result["legacyCalls"], usize::from(!has_button));
+            assert_eq!(
+                result["method"],
+                if has_button {
+                    "button-click"
+                } else {
+                    "showWidget"
+                }
+            );
+        }
+    }
 
     #[tokio::test]
     async fn ensure_pine_editor_open_errors_when_monaco_never_appears() {

@@ -6,10 +6,7 @@ import sys
 
 
 EXPECTED_NODE_VERSION = "v24.18.0"
-TEST_NAME = (
-    "ops::pine::editor::scripts::tests::"
-    "javascript_pine_open_contract_is_fail_closed_and_verifies_binding"
-)
+TEST_FILTER = "javascript_pine_"
 
 
 def main() -> int:
@@ -44,10 +41,9 @@ def main() -> int:
             "-p",
             "tradingview-cli",
             "--lib",
-            TEST_NAME,
+            TEST_FILTER,
             "--",
             "--ignored",
-            "--exact",
             "--nocapture",
         ],
         check=False,
