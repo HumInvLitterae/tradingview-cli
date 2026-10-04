@@ -3,6 +3,8 @@ use serde_json::{Value, json};
 use tradingview_cdp::RuntimeEvaluator;
 use tradingview_core::{AppError, ErrorKind};
 
+use crate::ops::pine::pine_sources_match;
+
 use super::runtime::{ensure_pine_editor_open, with_monaco};
 
 pub async fn pine_get(runtime: &mut impl RuntimeEvaluator) -> Result<Value, AppError> {
@@ -176,14 +178,6 @@ fn pine_source_response_type(value: &Value) -> &'static str {
         Value::Array(_) => "array",
         Value::Object(_) => "object",
     }
-}
-
-fn pine_sources_match(expected: &str, observed: &str) -> bool {
-    normalize_pine_line_endings(expected) == normalize_pine_line_endings(observed)
-}
-
-fn normalize_pine_line_endings(source: &str) -> String {
-    source.replace("\r\n", "\n").replace('\r', "\n")
 }
 
 fn pine_template(script_type: &str) -> &'static str {

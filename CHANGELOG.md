@@ -12,6 +12,13 @@ package version omits the leading `v`.
 - Offline semantics for `spec diagnose quote-data`, describing scanner and
   Desktop reads, the observation-window limit, and blocked/unavailable results.
 
+### Changed
+
+- Indicator-alert preview and creation now require a readable explicit saved
+  script revision matching the local source, allowing line-ending differences
+  only. Missing identity/source and mismatches stop before alert operations;
+  saved-version guessing is removed.
+
 ## v0.35.0
 
 ### Added

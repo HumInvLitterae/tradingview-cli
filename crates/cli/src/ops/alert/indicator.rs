@@ -1,3 +1,5 @@
+mod saved_script;
+
 use serde_json::{Value, json};
 
 use tradingview_cdp::RuntimeEvaluator;
@@ -11,6 +13,7 @@ use super::{
     ALERT_LIST_READER,
     payload::normalize_indicator_alert_create_payload,
 };
+use saved_script::{VerifiedSavedPineScript, resolve_verified};
 
 #[derive(Debug, Clone)]
 pub struct IndicatorAlertRequest<'a> {
@@ -25,16 +28,6 @@ pub struct IndicatorAlertRequest<'a> {
     pub dry_run: bool,
 }
 
-#[derive(Debug, Clone)]
-struct SavedPineScriptMatch {
-    id: Option<String>,
-    name: String,
-    title: Option<String>,
-    version: Option<Value>,
-    modified: Option<Value>,
-    script_id_available: bool,
-}
-
 pub async fn alert_create_indicator(
     runtime: &mut impl RuntimeEvaluator,
     request: IndicatorAlertRequest<'_>,
@@ -45,7 +38,7 @@ pub async fn alert_create_indicator(
         request.condition_title,
         request.alert_cond_id,
     )?;
-    let saved_script = resolve_saved_pine_script(runtime, script).await?;
+    let saved_script = resolve_verified(runtime, script, request.source).await?;
 
     if request.dry_run {
         return Ok(json!({
@@ -61,7 +54,7 @@ pub async fn alert_create_indicator(
             "title": saved_script.title,
             "version": saved_script.version,
             "modified": saved_script.modified,
-            "script_id_available": saved_script.script_id_available,
+            "script_id_available": true,
         },
         "condition": {
             "selector": if request.alert_cond_id.is_some() { "alert_cond_id" } else { "condition_title" },
@@ -191,164 +184,13 @@ fn public_alertcondition_candidate(candidate: PineAlertconditionCandidate) -> Va
     })
 }
 
-async fn resolve_saved_pine_script(
-    runtime: &mut impl RuntimeEvaluator,
-    script: &str,
-) -> Result<SavedPineScriptMatch, AppError> {
-    let script_literal = js_string(script)?;
-    let result = runtime
-        .evaluate(
-            &format!(
-                r#"
-            fetch('https://pine-facade.tradingview.com/pine-facade/list/?filter=saved', {{ credentials: 'include' }})
-                .then(function(response) {{
-                    return response.json().then(function(data) {{
-                        return {{ ok: response.ok, status: response.status, statusText: response.statusText, data: data }};
-                    }});
-                }})
-                .then(function(result) {{
-                    const requested = {script_literal};
-                    if (!result.ok) {{
-                        return {{ error: 'HTTP ' + result.status + ': ' + result.statusText, kind: 'internal_api_unavailable' }};
-                    }}
-                    if (!Array.isArray(result.data)) {{
-                        return {{ error: 'Unexpected response from pine-facade', kind: 'internal_api_unavailable' }};
-                    }}
-                    const scripts = result.data.map(function(s) {{
-                        return {{
-                            name: s.scriptName || s.scriptTitle || 'Untitled',
-                            title: s.scriptTitle || null,
-                            version: s.version || null,
-                            modified: s.modified || null,
-                            script_id: s.scriptIdPart || null,
-                            script_id_available: !!s.scriptIdPart
-                        }};
-                    }});
-                    function publicScript(script) {{
-                        return {{
-                            name: script.name,
-                            title: script.title,
-                            version: script.version,
-                            modified: script.modified,
-                            script_id_available: script.script_id_available
-                        }};
-                    }}
-                    const matches = scripts.filter(function(script) {{
-                        return script.name === requested || script.title === requested;
-                    }});
-                    return {{
-                        requested: requested,
-                        match_count: matches.length,
-                        match: matches.length === 1 ? matches[0] : null,
-                        candidates: matches.length === 1 ? [] : scripts.slice(0, 20).map(publicScript)
-                    }};
-                }})
-                .catch(function(error) {{
-                    return {{ error: error && error.message ? error.message : String(error), kind: 'internal_api_unavailable' }};
-                }})
-            "#
-            ),
-            true,
-        )
-        .await?;
-
-    normalize_saved_pine_script_match(result)
-}
-
-fn normalize_saved_pine_script_match(data: Value) -> Result<SavedPineScriptMatch, AppError> {
-    if let Some(error) = data.get("error").and_then(Value::as_str) {
-        return Err(
-            AppError::new(ErrorKind::InternalApiUnavailable, error.to_string()).with_details(data),
-        );
-    }
-
-    let match_count = data.get("match_count").and_then(Value::as_u64).unwrap_or(0);
-    if match_count != 1 {
-        let message = if match_count == 0 {
-            "No saved Pine script matches --script"
-        } else {
-            "Multiple saved Pine scripts match --script"
-        };
-        return Err(
-            AppError::new(ErrorKind::Validation, message).with_details(json!({
-                "requested": data.get("requested").cloned().unwrap_or(Value::Null),
-                "match_count": match_count,
-                "candidates": data.get("candidates").cloned().unwrap_or_else(|| json!([])),
-            })),
-        );
-    }
-
-    let matched = data
-        .get("match")
-        .and_then(Value::as_object)
-        .ok_or_else(|| {
-            AppError::new(
-                ErrorKind::InternalApiUnavailable,
-                "Pine script match payload was malformed",
-            )
-            .with_details(data.clone())
-        })?;
-
-    let name = matched
-        .get("name")
-        .and_then(Value::as_str)
-        .unwrap_or("Untitled")
-        .to_string();
-    let id = matched
-        .get("script_id")
-        .and_then(Value::as_str)
-        .filter(|value| !value.trim().is_empty())
-        .map(str::to_string);
-    let title = matched
-        .get("title")
-        .and_then(Value::as_str)
-        .map(str::to_string);
-    let version = matched
-        .get("version")
-        .cloned()
-        .filter(|value| !value.is_null());
-    let modified = matched
-        .get("modified")
-        .cloned()
-        .filter(|value| !value.is_null());
-    let script_id_available = matched
-        .get("script_id_available")
-        .and_then(Value::as_bool)
-        .unwrap_or(false);
-
-    Ok(SavedPineScriptMatch {
-        id,
-        name,
-        title,
-        version,
-        modified,
-        script_id_available,
-    })
-}
-
 async fn alert_create_indicator_via_api(
     runtime: &mut impl RuntimeEvaluator,
     script: &str,
     candidate: &PineAlertconditionCandidate,
-    saved_script: &SavedPineScriptMatch,
+    saved_script: &VerifiedSavedPineScript,
     request: &IndicatorAlertRequest<'_>,
 ) -> Result<Value, AppError> {
-    let script_id = saved_script.id.as_deref().ok_or_else(|| {
-        AppError::new(
-            ErrorKind::InternalApiUnavailable,
-            "Saved Pine script id was unavailable for indicator alert creation",
-        )
-        .with_details(json!({
-            "script": {
-                "requested": script,
-                "name": saved_script.name,
-                "title": saved_script.title,
-                "script_id_available": saved_script.script_id_available,
-            },
-            "phase": "saved_script_metadata_unavailable",
-        }))
-    })?;
-
     let script_literal = js_string(script)?;
     let script_name_literal = js_string(&saved_script.name)?;
     let script_title_literal = saved_script
@@ -357,13 +199,8 @@ async fn alert_create_indicator_via_api(
         .map(js_string)
         .transpose()?
         .unwrap_or_else(|| "null".to_string());
-    let script_id_literal = js_string(script_id)?;
-    let pine_version = saved_script
-        .version
-        .as_ref()
-        .and_then(|value| value.as_str().map(str::to_string))
-        .or_else(|| saved_script.version.as_ref().map(Value::to_string))
-        .unwrap_or_else(|| "1.0".to_string());
+    let script_id_literal = js_string(&saved_script.id)?;
+    let pine_version = saved_script.version.to_string();
     let pine_version_literal = js_string(&pine_version)?;
     let alert_cond_id_literal = js_string(&candidate.alert_cond_id)?;
     let condition_title_literal = candidate
@@ -875,308 +712,4 @@ fn pine_features(source: &str) -> Value {
 }
 
 #[cfg(test)]
-mod tests {
-    use std::collections::VecDeque;
-
-    use serde_json::json;
-
-    use super::super::super::test_support::FakeRuntime;
-    use super::*;
-
-    #[tokio::test]
-    async fn alert_indicator_dry_run_returns_sanitized_preview() {
-        let source = r#"//@version=6
-indicator("Signals")
-plot(close)
-alertcondition(close > open, "Long", "Long message")"#;
-        let mut runtime = FakeRuntime::new(VecDeque::from([json!({
-            "requested": "Signals",
-            "match_count": 1,
-            "match": {
-                "name": "Signals",
-                "title": "Signals",
-                "version": 4,
-                "modified": 123,
-                "script_id_available": true
-            },
-            "candidates": []
-        })]));
-
-        let data = alert_create_indicator(
-            &mut runtime,
-            IndicatorAlertRequest {
-                script: "Signals",
-                source,
-                input_source: "stdin",
-                condition_title: Some("Long"),
-                alert_cond_id: None,
-                symbol: Some("NASDAQ:AAPL"),
-                resolution: Some("1D"),
-                message: Some("Test alert"),
-                dry_run: true,
-            },
-        )
-        .await
-        .unwrap();
-
-        assert_eq!(data["action"], "dry_run");
-        assert_eq!(data["dry_run"], true);
-        assert_eq!(data["would_create"], true);
-        assert_eq!(data["mutation_supported"], true);
-        assert_eq!(data["script"]["requested"], "Signals");
-        assert_eq!(data["script"]["name"], "Signals");
-        assert_eq!(data["script"]["script_id_available"], true);
-        assert!(data["script"].get("id").is_none());
-        assert_eq!(data["condition"]["alert_cond_id"], "plot_1");
-        assert_eq!(data["condition"]["title"], "Long");
-        assert_eq!(data["request"]["symbol"], "NASDAQ:AAPL");
-        assert!(runtime.evaluated[0].0.contains("pine-facade/list"));
-        assert!(data["script"].get("script_id").is_none());
-    }
-
-    #[tokio::test]
-    async fn alert_indicator_dry_run_rejects_ambiguous_condition_selector() {
-        let mut runtime = FakeRuntime::new(VecDeque::new());
-
-        let error = alert_create_indicator(
-            &mut runtime,
-            IndicatorAlertRequest {
-                script: "Signals",
-                source: "alertcondition(close > open, \"Long\")",
-                input_source: "stdin",
-                condition_title: Some("Long"),
-                alert_cond_id: Some("plot_0"),
-                symbol: None,
-                resolution: None,
-                message: None,
-                dry_run: true,
-            },
-        )
-        .await
-        .unwrap_err();
-
-        assert_eq!(error.kind, ErrorKind::Validation);
-        assert!(runtime.evaluated.is_empty());
-    }
-
-    #[tokio::test]
-    async fn alert_indicator_dry_run_rejects_missing_saved_script_match() {
-        let source = "alertcondition(close > open, \"Long\")";
-        let mut runtime = FakeRuntime::new(VecDeque::from([json!({
-            "requested": "Signals",
-            "match_count": 0,
-            "match": null,
-            "candidates": [
-                { "name": "Other", "title": "Other", "version": 1, "modified": null, "script_id_available": true }
-            ]
-        })]));
-
-        let error = alert_create_indicator(
-            &mut runtime,
-            IndicatorAlertRequest {
-                script: "Signals",
-                source,
-                input_source: "stdin",
-                condition_title: Some("Long"),
-                alert_cond_id: None,
-                symbol: None,
-                resolution: None,
-                message: None,
-                dry_run: true,
-            },
-        )
-        .await
-        .unwrap_err();
-
-        assert_eq!(error.kind, ErrorKind::Validation);
-        assert_eq!(error.message, "No saved Pine script matches --script");
-        assert_eq!(error.details.unwrap()["match_count"], 0);
-    }
-
-    #[tokio::test]
-    async fn alert_indicator_create_returns_sanitized_success() {
-        let source = r#"//@version=6
-indicator("Signals")
-plot(close)
-alertcondition(close > open, "Long", "Long message")"#;
-        let mut runtime = FakeRuntime::new(VecDeque::from([
-            json!({
-                "requested": "Signals",
-                "match_count": 1,
-                "match": {
-                    "name": "Signals",
-                    "title": "Signals",
-                    "version": 4,
-                    "modified": 123,
-                    "script_id": "SAVED_SCRIPT_ID_REDACTED",
-                    "script_id_available": true
-                },
-                "candidates": []
-            }),
-            json!({
-                "action": "create_indicator",
-                "dry_run": false,
-                "alert_id": "4550000001",
-                "created": true,
-                "source": "indicator_alert_api",
-                "symbol": "NASDAQ:AAPL",
-                "resolution": "1D",
-                "message": "Long message",
-                "before_count": 1,
-                "after_count": 2,
-                "script": {
-                    "requested": "Signals",
-                    "name": "Signals",
-                    "title": "Signals",
-                    "version": "4",
-                    "script_id_available": true
-                },
-                "condition": {
-                    "alert_cond_id": "plot_1",
-                    "title": "Long",
-                    "message": "Long message",
-                    "plot_index": 1,
-                    "confidence": "best_effort"
-                },
-                "input_metadata": {
-                    "source": "default_no_inputs",
-                    "input_count": 0,
-                    "study_matched": false,
-                    "source_has_inputs": false
-                },
-                "matched_alert": {
-                    "alert_id": "4550000001",
-                    "message": "Long message",
-                    "condition": {
-                        "type": "alert_cond",
-                        "alert_cond_id": "plot_1",
-                        "has_study_series": true
-                    }
-                }
-            }),
-        ]));
-
-        let data = alert_create_indicator(
-            &mut runtime,
-            IndicatorAlertRequest {
-                script: "Signals",
-                source,
-                input_source: "stdin",
-                condition_title: Some("Long"),
-                alert_cond_id: None,
-                symbol: Some("NASDAQ:AAPL"),
-                resolution: Some("1D"),
-                message: None,
-                dry_run: false,
-            },
-        )
-        .await
-        .unwrap();
-
-        assert_eq!(data["action"], "create_indicator");
-        assert_eq!(data["dry_run"], false);
-        assert_eq!(data["created"], true);
-        assert_eq!(data["source"], "indicator_alert_api");
-        assert_eq!(data["alert_id"], "4550000001");
-        assert_eq!(data["condition"]["alert_cond_id"], "plot_1");
-        assert!(data["script"].get("id").is_none());
-        assert!(data["matched_alert"]["condition"].get("pine_id").is_none());
-        assert_eq!(runtime.evaluated.len(), 2);
-        assert!(runtime.evaluated[1].0.contains("create_alert"));
-        assert!(runtime.evaluated[1].0.contains("list_alerts"));
-        assert!(!runtime.evaluated[1].0.contains("Content-Type"));
-    }
-
-    #[tokio::test]
-    async fn alert_indicator_create_rejects_missing_script_id_before_create_request() {
-        let source = "alertcondition(close > open, \"Long\")";
-        let mut runtime = FakeRuntime::new(VecDeque::from([json!({
-            "requested": "Signals",
-            "match_count": 1,
-            "match": {
-                "name": "Signals",
-                "title": "Signals",
-                "version": 1,
-                "modified": null,
-                "script_id": null,
-                "script_id_available": false
-            },
-            "candidates": []
-        })]));
-
-        let error = alert_create_indicator(
-            &mut runtime,
-            IndicatorAlertRequest {
-                script: "Signals",
-                source,
-                input_source: "stdin",
-                condition_title: Some("Long"),
-                alert_cond_id: None,
-                symbol: None,
-                resolution: None,
-                message: None,
-                dry_run: false,
-            },
-        )
-        .await
-        .unwrap_err();
-
-        assert_eq!(error.kind, ErrorKind::InternalApiUnavailable);
-        assert_eq!(
-            error.message,
-            "Saved Pine script id was unavailable for indicator alert creation"
-        );
-        assert_eq!(runtime.evaluated.len(), 1);
-    }
-
-    #[tokio::test]
-    async fn alert_indicator_create_post_check_failure_does_not_fallback() {
-        let source = "alertcondition(close > open, \"Long\")";
-        let mut runtime = FakeRuntime::new(VecDeque::from([
-            json!({
-                "requested": "Signals",
-                "match_count": 1,
-                "match": {
-                    "name": "Signals",
-                    "title": "Signals",
-                    "version": 1,
-                    "modified": null,
-                    "script_id": "SAVED_SCRIPT_ID_REDACTED",
-                    "script_id_available": true
-                },
-                "candidates": []
-            }),
-            json!({
-                "error": "Indicator alert create did not confirm a matching new alert",
-                "error_kind": "internal_api_unavailable",
-                "phase": "post_check_failed",
-                "created": false,
-                "source": "indicator_alert_api"
-            }),
-        ]));
-
-        let error = alert_create_indicator(
-            &mut runtime,
-            IndicatorAlertRequest {
-                script: "Signals",
-                source,
-                input_source: "stdin",
-                condition_title: Some("Long"),
-                alert_cond_id: None,
-                symbol: None,
-                resolution: None,
-                message: None,
-                dry_run: false,
-            },
-        )
-        .await
-        .unwrap_err();
-
-        assert_eq!(error.kind, ErrorKind::InternalApiUnavailable);
-        assert_eq!(
-            error.message,
-            "Indicator alert create did not confirm a matching new alert"
-        );
-        assert_eq!(runtime.evaluated.len(), 2);
-    }
-}
+mod tests;

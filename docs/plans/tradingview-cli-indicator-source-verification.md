@@ -1,8 +1,10 @@
 # Verify source before creating a Pine indicator alert
 
-Status: investigation complete; contract proposal awaiting owner agreement.
-No implementation or new live Desktop/account operation is authorized by this
-record. The next release version is not selected. The
+Status: contract and implementation approved on 2026-10-05; implementation and
+focused local checks complete. Live qualification is pending because the running
+Desktop session has no available CDP listener. The owner designated disposable
+test scripts, but no source/target has been read. No alert creation is authorized
+by this record. The next release version is not selected. The
 [inventory](../next-version-work-items.md) owns priority.
 
 ## Outcome and demonstrated workflow
@@ -14,10 +16,10 @@ asks users to supply local source and a saved script name. This is a supported
 CLI workflow; its actual use frequency and a current affected account are
 UNCONFIRMED. No real incorrect alert was observed during this investigation.
 
-The [adapter](../../crates/cli/src/ops/alert/indicator.rs) selects the condition
-from local source, resolves a saved script by name/title, and combines the local
-condition ID with the saved ID/version. Dry-run stops after catalog matching and
-can report would_create:true without reading saved source.
+Before this change, the [adapter](../../crates/cli/src/ops/alert/indicator.rs)
+selected the condition from local source and combined it with saved ID/version
+metadata. Dry-run could report would_create:true after catalog matching without
+reading saved source. The new preflight verifies source before either mode.
 
 Two synthetic sources, run through the existing local `pine alertconditions`
 command on 2026-10-05, demonstrate the revision hazard:
@@ -51,12 +53,12 @@ An implementation must test the exact encoded path and selected version with
 production-generated JavaScript; a canned Rust Runtime result alone is not
 sufficient evidence.
 
-The [editor source comparison](../../crates/cli/src/ops/pine/editor/source.rs)
-already treats CRLF, LF, and lone CR as equivalent. Reuse that comparison rule.
+The [shared Pine source comparison](../../crates/cli/src/ops/pine.rs) treats
+CRLF, LF, and lone CR as equivalent. The editor and new preflight reuse it.
 Do not add hashing, semantic Pine comparison, an editor workaround, a generic
 source service, or a dependency for this bounded operation.
 
-## Proposed public behavior
+## Approved public behavior
 
 Apply the same preflight to dry-run and normal creation after the existing local
 selector validation and unique saved-script match. Read that exact saved
@@ -64,7 +66,7 @@ ID/version once, compare locally, and proceed only on a match. Never guess a
 missing version as 1.0. Keep local source out of provider requests. Do not expose
 saved source, IDs, digests, or raw provider errors in public output.
 
-| Input/evidence | Current behavior | Proposed behavior |
+| Input/evidence | Before | Approved behavior |
 | --- | --- | --- |
 | Local and saved source match after line-ending normalization | Existing preview/create path | Same successful JSON shape and path |
 | Same names, but local revision has an extra plot | Preview can report would_create:true with locally inferred plot_1; creation can advance with the saved revision's identity | Validation error before alert listing or creation, with phase:saved_source_verification and reason:source_mismatch |
@@ -72,7 +74,7 @@ saved source, IDs, digests, or raw provider errors in public output.
 | Spaces, comments, BOM, or a terminal newline differ | No comparison | Reject as source_mismatch; no automatic source repair or save |
 | Missing saved ID/version, denied GET, absent/empty/non-string source, or evaluation failure | Dry-run can succeed without an ID; normal mode can default a missing version | Fail before any alert operation with internal_api_unavailable and phase:saved_source_verification; use a fixed public-safe reason |
 
-For a source mismatch, the proposed error is:
+For a source mismatch, the approved error is:
 
 ```json
 {
@@ -104,7 +106,7 @@ Matching source does not prove compiled condition IDs, chart-study identity,
 input completeness, or complete post-create readback. Those existing limits
 remain explicit. Dry-run still is not creation acceptance.
 
-## Work and acceptance after agreement
+## Work and acceptance
 
 1. Add the saved-revision preflight using the existing Runtime and endpoint
    facilities. Keep source comparison local and preserve local validation order.
@@ -131,3 +133,61 @@ test thread. Their FakeRuntime payloads cover existing behavior, not saved-sourc
 verification. Source inspection located the versioned GET and line-ending rule.
 No saved-source retrieval, Desktop operation, account mutation, new provider
 request, or pinned JavaScript gate was run for this investigation.
+
+## Implementation decisions and progress
+
+The owner approved the preceding concrete behavior on 2026-10-05. One executor
+performs this work without additional agents. The focused mismatch regression failed before implementation because dry-run
+returned would_create:true for the different local revision. It now passes for
+both dry-run and normal creation, with no alert operations.
+
+Two private layouts were considered: keep lookup and comparison in the already
+large indicator adapter, or group catalog lookup and source verification in an
+adapter-local saved_script module. Use the latter so normal creation accepts
+only a verified saved-script value with required ID and version. It is not a
+new public API or general source service. Preserve the provider's numeric/string
+version representation for preview while using the same explicit version for
+GET and creation. Share the existing line-ending comparison within CLI Pine
+operations; do not add a dependency or expose a new Rust library API.
+
+The existing pinned account-JavaScript gate will execute the new generated
+source-fetch expression. No new test runner or CI lane is needed.
+
+The source GET uses the native fetch redirect:error option so a redirect cannot
+silently select another resource. Lookup and evaluation errors become fixed
+public-safe errors; raw provider failures and saved source are not exposed.
+The verified saved-script value is constructed only after comparison. Successful
+preview keeps the original numeric/string version representation, while GET and
+creation use the same explicit version.
+
+Acceptance on 2026-10-05:
+
+- Eleven indicator-alert adapter tests passed, covering mismatch in both modes,
+  exact/line-ending matches, textual differences, missing/malformed identity or
+  source, sanitized evaluation failures, and unchanged creation/post-check paths.
+- Fifteen existing Pine editor source tests passed after sharing the comparator.
+- The pinned Node 24.18.0 account gate passed all three tests. The new test executes
+  production-generated lookup and source-fetch expressions, checks the exact
+  encoded ID/version URL, requires a single read, and rejects failed/malformed
+  responses. Existing alert-list and watchlist gates also passed.
+- The indicator-alert spec CLI test and example parser test passed. Scoped CLI
+  Clippy for the library/tests passed with warnings denied; formatting passed.
+
+All Cargo checks used one build job and one test thread, without a full workspace
+suite, optimized build, dependency update, or installed-binary replacement.
+Upstream CI has not run for this change.
+
+Live qualification is incomplete. Target discovery failed at target_list, both
+in the ordinary environment and with sandbox restrictions removed. Process and
+listener inspection confirmed a running Desktop app; no CDP TCP listener was
+found on its main process or the configured port.
+No script, chart, or account operation followed, and the app was not restarted.
+The next action is to arrange a CDP-enabled session without losing existing work,
+then read and test only the owner-designated scripts. Current provider source
+compatibility and the new live dry-run remain UNCONFIRMED; this is not yet
+release-ready acceptance.
+
+Standalone Pine skill references, disposable resource staging with seven skills
+per root, public hygiene/self-test, and diff/link checks passed. Source review
+also confirmed that the alert-mutation JavaScript body is byte-identical; the
+new verification occurs before entering that body.

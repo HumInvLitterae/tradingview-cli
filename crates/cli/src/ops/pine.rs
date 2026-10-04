@@ -8,3 +8,11 @@ pub use tradingview_pine::{
     PineAlertconditionCandidate, pine_alertcondition_candidates, pine_alertconditions,
     pine_analyze, pine_check,
 };
+
+pub(super) fn pine_sources_match(expected: &str, observed: &str) -> bool {
+    normalize_pine_line_endings(expected) == normalize_pine_line_endings(observed)
+}
+
+fn normalize_pine_line_endings(source: &str) -> String {
+    source.replace("\r\n", "\n").replace('\r', "\n")
+}

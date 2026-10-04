@@ -18,25 +18,31 @@ async fn javascript_account_alert_lists_reject_failed_reads() {
     let mut runtime = FakeRuntime::new([]);
     let _ = super::alert_create(&mut runtime, 100.0, "crossing", None).await;
     let create = runtime.evaluated[0].0.clone();
+    let source = "indicator(\"Signals\")\nalertcondition(close > open, \"Long\", \"Long message\")";
     let mut runtime = FakeRuntime::new([
         json!({"match_count": 1, "match": {
             "name": "Signals", "script_id": "synthetic-script", "version": 1,
             "script_id_available": true
         }}),
+        json!({"source": source}),
         Value::Null,
     ]);
-    let _ = super::alert_create_indicator(&mut runtime, super::IndicatorAlertRequest {
-        script: "Signals",
-        source: "indicator(\"Signals\")\nalertcondition(close > open, \"Long\", \"Long message\")",
-        input_source: "inline",
-        condition_title: Some("Long"),
-        alert_cond_id: None,
-        symbol: Some("NASDAQ:EXAMPLE"),
-        resolution: Some("1D"),
-        message: None,
-        dry_run: false,
-    }).await;
-    let indicator = runtime.evaluated[1].0.clone();
+    let _ = super::alert_create_indicator(
+        &mut runtime,
+        super::IndicatorAlertRequest {
+            script: "Signals",
+            source,
+            input_source: "inline",
+            condition_title: Some("Long"),
+            alert_cond_id: None,
+            symbol: Some("NASDAQ:EXAMPLE"),
+            resolution: Some("1D"),
+            message: None,
+            dry_run: false,
+        },
+    )
+    .await;
+    let indicator = runtime.evaluated[2].0.clone();
     let expressions =
         serde_json::to_string(&[list, delete, delete_all, create, indicator]).unwrap();
     let script = format!(

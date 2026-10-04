@@ -806,6 +806,10 @@ The account gate executes shared alert-list validation and generated list,
 create and delete expressions against synthetic fetch responses; missing or
 malformed readback cannot stand in for an empty account. It also executes
 watchlist mutation expressions to check lost responses and original-list identity.
+Indicator-alert fixtures exercise the generated saved-script lookup and exact
+versioned source GET, with encoded IDs, malformed/error responses, no redirects,
+and no editor/account mutation. Rust fixtures enforce source comparison and
+rejection before alert operations in both dry-run and normal creation.
 The Pine-open gate executes the generated asynchronous page expression against
 synthetic Pine facade, Pine-owned Monaco, overlay-menu, and Save-bound store
 objects, including hidden stale editors, ambiguous visible editors, missing

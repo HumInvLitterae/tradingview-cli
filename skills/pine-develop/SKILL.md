@@ -24,5 +24,6 @@ cloud save as distinct results. Finish at the requested validation/persistence
 level, reporting errors and unverified levels that matter to that request.
 
 For a requested Pine `alertcondition()` alert, read
-[indicator alert guidance](references/indicator-alerts.md). A live dry-run does
-not verify source/version identity, study inputs or provider creation.
+[indicator alert guidance](references/indicator-alerts.md). A live dry-run
+compares supplied text with the selected saved revision, but does not verify
+compiled condition IDs, study inputs, or provider creation.

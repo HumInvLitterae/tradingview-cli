@@ -3,7 +3,8 @@
 Updated 2026-10-05. [Direction](next-version-roadmap.md) ·
 [Released contracts and evidence](plans/archives/tradingview-cli-chart-analysis-contracts.md).
 The owner approved the diagnostic spec contract below and bounded weekly/monthly
-technicals qualification on 2026-10-05. No release version is selected.
+technicals qualification on 2026-10-05. The source-verification contract was also
+approved later that day. No release version is selected.
 
 ## Released baseline
 
@@ -25,7 +26,7 @@ or execution was repeated for this inventory update.
 | --- | --- | --- | --- |
 | 1 | Needed technicals interval qualification | Complete for the approved weekly/monthly requests; see the bounded evidence below. Two-hour remains unverified. | One request per interval, no retry or fallback. This evidence does not require a release. |
 | 2 | `spec diagnose quote-data` semantics | Concrete examples approved. Implemented in the existing [quote spec module](../crates/cli/src/app/spec/quotes.rs); focused local verification passed; not yet released. | Match actual requests/effects, status variants, and source separation. Spec remains offline; acquisition, schemas, and recovery are unchanged. |
-| 3 | Saved-Pine source identity | [Investigation and proposed contract](plans/tradingview-cli-indicator-source-verification.md) demonstrate a local plot-ID revision mismatch and identify an existing saved-source GET. No live miscreated alert was observed; current versioned source retrieval remains UNCONFIRMED. | Review fail-closed behavior for both dry-run and creation. Implementation is not yet approved; release qualification needs an authorized script, local source, and Desktop target. |
+| 3 | Saved-Pine source identity | [Approved contract and acceptance](plans/tradingview-cli-indicator-source-verification.md). Implemented; focused Rust and generated-JavaScript fixtures passed. | Live qualification remains blocked by unavailable CDP in the running Desktop session. No restart or alert creation was performed. Provider compatibility is UNCONFIRMED; retain this release gate. |
 
 Priority 1 qualifies existing timeframe support. Priority 2 covers one diagnostic
 path, not all spec gaps. A reproduced analysis defect takes priority over
