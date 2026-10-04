@@ -26,7 +26,7 @@ or execution was repeated for this inventory update.
 | --- | --- | --- | --- |
 | 1 | Needed technicals interval qualification | Complete for the approved weekly/monthly requests; see the bounded evidence below. Two-hour remains unverified. | One request per interval, no retry or fallback. This evidence does not require a release. |
 | 2 | `spec diagnose quote-data` semantics | Concrete examples approved. Implemented in the existing [quote spec module](../crates/cli/src/app/spec/quotes.rs); focused local verification passed; not yet released. | Match actual requests/effects, status variants, and source separation. Spec remains offline; acquisition, schemas, and recovery are unchanged. |
-| 3 | Saved-Pine source identity | [Approved contract and acceptance](plans/tradingview-cli-indicator-source-verification.md). Implemented; focused Rust and generated-JavaScript fixtures passed. | Live qualification remains blocked by unavailable CDP in the running Desktop session. No restart or alert creation was performed. Provider compatibility is UNCONFIRMED; retain this release gate. |
+| 3 | Saved-Pine source identity | [Approved contract and acceptance](plans/tradingview-cli-indicator-source-verification.md). Implemented; focused Rust and generated-JavaScript fixtures passed. | Bounded live dry-run passed for an authorized saved revision after the owner restarted Desktop: exact source and CRLF passed; a textual mismatch was rejected. Normal alert creation was not exercised. Upstream CI and release packaging remain separate gates. |
 
 Priority 1 qualifies existing timeframe support. Priority 2 covers one diagnostic
 path, not all spec gaps. A reproduced analysis defect takes priority over

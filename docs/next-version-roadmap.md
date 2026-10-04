@@ -12,8 +12,9 @@ the diagnostic spec examples on 2026-10-05. Those reads succeeded; the diagnosti
 spec is implemented and locally validated, but unreleased. The next release
 version is not selected.
 The subsequent saved-Pine source-verification contract is approved and locally
-implemented. Its live qualification remains pending an available Desktop CDP
-session. The [inventory](next-version-work-items.md) owns scope and acceptance.
+implemented. Bounded live dry-run qualification passed for an authorized saved
+revision; normal alert creation remains untested. The
+[inventory](next-version-work-items.md) owns scope and acceptance.
 
 ## Approved outcome and follow-up sequence
 
@@ -45,7 +46,7 @@ program.
 | --- | --- | --- |
 | Existing technicals qualification | Know which requested intervals have actual provider evidence for multi-timeframe analysis | Daily success is historical evidence; weekly/monthly succeeded in the approved bounded run. Two-hour remains unverified, and the earlier 429 cause is unresolved. This adds no command or freshness/finality guarantee. |
 | Targeted diagnosis semantics | Programs can inspect prerequisites and effects before investigating unavailable quote-data | Implemented locally using the approved contract. The adapter requests scanner data before Desktop discovery. Annotation clarifies that behavior but does not make prices more available. |
-| Saved-Pine source identity | A future indicator-alert workflow could verify that supplied source matches the saved script | [Implementation and acceptance](plans/tradingview-cli-indicator-source-verification.md) cover source mismatch rejection in both modes. Local fixtures passed; live qualification is pending CDP availability. Provider compatibility is UNCONFIRMED. Inputs, compiled plot IDs, and readback remain separate limits. |
+| Saved-Pine source identity | A future indicator-alert workflow could verify that supplied source matches the saved script | [Implementation and acceptance](plans/tradingview-cli-indicator-source-verification.md) cover source mismatch rejection in both modes. Local fixtures and bounded live dry-run passed: exact source and CRLF were accepted, and a textual mismatch was rejected. Normal creation was not exercised. Inputs, compiled plot IDs, and readback remain separate limits. |
 | Chart-read performance work | Could reduce analysis wait time if a bottleneck is reproduced | The completed attribution study did not reproduce the earlier tail. Reopen only under its recorded trigger, then measure the responsible phase before choosing a fix. No speedup is currently demonstrated. |
 | Broad spec/schema completion | More commands become self-describing | Coverage alone is insufficient user value. Hotlist, depth, discover, and spec remain candidates until a concrete invocation or interpretation problem needs them. |
 

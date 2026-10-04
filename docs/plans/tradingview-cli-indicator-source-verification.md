@@ -1,11 +1,11 @@
 # Verify source before creating a Pine indicator alert
 
 Status: contract and implementation approved on 2026-10-05; implementation and
-focused local checks complete. Live qualification is pending because the running
-Desktop session has no available CDP listener. The owner designated disposable
-test scripts, but no source/target has been read. No alert creation is authorized
-by this record. The next release version is not selected. The
-[inventory](../next-version-work-items.md) owns priority.
+focused local checks and bounded live dry-run qualification complete. The
+authorized saved revision passed exact-source and line-ending checks and rejected
+a textual mismatch. No alert creation is authorized by this record. The next
+release version is not selected. The [inventory](../next-version-work-items.md)
+owns priority.
 
 ## Outcome and demonstrated workflow
 
@@ -48,8 +48,8 @@ revision without altering the editor.
 
 The existing Pine-open fixture returns synthetic source for any non-list fetch.
 It does not establish current provider support or validate the requested ID and
-version. Current live response shape and version binding remain UNCONFIRMED.
-An implementation must test the exact encoded path and selected version with
+version. The bounded live evidence below now confirms source retrieval for one
+authorized saved revision. Test the exact encoded path and selected version with
 production-generated JavaScript; a canned Rust Runtime result alone is not
 sufficient evidence.
 
@@ -177,15 +177,32 @@ All Cargo checks used one build job and one test thread, without a full workspac
 suite, optimized build, dependency update, or installed-binary replacement.
 Upstream CI has not run for this change.
 
-Live qualification is incomplete. Target discovery failed at target_list, both
-in the ordinary environment and with sandbox restrictions removed. Process and
-listener inspection confirmed a running Desktop app; no CDP TCP listener was
-found on its main process or the configured port.
-No script, chart, or account operation followed, and the app was not restarted.
-The next action is to arrange a CDP-enabled session without losing existing work,
-then read and test only the owner-designated scripts. Current provider source
-compatibility and the new live dry-run remain UNCONFIRMED; this is not yet
-release-ready acceptance.
+Live qualification completed on 2026-10-05 after the owner manually restarted
+Desktop. Earlier target discovery failed because no CDP listener was available.
+An authorized CLI restart returned launched:true but cdp_ready:false after the
+macOS launcher fallback; it did not establish readiness. Subsequent discovery
+confirmed connectivity after the owner's restart. No launch defect was diagnosed.
+
+Opening the authorized test script through pine open timed out at editor_readiness;
+no verified editor binding was obtained. The check therefore used a scoped,
+read-only CLI ui eval fetch of the catalog-selected saved ID/version to obtain
+source in a private temporary file. This was test input preparation, not a
+production fallback. The implementation itself used its normal catalog/source
+preflight, independently of the editor.
+
+Using the local debug binary with the implementation:
+
+- Exact saved source: dry-run succeeded with would_create:true.
+- A local comment addition: dry-run failed with validation and the approved
+  saved_source_verification/source_mismatch details.
+- Only line endings changed to CRLF: dry-run succeeded with would_create:true.
+
+This qualifies the observed provider revision retrieval and dry-run source check.
+It does not qualify Pine editor opening, compiled plot IDs, study inputs, normal
+alert creation, or post-create readback. No script save/compile or alert creation
+was performed. Raw source, account identifiers, target identifiers, and local
+paths remain outside tracked evidence. Upstream CI and release packaging remain
+separate gates; no release version has been selected.
 
 Standalone Pine skill references, disposable resource staging with seven skills
 per root, public hygiene/self-test, and diff/link checks passed. Source review

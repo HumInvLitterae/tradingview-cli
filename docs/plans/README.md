@@ -17,8 +17,9 @@ The reads succeeded, and the diagnostic spec is implemented with focused local
 acceptance. It is unreleased; upstream CI has not run for this slice. The
 inventory records the contract and evidence. No release version or broader
 feature scope beyond these slices is selected. The approved Pine source-verification
-change is implemented with focused local acceptance. Its live dry-run remains
-pending until a CDP-enabled Desktop session is available.
+change is implemented with focused local acceptance and bounded live dry-run
+qualification: exact source and CRLF passed; a textual mismatch was rejected.
+Normal alert creation was not exercised.
 
 Completed records preserve evidence for their recorded inputs. They are not
 current runtime acceptance or authorization for new live operations.
