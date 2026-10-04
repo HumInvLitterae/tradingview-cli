@@ -387,6 +387,36 @@ fn quote_specs_do_not_select_or_contact_a_source() {
 }
 
 #[test]
+fn quote_data_diagnostic_spec_describes_external_reads_without_connecting() {
+    let output = Command::cargo_bin("tv")
+        .unwrap()
+        .env("TV_CDP_PORT", "invalid")
+        .args(["spec", "diagnose", "quote-data"])
+        .assert()
+        .success()
+        .get_output()
+        .clone();
+    assert!(output.stderr.is_empty());
+    let envelope: Value = serde_json::from_slice(&output.stdout).unwrap();
+    let data = &envelope["data"];
+    assert_eq!(data["contract_version"], "cli_spec.v1");
+    assert_eq!(data["coverage"]["semantics"], "documented");
+    assert_eq!(data["coverage"]["validation"], "partial");
+
+    let semantics = &data["semantics"];
+    assert_eq!(semantics["source"], "quote_data_diagnostics");
+    assert!(semantics["output_contract"].is_null());
+    assert_eq!(semantics["requires"]["desktop"], true);
+    assert!(semantics["requires"]["authentication"].is_null());
+    assert_eq!(semantics["effects"]["provider_request"], true);
+    for effect in ["chart_mutation", "account_mutation", "local_file_write"] {
+        assert_eq!(semantics["effects"][effect], false);
+    }
+    assert_eq!(semantics["constraints"]["symbol"]["trimmed"], true);
+    assert_eq!(semantics["constraints"]["symbol"]["nonblank"], true);
+}
+
+#[test]
 fn analysis_specs_do_not_inspect_or_change_a_chart() {
     for path in [
         vec!["values"],

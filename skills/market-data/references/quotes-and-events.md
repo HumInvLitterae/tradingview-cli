@@ -17,6 +17,11 @@ establish equivalence with scanner extended-hours prices.
 For unavailable quote-data, report `source_availability.unavailable_reason`.
 `tv diagnose quote-data <SYMBOL>` is a separate bounded troubleshooting read,
 not a blended quote. An unavailable source does not prove that no price exists.
+When supported, `tv spec diagnose quote-data` describes that read offline.
+Execution requests a scanner reference before Desktop discovery and then observes
+quote-data events. Its 3.5-second observation window is not a whole-command
+deadline. Inspect `diagnostic_status` and `quote_data.payload_status` even when
+the envelope succeeds; a recovery hint is not an executed retry.
 
 ## Official MCP discovery and fields
 

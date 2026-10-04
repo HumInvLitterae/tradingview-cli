@@ -1,4 +1,4 @@
-//! Quote routing and scanner field discovery, without provider access.
+//! Quote routing, diagnostics, and scanner field discovery, without provider access.
 
 use serde_json::{Value, json};
 
@@ -83,6 +83,32 @@ pub(super) fn describe(path: &[&str]) -> Option<Value> {
                 ]
             ]);
         }
+        ["diagnose", "quote-data"] => {
+            result["source"] = json!("quote_data_diagnostics");
+            result["requires"] = json!({"desktop": true, "authentication": null});
+            result["effects"] = json!({
+                "provider_request": true,
+                "chart_mutation": false,
+                "account_mutation": false,
+                "local_file_write": false
+            });
+            result["constraints"] = json!({"symbol": {"trimmed": true, "nonblank": true}});
+            result["limits"] = json!([
+                "Execution requests a separate scanner freshness reference before discovering a Desktop target, even if Desktop is unavailable. A scanner error does not prevent Desktop diagnosis.",
+                "The quote-data reader enables CDP network observation and waits for matching events. Its 3.5-second observation window excludes scanner acquisition, target discovery, connection and Network.enable; it is not a whole-command deadline. No new symbol subscription or chart switch is performed.",
+                "A successful envelope can contain diagnostic_status blocked or unavailable. Inspect that field and quote_data.payload_status; successful transport alone does not establish a price, freshness or matching event availability.",
+                "Scanner and chart values are not merged with quote-data. Hints do not execute recovery, and quote-data is not added to auto routing.",
+                "Authentication is unspecified because this command does not establish the Desktop feed's account entitlements. It does not create or modify account objects or write a local file."
+            ]);
+            result["examples"] = json!([[
+                "tv",
+                "--target-id",
+                "<target_id>",
+                "diagnose",
+                "quote-data",
+                "NASDAQ:EXAMPLE"
+            ]]);
+        }
         ["quotes"] => {
             result["constraints"]["symbols"] = json!({
                 "min_items": 1,
@@ -135,7 +161,12 @@ mod tests {
 
     #[test]
     fn quote_and_metadata_examples_parse() {
-        for path in [vec!["quote"], vec!["quotes"], vec!["scanner", "metainfo"]] {
+        for path in [
+            vec!["quote"],
+            vec!["quotes"],
+            vec!["diagnose", "quote-data"],
+            vec!["scanner", "metainfo"],
+        ] {
             let detail = describe(&path).unwrap();
             for example in detail["examples"].as_array().unwrap() {
                 assert!(

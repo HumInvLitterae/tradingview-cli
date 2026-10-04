@@ -498,6 +498,17 @@ Quote-data instead observes Desktop network events and returns quote_data.v1;
 it neither switches symbols nor participates in auto routing. Scanner extended
 hours, chart last-bar/session data and quote-data rtc/lp have different meanings.
 
+Use `tv spec diagnose quote-data` to inspect the diagnostic command offline.
+Execution requests a separate scanner freshness reference before discovering a
+Desktop target, even if Desktop is unavailable. A scanner error does not prevent
+Desktop diagnosis. The command then observes matching quote-data network events;
+it does not subscribe a new symbol, switch the chart, or merge prices.
+The 3.5-second observation window excludes scanner acquisition, discovery,
+connection, and network-observation setup. It is not a whole-command deadline.
+An envelope can succeed with `diagnostic_status: blocked` or `unavailable`.
+Inspect that field and `quote_data.payload_status`; hints do not execute recovery.
+The command does not establish feed entitlements, freshness, or event availability.
+
 Quotes accepts 1–25 nonblank symbols and preserves order, requested_index and
 duplicates. Mixed results use a successful envelope with per-item errors; all
 failures produce an error with ordered batch details. Missing session prices stay

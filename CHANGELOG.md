@@ -7,6 +7,11 @@ package version omits the leading `v`.
 
 ## Unreleased
 
+### Added
+
+- Offline semantics for `spec diagnose quote-data`, describing scanner and
+  Desktop reads, the observation-window limit, and blocked/unavailable results.
+
 ## v0.35.0
 
 ### Added

@@ -1,8 +1,9 @@
 # Work inventory after v0.35.0
 
-Updated 2026-10-05. [Proposed direction](next-version-roadmap.md) ·
+Updated 2026-10-05. [Direction](next-version-roadmap.md) ·
 [Released contracts and evidence](plans/archives/tradingview-cli-chart-analysis-contracts.md).
-No next-version feature implementation is approved by this inventory.
+The owner approved the diagnostic spec contract below and bounded weekly/monthly
+technicals qualification on 2026-10-05. No release version is selected.
 
 ## Released baseline
 
@@ -18,19 +19,19 @@ succeeded at d71fd532. Post-tag 9cba16e changes only CLI tests and has successfu
 CI. The closeout preserves the separate failed tag-CI record. No archive download
 or execution was repeated for this inventory update.
 
-## Proposed priority
+## Approved work and remaining candidates
 
-| Order | Candidate | Evidence / decision gate | Acceptance if selected |
+| Order | Work | Evidence / decision gate | Acceptance / boundary |
 | --- | --- | --- | --- |
-| 1 | Needed technicals interval qualification | [Model](../crates/model/src/mcp_technicals.rs) already accepts 1W, 1M, and 2h; [transport fixture](../crates/mcp/src/fixtures.rs) covers 2h and one-attempt errors. Live symbol, intervals, and authority remain to be selected. | At most one request per approved interval; record provider outcome and unknown data conditions separately. Stop on rate-limit/authentication failure, with no retry or fallback. No release required for evidence alone. |
-| 2 | `spec diagnose quote-data` semantics | [Adapter](../crates/cli/src/ops/diagnostics.rs) requests a scanner reference before target discovery; [spec dispatcher](../crates/cli/src/app/spec.rs) currently leaves semantics null. Agree on additive public examples before implementation. | Match actual requests/effects, status variants, and source separation using existing diagnostic and spec fixtures. Spec itself must remain offline. No automatic recovery or new output schema is implied. |
+| 1 | Needed technicals interval qualification | Complete for the approved weekly/monthly requests; see the bounded evidence below. Two-hour remains unverified. | One request per interval, no retry or fallback. This evidence does not require a release. |
+| 2 | `spec diagnose quote-data` semantics | Concrete examples approved. Implemented in the existing [quote spec module](../crates/cli/src/app/spec/quotes.rs); focused local verification passed; not yet released. | Match actual requests/effects, status variants, and source separation. Spec remains offline; acquisition, schemas, and recovery are unchanged. |
 | 3 | Saved-Pine source identity | [Current indicator-alert contract](../crates/cli/src/app/spec/indicator_alert.rs) explicitly lacks source comparison and has other input/readback limits. Need a concrete indicator-alert workflow before promotion. | First establish whether saved source/version evidence can prove the required match; agree on mismatch/unavailable behavior. Do not promise complete alert identity from source comparison alone. |
 
-Priority 1 is verification, not unimplemented timeframe support. Priority 2 is a
-proposal to clarify one useful diagnostic path, not approval to fill all spec
-gaps. A reproduced analysis defect can displace either candidate after triage.
+Priority 1 qualifies existing timeframe support. Priority 2 covers one diagnostic
+path, not all spec gaps. A reproduced analysis defect takes priority over
+further annotation work after triage.
 
-## Diagnostic spec contract proposed for review
+## Approved diagnostic spec contract
 
 The existing [market-data guidance](../skills/market-data/references/quotes-and-events.md)
 uses `diagnose quote-data` after an unavailable quote-data read. This gives the
@@ -38,13 +39,13 @@ annotation a specific consumer path. Existing help already explains that the
 sources are separate; the improvement is structured discovery for that path,
 not a new diagnostic command or a price-availability fix.
 
-For `tv spec diagnose quote-data`, the relevant current data fragment is:
+For `tv spec diagnose quote-data`, the pre-change data fragment was:
 
 ```json
 {"coverage":{"semantics":"unavailable"},"semantics":null}
 ```
 
-The proposed fragment is:
+The approved fragment is:
 
 ```json
 {
@@ -65,8 +66,8 @@ The proposed fragment is:
 ```
 
 These are fragments, not replacement envelopes. Existing syntax metadata,
-partial validation coverage, and `cli_spec.v1` remain unchanged. Add prose limits
-and a synthetic invocation example using the existing spec conventions:
+partial validation coverage, and `cli_spec.v1` remain unchanged. The spec includes
+a synthetic invocation example and the following limits:
 
 - Scanner reference acquisition precedes Desktop target discovery, even when
   the Desktop is unavailable. A scanner error remains a separate reference
@@ -82,18 +83,48 @@ and a synthetic invocation example using the existing spec conventions:
   quote-data is not added to auto routing. Authentication remains unspecified
   because this command does not establish the Desktop feed's account entitlements.
 
-Implement only after agreement on these public examples. Extend the existing
-quote spec module rather than add a dispatcher framework. Verify the spec under
-invalid Desktop configuration, without executing the diagnostic command.
-Use the existing spec CLI tests, diagnostic payload tests, and blank-symbol
-contract; run scoped CLI Clippy, formatting, and documentation hygiene serially.
+The owner approved these public examples on 2026-10-05. The implementation
+extends the existing quote spec module without a new dispatcher. Source
+inspection established execution order and the observation-window boundary.
 No schema/validate support or live Desktop acceptance is included in this slice.
+
+Local acceptance on 2026-10-05:
+
+- The new offline CLI contract first failed on semantics:unavailable, then passed
+  after implementation. All 38 spec CLI tests and both diagnostic CLI tests passed.
+- The quote-spec example parser test and all seven diagnostic unit tests passed.
+  The built CLI's output matched every field in the approved JSON fragment.
+- Scoped CLI Clippy for the library and both affected integration targets passed
+  with warnings denied. Formatting and public/diff hygiene passed.
+- The standalone market-data skill reference check and disposable resource
+  staging passed with seven skills per root. Staging validates resource parity;
+  it is not optimized archive or installed-binary acceptance.
+
+Checks ran serially with one Cargo job and one test thread. The full workspace
+suite and upstream CI were not repeated, and no new Desktop operation was run.
+The fixed installed binary was not replaced. The implementation is unreleased.
+
+## Bounded technicals evidence
+
+On 2026-10-05, the owner-authorized `NASDAQ:AAPL` weekly and monthly reads each
+succeeded with `status: available` and `transport.tool_attempts: 1`. Both
+provider-reported symbols and intervals matched their requests. Each response
+contained 23 indicator slots, with EMA30 and SMA30 null and 21 numeric values.
+Data time, delay, adjustment, session, and finality remained unconfirmed.
+No retry, polling, source fallback, or two-hour request was performed.
+
+The installed CLI identified itself as v0.35.0 at 9cba16e, dirty:false, for
+aarch64-apple-darwin. This is bounded provider evidence for those requests,
+not archive/binary equality, universal availability, a resolution of the earlier
+429 cause, or current/final data qualification. No raw response or credential
+state is retained in this record. The [model](../crates/model/src/mcp_technicals.rs)
+and [transport fixture](../crates/mcp/src/fixtures.rs) remain unchanged.
 
 ## Retained qualification gaps and deferrals
 
-- Technicals: daily success is existing evidence; weekly previously returned
-  provider-internal 429. Monthly/two-hour success remains unverified. No new
-  provider requests were made during closeout.
+- Technicals: daily success is historical evidence. Weekly/monthly success is
+  scoped to the bounded observations above. The earlier provider-internal 429
+  remains unexplained; two-hour success remains unverified.
 - Nonempty native alert history, graphical Linux OAuth, and Windows skill-manager
   execution remain unverified. Fixture and CI success do not replace those runs.
 - Legacy alert symbol-marker identity remains unresolved. The released scalar
