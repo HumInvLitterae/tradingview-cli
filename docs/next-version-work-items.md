@@ -30,6 +30,65 @@ Priority 1 is verification, not unimplemented timeframe support. Priority 2 is a
 proposal to clarify one useful diagnostic path, not approval to fill all spec
 gaps. A reproduced analysis defect can displace either candidate after triage.
 
+## Diagnostic spec contract proposed for review
+
+The existing [market-data guidance](../skills/market-data/references/quotes-and-events.md)
+uses `diagnose quote-data` after an unavailable quote-data read. This gives the
+annotation a specific consumer path. Existing help already explains that the
+sources are separate; the improvement is structured discovery for that path,
+not a new diagnostic command or a price-availability fix.
+
+For `tv spec diagnose quote-data`, the relevant current data fragment is:
+
+```json
+{"coverage":{"semantics":"unavailable"},"semantics":null}
+```
+
+The proposed fragment is:
+
+```json
+{
+  "coverage": {"semantics": "documented"},
+  "semantics": {
+    "source": "quote_data_diagnostics",
+    "output_contract": null,
+    "requires": {"desktop": true, "authentication": null},
+    "effects": {
+      "provider_request": true,
+      "chart_mutation": false,
+      "account_mutation": false,
+      "local_file_write": false
+    },
+    "constraints": {"symbol": {"trimmed": true, "nonblank": true}}
+  }
+}
+```
+
+These are fragments, not replacement envelopes. Existing syntax metadata,
+partial validation coverage, and `cli_spec.v1` remain unchanged. Add prose limits
+and a synthetic invocation example using the existing spec conventions:
+
+- Scanner reference acquisition precedes Desktop target discovery, even when
+  the Desktop is unavailable. A scanner error remains a separate reference
+  result and does not prevent Desktop diagnosis.
+- The quote-data reader enables CDP network observation and waits for matching
+  events. Its 3.5-second observation window excludes scanner acquisition,
+  target discovery, connection, and Network.enable. It is not a whole-command
+  deadline. No new symbol subscription or chart switch is performed.
+- A successful CLI envelope can contain diagnostic_status blocked or unavailable.
+  Inspect that field and quote_data.payload_status. Successful transport alone
+  does not establish a price, freshness, or matching event availability.
+- Scanner/chart values are not merged. Hints do not execute recovery, and
+  quote-data is not added to auto routing. Authentication remains unspecified
+  because this command does not establish the Desktop feed's account entitlements.
+
+Implement only after agreement on these public examples. Extend the existing
+quote spec module rather than add a dispatcher framework. Verify the spec under
+invalid Desktop configuration, without executing the diagnostic command.
+Use the existing spec CLI tests, diagnostic payload tests, and blank-symbol
+contract; run scoped CLI Clippy, formatting, and documentation hygiene serially.
+No schema/validate support or live Desktop acceptance is included in this slice.
+
 ## Retained qualification gaps and deferrals
 
 - Technicals: daily success is existing evidence; weekly previously returned
