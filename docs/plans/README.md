@@ -5,7 +5,7 @@
 | Direction after v0.36.0 | [Roadmap](../next-version-roadmap.md) |
 | Current priority and retained acceptance evidence | [Inventory](../next-version-work-items.md) |
 | Released source-verification implementation and qualification | [Indicator source verification](tradingview-cli-indicator-source-verification.md) |
-| Proposed next implementation contract | [Study verification](tradingview-cli-indicator-study-verification.md) |
+| Proposed next implementation contract | [Opt-in indicator verification](tradingview-cli-indicator-study-verification.md) |
 | Current release behavior and limits | [v0.36.0 release notes](../releases/v0.36.0.md) |
 | Earlier released baseline | [v0.35.0 closeout](archives/tradingview-cli-chart-analysis-contracts.md) |
 | CDP stability triggers | [Strategy](../notes/cdp-stability-and-autonomous-operation-strategy.md) |
@@ -30,6 +30,11 @@ The authorized saved-study trial passed for one existing no-input indicator.
 Saved ID/version and compiled condition matched; the new study was removed and
 the original chart and saved source were preserved. The inventory distinguishes
 this metadata qualification from full alert creation and input-bearing cases.
+
+Further read-only research retrieved compiled metadata for an exact saved
+revision without adding a chart study. The revised proposal retains existing
+CLI/Rust contracts and adds opt-in verification; it no longer requires chart
+insertion for no-input scripts. Implementation remains pending agreement.
 
 Completed records preserve evidence for their recorded inputs. They are not
 current runtime acceptance or authorization for new live operations.

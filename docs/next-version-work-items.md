@@ -18,7 +18,7 @@ Live qualification gaps are not closed by publication.
 | --- | --- | --- |
 | 1 | Indicator-alert unknown creation outcomes | Approved and implemented locally. Production-JavaScript regression reproduced the incorrect false result; see acceptance below. |
 | 2 | Exact study and input identity | Bounded read-only observation completed. Native identity/version/condition fields exist; positional input remapping reproduced a wrong payload with synthetic data. The owner approved the bounded input-ID correction; implementation and acceptance follow below. |
-| 3 | Supported identity and creation readback | The no-input native trial passed. [Study-verification plan](plans/tradingview-cli-indicator-study-verification.md) proposes optional study-id and shared preview/create preflight; public contracts and its new live run await approval. |
+| 3 | Supported identity and creation readback | Native and saved-compiler probes passed within the bounds below. [Revised verification plan](plans/tradingview-cli-indicator-study-verification.md) preserves legacy behavior and proposes opt-in verification plus study selection. Public contracts await agreement; mandatory chart admission is superseded. |
 | 4 | Release the completed slice | Version remains provisional: defect-only v0.36.1 or additive v0.37.0, selected after scope review. |
 
 The owner approved priorities 1 and 2 on 2026-10-05. Priority 3 remains
@@ -301,6 +301,68 @@ duplicate-study trial needs its own source/instance/input examples; do not imply
 this trial covers it. The next implementation decision can now use demonstrated
 native identity fields, with missing or ambiguous identity handled explicitly.
 No new CLI flag or automatic admission change is introduced by this observation.
+
+## Chart-free metadata and compatibility research
+
+The owner requested further research before adopting the mandatory-chart
+proposal, including preserving existing behavior through an additional argument
+or API. On 2026-10-05 one executor performed source inspection and bounded
+read-only probes; no implementation or new chart/account mutation followed.
+
+The repository's [Pine check](../crates/pine/src/check.rs) uses translate_light
+and retains compiler diagnostics. One POST containing only an independently
+written synthetic script returned variables2, functions2, types, and enums, but
+no compiled metaInfo. This observation does not prove that every response from
+that endpoint lacks metadata. No saved/private source was submitted by this
+probe.
+
+The public community client's
+[getIndicator implementation](https://github.com/Mathieu2301/TradingView-API/blob/f007e7244739b91c8288d58637e27209cf66662d/src/http/indicators.ts)
+uses GET pine-facade/translate with script ID/version and reads result.metaInfo.
+This is primary evidence of that client's integration, not an official API
+stability guarantee. The official
+[Charting Library FAQ](https://www.tradingview.com/charting-library-docs/latest/resources/Frequently-Asked-Questions/)
+states that Pine Script and alerts are unsupported in that separate library;
+its study API documentation therefore does not establish this Desktop service
+contract.
+
+Observed through the already selected Desktop session:
+
+- A GET for the previously qualified saved no-input test revision returned
+  success and metaInfo, with matching scriptIdPart and pine.version. The expected
+  alertcondition plot ID and title matched the earlier local/native result.
+  That script was absent from the chart; the original 27-entity set remained
+  unchanged. No source upload, Pine Editor compile, or study insertion occurred.
+- One existing input-bearing chart revision returned four declared user-input
+  IDs with four defaults. Its compiled saved ID/version and declared input IDs
+  matched native metadata. This was a separate GET, not a new source submission.
+- The first actual-value probe used the underlying study object and found no
+  getInputValues array there. A corrected native read used the existing public
+  study wrapper, as production does, and found all four values; they equalled
+  that instance's defaults. No additional network request or mutation was needed
+  for the corrected read. Non-default live values remain unqualified.
+
+These facts establish a narrower and more useful split: compiled conditions and
+input definitions can be read without a chart instance, while a selected
+instance's current values require native reads. Saved defaults alone do not
+establish which values the user intended. The probes did not perform normal
+alert creation or verify provider/readback behavior, endpoint durability, or a
+Desktop-free authenticated workflow. No account-local IDs, source, or raw
+compiled results are retained here.
+
+The [revised plan](plans/tradingview-cli-indicator-study-verification.md)
+recommends --verify, with --study-id implying verification, and a separate Rust
+entry point preserving the existing request type/function. No flags keep current
+semantics and JSON. Verified no-input calls need no chart study; input-bearing
+calls require an exact saved-revision instance and reject ambiguity. The prior
+mandatory chart requirement and Rust struct-field addition are superseded.
+Using default input values, new input overrides, and full post-create identity
+remain separate contracts. Public examples await owner agreement.
+
+Documentation validation passed: diff whitespace checks, public-hygiene self-test
+and tracked-file scan, and 37 local Markdown link targets. Credential-pattern
+review found no newly added matches; existing changed-document matches are
+policy language. Rust/JavaScript tests were not rerun for this docs-only change.
 
 ## Historical v0.36.0 preparation evidence
 

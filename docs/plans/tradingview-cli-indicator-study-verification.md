@@ -1,188 +1,209 @@
-# Verify the chart study before indicator-alert operations
+# Opt-in verification for indicator alerts
 
-Status: proposed contract, 2026-10-05. Implementation and the new bounded live
-acceptance below await owner approval. One executor, no additional agents or
-sessions. The [inventory](../next-version-work-items.md) owns priority and the
-[roadmap](../next-version-roadmap.md) owns direction.
+Status: revised proposal, 2026-10-05; implementation awaits owner agreement.
+This supersedes the earlier mandatory-chart proposal in this same record.
+One executor, no additional agents or sessions. The
+[inventory](../next-version-work-items.md) owns priority and observed evidence;
+the [roadmap](../next-version-roadmap.md) owns direction.
 
-## Outcome and limit
+## Outcome and compatibility
 
-A user can choose which instance of a saved Pine indicator supplies the alert's
-inputs. Both preview and creation must identify its saved revision, confirm the
-selected compiled condition, and validate its native input IDs before proceeding.
-Two instances of the same script must not silently select the first by label.
+A user can opt into saved compiled-condition verification without adding a
+no-input indicator to the chart. For an input-bearing script, verified creation
+uses the values of an exact saved-revision chart instance. Multiple matching
+instances require an explicit selection. Saved defaults do not substitute for
+chart values.
 
-This changes admission: even a script without inputs must already have a matching
-study on the selected chart. The CLI does not add, compile, update, or repair
-that study. A dry-run becomes a chart-study preflight as well as the existing
-saved-source check. It still does not create an alert or establish provider
-acceptance, notification delivery, or complete post-create readback.
+Keep existing no-flag CLI behavior, JSON results, public IndicatorAlertRequest
+fields, and alert_create_indicator signature. Preserve the completed
+unknown-outcome and native input-ID corrections. Compatibility also preserves
+existing limits: legacy preview checks saved source but not compiled conditions
+or chart inputs; legacy normal creation still selects input studies by label.
+The new verification guarantee applies only to the opt-in operation.
+
+This is not Desktop-free creation. Saved private metadata uses the existing
+Desktop session, and normal creation still uses current chart/request metadata
+and the existing account path. Stronger preflight does not establish complete
+post-create identity, provider acceptance, or notification delivery.
 
 ## Evidence and alternatives
 
-The [bounded trial](../next-version-work-items.md#saved-study-observation-and-acceptance)
-matched saved ID/version to meta.scriptIdPart, meta.pine.version, and the native
-pineId/pineVersion inputs. It also matched the compiled alertcondition ID/title
-for one no-input script. The entity was removed and the original chart preserved.
-Input-bearing and duplicate-instance cases have not been qualified live.
+The [research record](../next-version-work-items.md#chart-free-metadata-and-compatibility-research)
+contains the bounded observations. An authenticated GET for an explicit saved
+ID/version returned metaInfo with matching scriptIdPart and pine.version plus
+the expected alertcondition ID/title while that script was absent from the
+chart. A second existing input-bearing revision returned four user-input
+IDs/defaults matching its native declarations. No chart or account state was
+changed. The actual chart values in that second case equalled defaults, so this
+does not qualify non-default values through real alert creation.
 
-Existing [state output](../../crates/cli/src/ops/chart.rs) returns every listed
-study's id/name. Unlike values output, it does not require a numeric study value.
-The existing indicator get command reads one entity's inputs, subject to its
-published long-string filtering. Use these facilities for selection; do not add
-a catalog command or use a lossy public summary to build an alert payload.
+The current translate_light source check returned language-analysis fields but
+no compiled metaInfo in one synthetic probe. It is not the proposed metadata
+source. The saved translate endpoint is an internal service used by a public
+community client, not a documented stable TradingView API. Missing or malformed
+metadata must fail the opt-in check; it must never silently use legacy behavior.
 
-| Design | Capability | Decision |
+| Design | Capability and cost | Decision |
 | --- | --- | --- |
-| Unique saved-ID/version match only, no selector | Works when exactly one matching instance exists; duplicates require changing the chart | Smaller interface, but cannot choose between ordinary same-script instances with different inputs |
-| Optional entity selector plus unique automatic selection | Existing single-instance calls keep their argument syntax; duplicates can be resolved explicitly | Recommended; reuses state/indicator get and requires one optional CLI/Rust field |
+| Require a chart study for every existing call | Strong chart-instance checks, but breaks no-input usage and preview; no longer necessary for compiled conditions | Superseded |
+| Add optional verification and study selection | Existing workflows retain behavior; verified no-input calls need no study; input-bearing calls use exact chart values | Recommended |
+| Add a second CLI creation command | Same possible capability, but duplicates command discovery/help for the same action | No demonstrated CLI benefit over opt-in arguments |
+| Automatically use saved defaults without a chart | Could eventually support input-bearing chart-free preparation, but changes which values drive an alert | Separate explicit input-source contract and qualification required; not this slice |
 
-Implement the second design. Do not introduce a saved selection file, preparation
-token, second creation API, persistent journal, or automatic study insertion.
-An entity ID selects a chart instance; it never bypasses saved-source, saved
-revision, condition, or input checks.
+A separate Rust entry point is justified by source compatibility: adding even
+an optional public struct field breaks existing struct-literal callers, and an
+extra function parameter breaks calls. Keep the existing public surface and
+share private preparation/creation helpers rather than duplicate adapters.
 
-## Proposed CLI and public results
+## Proposed CLI behavior
 
-Use the same explicit target throughout:
+Add --verify and --study-id. An explicit study-id implies verification; it is
+case-sensitive, trimmed, and nonblank. No flag means the current behavior.
+These names and contracts are proposals, not implemented flags.
 
 ```sh
-tv --target-id <target_id> state
-tv --target-id <target_id> indicator get <entity_id>
+# Existing invocation: behavior and output remain compatible.
+tv --target-id <target_id> alert create-indicator \
+  --script "Example indicator" --file <source.pine> \
+  --condition-title "Example condition" --dry-run
+
+# Verify saved compiled condition; no study needed when there are no user inputs.
+tv --target-id <target_id> alert create-indicator \
+  --script "Example indicator" --file <source.pine> \
+  --condition-title "Example condition" --verify --dry-run
+
+# Select the exact instance supplying current input values; implies --verify.
 tv --target-id <target_id> alert create-indicator \
   --script "Example indicator" --file <source.pine> \
   --condition-title "Example condition" --study-id <entity_id> --dry-run
 ```
 
-`--study-id` is optional, case-sensitive, trimmed, and nonblank when supplied.
-An omitted value requires exactly one native saved-ID/version match. With an
-explicit ID, inspect that entity and require the same native identity checks.
-Do not search another entity or fall back to a name when it is missing or wrong.
+Existing state output lists study IDs, including studies without a numeric
+value. Existing indicator get can help inspect an instance, but its long-string
+filtering makes it unsuitable as a complete alert-input payload. Read native
+values directly and retain the implemented native-ID validation.
 
-| Case | Before | Proposed behavior in both modes |
+| Case | Legacy invocation | Opt-in verification |
 | --- | --- | --- |
-| One matching saved revision on chart | Normal mode uses first matching label; preview ignores studies | Select it by native saved ID/version and verify condition/inputs |
-| Two matching instances | Normal mode uses first label match | Reject without study-id; select the specified instance when its identity matches |
-| Same label, different saved ID or version | Label can supply the inputs | Reject the selected mismatch; do not use it as a substitute |
-| No chart study for a no-input source | Preview and base-only normal creation can proceed | Reject; require the user to put the saved indicator on the chart first |
-| Compiled condition conflicts with the local candidate | Local candidate is used without native confirmation | Reject before alert listing or creation; no automatic ID remapping |
-| Missing identity/condition metadata | Name or local parsing may suffice | Report unavailable evidence, not a verified selection |
+| No user inputs and no chart study | Preview and base-only normal path can proceed | Read saved compiled metadata and proceed without a study |
+| Inputs and one exact native saved revision | Preview skips input checks; normal path uses labels | Use that instance's current values by declared ID |
+| Multiple exact instances | Normal path can use first matching label | Reject unless study-id selects one |
+| Same label but different saved ID/version | Label may supply values | Reject explicit mismatch; automatic mode never substitutes it |
+| Inputs but no exact instance | Normal mode requires a matching label; preview can pass | Reject; no fallback to saved defaults |
+| Explicit study-id for a no-input script | Flag does not exist | Require that entity to match; explicit selection is not ignored |
+| Compiled condition or required metadata unavailable | No compiled check | Reject before alert listing/creation; no fallback |
 
-Proposed additive success fragment for preview and normal creation:
+Both verified preview and normal mode use the same saved-source, compiled
+condition, and input preparation. Preview stops before all alert-list/create
+requests. Normal mode continues with the prepared input snapshot and current
+creation behavior. Resolve symbol/resolution through existing request/chart
+rules; this proposal does not add a new source or a different default.
+
+## Proposed public results and errors
+
+Leave legacy JSON unchanged. Only opt-in success adds this verification summary:
 
 ```json
-{"study":{"entity_id":"example-entity","selection":"explicit"}}
+{
+  "verification": {
+    "condition_source": "saved_compilation",
+    "input_source": "none",
+    "input_count": 0,
+    "study": null
+  }
+}
 ```
 
-selection is explicit or unique. The returned study has passed preflight; this
-is not a claim that every field of a newly created alert was verified. Keep
-existing success fields. Preview additionally receives resolved symbol and
-resolution plus the existing normal-mode input_metadata summary. It does not
-return source text, saved IDs, digests, or raw system input values. The condition
-confidence field retains its local-parser meaning; native agreement is the new
-admission requirement, not a rewrite of the parser's confidence vocabulary.
+For selected chart values, input_source is active_chart_study and study is
+{"entity_id":"example-entity","selection":"explicit"}; automatic selection
+uses unique. An explicitly selected no-input study still returns its selection,
+with input_source none and input_count zero. Preview additionally returns the
+resolved symbol and resolution in its request. Keep the parser's confidence
+meaning unchanged; compilation agreement is separate evidence. Do not return
+saved IDs, source, compiled payloads, or system input values.
 
-Native preflight errors have created:false and no creation_outcome:unknown.
-Existing saved-source errors remain unchanged. Use these proposed error details:
+The existing success normalizer must retain this summary only after validation.
+Invalid Runtime output must not become a verified success. Preflight errors
+have created:false; after a normal create may have dispatched, retain current
+created:null and creation_outcome:unknown semantics. Verified preview cannot
+report an unknown account write because it cannot dispatch one.
 
 | Failure | Kind | phase / reason |
 | --- | --- | --- |
 | Blank study-id | validation | Local argument rejection before connection |
+| Saved compiled identity disagrees | validation | compiled_condition_verification / saved_revision_mismatch |
+| Compiled condition disagrees with selected local ID/title | validation | compiled_condition_verification / condition_mismatch |
+| Compilation response or identity/condition/input definitions unavailable | internal_api_unavailable | compiled_condition_verification / compiled_metadata_unavailable |
 | Explicit entity missing | validation | study_identity_verification / study_not_found |
-| Explicit entity has a different saved ID/version | validation | study_identity_verification / saved_revision_mismatch |
-| No matching native revision | validation | study_identity_verification / no_matching_study |
-| Multiple matching revisions without explicit ID | validation | study_identity_verification / ambiguous_study; include match_count |
-| Chart or potentially matching identity cannot be read | internal_api_unavailable | study_identity_verification / study_metadata_unavailable |
-| Selected compiled condition disagrees | validation | compiled_condition_verification / condition_mismatch |
-| Compiled condition evidence cannot be read | internal_api_unavailable | compiled_condition_verification / condition_metadata_unavailable |
+| Explicit entity revision mismatch | validation | study_identity_verification / saved_revision_mismatch |
+| Required exact instance absent | validation | study_identity_verification / no_matching_study |
+| Multiple exact instances without selection | validation | study_identity_verification / ambiguous_study; include match_count |
+| Required native identity unavailable | internal_api_unavailable | study_identity_verification / study_metadata_unavailable |
 
-Input failures retain study_input_metadata_unavailable and the already approved
-input-ID semantics. Missing metadata is not a zero-match result. Automatic
-selection must stop when unreadable metadata could conceal another match;
-explicit selection need not inspect unrelated entities. Compare the selected
-plot ID/type and, when locally known, title. For an explicit condition ID with
-no literal local title, require that exact native alertcondition ID without
-claiming title agreement. Require native ID/version representations to agree;
-never use top-level meta.version as the saved revision.
-
-After a normal creation evaluation may have dispatched, retain the implemented
-unknown-outcome semantics. A dry-run evaluation can never dispatch an alert;
-its evaluation failure must not imply an unknown account write.
+Keep existing saved-source and native-input error semantics. Missing metadata
+is not a zero-match result. Automatic selection must stop if unreadable relevant
+metadata could conceal another match; explicit selection need not inspect other
+entities. Compare exact plot ID/type and the local title when known. Do not
+remap a local candidate to a different compiled condition. Require native saved
+ID/version representations to agree. Do not use top-level meta.version as the saved revision or use last instead of the verified version.
 
 ## Ownership and implementation sketch
 
-The [request and adapter](../../crates/cli/src/ops/alert/indicator.rs) own the
-operation. Add study_id: Option<&str> to public IndicatorAlertRequest, threaded
-from AlertCommand::CreateIndicator through dispatch. Existing Rust struct-literal
-callers must add study_id: None, or Some(entity_id). This is a Rust source
-compatibility change even though the CLI flag is optional. Update repository
-callers and the Rust API guide together; do not conceal it behind a second API.
-The existing public operation signature otherwise remains unchanged.
-
-Keep saved_script.rs as the exact catalog/revision/source guard. A private
-indicator/study.rs may own the native selection, compiled-condition, and input
-helper as one responsibility. Move the current label-first input selection out
-rather than retaining two implementations. Do not export intermediate study
-metadata or change generic model/CDP ownership.
-
-The usage-driven native helper has this conceptual shape:
+Keep IndicatorAlertRequest and alert_create_indicator unchanged. Proposed public
+addition in the existing alert operation module:
 
 ```text
-resolveStudy(chart, verifiedSavedRevision, optionalEntityId, localCandidate)
-    -> {entityId, selection, verifiedInputs, inputCount}
-    or a bounded preflight error
+IndicatorStudySelection<'a> = Automatic | Entity(&'a str)
+alert_create_indicator_verified(runtime, request, selection) -> Result<Value, AppError>
 ```
 
-Embed that helper in the existing operation evaluation so preview and execution
-use the same preparation. Preview returns before any alert list/create request;
-normal mode continues with the verified input snapshot and current creation
-flow. Copy the selected input values into the request snapshot before awaiting
-account reads. Do not resolve the study again by name. Preserve the existing
-normal-success normalizer and extend its allowlisted output for study; assemble
-preview from the native summary without a second selection. Missing/malformed
-Runtime results cannot become successful previews.
+Automatic means no entity for zero compiled user inputs; otherwise require one
+exact native revision. Entity requires that exact instance even with no inputs.
+The new function is a distinct stronger contract, not an alias changing legacy
+semantics. CLI flags select the appropriate function. Update Rust API docs and
+exports alongside implementation; retain a compile fixture using the unchanged
+request literal and function signature.
 
-No CLI flag, Rust field, or code stub is added until the contract is approved.
-Implementation must update help/spec/examples, both distributed indicator guides,
-CLI/Rust docs, changelog, affected normalizer fixtures, and request constructors.
+Reuse saved_script.rs for catalog/revision/source equality. A private compiled
+metadata helper fetches the exact saved revision and validates its identity,
+condition, and user-input declarations. A private study helper resolves an
+instance and snapshots its actual values. Share native input validation and the
+existing create/readback path across modes; do not introduce a second transport,
+persistent selection file, public intermediate representation, or generic
+verification framework. Compile metadata and native declared input IDs must
+agree when chart values are used. No automatic study insertion or source edit.
+
+No source implementation, CLI stub, or new dependency is authorized by this
+research. Implementation must update help/spec, CLI/Rust docs, changelog, both
+distributed indicator guides, output normalization, and affected tests together.
 
 ## Acceptance and authority
 
-After approval, implement and commit coherent verified units. Keep one Cargo job
-and one test thread. Reuse the account-JavaScript gate and production-generated
-expressions. Cover unique and explicit selection, duplicate instances with
-separate inputs, ID/version conflicts, missing metadata, condition mismatch,
-missing/duplicate inputs, source mismatch, and invalid Runtime results. Every
-preflight rejection and every preview must issue zero alert-list/create calls.
-Normal success must use the selected instance's values without retry/fallback.
-Keep the completed unknown-outcome and input-ID regressions green.
+After contract approval, verify legacy behavior and the new path separately.
+Fixtures must prove no extra metadata request, changed JSON, or study requirement
+for no-flag calls. Exercise saved compilation without a study, input-bearing
+unique/explicit selection, duplicates, wrong revisions, missing metadata,
+condition mismatch, malformed Runtime output, and preserved native input IDs.
+Every verified preflight failure and preview must issue zero alert-list/create
+calls. Normal verified success must use the selected actual values once without
+fallback or retry. Keep the approved outcome/input regressions green.
 
-Run affected Rust/model and CLI argument/spec tests, pinned JavaScript contracts,
-scoped Clippy, formatting, hygiene, and standalone resource checks. No dependency
-addition or broad local rebuild is planned. Local fixture acceptance is not live
-normal-creation acceptance.
+Run affected Rust and CLI contracts, production-JavaScript fixtures, scoped
+Clippy, formatting, public hygiene, and standalone resources with one Cargo job
+and one test thread. These checks do not establish real alert acceptance.
 
-Proposed live acceptance, requiring approval together with implementation:
-reuse the previously selected saved no-input test script/revision and test chart.
-Check for unsaved edits, open and normally compile once, and identify exactly one
-new matching entity. Run at most three dry-runs with the new implementation:
-unique automatic selection, explicit selection of that entity, and an explicit
-pre-existing nonmatching entity to confirm rejection. Do not edit/save source,
-change inputs, add duplicate instances, or create alerts. Remove only the verified
-new entity and confirm the original study set, symbol, resolution, and saved
-source/revision. Stop without retry on uncertain mutation; never guess cleanup.
-The editor may remain on the approved test script as in the prior trial.
-
-This live run covers a no-input instance only. Input-bearing and duplicate
-instances use fixtures in this slice and remain unqualified live. Normal alert
-creation/readback and notifications remain separate permissions and evidence.
-Push, tags, release publication, dependency additions, and extra agents are not
-included. If the owner approves only local implementation, preserve that narrower
-scope and leave this live acceptance pending.
+A possible later read-only smoke is one verified no-input preview using the
+existing saved revision without adding a study. Input-bearing non-default and
+duplicate-instance qualification needs its own concrete targets and bounds.
+No new live mutation run is requested by this revised proposal. Full normal
+creation/readback, source/input changes, publication, and extra agents remain
+outside scope. The earlier proposed compile/three-preview/cleanup run is
+superseded; it was never approved or performed.
 
 ## Progress
 
-- Grounded current CLI/Rust consumers, native state discovery, source guard,
-  input construction, and output normalization.
-- Compared the two selection designs and selected the optional-ID proposal.
-- Awaiting agreement on the public examples and optional bounded live acceptance.
+- Completed the earlier bounded native saved-study trial; retained its evidence.
+- Demonstrated saved compiled metadata retrieval without chart insertion and
+  input definitions/defaults for one existing input-bearing revision.
+- Replaced mandatory admission changes with this compatibility-preserving
+  opt-in proposal. CLI/Rust/JSON examples await owner agreement.
