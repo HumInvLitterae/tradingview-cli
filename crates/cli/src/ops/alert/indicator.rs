@@ -572,7 +572,8 @@ async fn alert_create_indicator_via_api(
                         error: error && error.message ? error.message : String(error),
                         error_kind: 'internal_api_unavailable',
                         phase: 'create_request_unavailable',
-                        created: false,
+                        created: null,
+                        creation_outcome: 'unknown',
                         source,
                         before_count: before.rows.length
                     }};
@@ -587,7 +588,8 @@ async fn alert_create_indicator_via_api(
                                 : 'HTTP ' + createResponse.status + ': ' + createResponse.statusText,
                         error_kind: 'internal_api_unavailable',
                         phase: 'create_request_failed',
-                        created: false,
+                        created: null,
+                        creation_outcome: 'unknown',
                         source,
                         before_count: before.rows.length,
                         status: createResponse.status,
@@ -601,7 +603,8 @@ async fn alert_create_indicator_via_api(
                         error: after.error,
                         error_kind: 'internal_api_unavailable',
                         phase: 'post_list_unavailable',
-                        created: false,
+                        created: null,
+                        creation_outcome: 'unknown',
                         source,
                         symbol: chartMeta.symbol,
                         resolution: chartMeta.resolution,
@@ -615,7 +618,8 @@ async fn alert_create_indicator_via_api(
                         error: 'Indicator alert create did not confirm a matching new alert',
                         error_kind: 'internal_api_unavailable',
                         phase: 'post_check_failed',
-                        created: false,
+                        created: null,
+                        creation_outcome: 'unknown',
                         source,
                         symbol: chartMeta.symbol,
                         resolution: chartMeta.resolution,
@@ -666,9 +670,23 @@ async fn alert_create_indicator_via_api(
             ),
             true,
         )
-        .await?;
+        .await;
 
-    normalize_indicator_alert_create_payload(result)
+    result
+        .and_then(normalize_indicator_alert_create_payload)
+        .map_err(|mut error| {
+            let mut details = error
+                .details
+                .take()
+                .and_then(|value| value.as_object().cloned())
+                .unwrap_or_default();
+            // Only a returned preflight result proves the POST was not attempted.
+            if details.get("created").and_then(Value::as_bool) != Some(false) {
+                details.insert("created".into(), Value::Null);
+                details.insert("creation_outcome".into(), json!("unknown"));
+            }
+            error.with_details(Value::Object(details))
+        })
 }
 
 fn offsets_by_plot(plot_index: usize) -> Value {

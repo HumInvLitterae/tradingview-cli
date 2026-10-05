@@ -324,7 +324,8 @@ async fn alert_indicator_create_post_check_failure_does_not_fallback() {
             "error": "Indicator alert create did not confirm a matching new alert",
             "error_kind": "internal_api_unavailable",
             "phase": "post_check_failed",
-            "created": false,
+            "created": null,
+            "creation_outcome": "unknown",
             "source": "indicator_alert_api"
         }),
     ]));
@@ -650,4 +651,156 @@ async fn javascript_account_indicator_source_fetch_is_versioned_and_read_only() 
         "{}",
         String::from_utf8_lossy(&output.stderr)
     );
+}
+
+#[tokio::test]
+#[ignore = "run through scripts/check-account-js-contract.py with pinned Node.js"]
+async fn javascript_account_indicator_creation_outcomes() {
+    let source = "indicator(\"Signals\")\nalertcondition(close > open, \"Long\")";
+    let mut runtime = FakeRuntime::new([saved_script_fixture(), json!({"source": source})]);
+    let _ = alert_create_indicator(&mut runtime, source_check_request(source, false)).await;
+    let expression = serde_json::to_string(&runtime.evaluated[2].0).unwrap();
+    let script = format!(
+        r#"
+        const assert = require('node:assert/strict');
+        const expression = {expression};
+        global.window = {{ TradingViewApi: {{ _activeChartWidgetWV: {{
+            value: () => ({{ symbolExt: () => ({{ symbol: 'NASDAQ:EXAMPLE' }}) }})
+        }} }} }};
+        (async () => {{
+            const results = [];
+            for (const mode of ['post_list', 'post_check', 'network', 'body', 'http', 'rejected', 'pre_list', 'success']) {{
+                let writes = 0;
+                let reads = 0;
+                let payload;
+                global.fetch = async (url, options) => {{
+                    if (options.method === 'POST') {{
+                        assert.equal(url, 'https://pricealerts.tradingview.com/create_alert');
+                        writes++;
+                        payload = JSON.parse(options.body).payload;
+                        if (mode === 'network') throw new Error('connection lost');
+                        return {{
+                            ok: mode !== 'http', status: mode === 'http' ? 503 : 200,
+                            statusText: 'synthetic response',
+                            text: async () => {{
+                                if (mode === 'body') throw new Error('response lost');
+                                return JSON.stringify(mode === 'rejected' ? {{s: 'error'}} : {{s: 'ok'}});
+                            }}
+                        }};
+                    }}
+                    reads++;
+                    if (mode === 'pre_list' || (mode === 'post_list' && reads === 2)) {{
+                        throw new Error('list unavailable');
+                    }}
+                    const rows = [{{ id: 'existing' }}];
+                    if (mode === 'success' && writes === 1) rows.push({{
+                        id: 'new', symbol: payload.symbol, message: payload.message,
+                        condition: payload.conditions[0]
+                    }});
+                    return {{ ok: true, json: async () => ({{r: rows}}) }};
+                }};
+                const result = await eval(expression);
+                assert.equal(writes, mode === 'pre_list' ? 0 : 1, mode);
+                if (mode === 'success') {{
+                    assert.equal(result.created, true);
+                    assert.equal(result.alert_id, 'new');
+                    assert.equal(result.creation_outcome, undefined);
+                }} else if (mode === 'pre_list') {{
+                    assert.equal(result.phase, 'pre_list_unavailable');
+                    assert.equal(result.created, false);
+                    assert.equal(result.creation_outcome, undefined);
+                }} else {{
+                    assert.equal(result.created, null, mode + ': creation cannot be ruled out');
+                    assert.equal(result.creation_outcome, 'unknown', mode);
+                    assert.equal(result.phase, {{
+                        post_list: 'post_list_unavailable', post_check: 'post_check_failed',
+                        network: 'create_request_unavailable', body: 'create_request_unavailable',
+                        http: 'create_request_failed', rejected: 'create_request_failed'
+                    }}[mode]);
+                }}
+                results.push({{ mode, result }});
+            }}
+            console.log(JSON.stringify(results));
+        }})().catch(error => {{ console.error(error); process.exitCode = 1; }});
+        "#
+    );
+    let output = std::process::Command::new("node")
+        .args(["-e", &script])
+        .output()
+        .expect("Node.js is required for the account JavaScript contract");
+    assert!(
+        output.status.success(),
+        "{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let results: Vec<Value> = serde_json::from_slice(&output.stdout).unwrap();
+    for row in results {
+        let mut runtime = FakeRuntime::new([
+            saved_script_fixture(),
+            json!({"source": source}),
+            row["result"].clone(),
+        ]);
+        let result =
+            alert_create_indicator(&mut runtime, source_check_request(source, false)).await;
+        if row["mode"] == "success" {
+            let data = result.unwrap();
+            assert_eq!(data["created"], true);
+            assert!(data.get("creation_outcome").is_none());
+        } else {
+            let error = result.unwrap_err();
+            assert_eq!(error.kind, ErrorKind::InternalApiUnavailable);
+            let envelope = tradingview_core::ErrorEnvelope::new("alert", error.into());
+            let envelope = serde_json::to_value(envelope).unwrap();
+            assert_eq!(envelope["success"], false);
+            let details = &envelope["error"]["details"];
+            if row["mode"] == "pre_list" {
+                assert_eq!(details["created"], false);
+            } else {
+                assert_eq!(details.get("created"), Some(&Value::Null));
+                assert_eq!(details["creation_outcome"], "unknown");
+            }
+        }
+        assert_eq!(runtime.evaluated.len(), 3);
+    }
+}
+
+#[tokio::test]
+async fn alert_indicator_lost_evaluation_keeps_error_kind_and_unknown_outcome() {
+    let source = "alertcondition(close > open, \"Long\")";
+    for kind in [
+        ErrorKind::Timeout,
+        ErrorKind::Connection,
+        ErrorKind::InternalApiUnavailable,
+    ] {
+        let mut runtime = FakeRuntime::new([saved_script_fixture(), json!({"source": source})])
+            .with_evaluate_app_error_after_responses(
+                AppError::new(kind, "evaluation response unavailable")
+                    .with_details(json!({"failure_stage": "method_call"})),
+            );
+        let error = alert_create_indicator(&mut runtime, source_check_request(source, false))
+            .await
+            .unwrap_err();
+        assert_eq!(error.kind, kind);
+        let details = error.details.unwrap();
+        assert_eq!(details["failure_stage"], "method_call");
+        assert_eq!(details.get("created"), Some(&Value::Null));
+        assert_eq!(details["creation_outcome"], "unknown");
+        assert_eq!(runtime.evaluated.len(), 3);
+    }
+}
+
+#[tokio::test]
+async fn alert_indicator_malformed_creation_result_is_unknown() {
+    let source = "alertcondition(close > open, \"Long\")";
+    for response in [Value::Null, json!({}), json!("invalid")] {
+        let mut runtime =
+            FakeRuntime::new([saved_script_fixture(), json!({"source": source}), response]);
+        let error = alert_create_indicator(&mut runtime, source_check_request(source, false))
+            .await
+            .unwrap_err();
+        let details = error.details.unwrap();
+        assert_eq!(details.get("created"), Some(&Value::Null));
+        assert_eq!(details["creation_outcome"], "unknown");
+        assert_eq!(runtime.evaluated.len(), 3);
+    }
 }

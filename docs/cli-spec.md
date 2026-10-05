@@ -1163,8 +1163,16 @@ is used. The request uses dividends adjustment, on-bar-close, approximately
 Readback matches an alert not previously seen by ID, its alert_cond type,
 condition ID and message; symbol is checked only when reported. It does not
 verify every input, saved version, resolution or notification delivery. Failed
-readback does not prove no alert was created. No DOM/MCP fallback is performed;
-inspect account state before retrying and keep script/account details private.
+readback does not prove no alert was created. Once a creation POST is attempted,
+request/response failures and failed readback return error details with
+`created:null` and `creation_outcome:"unknown"`. This also covers unavailable or
+malformed creation-evaluation results, where the POST's progress cannot be
+established. HTTP/provider error replies alone do not prove no side effect.
+Errors returned by chart/input/list preflight before the POST retain
+`created:false`; saved-source preflight errors keep their existing format.
+Confirmed success still returns `created:true` with the existing shape.
+No automatic retry, deletion, DOM or MCP fallback is performed. Inspect account
+state before retrying and keep script/account details private.
 
 
 ## Pine shape and character observations

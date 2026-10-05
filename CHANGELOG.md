@@ -7,6 +7,13 @@ package version omits the leading `v`.
 
 ## Unreleased
 
+### Fixed
+
+- Indicator-alert creation errors now distinguish unknown outcomes from confirmed
+  preflight non-creation. Request/response failures, failed readback, and missing
+  creation-evaluation results report `created:null` and `creation_outcome:unknown`.
+  Confirmed successful output is unchanged; no automatic retry is added.
+
 ## v0.36.0
 
 ### Added
