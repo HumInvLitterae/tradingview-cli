@@ -5,6 +5,7 @@
 | Direction after v0.36.0 | [Roadmap](../next-version-roadmap.md) |
 | Current priority and retained acceptance evidence | [Inventory](../next-version-work-items.md) |
 | Released source-verification implementation and qualification | [Indicator source verification](tradingview-cli-indicator-source-verification.md) |
+| Proposed next implementation contract | [Study verification](tradingview-cli-indicator-study-verification.md) |
 | Current release behavior and limits | [v0.36.0 release notes](../releases/v0.36.0.md) |
 | Earlier released baseline | [v0.35.0 closeout](archives/tradingview-cli-chart-analysis-contracts.md) |
 | CDP stability triggers | [Strategy](../notes/cdp-stability-and-autonomous-operation-strategy.md) |

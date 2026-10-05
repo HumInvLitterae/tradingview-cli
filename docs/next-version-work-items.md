@@ -18,7 +18,7 @@ Live qualification gaps are not closed by publication.
 | --- | --- | --- |
 | 1 | Indicator-alert unknown creation outcomes | Approved and implemented locally. Production-JavaScript regression reproduced the incorrect false result; see acceptance below. |
 | 2 | Exact study and input identity | Bounded read-only observation completed. Native identity/version/condition fields exist; positional input remapping reproduced a wrong payload with synthetic data. The owner approved the bounded input-ID correction; implementation and acceptance follow below. |
-| 3 | Supported identity and creation readback | The authorized one-study compile/read/cleanup trial passed for a no-input saved indicator. Full identity behavior, input-bearing qualification, and creation readback remain separate. |
+| 3 | Supported identity and creation readback | The no-input native trial passed. [Study-verification plan](plans/tradingview-cli-indicator-study-verification.md) proposes optional study-id and shared preview/create preflight; public contracts and its new live run await approval. |
 | 4 | Release the completed slice | Version remains provisional: defect-only v0.36.1 or additive v0.37.0, selected after scope review. |
 
 The owner approved priorities 1 and 2 on 2026-10-05. Priority 3 remains

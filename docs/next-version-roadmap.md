@@ -119,6 +119,12 @@ path for that limited case, not input-bearing scripts or full alert creation.
 Use this evidence when proposing missing/ambiguous identity behavior; do not
 promote a new selector or broader admission change without concrete examples.
 
+The [study-verification plan](plans/tradingview-cli-indicator-study-verification.md)
+now proposes those examples. It recommends optional study-id with unique native
+selection when omitted, shared preview/create preflight, and a required chart
+study even for no-input scripts. The proposal preserves the current post-create
+readback limits and awaits owner approval.
+
 ## Other candidates and tradeoffs
 
 | Candidate | Decision for this draft | Reopen when |
