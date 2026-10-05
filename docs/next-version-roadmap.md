@@ -1,12 +1,11 @@
 # Direction after v0.36.0
 
-Status: the approved unknown-outcome and native input-ID corrections are
-implemented and committed. An authorized one-study compile/read/cleanup trial
-also matched a saved no-input indicator to its chart entity, saved revision, and
-compiled condition. A later read-only probe retrieved the saved compiled
-metadata without adding a chart study. The inventory owns the evidence and
-its limits. Broader identity behavior and live creation remain separate decisions. One executor
-works without delegated agents; no further live scope or publication is implied.
+Status: the unknown-outcome and native input-ID corrections are implemented and
+committed. Opt-in compiled-condition and study-input verification is also
+implemented and locally accepted. A verified no-input preview succeeded without
+adding a study. The inventory and implementation plan retain the fixture/live
+limits. Complete created-alert identity and live normal creation remain separate
+work. One executor works without delegated agents; publication is not implied.
 
 ## Released baseline
 
@@ -40,14 +39,14 @@ one release.
 | Order | Deliverable | User-visible completion | Gate |
 | --- | --- | --- | --- |
 | 1 | Distinguish creation failure from an unknown outcome | A failed post-create readback cannot be read as proof of non-creation; guidance directs the user to inspect state before repeating a request | Approved error examples; implemented with production JavaScript fault fixtures, see inventory |
-| 2 | Qualify exact study selection and input identity | Determine whether duplicate study names and incomplete inputs can be rejected or resolved using stable native identity | Inspect existing study metadata first; a bounded read-only Desktop probe needs a named target and authority; no new selector is promised yet |
-| 3 | Implement the supported identity and readback contract | For the agreed supported case, use the intended inputs and confirm the newly created alert against the agreed fields | Agree selector/error examples and supported limits; require an authorized bounded create/readback/cleanup run before claiming live creation acceptance |
+| 2 | Qualify exact study selection and input identity | Determine whether duplicate study names and incomplete inputs can be rejected or resolved using stable native identity | Native identity and saved compiled metadata were observed in bounded probes; the input-ID correction is implemented and accepted |
+| 3 | Implement the supported identity and readback contract | For the agreed supported case, use the intended inputs and confirm the newly created alert against the agreed fields | Opt-in preflight is approved and implemented; complete post-create identity and live create/readback/cleanup need their own agreed scope |
 | 4 | Release the completed slice | Ship a coherent improvement with matching CLI guidance, fixtures, CI, and native packages | Refresh existing dependencies, preserve resource limits, and obtain publication authority |
 
 Order 1 can ship independently if the later identity investigation is inconclusive.
-A defect-only release may be v0.36.1. Reserve v0.37.0 for approved additive CLI or
-JSON behavior and the supported identity workflow. Select the version after
-contract review; do not enlarge scope merely to fill a minor release.
+A defect-only subset may use v0.36.1; including the approved additive CLI/JSON
+behavior calls for v0.37.0. Select the version with the release scope rather than
+enlarging scope to fill a minor release.
 
 ### Approved first contract
 
@@ -76,35 +75,30 @@ automatic deletion, or an account-persistent journal to solve this problem.
 Acceptance must prove that ambiguous results cannot enter the confirmed-success
 path and that no second creation request is issued.
 
-### Identity investigation and conditional implementation
+### Identity scope and remaining readback
 
-Current creation selects the first chart study matching a name/title, maps input
-order to in_0 and subsequent keys, and derives condition candidates from local
-source. Readback checks a new ID, condition ID, message, and symbol when present.
-It does not establish every input, saved version, or resolution. Saved-source
-agreement alone does not close those gaps.
+Legacy creation still selects the first chart study matching a name/title, but
+the approved correction now preserves and validates native input IDs. Legacy
+condition candidates remain local-parser results. The opt-in path verifies saved
+compiled conditions and exact native saved-revision inputs, with an explicit
+selector for duplicate instances. It never substitutes names or defaults when
+required evidence is missing.
 
-First determine what stable saved-script identity, study entity identity, input
-metadata, compiled condition information, and created-alert identity the existing
-native APIs actually expose. Reuse adequate native facilities. If a field cannot
-be established, record it as UNCONFIRMED rather than replacing it with a name
-match or invented default.
-
-Propose the smallest supported workflow from that evidence. Include duplicate
-names, changed inputs, missing metadata, concurrent unrelated alert creation,
-and an accepted create followed by a failed readback in its acceptance cases.
-A possible explicit study selector remains a design candidate, not an approved
-public flag. If complete identity is infeasible, report the precise supported
-subset and its omitted behavior before seeking implementation approval.
+Readback still checks a new ID, condition ID, message, and symbol when present.
+It does not establish every input, saved version, or resolution. The stronger
+preflight does not close those post-create gaps. Any further identity work must
+agree the fields to be verified and cover unrelated concurrent creation and an
+accepted create followed by failed readback. Missing evidence remains
+UNCONFIRMED rather than an invented match.
 
 ## Current investigation decision
 
 The initial read-only observation found native script/version and condition
 metadata, but no chart study matching the saved catalog. A subsequent authorized
 compile/read/cleanup trial established that binding for one saved no-input
-indicator. Input-bearing and duplicate-study cases remain unqualified. More immediately, the production input mapping
-turned synthetic internal text into in_0 instead of retaining the intended value
-20. The [inventory](next-version-work-items.md#approved-input-id-correction)
+indicator. Non-default input and duplicate-study cases remain unqualified live.
+Before its correction, the production input mapping turned synthetic internal
+text into in_0 instead of retaining the intended value 20. The [inventory](next-version-work-items.md#approved-input-id-correction)
 records the reproduction, approved before/after examples, and acceptance.
 
 The owner approved that input-ID correction before a new selector or full
@@ -121,12 +115,13 @@ Use this evidence when proposing missing/ambiguous identity behavior; do not
 promote a new selector or broader admission change without concrete examples.
 
 The [study-verification plan](plans/tradingview-cli-indicator-study-verification.md)
-now preserves existing no-flag behavior and proposes opt-in verification. Saved
-compiled metadata removes the need for a chart study when there are no user
-inputs. Input-bearing verified calls use an exact native revision, with study-id
-resolving multiple instances. A separate Rust function preserves existing
-request literals and callers. This supersedes mandatory chart admission; the
-new contracts await owner agreement. Post-create readback limits remain.
+now records the approved opt-in verification implementation, preserving existing
+no-flag behavior. Saved compiled metadata removes the need for a chart study
+when there are no user inputs. Input-bearing verified calls use an exact native
+revision, with study-id resolving multiple instances. A separate Rust function preserves existing
+request literals and callers. This supersedes mandatory chart admission. Local
+implementation and bounded acceptance passed, including a verified no-input
+preview without chart insertion. Post-create readback limits remain.
 
 ## Other candidates and tradeoffs
 
@@ -146,13 +141,14 @@ continues to govern transport proposals.
 
 ## Execution limits
 
-The approval covers the first correction and source investigation. It does not
-authorize broader identity contracts, dependency additions, live account changes,
-or publication. The inventory owns priority and this bounded slice's work record.
-A broader identity implementation needs its own agreed contract and ExecPlan. Keep private consumer details out
-of public records. Run local Cargo checks serially with one build job and one
-test thread, reuse unchanged valid evidence, and avoid redundant broad builds.
-Before release, review existing dependency updates and resolver constraints,
-run affected checks and normal CI, and qualify native packages. Fixture success,
-read-only qualification, normal creation, and notification delivery remain
-separate evidence. The proposed scope does not promise notification delivery.
+The owner approved the outcome and input corrections, bounded metadata research,
+and the opt-in verification contract in the linked ExecPlan. Implementation and
+local acceptance are complete. Dependency additions, live account writes,
+complete post-create identity, and publication remain outside that scope.
+Keep private consumer details out of public records. Run local Cargo checks
+serially with one build job and one test thread, reuse unchanged valid evidence,
+and avoid redundant broad builds. Before release, review existing dependency
+updates and resolver constraints, run affected checks and normal CI, and qualify
+native packages. Fixture success, read-only qualification, normal creation, and
+notification delivery remain separate evidence. This slice does not promise
+notification delivery.

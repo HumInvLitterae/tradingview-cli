@@ -40,8 +40,8 @@ pub(crate) use market::CHART_COMPARE_CONTRACT_VERSION;
 pub(crate) use common::{DEFAULT_OHLCV_COUNT, MAX_OHLCV_COUNT};
 
 pub use alert::{
-    IndicatorAlertRequest, alert_create, alert_create_indicator, alert_delete, alert_delete_all,
-    alert_list,
+    IndicatorAlertRequest, IndicatorStudySelection, alert_create, alert_create_indicator,
+    alert_create_indicator_verified, alert_delete, alert_delete_all, alert_list,
 };
 pub use chart::{
     current_chart_type, current_symbol, current_timeframe, scroll_to_date, set_chart_type,

@@ -854,6 +854,9 @@ fn indicator_alert_spec_does_not_read_source_or_create_alert() {
     assert_eq!(spec["effects"]["chart_mutation"], false);
     assert_eq!(spec["variants"][0]["effects"]["account_mutation"], false);
     assert_eq!(spec["variants"][1]["effects"]["account_mutation"], true);
+    assert_eq!(spec["constraints"]["verify"]["default"], false);
+    assert_eq!(spec["constraints"]["study_id"]["implies"], "verify");
+    assert_eq!(spec["examples"].as_array().unwrap().len(), 3);
 }
 
 #[test]

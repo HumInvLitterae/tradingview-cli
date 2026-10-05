@@ -710,6 +710,13 @@ pub enum AlertCommand {
         resolution: Option<String>,
         #[arg(long, short)]
         message: Option<String>,
+        #[arg(
+            long,
+            help = "Verify the saved compiled condition and required chart inputs"
+        )]
+        verify: bool,
+        #[arg(long, help = "Use this exact chart study's inputs; implies --verify")]
+        study_id: Option<String>,
         #[arg(long)]
         dry_run: bool,
     },

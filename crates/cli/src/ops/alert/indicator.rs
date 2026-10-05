@@ -11,9 +11,16 @@ use super::{
         pine::{PineAlertconditionCandidate, pine_alertcondition_candidates},
     },
     ALERT_LIST_READER,
-    payload::normalize_indicator_alert_create_payload,
+    payload::{
+        normalize_indicator_alert_create_payload, normalize_indicator_alert_verified_payload,
+    },
 };
 use saved_script::{VerifiedSavedPineScript, resolve_verified};
+
+pub use tradingview_model::alert::IndicatorStudySelection;
+
+const STUDY_INPUTS: &str = include_str!("indicator/study_inputs.js");
+const VERIFICATION_SCRIPT: &str = include_str!("indicator/verification.js");
 
 #[derive(Debug, Clone)]
 pub struct IndicatorAlertRequest<'a> {
@@ -32,6 +39,29 @@ pub async fn alert_create_indicator(
     runtime: &mut impl RuntimeEvaluator,
     request: IndicatorAlertRequest<'_>,
 ) -> Result<Value, AppError> {
+    create_indicator(runtime, request, None).await
+}
+
+/// Verify the saved compiled condition and the selected instance's input values.
+pub async fn alert_create_indicator_verified(
+    runtime: &mut impl RuntimeEvaluator,
+    request: IndicatorAlertRequest<'_>,
+    selection: IndicatorStudySelection<'_>,
+) -> Result<Value, AppError> {
+    let selection = match selection {
+        IndicatorStudySelection::Automatic => IndicatorStudySelection::Automatic,
+        IndicatorStudySelection::Entity(id) => {
+            IndicatorStudySelection::Entity(require_non_empty(id, "study_id")?)
+        }
+    };
+    create_indicator(runtime, request, Some(selection)).await
+}
+
+async fn create_indicator(
+    runtime: &mut impl RuntimeEvaluator,
+    request: IndicatorAlertRequest<'_>,
+    selection: Option<IndicatorStudySelection<'_>>,
+) -> Result<Value, AppError> {
     let script = require_non_empty(request.script, "script")?;
     let candidate = select_alertcondition_candidate(
         request.source,
@@ -40,8 +70,45 @@ pub async fn alert_create_indicator(
     )?;
     let saved_script = resolve_verified(runtime, script, request.source).await?;
 
+    if request.dry_run && selection.is_none() {
+        return Ok(indicator_preview(
+            script,
+            &candidate,
+            &saved_script,
+            &request,
+        ));
+    }
+
+    let prepared = alert_create_indicator_via_api(
+        runtime,
+        script,
+        &candidate,
+        &saved_script,
+        &request,
+        selection,
+    )
+    .await?;
     if request.dry_run {
-        return Ok(json!({
+        let mut preview = indicator_preview(script, &candidate, &saved_script, &request);
+        preview["verification"] = prepared["verification"].clone();
+        preview["request"]["symbol"] = prepared["symbol"].clone();
+        preview["request"]["resolution"] = prepared["resolution"].clone();
+        preview["note"] = json!(
+            "Dry run only. Saved compilation and required chart inputs passed preflight. No alert was listed or created; provider acceptance and creation readback were not exercised."
+        );
+        Ok(preview)
+    } else {
+        Ok(prepared)
+    }
+}
+
+fn indicator_preview(
+    script: &str,
+    candidate: &PineAlertconditionCandidate,
+    saved_script: &VerifiedSavedPineScript,
+    request: &IndicatorAlertRequest<'_>,
+) -> Value {
+    json!({
         "action": "dry_run",
         "dry_run": true,
         "would_create": true,
@@ -73,10 +140,7 @@ pub async fn alert_create_indicator(
             "message": request.message.map(str::trim).filter(|value| !value.is_empty()),
         },
         "note": "Dry run only. No TradingView alert was created. Normal create still requires saved script metadata and post-create readback.",
-        }));
-    }
-
-    alert_create_indicator_via_api(runtime, script, &candidate, &saved_script, &request).await
+    })
 }
 
 fn require_non_empty<'a>(value: &'a str, label: &str) -> Result<&'a str, AppError> {
@@ -190,6 +254,7 @@ async fn alert_create_indicator_via_api(
     candidate: &PineAlertconditionCandidate,
     saved_script: &VerifiedSavedPineScript,
     request: &IndicatorAlertRequest<'_>,
+    selection: Option<IndicatorStudySelection<'_>>,
 ) -> Result<Value, AppError> {
     let script_literal = js_string(script)?;
     let script_name_literal = js_string(&saved_script.name)?;
@@ -257,13 +322,19 @@ async fn alert_create_indicator_via_api(
         )
     })?;
     let source_has_inputs = source_has_pine_inputs(request.source);
+    let verification_request = match selection {
+        None => Value::Null,
+        Some(IndicatorStudySelection::Automatic) => json!({"study_id": null}),
+        Some(IndicatorStudySelection::Entity(id)) => json!({"study_id": id}),
+    };
+    let dry_run = request.dry_run;
 
     let result = runtime
         .evaluate(
             &format!(
                 r#"
             (async function() {{
-                const source = 'indicator_alert_api';
+                const source = {dry_run} ? 'indicator_alert_dry_run' : 'indicator_alert_api';
                 const requestedScript = {script_literal};
                 const savedScriptName = {script_name_literal};
                 const savedScriptTitle = {script_title_literal};
@@ -278,6 +349,16 @@ async fn alert_create_indicator_via_api(
                 const offsetsByPlot = {offsets_json};
                 const pineFeatures = {pine_features_json};
                 const sourceHasInputs = {source_has_inputs};
+                const verificationRequest = {verification_request};
+                const dryRun = {dry_run};
+                const baseInputs = {{
+                    pineFeatures: JSON.stringify(pineFeatures),
+                    __fast_calc: false,
+                    __profile: false
+                }};
+
+                {STUDY_INPUTS}
+                {VERIFICATION_SCRIPT}
 
                 function publicAlert(alert) {{
                     if (!alert) return null;
@@ -361,12 +442,8 @@ async fn alert_create_indicator_via_api(
                     return label === savedScriptName || label === savedScriptTitle || label === requestedScript;
                 }}
 
-                function readStudyInputs(chart) {{
-                    const base = {{
-                        pineFeatures: JSON.stringify(pineFeatures),
-                        __fast_calc: false,
-                        __profile: false
-                    }};
+                function legacyStudyInputs(chart) {{
+                    const base = baseInputs;
                     if (!chart || typeof chart.getAllStudies !== 'function') {{
                         if (sourceHasInputs) {{
                             return {{
@@ -406,36 +483,10 @@ async fn alert_create_indicator_via_api(
                         }} catch (_) {{
                             return unavailable;
                         }}
-                        if (!Array.isArray(declared) || !Array.isArray(values)) return unavailable;
-
-                        const systemIds = new Set(['text', 'pineId', 'pineVersion', 'pineFeatures', '__fast_calc', '__profile']);
-                        const declaredIds = new Set();
-                        const userIds = new Set();
-                        for (const input of declared) {{
-                            if (!input || typeof input.id !== 'string' || declaredIds.has(input.id)) return unavailable;
-                            declaredIds.add(input.id);
-                            if (/^in_\d+$/.test(input.id)) userIds.add(input.id);
-                            else if (!systemIds.has(input.id)) return unavailable;
-                        }}
-
-                        const inputs = Object.assign({{}}, base);
-                        const returnedIds = new Set();
-                        let inputCount = 0;
-                        for (const input of values) {{
-                            if (!input || typeof input.id !== 'string' || returnedIds.has(input.id)) return unavailable;
-                            returnedIds.add(input.id);
-                            if (systemIds.has(input.id)) continue;
-                            if (!userIds.has(input.id)) return unavailable;
-                            const value = input.value !== undefined ? input.value : input.val;
-                            if (value === undefined) return unavailable;
-                            inputs[input.id] = value;
-                            inputCount++;
-                        }}
-                        if (inputCount !== userIds.size) return unavailable;
+                        const inputs = nativeStudyInputs(declared, values, base);
+                        if (!inputs.ok) return inputs;
                         return {{
-                            ok: true,
-                            inputs,
-                            input_count: inputCount,
+                            ...inputs,
                             input_source: 'active_chart_study',
                             study_matched: true
                         }};
@@ -503,6 +554,9 @@ async fn alert_create_indicator_via_api(
                     return null;
                 }}
 
+                const compiled = verificationRequest ? await savedCompilation() : null;
+                if (compiled && !compiled.ok) return compiled;
+
                 const chartMeta = readChartMetadata();
                 if (chartMeta.error) {{
                     return {{
@@ -514,8 +568,11 @@ async fn alert_create_indicator_via_api(
                     }};
                 }}
 
-                const studyInputs = readStudyInputs(chartMeta.chart);
+                const studyInputs = verificationRequest
+                    ? verifiedStudyInputs(chartMeta.chart, baseInputs, verificationRequest.study_id, compiled.userIds)
+                    : legacyStudyInputs(chartMeta.chart);
                 if (!studyInputs.ok) {{
+                    if (verificationRequest) return studyInputs;
                     return {{
                         error: studyInputs.error,
                         error_kind: 'internal_api_unavailable',
@@ -523,6 +580,16 @@ async fn alert_create_indicator_via_api(
                         created: false,
                         source,
                         input_metadata_required: sourceHasInputs
+                    }};
+                }}
+
+                if (dryRun) {{
+                    return {{
+                        action: 'dry_run',
+                        created: false,
+                        symbol: chartMeta.symbol,
+                        resolution: String(chartMeta.resolution),
+                        verification: studyInputs.verification
                     }};
                 }}
 
@@ -682,7 +749,8 @@ async fn alert_create_indicator_via_api(
                         study_matched: studyInputs.study_matched,
                         source_has_inputs: sourceHasInputs
                     }},
-                    matched_alert: publicMatched
+                    matched_alert: publicMatched,
+                    ...(verificationRequest ? {{verification: studyInputs.verification}} : {{}})
                 }};
             }})()
             "#,
@@ -693,21 +761,28 @@ async fn alert_create_indicator_via_api(
         )
         .await;
 
-    result
-        .and_then(normalize_indicator_alert_create_payload)
-        .map_err(|mut error| {
-            let mut details = error
-                .details
-                .take()
-                .and_then(|value| value.as_object().cloned())
-                .unwrap_or_default();
-            // Only a returned preflight result proves the POST was not attempted.
-            if details.get("created").and_then(Value::as_bool) != Some(false) {
-                details.insert("created".into(), Value::Null);
-                details.insert("creation_outcome".into(), json!("unknown"));
-            }
-            error.with_details(Value::Object(details))
-        })
+    let result = result.and_then(|data| match selection {
+        Some(selection) => {
+            normalize_indicator_alert_verified_payload(data, request.dry_run, selection)
+        }
+        None => normalize_indicator_alert_create_payload(data),
+    });
+    result.map_err(|mut error| {
+        let mut details = error
+            .details
+            .take()
+            .and_then(|value| value.as_object().cloned())
+            .unwrap_or_default();
+        // A preview cannot dispatch; normal failures need returned preflight proof.
+        if request.dry_run {
+            details.insert("created".into(), json!(false));
+            details.remove("creation_outcome");
+        } else if details.get("created").and_then(Value::as_bool) != Some(false) {
+            details.insert("created".into(), Value::Null);
+            details.insert("creation_outcome".into(), json!("unknown"));
+        }
+        error.with_details(Value::Object(details))
+    })
 }
 
 fn offsets_by_plot(plot_index: usize) -> Value {

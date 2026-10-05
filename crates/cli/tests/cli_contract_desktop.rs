@@ -2254,7 +2254,59 @@ fn alert_create_indicator_help_is_available() {
     assert!(stdout.contains("Create or preview a Pine alertcondition() alert"));
     assert!(stdout.contains("--condition-title"));
     assert!(stdout.contains("--alert-cond-id"));
+    assert!(stdout.contains("--verify"));
+    assert!(stdout.contains("--study-id"));
     assert!(stdout.contains("--dry-run"));
+}
+
+#[test]
+fn alert_create_indicator_verification_flags_reach_connection() {
+    for flags in [
+        vec!["--verify"],
+        vec!["--verify", "--dry-run"],
+        vec!["--study-id", "chosen"],
+        vec!["--study-id", "chosen", "--dry-run"],
+    ] {
+        let assert = tv_with_cdp_disconnect()
+            .args([
+                "alert",
+                "create-indicator",
+                "--script",
+                "Signals",
+                "--condition-title",
+                "Long",
+            ])
+            .args(flags)
+            .write_stdin("alertcondition(close > open, \"Long\")")
+            .assert()
+            .failure()
+            .code(2);
+        assert_eq!(stderr_json(&assert)["error"]["kind"], "connection");
+    }
+}
+
+#[test]
+fn alert_create_indicator_blank_study_id_fails_before_source_read_or_connection() {
+    let assert = tv()
+        .env("TV_CDP_PORT", "9")
+        .args([
+            "alert",
+            "create-indicator",
+            "--script",
+            "Signals",
+            "--condition-title",
+            "Long",
+            "--study-id",
+            "  ",
+            "--file",
+            "/missing-source-for-study-selection-check.pine",
+        ])
+        .assert()
+        .failure()
+        .code(1);
+    let value = stderr_json(&assert);
+    assert_eq!(value["error"]["kind"], "validation");
+    assert_eq!(value["error"]["message"], "study_id must not be empty");
 }
 
 #[test]

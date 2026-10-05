@@ -18,13 +18,14 @@ Live qualification gaps are not closed by publication.
 | --- | --- | --- |
 | 1 | Indicator-alert unknown creation outcomes | Approved and implemented locally. Production-JavaScript regression reproduced the incorrect false result; see acceptance below. |
 | 2 | Exact study and input identity | Bounded read-only observation completed. Native identity/version/condition fields exist; positional input remapping reproduced a wrong payload with synthetic data. The owner approved the bounded input-ID correction; implementation and acceptance follow below. |
-| 3 | Supported identity and creation readback | Native and saved-compiler probes passed within the bounds below. [Revised verification plan](plans/tradingview-cli-indicator-study-verification.md) preserves legacy behavior and proposes opt-in verification plus study selection. Public contracts await agreement; mandatory chart admission is superseded. |
+| 3 | Supported identity and creation readback | Native and saved-compiler probes passed within the bounds below. [Revised verification plan](plans/tradingview-cli-indicator-study-verification.md) records approved opt-in verification and study selection. Implementation and local acceptance passed, including a verified no-input live preview without chart insertion. Full created-alert identity remains separate. |
 | 4 | Release the completed slice | Version remains provisional: defect-only v0.36.1 or additive v0.37.0, selected after scope review. |
 
-The owner approved priorities 1 and 2 on 2026-10-05. Priority 3 remains
-conditional on demonstrated identity support and agreed public examples.
-No additional agents are planned. The roadmap owns direction and contract
-examples. This inventory records the bounded correction and investigation below.
+The owner approved priorities 1 and 2 on 2026-10-05, then approved priority 3's
+opt-in preflight after metadata research and concrete public examples. Complete
+post-create identity remains separate. No additional agents are planned. The
+roadmap owns direction, the implementation plan owns its contract and acceptance,
+and this inventory records priority and retained evidence.
 Historical v0.36.0 acceptance remains unchanged.
 
 ## Approved outcome correction and identity investigation, 2026-10-05
@@ -357,12 +358,43 @@ semantics and JSON. Verified no-input calls need no chart study; input-bearing
 calls require an exact saved-revision instance and reject ambiguity. The prior
 mandatory chart requirement and Rust struct-field addition are superseded.
 Using default input values, new input overrides, and full post-create identity
-remain separate contracts. Public examples await owner agreement.
+remain separate contracts. The owner subsequently approved these examples and
+implementation; acceptance is recorded below.
 
 Documentation validation passed: diff whitespace checks, public-hygiene self-test
 and tracked-file scan, and 37 local Markdown link targets. Credential-pattern
 review found no newly added matches; existing changed-document matches are
 policy language. Rust/JavaScript tests were not rerun for this docs-only change.
+
+## Approved opt-in indicator verification implementation
+
+The owner approved the revised compatibility-preserving plan on 2026-10-05.
+One executor implemented --verify and --study-id, the additive Rust operation,
+shared native input validation, and the compiled/native identity checks. The
+[plan](plans/tradingview-cli-indicator-study-verification.md) owns the complete
+contract and implementation decisions. No extra agents, dependencies, source or
+chart mutations, alert writes, or publication are included.
+
+Existing no-flag CLI/JSON and IndicatorAlertRequest/alert_create_indicator remain
+unchanged. Direct constructors of the public clap parser variant need the new
+verify:false and study_id:None fields; the Rust API guide states that narrower
+parser compatibility boundary. Selection and pure result validation live in the
+model crate; browser reads and creation orchestration remain in the CLI.
+
+Local acceptance passed. Two new regression cases failed before their fixes:
+a contradictory non-error creation result could imply known non-creation, and a
+chart change during the compiled-metadata read could combine an earlier symbol
+with later inputs. Verified normalization now rejects the first as an unknown
+normal outcome. Chart context and actual values are read together after saved
+compilation, then input values are copied before account requests.
+
+The plan records 96 generated-JavaScript scenarios, Rust and CLI contracts,
+scoped Clippy, resource checks, and bounded live evidence. The verified no-input
+preview succeeded without a study or account mutation. Its first inspection used
+a different native symbol field than production; one read-only repeat confirmed
+the unchanged production rule and all chart-preservation checks. Full normal
+creation/readback, non-default live inputs, and duplicate-instance live behavior
+remain unqualified. No version bump or publication is part of this implementation.
 
 ## Historical v0.36.0 preparation evidence
 

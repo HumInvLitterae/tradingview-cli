@@ -1,4 +1,5 @@
 mod input_contract;
+mod verification_contract;
 
 use std::collections::VecDeque;
 

@@ -7,6 +7,16 @@ package version omits the leading `v`.
 
 ## Unreleased
 
+### Added
+
+- Opt-in `alert create-indicator --verify` checks the exact saved compiled
+  condition and required chart inputs in preview and normal creation.
+  `--study-id <ID>` selects an exact instance and implies verification. No-input
+  scripts need no chart study; input-bearing scripts require a unique matching
+  saved revision or explicit selection. Existing no-flag behavior and JSON remain
+  unchanged. Rust callers can use `alert_create_indicator_verified` with
+  `IndicatorStudySelection`; the existing request type and function are retained.
+
 ### Fixed
 
 - Indicator-alert creation preserves native user-input IDs instead of renumbering

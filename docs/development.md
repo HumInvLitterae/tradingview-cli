@@ -816,6 +816,12 @@ Indicator-alert fixtures exercise the generated saved-script lookup and exact
 versioned source GET, with encoded IDs, malformed/error responses, no redirects,
 and no editor/account mutation. Rust fixtures enforce source comparison and
 rejection before alert operations in both dry-run and normal creation.
+The same gate runs opt-in compiled-condition and study-selection fixtures for
+no-input scripts, duplicate instances, native ID/version agreement, complete
+input IDs, snapshot isolation, metadata failures, and unchanged creation-outcome
+handling. It verifies zero alert-list/create requests for every preview and
+failed preflight. Rust fixtures reject malformed verification results and retain
+the existing public request literal and operation entry point.
 The Pine-open gate executes the generated asynchronous page expression against
 synthetic Pine facade, Pine-owned Monaco, overlay-menu, and Save-bound store
 objects, including hidden stale editors, ambiguous visible editors, missing

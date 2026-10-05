@@ -1,6 +1,6 @@
 # Opt-in verification for indicator alerts
 
-Status: revised proposal, 2026-10-05; implementation awaits owner agreement.
+Status: implementation approved and locally accepted on 2026-10-05.
 This supersedes the earlier mandatory-chart proposal in this same record.
 One executor, no additional agents or sessions. The
 [inventory](../next-version-work-items.md) owns priority and observed evidence;
@@ -38,8 +38,8 @@ changed. The actual chart values in that second case equalled defaults, so this
 does not qualify non-default values through real alert creation.
 
 The current translate_light source check returned language-analysis fields but
-no compiled metaInfo in one synthetic probe. It is not the proposed metadata
-source. The saved translate endpoint is an internal service used by a public
+no compiled metaInfo in one synthetic probe. It is not the metadata
+source for this implementation. The saved translate endpoint is an internal service used by a public
 community client, not a documented stable TradingView API. Missing or malformed
 metadata must fail the opt-in check; it must never silently use legacy behavior.
 
@@ -55,11 +55,11 @@ an optional public struct field breaks existing struct-literal callers, and an
 extra function parameter breaks calls. Keep the existing public surface and
 share private preparation/creation helpers rather than duplicate adapters.
 
-## Proposed CLI behavior
+## CLI behavior
 
 Add --verify and --study-id. An explicit study-id implies verification; it is
 case-sensitive, trimmed, and nonblank. No flag means the current behavior.
-These names and contracts are proposals, not implemented flags.
+The owner approved these names and contracts; they are implemented locally.
 
 ```sh
 # Existing invocation: behavior and output remain compatible.
@@ -97,9 +97,9 @@ Both verified preview and normal mode use the same saved-source, compiled
 condition, and input preparation. Preview stops before all alert-list/create
 requests. Normal mode continues with the prepared input snapshot and current
 creation behavior. Resolve symbol/resolution through existing request/chart
-rules; this proposal does not add a new source or a different default.
+rules; verification does not add a new source or a different default.
 
-## Proposed public results and errors
+## Public results and errors
 
 Leave legacy JSON unchanged. Only opt-in success adds this verification summary:
 
@@ -145,12 +145,13 @@ is not a zero-match result. Automatic selection must stop if unreadable relevant
 metadata could conceal another match; explicit selection need not inspect other
 entities. Compare exact plot ID/type and the local title when known. Do not
 remap a local candidate to a different compiled condition. Require native saved
-ID/version representations to agree. Do not use top-level meta.version as the saved revision or use last instead of the verified version.
+ID/version representations to agree. Do not use top-level meta.version as the
+saved revision or use last instead of the verified version.
 
-## Ownership and implementation sketch
+## Ownership and implementation
 
-Keep IndicatorAlertRequest and alert_create_indicator unchanged. Proposed public
-addition in the existing alert operation module:
+IndicatorAlertRequest and alert_create_indicator remain unchanged. The additive
+public entry point in the existing alert operation module is:
 
 ```text
 IndicatorStudySelection<'a> = Automatic | Entity(&'a str)
@@ -173,13 +174,13 @@ persistent selection file, public intermediate representation, or generic
 verification framework. Compile metadata and native declared input IDs must
 agree when chart values are used. No automatic study insertion or source edit.
 
-No source implementation, CLI stub, or new dependency is authorized by this
-research. Implementation must update help/spec, CLI/Rust docs, changelog, both
-distributed indicator guides, output normalization, and affected tests together.
+The owner approved this compatibility-preserving implementation. No new
+dependency is included. Help/spec, CLI/Rust docs, changelog, both distributed
+indicator guides, output normalization, and affected tests are updated together.
 
 ## Acceptance and authority
 
-After contract approval, verify legacy behavior and the new path separately.
+Verify legacy behavior and the new path separately.
 Fixtures must prove no extra metadata request, changed JSON, or study requirement
 for no-flag calls. Exercise saved compilation without a study, input-bearing
 unique/explicit selection, duplicates, wrong revisions, missing metadata,
@@ -192,10 +193,13 @@ Run affected Rust and CLI contracts, production-JavaScript fixtures, scoped
 Clippy, formatting, public hygiene, and standalone resources with one Cargo job
 and one test thread. These checks do not establish real alert acceptance.
 
-A possible later read-only smoke is one verified no-input preview using the
-existing saved revision without adding a study. Input-bearing non-default and
-duplicate-instance qualification needs its own concrete targets and bounds.
-No new live mutation run is requested by this revised proposal. Full normal
+Read-only live acceptance uses one verified no-input preview of the previously
+qualified saved test revision, without adding a study. Source may be read into
+a temporary local file for that invocation and removed afterward. Compare chart
+entity IDs, symbol, and resolution before and after the preview. Input-bearing
+non-default and duplicate-instance qualification needs its own concrete targets
+and bounds.
+No new live mutation run is authorized in this implementation. Full normal
 creation/readback, source/input changes, publication, and extra agents remain
 outside scope. The earlier proposed compile/three-preview/cleanup run is
 superseded; it was never approved or performed.
@@ -206,4 +210,78 @@ superseded; it was never approved or performed.
 - Demonstrated saved compiled metadata retrieval without chart insertion and
   input definitions/defaults for one existing input-bearing revision.
 - Replaced mandatory admission changes with this compatibility-preserving
-  opt-in proposal. CLI/Rust/JSON examples await owner agreement.
+  opt-in proposal. The owner approved the CLI/Rust/JSON examples and implementation.
+
+### Implementation checkpoint
+
+- Ground and sketch: traced CLI dispatch, unchanged public request, saved-source
+  guard, generated account expression, and success/error normalization. Keep
+  legacy preview's early return and legacy network request count.
+- Blocking first steps: agree contracts (complete), then share the current native
+  input validator and preview shaping before adding verified selection.
+- Independent workstreams: CLI wiring, adapter, and executable fixtures depend on
+  the same contract; one executor owns all changes sequentially.
+- Shared mutable state: one checkout and one Cargo job/test thread; no concurrent
+  writers, delegated agents, or new sessions.
+- Smallest safe decomposition: one shared account expression with optional
+  compiled/study preparation; separate public entry points protect compatibility.
+  A second complete creation adapter would duplicate request/readback policy.
+- Implement and verify: complete; acceptance and remaining live limits follow.
+- Review and commit: reviewed boundaries, compatibility, naming, formatting, and
+  the final diff; commit this coherent implementation with its guidance/evidence.
+- Delegation, parallel design agents, and PR publication: skipped under the
+  repository's explicit authority boundaries. The existing plan is the work record.
+
+The compatibility boundary is the no-flag CLI/JSON and named operation API.
+The public clap parser variant also reflects the new flags; direct constructors
+need verify:false and study_id:None, as documented in the Rust API guide. The
+repository has no direct constructor beyond dispatch destructuring. Preserving
+that parser representation too would require a separate parsing model; this
+slice retains the normal clap representation and the unchanged operation request.
+
+Implementation review kept pure verification-result shaping and the selection
+policy enum in tradingview-model, following the existing alert normalizer
+boundary. The operation re-exports the enum at the agreed CLI Rust path. Browser
+metadata reads and native selection remain private CLI JavaScript. Both modes
+share the existing creation/readback expression and one native input validator.
+Saved compilation is awaited before reading chart context and input values, so
+those chart-derived values are captured without an intervening network wait.
+
+The result normalizer uses the model crate's existing serde_json validation
+pattern, including closed verification fields and consistent selection/counts.
+It does not introduce a new dependency or duplicate the normal create normalizer.
+
+### Acceptance, 2026-10-05
+
+- The CLI alert module passed 39 Rust tests. Its five ignored JavaScript tests
+  ran through the pinned Node 24.21.0 account gate, which passed all six tests
+  including the existing watchlist coverage. The new production-generated
+  verification matrix passed 96 preview/normal scenarios through the real Rust
+  operation and result normalizer.
+- Model alert-related tests passed 14 cases. CLI indicator-alert execution/help
+  passed six tests, the offline spec test passed, all three spec examples parsed,
+  and the five offline schema/validation integration tests passed.
+- Scoped model-library and CLI library/binary/affected integration-target Clippy
+  passed with warnings denied. Formatting, diff checks, public-hygiene checks,
+  14 packaging self-tests, both standalone skill references, shared-guide equality,
+  and 51 changed-document local link targets passed. Manifests and lockfile did
+  not change.
+- A locally built CLI ran --verify --dry-run for the previously qualified saved
+  no-input revision while its study was absent. The preview reported
+  saved_compilation, input_source none, input_count zero, and study null; the
+  local/native condition candidate agreed. The original 27 study IDs, chart
+  symbol metadata, and resolution were unchanged.
+- The first live preview succeeded, but the inspection helper compared its
+  resolved symbol with symbolExt instead of the production main-series symbol.
+  A read-only inspection found different exchange-qualified codes in those two
+  native fields. The implementation already followed the unchanged main-series
+  precedence. One bounded read-only repeat with that existing rule confirmed
+  symbol/resolution and all other preview checks. No CLI symbol rule was changed
+  to make the check pass. Both temporary source directories were removed.
+
+The malformed-result and chart-context timing regressions failed before their
+fixes and passed afterward. No input edit, source edit/save, Pine Editor compile,
+study insertion, normal alert creation, notification, or live alert-list call
+was performed. Non-default inputs and duplicate instances are fixture-qualified,
+not live-qualified. Full workspace/platform suites, CI, optimized archives, and
+complete post-create identity remain separate acceptance work.

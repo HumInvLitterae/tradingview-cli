@@ -127,3 +127,57 @@ Do not move chart fallback quote reads, `tv ohlcv`, Screener UI operations,
 watchlist/alert mutations, Pine Editor operations, or generic UI automation
 into `tradingview-market` or `tradingview-scanner`. Those paths are not
 Desktop-free read APIs.
+
+## Desktop indicator alerts
+
+`tradingview_cli::ops::alert_create_indicator(runtime, request)` and the fields of
+`IndicatorAlertRequest` retain their existing source and result contracts.
+The legacy preview verifies saved source; normal creation selects chart inputs
+by label. Neither operation gains compiled verification implicitly.
+
+The public clap parser variant `cli::AlertCommand::CreateIndicator` gains
+`verify` and `study_id` fields for the new flags. Code constructing that parser
+variant directly must add `verify: false` and `study_id: None` to preserve its
+behavior, or handle the fields when destructuring. This parser-type change does
+not add fields to `ops::IndicatorAlertRequest` or change the existing operation
+signature.
+
+Use the additive `alert_create_indicator_verified(runtime, request, selection)`
+for stronger preflight. `IndicatorStudySelection::Automatic` needs no study for
+zero compiled user inputs, otherwise exactly one native saved-revision match.
+`IndicatorStudySelection::Entity(id)` requires that exact instance even without
+inputs. IDs are trimmed and must be nonblank. Both functions use
+`&mut impl tradingview_cdp::RuntimeEvaluator` and return
+`Result<serde_json::Value, tradingview_core::AppError>`.
+
+```rust
+use tradingview_cli::ops::{
+    IndicatorAlertRequest, IndicatorStudySelection, alert_create_indicator_verified,
+};
+
+let request = IndicatorAlertRequest {
+    script: "Example indicator",
+    source: &source,
+    input_source: "inline",
+    condition_title: Some("Example condition"),
+    alert_cond_id: None,
+    symbol: None,
+    resolution: None,
+    message: None,
+    dry_run: true,
+};
+let preview = alert_create_indicator_verified(
+    runtime,
+    request,
+    IndicatorStudySelection::Automatic,
+).await?;
+```
+
+Verified preview resolves the request's symbol/resolution and returns a
+verification summary without listing or creating alerts. Normal mode shares the
+same preflight, then the existing creation/readback path. Input values come from
+the selected chart instance, never saved defaults. The internal saved-compilation
+service uses the Desktop session and has no public stability guarantee. Missing
+or conflicting metadata fails without legacy fallback. See
+[the indicator-alert contract](cli-spec.md#pine-indicator-alerts) for errors,
+output fields, creation defaults, and post-create verification limits.

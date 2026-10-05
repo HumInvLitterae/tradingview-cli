@@ -710,6 +710,8 @@ pub async fn dispatch(
                 symbol,
                 resolution,
                 message,
+                verify,
+                study_id,
                 dry_run,
             } => {
                 if script.trim().is_empty() {
@@ -722,6 +724,12 @@ pub async fn dispatch(
                     return Err(AppError::new(
                         ErrorKind::Validation,
                         "Use exactly one of --condition-title <TEXT> or --alert-cond-id <ID>",
+                    ));
+                }
+                if study_id.as_deref().is_some_and(|id| id.trim().is_empty()) {
+                    return Err(AppError::new(
+                        ErrorKind::Validation,
+                        "study_id must not be empty",
                     ));
                 }
                 let (source, input_source) = read_pine_source(file.as_deref())?;
@@ -737,7 +745,15 @@ pub async fn dispatch(
                     dry_run,
                 };
                 let mut runtime = connect_runtime(config).await?;
-                ops::alert_create_indicator(&mut runtime, request).await
+                if verify || study_id.is_some() {
+                    let selection = study_id
+                        .as_deref()
+                        .map(ops::IndicatorStudySelection::Entity)
+                        .unwrap_or(ops::IndicatorStudySelection::Automatic);
+                    ops::alert_create_indicator_verified(&mut runtime, request, selection).await
+                } else {
+                    ops::alert_create_indicator(&mut runtime, request).await
+                }
             }
             AlertCommand::Delete { id, all, dry_run } => {
                 if id.is_some() == all {

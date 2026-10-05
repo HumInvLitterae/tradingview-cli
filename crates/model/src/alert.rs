@@ -1,3 +1,9 @@
+mod indicator_verification;
+
+pub use indicator_verification::{
+    IndicatorStudySelection, normalize_indicator_alert_verified_payload,
+};
+
 use serde_json::{Value, json};
 
 use tradingview_core::{AppError, ErrorKind};
