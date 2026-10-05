@@ -874,3 +874,20 @@ packages at 0.36.0, and all ten build-provenance tests pass. Production code,
 runtime skills, and test runners are byte-identical to the accepted Pine-creation
 implementation. Public-hygiene and local-reference checks passed. No live cloud
 operation was repeated while correcting history.
+
+
+### Candidate CI fixture repair, 2026-10-06
+
+[CI at the release-preparation commit](https://github.com/HumInvLitterae/tradingview-cli/actions/runs/37335069823)
+passed all jobs except the account JavaScript contract step. The indicator
+verification fixture passed its generated source as one `node -e` argument;
+Linux rejected process creation with `ArgumentListTooLong` before executing it.
+The macOS local run had not exposed that argument-size limit.
+
+The fixture now writes the same generated source to a temporary `.cjs` file and
+passes its path to Node. This uses the existing tempfile dependency and preserves
+the full scenario matrix and Rust result validation. Production code is unchanged.
+With Node 24.21.0, the local account gate passed all six tests, including all 96
+indicator-verification cases. Formatting, CLI library/test Clippy with all
+features and warnings denied, public hygiene, and diff checks also passed.
+A fresh Linux CI run remains pending until push.

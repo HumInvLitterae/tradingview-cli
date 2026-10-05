@@ -247,8 +247,11 @@ async fn javascript_account_indicator_verification() {
         Value::Object(expressions),
         include_str!("verification_contract.js")
     );
+    let fixture_dir = tempfile::tempdir().unwrap();
+    let fixture_path = fixture_dir.path().join("verification.cjs");
+    std::fs::write(&fixture_path, script).unwrap();
     let output = std::process::Command::new("node")
-        .args(["-e", &script])
+        .arg(&fixture_path)
         .output()
         .expect("Node.js is required for the account JavaScript contract");
     assert!(
