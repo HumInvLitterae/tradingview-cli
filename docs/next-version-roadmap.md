@@ -1,12 +1,13 @@
 # Direction after v0.36.0
 
-Status: the unknown-outcome and native input-ID corrections are implemented and
-committed. Opt-in compiled-condition and study-input verification is also
-implemented and locally accepted. A verified no-input preview succeeded without
-adding a study. Input-bearing previews also passed unique selection, duplicate
-rejection, and explicit selection with temporary instances cleaned up. The inventory and implementation plan retain the fixture/live
-limits. Complete created-alert identity and live normal creation remain separate
-work. One executor works without delegated agents; publication is not implied.
+Status: the unknown-outcome and native input-ID corrections, opt-in indicator
+verification, and named Pine creation are implemented and locally accepted.
+Pine creation belongs to the same pre-release scope, prompted by the manual-save
+gap encountered during indicator qualification. All remain Unreleased, with the
+workspace version at 0.36.0. v0.37.0 is the intended next version; its preparation
+must include the complete scope and has not been finalized. Complete created-alert
+identity and live normal alert creation remain separate work. One executor works
+without delegated agents.
 
 ## Released baseline
 
@@ -45,9 +46,9 @@ one release.
 | 4 | Release the completed slice | Ship a coherent improvement with matching CLI guidance, fixtures, CI, and native packages | Refresh existing dependencies, preserve resource limits, and obtain publication authority |
 
 Order 1 can ship independently if the later identity investigation is inconclusive.
-A defect-only subset may use v0.36.1; including the approved additive CLI/JSON
-behavior calls for v0.37.0. Select the version with the release scope rather than
-enlarging scope to fill a minor release.
+The owner selected v0.37.0 for the approved additive CLI/JSON behavior. Finish
+the required named Pine creation fix before preparing that release. Both features
+belong in the same candidate; no candidate excluding that fix is current.
 
 ### Approved first contract
 

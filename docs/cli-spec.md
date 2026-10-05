@@ -409,7 +409,7 @@ not active-layout readback; inspect `data.error` even with a successful envelope
 
 ## Pine source and Editor operations
 
-All thirteen Pine paths have semantic details. Analyze and alertconditions read
+All fourteen Pine paths have semantic details. Analyze and alertconditions read
 UTF-8 source from `--file` or non-terminal stdin and run locally. Check uses the
 same input selection but sends source to the credential-free Pine facade; it is
 neither offline nor official MCP. No source-input command implicitly reads the
@@ -430,6 +430,57 @@ does not handle naming a new script or independently retrieve a saved revision.
 Errors reads current markers without compiling, while console reads visible log
 entries. Empty markers or logs do not establish a fresh successful execution.
 Saved-script list can return `data.error` inside a successful envelope.
+
+
+### Create a saved Pine script from a file
+
+```sh
+tv pine create --name "Example Script" --file example.pine
+```
+
+Create requires both flags and reads the nonblank UTF-8 file before connecting.
+The name is trimmed and must be nonblank. Unlike new, this creates a new cloud
+script through the selected authenticated Desktop session without opening or
+replacing the editor buffer or adding a chart study. Existing names are rejected;
+the native save service also disables overwrite. It can compile submitted source
+as part of saving, but does not execute it on the chart.
+
+Success reports saved true, source_verified true, and script with id, name, and
+version. The operation verifies the new ID/name/version in a fresh catalog and
+retrieves that exact saved revision; only line-ending differences are accepted.
+Compilation is independent: compilation.compiled is true, false, or null when
+unavailable/inconsistent, with error_count, warning_count, errors, and warnings.
+Diagnostics retain message and optional start/end line/column. A saved script
+can have compilation errors. The source is internal_api and source_category is
+desktop_backed_operation; no source text is returned.
+
+For example, a verified save can return:
+
+```json
+{
+  "operation": "pine_create",
+  "saved": true,
+  "script": {"id": "synthetic-script-id", "name": "Example Script", "version": "1.0"},
+  "source_verified": true,
+  "compilation": {"compiled": true, "error_count": 0, "warning_count": 0, "errors": [], "warnings": []},
+  "source": "internal_api",
+  "source_category": "desktop_backed_operation",
+  "requires_desktop": true,
+  "non_mutating": false
+}
+```
+
+Operation preflight failures include saved false and phase preflight. A name
+collision is validation / name_conflict; unreadable catalogs or unavailable
+native service are internal_api_unavailable. Local argument/file errors occur
+before connecting. After dispatch may have occurred, failed requests, malformed
+results, or failed/mismatched readback report saved null and save_outcome unknown.
+Runtime failures retain their error kind and failure_stage when available.
+No automatic retry occurs. Inspect saved scripts before repeating an uncertain
+request; do not infer that the name is free from a failed response.
+
+The existing save command keeps its editor-bound behavior. Create has no
+rename, overwrite, delete, or editor-save fallback.
 
 
 ## Selected-chart data and capture

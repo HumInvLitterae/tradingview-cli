@@ -2518,3 +2518,84 @@ fn type_rejects_unknown_chart_type_before_connecting() {
             .contains(&Value::String("Candles".to_string()))
     );
 }
+
+#[test]
+fn pine_create_requires_explicit_name_and_file() {
+    for args in [
+        vec!["pine", "create"],
+        vec!["pine", "create", "--name", "Example"],
+        vec!["pine", "create", "--file", "example.pine"],
+    ] {
+        let assertion = tv().args(args).assert().failure().code(1);
+        assert_eq!(stderr_json(&assertion)["error"]["kind"], "validation");
+    }
+    tv().args(["pine", "create", "--help"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("never overwrites"))
+        .stdout(predicate::str::contains(
+            "Uncertain outcomes are not retried",
+        ));
+}
+
+#[test]
+fn pine_create_checks_name_and_file_before_connecting() {
+    let assertion = tv_with_cdp_disconnect()
+        .args(["pine", "create", "--name", " ", "--file", "missing.pine"])
+        .assert()
+        .failure()
+        .code(1);
+    assert_eq!(
+        stderr_json(&assertion)["error"]["message"],
+        "Pine script name must not be empty"
+    );
+
+    let assertion = tv_with_cdp_disconnect()
+        .args([
+            "pine",
+            "create",
+            "--name",
+            "Example",
+            "--file",
+            "target/does-not-exist.pine",
+        ])
+        .assert()
+        .failure()
+        .code(1);
+    assert_eq!(stderr_json(&assertion)["error"]["kind"], "validation");
+
+    let dir = tempfile::tempdir().unwrap();
+    let file = dir.path().join("create.pine");
+    fs::write(&file, "  ").unwrap();
+    let assertion = tv_with_cdp_disconnect()
+        .args([
+            "pine",
+            "create",
+            "--name",
+            "Example",
+            "--file",
+            file.to_str().unwrap(),
+        ])
+        .assert()
+        .failure()
+        .code(1);
+    assert_eq!(
+        stderr_json(&assertion)["error"]["message"],
+        "Pine source must not be empty"
+    );
+
+    fs::write(&file, "//@version=6\nindicator(\"Example\")\nplot(close)").unwrap();
+    let assertion = tv_with_cdp_disconnect()
+        .args([
+            "pine",
+            "create",
+            "--name",
+            "Example",
+            "--file",
+            file.to_str().unwrap(),
+        ])
+        .assert()
+        .failure()
+        .code(2);
+    assert_eq!(stderr_json(&assertion)["error"]["kind"], "connection");
+}

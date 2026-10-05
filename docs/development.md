@@ -822,6 +822,10 @@ input IDs, snapshot isolation, metadata failures, and unchanged creation-outcome
 handling. It verifies zero alert-list/create requests for every preview and
 failed preflight. Rust fixtures reject malformed verification results and retain
 the existing public request literal and operation entry point.
+The Pine gate also executes new-script creation against synthetic native-save
+and catalog/source responses, including no-save preflight failures, one-call
+unknown outcomes, revision/source readback, and editor/chart non-use. Its results
+pass through the real Rust adapter and normalizer.
 The Pine-open gate executes the generated asynchronous page expression against
 synthetic Pine facade, Pine-owned Monaco, overlay-menu, and Save-bound store
 objects, including hidden stale editors, ambiguous visible editors, missing

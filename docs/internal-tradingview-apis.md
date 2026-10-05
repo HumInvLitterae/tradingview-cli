@@ -527,7 +527,17 @@ or directly when the operation does not require the editor.
 
 Current command family:
 
-- `pine list/open/check`
+- `pine list/open/check/create`
+
+`pine create` uses TradingViewApi._pineEditorApi.saveNewScript with source/name.
+The native service enforces its plan-limit check and calls save/new with
+allowOverwrite false. The CLI checks a fresh saved catalog before saving and
+verifies the returned new identity/version with another catalog and versioned
+source GET afterward. These reads bypass the native listSavedScripts cache.
+Persistence confirmation is independent of returned compilation diagnostics.
+There is no direct POST, naming-dialog, or editor-save fallback; the existing
+editor-bound save behavior below is unchanged. Lost or unverifiable results are
+unknown outcomes and are not replayed.
 
 Related DOM-backed Pine commands:
 

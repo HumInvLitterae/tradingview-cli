@@ -9,6 +9,11 @@ package version omits the leading `v`.
 
 ### Added
 
+- `pine create --name <NAME> --file <PATH>` saves a new cloud script through
+  Desktop, rejects existing names, and verifies the new ID/version/source.
+  It preserves the editor and chart and reports compilation separately from
+  persistence. Uncertain save/readback outcomes are never retried automatically.
+
 - Opt-in `alert create-indicator --verify` checks the exact saved compiled
   condition and required chart inputs in preview and normal creation.
   `--study-id <ID>` selects an exact instance and implies verification. No-input

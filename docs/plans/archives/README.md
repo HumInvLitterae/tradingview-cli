@@ -8,6 +8,12 @@ remain at their original paths. Use [current work](../README.md) to resume.
 
 Recently completed:
 
+- [Verified saved Pine creation](tradingview-cli-pine-script-creation.md):
+  explicit name/file creation through the native service, independent saved
+  revision/source verification, separate compilation evidence, and unknown-save
+  handling. Full local baseline and one bounded live save passed on 2026-10-05.
+  Implemented as Unreleased; the saved synthetic fixture is retained.
+
 - [Chart-analysis contracts and v0.35.0](tradingview-cli-chart-analysis-contracts.md):
   nullable OHLCV, offline OHLCV and Pine graphics support, legacy alert-price
   projection, dependency refresh, and standalone distribution guidance shipped

@@ -844,6 +844,16 @@ pub enum PineCommand {
     RawCompile,
     #[command(about = "Save the current Pine Script editor source")]
     Save,
+    #[command(
+        about = "Create and verify a new saved Pine Script from a file",
+        long_about = "Save a local Pine Script as a new named script through the selected TradingView Desktop session.\n\nRequires a nonblank name and UTF-8 file. Rejects existing names, never overwrites, and verifies the new saved ID, version and source. The native save compiles source; compilation evidence is separate from persistence. Does not open or replace the editor or add a chart study. Uncertain outcomes are not retried."
+    )]
+    Create {
+        #[arg(long)]
+        name: String,
+        #[arg(long, short)]
+        file: PathBuf,
+    },
     #[command(about = "Create a new Pine Script template in the editor")]
     New { script_type: Option<String> },
     #[command(

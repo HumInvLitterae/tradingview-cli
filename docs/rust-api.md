@@ -128,6 +128,22 @@ watchlist/alert mutations, Pine Editor operations, or generic UI automation
 into `tradingview-market` or `tradingview-scanner`. Those paths are not
 Desktop-free read APIs.
 
+## Desktop saved Pine creation
+
+`tradingview_cli::ops::pine_create(runtime, name, source)` creates a new named
+saved script through the native Desktop service and verifies catalog identity
+and exact revision source. `validate_pine_create_name` exposes the same trimmed,
+nonblank-name check for callers that validate before reading input/connecting.
+Source must be nonblank. Successful JSON includes saved true and independent
+compilation evidence. Uncertain evaluation/save/readback failures retain saved
+null / save_outcome unknown, with no retry. See the
+[creation contract](cli-spec.md#create-a-saved-pine-script-from-a-file).
+
+The CLI requires an explicit file; the operation accepts source text and does
+not read a file or editor. Existing pine_save and pine_new behavior is unchanged.
+The public PineCommand enum gains Create { name, file }; exhaustive matches must
+handle it. No existing variant fields or operation signatures change.
+
 ## Desktop indicator alerts
 
 `tradingview_cli::ops::alert_create_indicator(runtime, request)` and the fields of

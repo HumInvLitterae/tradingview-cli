@@ -6,6 +6,7 @@
 | Current priority and retained acceptance evidence | [Inventory](../next-version-work-items.md) |
 | Released source-verification implementation and qualification | [Indicator source verification](tradingview-cli-indicator-source-verification.md) |
 | Approved opt-in verification | [Opt-in indicator verification](tradingview-cli-indicator-study-verification.md) |
+| Implemented saved-script creation | [Pine creation acceptance](archives/tradingview-cli-pine-script-creation.md) |
 | Current release behavior and limits | [v0.36.0 release notes](../releases/v0.36.0.md) |
 | Earlier released baseline | [v0.35.0 closeout](archives/tradingview-cli-chart-analysis-contracts.md) |
 | CDP stability triggers | [Strategy](../notes/cdp-stability-and-autonomous-operation-strategy.md) |
@@ -42,8 +43,10 @@ post-create identity.
 Completed records preserve evidence for their recorded inputs. They are not
 current runtime acceptance or authorization for new live operations.
 
-
 Input-bearing live acceptance also passed automatic selection, duplicate
 rejection, and explicit selection at native Length values 30 and 50. Temporary
-instances were removed and the original chart restored. The approved next stage
-is v0.37.0 preparation; full created-alert identity remains separate.
+instances were removed and the original chart restored. Named Pine creation
+also passed bounded live save/readback and editor/chart preservation. It is a
+required pre-release fix in the same next-version scope. These changes remain
+Unreleased with workspace version 0.36.0. Preparation of the complete v0.37.0
+candidate, candidate CI, and publication remain pending.

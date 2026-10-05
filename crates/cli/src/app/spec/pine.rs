@@ -6,8 +6,16 @@ pub(super) fn describe(path: &[&str]) -> Option<Value> {
     let ["pine", action] = path else {
         return None;
     };
-    let source_input = matches!(*action, "set" | "analyze" | "alertconditions" | "check");
+    let source_input = matches!(
+        *action,
+        "set" | "create" | "analyze" | "alertconditions" | "check"
+    );
     let desktop = !matches!(*action, "analyze" | "alertconditions" | "check");
+    let transmits_source = match *action {
+        "create" | "check" => Some(true),
+        "analyze" | "alertconditions" => Some(false),
+        _ => None,
+    };
     let mut result = json!({
         "source": if desktop { "internal_api" } else { "local_source" },
         "requires": {
@@ -15,13 +23,13 @@ pub(super) fn describe(path: &[&str]) -> Option<Value> {
             "authentication": if desktop { Value::Null } else { json!(false) }
         },
         "effects": {
-            "may_open_editor": desktop && *action != "list",
+            "may_open_editor": desktop && !matches!(*action, "list" | "create"),
             "editor_source_mutation": matches!(*action, "set" | "new" | "open"),
             "chart_mutation": matches!(*action, "compile" | "raw-compile"),
-            "may_save_script": matches!(*action, "save" | "raw-compile"),
+            "may_save_script": matches!(*action, "save" | "create" | "raw-compile"),
             "local_file_write": false,
             "reads_source_input": source_input,
-            "transmits_source": if desktop { Value::Null } else { json!(*action == "check") }
+            "transmits_source": transmits_source
         },
         "output_contract": null,
         "constraints": {},
@@ -87,6 +95,22 @@ pub(super) fn describe(path: &[&str]) -> Option<Value> {
             result["readback"] = json!({"argv": ["tv", "pine", "errors"]});
             "Legacy button selection can click Save and add to chart or a save button; Ctrl+Enter is used only when no button was clicked. Reports the action without diagnostics or study verification; do not treat success as compilation or persistence proof."
         }
+        "create" => {
+            result["requires"]["authentication"] = json!(true);
+            result["constraints"]["source_input"]["selection"] = json!("required --file");
+            result["constraints"]["name"] =
+                json!({"nonblank": true, "normalization": "trim", "overwrite": false});
+            result["effects"]["compiles_submitted_source"] = json!(true);
+            result["readback"] = json!({"argv": ["tv", "pine", "list"]});
+            result["limits"] = json!([
+                "Uses the selected authenticated Desktop session and its native new-script save service; no official MCP or direct-POST fallback.",
+                "Rejects an existing saved name before saving. Native save also disables overwrite.",
+                "Verifies the new catalog ID/name/version and exact revision source, allowing line-ending differences only.",
+                "saved=true establishes persistence, not successful compilation or chart execution; inspect compilation.compiled separately.",
+                "Operation preflight failures report saved=false; uncertain dispatch/readback reports saved=null and save_outcome=unknown. No automatic retry."
+            ]);
+            "Creates a new cloud script from the explicit file without opening/replacing the Editor or adding a study. Local input errors precede Desktop connection."
+        }
         "save" => {
             "Sends the platform save shortcut and requires explicit saved=true and dirty_after=false. Naming an unsaved script is unsupported; a naming dialog can remain open on failure. This verifies UI dirty-state evidence, not an independent server revision fetch."
         }
@@ -112,7 +136,17 @@ pub(super) fn describe(path: &[&str]) -> Option<Value> {
         _ => return None,
     };
     result["limits"].as_array_mut().unwrap().push(json!(limit));
-    result["examples"] = if source_input {
+    result["examples"] = if *action == "create" {
+        json!([[
+            "tv",
+            "pine",
+            "create",
+            "--name",
+            "Example Script",
+            "--file",
+            "example.pine"
+        ]])
+    } else if source_input {
         json!([["tv", "pine", action, "--file", "example.pine"]])
     } else if *action == "open" {
         json!([["tv", "pine", "open", "Example Script"]])
@@ -141,6 +175,7 @@ mod tests {
             "compile",
             "raw-compile",
             "save",
+            "create",
             "new",
             "open",
             "analyze",

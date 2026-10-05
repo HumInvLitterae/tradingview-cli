@@ -1,4 +1,7 @@
+mod create;
 mod editor;
+
+pub use create::{pine_create, validate_pine_create_name};
 
 pub use editor::{
     pine_compile, pine_console, pine_errors, pine_get, pine_list, pine_new, pine_open,

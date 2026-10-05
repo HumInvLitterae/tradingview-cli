@@ -267,6 +267,7 @@ fn pine_specs_never_read_source_connect_or_compile() {
         "compile",
         "raw-compile",
         "save",
+        "create",
         "new",
         "open",
         "analyze",
@@ -289,18 +290,27 @@ fn pine_specs_never_read_source_connect_or_compile() {
         let semantics = &value["data"]["semantics"];
         let desktop = !["analyze", "alertconditions", "check"].contains(&action);
         assert_eq!(semantics["requires"]["desktop"], desktop);
-        if desktop {
+        if action == "create" {
+            assert_eq!(semantics["requires"]["authentication"], true);
+            assert_eq!(semantics["effects"]["transmits_source"], true);
+            assert_eq!(semantics["effects"]["editor_source_mutation"], false);
+            assert_eq!(semantics["effects"]["chart_mutation"], false);
+            assert_eq!(
+                semantics["constraints"]["source_input"]["selection"],
+                "required --file"
+            );
+        } else if desktop {
             assert!(semantics["effects"]["transmits_source"].is_null());
         } else {
             assert_eq!(semantics["effects"]["transmits_source"], action == "check");
         }
         assert_eq!(
             semantics["effects"]["may_open_editor"],
-            desktop && action != "list"
+            desktop && !["list", "create"].contains(&action)
         );
         assert_eq!(
             semantics["effects"]["may_save_script"],
-            ["save", "raw-compile"].contains(&action)
+            ["save", "create", "raw-compile"].contains(&action)
         );
     }
 }

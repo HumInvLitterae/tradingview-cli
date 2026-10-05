@@ -996,6 +996,12 @@ pub async fn dispatch(
                 let mut runtime = connect_runtime(config).await?;
                 ops::pine_save(&mut runtime).await
             }
+            PineCommand::Create { name, file } => {
+                let name = ops::validate_pine_create_name(&name)?;
+                let (source, _) = read_pine_source(Some(&file))?;
+                let mut runtime = connect_runtime(config).await?;
+                ops::pine_create(&mut runtime, name, &source).await
+            }
             PineCommand::New { script_type } => {
                 let script_type =
                     ops::validate_pine_script_type(script_type.as_deref().unwrap_or("indicator"))?;

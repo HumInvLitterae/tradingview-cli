@@ -19,7 +19,7 @@ Live qualification gaps are not closed by publication.
 | 1 | Indicator-alert unknown creation outcomes | Approved and implemented locally. Production-JavaScript regression reproduced the incorrect false result; see acceptance below. |
 | 2 | Exact study and input identity | Bounded read-only observation completed. Native identity/version/condition fields exist; positional input remapping reproduced a wrong payload with synthetic data. The owner approved the bounded input-ID correction; implementation and acceptance follow below. |
 | 3 | Supported identity and creation readback | Native and saved-compiler probes passed within the bounds below. [Revised verification plan](plans/tradingview-cli-indicator-study-verification.md) records approved opt-in verification and study selection. Implementation and local acceptance passed, including no-input and input-bearing live previews, duplicate rejection, and explicit instance selection. Full created-alert identity remains separate. |
-| 4 | Release the completed slice | The owner approved v0.37.0 preparation for the additive slice. Dependency review, release checks, and package qualification follow live acceptance; publication remains separate. |
+| 4 | Release the completed slice | Prepare v0.37.0 after the required named Pine creation fix. Both features are locally accepted and remain Unreleased; no current release candidate is finalized. |
 
 The owner approved priorities 1 and 2 on 2026-10-05, then approved priority 3's
 opt-in preflight after metadata research and concrete public examples. Complete
@@ -836,3 +836,41 @@ restored the original 27 studies, their inputs, symbol metadata, and resolution;
 saved source was unchanged. No alert was listed or created. This closes the
 input-bearing preview gap and supersedes the save blocker above; created-alert
 payload/readback and notification behavior remain outside the trial.
+
+## Required pre-release Pine creation fix, 2026-10-05
+
+The owner identified new-script saving as a fix required before releasing the
+indicator changes, not as a follow-up after a completed release-preparation
+boundary. The implemented command and its one retained synthetic cloud script
+are accepted in the [Pine creation record](plans/archives/tradingview-cli-pine-script-creation.md).
+Existing editor-bound save behavior is unchanged.
+
+The complete feature scope passed the full local baseline (1,183 Rust tests),
+the pinned Pine JavaScript gate (three tests, including 33 creation cases), and
+package resource checks. One real saved script passed independent source/revision
+readback and same-name rejection. Editor state, all original chart entities and
+inputs, and existing saved catalog entries were preserved. The synthetic script
+remains saved. No alert operation or publication was performed.
+
+A dependency review found all 24 direct/dev requirements at the current stable
+version. Cargo update --dry-run resolved zero external updates under Rust 1.99.0.
+The newer generic-array 0.14.9 remains blocked by crypto-common 0.1.7's exact
+0.14.7 requirement; no override was introduced.
+
+The earlier local version bump and archive omitted this required fix and were
+premature. Their release-preparation/qualification commits were removed from
+current history, and the archive was withdrawn from candidate use. The original
+commits remain recoverable locally. No remote history was changed. The workspace
+version is restored to 0.36.0, all pending features share Unreleased, and the
+v0.37.0 notes/preparation boundary has been removed. The recorded feature tests
+were run with the temporary 0.37.0 package version before this correction;
+production source is identical. This is source acceptance, not qualification of
+a new release archive. Prepare and verify the complete candidate only after
+these pre-release changes are settled.
+
+
+After history normalization, locked Cargo metadata confirms all eight workspace
+packages at 0.36.0, and all ten build-provenance tests pass. Production code,
+runtime skills, and test runners are byte-identical to the accepted Pine-creation
+implementation. Public-hygiene and local-reference checks passed. No live cloud
+operation was repeated while correcting history.

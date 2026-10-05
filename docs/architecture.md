@@ -351,8 +351,10 @@ Keep these boundaries unless a future ExecPlan records new evidence:
 - `columns reset` remains deferred until a reliable default Screener column
   source is found
 - broad multi-option and free-text Screener filter editing remains deferred
-- Pine save for a new unsaved script remains deferred when the naming dialog is
-  outside the verified CDP target
+- `pine save` does not name an unsaved editor buffer when its dialog is outside
+  the verified CDP target. File-based `pine create --name --file` uses the native
+  new-script service and independently verifies the saved revision/source; see
+  the [accepted creation record](plans/archives/tradingview-cli-pine-script-creation.md).
 - generic `ui` commands exist for compatibility, but higher-level commands are
   preferred
 - direct HTTP operation without TradingView Desktop page-session context is

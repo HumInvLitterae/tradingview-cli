@@ -76,9 +76,9 @@ pub use mcp::run_mcp;
 pub(crate) use mcp::{prepare_mcp_bars, validate_mcp_target};
 pub use observe::{observe_chart_event, observe_readiness_event};
 pub use pine::{
-    pine_alertconditions, pine_analyze, pine_check, pine_compile, pine_console, pine_errors,
-    pine_get, pine_list, pine_new, pine_open, pine_raw_compile, pine_save, pine_set,
-    validate_pine_script_type,
+    pine_alertconditions, pine_analyze, pine_check, pine_compile, pine_console, pine_create,
+    pine_errors, pine_get, pine_list, pine_new, pine_open, pine_raw_compile, pine_save, pine_set,
+    validate_pine_create_name, validate_pine_script_type,
 };
 pub use readiness::readiness;
 pub use replay::{

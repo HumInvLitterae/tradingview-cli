@@ -219,6 +219,13 @@ The success payload reports `script_id_available` and
 `script_identity_verified` instead of exposing the account-local saved-script
 ID.
 
+To save a local Pine file as a new cloud script, use
+`tv pine create --name "Example Script" --file example.pine`. It rejects name
+collisions and verifies the new saved identity, revision, and source without
+opening the editor or adding a study. Check compilation separately from saved
+state. Uncertain save/readback failures are not retried; see the
+[Pine creation contract](https://github.com/HumInvLitterae/tradingview-cli/blob/main/docs/cli-spec.md#create-a-saved-pine-script-from-a-file).
+
 Bounded stream observations emit newline-delimited JSON:
 
 ```bash

@@ -13,7 +13,7 @@ def main() -> int:
     node = shutil.which("node")
     if node is None:
         print(
-            "Pine open JavaScript contract requires Node.js "
+            "Pine JavaScript contract requires Node.js "
             f"{EXPECTED_NODE_VERSION.removeprefix('v')}",
             file=sys.stderr,
         )
@@ -28,7 +28,7 @@ def main() -> int:
     observed = version.stdout.strip()
     if version.returncode != 0 or observed != EXPECTED_NODE_VERSION:
         print(
-            "Pine open JavaScript contract requires Node.js "
+            "Pine JavaScript contract requires Node.js "
             f"{EXPECTED_NODE_VERSION}; observed {observed or 'unavailable'}",
             file=sys.stderr,
         )

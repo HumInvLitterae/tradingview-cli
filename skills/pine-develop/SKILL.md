@@ -16,6 +16,7 @@ chart prices, OHLCV, Desktop startup, or cloud persistence.
 | Read current editor or saved list | `tv pine get`, `tv pine errors`, `tv pine console`, `tv pine list` | Resolve the [Desktop session](references/desktop-session.md) if needed. |
 | Edit a saved script or create a buffer | `tv pine open <NAME...>`, `tv pine set --file <PATH>`, `tv pine new` | Read [editor identity and persistence](references/workflow.md) before mutation. |
 | Compile in the live editor | `tv pine compile` | May add/update a chart-local study; does not save. |
+| Create a new saved script from a file | `tv pine create --name <NAME> --file <PATH>` | Cloud write; verifies new identity/revision/source. Does not open the editor or add a study. |
 | Persist an existing saved script | `tv pine save` | Explicit cloud write; requires verified script binding and intent to save. |
 
 Use the editor reference for the guarded open/set/compile/save sequence and
