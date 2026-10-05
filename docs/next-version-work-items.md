@@ -4,7 +4,8 @@ Updated 2026-10-05. [Direction](next-version-roadmap.md) ·
 [Released contracts and evidence](plans/archives/tradingview-cli-chart-analysis-contracts.md).
 The owner approved the diagnostic spec contract below and bounded weekly/monthly
 technicals qualification on 2026-10-05. The source-verification contract was also
-approved later that day. No release version is selected.
+approved later that day. The local release candidate is v0.36.0; publication
+has not been authorized or performed.
 
 ## Released baseline
 
@@ -354,6 +355,64 @@ retry, broker, timeout, or topology optimization. It does not qualify cold app
 startup, other charts, symbol changes, longer sessions, or provider/MCP latency.
 Retain the existing trigger-based defer and proceed toward candidate CI and
 native package qualification rather than adding an unmeasured optimization.
+
+## Local v0.36.0 preparation
+
+The next-work request covers local release preparation. Use v0.36.0 for the
+candidate because it includes additive diagnostic semantics and tighter
+indicator-alert admission, not only a patch-level defect correction. The
+[release notes](releases/v0.36.0.md) describe those user-visible changes and the
+Pine opening/bars parser fixes. This does not authorize push, tags, workflow
+dispatch, or publication.
+
+Workspace versions and release notes are prepared locally. After stopping the
+resource-heavy baseline, the owner authorized resumption with completed tests
+omitted. Keep the one-job/one-test-thread limit and do not repeat broad local
+checks. Fixed installed binaries and saved stashes remain untouched.
+
+Candidate validation is accounted for as follows:
+
+- Before interruption, 24 test executables completed with 802 passing tests and
+  24 ignored tests. Those executables were not run again.
+- The 13 unfinished executables completed with 316 passing tests, zero failures,
+  and nine ignored tests. They ran directly from compiled artifacts, one at a
+  time, in their package directories. Artifact enumeration with Cargo --no-run
+  rebuilt only the CLI once; the remaining execution did not invoke Cargo.
+- The 42 bars tests from the prior stability fix were reused because the source
+  and external dependencies are unchanged. That prefix was filtered from the
+  resumed market suite. Its live heartbeat test remained ignored. The combined
+  unit/integration evidence covers 1,160 passing tests; this is combined
+  evidence, not a claim that one uninterrupted workspace run completed.
+- Rustdoc examples were not rerun. Their owning market/scanner library files
+  and public API declarations are unchanged from the successful 9cba16e CI
+  baseline. Normal candidate CI will cover doc-tests again.
+- Full-workspace Clippy with warnings denied, formatting, package-checker and
+  public-hygiene self-tests, and document links passed before interruption.
+  The unchanged Node 24.21.0 JavaScript and schema evidence above is reused.
+
+The final resolver recheck found zero available Cargo updates; the upstream
+exact generic-array constraint remains. Cargo metadata confirms all eight
+workspace crates at 0.36.0. Cargo.lock changes only those workspace versions.
+
+Resource staging passed with seven runtime skills per agent root, complete
+references, and guide parity. The staged debug binary reports 0.36.0, matches
+the build output's SHA-256, and runs diagnostic spec and OHLCV schema commands
+from outside the repository. Its embedded provenance is ff9e252-dirty because
+it was built from the candidate draft before commit. This qualifies resources
+and standalone execution, not optimized archive acceptance. No new optimized
+build or native archive was run; those remain CI/release qualification work.
+
+Local candidate preparation is complete within the resource constraint. The
+next step is an owner-authorized main push and normal CI. Native optimized
+packages and publication remain outstanding; no push, tag, or remote workflow
+was initiated during this preparation.
+
+
+Final candidate corrections preserve Pine condition IDs and positions across
+LF, CRLF, lone CR, and mixed line endings. The account-management indicator guide
+also matches the Pine guide, with a package check preventing drift. Focused
+regressions and validation are recorded in the
+[source-verification plan](plans/tradingview-cli-indicator-source-verification.md#final-review-correction-2026-10-05).
 
 ## Working limits
 

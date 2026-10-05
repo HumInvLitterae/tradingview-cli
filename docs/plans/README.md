@@ -15,8 +15,9 @@ v0.35.0 is published. Release metadata and workflow success were rechecked on
 bounded weekly/monthly technicals qualification and the diagnostic spec contract.
 The reads succeeded, and the diagnostic spec is implemented with focused local
 acceptance. It is unreleased; upstream CI has not run for this slice. The
-inventory records the contract and evidence. No release version or broader
-feature scope beyond these slices is selected. The approved Pine source-verification
+inventory records the contract and evidence. Local release preparation now
+targets v0.36.0; publication and broader feature scope remain separate. The
+approved Pine source-verification
 change is implemented with focused local acceptance and bounded live dry-run
 qualification: exact source and CRLF passed; a textual mismatch was rejected.
 Normal alert creation was not exercised. The subsequent Pine Editor opening
@@ -36,3 +37,8 @@ acceptance. No performance optimization was promoted.
 The owner-approved Desktop timing run completed 40/40 reads successfully.
 OHLCV summary and study-values medians were 16.8 ms and 19.8 ms; no call crossed
 the existing investigation trigger. The inventory retains scope and limits.
+
+Local v0.36.0 preparation resumed with completed tests omitted. The remaining
+316 tests passed; prior results are reused as recorded in the inventory.
+Resource staging and standalone debug-binary checks passed. Normal CI and
+optimized native packages remain outstanding. Do not repeat heavy local checks.

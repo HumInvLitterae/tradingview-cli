@@ -9,8 +9,11 @@ successful CI. It does not warrant a patch release by itself.
 
 Status: the owner approved bounded weekly/monthly technicals qualification and
 the diagnostic spec examples on 2026-10-05. Those reads succeeded; the diagnostic
-spec is implemented and locally validated, but unreleased. The next release
-version is not selected.
+spec is implemented and locally validated, but unreleased. Local preparation
+now targets v0.36.0, including the saved-source guard and the two reliability
+fixes below. Local candidate checks and resource staging are complete within
+the owner's resource limit; normal CI and optimized native packages remain.
+Publication remains owner-controlled.
 The subsequent saved-Pine source-verification contract is approved and locally
 implemented. Bounded live dry-run qualification passed for an authorized saved
 revision; normal alert creation remains untested. The
@@ -51,7 +54,7 @@ program.
 | Broad spec/schema completion | More commands become self-describing | Coverage alone is insufficient user value. Hotlist, depth, discover, and spec remain candidates until a concrete invocation or interpretation problem needs them. |
 
 The source anchors and tests are in the inventory. Preserve v0.35.0 as the
-released baseline until a release is explicitly selected. This bounded run found
+released baseline until v0.36.0 is published. This bounded run found
 no provider failure requiring a fix. The diagnostic annotation is an unreleased
 addition; do not expand its scope merely to fill a version.
 

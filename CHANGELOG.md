@@ -7,6 +7,8 @@ package version omits the leading `v`.
 
 ## Unreleased
 
+## v0.36.0
+
 ### Added
 
 - Offline semantics for `spec diagnose quote-data`, describing scanner and

@@ -3,8 +3,8 @@
 Status: contract and implementation approved on 2026-10-05; implementation and
 focused local checks and bounded live dry-run qualification complete. The
 authorized saved revision passed exact-source and line-ending checks and rejected
-a textual mismatch. No alert creation is authorized by this record. The next
-release version is not selected. The [inventory](../next-version-work-items.md)
+a textual mismatch. No alert creation is authorized by this record. The change
+is included in the local v0.36.0 release candidate. The [inventory](../next-version-work-items.md)
 owns priority.
 
 ## Outcome and demonstrated workflow
@@ -202,7 +202,7 @@ It does not qualify Pine editor opening, compiled plot IDs, study inputs, normal
 alert creation, or post-create readback. No script save/compile or alert creation
 was performed. Raw source, account identifiers, target identifiers, and local
 paths remain outside tracked evidence. Upstream CI and release packaging remain
-separate gates; no release version has been selected.
+separate gates; local release preparation now targets v0.36.0.
 
 Standalone Pine skill references, disposable resource staging with seven skills
 per root, public hygiene/self-test, and diff/link checks passed. Source review
