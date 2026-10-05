@@ -9,6 +9,11 @@ package version omits the leading `v`.
 
 ### Fixed
 
+- Indicator-alert creation preserves native user-input IDs instead of renumbering
+  system fields and values by position. Missing, duplicate, undeclared, or
+  unverifiable inputs stop before alert operations. `input_metadata.input_count`
+  now counts verified user inputs; defaults do not replace missing values.
+
 - Indicator-alert creation errors now distinguish unknown outcomes from confirmed
   preflight non-creation. Request/response failures, failed readback, and missing
   creation-evaluation results report `created:null` and `creation_outcome:unknown`.

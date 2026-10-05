@@ -17,7 +17,7 @@ Live qualification gaps are not closed by publication.
 | Priority | Proposed work | State / next decision |
 | --- | --- | --- |
 | 1 | Indicator-alert unknown creation outcomes | Approved and implemented locally. Production-JavaScript regression reproduced the incorrect false result; see acceptance below. |
-| 2 | Exact study and input identity | Bounded read-only observation completed. Native identity/version/condition fields exist; positional input remapping reproduced a wrong payload with synthetic data. Proposed correction below needs scope approval. |
+| 2 | Exact study and input identity | Bounded read-only observation completed. Native identity/version/condition fields exist; positional input remapping reproduced a wrong payload with synthetic data. The owner approved the bounded input-ID correction; implementation and acceptance follow below. |
 | 3 | Supported identity and creation readback | Conditional on priority 2 and approved contracts. Live creation, readback, and cleanup need bounded account authority. |
 | 4 | Release the completed slice | Version remains provisional: defect-only v0.36.1 or additive v0.37.0, selected after scope review. |
 
@@ -91,7 +91,7 @@ now has the bounded observation below; the next correction needs scope review.
 | Required fact | Existing facility and evidence | Conclusion |
 | --- | --- | --- |
 | Select one chart study | [Indicator reads](../crates/cli/src/ops/data/indicator.rs) use getStudyById(entity_id); indicator edits already accept entity IDs | Existing native selection can be reused. Current live availability is not requalified. |
-| Read inputs by their actual IDs | [Indicator edits](../crates/cli/src/ops/indicator.rs) use getInputValues entries by input.id; the alert adapter currently assigns returned positions to in_N | Native input IDs are available in existing code paths. Their mapping to alert payload keys needs qualification before replacing the positional mapping. |
+| Read inputs by their actual IDs | [Indicator edits](../crates/cli/src/ops/indicator.rs) use getInputValues entries by input.id; the pre-correction alert adapter assigned returned positions to in_N | Native input IDs are available in existing code paths. Their mapping to alert payload keys needs qualification before replacing the positional mapping. |
 | Reuse existing public output as a complete input payload | [Study-value shaping](../crates/cli/src/ops/data/study_values.rs) caps and filters inputs; indicator get also filters long text/string values | Unsuitable as a complete creation payload. Reuse native reads, not the intentionally lossy public summaries. |
 | Tie a chart study to the saved revision | The saved-script preflight identifies catalog ID/version, while the chart path matches labels | The required chart-study-to-saved-version relationship remains UNCONFIRMED. Entity ID alone does not prove it. |
 | Verify compiled condition identity | Local Pine parsing produces best-effort plot candidates; current creation does not read compiled condition metadata | Source equality does not establish this relationship. Native metadata availability remains UNCONFIRMED. |
@@ -130,8 +130,8 @@ are retained here. Aggregate observations:
   saved-script-to-chart-version qualification remains UNCONFIRMED. Do not add a
   study merely to fill this evidence gap without authorization.
 
-The current adapter ignores returned input IDs and assigns each array element
-by position to in_N. A temporary Rust test used the existing FakeRuntime to
+Before correction, the adapter ignored returned input IDs and assigned each
+array element by position to in_N. A temporary Rust test used the existing FakeRuntime to
 capture the exact production-generated creation expression, then executed it
 under Node 24.21.0 with synthetic chart inputs and intercepted fetch. No real
 POST was made. The relevant synthetic sequence was:
@@ -153,16 +153,16 @@ synthetic-source. Thus the production mapping relocates a system text value
 into the first user input for this observed shape. This is a reproduced payload
 construction defect, not an observed wrong live alert or disclosure of real
 script content. The temporary failing test was removed after capturing the
-result; tracked executable files are unchanged. Reintroduce this regression
-through the existing account-JavaScript gate when implementing the correction.
+result; no executable change was committed with that investigation. The approved
+correction below reintroduces the regression through the account-JavaScript gate.
 
-### Proposed next correction, not yet approved
+### Approved input-ID correction
 
-Fix input-ID handling before introducing any new study selector. Keep the
-existing source guard, successful envelope, no-retry rule, and account-operation
-limits. Proposed before/after examples:
+The owner approved these before/after examples on 2026-10-05. Fix input-ID
+handling before introducing any new study selector. Keep the existing source
+guard, successful envelope, no-retry rule, and account-operation limits.
 
-| Case | Current behavior | Proposed behavior |
+| Case | Before correction | Approved behavior |
 | --- | --- | --- |
 | System fields precede in_0=20 | System text becomes outgoing in_0; 20 shifts to in_4 | Preserve in_0=20 by ID; never copy text/pineId/pineVersion into user-input slots |
 | User inputs are returned in a different order | Values move to different parameter IDs | Match declared user-input IDs and retain each value under its own ID |
@@ -170,14 +170,50 @@ limits. Proposed before/after examples:
 | Metadata is absent or the input shape cannot be verified | Completeness is not established | Stop before creation rather than infer positions or fill defaults |
 | input_metadata.input_count | Counts all returned entries, including system fields | Count the verified user inputs placed in the request |
 
-This intentionally tightens admission and changes the count's meaning; approval
-of these examples is required before implementation. Preserve supported scalar
-and array values rather than imposing a new arbitrary type policy. Reuse native
+This approved change intentionally tightens admission and changes the count's
+meaning. Preserve supported scalar and array values rather than imposing a new
+arbitrary type policy. Reuse native
 meta.inputs/getInputValues reads; lossy public summaries are not a payload source.
 Keep generated base metadata under its existing handling. Tests must reject
 missing/duplicate IDs and prove internal text is absent from outgoing user slots.
 The existing production-JavaScript harness can qualify construction without a
 live account write. Normal creation acceptance remains a separate authorized run.
+
+Implementation uses the existing native meta.inputs/getInputValues boundary.
+Both arrays reject duplicate/malformed IDs. The six observed system IDs are
+recognized but never assigned to user slots; only declared in_N entries with
+actual value or the existing val alias are copied. The old defval fallback is
+removed. Unknown IDs fail closed rather than acquiring a new implicit mapping.
+The generated base pineFeatures/__fast_calc/__profile values remain unchanged.
+No new public selector, helper service, dependency, or transport behavior is added.
+
+The permanent production-JavaScript regression first failed with synthetic-source
+at in_0 and the intended 20 at in_4. After correction it covers 17 cases: system
+prefixes, reordered/sparse IDs, zero/false/string/array values, the val alias,
+zero user inputs, missing/duplicate/undeclared inputs, default-only values,
+unavailable or malformed arrays, unsupported IDs, and throwing native getters.
+Accepted cases retain exact user IDs and values, omit system text, count only
+user inputs, and issue one POST. Rejected cases issue neither list nor create.
+Results pass through the real Rust normalizer. The test is a child of the
+existing indicator tests and runs in the existing pinned account-JavaScript gate.
+Focused validation uses one Cargo job and one test thread:
+
+- Account JavaScript gate: five passed, including all 17 input cases.
+- Alert Rust module: 33 passed, with four JavaScript tests left to the dedicated
+  gate. Indicator-alert offline spec integration: one passed.
+- Package checker: 14 self-tests passed; both affected standalone skill
+  references passed. Public hygiene self-test/scan, formatting, diff checks,
+  and 29 changed-document local links passed.
+- The first CLI integration attempt failed during linking with ENOSPC. After
+  removing only inactive older CLI incremental caches, the same scoped command
+  passed. Current binaries and source were retained; no full clean was used.
+
+Scoped CLI library/spec-target Clippy passed with warnings denied. The built
+offline spec describes ID preservation and the corrected input count with an
+invalid Desktop port. No new live Desktop/provider/account operation, full
+workspace suite, optimized archive, or CI run is included.
+Fixture acceptance does not qualify normal creation or complete saved-study
+identity. The installed binary remains unchanged.
 
 Do not expand this correction into a new --study-id flag, saved-version binding,
 or full post-create identity proof. Those require a saved test indicator on a

@@ -1149,16 +1149,23 @@ or raw provider failures.
 
 Execution takes inputs from the first chart study matching a saved/requested
 name/title. It does not resolve duplicate names by entity ID or verify that
-study's source version. Returned input order becomes in_0, in_1, etc.; zero returned values do
-not prove completeness. Textual input detection can be affected by comments or
-formatting. When inputs are detected and no matching study is available, it
-fails; otherwise base metadata can suffice without a study.
+study's source version. For that study, native input declarations and current
+values must be readable arrays with unique, recognized IDs. User input IDs such
+as in_0 are preserved, independently of array order. Missing or undeclared user
+inputs, duplicate IDs, unknown input shapes, and absent values fail with
+phase:study_input_metadata_unavailable and created:false before alert listing
+or creation. Defaults do not fill missing values.
 
-Known limitation: native input arrays can contain system fields before user
-inputs. The current positional mapping can therefore send the wrong values as
-in_0 and subsequent user inputs. This was reproduced with synthetic data after
-a read-only metadata observation. Do not rely on normal creation with study
-inputs until the input-ID correction is released; dry-run does not check them.
+System entries text, pineId, pineVersion, pineFeatures, __fast_calc, and __profile
+are excluded from user-input assignment. Generated base metadata retains its
+existing handling. input_metadata.input_count counts verified user inputs, not
+system entries. An empty user-input set is accepted only when declared metadata
+and returned values agree on that set. This checks input completeness against
+native declarations, not the saved script's version or compiled condition.
+
+Textual input detection can be affected by comments or formatting. When inputs
+are detected and no matching study is available, execution fails; otherwise base
+metadata can suffice without a study. Dry-run does not check study inputs.
 
 Optional symbol/resolution overrides do not change the source of study inputs.
 Missing resolution and currency can default to 1 and USD; saved version is required.

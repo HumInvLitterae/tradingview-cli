@@ -392,29 +392,50 @@ async fn alert_create_indicator_via_api(
                             info.title
                         ].filter(Boolean);
                         if (!labels.some(sameScriptLabel)) continue;
-                        let values = [];
+                        const unavailable = {{
+                            ok: false,
+                            error: 'Active study inputs could not be verified against declared input IDs'
+                        }};
+                        let values;
+                        let declared;
                         try {{
-                            if (study && typeof study.getInputValues === 'function') {{
-                                values = study.getInputValues() || [];
-                            }}
-                        }} catch (error) {{
-                            return {{
-                                ok: false,
-                                error: 'Could not read active study input values: ' + (error && error.message ? error.message : String(error))
-                            }};
+                            const source = study && (study._study || study);
+                            const meta = source && typeof source.metaInfo === 'function' ? source.metaInfo() : null;
+                            declared = meta && meta.inputs;
+                            values = study && typeof study.getInputValues === 'function' ? study.getInputValues() : null;
+                        }} catch (_) {{
+                            return unavailable;
                         }}
+                        if (!Array.isArray(declared) || !Array.isArray(values)) return unavailable;
+
+                        const systemIds = new Set(['text', 'pineId', 'pineVersion', 'pineFeatures', '__fast_calc', '__profile']);
+                        const declaredIds = new Set();
+                        const userIds = new Set();
+                        for (const input of declared) {{
+                            if (!input || typeof input.id !== 'string' || declaredIds.has(input.id)) return unavailable;
+                            declaredIds.add(input.id);
+                            if (/^in_\d+$/.test(input.id)) userIds.add(input.id);
+                            else if (!systemIds.has(input.id)) return unavailable;
+                        }}
+
                         const inputs = Object.assign({{}}, base);
-                        for (let j = 0; j < values.length; j++) {{
-                            const input = values[j] || {{}};
-                            let value = input.value;
-                            if (value === undefined && input.val !== undefined) value = input.val;
-                            if (value === undefined && input.defval !== undefined) value = input.defval;
-                            inputs['in_' + j] = value;
+                        const returnedIds = new Set();
+                        let inputCount = 0;
+                        for (const input of values) {{
+                            if (!input || typeof input.id !== 'string' || returnedIds.has(input.id)) return unavailable;
+                            returnedIds.add(input.id);
+                            if (systemIds.has(input.id)) continue;
+                            if (!userIds.has(input.id)) return unavailable;
+                            const value = input.value !== undefined ? input.value : input.val;
+                            if (value === undefined) return unavailable;
+                            inputs[input.id] = value;
+                            inputCount++;
                         }}
+                        if (inputCount !== userIds.size) return unavailable;
                         return {{
                             ok: true,
                             inputs,
-                            input_count: values.length,
+                            input_count: inputCount,
                             input_source: 'active_chart_study',
                             study_matched: true
                         }};

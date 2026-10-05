@@ -4,9 +4,10 @@ Status: on 2026-10-05 the owner approved the proposed direction, the unknown
 creation-outcome correction, and the study/input identity investigation. The
 correction is implemented and committed; the inventory owns acceptance and
 investigation results. A bounded metadata read has now exposed an input-position
-defect, reproduced using synthetic data. Its proposed correction is the next
-scope decision, ahead of a broader identity feature. Broader identity behavior remains conditional. One executor, no
-delegated agents. No new live operation or publication is authorized.
+defect, reproduced using synthetic data. The owner then approved the bounded
+input-ID correction, which is implemented locally. Broader identity behavior
+remains conditional. One executor works without delegated agents. No new live
+operation or publication is authorized.
 
 ## Released baseline
 
@@ -103,13 +104,13 @@ The bounded read-only observation found native script/version and condition
 metadata, but no chart study matching the saved catalog. Full saved-study binding
 is therefore still unqualified. More immediately, the production input mapping
 turned synthetic internal text into in_0 instead of retaining the intended value
-20. The [inventory](next-version-work-items.md#proposed-next-correction-not-yet-approved)
-records the reproduction and concrete before/after proposal.
+20. The [inventory](next-version-work-items.md#approved-input-id-correction)
+records the reproduction, approved before/after examples, and acceptance.
 
-Prioritize that input-ID correction before a new selector or full identity
-workflow. It can be implemented and fixture-tested without a live account write.
-Admission of incomplete metadata and the public input count change need approval
-of the recorded examples. No broader identity behavior is implied.
+The owner approved that input-ID correction before a new selector or full
+identity workflow. Local implementation preserves native IDs and rejects
+incomplete metadata without a live account write. The count now means verified
+user inputs. No broader identity behavior is implied.
 
 ## Other candidates and tradeoffs
 

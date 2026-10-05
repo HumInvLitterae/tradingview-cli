@@ -1,3 +1,5 @@
+mod input_contract;
+
 use std::collections::VecDeque;
 
 use serde_json::json;
