@@ -17,7 +17,7 @@ Live qualification gaps are not closed by publication.
 | Priority | Proposed work | State / next decision |
 | --- | --- | --- |
 | 1 | Indicator-alert unknown creation outcomes | Approved and implemented locally. Production-JavaScript regression reproduced the incorrect false result; see acceptance below. |
-| 2 | Exact study and input identity | Source investigation complete. Native entity/input access exists; saved-version and compiled-condition binding remain UNCONFIRMED without a bounded live probe. |
+| 2 | Exact study and input identity | Bounded read-only observation completed. Native identity/version/condition fields exist; positional input remapping reproduced a wrong payload with synthetic data. Proposed correction below needs scope approval. |
 | 3 | Supported identity and creation readback | Conditional on priority 2 and approved contracts. Live creation, readback, and cleanup need bounded account authority. |
 | 4 | Release the completed slice | Version remains provisional: defect-only v0.36.1 or additive v0.37.0, selected after scope review. |
 
@@ -84,7 +84,7 @@ No full workspace suite, live creation, notification, Desktop read, normal CI,
 or optimized archive qualification was performed. This is local fixture and
 offline acceptance, not live creation acceptance. The correction is committed as
 28a8b07. Priority 1 is complete locally; priority 2 has source findings and
-needs the bounded observation below before a broader implementation decision.
+now has the bounded observation below; the next correction needs scope review.
 
 ### Identity feasibility findings
 
@@ -97,14 +97,93 @@ needs the bounded observation below before a broader implementation decision.
 | Verify compiled condition identity | Local Pine parsing produces best-effort plot candidates; current creation does not read compiled condition metadata | Source equality does not establish this relationship. Native metadata availability remains UNCONFIRMED. |
 | Identify exactly the created alert | Current readback searches new list IDs by condition/message and optional symbol, without binding a create-response ID | Concurrent matching alerts and full saved-version/input/resolution confirmation remain outside the completed correction. |
 
-Next useful evidence is a bounded read-only probe of one explicitly selected
-Desktop chart and saved script. Inspect metadata field presence and compare
-identities in memory; retain only public-safe capability conclusions. Do not
-save/compile source, insert or edit studies, create alerts, or dump raw account
-metadata. A concrete target and authority are still needed. If no stable saved
-revision/condition relationship is available, present the narrower supported
-workflow before proposing flags. Any later creation acceptance must separately
-name the test alert, permitted count, readback, and cleanup authority.
+### Bounded observation and reproduced input defect
+
+On 2026-10-05, the owner requested the next work after the read-only observation
+had been identified as the next step. One executor selected the existing active
+test layout from the Desktop target inventory and confirmed readiness. The
+installed CLI identified v0.36.0 at 5c72c081, dirty:false. No archive equality
+claim is made. Custom metadata reads used the existing explicitly enabled
+ui eval path for those processes only; no persistent configuration changed.
+An initial top-level eval lookup was invalid, and the first ui eval call was
+rejected by its default opt-in guard before execution.
+
+The bounded sequence read metadata from one chart and issued one saved-catalog
+GET. It did not save, compile, insert, edit, switch, create, delete, or retry an
+account mutation. No source values, account IDs, raw responses, or target IDs
+are retained here. Aggregate observations:
+
+- All 24 observed Pine studies exposed scriptIdPart and pine.version.
+  Their pineId/pineVersion input fields agreed with those metadata fields in
+  all 24 cases. Top-level meta.version differed from pine.version in all cases;
+  the inspected example used engine metadata version 101. Do not substitute it
+  for the saved Pine revision.
+- User input IDs matched declared metadata IDs in all 24 observed studies.
+  Returned inputs included system fields before in_0. In one inspected shape,
+  text, pineId, pineVersion, and pineFeatures preceded four user inputs; the
+  array ended with __fast_calc and __profile.
+- Four studies exposed alertcondition plots, with 2, 6, 6, and 6 conditions.
+  All observed condition IDs had the plot_N shape and had titles in styles.
+  This confirms metadata availability on this chart, not source-to-compiled
+  condition equivalence for a selected saved test script.
+- No chart study's scriptIdPart matched the saved catalog. Therefore a complete
+  saved-script-to-chart-version qualification remains UNCONFIRMED. Do not add a
+  study merely to fill this evidence gap without authorization.
+
+The current adapter ignores returned input IDs and assigns each array element
+by position to in_N. A temporary Rust test used the existing FakeRuntime to
+capture the exact production-generated creation expression, then executed it
+under Node 24.21.0 with synthetic chart inputs and intercepted fetch. No real
+POST was made. The relevant synthetic sequence was:
+
+```json
+[
+  {"id":"text","value":"synthetic-source"},
+  {"id":"pineId","value":"synthetic-id"},
+  {"id":"pineVersion","value":"4.0"},
+  {"id":"pineFeatures","value":"{}"},
+  {"id":"in_0","value":20},
+  {"id":"__fast_calc","value":false},
+  {"id":"__profile","value":false}
+]
+```
+
+The assertion that the outgoing in_0 equals 20 failed with actual
+synthetic-source. Thus the production mapping relocates a system text value
+into the first user input for this observed shape. This is a reproduced payload
+construction defect, not an observed wrong live alert or disclosure of real
+script content. The temporary failing test was removed after capturing the
+result; tracked executable files are unchanged. Reintroduce this regression
+through the existing account-JavaScript gate when implementing the correction.
+
+### Proposed next correction, not yet approved
+
+Fix input-ID handling before introducing any new study selector. Keep the
+existing source guard, successful envelope, no-retry rule, and account-operation
+limits. Proposed before/after examples:
+
+| Case | Current behavior | Proposed behavior |
+| --- | --- | --- |
+| System fields precede in_0=20 | System text becomes outgoing in_0; 20 shifts to in_4 | Preserve in_0=20 by ID; never copy text/pineId/pineVersion into user-input slots |
+| User inputs are returned in a different order | Values move to different parameter IDs | Match declared user-input IDs and retain each value under its own ID |
+| A declared user input is absent or duplicated | Positional assembly can proceed | Stop before alert listing/creation with study_input_metadata_unavailable |
+| Metadata is absent or the input shape cannot be verified | Completeness is not established | Stop before creation rather than infer positions or fill defaults |
+| input_metadata.input_count | Counts all returned entries, including system fields | Count the verified user inputs placed in the request |
+
+This intentionally tightens admission and changes the count's meaning; approval
+of these examples is required before implementation. Preserve supported scalar
+and array values rather than imposing a new arbitrary type policy. Reuse native
+meta.inputs/getInputValues reads; lossy public summaries are not a payload source.
+Keep generated base metadata under its existing handling. Tests must reject
+missing/duplicate IDs and prove internal text is absent from outgoing user slots.
+The existing production-JavaScript harness can qualify construction without a
+live account write. Normal creation acceptance remains a separate authorized run.
+
+Do not expand this correction into a new --study-id flag, saved-version binding,
+or full post-create identity proof. Those require a saved test indicator on a
+chosen chart. Creating/saving or adding such an indicator would change state;
+its exact source, instances, input settings, and cleanup must be agreed first.
+A successful metadata read alone does not authorize those actions.
 
 ## Historical v0.36.0 preparation evidence
 

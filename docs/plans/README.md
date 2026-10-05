@@ -18,7 +18,9 @@ remain applicable.
 
 The owner approved the first outcome correction and study/input identity
 investigation. The correction is implemented locally; the inventory records
-acceptance and the remaining identity evidence gaps. Broader identity behavior,
+acceptance and the remaining identity evidence gaps. A bounded metadata read
+and synthetic production-expression probe reproduced positional input corruption;
+the inventory proposes the next input-ID correction. Broader identity behavior,
 new live operations, and publication remain separate decisions. Version selection
 follows the completed release scope.
 

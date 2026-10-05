@@ -1154,6 +1154,12 @@ not prove completeness. Textual input detection can be affected by comments or
 formatting. When inputs are detected and no matching study is available, it
 fails; otherwise base metadata can suffice without a study.
 
+Known limitation: native input arrays can contain system fields before user
+inputs. The current positional mapping can therefore send the wrong values as
+in_0 and subsequent user inputs. This was reproduced with synthetic data after
+a read-only metadata observation. Do not rely on normal creation with study
+inputs until the input-ID correction is released; dry-run does not check them.
+
 Optional symbol/resolution overrides do not change the source of study inputs.
 Missing resolution and currency can default to 1 and USD; saved version is required.
 A trimmed nonblank message overrides the source candidate message, then `(none)`

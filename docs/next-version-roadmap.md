@@ -2,8 +2,10 @@
 
 Status: on 2026-10-05 the owner approved the proposed direction, the unknown
 creation-outcome correction, and the study/input identity investigation. The
-correction is implemented locally; the inventory owns acceptance and investigation
-results. Broader identity behavior remains conditional. One executor, no
+correction is implemented and committed; the inventory owns acceptance and
+investigation results. A bounded metadata read has now exposed an input-position
+defect, reproduced using synthetic data. Its proposed correction is the next
+scope decision, ahead of a broader identity feature. Broader identity behavior remains conditional. One executor, no
 delegated agents. No new live operation or publication is authorized.
 
 ## Released baseline
@@ -94,6 +96,20 @@ and an accepted create followed by a failed readback in its acceptance cases.
 A possible explicit study selector remains a design candidate, not an approved
 public flag. If complete identity is infeasible, report the precise supported
 subset and its omitted behavior before seeking implementation approval.
+
+## Current investigation decision
+
+The bounded read-only observation found native script/version and condition
+metadata, but no chart study matching the saved catalog. Full saved-study binding
+is therefore still unqualified. More immediately, the production input mapping
+turned synthetic internal text into in_0 instead of retaining the intended value
+20. The [inventory](next-version-work-items.md#proposed-next-correction-not-yet-approved)
+records the reproduction and concrete before/after proposal.
+
+Prioritize that input-ID correction before a new selector or full identity
+workflow. It can be implemented and fixture-tested without a live account write.
+Admission of incomplete metadata and the public input count change need approval
+of the recorded examples. No broader identity behavior is implied.
 
 ## Other candidates and tradeoffs
 
