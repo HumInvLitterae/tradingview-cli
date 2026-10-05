@@ -1,17 +1,13 @@
 # Canonical history rewrite recovery
 
-Status: canonical rewrite and post-rewrite documentation closeout are complete.
-Fresh clones now receive the rewritten history. The maintainer primary clone has
-also been realigned after backup and exact remote-manifest verification. Do not
-run the optional existing-clone realignment commands below without first
-confirming a clean worktree, a private backup, and the current canonical
-manifest.
+Canonical history was updated on 2026-10-05. New clones receive the current
+history. Existing clones should follow the steps below rather than merge the
+old and current histories.
 
-The `v0.26.0` preparation rewrote canonical `main` and release tags to remove a
-machine-specific path from reachable Git history. File content at the new tip
-is unchanged, and existing GitHub Release objects and assets remain in place.
-Commit and tag-target identifiers changed because rewriting an old commit
-changes every descendant identifier.
+Commit identifiers and tag targets can differ from older clones. Published
+Release archives are unchanged and retain their original embedded build IDs.
+Before realigning an existing clone, preserve its local work and verify the
+current remote refs.
 
 The safest recovery is a fresh clone. Do not pull or merge rewritten history
 into an old clone. Preserve the old clone until you have audited and recovered
