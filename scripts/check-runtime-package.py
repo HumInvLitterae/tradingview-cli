@@ -76,7 +76,7 @@ def check_package(package, expected_skills):
                 tree[path.relative_to(root).as_posix()] = path.read_bytes()
                 if path.suffix == ".md":
                     documents.append(path)
-        for shared_name in ("desktop-session.md", "mcp-connection.md"):
+        for shared_name in ("desktop-session.md", "mcp-connection.md", "indicator-alerts.md"):
             copies = [content for name, content in tree.items()
                       if name.endswith(f"/references/{shared_name}")]
             if copies and any(content != copies[0] for content in copies[1:]):
@@ -202,6 +202,14 @@ class PackageReferenceTests(unittest.TestCase):
                 path = self.root / prefix / "skills" / name / "references/mcp-connection.md"
                 path.parent.mkdir(parents=True, exist_ok=True)
                 path.write_text(f"Different connection guidance: {name}\n")
+        self.assertEqual(sum("shared guidance differs" in e for e in self.check()), 2)
+
+    def test_indicator_alert_guidance_cannot_drift_between_skills(self):
+        for prefix in (".agents", ".claude"):
+            for name in ("one", "two"):
+                path = self.root / prefix / "skills" / name / "references/indicator-alerts.md"
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_text(f"Different indicator guidance: {name}\n")
         self.assertEqual(sum("shared guidance differs" in e for e in self.check()), 2)
 
     def test_copies_and_guides_must_match(self):

@@ -208,3 +208,24 @@ Standalone Pine skill references, disposable resource staging with seven skills
 per root, public hygiene/self-test, and diff/link checks passed. Source review
 also confirmed that the alert-mutation JavaScript body is byte-identical; the
 new verification occurs before entering that body.
+
+## Final review correction, 2026-10-05
+
+Final review found that the source comparator accepted lone CR while local
+condition discovery only ended line comments at LF. A mixed-ending synthetic
+source therefore matched the saved text after normalization but produced plot_0
+instead of plot_1. An all-CR source beginning with a version directive produced
+zero candidates. No live source containing those endings was observed.
+
+The Pine call scanner now recognizes CR as a line boundary without changing
+source byte offsets, and its line counter treats CRLF as one boundary. New
+regressions failed before the correction and passed afterward for local LF,
+CRLF, lone CR, and mixed endings. The adapter regression verifies both the
+preview ID and the condition ID sent to the normal creation expression through
+FakeRuntime; it does not create a real alert. All 26 Pine library tests and 12
+indicator-alert tests passed. Scoped Pine/CLI Clippy passed with warnings denied.
+The approved source-comparison contract and successful output shape are unchanged.
+
+The account-management copy of the indicator-alert guide now matches the Pine
+copy. The existing package validator also rejects drift between those copies;
+its new regression failed before the validator change and passed afterward.

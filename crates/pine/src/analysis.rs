@@ -515,14 +515,18 @@ fn string_literal_value(value: &str) -> Option<String> {
 fn line_column(source: &str, byte_index: usize) -> (usize, usize) {
     let mut line = 1usize;
     let mut line_start = 0usize;
+    let mut previous_cr = false;
     for (index, ch) in source.char_indices() {
         if index >= byte_index {
             break;
         }
-        if ch == '\n' {
-            line += 1;
+        if matches!(ch, '\r' | '\n') {
+            if ch == '\r' || !previous_cr {
+                line += 1;
+            }
             line_start = index + ch.len_utf8();
         }
+        previous_cr = ch == '\r';
     }
     (line, byte_index - line_start + 1)
 }
@@ -572,8 +576,8 @@ fn sanitize_for_call_scan(source: &str) -> String {
                 }
             }
             State::LineComment => {
-                if ch == '\n' {
-                    output.push('\n');
+                if matches!(ch, '\r' | '\n') {
+                    output.push(ch);
                     state = State::Normal;
                 } else {
                     push_spaces_like(&mut output, ch);
@@ -588,15 +592,15 @@ fn sanitize_for_call_scan(source: &str) -> String {
                     chars.next();
                     push_spaces_like(&mut output, next);
                     state = State::Normal;
-                } else if ch == '\n' {
-                    output.push('\n');
+                } else if matches!(ch, '\r' | '\n') {
+                    output.push(ch);
                 } else {
                     push_spaces_like(&mut output, ch);
                 }
             }
             State::String(quote) => {
-                if ch == '\n' {
-                    output.push('\n');
+                if matches!(ch, '\r' | '\n') {
+                    output.push(ch);
                     escaped = false;
                 } else {
                     push_spaces_like(&mut output, ch);
@@ -872,6 +876,27 @@ alertcondition(close > open, "Real")"#,
         assert_eq!(result["counted_output_count"], 2);
         assert_eq!(result["candidates"][0]["alert_cond_id"], "plot_1");
         assert_eq!(result["candidates"][0]["title"], "Real");
+    }
+
+    #[test]
+    fn pine_alertconditions_preserves_ids_and_positions_across_line_endings() {
+        let source = "//@version=6\nindicator(\"Signals\")\n// Comment\nplot(close)\nalertcondition(close > open, \"Long\", \"Long message\")\n";
+        for input in [
+            source.to_owned(),
+            source.replace('\n', "\r\n"),
+            source.replace('\n', "\r"),
+            source.replace("// Comment\n", "// Comment\r"),
+        ] {
+            let result = pine_alertconditions(&input, "stdin");
+            assert_eq!(result["candidate_count"], 1, "{input:?}");
+            assert_eq!(result["counted_output_count"], 2, "{input:?}");
+            let candidate = &result["candidates"][0];
+            assert_eq!(candidate["alert_cond_id"], "plot_1", "{input:?}");
+            assert_eq!(candidate["line"], 5, "{input:?}");
+            assert_eq!(candidate["column"], 1, "{input:?}");
+            assert_eq!(candidate["title"], "Long");
+            assert_eq!(candidate["message"], "Long message");
+        }
     }
 
     #[test]

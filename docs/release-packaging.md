@@ -132,7 +132,8 @@ checks guide/resource parity, exact skill membership, and local Markdown links
 transitively from README, CHANGELOG, the guides and skills, including document
 paths written as inline code in skills. Each skill is also checked in isolation, rejecting sibling
 references even when the sibling is present in the archive. A missing or escaping reference fails
-staging. Online links are not fetched. CI also exercises the checker and stages
+staging. Shared Desktop-session, MCP-connection, and indicator-alert references
+must also agree across standalone skill copies. Online links are not fetched. CI also exercises the checker and stages
 a disposable placeholder binary, proving guidance packaging without claiming a
 working CLI build.
 

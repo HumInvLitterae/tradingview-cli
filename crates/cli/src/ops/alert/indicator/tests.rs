@@ -414,6 +414,40 @@ async fn alert_indicator_source_comparison_accepts_only_line_ending_changes() {
 }
 
 #[tokio::test]
+async fn alert_indicator_local_line_endings_preserve_the_selected_condition() {
+    let saved = "//@version=6\nindicator(\"Signals\")\n// Comment\nplot(close)\nalertcondition(close > open, \"Long\")\n";
+    for local in [
+        saved.replace("// Comment\n", "// Comment\r"),
+        saved.replace('\n', "\r"),
+        saved.replace('\n', "\r\n"),
+    ] {
+        for dry_run in [true, false] {
+            let mut runtime = FakeRuntime::new([
+                saved_script_fixture(),
+                json!({"source": saved}),
+                json!({"error": "synthetic creation stop"}),
+            ]);
+            let result =
+                alert_create_indicator(&mut runtime, source_check_request(&local, dry_run)).await;
+            if dry_run {
+                let data = result.unwrap();
+                assert_eq!(data["condition"]["alert_cond_id"], "plot_1");
+                assert_eq!(data["condition"]["line"], 5);
+                assert_eq!(runtime.evaluated.len(), 2);
+            } else {
+                assert!(result.is_err());
+                assert_eq!(runtime.evaluated.len(), 3);
+                assert!(
+                    runtime.evaluated[2]
+                        .0
+                        .contains("const requestedAlertCondId = \"plot_1\";")
+                );
+            }
+        }
+    }
+}
+
+#[tokio::test]
 async fn alert_indicator_requires_id_and_version_in_both_modes() {
     let source = "alertcondition(close > open, \"Long\")";
     for (field, value) in [

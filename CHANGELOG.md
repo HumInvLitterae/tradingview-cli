@@ -21,6 +21,8 @@ package version omits the leading `v`.
 
 ### Fixed
 
+- Pine condition discovery treats LF, CRLF, and lone CR consistently, preserving
+  condition IDs and source positions when line endings differ.
 - Pine Editor opening prefers the dedicated panel button when available, so an
   inactive legacy widget API no longer prevents opening the editor.
 - Desktop-free bars rejects overflowing or invalid UTF-8 frame boundaries with
