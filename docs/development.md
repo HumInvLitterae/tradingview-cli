@@ -737,8 +737,9 @@ separate acceptance; container success does not prove desktop dialogs.
 
 ## Public hygiene guard
 
-Tracked text files must not contain machine-specific user-home paths. Run the
-deterministic detector tests and then scan the tracked tree:
+Tracked text files must not contain machine-specific user-home paths or known
+confidential identifiers. Run the deterministic detector tests and then scan
+the tracked tree:
 
 ```bash
 python scripts/check-public-hygiene.py --self-test
@@ -747,9 +748,14 @@ python scripts/check-public-hygiene.py
 
 The guard runs in both Ubuntu and Windows CI jobs. It skips binary files and
 prints only a repository-relative file, line number, and detector category for
-each violation. Its only exceptions are the exact path-and-line pairs for two
-synthetic app-window URL fixtures. The same value in another file, or another
-user-home value in an allowed file, is rejected.
+each violation. Confidential identifiers are matched using SHA-256 fingerprints
+of case-folded tokens and path components; the original values must not be added
+to the guard or its tests. This detects known identifiers, not every possible
+private fact. Review public prose for external project names, paths, revisions,
+operational status, and acceptance records before committing. Its only exceptions
+are the exact path-and-line pairs for two synthetic app-window URL fixtures.
+The same value in another file, or another user-home value in an allowed file,
+is rejected.
 
 ## Validation baseline
 

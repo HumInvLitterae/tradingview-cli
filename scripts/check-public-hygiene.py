@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
-"""Reject machine-specific user-home paths in tracked text files."""
+"""Reject user-home paths and known confidential identifiers in tracked text files."""
 
 from __future__ import annotations
 
 import argparse
 from dataclasses import dataclass
+import hashlib
 import os
 from pathlib import Path
 import re
@@ -26,6 +27,35 @@ ALLOWED_LINES = {
     "crates/cdp/src/transport.rs": frozenset({SYNTHETIC_LINE}),
     "crates/cli/src/ops/status.rs": frozenset({SYNTHETIC_LINE}),
 }
+
+
+# Compare fingerprints without embedding excluded identifiers in tracked files.
+CONFIDENTIAL_IDENTIFIER_SHA256 = frozenset({
+    "14c16108f46c50f056764316f1d8b5add41ecceac26a7079b04a677cc15040ba",
+    "246609f4e1cdb374d157a6051fb5c356fc815bd9ad0df8dc2ad4a1090abd45df",
+    "2853403d01ee6f8352a221ab2d6d1dc01ca2f389a03e0b0ce773758cddce489e",
+    "38d8ed08f7f0995e83d7bc3fb76a44124e47defcd6ad032b4f7550da2b0f8452",
+    "39121b7a7dae8b6600d8d0283d479955e4f90c415e1ec6834ee7ccf2c7091851",
+    "41601d5f56eed0bdc6a1122e4cb2c4de5df04f57dd1acf15b28c76eb25062053",
+    "510fc0d3e24c1f22484758d92f22706125ed13d6e2764e4f99552e3289b4da33",
+    "5b1d1dc069e855d4289706c765cabdeab0e0fa2318789cddfb193eecc648f70f",
+    "6b17eac04b8ee4677ef7495e4a6b5598a3be04245930135fc88db7ece94f914d",
+    "8511c87004f3650927d7b81d8b9fd4dcfc2f2e636da1924f3e41fd1997825987",
+    "a6802145733d70778dd3e9160db81537acd97d389ed48165ab2debbff4051a57",
+})
+IDENTIFIER = re.compile(r"[A-Za-z0-9_]+(?:[-./;][A-Za-z0-9_]+)*")
+
+
+def contains_confidential_identifier(
+    line: str,
+    fingerprints: frozenset[str] = CONFIDENTIAL_IDENTIFIER_SHA256,
+) -> bool:
+    for token in IDENTIFIER.findall(line):
+        for candidate in {token, *token.split("/")}:
+            fingerprint = hashlib.sha256(candidate.casefold().encode("utf-8")).hexdigest()
+            if fingerprint in fingerprints:
+                return True
+    return False
 
 
 @dataclass(frozen=True)
@@ -90,6 +120,8 @@ def scan_entries(
                 for detector in DETECTORS
                 if detector.pattern.search(line)
             ]
+            if contains_confidential_identifier(line):
+                matching.append("confidential_identifier")
             if not matching:
                 continue
             if stripped in allowed:
@@ -143,6 +175,12 @@ def repository_entries() -> tuple[list[tuple[str, bytes]], Path]:
 
 
 def run_self_test() -> None:
+    synthetic = "synthetic-confidential-project"
+    fingerprints = frozenset({hashlib.sha256(synthetic.encode("utf-8")).hexdigest()})
+    for value in (synthetic, synthetic.upper(), f"https://example.invalid/{synthetic}/src"):
+        assert contains_confidential_identifier(value, fingerprints)
+    assert not contains_confidential_identifier("public-example-project", fingerprints)
+
     allowed_entries = [
         (path, (next(iter(lines)) + "\n").encode("utf-8"))
         for path, lines in ALLOWED_LINES.items()
