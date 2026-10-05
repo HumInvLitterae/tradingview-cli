@@ -285,3 +285,37 @@ study insertion, normal alert creation, notification, or live alert-list call
 was performed. Non-default inputs and duplicate instances are fixture-qualified,
 not live-qualified. Full workspace/platform suites, CI, optimized archives, and
 complete post-create identity remain separate acceptance work.
+
+### Input-bearing live qualification preparation
+
+The owner approved proceeding with input-bearing, duplicate-instance dry-run
+qualification before release preparation. A fresh read of three saved scripts
+found no eligible revision: one had inputs but no alertcondition, and two had an
+alertcondition but no user inputs. No study was added or changed; the original
+27-entity set was preserved.
+
+The local [test source](../examples/indicator-alert-verification.pine) provides
+one bounded integer Length input and one alertcondition. Offline analysis found
+zero issues and one best-effort plot_1 candidate. This is not server compilation
+or a saved revision. Existing saved source must remain untouched.
+
+A new saved script named CLI Verification Fixture is required. Cloud creation
+is an additional effect beyond the approved chart additions/input changes. The
+CLI does not support naming/saving a new script, and the native UI observation
+attempt failed at screen capture. Ask the owner to save this source as a new
+indicator; do not use an unverified keyboard or save fallback. Leave that saved
+fixture available for reuse rather than deleting cloud state after the trial.
+
+Once the owner supplies the saved fixture, verify exact source and revision,
+resolve the test chart again, and record its baseline. Use native, verified
+insertion facilities for at most two new instances of this exact revision.
+Set only the new instances' Length inputs to 30 and 50, distinct from default 20.
+Check unique automatic selection, duplicate rejection, and explicit selection of
+each instance using dry-run. Compare native input values and returned selection;
+this does not prove values in a real created alert. Remove only the newly
+identified test instances and verify original chart state and saved source.
+Do not edit existing studies, save source changes, or create/list alerts.
+
+The live qualification and release preparation remain incomplete pending the
+saved fixture. No additional agents, publication, or account alert mutation is
+included. The preparation adds no production code or dependencies.

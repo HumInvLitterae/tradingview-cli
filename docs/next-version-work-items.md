@@ -814,3 +814,15 @@ dependency additions, and remote writes need explicit authority. Public CLI,
 JSON, Rust API, and persisted-format changes require agreed concrete examples.
 Before a formal release, recheck and update existing dependencies, explain
 resolver constraints, and run the affected checks and normal candidate CI.
+
+## Input-bearing verification follow-up, 2026-10-05
+
+The owner approved the next bounded live qualification before release preparation.
+Current saved revisions do not contain both user inputs and an alertcondition.
+A synthetic source is prepared and passes offline analysis, but is not yet saved
+or compiled in TradingView. New cloud-script creation was not included in the
+chart-only trial scope. The native UI observation failed, and the CLI has no
+new-script naming/save operation. The
+[implementation plan](plans/tradingview-cli-indicator-study-verification.md#input-bearing-live-qualification-preparation)
+records the requested owner save and the 30/50-input, two-instance trial bounds.
+No chart mutation or alert operation was performed in this preparation.
