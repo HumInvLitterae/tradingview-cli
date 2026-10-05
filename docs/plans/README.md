@@ -41,3 +41,9 @@ post-create identity.
 
 Completed records preserve evidence for their recorded inputs. They are not
 current runtime acceptance or authorization for new live operations.
+
+
+Input-bearing live acceptance also passed automatic selection, duplicate
+rejection, and explicit selection at native Length values 30 and 50. Temporary
+instances were removed and the original chart restored. The approved next stage
+is v0.37.0 preparation; full created-alert identity remains separate.

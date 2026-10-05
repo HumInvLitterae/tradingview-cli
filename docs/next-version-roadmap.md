@@ -3,7 +3,8 @@
 Status: the unknown-outcome and native input-ID corrections are implemented and
 committed. Opt-in compiled-condition and study-input verification is also
 implemented and locally accepted. A verified no-input preview succeeded without
-adding a study. The inventory and implementation plan retain the fixture/live
+adding a study. Input-bearing previews also passed unique selection, duplicate
+rejection, and explicit selection with temporary instances cleaned up. The inventory and implementation plan retain the fixture/live
 limits. Complete created-alert identity and live normal creation remain separate
 work. One executor works without delegated agents; publication is not implied.
 

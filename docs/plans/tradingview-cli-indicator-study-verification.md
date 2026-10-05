@@ -316,6 +316,44 @@ this does not prove values in a real created alert. Remove only the newly
 identified test instances and verify original chart state and saved source.
 Do not edit existing studies, save source changes, or create/list alerts.
 
-The live qualification and release preparation remain incomplete pending the
-saved fixture. No additional agents, publication, or account alert mutation is
+At this preparation checkpoint, live qualification and release preparation
+were pending the saved fixture. The follow-up below supersedes that blocker. No additional agents, publication, or account alert mutation is
 included. The preparation adds no production code or dependencies.
+
+
+### Input-bearing live acceptance, 2026-10-05
+
+The owner saved the synthetic fixture. Its exact revision matched the local
+source after the existing line-ending normalization; the native metadata had
+one user input, default 20, and alertcondition plot_1. Inspection of the native
+metainfo repository and study inserter established the Pine descriptor fields
+before insertion. The trial used that chart-owned inserter with the exact saved
+ID/version and input overrides; it did not open, edit, compile, or save the Pine
+Editor buffer. No production adapter was changed for the trial.
+
+The final bounded run passed:
+
+- One new instance with native Length 30 was selected by --verify --dry-run,
+  reporting saved_compilation, active_chart_study, input_count 1, and unique.
+- A second instance of the same revision with Length 50 caused automatic
+  selection to return validation / ambiguous_study with match_count 2 and
+  created false before alert operations.
+- --study-id selected each of the two entity IDs successfully and reported
+  explicit selection. Native readback independently confirmed values 30 and 50.
+- Cleanup removed only the newly inserted fixture instances. The original
+  27 study IDs and their input values, symbol metadata, and resolution matched
+  the baseline. A final saved-source/revision read still matched the fixture.
+
+Two earlier attempts ended at inspection-helper errors, not CLI failures.
+The first helper expected a created field in successful dry-run output, which
+instead retains dry_run / would_create. The second read only stdout, although
+error envelopes use stderr. Both attempts removed their temporary instances and
+verified baseline restoration before the corrected repeat. The initial source
+comparison also needed the CLI's existing CRLF normalization. No CLI behavior was
+changed to satisfy these checks.
+
+These observations establish native values and preview selection, not values
+inside a created alert or notification delivery. No alert was listed or created,
+no existing study was edited, and no saved source was changed. Private temporary
+snapshots were removed after verification. The saved synthetic fixture remains
+available for reuse. Release preparation is the next approved stage.

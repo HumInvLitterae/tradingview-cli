@@ -18,8 +18,8 @@ Live qualification gaps are not closed by publication.
 | --- | --- | --- |
 | 1 | Indicator-alert unknown creation outcomes | Approved and implemented locally. Production-JavaScript regression reproduced the incorrect false result; see acceptance below. |
 | 2 | Exact study and input identity | Bounded read-only observation completed. Native identity/version/condition fields exist; positional input remapping reproduced a wrong payload with synthetic data. The owner approved the bounded input-ID correction; implementation and acceptance follow below. |
-| 3 | Supported identity and creation readback | Native and saved-compiler probes passed within the bounds below. [Revised verification plan](plans/tradingview-cli-indicator-study-verification.md) records approved opt-in verification and study selection. Implementation and local acceptance passed, including a verified no-input live preview without chart insertion. Full created-alert identity remains separate. |
-| 4 | Release the completed slice | Version remains provisional: defect-only v0.36.1 or additive v0.37.0, selected after scope review. |
+| 3 | Supported identity and creation readback | Native and saved-compiler probes passed within the bounds below. [Revised verification plan](plans/tradingview-cli-indicator-study-verification.md) records approved opt-in verification and study selection. Implementation and local acceptance passed, including no-input and input-bearing live previews, duplicate rejection, and explicit instance selection. Full created-alert identity remains separate. |
+| 4 | Release the completed slice | The owner approved v0.37.0 preparation for the additive slice. Dependency review, release checks, and package qualification follow live acceptance; publication remains separate. |
 
 The owner approved priorities 1 and 2 on 2026-10-05, then approved priority 3's
 opt-in preflight after metadata research and concrete public examples. Complete
@@ -826,3 +826,13 @@ new-script naming/save operation. The
 [implementation plan](plans/tradingview-cli-indicator-study-verification.md#input-bearing-live-qualification-preparation)
 records the requested owner save and the 30/50-input, two-instance trial bounds.
 No chart mutation or alert operation was performed in this preparation.
+
+
+The owner subsequently saved the synthetic fixture. The
+[live acceptance](plans/tradingview-cli-indicator-study-verification.md#input-bearing-live-acceptance-2026-10-05)
+passed unique automatic selection at Length 30, ambiguity rejection with a
+second instance at Length 50, and explicit selection of each entity. Cleanup
+restored the original 27 studies, their inputs, symbol metadata, and resolution;
+saved source was unchanged. No alert was listed or created. This closes the
+input-bearing preview gap and supersedes the save blocker above; created-alert
+payload/readback and notification behavior remain outside the trial.
