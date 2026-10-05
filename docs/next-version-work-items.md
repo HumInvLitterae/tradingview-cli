@@ -876,6 +876,57 @@ implementation. Public-hygiene and local-reference checks passed. No live cloud
 operation was repeated while correcting history.
 
 
+## Complete v0.37.0 candidate, 2026-10-06
+
+The owner authorized final review and local preparation of the complete next
+release. One executor reviewed saved-script creation, creation-outcome handling,
+native input IDs, opt-in compiled-condition/study verification, and their CLI,
+JSON, Rust API, and runtime-guide consumers. No additional blocking defect was
+found. Complete post-create alert identity and live normal alert creation remain
+outside this accepted slice. No agents or live account operations were used.
+
+The release includes the required Pine creation fix and the indicator changes
+together. The earlier withdrawn archive is not reused. The changelog clarifies
+that input-ID and uncertain-outcome fixes also affect normal creation without
+verification flags; unchanged no-flag selection does not exempt those fixes.
+
+All 24 direct/dev dependency requirements were checked against the crates.io
+stable versions again. Cargo update --dry-run resolved zero updates under Rust
+1.99.0. No dependency or resolver override changed. The complete source, runtime
+skills, test runners, and dependency graph match the accepted implementation.
+Restoring 0.37.0 also restores the exact manifests used for the recorded 1,183
+passing Rust tests, full-workspace Clippy, formatting, and JavaScript gates.
+Those results are reused; release provenance and actual archive execution are
+checked on the new build. Candidate CI, other native platforms, tags, and
+publication remain outstanding.
+
+
+Local candidate preparation is complete. Before release-history normalization,
+a fresh serial build at `53cc5ea4` using `cargo build --release --locked`
+produced the optimized macOS arm64 binary with
+version 0.37.0, that full commit hash, and `dirty:false`. The new archive contains
+both required features. Its SHA-256 is
+`6ac08f6e250fde3e8af7fd64f026d6e62db46134d6ee09a9e5b4e7b312be6a90`.
+
+The staged and extracted packages passed reference and parity checks for seven
+runtime skills under each agent root. The extracted executable matches the build
+output byte-for-byte. From outside the repository it passed version/provenance,
+Pine-create and indicator-verification help/spec checks, blank-name rejection
+before Desktop connection, and offline analysis of the synthetic fixture.
+The package checker self-tests, 40 changed-document
+local link targets, public hygiene across 805 tracked files, and diff whitespace
+checks also passed.
+
+Versioning, release notes, and acceptance records are included in the customary
+`chore(release): Prepare v0.37.0` commit. This history normalization changes no
+executable or packaged inputs. The archive above retains its recorded build
+commit and qualifies those inputs, not the new commit provenance. Other
+operating-system packages and CI at the final release commit remain unverified.
+The installed binary was not replaced, and no push, tag, release publication,
+or further cloud-script/alert
+operation was performed. The next step is an owner-authorized main push and CI.
+
+
 ### Candidate CI fixture repair, 2026-10-06
 
 [CI at the release-preparation commit](https://github.com/HumInvLitterae/tradingview-cli/actions/runs/37335069823)

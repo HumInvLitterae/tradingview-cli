@@ -3,11 +3,11 @@
 Status: the unknown-outcome and native input-ID corrections, opt-in indicator
 verification, and named Pine creation are implemented and locally accepted.
 Pine creation belongs to the same pre-release scope, prompted by the manual-save
-gap encountered during indicator qualification. All remain Unreleased, with the
-workspace version at 0.36.0. v0.37.0 is the intended next version; its preparation
-must include the complete scope and has not been finalized. Complete created-alert
-identity and live normal alert creation remain separate work. One executor works
-without delegated agents.
+gap encountered during indicator qualification. Final review found no additional
+blocking issue. Local preparation of the complete v0.37.0 candidate is finished,
+including both features and the alert corrections. Its macOS arm64 archive
+passed local qualification. Candidate CI and publication remain pending. Complete
+created-alert identity and live normal alert creation remain separate work. One executor works without delegated agents.
 
 ## Released baseline
 

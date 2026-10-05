@@ -47,6 +47,7 @@ Input-bearing live acceptance also passed automatic selection, duplicate
 rejection, and explicit selection at native Length values 30 and 50. Temporary
 instances were removed and the original chart restored. Named Pine creation
 also passed bounded live save/readback and editor/chart preservation. It is a
-required pre-release fix in the same next-version scope. These changes remain
-Unreleased with workspace version 0.36.0. Preparation of the complete v0.37.0
-candidate, candidate CI, and publication remain pending.
+required pre-release fix in the same next-version scope. Final review is complete,
+and the complete v0.37.0 candidate passed local macOS arm64 archive qualification.
+The [inventory](../next-version-work-items.md#complete-v0370-candidate-2026-10-06)
+tracks archive acceptance, candidate CI, and publication.

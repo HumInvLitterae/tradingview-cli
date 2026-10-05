@@ -7,6 +7,8 @@ package version omits the leading `v`.
 
 ## Unreleased
 
+## v0.37.0
+
 ### Added
 
 - `pine create --name <NAME> --file <PATH>` saves a new cloud script through
@@ -18,9 +20,11 @@ package version omits the leading `v`.
   condition and required chart inputs in preview and normal creation.
   `--study-id <ID>` selects an exact instance and implies verification. No-input
   scripts need no chart study; input-bearing scripts require a unique matching
-  saved revision or explicit selection. Existing no-flag behavior and JSON remain
-  unchanged. Rust callers can use `alert_create_indicator_verified` with
-  `IndicatorStudySelection`; the existing request type and function are retained.
+  saved revision or explicit selection. Without these flags, study selection and
+  successful JSON keep their existing shape; the input and error fixes below
+  apply to normal creation as well. Rust callers can use
+  `alert_create_indicator_verified` with `IndicatorStudySelection`; the existing
+  request type and function are retained.
 
 ### Fixed
 
