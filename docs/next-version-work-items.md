@@ -316,8 +316,44 @@ local reproduction script are retained outside tracked files.
 
 This measures warm-cache local CLI work only. It does not measure provider or
 Desktop latency. The useful next measurement is the existing test chart's
-OHLCV summary and study values, with a fixed target and bounded read count;
-new Desktop read authority must be settled before running that measurement.
+OHLCV summary and study values, with a fixed target and bounded read count.
+The owner subsequently approved that read-only scope; results follow below.
+
+## Bounded Desktop timing, 2026-10-05
+
+With explicit owner approval, confirm the existing test chart through tab list
+and run the optimized 430f0bf binary with that fixed target. Alternate ohlcv
+--summary --count 20 and values for 20 rounds, without extra warmups or retries.
+The script limits each subprocess to 12 seconds and the whole run to two minutes,
+and stops at the first command/validation failure. It measures spawn through
+captured output; JSON/schema validation runs outside the per-command timer.
+No chart setting, foreground state, script, or account state was changed.
+
+| Operation | Success | Median ms | p95 ms | Min–max ms | First call ms |
+| --- | --- | --- | --- | --- | --- |
+| OHLCV summary, 20 bars | 20/20 | 16.836 | 22.951 | 14.124–57.923 | 57.923 |
+| Study values, 13 studies / 27 value fields | 20/20 | 19.814 | 35.058 | 14.846–44.918 | 35.058 |
+
+All 40 invocations and their output validation completed in 0.882 seconds.
+Every summary contained 20 bars; every values response contained 13 studies and
+27 value fields. The checked chart/study identities stayed unchanged throughout
+the run. Responses passed the existing output schemas; no raw prices, study
+identifiers, target identifiers, or account payloads are retained in this record.
+The local measurement script and per-call durations remain outside tracked files.
+
+This was one already-running Desktop session on the same ten-logical-CPU host,
+with a one-minute load average around 5.9 and existing applications left running.
+The first call is included in the distribution; the Desktop session and OS
+caches were not reset. p95 uses the nearest-rank sample. No comparison binary or
+phase profiler ran against Desktop, so the result establishes observed total
+latency, not a speedup or causal attribution.
+
+No call exceeded the prior investigation's one-second trigger, timed out, or
+returned a transport failure. This bounded measurement does not justify a new
+retry, broker, timeout, or topology optimization. It does not qualify cold app
+startup, other charts, symbol changes, longer sessions, or provider/MCP latency.
+Retain the existing trigger-based defer and proceed toward candidate CI and
+native package qualification rather than adding an unmeasured optimization.
 
 ## Working limits
 

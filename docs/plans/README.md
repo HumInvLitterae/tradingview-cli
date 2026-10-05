@@ -32,3 +32,7 @@ live gaps remain separate. The owner then approved the performance/stability
 follow-up. It reproduced and fixed a malformed bars-frame panic with local
 fixtures; the inventory records
 acceptance. No performance optimization was promoted.
+
+The owner-approved Desktop timing run completed 40/40 reads successfully.
+OHLCV summary and study-values medians were 16.8 ms and 19.8 ms; no call crossed
+the existing investigation trigger. The inventory retains scope and limits.
