@@ -282,6 +282,43 @@ build, full workspace suite, or performance benchmark was run. No speedup or
 new service-wide stability rate is claimed. The bounded follow-up is complete;
 normal candidate CI and native package qualification remain the next gates.
 
+## Offline timing follow-up, 2026-10-05
+
+After the owner requested measurement, build 430f0bf once with cargo build
+--release --locked -p tradingview-cli --bin tv using the existing target directory
+and one job. The installed binary remains unchanged. Run three offline commands
+20 times per binary, alternating old/candidate order and rotating command order,
+after one excluded warmup for each command/binary pair. Measure subprocess spawn,
+CLI execution, and captured output with a monotonic clock; validate JSON after
+the timer. Successful content must match across runs, excluding the separately
+verified embedded binary-version field. All 120 measured invocations succeeded.
+
+The current optimized candidate results, in milliseconds:
+
+| Command / synthetic input | Median | p95 | Min–max |
+| --- | --- | --- | --- |
+| spec ohlcv | 9.705 | 11.924 | 8.515–14.032 |
+| pine alertconditions, 3 lines / 1 candidate | 8.818 | 16.350 | 7.620–19.163 |
+| pine alertconditions, 222 lines / 20 candidates | 9.129 | 12.321 | 8.403–14.654 |
+
+The synthetic inputs contain a version directive, indicator declaration, and
+one alertcondition for the small case. The larger case has the two declarations,
+200 simple arithmetic assignments, and 20 distinct alertconditions. Output
+validation checked exact candidate counts and stable complete payloads.
+
+The fixed 9cba16e binary had medians 9.560, 8.765, and 9.038 ms respectively.
+These are reference observations, not a controlled build comparison: its build
+flags were not re-established. The host has ten logical CPUs, one-minute load
+was approximately 5.3–5.5, and existing applications were left running. No
+profiler or isolated cold-start run was performed, so these values do not
+identify a performance limiter or justify an optimization. Raw timings and the
+local reproduction script are retained outside tracked files.
+
+This measures warm-cache local CLI work only. It does not measure provider or
+Desktop latency. The useful next measurement is the existing test chart's
+OHLCV summary and study values, with a fixed target and bounded read count;
+new Desktop read authority must be settled before running that measurement.
+
 ## Working limits
 
 One PM/executor; preserve unrelated work, staged changes, and stashes. Use scoped
