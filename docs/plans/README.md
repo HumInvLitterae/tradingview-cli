@@ -25,5 +25,10 @@ acceptance in the inventory. Broader identity behavior, new live operations, and
 publication remain separate decisions. Version selection follows the completed
 release scope.
 
+The authorized saved-study trial passed for one existing no-input indicator.
+Saved ID/version and compiled condition matched; the new study was removed and
+the original chart and saved source were preserved. The inventory distinguishes
+this metadata qualification from full alert creation and input-bearing cases.
+
 Completed records preserve evidence for their recorded inputs. They are not
 current runtime acceptance or authorization for new live operations.

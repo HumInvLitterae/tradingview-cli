@@ -1,13 +1,11 @@
 # Direction after v0.36.0
 
-Status: on 2026-10-05 the owner approved the proposed direction, the unknown
-creation-outcome correction, and the study/input identity investigation. The
-correction is implemented and committed; the inventory owns acceptance and
-investigation results. A bounded metadata read has now exposed an input-position
-defect, reproduced using synthetic data. The owner then approved the bounded
-input-ID correction, which is implemented locally. Broader identity behavior
-remains conditional. One executor works without delegated agents. No new live
-operation or publication is authorized.
+Status: the approved unknown-outcome and native input-ID corrections are
+implemented and committed. An authorized one-study compile/read/cleanup trial
+also matched a saved no-input indicator to its chart entity, saved revision, and
+compiled condition. The inventory owns the evidence and its limits. Broader
+identity behavior and live creation remain separate decisions. One executor
+works without delegated agents; no further live scope or publication is implied.
 
 ## Released baseline
 
@@ -100,9 +98,10 @@ subset and its omitted behavior before seeking implementation approval.
 
 ## Current investigation decision
 
-The bounded read-only observation found native script/version and condition
-metadata, but no chart study matching the saved catalog. Full saved-study binding
-is therefore still unqualified. More immediately, the production input mapping
+The initial read-only observation found native script/version and condition
+metadata, but no chart study matching the saved catalog. A subsequent authorized
+compile/read/cleanup trial established that binding for one saved no-input
+indicator. Input-bearing and duplicate-study cases remain unqualified. More immediately, the production input mapping
 turned synthetic internal text into in_0 instead of retaining the intended value
 20. The [inventory](next-version-work-items.md#approved-input-id-correction)
 records the reproduction, approved before/after examples, and acceptance.
@@ -112,12 +111,13 @@ identity workflow. Local implementation preserves native IDs and rejects
 incomplete metadata without a live account write. The count now means verified
 user inputs. No broader identity behavior is implied.
 
-Read-only follow-up found existing saved test indicators with one condition and
-no user inputs. The inventory now prepares a one-study open/compile/read/cleanup
-trial using unchanged saved source. It needs explicit chart-mutation approval.
-It can qualify saved-version and compiled-condition binding for that limited
-case; it cannot qualify input-bearing scripts or full alert creation. Deferring
-this trial and releasing the two completed fixes remains a valid alternative.
+The approved trial used unchanged saved source, produced exactly one study,
+matched both native ID/version representations and the condition ID/title, then
+removed only that new entity. The original chart studies, symbol, resolution,
+and saved source/revision were preserved. This qualifies the native metadata
+path for that limited case, not input-bearing scripts or full alert creation.
+Use this evidence when proposing missing/ambiguous identity behavior; do not
+promote a new selector or broader admission change without concrete examples.
 
 ## Other candidates and tradeoffs
 

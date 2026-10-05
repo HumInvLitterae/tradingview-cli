@@ -18,7 +18,7 @@ Live qualification gaps are not closed by publication.
 | --- | --- | --- |
 | 1 | Indicator-alert unknown creation outcomes | Approved and implemented locally. Production-JavaScript regression reproduced the incorrect false result; see acceptance below. |
 | 2 | Exact study and input identity | Bounded read-only observation completed. Native identity/version/condition fields exist; positional input remapping reproduced a wrong payload with synthetic data. The owner approved the bounded input-ID correction; implementation and acceptance follow below. |
-| 3 | Supported identity and creation readback | Existing saved test indicators were inspected read-only. A one-study compile/read/cleanup trial is ready for approval below; full creation remains separate. |
+| 3 | Supported identity and creation readback | The authorized one-study compile/read/cleanup trial passed for a no-input saved indicator. Full identity behavior, input-bearing qualification, and creation readback remain separate. |
 | 4 | Release the completed slice | Version remains provisional: defect-only v0.36.1 or additive v0.37.0, selected after scope review. |
 
 The owner approved priorities 1 and 2 on 2026-10-05. Priority 3 remains
@@ -221,7 +221,7 @@ chosen chart. Creating/saving or adding such an indicator would change state;
 its exact source, instances, input settings, and cleanup must be agreed first.
 A successful metadata read alone does not authorize those actions.
 
-### Next saved-study observation, prepared for approval
+### Saved-study observation and acceptance
 
 On the owner's next-work request, read-only target discovery confirmed the same
 active test layout. A saved-catalog read found two existing test indicators.
@@ -235,9 +235,10 @@ binding. No saved source, editor selection, chart study, or alert was changed.
 Use one of these existing saved indicators for the next bounded trial. This
 avoids creating or overwriting cloud source. The concrete script name, saved
 revision, and target are selected privately with the owner, not embedded here.
-The trial requires approval for opening/selecting that saved script in Pine,
+The owner explicitly approved opening/selecting that saved script in Pine,
 one normal compile that may add a chart study, and removal of only the verified
-new study. No source edit, save, new script, input edit, or alert operation is
+new study. The procedure below was executed once; it is not standing authority
+for another target or script. No source edit, save, new script, input edit, or alert operation is
 included. The editor may remain open with the test script selected; existing
 unsaved work must not be discarded to start the trial.
 
@@ -264,10 +265,42 @@ unsaved work must not be discarded to start the trial.
    duplicate-name selection, saved-revision mismatch, full create readback, or
    notification delivery.
 
-If the owner prefers no chart mutation, retain the two completed fixes as the
-next release slice and defer saved-study qualification. Neither route requires
-a new public selector now. A later input-bearing or duplicate-study trial needs
-its own source/instance/input examples; do not imply the no-input trial covers it.
+Acceptance on 2026-10-05:
+
+- The active editor's source matched its own saved revision before selection.
+  No unsaved edits were discarded. pine open returned slot_rebound:true and
+  binding_verified:true, and the selected editor text matched the approved
+  saved revision before compilation.
+- Normal pine compile ran once and returned zero errors. Study count increased
+  from 27 to 28. Exactly one new entity was present; every original entity
+  remained. Symbol and resolution were unchanged.
+- The new study's meta.scriptIdPart and pineId input both matched the selected
+  saved ID. Its meta.pine.version and pineVersion input both matched the selected
+  saved revision. These comparisons occurred in memory; identifiers are not
+  retained in this record.
+- Exactly one compiled alertcondition had the expected plot_1 ID and matching
+  title from styles. Declared and returned user-input counts were both zero.
+  This agrees with the production local parser for this source only.
+- The verified new entity was removed once through indicator remove. Readback
+  confirmed its absence and exactly the original 27-entity set. Symbol and
+  resolution remained unchanged. A saved-catalog/source re-read confirmed
+  the saved revision and source were unchanged. Editor source also still matched
+  the selected saved source; the editor remains on the approved test script.
+
+No source edit/save, input change, raw compile, alert request, or mutation retry
+occurred. The run used the installed v0.36.0 CLI for editor/indicator operations
+and bounded metadata evaluations for identity comparisons. It does not validate
+the unreleased alert input fix through a real creation request. Temporary local
+recovery material is removed after successful cleanup and documentation checks.
+
+This closes native metadata feasibility for one saved no-input indicator:
+existing facilities can connect the saved revision, chart entity, and compiled
+condition without relying on display-name equality. It does not establish a
+public selector policy or full alert-create readback. A later input-bearing or
+duplicate-study trial needs its own source/instance/input examples; do not imply
+this trial covers it. The next implementation decision can now use demonstrated
+native identity fields, with missing or ambiguous identity handled explicitly.
+No new CLI flag or automatic admission change is introduced by this observation.
 
 ## Historical v0.36.0 preparation evidence
 
