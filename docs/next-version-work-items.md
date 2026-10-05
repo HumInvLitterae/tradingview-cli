@@ -1,11 +1,112 @@
-# Work inventory after v0.35.0
+# Work inventory after v0.36.0
 
-Updated 2026-10-05. [Direction](next-version-roadmap.md) ·
-[Released contracts and evidence](plans/archives/tradingview-cli-chart-analysis-contracts.md).
-The owner approved the diagnostic spec contract below and bounded weekly/monthly
-technicals qualification on 2026-10-05. The source-verification contract was also
-approved later that day. The local release candidate is v0.36.0; publication
-has not been authorized or performed.
+Updated 2026-10-05. [Proposed direction](next-version-roadmap.md).
+
+## Current status and next queue
+
+v0.36.0 is published at 5c72c081b8e0539454a8be0e001702735656585e.
+GitHub release metadata, four uploaded native archives plus SHA256SUMS, and
+successful CI and Release runs at that commit were checked on 2026-10-05.
+No archive was downloaded or executed in this planning pass.
+
+The diagnostic spec, saved-source guard, Pine Editor repair, and bars-frame fix
+below are released. Statements about pending publication or CI in the historical
+sections describe their original checkpoints and are superseded by this status.
+Live qualification gaps are not closed by publication.
+
+| Priority | Proposed work | State / next decision |
+| --- | --- | --- |
+| 1 | Indicator-alert unknown creation outcomes | Approved and implemented locally. Production-JavaScript regression reproduced the incorrect false result; see acceptance below. |
+| 2 | Exact study and input identity | Source investigation complete. Native entity/input access exists; saved-version and compiled-condition binding remain UNCONFIRMED without a bounded live probe. |
+| 3 | Supported identity and creation readback | Conditional on priority 2 and approved contracts. Live creation, readback, and cleanup need bounded account authority. |
+| 4 | Release the completed slice | Version remains provisional: defect-only v0.36.1 or additive v0.37.0, selected after scope review. |
+
+The owner approved priorities 1 and 2 on 2026-10-05. Priority 3 remains
+conditional on demonstrated identity support and agreed public examples.
+No additional agents are planned. The roadmap owns direction and contract
+examples. This inventory records the bounded correction and investigation below.
+Historical v0.36.0 acceptance remains unchanged.
+
+## Approved outcome correction and identity investigation, 2026-10-05
+
+Scope: represent unknown indicator-alert creation outcomes accurately, and
+investigate existing study/input identity facilities. Preserve confirmed-success
+and preflight behavior. No new selector, stronger identity promise, automatic
+retry, account operation, dependency, or publication is included.
+Completed authorized work is committed in coherent batches after verification.
+One executor performs the work without additional agents.
+
+### Implementation and contract
+
+The [adapter](../crates/cli/src/ops/alert/indicator.rs) now reports created:null
+and creation_outcome:unknown for create_request_unavailable,
+create_request_failed, post_list_unavailable, and post_check_failed. HTTP/provider
+failure does not establish absence of a write. The Rust evaluation boundary also
+marks lost, exceptional, or malformed results unknown while preserving the
+original error kind, exit code, and available details such as failure_stage.
+Only an explicit returned preflight result retains created:false. Source
+verification fails before this creation evaluation and keeps its original errors.
+Confirmed success and dry-run retain their existing shapes.
+
+The native Runtime already exposes errors and the existing normalizer already
+preserves error details. Reuse them; a new outcome framework, persistent journal,
+transport retry, or model-crate API is unnecessary. Update the spec, CLI guide,
+both distributed indicator-alert references, and changelog with the same meaning.
+
+### Acceptance
+
+The new production-generated JavaScript regression failed before the correction
+with `post_list: creation cannot be ruled out` and `false !== null`.
+A separate Runtime-loss regression failed because created was absent rather
+than null. After correction, the JavaScript matrix covers failed readback,
+no matching alert, fetch rejection, response-body failure, HTTP failure,
+provider error, pre-list failure, and confirmed success. Each dispatched case
+issues exactly one POST; pre-list failure issues none. Returned results also
+pass through the real Rust adapter, normalizer, and error envelope.
+
+Runtime fixtures cover timeout, connection failure, and evaluation error with
+failure_stage retained, plus null, empty, and non-object results. Source mismatch
+and unavailable saved identity still stop before any alert operation.
+Focused acceptance passed with one Cargo build job and one test thread:
+
+- Alert Rust module: 33 passed; three JavaScript tests were skipped here and
+  exercised through the dedicated gate.
+- Pinned Node 24.21.0 account JavaScript gate: four passed, including the new
+  eight-case production-expression matrix.
+- Indicator-alert offline spec integration test: one passed. The built binary's
+  spec output also includes both new error fields with TV_CDP_PORT invalid.
+- Scoped CLI library/spec-target Clippy passed with warnings denied.
+- Formatting, diff checks, public-hygiene self-test and tracked-file scan,
+  14 package-checker self-tests, both affected standalone skill references,
+  and 28 changed-document local link targets passed.
+
+No full workspace suite, live creation, notification, Desktop read, normal CI,
+or optimized archive qualification was performed. This is local fixture and
+offline acceptance, not live creation acceptance. The correction is committed as
+28a8b07. Priority 1 is complete locally; priority 2 has source findings and
+needs the bounded observation below before a broader implementation decision.
+
+### Identity feasibility findings
+
+| Required fact | Existing facility and evidence | Conclusion |
+| --- | --- | --- |
+| Select one chart study | [Indicator reads](../crates/cli/src/ops/data/indicator.rs) use getStudyById(entity_id); indicator edits already accept entity IDs | Existing native selection can be reused. Current live availability is not requalified. |
+| Read inputs by their actual IDs | [Indicator edits](../crates/cli/src/ops/indicator.rs) use getInputValues entries by input.id; the alert adapter currently assigns returned positions to in_N | Native input IDs are available in existing code paths. Their mapping to alert payload keys needs qualification before replacing the positional mapping. |
+| Reuse existing public output as a complete input payload | [Study-value shaping](../crates/cli/src/ops/data/study_values.rs) caps and filters inputs; indicator get also filters long text/string values | Unsuitable as a complete creation payload. Reuse native reads, not the intentionally lossy public summaries. |
+| Tie a chart study to the saved revision | The saved-script preflight identifies catalog ID/version, while the chart path matches labels | The required chart-study-to-saved-version relationship remains UNCONFIRMED. Entity ID alone does not prove it. |
+| Verify compiled condition identity | Local Pine parsing produces best-effort plot candidates; current creation does not read compiled condition metadata | Source equality does not establish this relationship. Native metadata availability remains UNCONFIRMED. |
+| Identify exactly the created alert | Current readback searches new list IDs by condition/message and optional symbol, without binding a create-response ID | Concurrent matching alerts and full saved-version/input/resolution confirmation remain outside the completed correction. |
+
+Next useful evidence is a bounded read-only probe of one explicitly selected
+Desktop chart and saved script. Inspect metadata field presence and compare
+identities in memory; retain only public-safe capability conclusions. Do not
+save/compile source, insert or edit studies, create alerts, or dump raw account
+metadata. A concrete target and authority are still needed. If no stable saved
+revision/condition relationship is available, present the narrower supported
+workflow before proposing flags. Any later creation acceptance must separately
+name the test alert, permitted count, readback, and cleanup authority.
+
+## Historical v0.36.0 preparation evidence
 
 ## Released baseline
 
