@@ -18,7 +18,7 @@ Live qualification gaps are not closed by publication.
 | --- | --- | --- |
 | 1 | Indicator-alert unknown creation outcomes | Approved and implemented locally. Production-JavaScript regression reproduced the incorrect false result; see acceptance below. |
 | 2 | Exact study and input identity | Bounded read-only observation completed. Native identity/version/condition fields exist; positional input remapping reproduced a wrong payload with synthetic data. The owner approved the bounded input-ID correction; implementation and acceptance follow below. |
-| 3 | Supported identity and creation readback | Conditional on priority 2 and approved contracts. Live creation, readback, and cleanup need bounded account authority. |
+| 3 | Supported identity and creation readback | Existing saved test indicators were inspected read-only. A one-study compile/read/cleanup trial is ready for approval below; full creation remains separate. |
 | 4 | Release the completed slice | Version remains provisional: defect-only v0.36.1 or additive v0.37.0, selected after scope review. |
 
 The owner approved priorities 1 and 2 on 2026-10-05. Priority 3 remains
@@ -220,6 +220,54 @@ or full post-create identity proof. Those require a saved test indicator on a
 chosen chart. Creating/saving or adding such an indicator would change state;
 its exact source, instances, input settings, and cleanup must be agreed first.
 A successful metadata read alone does not authorize those actions.
+
+### Next saved-study observation, prepared for approval
+
+On the owner's next-work request, read-only target discovery confirmed the same
+active test layout. A saved-catalog read found two existing test indicators.
+Their exact saved revisions were read without exposing source text or IDs in
+tracked files. Local production pine alertconditions parsing reported one
+candidate at plot_1 after one preceding output for each script. Both sources
+contained no input-call tokens and declared indicators rather than strategies.
+This is static source evidence, not successful compilation or current study
+binding. No saved source, editor selection, chart study, or alert was changed.
+
+Use one of these existing saved indicators for the next bounded trial. This
+avoids creating or overwriting cloud source. The concrete script name, saved
+revision, and target are selected privately with the owner, not embedded here.
+The trial requires approval for opening/selecting that saved script in Pine,
+one normal compile that may add a chart study, and removal of only the verified
+new study. No source edit, save, new script, input edit, or alert operation is
+included. The editor may remain open with the test script selected; existing
+unsaved work must not be discarded to start the trial.
+
+1. Reconfirm the explicit target, exact saved revision, and absence of a matching
+   study. Inspect existing editor state first. If switching could discard
+   unpreserved edits or binding cannot be established, stop before switching.
+   Capture the pre-trial study identities in memory.
+2. Open the approved saved script through pine open and require slot_rebound and
+   binding_verified. Compare editor source with the saved revision without
+   modifying either. Use normal pine compile once; do not use raw-compile,
+   save-related actions, or retry after an uncertain dispatch.
+3. Require exactly one newly added study and match its scriptIdPart/pineId and
+   pine.version/pineVersion to the selected catalog revision in memory. Do not
+   use top-level meta.version as the saved revision. Compare the compiled
+   alertcondition ID/title with the local candidate and confirm the empty
+   declared user-input set. Do not call alert create-indicator, even as a
+   substitute for this metadata observation.
+4. Remove only that new entity after its identity is verified and the owner has
+   authorized cleanup. Check that it is absent and all pre-existing study IDs
+   remain. If multiple additions, unknown identity, or an uncertain operation
+   prevent safe cleanup, stop and report the remaining state; never guess an ID.
+5. Retain aggregate match/failure results only. A successful trial qualifies one
+   no-input script on one target. It does not cover non-default inputs,
+   duplicate-name selection, saved-revision mismatch, full create readback, or
+   notification delivery.
+
+If the owner prefers no chart mutation, retain the two completed fixes as the
+next release slice and defer saved-study qualification. Neither route requires
+a new public selector now. A later input-bearing or duplicate-study trial needs
+its own source/instance/input examples; do not imply the no-input trial covers it.
 
 ## Historical v0.36.0 preparation evidence
 

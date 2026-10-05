@@ -112,6 +112,13 @@ identity workflow. Local implementation preserves native IDs and rejects
 incomplete metadata without a live account write. The count now means verified
 user inputs. No broader identity behavior is implied.
 
+Read-only follow-up found existing saved test indicators with one condition and
+no user inputs. The inventory now prepares a one-study open/compile/read/cleanup
+trial using unchanged saved source. It needs explicit chart-mutation approval.
+It can qualify saved-version and compiled-condition binding for that limited
+case; it cannot qualify input-bearing scripts or full alert creation. Deferring
+this trial and releasing the two completed fixes remains a valid alternative.
+
 ## Other candidates and tradeoffs
 
 | Candidate | Decision for this draft | Reopen when |
