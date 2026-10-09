@@ -1,156 +1,133 @@
-# Direction after v0.36.0
+# Direction after v0.37.0
 
-Status: the unknown-outcome and native input-ID corrections, opt-in indicator
-verification, and named Pine creation are implemented and locally accepted.
-Pine creation belongs to the same pre-release scope, prompted by the manual-save
-gap encountered during indicator qualification. Final review found no additional
-blocking issue. Local preparation of the complete v0.37.0 candidate is finished,
-including both features and the alert corrections. Its macOS arm64 archive
-passed local qualification. Candidate CI and publication remain pending. Complete
-created-alert identity and live normal alert creation remain separate work. One executor works without delegated agents.
+Status: implemented and locally accepted on 2026-10-10; cross-platform CI and
+release preparation remain pending. Dependency updates are committed separately
+as `15c19c54`. The owner approved the MCP diagnostic slice and requested assessment
+of the SDK refresh-rejection callback. The [inventory](next-version-work-items.md#approved-mcp-read-diagnostics-2026-10-10)
+records implementation and acceptance. Live account writes, additional agents,
+and publication remain outside this scope.
 
-## Released baseline
+## Current baseline
 
-[v0.36.0](releases/v0.36.0.md) is published at
-5c72c081b8e0539454a8be0e001702735656585e. GitHub release metadata and successful
-CI and Release runs at that commit were checked on 2026-10-05. Four native
-archives and SHA256SUMS are uploaded. This planning pass did not download or
-execute them.
+v0.37.0 is published at `1fe311be70c756beb007a58a257c07e4e2f6fd10`.
+The tag, main branch, successful CI and Release runs, and four native assets plus
+SHA256SUMS were checked on 2026-10-10. The assets were not executed in this pass.
+The [release notes](releases/v0.37.0.md) describe named Pine creation, opt-in
+indicator verification, native input IDs, and unknown creation outcomes.
+Those features are released, not remaining next-version work.
 
-The release includes saved-Pine source verification, the Pine Editor opening
-repair, malformed bars-frame rejection, and offline quote-data diagnostic
-semantics. The [inventory](next-version-work-items.md) preserves their local
-acceptance evidence. They are completed work, not candidates for the next release.
+The [inventory](next-version-work-items.md#dependency-refresh-before-next-version-planning-2026-10-10)
+records the new dependency set and local checks. The workspace version stays
+0.37.0 until final release preparation.
 
-## Approved direction
+## Approved next slice
 
-Make indicator-alert results useful for deciding whether to inspect account
-state, correct a request, or proceed. A user must not interpret an unconfirmed
-creation as proof that nothing was created. After that correction, investigate
-whether the selected study, its inputs, and the resulting alert can be tied to
-the intended saved revision and condition.
+Make MCP read failures explain how far the operation progressed. The proposed
+release is v0.38.0 because it adds public diagnostic information. Versioning
+remains part of final release preparation.
 
-This direction was selected because the existing supported workflow has
-specific gaps visible in code and its user guide. Current usage frequency is
-UNCONFIRMED. No incorrect or duplicate live alert was observed in this planning
-pass. This proposal does not promise complete indicator-alert verification in
-one release.
+A recent bounded search timed out with `stage:tool_response` and zero tool
+attempts. A standard-budget search then timed out with one attempt. The same
+search later succeeded without a CLI or authentication change. This proves a
+useful diagnostic gap, not a specific provider defect or a retry requirement.
+The observed recovery does not establish current service health.
 
-## Proposed order and release boundaries
+[client.rs](../crates/mcp/src/client.rs) sets `tool_response` before
+connection setup and tool-catalog retrieval. Before this change, the public error
+could not identify which of those steps was waiting.
+[http.rs](../crates/mcp/src/http.rs) already records bounded protocol observations
+for the private proof path.
+[Existing fixtures](../crates/mcp/src/fixtures.rs) distinguish initialization and
+catalog timeouts and check that tokens and request arguments are absent.
+Reuse these facilities, with an explicit public allowlist, rather than exposing
+the whole private report or adding another connection stack.
 
-| Order | Deliverable | User-visible completion | Gate |
-| --- | --- | --- | --- |
-| 1 | Distinguish creation failure from an unknown outcome | A failed post-create readback cannot be read as proof of non-creation; guidance directs the user to inspect state before repeating a request | Approved error examples; implemented with production JavaScript fault fixtures, see inventory |
-| 2 | Qualify exact study selection and input identity | Determine whether duplicate study names and incomplete inputs can be rejected or resolved using stable native identity | Native identity and saved compiled metadata were observed in bounded probes; the input-ID correction is implemented and accepted |
-| 3 | Implement the supported identity and readback contract | For the agreed supported case, use the intended inputs and confirm the newly created alert against the agreed fields | Opt-in preflight is approved and implemented; complete post-create identity and live create/readback/cleanup need their own agreed scope |
-| 4 | Release the completed slice | Ship a coherent improvement with matching CLI guidance, fixtures, CI, and native packages | Refresh existing dependencies, preserve resource limits, and obtain publication authority |
+## Approved public behavior
 
-Order 1 can ship independently if the later identity investigation is inconclusive.
-The owner selected v0.37.0 for the approved additive CLI/JSON behavior. Finish
-the required named Pine creation fix before preparing that release. Both features
-belong in the same candidate; no candidate excluding that fix is current.
+Keep `mcp_error.v1`, the existing kind/code/stage/exit status, tool-attempt count,
+and automatic-retry policy. For MCP read transport failures, add optional
+`details.protocol` observations for `initialize`, `notifications/initialized`,
+`tools/list`, `tools/call`, and `event_stream` when observed. Each observation
+contains `phase` and `status`. Allowed phases are `await_headers`,
+`headers_received`, `accepted`, `json_body`, `json_complete`, and `sse_stream`.
+Status is the observed HTTP status or null. Omit unobserved methods. Session
+cleanup and cancellation are excluded from this initial public projection.
+No URLs, headers, session IDs, tokens, tool arguments, or raw responses belong
+in this object.
 
-### Approved first contract
+For example, initialization succeeded but the tool catalog did not return:
 
-The v0.36.0 [adapter](../crates/cli/src/ops/alert/indicator.rs) reported
-created:false for post_list_unavailable and post_check_failed after an accepted
-create request. The [model normalizer](../crates/model/src/alert.rs) carries those
-fields into error details. The [user guide](../skills/pine-develop/references/indicator-alerts.md)
-already warns that failed readback does not prove non-creation.
+```json
+{
+  "code": "deadline_exceeded",
+  "stage": "tool_response",
+  "tool_attempts": 0,
+  "automatic_retry": false,
+  "protocol": {
+    "initialize": {"phase": "json_complete", "status": 200},
+    "tools/list": {"phase": "await_headers", "status": null}
+  }
+}
+```
 
-The approved examples below are error-detail fragments, not replacement envelopes:
+This is an illustrative error-details fragment, not a replacement envelope.
+It tells the caller that catalog retrieval was waiting before a tool attempt.
+Multiple concurrent protocol observations are retained separately. An SSE stream
+being open does not by itself identify the failed request. Attempt counts remain
+local attempt evidence, not proof that the provider accepted or completed a call.
 
-| Case | v0.36.0 behavior | Approved meaning |
-| --- | --- | --- |
-| Saved-source mismatch before dispatch | Validation error; no creation attempted | Retain existing behavior |
-| Creation accepted, subsequent list unavailable | phase:post_list_unavailable, created:false | phase retained; created:null, creation_outcome:unknown |
-| Creation accepted, no uniquely confirmed matching result | phase:post_check_failed, created:false | phase retained; created:null, creation_outcome:unknown |
-| Confirmed new alert | Success with created:true | Preserve the successful shape |
+The improvement helps users decide which evidence to report and avoids treating
+all timeouts as failed data-tool responses. It does not restore a stalled service,
+identify a root cause without evidence, change the 30-second default deadline,
+retry automatically, or switch data sources. Credential errors retain their
+existing explicit-login guidance. Account mutations keep their current contract.
 
-The owner approved created:null and creation_outcome:unknown for unconfirmed
-creation errors. This nullable change is intentional; callers must not treat
-null as confirmed false. The implementation also covers POST request/response
-failures, including HTTP/provider errors, and lost or malformed Runtime results.
-Those outcomes cannot establish absence of a side effect. Existing error kinds,
-exit codes, phases, preflight errors, and successful shapes remain unchanged. Do not add automatic retries,
-automatic deletion, or an account-persistent journal to solve this problem.
-Acceptance must prove that ambiguous results cannot enter the confirmed-success
-path and that no second creation request is issued.
+## Work and acceptance
 
-### Identity scope and remaining readback
+One executor owns the work; no additional agents are proposed.
 
-Legacy creation still selects the first chart study matching a name/title, but
-the approved correction now preserves and validates native input IDs. Legacy
-condition candidates remain local-parser results. The opt-in path verifies saved
-compiled conditions and exact native saved-revision inputs, with an explicit
-selector for duplicate instances. It never substitutes names or defaults when
-required evidence is missing.
+1. The owner approved the additive error fragment and method/phase values.
+   The affected error boundary, spec builders, fixtures, and three distributed
+   connection-guide copies have been inspected.
+2. Implement public shaping at the existing MCP error boundary. Preserve the
+   underlying per-method observations and old fields. Update offline spec, CLI
+   documentation, and every distributed copy of the MCP connection guide.
+3. Exercise the public error path with stalled initialization, catalog headers,
+   tool headers, JSON bodies, and SSE responses. Include successful requests,
+   credential failures, and overlapping streams. Assert that no extra provider
+   request or retry occurs and that sensitive fields cannot reach public output.
+4. Run affected MCP/CLI tests, required baseline and packaging checks, then normal
+   CI on supported platforms. A bounded read-only smoke may supplement fixture
+   evidence when explicitly authorized; do not induce a real outage or use live
+   account writes to test errors.
+5. Prepare the release only after implementation and acceptance. Keep feature
+   work, necessary CI fixes, and `chore(release): Prepare v0.38.0` in that order.
+   Push, tagging, and publication remain owner-controlled actions.
 
-Readback still checks a new ID, condition ID, message, and symbol when present.
-It does not establish every input, saved version, or resolution. The stronger
-preflight does not close those post-create gaps. Any further identity work must
-agree the fields to be verified and cover unrelated concurrent creation and an
-accepted create followed by failed readback. Missing evidence remains
-UNCONFIRMED rather than an invented match.
+Every implementation stage must leave the existing commands usable. No new
+command, daemon, log service, persisted format, or dependency is needed for the
+approved diagnostic slice.
 
-## Current investigation decision
+## Next candidate and alternatives
 
-The initial read-only observation found native script/version and condition
-metadata, but no chart study matching the saved catalog. A subsequent authorized
-compile/read/cleanup trial established that binding for one saved no-input
-indicator. Non-default input and duplicate-study cases remain unqualified live.
-Before its correction, the production input mapping turned synthetic internal
-text into in_0 instead of retaining the intended value 20. The [inventory](next-version-work-items.md#approved-input-id-correction)
-records the reproduction, approved before/after examples, and acceptance.
+Complete indicator-alert creation readback is the next independent candidate.
+The current [matchingNewAlert](../crates/cli/src/ops/alert/indicator.rs) checks a
+new ID, condition ID, message, and symbol when supplied; it does not fully bind
+the result to the saved revision, inputs, or resolution. The
+[study-verification record](plans/tradingview-cli-indicator-study-verification.md)
+qualifies preflight and preview, not that complete post-create relationship.
 
-The owner approved that input-ID correction before a new selector or full
-identity workflow. Local implementation preserves native IDs and rejects
-incomplete metadata without a live account write. The count now means verified
-user inputs. No broader identity behavior is implied.
+Before proposing a stronger success contract, establish which identity fields
+are available from the create response and subsequent reads. The desired result
+is that an unrelated concurrent alert cannot satisfy creation verification.
+Missing or ambiguous evidence must remain an unknown outcome. Exact live targets,
+creation limits, and cleanup authority must be agreed before an account trial.
+Do not promise full identity verification until those provider capabilities are
+qualified. This research need not delay the smaller MCP diagnostic release.
 
-The approved trial used unchanged saved source, produced exactly one study,
-matched both native ID/version representations and the condition ID/title, then
-removed only that new entity. The original chart studies, symbol, resolution,
-and saved source/revision were preserved. This qualifies the native metadata
-path for that limited case, not input-bearing scripts or full alert creation.
-Use this evidence when proposing missing/ambiguous identity behavior; do not
-promote a new selector or broader admission change without concrete examples.
-
-The [study-verification plan](plans/tradingview-cli-indicator-study-verification.md)
-now records the approved opt-in verification implementation, preserving existing
-no-flag behavior. Saved compiled metadata removes the need for a chart study
-when there are no user inputs. Input-bearing verified calls use an exact native
-revision, with study-id resolving multiple instances. A separate Rust function preserves existing
-request literals and callers. This supersedes mandatory chart admission. Local
-implementation and bounded acceptance passed, including a verified no-input
-preview without chart insertion. Post-create readback limits remain.
-
-## Other candidates and tradeoffs
-
-| Candidate | Decision for this draft | Reopen when |
-| --- | --- | --- |
-| Technicals two-hour qualification and prior 429 diagnosis | Separate bounded qualification, not a release feature | A needed interval or a new failure has an authorized target; no automatic polling or fallback |
-| Nonempty native alert history, graphical Linux OAuth, Windows skill-manager execution | Keep explicit platform/provider acceptance gaps | An appropriate account or platform and bounded test are available |
-| Chart-read speed or reconnect changes | Defer; the recorded 40-read run did not reach the investigation trigger | An ordinary or authorized read exceeds one second, times out, or fails a method call |
-| Hotlist, depth, discover, and broader spec/schema coverage | Defer blanket expansion | A concrete caller cannot discover a required invocation or interpret its result |
-| Indicator search, larger bar caps, additional intraday bars, drawing geometry, Windows MSIX/AUMID | No promotion | A demonstrated workflow need justifies a separate proposal |
-
-An analysis-first alternative would focus on a demonstrated data-read defect or
-needed interval. It should take priority if such evidence arrives. Current
-qualification gaps alone do not establish a product defect or justify another
-backend. The [CDP strategy](notes/cdp-stability-and-autonomous-operation-strategy.md)
-continues to govern transport proposals.
-
-## Execution limits
-
-The owner approved the outcome and input corrections, bounded metadata research,
-and the opt-in verification contract in the linked ExecPlan. Implementation and
-local acceptance are complete. Dependency additions, live account writes,
-complete post-create identity, and publication remain outside that scope.
-Keep private consumer details out of public records. Run local Cargo checks
-serially with one build job and one test thread, reuse unchanged valid evidence,
-and avoid redundant broad builds. Before release, review existing dependency
-updates and resolver constraints, run affected checks and normal CI, and qualify
-native packages. Fixture success, read-only qualification, normal creation, and
-notification delivery remain separate evidence. This slice does not promise
-notification delivery.
+An alert-first release is a reasonable alternative if reliable alert creation is
+the immediate priority. It needs more provider qualification and live-write scope
+than the recommended diagnostics slice. Automatic timeout extension/retry and
+blanket new-command expansion are not justified by the observed transient outage.
+Previously deferred bars, drawing, platform, and discovery work remains deferred
+unless a concrete workflow supplies new evidence or a changed priority.

@@ -171,6 +171,12 @@ normal errors and execution ordering; this tool adds no retry or source fallback
 
 ## Qualified MCP read details
 
+MCP read specs identify `mcp_error.v1` and describe optional `details.protocol`
+progress on read timeouts and connection failures after authentication. See the
+[error contract](official-mcp.md#errors-and-retry) for allowed methods, phases,
+and status meaning. These observations do not establish a root cause or provider
+acceptance and do not change retry policy.
+
 | Path after `tv spec` | Constraints and next-step guidance |
 | --- | --- |
 | `mcp search` | Query tokens are joined with spaces; the UTF-8 byte limit and allowed `--type` values come from request validation. Results remain candidates. |

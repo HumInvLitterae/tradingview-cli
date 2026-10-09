@@ -1,32 +1,26 @@
-# Work inventory after v0.36.0
+# Work inventory after v0.37.0
 
-Updated 2026-10-05. [Proposed direction](next-version-roadmap.md).
+Updated 2026-10-10. [Approved direction](next-version-roadmap.md).
 
 ## Current status and next queue
 
-v0.36.0 is published at 5c72c081b8e0539454a8be0e001702735656585e.
-GitHub release metadata, four uploaded native archives plus SHA256SUMS, and
-successful CI and Release runs at that commit were checked on 2026-10-05.
-No archive was downloaded or executed in this planning pass.
+v0.37.0 is published at `1fe311be70c756beb007a58a257c07e4e2f6fd10`.
+The remote tag and main branch, successful CI and Release runs, and four native
+archives plus SHA256SUMS were verified on 2026-10-10. No archive was executed in
+this planning pass. Named Pine creation, opt-in indicator preflight, native input
+IDs, and unknown creation outcomes are released. Historical pending-publication
+statements below describe their original checkpoints and are superseded here.
+Their live qualification limits remain applicable.
 
-The diagnostic spec, saved-source guard, Pine Editor repair, and bars-frame fix
-below are released. Statements about pending publication or CI in the historical
-sections describe their original checkpoints and are superseded by this status.
-Live qualification gaps are not closed by publication.
-
-| Priority | Proposed work | State / next decision |
+| Priority | Work | State / next decision |
 | --- | --- | --- |
-| 1 | Indicator-alert unknown creation outcomes | Approved and implemented locally. Production-JavaScript regression reproduced the incorrect false result; see acceptance below. |
-| 2 | Exact study and input identity | Bounded read-only observation completed. Native identity/version/condition fields exist; positional input remapping reproduced a wrong payload with synthetic data. The owner approved the bounded input-ID correction; implementation and acceptance follow below. |
-| 3 | Supported identity and creation readback | Native and saved-compiler probes passed within the bounds below. [Revised verification plan](plans/tradingview-cli-indicator-study-verification.md) records approved opt-in verification and study selection. Implementation and local acceptance passed, including no-input and input-bearing live previews, duplicate rejection, and explicit instance selection. Full created-alert identity remains separate. |
-| 4 | Release the completed slice | Prepare v0.37.0 after the required named Pine creation fix. Both features are locally accepted and remain Unreleased; no current release candidate is finalized. |
+| Complete | Existing dependency refresh | Committed as `15c19c54`; validation and resolver constraints are recorded below. |
+| Locally complete | Explain MCP read transport failures | Public-safe optional protocol observations, offline spec, guides, and regression tests passed local acceptance below. Cross-platform CI and release preparation remain pending. |
+| Next independent candidate | Complete indicator-alert creation readback | Current preflight is released. Qualify create-response/readback identity fields before proposing a stronger success contract or live trial. |
 
-The owner approved priorities 1 and 2 on 2026-10-05, then approved priority 3's
-opt-in preflight after metadata research and concrete public examples. Complete
-post-create identity remains separate. No additional agents are planned. The
-roadmap owns direction, the implementation plan owns its contract and acceptance,
-and this inventory records priority and retained evidence.
-Historical v0.36.0 acceptance remains unchanged.
+The roadmap owns direction; this inventory owns priority and retained evidence.
+One executor works without additional agents. The owner approved MCP diagnostic
+implementation on 2026-10-10. Live account writes remain outside that scope.
 
 ## Approved outcome correction and identity investigation, 2026-10-05
 
@@ -979,3 +973,65 @@ No production source, public contract, workspace version, or installed binary
 changed. No live provider/account operation, optimized release build, platform CI,
 or push was performed. Their historical evidence is not new acceptance of this
 dependency set. The next step is the owner's requested planning proposal.
+
+
+## Approved MCP read diagnostics, 2026-10-10
+
+The owner approved the roadmap's optional protocol observations and requested a
+judgment on the new SDK refresh-token rejection callback. One executor owns the
+implementation, verification, and commit without additional agents. Reuse this
+record and the roadmap; no second plan or independent review is introduced.
+
+The existing Http collector owns per-method observations. The client error
+boundary projects only the approved method, phase, and status fields for
+read timeouts and connection failures after authentication. A private pure
+projection keeps public-contract selection at that boundary. Returning the entire
+private diagnostic object would leak unrelated fields; replacing the collector
+with a new typed transport subsystem would broaden this small change needlessly.
+Account mutation errors, authentication guidance, retries, and deadline policy
+retain their existing behavior.
+
+The SDK callback lets a credential store retire definitively rejected refresh
+tokens. This client already persists the difference between attempted token
+exchanges and successfully saved credentials. `Auth::restore` rejects a later operation when those generations
+differ. A new [loopback regression](../crates/mcp/src/fixtures.rs) sends an OAuth
+`invalid_grant`, reopens the
+persisted budget, and confirms `auth_required`, the explicit-login hint, zero tool
+attempts, and no second refresh request despite the retained stored record. A new
+OAuth grant restores reads. The test passed before any diagnostic implementation.
+No callback override or credential deletion is needed to prevent reuse here.
+Local status still reports record presence/expiry, not provider acceptance.
+
+The public-path timeout regression failed before implementation because protocol
+observations were absent. The completed fixture matrix covers initialization,
+catalog and tool headers, JSON and SSE bodies, plus a concurrent event stream.
+A dropped connection also reports transport progress. The tests assert the
+existing code/stage/attempt count and no extra tool dispatch. Projection tests
+exclude unrecognized methods/phases, private fields, cancellation, and cleanup.
+Successful results and nearby auth/mutation errors retain their existing shape.
+Offline spec, the public error guide, and all three standalone MCP connection
+guides describe the same interpretation. No live provider trial or release
+preparation is needed to answer the callback question.
+
+
+### Local acceptance
+
+The required baseline passed with one Cargo build job and one test thread:
+workspace formatting, all-target/all-feature Clippy with warnings denied, and
+1,187 workspace tests with zero failures and 38 opt-in tests ignored. Focused
+acceptance also passed 73 MCP tests and 38 CLI spec tests. The built debug CLI's
+`spec mcp search` reports the new error interpretation with an invalid Desktop
+configuration and no connection attempt.
+
+The package checker passed 14 self-tests, all three changed standalone skills,
+and resource staging with seven skills per agent root. Public hygiene, changed
+local Markdown links, and the final diff check passed. Unchanged JavaScript and
+output-schema gates reuse the dependency-refresh evidence above; no relevant
+production expression or output schema changed.
+
+This is deterministic loopback/fixture and local macOS acceptance. No live
+provider or account operation, installed-binary replacement, Linux/Windows CI,
+optimized release candidate, push, tag, or publication was performed. Preserve
+this feature commit separately from dependency updates and final release
+preparation. The next release step is cross-platform CI after an authorized push,
+followed by the established release-preparation sequence.

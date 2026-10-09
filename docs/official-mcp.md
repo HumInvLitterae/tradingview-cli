@@ -956,9 +956,48 @@ it must not feed this output through a `bars.v1` parser or invent missing eviden
 
 Failures write an error envelope to stderr, leave stdout empty and return a
 nonzero exit code. `error.details.contract_version:"mcp_error.v1"` identifies the
-MCP-specific code, stage and dispatched tool count. No raw OAuth/server error is
-copied into the envelope. General clap syntax errors retain the existing CLI
-parser envelope.
+MCP-specific code, stage and local tool-attempt count. An attempt does not prove
+provider acceptance or completion. No raw OAuth/server error is copied into the
+envelope. General clap syntax errors retain the existing CLI parser envelope.
+
+Read failures with `code:"deadline_exceeded"` or `code:"transport_error"` at
+`stage:"tool_response"` may also include `details.protocol`. This object reports
+observed progress independently for `initialize`, `notifications/initialized`,
+`tools/list`, `tools/call`, and `event_stream`. Unobserved methods are omitted.
+Each entry contains only `phase` and `status`; status is the observed HTTP status
+or null before headers arrive. The allowed phases are:
+
+| Phase | Observation |
+| --- | --- |
+| `await_headers` | The request is starting or waiting for response headers. |
+| `headers_received` | Response headers arrived. |
+| `accepted` | The server returned HTTP 202; completion is not established. |
+| `json_body` | A JSON response body is being read. |
+| `json_complete` | The JSON response was decoded. |
+| `sse_stream` | The response is an SSE stream; tool completion is not established. |
+
+For example, this fragment records completed initialization and a catalog request
+still waiting for headers before any tool attempt:
+
+```json
+{
+  "code": "deadline_exceeded",
+  "stage": "tool_response",
+  "tool_attempts": 0,
+  "automatic_retry": false,
+  "protocol": {
+    "initialize": {"phase": "json_complete", "status": 200},
+    "tools/list": {"phase": "await_headers", "status": null}
+  }
+}
+```
+
+These are progress observations, not a root-cause verdict. A background event
+stream can overlap another request, and an open stream does not identify which
+request failed. Cleanup and cancellation are excluded, as are URLs, headers,
+session IDs, tokens, tool arguments, and raw response bodies. Successful results,
+authentication errors, and account-mutation errors do not gain this field.
+Diagnostics do not authorize retries, longer deadlines, or reauthentication.
 
 Credential failures keep `code:"credential_store_unavailable"` and may include a
 closed `reason` identifying worker spawn/input/output/exit, invalid worker reply,

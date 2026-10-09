@@ -5,6 +5,8 @@ use tradingview_model::{mcp_account::Request, mcp_bars, mcp_data};
 pub(super) fn read_metadata() -> Value {
     json!({
         "source": "tradingview_mcp",
+        "error_contract": "mcp_error.v1",
+        "error_interpretation": "Read deadline_exceeded and transport_error failures after authentication may include details.protocol. Each observed initialization, catalog, tool-call or event-stream method has a phase and nullable HTTP status. Observations are independent progress evidence, not a root-cause verdict or proof of provider acceptance. Unobserved methods are omitted; automatic retry remains disabled.",
         "requires": {"authentication": true, "desktop": false},
         "effects": {"account_mutation": false, "provider_request": true}
     })

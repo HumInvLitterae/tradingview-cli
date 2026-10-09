@@ -97,7 +97,7 @@ impl Http {
             .unwrap_or(Value::Null)
     }
 
-    // Private proof diagnostics only: closed protocol names, phases and statuses.
+    // Private diagnostics; the client projects the public read-error fields.
     // Keep each operation separate because the SDK may also open an SSE stream.
     fn describe_protocol(&self, method: &str, phase: &str, status: Option<StatusCode>) {
         if !matches!(

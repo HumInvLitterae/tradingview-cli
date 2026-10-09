@@ -1,5 +1,7 @@
 //! Loopback-only synthetic OAuth/MCP server. No provider or OS store access.
 
+mod protocol;
+
 use crate::{
     Failure,
     admission::Admission,
@@ -35,6 +37,7 @@ struct Response {
     mime: &'static str,
     extra: String,
     delay: Duration,
+    body_delay: Duration,
 }
 
 impl Response {
@@ -45,6 +48,7 @@ impl Response {
             mime: "application/json",
             extra: String::new(),
             delay: Duration::ZERO,
+            body_delay: Duration::ZERO,
         }
     }
 
@@ -132,6 +136,13 @@ impl Server {
                         body,
                     };
                     captured.lock().unwrap().push(request.clone());
+                    if mode == "disconnect-tool"
+                        && serde_json::from_slice::<Value>(&request.body)
+                            .ok()
+                            .is_some_and(|value| value["method"] == "tools/call")
+                    {
+                        return;
+                    }
                     let response = respond(&routes, &request, mode);
                     sleep(response.delay).await;
                     let head = format!(
@@ -145,6 +156,7 @@ impl Server {
                         response.extra
                     );
                     let _ = socket.write_all(head.as_bytes()).await;
+                    sleep(response.body_delay).await;
                     let _ = socket.write_all(&response.body).await;
                 });
             }
@@ -219,6 +231,11 @@ fn respond(ep: &Endpoints, r: &Request, mode: &str) -> Response {
             .collect();
             assert_eq!(fields.get("resource"), Some(&ep.resource));
             let refresh = fields.get("grant_type").map(String::as_str) == Some("refresh_token");
+            if refresh && mode == "refresh-invalid-grant" {
+                let mut reply = Response::json(json!({"error": "invalid_grant"}));
+                reply.status = 400;
+                return reply;
+            }
             if !refresh {
                 assert!(fields.get("code_verifier").is_some_and(|v| v.len() >= 43));
             }
@@ -241,17 +258,38 @@ fn respond(ep: &Endpoints, r: &Request, mode: &str) -> Response {
         }
         _ => {}
     }
+    if r.method == "GET" && mode == "slow-catalog-with-event-stream" {
+        let mut reply = Response::json(json!({}));
+        reply.mime = "text/event-stream";
+        reply.body = b": keepalive\n\n".to_vec();
+        reply.body_delay = Duration::from_secs(60);
+        return reply;
+    }
     if r.method == "GET" || r.method == "DELETE" {
         return Response::status(405);
     }
     let request: Value = serde_json::from_slice(&r.body).unwrap();
     let id = &request["id"];
     if (mode == "slow-initialize-headers" && request["method"] == "initialize")
-        || (mode == "slow-catalog-headers" && request["method"] == "tools/list")
+        || (matches!(
+            mode,
+            "slow-catalog-headers" | "slow-catalog-with-event-stream"
+        ) && request["method"] == "tools/list")
+        || (mode == "slow-tool-headers" && request["method"] == "tools/call")
     {
         let mut response = Response::status(200);
-        response.delay = Duration::from_secs(5);
+        response.delay = Duration::from_secs(60);
         return response;
+    }
+    if request["method"] == "tools/call"
+        && matches!(mode, "slow-tool-json-body" | "slow-tool-sse-body")
+    {
+        let mut reply = Response::json(json!({"synthetic-secret": true}));
+        reply.body_delay = Duration::from_secs(60);
+        if mode == "slow-tool-sse-body" {
+            reply.mime = "text/event-stream";
+        }
+        return reply;
     }
     if mode.starts_with("alert-history-") {
         if request["method"] == "tools/list" {
@@ -774,7 +812,9 @@ fn respond(ep: &Endpoints, r: &Request, mode: &str) -> Response {
         _ => panic!("unexpected synthetic method"),
     };
     let mut response = Response::json(json!({"jsonrpc": "2.0", "id": id, "result": result}));
-    if mode == "session-json" && request["method"] == "initialize" {
+    if matches!(mode, "session-json" | "slow-catalog-with-event-stream")
+        && request["method"] == "initialize"
+    {
         response.extra = "Mcp-Session-Id: synthetic-session\r\n".into();
     }
     if matches!(
@@ -1167,6 +1207,72 @@ async fn successful_server_rotation_with_failed_save_requires_reauthorization() 
 }
 
 #[tokio::test]
+async fn rejected_refresh_is_not_reused_and_new_authorization_restores_reads() {
+    use crate::client::{Operation, execute};
+
+    let server = Server::start("refresh-invalid-grant").await;
+    let (root, mut guard, budget, http, store) = context(&server, 30).await;
+    fixture_login(&http, &store, &budget).await;
+    let mut auth = Auth::discover(http.clone(), store.clone(), budget.clone())
+        .await
+        .unwrap();
+    auth.restore().await.unwrap();
+    assert_eq!(auth.refresh().await.unwrap_err(), Failure::AuthRequired);
+    assert!(store.load_record().await.unwrap().is_some());
+
+    let resumed = Arc::new(Mutex::new(
+        Budget::open(&root.path().join("state"), true).unwrap(),
+    ));
+    let reader = store.next_operation();
+    let request = || {
+        Operation::Bars(
+            tradingview_model::mcp_bars::Request::new("NASDAQ:EXAMPLE", "1D", 20).unwrap(),
+        )
+    };
+    let error = execute(
+        request(),
+        &mut guard,
+        reader.clone(),
+        http.clone(),
+        resumed.clone(),
+        true,
+    )
+    .await
+    .unwrap_err();
+    let details = error.details.unwrap();
+    assert_eq!(details["code"], "auth_required");
+    assert_eq!(details["next_action"], "tv mcp login");
+    assert_eq!(details["tool_attempts"], 0);
+    assert!(details.get("protocol").is_none());
+    assert_eq!(resumed.lock().unwrap().counts().refresh, 1);
+    assert_eq!(
+        server
+            .requests
+            .lock()
+            .unwrap()
+            .iter()
+            .filter(|r| r.path == "/token")
+            .count(),
+        2
+    );
+    assert_eq!(server.calls("tools/call"), 0);
+
+    fixture_login(&http, &reader, &resumed).await;
+    let data = execute(
+        request(),
+        &mut guard,
+        reader.next_operation(),
+        http,
+        resumed,
+        true,
+    )
+    .await
+    .unwrap();
+    assert_eq!(data["contract_version"], "mcp_bars.v1");
+    assert_eq!(server.calls("tools/call"), 1);
+}
+
+#[tokio::test]
 async fn rejected_tool_refreshes_once_without_replaying_and_prepares_next_invocation() {
     let server = Server::start("401").await;
     let (_root, mut guard, budget, http, store) = context(&server, 5).await;
@@ -1303,6 +1409,7 @@ async fn public_service_shapes_wire_data_and_preserves_typed_failures() {
         .await;
         if matches!(mode, "json" | "sse") {
             let data = result.unwrap();
+            assert!(data.get("protocol").is_none());
             assert_eq!(data["contract_version"], "mcp_bars.v1");
             assert_eq!(data["client_observation"]["count_status"], "short");
             assert!(data["bars"][0]["volume"].is_null());
@@ -1701,6 +1808,7 @@ async fn failed_account_changes_do_not_refresh_or_replay() {
                 tokio::time::resume();
             }
             let details = result.unwrap_err().details.unwrap();
+            assert!(details.get("protocol").is_none());
             assert_eq!(
                 details["mutation"]["status"],
                 if mode == "schema-change" {

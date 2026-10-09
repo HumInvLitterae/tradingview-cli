@@ -10,6 +10,10 @@ fn spec_is_offline_even_with_invalid_desktop_configuration() {
         vec!["mcp", "symbols"],
         vec!["mcp", "bars"],
         vec!["mcp", "alert", "history"],
+        vec!["mcp", "financials"],
+        vec!["mcp", "news"],
+        vec!["mcp", "economic-data"],
+        vec!["mcp", "watchlist", "list"],
     ] {
         let output = Command::cargo_bin("tv")
             .unwrap()
@@ -27,6 +31,13 @@ fn spec_is_offline_even_with_invalid_desktop_configuration() {
         assert_eq!(data["semantics"]["requires"]["desktop"], false);
         assert_eq!(data["semantics"]["effects"]["account_mutation"], false);
         assert_eq!(data["coverage"]["validation"], "partial");
+        assert_eq!(data["semantics"]["error_contract"], "mcp_error.v1");
+        assert!(
+            data["semantics"]["error_interpretation"]
+                .as_str()
+                .unwrap()
+                .contains("details.protocol")
+        );
         assert!(
             data["semantics"]["output_contract"]
                 .as_str()

@@ -35,6 +35,16 @@ may permit a later explicit command, but the failed data call was not replayed.
 Never loop, increase deadlines, reauthenticate, change source or repeat account
 mutations merely because a diagnostic suggests a next action.
 
+Read `deadline_exceeded` and `transport_error` failures at `tool_response` may
+include `details.protocol`. Preserve each observed method's `phase` and HTTP
+`status` (null before headers arrive). `await_headers` means a request is starting
+or awaiting headers; `json_body` means its body is being read; `json_complete`
+means JSON was decoded; `sse_stream` means an SSE response is open. Headers or
+HTTP 202 acceptance do not prove tool completion. Unobserved methods are omitted.
+Concurrent event-stream and request observations are separate evidence, not a
+root-cause diagnosis. The attempt count does not prove provider acceptance.
+Neither these observations nor their absence authorize an automatic retry.
+
 For versions whose `tv mcp --help` advertises `--timeout`, a caller-selected
 longer read can use `tv mcp --timeout 90 <read command>`. The unit is seconds,
 range 1..180, default 30 for provider reads. The selected deadline includes

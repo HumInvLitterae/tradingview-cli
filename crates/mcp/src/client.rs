@@ -313,12 +313,12 @@ pub(crate) async fn execute(
         .tools
         .saturating_sub(before);
     result.map_err(|mut error| {
-        let mut error = if let Some(code) = error
+        let cause = error
             .details
             .as_ref()
             .and_then(|v| v.get("failure"))
-            .and_then(|v| serde_json::from_value::<Failure>(v.clone()).ok())
-        {
+            .and_then(|v| serde_json::from_value::<Failure>(v.clone()).ok());
+        let mut error = if let Some(code) = cause {
             failure(code, stage, attempts, Some(&http))
         } else {
             let details = error.details.get_or_insert_with(|| json!({}));
@@ -345,9 +345,57 @@ pub(crate) async fn execute(
                 "automatic_retry": false
             });
             details["next_action"] = json!(next_action);
+        } else if stage == "tool_response"
+            && matches!(cause, Some(Failure::Timeout | Failure::Connection))
+            && let Some(protocol) = public_protocol(&http.diagnostics())
+        {
+            error.details.get_or_insert_with(|| json!({}))["protocol"] = protocol;
         }
         error
     })
+}
+
+fn public_protocol(diagnostics: &Value) -> Option<Value> {
+    let observations = diagnostics.get("protocol")?.as_object()?;
+    let mut protocol = serde_json::Map::new();
+    for method in [
+        "initialize",
+        "notifications/initialized",
+        "tools/list",
+        "tools/call",
+        "event_stream",
+    ] {
+        let Some(observation) = observations.get(method) else {
+            continue;
+        };
+        let Some(phase) = observation
+            .get("phase")
+            .and_then(Value::as_str)
+            .filter(|phase| {
+                matches!(
+                    *phase,
+                    "await_headers"
+                        | "headers_received"
+                        | "accepted"
+                        | "json_body"
+                        | "json_complete"
+                        | "sse_stream"
+                )
+            })
+        else {
+            continue;
+        };
+        let Some(status) = observation.get("status").filter(|status| {
+            status.is_null()
+                || status
+                    .as_u64()
+                    .is_some_and(|value| (100..=999).contains(&value))
+        }) else {
+            continue;
+        };
+        protocol.insert(method.into(), json!({"phase": phase, "status": status}));
+    }
+    (!protocol.is_empty()).then_some(Value::Object(protocol))
 }
 
 pub(crate) fn failure(error: Failure, stage: &str, attempts: u32, http: Option<&Http>) -> AppError {
@@ -465,6 +513,38 @@ fn state_directory() -> Result<PathBuf, Failure> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn public_protocol_omits_private_fields_and_unrecognized_observations() {
+        let diagnostic = json!({
+            "oauth_error": "private",
+            "protocol": {
+                "initialize": {"phase": "json_complete", "status": 200, "remaining_ms": 40, "private": "secret"},
+                "notifications/initialized": {"phase": "accepted", "status": 202},
+                "tools/list": {"phase": "await_headers", "status": null},
+                "tools/call": {"phase": "private-phase", "status": 200},
+                "event_stream": {"phase": "await_headers", "status": "private-status"},
+                "delete_session": {"phase": "headers_received", "status": 200},
+                "notifications/cancelled": {"phase": "accepted", "status": 202},
+                "private-method": {"phase": "json_complete", "status": 200}
+            }
+        });
+        assert_eq!(
+            public_protocol(&diagnostic),
+            Some(json!({
+                "initialize": {"phase": "json_complete", "status": 200},
+                "notifications/initialized": {"phase": "accepted", "status": 202},
+                "tools/list": {"phase": "await_headers", "status": null}
+            }))
+        );
+        for diagnostic in [
+            Value::Null,
+            json!({}),
+            json!({"protocol": {"tools/call": {"phase": "json_body"}}}),
+        ] {
+            assert_eq!(public_protocol(&diagnostic), None);
+        }
+    }
 
     #[test]
     fn state_security_diagnostics_preserve_codes_without_private_context() {

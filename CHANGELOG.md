@@ -7,6 +7,13 @@ package version omits the leading `v`.
 
 ## Unreleased
 
+### Added
+
+- MCP read timeouts and connection failures can report per-method progress in
+  `error.details.protocol`, distinguishing initialization, catalog retrieval,
+  tool requests, and event streams. Entries contain only phase and HTTP status;
+  existing error codes, deadlines, and automatic-retry policy are unchanged.
+
 ### Changed
 
 - Updated rmcp to 3.5.1 and refreshed 11 compatible transitive dependencies,
