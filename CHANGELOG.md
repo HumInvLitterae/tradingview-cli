@@ -7,6 +7,11 @@ package version omits the leading `v`.
 
 ## Unreleased
 
+### Changed
+
+- Updated rmcp to 3.5.1 and refreshed 11 compatible transitive dependencies,
+  including the HTTP transport stack.
+
 ## v0.37.0
 
 ### Added

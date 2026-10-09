@@ -942,3 +942,40 @@ With Node 24.21.0, the local account gate passed all six tests, including all 96
 indicator-verification cases. Formatting, CLI library/test Clippy with all
 features and warnings denied, public hygiene, and diff checks also passed.
 A fresh Linux CI run remains pending until push.
+
+
+## Dependency refresh before next-version planning, 2026-10-10
+
+The owner requested dependency updates and a commit before the next-version
+proposal. One executor performs the update and review without delegated agents.
+The sequence is dependency discovery, update, validation, one dependency commit,
+then a separate planning proposal. Public contracts and release versioning are
+outside this update.
+
+Registry checks covered all 24 direct/dev dependencies. `rmcp` advances from
+3.5.0 to 3.5.1; Cargo resolves 11 further updates to existing indirect dependencies,
+including hyper 1.12.0, h2 0.4.20, and tokio-util 0.7.20. No package is added or
+removed. The [SDK release](https://github.com/modelcontextprotocol/rust-sdk/releases/tag/rmcp-v3.5.1)
+adds an optional refresh-token rejection callback. The current Store uses its
+no-op default; adopting new credential-retirement behavior is not part of this
+update. Existing one-dispatch and explicit reauthorization behavior is retained.
+
+Node 24.21.0, jsonschema 4.26.0, and the existing GitHub Actions major references
+already select the current releases in their chosen series. No toolchain pin
+changes are needed. crypto-common 0.1.7 still requires generic-array exactly
+0.14.7, so its newer compatible-series version remains resolver-blocked.
+No override is added.
+
+Validation passed with one Cargo build job, one test thread, and the existing
+target directory. Workspace formatting and all-target/all-feature Clippy passed.
+Workspace tests passed 1,183 cases with zero failures and 38 opt-in cases ignored.
+Separate pinned Node 24.21.0 gates passed six account tests, including 96 indicator
+verification cases, and three Pine tests, including 33 creation cases. The output
+schema gate passed with jsonschema 4.26.0. Package-checker self-tests passed 14
+cases; public hygiene and diff checks passed. Package membership and dependency
+edges are unchanged. The resolver recheck found zero further updates.
+
+No production source, public contract, workspace version, or installed binary
+changed. No live provider/account operation, optimized release build, platform CI,
+or push was performed. Their historical evidence is not new acceptance of this
+dependency set. The next step is the owner's requested planning proposal.
