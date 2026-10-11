@@ -14,7 +14,7 @@ Their live qualification limits remain applicable.
 
 | Priority | Work | State / next decision |
 | --- | --- | --- |
-| Complete | Existing dependency refresh | Committed as `15c19c54`; validation and resolver constraints are recorded below. |
+| Complete | Existing dependency refresh | Initial refresh `15c19c54`, followed by five updates on 2026-10-11; see the latest dependency acceptance below. |
 | Locally complete | Explain MCP read transport failures | Public-safe optional protocol observations, offline spec, guides, and regression tests passed local acceptance below. Cross-platform CI and release preparation remain pending. |
 | Next independent candidate | Complete indicator-alert creation readback | Current preflight is released. Qualify create-response/readback identity fields before proposing a stronger success contract or live trial. |
 
@@ -1035,3 +1035,47 @@ optimized release candidate, push, tag, or publication was performed. Preserve
 this feature commit separately from dependency updates and final release
 preparation. The next release step is cross-platform CI after an authorized push,
 followed by the established release-preparation sequence.
+
+
+## Dependency refresh before CI, 2026-10-11
+
+The owner requested another dependency update before pushing the prepared work.
+Preserve the pending v0.38.0 version and release files, and commit only this
+refresh. One executor performs the update and checks without additional agents.
+
+The crates.io registry check covered all 24 direct requirements. serde_json
+advances from 1.0.151 to 1.0.152. Cargo also updates cc 1.6.0 to 1.7.0, smallvec
+1.16.2 to 1.16.3, syn 3.0.6 to 3.0.7, and uuid 1.27.0 to 1.28.0. Package membership
+and dependency edges remain unchanged after accounting for version references.
+No new feature flag, compatibility override, or production API change is needed.
+
+The [serde_json release](https://github.com/serde-rs/json/releases/tag/v1.0.152)
+fixes numeric handling. The workspace enables default/std. The negative-zero
+fix requires `arbitrary_precision`, which is not enabled here.
+The [cc release](https://github.com/rust-lang/cc-rs/releases/tag/cc-v1.7.0)
+updates native compiler detection and tooling, including the aws-lc build path.
+The [syn release](https://github.com/dtolnay/syn/releases/tag/3.0.7) fixes parsing
+an absolute path in a labeled break. smallvec includes a fuzz-check overflow fix.
+The [uuid release](https://github.com/uuid-rs/uuid/releases/tag/v1.28.0) adds
+optional serde format adapters that this client does not adopt. uuid enters
+through the Linux zbus/Secret Service path, which macOS checks do not execute.
+
+Node 24.21.0 and jsonschema 4.26.0 remain current in the configured series.
+The GitHub Actions references already follow the current v7 release series.
+crypto-common 0.1.7 still requires generic-array exactly 0.14.7. Preserve that
+upstream constraint rather than introducing an override.
+
+Validation passed with one Cargo build job and one test thread: all-workspace,
+all-target, all-feature Clippy, formatting, and 1,187 workspace tests with zero
+failures and 38 opt-in tests ignored. All six pinned JavaScript gates passed
+14 tests, and the output-schema gate passed with jsonschema 4.26.0. Runtime
+resource staging, public hygiene, local document links, and diff checks passed.
+
+Checks ran with the existing 0.38.0 release preparation in the working tree.
+The dependency-only commit retains the current 0.37.0 package metadata; the
+pending eight workspace version changes remain separate. Application code,
+feature flags, and the resolved external dependency graph are identical between
+that commit and the tested preparation. No live provider access, Linux/Windows
+execution, optimized candidate, push, tag, or installed-binary change occurred.
+The fresh baseline supersedes earlier dependency acceptance for this set.
+The pending push now also needs this follow-up dependency commit before CI.
