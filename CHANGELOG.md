@@ -18,7 +18,8 @@ package version omits the leading `v`.
 
 - Updated rmcp to 3.5.1 and refreshed 11 compatible transitive dependencies,
   including the HTTP transport stack.
-- Updated serde_json to 1.0.152 and refreshed cc, smallvec, syn, and uuid.
+- Updated serde_json to 1.0.154 and refreshed cc, smallvec, syn, unicode-ident,
+  and uuid.
 
 ## v0.37.0
 

@@ -1,6 +1,6 @@
 # Work inventory after v0.37.0
 
-Updated 2026-10-10. [Approved direction](next-version-roadmap.md).
+Updated 2026-10-12. [Approved direction](next-version-roadmap.md).
 
 ## Current status and next queue
 
@@ -14,7 +14,7 @@ Their live qualification limits remain applicable.
 
 | Priority | Work | State / next decision |
 | --- | --- | --- |
-| Complete | Existing dependency refresh | Initial refresh `15c19c54`, followed by five updates on 2026-10-11; see the latest dependency acceptance below. |
+| Complete | Existing dependency refresh | Initial refresh `15c19c54`, followed by updates on 2026-10-11 and 2026-10-12; see the latest dependency acceptance below. |
 | Locally complete | Explain MCP read transport failures | Public-safe optional protocol observations, offline spec, guides, and regression tests passed local acceptance below. Cross-platform CI and release preparation remain pending. |
 | Next independent candidate | Complete indicator-alert creation readback | Current preflight is released. Qualify create-response/readback identity fields before proposing a stronger success contract or live trial. |
 
@@ -1079,3 +1079,33 @@ that commit and the tested preparation. No live provider access, Linux/Windows
 execution, optimized candidate, push, tag, or installed-binary change occurred.
 The fresh baseline supersedes earlier dependency acceptance for this set.
 The pending push now also needs this follow-up dependency commit before CI.
+
+
+## Dependency refresh, 2026-10-12
+
+The requested refresh updates serde_json 1.0.152 to 1.0.154, cc 1.7.0 to 1.8.0,
+syn 3.0.7 to 3.0.8, and unicode-ident 1.0.26 to 1.0.27. A crates.io check covered
+all 24 direct requirements. Package membership and dependency edges remain
+unchanged after normalizing version references. No feature flags or overrides
+are added.
+
+[serde_json 1.0.153](https://github.com/serde-rs/json/releases/tag/v1.0.153)
+corrects the reported position of invalid UTF-8. Version 1.0.154 adds no_std
+preserve_order support; this workspace uses default/std. The cc update fixes
+native-build error handling and jobserver behavior. syn corrects expression-token
+parsing, and unicode-ident changes its trie layout. These updates require no
+application API migration. Node 24.21.0, jsonschema 4.26.0, and the current v7
+GitHub Actions references need no change. crypto-common still requires
+generic-array exactly 0.14.7; retain that upstream constraint.
+
+Validation passed with one Cargo build job and one test thread: formatting,
+all-target/all-feature workspace Clippy, and 1,187 workspace tests with zero
+failures and 38 ignored in the ordinary suite. Separate pinned JavaScript gates
+passed 14 tests, and the jsonschema 4.26.0 output-schema gate passed. Runtime
+resource staging, public hygiene, local document links, and diff checks passed.
+
+Validation used the preserved 0.38.0 working-tree preparation. The dependency
+commit keeps 0.37.0 package metadata; application code, feature flags, and external
+dependency resolution are the same. The seven release-preparation files remain
+separate. No live provider operation, Linux/Windows execution, optimized build,
+push, tag, or installed-binary replacement was performed.
