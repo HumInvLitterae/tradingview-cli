@@ -1,6 +1,6 @@
 # Work inventory after v0.37.0
 
-Updated 2026-10-12. [Approved direction](next-version-roadmap.md).
+Updated 2026-10-13. [Approved direction](next-version-roadmap.md).
 
 ## Current status and next queue
 
@@ -14,7 +14,7 @@ Their live qualification limits remain applicable.
 
 | Priority | Work | State / next decision |
 | --- | --- | --- |
-| Complete | Existing dependency refresh | Initial refresh `15c19c54`, followed by updates on 2026-10-11 and 2026-10-12; see the latest dependency acceptance below. |
+| Complete | Existing dependency refresh | Initial refresh `15c19c54`; subsequent refreshes and acceptance are recorded below, latest 2026-10-13. |
 | Locally complete | Explain MCP read transport failures | Public-safe optional protocol observations, offline spec, guides, and regression tests passed local acceptance below. Cross-platform CI and release preparation remain pending. |
 | Next independent candidate | Complete indicator-alert creation readback | Current preflight is released. Qualify create-response/readback identity fields before proposing a stronger success contract or live trial. |
 
@@ -1109,3 +1109,36 @@ commit keeps 0.37.0 package metadata; application code, feature flags, and exter
 dependency resolution are the same. The seven release-preparation files remain
 separate. No live provider operation, Linux/Windows execution, optimized build,
 push, tag, or installed-binary replacement was performed.
+
+
+## Dependency refresh, 2026-10-13
+
+The requested refresh updates keyring-core 1.0.0 to 1.0.1, aws-lc-rs 1.18.1 to
+1.18.2, aws-lc-sys 0.45.0 to 0.46.0, sha2 0.11.0 to 0.11.1, and syn 3.0.8 to
+3.0.9. All 24 direct requirements were checked against crates.io. Package
+membership and dependency edges are unchanged after normalizing versions.
+
+[keyring-core 1.0.1](https://github.com/open-source-cooperative/keyring-core/releases/tag/v1.0.1)
+reports no functional change. [aws-lc-rs 1.18.2](https://github.com/aws/aws-lc-rs/releases/tag/v1.18.2)
+updates bundled AWS-LC to 5.11.0, with cryptography and native-build fixes.
+Local build output confirms linking the bundled 0.46.0 static crypto library.
+The changed minimum for externally supplied AWS-LC does not require a project
+configuration change for this build. sha2 fixes AArch64 constant loading and
+raises its Rust minimum to 1.88, below the Rust 1.99.0 toolchain used here.
+syn adds Punctuated::retain; existing callers need no API migration.
+
+Node 24.21.0, jsonschema 4.26.0, and the current v7 GitHub Actions references
+remain current in their configured series. crypto-common still requires
+generic-array exactly 0.14.7. No override or new feature flag is added.
+
+Validation passed with one build job and one test thread: formatting,
+all-target/all-feature workspace Clippy, and 1,187 workspace tests with zero
+failures and 38 ignored in the ordinary suite. Separate JavaScript gates passed
+14 tests, and the output-schema gate passed with jsonschema 4.26.0. Runtime
+resource staging, public hygiene, local document links, and diff checks passed.
+
+Checks used the preserved 0.38.0 preparation. The dependency-only commit retains
+0.37.0 package metadata with the same application code and external dependency
+resolution. The seven release-preparation files remain separate. No live provider
+operation, Linux/Windows execution, optimized build, push, tag, or binary
+installation was performed.

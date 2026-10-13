@@ -20,6 +20,7 @@ package version omits the leading `v`.
   including the HTTP transport stack.
 - Updated serde_json to 1.0.154 and refreshed cc, smallvec, syn, unicode-ident,
   and uuid.
+- Updated keyring-core to 1.0.1 and refreshed AWS-LC, sha2, and syn.
 
 ## v0.37.0
 
