@@ -1,30 +1,31 @@
 # Direction after v0.37.0
 
-Status: implemented and locally accepted on 2026-10-10; cross-platform CI and
-release preparation remain pending. Dependency updates are committed separately
-as `15c19c54`. The owner approved the MCP diagnostic slice and requested assessment
-of the SDK refresh-rejection callback. The [inventory](next-version-work-items.md#approved-mcp-read-diagnostics-2026-10-10)
-records implementation and acceptance. Live account writes, additional agents,
-and publication remain outside this scope.
+Status: v0.38.0 release preparation on 2026-10-13. The implementation and final
+dependency set at `e251e599` passed all 11 CI jobs across Linux, macOS, and
+Windows. Version metadata and notes are ready for the normal release-preparation
+commit. The [inventory](next-version-work-items.md#v0380-release-preparation-2026-10-13)
+records acceptance and remaining publication checks. Live account writes,
+additional agents, and publication remain outside the current authorization.
 
 ## Current baseline
 
-v0.37.0 is published at `1fe311be70c756beb007a58a257c07e4e2f6fd10`.
-The tag, main branch, successful CI and Release runs, and four native assets plus
-SHA256SUMS were checked on 2026-10-10. The assets were not executed in this pass.
+v0.37.0 remains published at `1fe311be70c756beb007a58a257c07e4e2f6fd10`.
+The published version and remote tag were rechecked on 2026-10-13; main now
+points to `e251e599`. The four native assets plus SHA256SUMS were checked on
+2026-10-10 and were not executed in this pass.
 The [release notes](releases/v0.37.0.md) describe named Pine creation, opt-in
 indicator verification, native input IDs, and unknown creation outcomes.
 Those features are released, not remaining next-version work.
 
 The [inventory](next-version-work-items.md#dependency-refresh-before-next-version-planning-2026-10-10)
-records the new dependency set and local checks. The workspace version stays
-0.37.0 until final release preparation.
+records the new dependency set and local checks. The working tree now prepares
+0.38.0; v0.37.0 remains the published release.
 
 ## Approved next slice
 
-Make MCP read failures explain how far the operation progressed. The proposed
-release is v0.38.0 because it adds public diagnostic information. Versioning
-remains part of final release preparation.
+Make MCP read failures explain how far the operation progressed. The release
+is v0.38.0 because it adds public diagnostic information. Version metadata and
+notes are prepared together.
 
 A recent bounded search timed out with `stage:tool_response` and zero tool
 attempts. A standard-budget search then timed out with one attempt. The same

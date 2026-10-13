@@ -15,7 +15,7 @@ Their live qualification limits remain applicable.
 | Priority | Work | State / next decision |
 | --- | --- | --- |
 | Complete | Existing dependency refresh | Initial refresh `15c19c54`; subsequent refreshes and acceptance are recorded below, latest 2026-10-13. |
-| Locally complete | Explain MCP read transport failures | Public-safe optional protocol observations, offline spec, guides, and regression tests passed local acceptance below. Cross-platform CI and release preparation remain pending. |
+| Accepted for release | Explain MCP read transport failures | Local acceptance and all 11 CI jobs passed for `e251e599`; v0.38.0 preparation and remaining publication checks are recorded below. |
 | Next independent candidate | Complete indicator-alert creation readback | Current preflight is released. Qualify create-response/readback identity fields before proposing a stronger success contract or live trial. |
 
 The roadmap owns direction; this inventory owns priority and retained evidence.
@@ -1142,3 +1142,44 @@ Checks used the preserved 0.38.0 preparation. The dependency-only commit retains
 resolution. The seven release-preparation files remain separate. No live provider
 operation, Linux/Windows execution, optimized build, push, tag, or binary
 installation was performed.
+
+
+## v0.38.0 release preparation, 2026-10-13
+
+The owner requested continuation after CI passed. The latest
+[CI run](https://github.com/HumInvLitterae/tradingview-cli/actions/runs/38335935575)
+targets `e251e599` and passed all 11 jobs, including the Linux, macOS, and Windows
+test matrix, script checks, Clippy, formatting, JavaScript contracts, and output
+schemas. No CI correction is needed before release preparation. The remote main
+branch matches that commit; v0.37.0 remains the latest published release, and no
+remote v0.38.0 tag exists at this checkpoint.
+
+Prepare all eight workspace versions and lockfile entries as 0.38.0, promote the
+approved changelog entries, and include the curated release notes in one
+`chore(release): Prepare v0.38.0` commit. The feature and dependency commits remain
+separate and precede it. One executor continues without additional agents.
+
+The full local baseline from the 2026-10-13 dependency refresh remains valid:
+1,187 ordinary tests, all-target/all-feature Clippy, 14 JavaScript contract tests,
+and the output-schema gate passed with this dependency set and the 0.38.0 working
+tree version. This step changes only release metadata and documentation.
+No application code, feature flag, dependency version, or dependency edge changes.
+
+Validate an optimized build before committing, then rebuild from the clean
+release commit to stamp the correct revision. Stage and inspect the resulting
+macOS ARM64 archive, verify offline version/spec behavior, and retain its checksum
+and a local receipt. These post-commit artifacts identify the exact commit without
+adding another tracked release-preparation change. They do not replace CI on the
+release commit or the other native release archives.
+
+Pre-commit optimized build and offline version/spec checks passed. The binary
+reports 0.38.0 and the expected dirty stamp for the uncommitted preparation.
+Only eight workspace lockfile versions changed; external resolution is identical.
+Package-checker self-tests passed 14 cases, and public hygiene, local document
+links, and diff checks passed. The final clean-stamp rebuild and archive receipt
+follow the commit as described above.
+
+Push, version tagging, GitHub Release publication, and installed-binary replacement
+remain separately authorized actions. After an authorized push, verify CI for the
+release commit before tagging and publishing. Preserve the distinction between
+local archive checks, cross-platform CI, and live provider observations.

@@ -4,6 +4,7 @@
 | --- | --- |
 | Approved direction after v0.37.0 | [Roadmap](../next-version-roadmap.md) |
 | Current priority and retained acceptance evidence | [Inventory](../next-version-work-items.md) |
+| v0.38.0 release preparation | [Release notes](../releases/v0.38.0.md) |
 | Current released behavior and limits | [v0.37.0 release notes](../releases/v0.37.0.md) |
 | Released opt-in verification and live preview evidence | [Indicator verification](tradingview-cli-indicator-study-verification.md) |
 | Released saved-source verification evidence | [Source verification](tradingview-cli-indicator-source-verification.md) |
@@ -12,12 +13,12 @@
 | CDP stability triggers | [Strategy](../notes/cdp-stability-and-autonomous-operation-strategy.md) |
 | Completed work | [Archive catalog](archives/README.md) |
 
-v0.37.0 publication and CI were rechecked on 2026-10-10. The dependency refresh
-is committed separately. The owner approved MCP read-error diagnostics as the
-next release slice on 2026-10-10. Implementation and local acceptance are complete;
-cross-platform CI and release preparation remain pending. Complete created-alert
-identity remains a separate candidate requiring qualification. The inventory
-records implementation and acceptance evidence.
+The implementation and final dependency set at `e251e599` passed all 11 CI jobs
+on 2026-10-13, including Linux, macOS, and Windows tests. v0.38.0 version metadata
+and notes are ready for the release-preparation commit. v0.37.0 remains the
+published release. Complete created-alert identity is a separate candidate
+requiring qualification. The inventory owns acceptance and remaining release
+checks.
 
 Completed records preserve the evidence for their stated inputs and limits.
 They do not authorize new live operations or establish current provider health.

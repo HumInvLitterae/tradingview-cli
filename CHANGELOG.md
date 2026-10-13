@@ -7,6 +7,8 @@ package version omits the leading `v`.
 
 ## Unreleased
 
+## v0.38.0
+
 ### Added
 
 - MCP read timeouts and connection failures can report per-method progress in
