@@ -7,6 +7,14 @@ package version omits the leading `v`.
 
 ## Unreleased
 
+### Fixed
+
+- Desktop price-alert creation preserves unknown outcomes after a possible
+  account write, including request/readback failure and unavailable or malformed
+  execution results. Error details use `created:null` and
+  `creation_outcome:"unknown"`; proven preflight failures retain `created:false`.
+  Successful output, error kinds, exit codes, and retry behavior are unchanged.
+
 ## v0.38.0
 
 ### Added

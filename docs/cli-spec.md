@@ -1161,6 +1161,16 @@ Older binaries can report `source: dom_fallback` and `created: true` after a
 button click without verifying conditions or persistence; that is not proof
 of a correctly saved alert.
 
+After a creation POST may have been sent, request/response failures and failed
+readback report error details with `created:null` and
+`creation_outcome:"unknown"`. Lost, exceptional, or malformed Runtime results
+without explicit preflight evidence have the same outcome. Only a returned
+preflight failure proving no POST was attempted retains `created:false`;
+local argument errors still stop before evaluation. Confirmed success remains
+`created:true`. Error kinds, exit codes, notification defaults, and `price_set`
+keep their existing meaning. Inspect account state before considering another
+creation; no automatic retry or cleanup is performed.
+
 Delete requires exactly one of `--id` and `--all`. Dry-run is supported only
 with all and performs a fresh account read. Execution of all targets every alert
 listed at that time, not the chart symbol or a prior preview's fixed set. No

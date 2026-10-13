@@ -1,4 +1,4 @@
-use serde_json::Value;
+use serde_json::{Value, json};
 
 use tradingview_cdp::RuntimeEvaluator;
 use tradingview_core::AppError;
@@ -220,7 +220,8 @@ pub async fn alert_create(
                         condition: requestedCondition,
                         message: requestedMessage,
                         price_set: true,
-                        created: false,
+                        created: null,
+                        creation_outcome: 'unknown',
                         source,
                         before_count: before.alerts.length
                     }};
@@ -238,7 +239,8 @@ pub async fn alert_create(
                         condition: requestedCondition,
                         message: requestedMessage,
                         price_set: true,
-                        created: false,
+                        created: null,
+                        creation_outcome: 'unknown',
                         source,
                         before_count: before.alerts.length,
                         status: createResponse.status,
@@ -258,7 +260,8 @@ pub async fn alert_create(
                         condition_type: requestedConditionType,
                         message: requestedMessage,
                         price_set: true,
-                        created: false,
+                        created: null,
+                        creation_outcome: 'unknown',
                         source,
                         symbol: chartMeta.symbol,
                         resolution: chartMeta.resolution,
@@ -278,7 +281,8 @@ pub async fn alert_create(
                         condition_type: requestedConditionType,
                         message: requestedMessage,
                         price_set: true,
-                        created: false,
+                        created: null,
+                        creation_outcome: 'unknown',
                         source,
                         symbol: chartMeta.symbol,
                         resolution: chartMeta.resolution,
@@ -310,9 +314,32 @@ pub async fn alert_create(
             ),
             true,
         )
-        .await?;
+        .await;
 
-    normalize_alert_create_payload(result)
+    // Only an explicit returned preflight failure proves no POST was attempted.
+    let preflight_failure = result.as_ref().is_ok_and(|data| {
+        data.get("created").and_then(Value::as_bool) == Some(false)
+            && data.get("error").and_then(Value::as_str).is_some()
+            && data.get("source").and_then(Value::as_str) == Some("internal_api")
+            && matches!(
+                data.get("phase").and_then(Value::as_str),
+                Some("chart_metadata_unavailable" | "pre_list_unavailable")
+            )
+    });
+    result
+        .and_then(normalize_alert_create_payload)
+        .map_err(|mut error| {
+            let mut details = error
+                .details
+                .take()
+                .and_then(|value| value.as_object().cloned())
+                .unwrap_or_default();
+            if !preflight_failure {
+                details.insert("created".into(), Value::Null);
+                details.insert("creation_outcome".into(), json!("unknown"));
+            }
+            error.with_details(Value::Object(details))
+        })
 }
 
 #[cfg(test)]
@@ -372,13 +399,17 @@ mod tests {
         for phase in ["chart_metadata_unavailable", "pre_list_unavailable"] {
             let mut runtime = FakeRuntime::new([json!({
                 "error": "API preflight unavailable", "error_kind": "internal_api_unavailable",
-                "phase": phase, "api_fallback_allowed": true, "source": "internal_api"
+                "phase": phase, "api_fallback_allowed": false, "source": "internal_api",
+                "price_set": false, "created": false
             })]);
             let error = alert_create(&mut runtime, 100.0, "crossing", None)
                 .await
                 .unwrap_err();
             assert_eq!(error.kind, ErrorKind::InternalApiUnavailable);
-            assert_eq!(error.details.unwrap()["phase"], phase);
+            let details = error.details.unwrap();
+            assert_eq!(details["phase"], phase);
+            assert_eq!(details["created"], false);
+            assert!(details.get("creation_outcome").is_none());
             assert_eq!(runtime.evaluated.len(), 1);
             let expression = &runtime.evaluated[0].0;
             assert!(!expression.contains("document.querySelector"));
@@ -447,7 +478,8 @@ mod tests {
             "condition": "crossing",
             "message": "(none)",
             "price_set": true,
-            "created": false,
+            "created": null,
+            "creation_outcome": "unknown",
             "source": "internal_api"
         })]));
 
@@ -474,7 +506,8 @@ mod tests {
             "condition": "crossing",
             "message": "(none)",
             "price_set": true,
-            "created": false,
+            "created": null,
+            "creation_outcome": "unknown",
             "source": "internal_api"
         })]));
 
@@ -487,3 +520,6 @@ mod tests {
         assert_eq!(runtime.evaluated.len(), 1);
     }
 }
+
+#[cfg(test)]
+mod outcome_tests;

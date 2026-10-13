@@ -144,6 +144,17 @@ not read a file or editor. Existing pine_save and pine_new behavior is unchanged
 The public PineCommand enum gains Create { name, file }; exhaustive matches must
 handle it. No existing variant fields or operation signatures change.
 
+## Desktop price-alert outcomes
+
+`tradingview_cli::ops::alert_create(runtime, price, condition, message)` keeps
+its signature and success payload. Errors after a possible creation POST now
+carry `created:null` and `creation_outcome:"unknown"`, including lost or
+malformed Runtime results without explicit preflight proof. Returned preflight
+failures retain `created:false`; local argument errors stop before evaluation.
+Callers must accept a nullable error-detail field and must not infer absence of
+an account write from an error. Error kinds and exit codes are unchanged.
+See the [Desktop price-alert contract](cli-spec.md#legacy-desktop-price-alerts).
+
 ## Desktop indicator alerts
 
 `tradingview_cli::ops::alert_create_indicator(runtime, request)` and the fields of

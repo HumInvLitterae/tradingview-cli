@@ -43,7 +43,7 @@ pub(super) fn describe(path: &[&str]) -> Option<Value> {
                 json!("Symbol and resolution come from the active chart, with resolution fallback 1 and currency fallback USD. Internal API uses split adjustment, about 30-day expiration, on_first_fire and auto_deactivate; popup/mobile_push are true, email/SMS are false and webhook is null. These are not the MCP notification defaults."),
                 json!("greater_than/less_than map to crossing-up/down conditions, not generalized persistent inequalities. The internal API verifies a new ID with matching symbol marker, message, condition type and price tolerance; it does not independently confirm every notification/expiration field."),
                 json!("API preflight failures return an error without opening a dialog. No automatic DOM or MCP fallback is performed, before or after dispatch."),
-                json!("Failed readback can follow account creation; inspect the account before retrying to avoid duplicates.")
+                json!("After a creation POST may have been sent, request/response failures and failed readback report created:null and creation_outcome:unknown. Lost, exceptional, or malformed Runtime results without explicit preflight proof are also unknown. Only proven returned preflight failures retain created:false; local argument errors stop before evaluation. Confirmed success remains created:true. Error kinds, exit codes and price_set are unchanged; inspect account state before another creation. No automatic retry or cleanup is performed.")
             ]);
             json!([[
                 "tv",
