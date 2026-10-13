@@ -2320,7 +2320,8 @@ async fn reused_session_preserves_mutation_when_readback_fails() {
             ("reuse-paged-readback", "", 1),
         ] {
             let server = Server::start(mode).await;
-            let (_root, mut guard, budget, http, store) = context(&server, 4).await;
+            let (_root, mut guard, budget, http, store) =
+                context(&server, RESPONSE_TEST_TIMEOUT_SECS).await;
             fixture_login(&http, &store, &budget).await;
             let counts = budget.clone();
             let operation = if alert {
@@ -2330,9 +2331,26 @@ async fn reused_session_preserves_mutation_when_readback_fails() {
                     WatchlistMutation::update("12", Some("Example"), None).unwrap(),
                 )
             };
-            let result = execute(operation, &mut guard, store, http, budget, true)
+            let task = tokio::spawn(async move {
+                execute(operation, &mut guard, store, http, budget, true).await
+            });
+            if mode == "reuse-readback-timeout" {
+                // Expire the deadline only after the mutation reply led to readback.
+                tokio::time::timeout(Duration::from_secs(RESPONSE_TEST_TIMEOUT_SECS), async {
+                    while server.calls("tools/call") < 2 {
+                        sleep(Duration::from_millis(1)).await;
+                    }
+                })
                 .await
-                .unwrap();
+                .expect("mutation and readback must dispatch before advancing time");
+                tokio::time::pause();
+                tokio::time::advance(Duration::from_secs(RESPONSE_TEST_TIMEOUT_SECS + 1)).await;
+            }
+            let result = task.await.unwrap();
+            if mode == "reuse-readback-timeout" {
+                tokio::time::resume();
+            }
+            let result = result.unwrap_or_else(|error| panic!("{mode}, alert={alert}: {error:?}"));
             assert_eq!(result["mutation"]["status"], "response_received", "{mode}");
             assert_eq!(result["mutation"]["tool_attempts"], 1);
             assert_eq!(result["readback"]["tool_attempts"], attempts, "{mode}");
