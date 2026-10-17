@@ -192,8 +192,10 @@ alertcondition(close > open, "Long", "Long message")"#;
         json!({
             "action": "create_indicator",
             "dry_run": false,
-            "alert_id": "4550000001",
+            "alert_id": 4550000001_u64,
             "created": true,
+            "confirmation": {"identity":"matched","settings":"matched"},
+            "activation": {"state":"active"},
             "source": "indicator_alert_api",
             "symbol": "NASDAQ:AAPL",
             "resolution": "1D",
@@ -221,7 +223,7 @@ alertcondition(close > open, "Long", "Long message")"#;
                 "source_has_inputs": false
             },
             "matched_alert": {
-                "alert_id": "4550000001",
+                "alert_id": 4550000001_u64,
                 "message": "Long message",
                 "condition": {
                     "type": "alert_cond",
@@ -253,7 +255,7 @@ alertcondition(close > open, "Long", "Long message")"#;
     assert_eq!(data["dry_run"], false);
     assert_eq!(data["created"], true);
     assert_eq!(data["source"], "indicator_alert_api");
-    assert_eq!(data["alert_id"], "4550000001");
+    assert_eq!(data["alert_id"], 4550000001_u64);
     assert_eq!(data["condition"]["alert_cond_id"], "plot_1");
     assert!(data["script"].get("id").is_none());
     assert!(data["matched_alert"]["condition"].get("pine_id").is_none());
@@ -687,7 +689,7 @@ async fn javascript_account_indicator_creation_outcomes() {
                             statusText: 'synthetic response',
                             text: async () => {{
                                 if (mode === 'body') throw new Error('response lost');
-                                return JSON.stringify(mode === 'rejected' ? {{s: 'error'}} : {{s: 'ok'}});
+                                return JSON.stringify(mode === 'rejected' ? {{s: 'error'}} : {{s: 'ok', r: {{alert_id: 2}}}});
                             }}
                         }};
                     }}
@@ -695,9 +697,10 @@ async fn javascript_account_indicator_creation_outcomes() {
                     if (mode === 'pre_list' || (mode === 'post_list' && reads === 2)) {{
                         throw new Error('list unavailable');
                     }}
-                    const rows = [{{ id: 'existing' }}];
+                    const rows = [{{ alert_id: 1 }}];
                     if (mode === 'success' && writes === 1) rows.push({{
-                        id: 'new', symbol: payload.symbol, message: payload.message,
+                        ...structuredClone(payload), alert_id: 2, active: true, last_error: null, last_stop_reason: null,
+                        expiration: new Date(Math.floor(Date.parse(payload.expiration) / 1000) * 1000).toISOString(),
                         condition: payload.conditions[0]
                     }});
                     return {{ ok: true, json: async () => ({{r: rows}}) }};
@@ -706,7 +709,7 @@ async fn javascript_account_indicator_creation_outcomes() {
                 assert.equal(writes, mode === 'pre_list' ? 0 : 1, mode);
                 if (mode === 'success') {{
                     assert.equal(result.created, true);
-                    assert.equal(result.alert_id, 'new');
+                    assert.equal(result.alert_id, 2);
                     assert.equal(result.creation_outcome, undefined);
                 }} else if (mode === 'pre_list') {{
                     assert.equal(result.phase, 'pre_list_unavailable');
@@ -806,4 +809,108 @@ async fn alert_indicator_malformed_creation_result_is_unknown() {
         assert_eq!(details["creation_outcome"], "unknown");
         assert_eq!(runtime.evaluated.len(), 3);
     }
+}
+
+#[tokio::test]
+#[ignore = "run through scripts/check-account-js-contract.py with pinned Node.js"]
+async fn javascript_account_indicator_confirmation() {
+    let source = "indicator(\"Signals\")\nalertcondition(close > open, \"Long\")";
+    let mut runtime = FakeRuntime::new([saved_script_fixture(), json!({"source": source})]);
+    let _ = alert_create_indicator(&mut runtime, source_check_request(source, false)).await;
+    let expression = serde_json::to_string(&runtime.evaluated[2].0).unwrap();
+    let cases = include_str!("tests/confirmation_contract.js");
+    let script = format!(
+        "const assert = require('node:assert/strict'); const expression = {expression};\n{cases}"
+    );
+    let output = std::process::Command::new("node")
+        .args(["-e", &script])
+        .output()
+        .unwrap();
+    assert!(
+        output.status.success(),
+        "{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let rows: Vec<Value> = serde_json::from_slice(&output.stdout).unwrap();
+    for row in rows {
+        let mut runtime = FakeRuntime::new([
+            saved_script_fixture(),
+            json!({"source": source}),
+            row["result"].clone(),
+        ]);
+        let result =
+            alert_create_indicator(&mut runtime, source_check_request(source, false)).await;
+        if row["success"] == true {
+            let data = result.unwrap();
+            assert_eq!(data["confirmation"]["settings"], "matched");
+            assert_eq!(data["activation"], row["result"]["activation"]);
+        } else {
+            let error = result.unwrap_err();
+            let details = error.details.unwrap();
+            assert_eq!(
+                details["created"],
+                if row["unknown"] == true {
+                    Value::Null
+                } else {
+                    json!(true)
+                },
+                "{}",
+                row["mode"]
+            );
+            assert_eq!(
+                details.get("creation_outcome").is_some(),
+                row["unknown"] == true
+            );
+        }
+    }
+}
+
+#[tokio::test]
+async fn indicator_confirmation_rejects_malformed_and_runtime_proof() {
+    let source = "indicator(\"Signals\")\nalertcondition(close > open, \"Long\")";
+    let valid = json!({
+        "error":"private-provider-error", "created":true, "alert_id":2,
+        "phase":"post_check_failed", "reason":"settings_mismatch",
+        "confirmation":{"identity":"matched","settings":"mismatch"},
+        "activation":{"state":"pending"}
+    });
+    let mut lost = FakeRuntime::new([saved_script_fixture(), json!({"source": source})])
+        .with_evaluate_app_error_after_responses(
+            AppError::new(ErrorKind::Connection, "lost response").with_details(valid.clone()),
+        );
+    let error = alert_create_indicator(&mut lost, source_check_request(source, false))
+        .await
+        .unwrap_err();
+    assert_eq!(error.details.unwrap()["created"], Value::Null);
+    let mut cases = vec![json!({"created":false}), json!({"created":true})];
+    for (path, value) in [
+        ("/alert_id", json!("2")),
+        ("/reason", json!("arbitrary")),
+        ("/phase", json!("other")),
+        ("/confirmation/identity", json!("unknown")),
+        ("/confirmation/settings", json!("matched")),
+        ("/activation/state", json!("arbitrary")),
+    ] {
+        let mut data = valid.clone();
+        *data.pointer_mut(path).unwrap() = value;
+        cases.push(data);
+    }
+    for data in cases {
+        let mut runtime =
+            FakeRuntime::new([saved_script_fixture(), json!({"source":source}), data]);
+        let error = alert_create_indicator(&mut runtime, source_check_request(source, false))
+            .await
+            .unwrap_err();
+        assert_eq!(error.details.unwrap()["created"], Value::Null);
+    }
+    let mut runtime = FakeRuntime::new([
+        saved_script_fixture(),
+        json!({"source":source}),
+        valid.clone(),
+    ]);
+    let error = alert_create_indicator(&mut runtime, source_check_request(source, false))
+        .await
+        .unwrap_err();
+    assert!(!format!("{error:?}").contains("private-provider-error"));
+    assert_eq!(error.details.unwrap()["created"], true);
 }

@@ -513,8 +513,11 @@ Indicator alertcondition alerts:
   local static candidate with an exact saved-script display-name match from the
   logged-in Pine facade list. Dry-run returns a sanitized preview. Normal mode
   creates through the alert endpoint only when required saved-script and input
-  metadata can be resolved safely, then verifies the new alert through a list
-  readback before reporting success.
+  metadata can be resolved safely, then binds a unique new saved row to response
+  r.alert_id and compares the submitted settings before reporting success.
+  Activation is reported separately without polling or restart; attributed
+  settings/stop failures report created:true rather than allowing blind retries.
+  See the public indicator-alert contract for comparison and failure rules.
 - Raw indicator-alert endpoint primitives remain intentionally unexposed. The
   CLI does not ask users for saved script ids, raw Pine input payloads, raw plot
   offsets, or webhook fields in this initial surface.

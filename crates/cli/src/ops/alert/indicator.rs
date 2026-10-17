@@ -20,6 +20,7 @@ use saved_script::{VerifiedSavedPineScript, resolve_verified};
 pub use tradingview_model::alert::IndicatorStudySelection;
 
 const STUDY_INPUTS: &str = include_str!("indicator/study_inputs.js");
+const CONFIRMATION_SCRIPT: &str = include_str!("indicator/confirmation.js");
 const VERIFICATION_SCRIPT: &str = include_str!("indicator/verification.js");
 
 #[derive(Debug, Clone)]
@@ -359,6 +360,7 @@ async fn alert_create_indicator_via_api(
 
                 {STUDY_INPUTS}
                 {VERIFICATION_SCRIPT}
+                {CONFIRMATION_SCRIPT}
 
                 function publicAlert(alert) {{
                     if (!alert) return null;
@@ -368,7 +370,7 @@ async fn alert_create_indicator_via_api(
                         symbol: alert.symbol || (alert.condition && alert.condition.symbol) || null,
                         type: alert.type || null,
                         message: alert.message || alert.description || '',
-                        active: alert.active !== false,
+                        active: typeof alert.active === 'boolean' ? alert.active : null,
                         resolution: alert.resolution || alert.interval || (condition && condition.resolution) || null,
                         created: alert.created || alert.create_time || null,
                         expiration: alert.expiration || alert.expire_time || null,
@@ -501,15 +503,6 @@ async fn alert_create_indicator_via_api(
                     return {{ ok: true, inputs: base, input_count: 0, input_source: 'default_no_inputs', study_matched: false }};
                 }}
 
-                function alertIds(rows) {{
-                    const ids = {{}};
-                    rows.forEach(function(alert) {{
-                        const id = alert && (alert.alert_id || alert.id);
-                        if (id !== null && id !== undefined) ids[String(id)] = true;
-                    }});
-                    return ids;
-                }}
-
                 function alertCondition(alert) {{
                     if (!alert) return null;
                     if (alert.condition && typeof alert.condition === 'object') return alert.condition;
@@ -521,37 +514,6 @@ async fn alert_create_indicator_via_api(
                     return !!(condition && Array.isArray(condition.series) && condition.series.some(function(series) {{
                         return series && series.type === 'study';
                     }}));
-                }}
-
-                function conditionAlertCondId(condition) {{
-                    if (!condition) return null;
-                    if (condition.alert_cond_id) return condition.alert_cond_id;
-                    if (condition.alertCondId) return condition.alertCondId;
-                    if (Array.isArray(condition.series)) {{
-                        for (let i = 0; i < condition.series.length; i++) {{
-                            const series = condition.series[i] || {{}};
-                            if (series.alert_cond_id) return series.alert_cond_id;
-                            if (series.alertCondId) return series.alertCondId;
-                        }}
-                    }}
-                    return null;
-                }}
-
-                function matchingNewAlert(rows, beforeIds, symbolMarker) {{
-                    for (let i = 0; i < rows.length; i++) {{
-                        const alert = rows[i] || {{}};
-                        const id = alert.alert_id || alert.id;
-                        if (id !== null && id !== undefined && beforeIds[String(id)]) continue;
-                        const condition = alertCondition(alert);
-                        if (!condition || condition.type !== 'alert_cond') continue;
-                        if (conditionAlertCondId(condition) !== requestedAlertCondId) continue;
-                        const message = alert.message || alert.description || '';
-                        if (message !== requestedMessage) continue;
-                        const symbol = alert.symbol || (alert.condition && alert.condition.symbol) || null;
-                        if (symbol && symbol !== symbolMarker) continue;
-                        return alert;
-                    }}
-                    return null;
                 }}
 
                 const compiled = verificationRequest ? await savedCompilation() : null;
@@ -604,6 +566,15 @@ async fn alert_create_indicator_via_api(
                     }};
                 }}
 
+                const beforeIds = new Set();
+                for (const row of before.rows) {{
+                    if (!validAlertId(row.alert_id) ||
+                        (Object.hasOwn(row, 'id') && row.id !== row.alert_id) || beforeIds.has(row.alert_id)) {{
+                        return {{error: 'Invalid pre-creation alert identities', error_kind: 'internal_api_unavailable',
+                            phase: 'pre_list_unavailable', created: false, source}};
+                    }}
+                    beforeIds.add(row.alert_id);
+                }}
                 const symbolMarker = '=' + JSON.stringify({{
                     symbol: chartMeta.symbol,
                     adjustment: 'dividends',
@@ -642,6 +613,7 @@ async fn alert_create_indicator_via_api(
                     ignore_warnings: true
                 }};
 
+                const submitted = structuredClone(payload);
                 let createResponse;
                 let createText;
                 let createData = null;
@@ -657,7 +629,7 @@ async fn alert_create_indicator_via_api(
                     }} catch (_) {{}}
                 }} catch (error) {{
                     return {{
-                        error: error && error.message ? error.message : String(error),
+                        error: 'Indicator alert creation response unavailable',
                         error_kind: 'internal_api_unavailable',
                         phase: 'create_request_unavailable',
                         created: null,
@@ -669,11 +641,7 @@ async fn alert_create_indicator_via_api(
 
                 if (!createResponse.ok || (createData && createData.err) || (createData && createData.s && createData.s !== 'ok')) {{
                     return {{
-                        error: createData && createData.errmsg
-                            ? createData.errmsg
-                            : createData && createData.err && createData.err.code
-                                ? createData.err.code
-                                : 'HTTP ' + createResponse.status + ': ' + createResponse.statusText,
+                        error: 'Indicator alert creation request failed',
                         error_kind: 'internal_api_unavailable',
                         phase: 'create_request_failed',
                         created: null,
@@ -681,7 +649,6 @@ async fn alert_create_indicator_via_api(
                         source,
                         before_count: before.rows.length,
                         status: createResponse.status,
-                        body_excerpt: String(createText || '').slice(0, 160)
                     }};
                 }}
 
@@ -700,29 +667,16 @@ async fn alert_create_indicator_via_api(
                     }};
                 }}
 
-                const matched = matchingNewAlert(after.rows, alertIds(before.rows), symbolMarker);
-                if (!matched) {{
-                    return {{
-                        error: 'Indicator alert create did not confirm a matching new alert',
-                        error_kind: 'internal_api_unavailable',
-                        phase: 'post_check_failed',
-                        created: null,
-                        creation_outcome: 'unknown',
-                        source,
-                        symbol: chartMeta.symbol,
-                        resolution: chartMeta.resolution,
-                        alert_cond_id: requestedAlertCondId,
-                        before_count: before.rows.length,
-                        after_count: after.rows.length
-                    }};
-                }}
-
-                const publicMatched = publicAlert(matched);
+                const confirmed = confirmCreatedAlert(createData, before.rows, after.rows, submitted);
+                if (confirmed.error) return confirmed;
+                const publicMatched = publicAlert(confirmed.row);
                 return {{
                     action: 'create_indicator',
                     dry_run: false,
                     alert_id: publicMatched && publicMatched.alert_id || null,
                     created: true,
+                    confirmation: confirmed.confirmation,
+                    activation: confirmed.activation,
                     source,
                     symbol: chartMeta.symbol,
                     resolution: String(chartMeta.resolution),
@@ -761,6 +715,22 @@ async fn alert_create_indicator_via_api(
         )
         .await;
 
+    let returned_result = result.is_ok();
+    let returned_preflight = result.as_ref().is_ok_and(|data| {
+        data.get("created") == Some(&Value::Bool(false))
+            && data.get("error").and_then(Value::as_str).is_some()
+            && data.get("source").and_then(Value::as_str) == Some("indicator_alert_api")
+            && matches!(
+                data.get("phase").and_then(Value::as_str),
+                Some(
+                    "chart_metadata_unavailable"
+                        | "study_input_metadata_unavailable"
+                        | "pre_list_unavailable"
+                        | "compiled_condition_verification"
+                        | "study_identity_verification"
+                )
+            )
+    });
     let result = result.and_then(|data| match selection {
         Some(selection) => {
             normalize_indicator_alert_verified_payload(data, request.dry_run, selection)
@@ -777,7 +747,10 @@ async fn alert_create_indicator_via_api(
         if request.dry_run {
             details.insert("created".into(), json!(false));
             details.remove("creation_outcome");
-        } else if details.get("created").and_then(Value::as_bool) != Some(false) {
+        } else if returned_result && details.get("created").and_then(Value::as_bool) == Some(true) {
+            // The model normalizer admits only well-formed attributed confirmation errors.
+            details.remove("creation_outcome");
+        } else if !returned_preflight {
             details.insert("created".into(), Value::Null);
             details.insert("creation_outcome".into(), json!("unknown"));
         }

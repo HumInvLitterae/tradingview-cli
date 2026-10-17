@@ -63,11 +63,12 @@ async fn javascript_account_indicator_input_ids() {
                     if (options.method === 'POST') {{
                         writes++;
                         payload = JSON.parse(options.body).payload;
-                        return {{ok:true,text:async()=>'{{"s":"ok"}}'}};
+                        return {{ok:true,text:async()=>'{{"s":"ok","r":{{"alert_id":2}}}}'}};
                     }}
                     reads++;
                     return {{ok:true,json:async()=>({{r:payload ? [{{
-                        id:'new',symbol:payload.symbol,message:payload.message,
+                        ...structuredClone(payload),alert_id:2,active:true,last_error:null,last_stop_reason:null,
+                        expiration:new Date(Math.floor(Date.parse(payload.expiration)/1000)*1000).toISOString(),
                         condition:payload.conditions[0]
                     }}] : []}})}};
                 }};

@@ -270,9 +270,70 @@ pub fn normalize_alert_create_payload(data: Value) -> Result<Value, AppError> {
     }))
 }
 
+fn indicator_confirmation_fields(data: &Value) -> Option<(Value, Value)> {
+    let id = data.get("alert_id")?.as_u64()?;
+    if id == 0 || id > 9_007_199_254_740_991 {
+        return None;
+    }
+    let confirmation = data.get("confirmation")?.as_object()?;
+    let activation = data.get("activation")?.as_object()?;
+    if confirmation.len() != 2
+        || confirmation.get("identity")?.as_str()? != "matched"
+        || !matches!(
+            confirmation.get("settings")?.as_str()?,
+            "matched" | "mismatch" | "unknown"
+        )
+        || activation.len() != 1
+        || !matches!(
+            activation.get("state")?.as_str()?,
+            "active" | "pending" | "stopped" | "unknown"
+        )
+        || data.get("creation_outcome").is_some()
+    {
+        return None;
+    }
+    Some((
+        Value::Object(confirmation.clone()),
+        Value::Object(activation.clone()),
+    ))
+}
+
 pub fn normalize_indicator_alert_create_payload(data: Value) -> Result<Value, AppError> {
     let data = sanitize_alert_payload(data);
+    let invalid = || {
+        AppError::new(
+            ErrorKind::InternalApiUnavailable,
+            "Indicator alert evaluation did not return valid creation confirmation",
+        )
+    };
     if let Some(message) = data.get("error").and_then(Value::as_str) {
+        if data.get("created") == Some(&Value::Bool(true)) {
+            let (confirmation, activation) =
+                indicator_confirmation_fields(&data).ok_or_else(invalid)?;
+            let reason = data.get("reason").and_then(Value::as_str);
+            let valid_reason = match reason {
+                Some("settings_mismatch") => confirmation["settings"] == "mismatch",
+                Some("settings_unavailable") => confirmation["settings"] == "unknown",
+                Some("activation_stopped") => {
+                    confirmation["settings"] == "matched" && activation["state"] == "stopped"
+                }
+                _ => false,
+            };
+            if !valid_reason
+                || data.get("phase").and_then(Value::as_str) != Some("post_check_failed")
+            {
+                return Err(invalid());
+            }
+            return Err(AppError::new(
+                ErrorKind::InternalApiUnavailable,
+                "Created indicator alert did not pass confirmation",
+            )
+            .with_details(json!({
+                "phase": "post_check_failed", "reason": reason, "created": true,
+                "alert_id": data["alert_id"], "confirmation": confirmation,
+                "activation": activation, "source": "indicator_alert_api"
+            })));
+        }
         let kind = match data.get("error_kind").and_then(Value::as_str) {
             Some("validation") => ErrorKind::Validation,
             _ => ErrorKind::InternalApiUnavailable,
@@ -292,6 +353,10 @@ pub fn normalize_indicator_alert_create_payload(data: Value) -> Result<Value, Ap
         .with_details(data));
     }
 
+    let (confirmation, activation) = indicator_confirmation_fields(&data).ok_or_else(invalid)?;
+    if confirmation["settings"] != "matched" || activation["state"] == "stopped" {
+        return Err(invalid());
+    }
     Ok(json!({
         "action": data
             .get("action")
@@ -299,6 +364,8 @@ pub fn normalize_indicator_alert_create_payload(data: Value) -> Result<Value, Ap
             .unwrap_or("create_indicator"),
         "dry_run": false,
         "created": true,
+        "confirmation": confirmation,
+        "activation": activation,
         "source": data
             .get("source")
             .and_then(Value::as_str)

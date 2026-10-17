@@ -59,8 +59,9 @@ For chart inputs, `verification.input_source` is `active_chart_study` and `study
 contains `entity_id` plus `selection: explicit` or `unique`. An explicitly
 selected no-input study is also reported, with input_source none and count zero.
 Preview's request contains resolved symbol/resolution. Raw compiled results and
-saved IDs are not returned. Stronger preflight does not expand post-create
-readback or notification guarantees.
+saved IDs are not returned. Post-create confirmation applies equally to legacy
+and verified creation; preflight verification does not guarantee notification
+delivery.
 
 ## Existing behavior without verification
 
@@ -108,15 +109,41 @@ A trimmed nonblank message overrides the source candidate message, then `(none)`
 is used. The request uses dividends adjustment, on-bar-close, approximately
 30-day expiry, auto-deactivation off and all notification channels off.
 
-Readback matches an alert not previously seen by ID, its alert_cond type,
-condition ID and message; symbol is checked only when reported. It does not
-verify every input, saved version, resolution or notification delivery. Failed
-readback does not prove no alert was created. Once a creation POST is attempted,
-request/response failures and failed readback return error details with
-`created:null` and `creation_outcome:"unknown"`. This also covers unavailable or
-malformed normal creation-evaluation results. HTTP/provider errors alone do not
-prove absence of a write. Returned chart/input/list preflight failures retain
-created:false. Confirmed normal success returns created:true; only opt-in
-successes add the verification summary. No automatic retry, deletion, DOM or MCP
-fallback is performed. Inspect account state before retrying and keep
-script/account details private.
+Normal creation binds readback to the positive safe-integer `r.alert_id` from
+its creation response, absent before creation and unique afterward. It never
+substitutes another content-matching alert or the response envelope's `id`.
+Before public sanitization it compares the submitted snapshot with saved
+condition/study identity, complete typed input maps, plot offsets, symbol
+settings, resolution, message, name, notifications, expiry and auto-deactivation.
+Object-key order is ignored; array order, missing values and types matter.
+Only observed expiry truncation to whole seconds, added `cross_interval:false`,
+and omission of request-only `ignore_warnings` are allowed. Server metadata
+outside the compared settings is ignored. This proves the submitted settings
+were stored; exact intended-study selection remains an opt-in preflight check.
+
+Successful normal creation adds `confirmation:{identity:"matched",settings:"matched"}`
+and `activation:{state:"active"|"pending"|"unknown"}`. Existing `verification`
+continues to describe opt-in preflight. Pending means `active:false` with
+explicitly null stop/error fields, not a promise of eventual activation.
+Missing or contradictory activation data is unknown. Neither success nor
+active state guarantees trigger evaluation or notification delivery.
+
+Once a POST is attempted, unavailable responses, invalid response identity,
+unattributable rows and Runtime loss return `created:null` with
+`creation_outcome:"unknown"`. A positively attributed row whose settings are
+missing/malformed or different returns an error with `created:true`, its
+`alert_id`, `phase:"post_check_failed"`, and `reason:"settings_unavailable"` or
+`"settings_mismatch"`; confirmation.settings is unknown or mismatch respectively.
+A matched row explicitly stopped returns the same error phase with
+`reason:"activation_stopped"` and activation.state stopped. These created:true
+errors do not include creation_outcome unknown. Error kinds and exit-code mapping
+are unchanged. Proven preflight failures retain created:false. Always check the
+success envelope; an error does not mean it is safe to create again.
+
+There is one pre-list, one creation POST and one post-list, with no automatic
+waiting, polling, retry, restart, deletion, DOM or MCP fallback. There is no
+wait-for-activation flag. Inspect the returned ID in `tv alert list` for a later
+active-state observation; that public list cannot reverify private saved inputs.
+Keep script/account details private. Live qualification covers no-input and one
+non-default integer-input alert; other input types have deterministic fixture
+coverage, not a live-provider guarantee.

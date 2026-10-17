@@ -202,7 +202,11 @@ let preview = alert_create_indicator_verified(
 
 Verified preview resolves the request's symbol/resolution and returns a
 verification summary without listing or creating alerts. Normal mode shares the
-same preflight, then the existing creation/readback path. Input values come from
+same preflight, then response-ID attribution and submitted-settings readback.
+Both creation entry points add confirmation and activation summaries without
+changing signatures. An attributed settings/stop failure returns an AppError
+with created:true; unavailable attribution remains created:null. No activation
+wait or automatic retry is performed. Input values come from
 the selected chart instance, never saved defaults. The internal saved-compilation
 service uses the Desktop session and has no public stability guarantee. Missing
 or conflicting metadata fails without legacy fallback. See

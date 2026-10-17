@@ -100,7 +100,7 @@ async fn javascript_account_alert_lists_reject_failed_reads() {
                             writes++;
                             return {{ok: true, json: async () => ({{}}), text: async () => '{{}}'}};
                         }}
-                        const body = !preflight && reads++ === 0 ? {{r: [{{id: 12}}]}} : {{}};
+                        const body = !preflight && reads++ === 0 ? {{r: [{{id: 12, alert_id: 12}}]}} : {{}};
                         return {{ok: true, json: async () => body}};
                     }};
                     const result = await eval(expression);

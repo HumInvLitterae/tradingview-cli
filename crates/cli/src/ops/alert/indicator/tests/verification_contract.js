@@ -196,7 +196,7 @@ const cases = [
                     writes++;
                     payload = JSON.parse(options.body).payload;
                     if (state.accountFailure === 'create') throw new Error('synthetic creation loss');
-                    return {ok: true, text: async () => '{"s":"ok"}'};
+                    return {ok: true, text: async () => '{"s":"ok","r":{"alert_id":2}}'};
                 }
                 assert.equal(url, 'https://pricealerts.tradingview.com/list_alerts');
                 reads++;
@@ -205,7 +205,8 @@ const cases = [
                     return {ok: false};
                 }
                 return {ok: true, json: async () => ({r: payload && state.accountFailure !== 'post-match' ? [{
-                    id: 'new', symbol: payload.symbol, message: payload.message, condition: payload.conditions[0]
+                    ...structuredClone(payload), alert_id: 2, active: true, last_error: null, last_stop_reason: null,
+                    expiration: new Date(Math.floor(Date.parse(payload.expiration) / 1000) * 1000).toISOString(), condition: payload.conditions[0]
                 }] : []})};
             };
             const key = test.idOnly ? `idOnly:${dryRun}` : `${test.inputs}:${dryRun}:${explicit}`;

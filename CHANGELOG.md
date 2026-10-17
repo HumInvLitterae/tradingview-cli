@@ -9,6 +9,13 @@ package version omits the leading `v`.
 
 ### Fixed
 
+- Desktop indicator-alert creation binds saved rows to the creation response ID
+  and compares submitted settings, preventing unrelated matching alerts from
+  confirming a request. Normal results report confirmation and activation
+  separately without waiting. Attributed settings or stopped-state failures
+  return errors with created:true and the alert ID; uncertain outcomes remain
+  created:null. Dry-run, price alerts and MCP behavior are unchanged.
+
 - Desktop price-alert creation preserves unknown outcomes after a possible
   account write, including request/readback failure and unavailable or malformed
   execution results. Error details use `created:null` and
