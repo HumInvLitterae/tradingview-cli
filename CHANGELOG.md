@@ -7,6 +7,11 @@ package version omits the leading `v`.
 
 ## Unreleased
 
+### Changed
+
+- Updated Tokio to 1.53.3 and refreshed twelve compatible transitive
+  dependencies, including Rustls and platform certificate/IPC support.
+
 ### Fixed
 
 - Desktop indicator-alert creation binds saved rows to the creation response ID
