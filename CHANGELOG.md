@@ -7,6 +7,8 @@ package version omits the leading `v`.
 
 ## Unreleased
 
+## v0.39.0
+
 ### Changed
 
 - Updated Tokio to 1.53.3 and refreshed twelve compatible transitive
