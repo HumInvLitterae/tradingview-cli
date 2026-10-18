@@ -388,9 +388,6 @@ remained unknown. This does not establish the cause of the earlier transient
 credential failures or long-running reliability. Windows basic acceptance is now
 recorded in the current release checklist above.
 
-The owner agreed to the expansion sequence in the
-[roadmap](../../next-version-roadmap.md#agreed-expansion-order), specifically promoting
-watchlists and alerts immediately after intraday bars and before financial data.
 The earlier exclusions below describe the first delivered slice, not a permanent
 ban on this agreed follow-up. Symbol discovery, single/batch symbol reads and
 screener queries and recent-count intraday OHLCV are implemented using the shared

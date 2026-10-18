@@ -28,14 +28,11 @@ post-create identity, provider acceptance, or notification delivery.
 
 ## Evidence and alternatives
 
-The [research record](../next-version-work-items.md#chart-free-metadata-and-compatibility-research)
-contains the bounded observations. An authenticated GET for an explicit saved
-ID/version returned metaInfo with matching scriptIdPart and pine.version plus
-the expected alertcondition ID/title while that script was absent from the
-chart. A second existing input-bearing revision returned four user-input
-IDs/defaults matching its native declarations. No chart or account state was
-changed. The actual chart values in that second case equalled defaults, so this
-does not qualify non-default values through real alert creation.
+Compiled saved metadata is available for an explicit saved ID/version without
+requiring a chart instance. Current values for user inputs still require the
+selected chart study. See the [internal API reference](../internal-tradingview-apis.md)
+for the adapter boundaries; metadata defaults are not a substitute for current
+chart inputs.
 
 The current translate_light source check returned language-analysis fields but
 no compiled metaInfo in one synthetic probe. It is not the metadata
