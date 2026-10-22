@@ -7,6 +7,11 @@ package version omits the leading `v`.
 
 ## Unreleased
 
+### Changed
+
+- Updated rmcp to 3.6.0 and Tokio to 1.54.1, and refreshed eighteen compatible
+  transitive dependencies, including TLS certificate support and Unicode data.
+
 ## v0.39.0
 
 ### Changed
