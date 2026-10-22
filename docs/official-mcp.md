@@ -652,6 +652,23 @@ metadata, provider timestamps and the original ordered `symbols` strings.
 Section labels are preserved; they are not resolved as instruments or flattened
 into a deduplicated symbol set. Missing symbols or optional fields remain null.
 
+Each watchlist also includes ordered `entries`, derived from `symbols`:
+`{"kind":"symbol","symbol":"NASDAQ:EXAMPLE"}` or
+`{"kind":"section","name":"Candidates","collapsed":true}`.
+The original `symbols` remain unchanged. Section strings start with `###`;
+an optional U+2064 immediately after that prefix marks a collapsed section.
+The prefix and marker are omitted from the entry's `name`. Empty names or
+repeated leading collapse markers fail with reason `watchlist_section`.
+`collapsed` describes the returned saved state, not unsaved Desktop state.
+
+Entries preserve every position, including duplicate symbols, same-name
+sections, empty sections and symbols before the first section. A section owns
+the following symbols until the next section; array positions identify entries
+only within that snapshot, not across edits. Unknown `symbols` produce
+`entries:null`; an empty list produces `entries:[]`. These fields also appear
+in list results and mutation readback snapshots, without strengthening the
+existing completeness or mutation-confirmation guarantees.
+
 Alert snapshots retain IDs, optional symbol/name/active state, condition type,
 threshold, resolution and provider timestamp strings. Detail reads additionally
 retain available auto-deactivation/webhook-presence flags and a supported

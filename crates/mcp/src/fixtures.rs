@@ -1659,6 +1659,12 @@ async fn account_read_service_preserves_contracts_and_never_replays_failures() {
                 }
                 if request.kind() == Kind::Watchlist {
                     assert_eq!(data["watchlist"]["id"], "12");
+                    assert_eq!(
+                        data["watchlist"]["entries"],
+                        json!([
+                            {"kind": "symbol", "symbol": "NASDAQ:EXAMPLE"}
+                        ])
+                    );
                 }
                 let requests = server.requests.lock().unwrap();
                 let call = requests

@@ -293,7 +293,27 @@ fn watchlist(row: &Value) -> Result<Value, AppError> {
         Some(Value::Array(symbols)) if symbols.iter().all(Value::is_string) => json!(symbols),
         _ => return Err(invalid_response("watchlist_symbols")),
     };
+    item["entries"] = match item["symbols"].as_array() {
+        None => Value::Null,
+        Some(symbols) => symbols
+            .iter()
+            .map(|symbol| watchlist_entry(symbol.as_str().unwrap()))
+            .collect::<Result<Vec<_>, _>>()?
+            .into(),
+    };
     Ok(item)
+}
+
+fn watchlist_entry(symbol: &str) -> Result<Value, AppError> {
+    let Some(section) = symbol.strip_prefix("###") else {
+        return Ok(json!({"kind": "symbol", "symbol": symbol}));
+    };
+    let collapsed = section.starts_with('\u{2064}');
+    let name = section.strip_prefix('\u{2064}').unwrap_or(section);
+    if name.is_empty() || name.starts_with('\u{2064}') {
+        return Err(invalid_response("watchlist_section"));
+    }
+    Ok(json!({"kind": "section", "name": name, "collapsed": collapsed}))
 }
 
 fn alert(row: &Value) -> Result<Value, AppError> {
@@ -404,6 +424,13 @@ mod tests {
         assert_eq!(data["items"][0]["id"], "12");
         assert_eq!(data["items"][0]["symbols"][0], "###Section");
         assert!(data["items"][1]["symbols"].is_null());
+        assert_eq!(
+            data["items"][0]["entries"][0],
+            json!({
+                "kind": "section", "name": "Section", "collapsed": false
+            })
+        );
+        assert!(data["items"][1]["entries"].is_null());
         assert!(data["items"][0]["active"].is_null());
         assert_eq!(data["client_observation"]["completeness"], "unconfirmed");
         let empty = normalize(&Request::watchlists(), json!({"watchlists": []}), 0).unwrap();
@@ -411,6 +438,59 @@ mod tests {
         let request = Request::watchlist("12").unwrap();
         assert!(normalize(&request, json!({"watchlist": {"id": 10}}), 0).is_err());
         assert!(normalize(&request, json!({"watchlist": null}), 0).is_err());
+    }
+
+    #[test]
+    fn watchlist_entries_preserve_sections_members_and_saved_order() {
+        let symbols = json!([
+            "NASDAQ:EXAMPLE",
+            "###Same",
+            "###\u{2064}Same",
+            "NASDAQ:EXAMPLE",
+            "NASDAQ:EXAMPLE",
+            "###Empty"
+        ]);
+        let data = normalize(
+            &Request::watchlist("12").unwrap(),
+            json!({"watchlist": {"id": 12, "symbols": symbols}}),
+            0,
+        )
+        .unwrap();
+        assert_eq!(data["watchlist"]["symbols"], symbols);
+        assert_eq!(
+            data["watchlist"]["entries"],
+            json!([
+                {"kind": "symbol", "symbol": "NASDAQ:EXAMPLE"},
+                {"kind": "section", "name": "Same", "collapsed": false},
+                {"kind": "section", "name": "Same", "collapsed": true},
+                {"kind": "symbol", "symbol": "NASDAQ:EXAMPLE"},
+                {"kind": "symbol", "symbol": "NASDAQ:EXAMPLE"},
+                {"kind": "section", "name": "Empty", "collapsed": false}
+            ])
+        );
+        assert_eq!(data["client_observation"]["identity_match"], "matched");
+        assert_eq!(data["client_observation"]["completeness"], "unconfirmed");
+    }
+
+    #[test]
+    fn watchlist_entries_distinguish_unknown_empty_and_invalid_sections() {
+        let request = Request::watchlist("12").unwrap();
+        for row in [json!({"id": 12}), json!({"id": 12, "symbols": null})] {
+            let data = normalize(&request, json!({"watchlist": row}), 0).unwrap();
+            assert!(data["watchlist"]["entries"].is_null());
+        }
+        let empty =
+            normalize(&request, json!({"watchlist": {"id": 12, "symbols": []}}), 0).unwrap();
+        assert_eq!(empty["watchlist"]["entries"], json!([]));
+        for section in ["###", "###\u{2064}", "###\u{2064}\u{2064}Name"] {
+            let error = normalize(
+                &request,
+                json!({"watchlist": {"id": 12, "symbols": [section]}}),
+                0,
+            )
+            .unwrap_err();
+            assert_eq!(error.details.unwrap()["reason"], "watchlist_section");
+        }
     }
 
     #[test]

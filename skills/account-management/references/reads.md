@@ -12,6 +12,14 @@ against the request. IDs allow zero and reject leading zeros/whitespace. Preserv
 symbol order and section labels; a section label is not a tradable symbol.
 `symbols: null` is unknown, not an empty list.
 
+Use `entries` for the ordered structure: `kind: symbol` has `symbol`, and
+`kind: section` has `name` and the saved `collapsed` state. Folded members are
+still included. Duplicate members, same-name sections and empty sections keep
+their positions. Members before the first section are unsectioned; subsequent
+members belong to the preceding section. Positions are snapshot-local, not
+stable section IDs. Unknown symbols give `entries: null`; empty symbols give
+`entries: []`. This is saved account state, not unsaved Desktop display state.
+
 Alert list accepts an optional qualified symbol and explicit `--active true` or
 `--active false`; omission leaves active state unfiltered. Known response fields
 that contradict filters fail, but null fields remain unknown. List rows retain

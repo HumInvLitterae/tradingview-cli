@@ -88,7 +88,7 @@ pub(super) fn describe(path: &[&str]) -> Option<Value> {
     result["output_contract"] = json!(contract);
     result["examples"] = json!([example]);
     let interpretation = if *family == "watchlist" {
-        "Watchlist IDs are decimal strings. List rows and symbols retain provider order, including section labels; symbols null is not an empty list and section labels are not tradable symbols. Read results neither select nor activate the list."
+        "Watchlist IDs are decimal strings. Original symbols are preserved. Ordered entries distinguish kind=symbol (symbol) from kind=section (name, collapsed). Collapsed is the saved state, not unsaved Desktop state. Duplicate members, same-name sections and empty sections remain distinct; entries null means symbols are unknown, while [] means empty. Invalid section encoding fails. Read results neither select nor activate the list."
     } else {
         "Alert IDs are positive integers. Conditions are a limited projection with condition_completeness unconfirmed, insufficient to recreate arbitrary Pine alerts. Notification messages and webhook URLs are excluded; has_webhook and notification flags do not prove delivery. Time fields remain provider strings, not normalized firing-history timestamps."
     };
