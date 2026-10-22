@@ -484,10 +484,15 @@ Safety boundary:
 - failed/malformed list reads return errors; only a valid empty collection means
   no listed alerts. Read, create and delete share strict list-response validation
 - creates and deletes require post-mutation readback before success
-- price creation failures after a POST may have dispatched return `created:null`
+- unattributable price creation failures after a POST may have dispatched return `created:null`
   and `creation_outcome:"unknown"`, including lost or malformed Runtime results
   without explicit preflight proof. Only proven preflight failures retain
   `created:false`; confirmed success stays `created:true`
+- price creation matches the response ID and saved settings, including the
+  simple-price `resolution: "1"` / `cross_interval: true` normalization.
+  Attributed settings failures or stopped activation retain `created:true` and
+  the ID. Success reports activation as active, pending or unknown without
+  polling; see [price-alert semantics](../skills/account-management/references/legacy-alerts.md)
 - create never falls back to visible dialog automation or MCP; preflight
   failure returns an error, and uncertain writes are not replayed
 - deletes support dry-run where applicable and require post-delete absence

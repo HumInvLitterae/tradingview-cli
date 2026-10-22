@@ -12,6 +12,8 @@ use tradingview_model::alert::{
     alert_condition_type, normalize_alert_condition, validate_alert_condition,
 };
 
+const CONFIRMATION_SCRIPT: &str = include_str!("confirmation.js");
+
 pub async fn alert_create(
     runtime: &mut impl RuntimeEvaluator,
     price: f64,
@@ -48,7 +50,7 @@ pub async fn alert_create(
                         symbol: alert.symbol || (alert.condition && alert.condition.symbol) || null,
                         type: alert.type || null,
                         message: alert.message || alert.description || '',
-                        active: alert.active !== false,
+                        active: typeof alert.active === 'boolean' ? alert.active : null,
                         condition: alert.condition || null,
                         resolution: alert.resolution || alert.interval || null,
                         created: alert.created || alert.create_time || null,
@@ -57,10 +59,11 @@ pub async fn alert_create(
                 }}
 
                 {ALERT_LIST_READER}
+                {CONFIRMATION_SCRIPT}
                 async function listAlerts() {{
                     const result = await __readAlertRows();
                     if (!result.ok) return result;
-                    return {{ ok: true, alerts: result.alerts.map(publicAlert) }};
+                    return {{ ok: true, alerts: result.alerts }};
                 }}
 
                 function readChartMetadata() {{
@@ -99,40 +102,6 @@ pub async fn alert_create(
                             error: error && error.message ? error.message : String(error)
                         }};
                     }}
-                }}
-
-                function alertIds(alerts) {{
-                    const ids = {{}};
-                    alerts.forEach(function(alert) {{
-                        const id = alert && alert.alert_id;
-                        if (id !== null && id !== undefined) ids[String(id)] = true;
-                    }});
-                    return ids;
-                }}
-
-                function conditionValue(alert) {{
-                    const series = alert && alert.condition && Array.isArray(alert.condition.series)
-                        ? alert.condition.series
-                        : [];
-                    for (let i = 0; i < series.length; i++) {{
-                        if (series[i] && series[i].type === 'value' && typeof series[i].value === 'number') {{
-                            return series[i].value;
-                        }}
-                    }}
-                    return null;
-                }}
-
-                function matchingNewAlert(alerts, beforeIds, symbolMarker) {{
-                    const tolerance = Math.max(0.000001, Math.abs(requestedPrice) * 0.000001);
-                    return alerts.find(function(alert) {{
-                        const id = alert && alert.alert_id;
-                        if (id !== null && id !== undefined && beforeIds[String(id)]) return false;
-                        if (!alert || alert.message !== requestedMessage) return false;
-                        if (alert.symbol !== symbolMarker) return false;
-                        if (!alert.condition || alert.condition.type !== requestedConditionType) return false;
-                        const value = conditionValue(alert);
-                        return typeof value === 'number' && Math.abs(value - requestedPrice) <= tolerance;
-                    }}) || null;
                 }}
 
                 const chartMeta = readChartMetadata();
@@ -197,6 +166,7 @@ pub async fn alert_create(
                     ignore_warnings: true
                 }};
 
+                const submitted = structuredClone(payload);
                 let createResponse;
                 let createText;
                 let createData = null;
@@ -227,11 +197,9 @@ pub async fn alert_create(
                     }};
                 }}
 
-                if (!createResponse.ok || (createData && createData.err)) {{
+                if (!createResponse.ok || (createData && createData.err) || (createData && createData.s && createData.s !== 'ok')) {{
                     return {{
-                        error: createData && createData.errmsg
-                            ? createData.errmsg
-                            : 'HTTP ' + createResponse.status + ': ' + createResponse.statusText,
+                        error: 'Alert creation request failed',
                         error_kind: 'internal_api_unavailable',
                         phase: 'create_request_failed',
                         api_fallback_allowed: false,
@@ -244,7 +212,6 @@ pub async fn alert_create(
                         source,
                         before_count: before.alerts.length,
                         status: createResponse.status,
-                        body_excerpt: String(createText || '').slice(0, 160)
                     }};
                 }}
 
@@ -269,27 +236,14 @@ pub async fn alert_create(
                     }};
                 }}
 
-                const matched = matchingNewAlert(after.alerts, alertIds(before.alerts), symbolMarker);
-                if (!matched) {{
-                    return {{
-                        error: 'Alert create did not confirm a matching new alert',
-                        error_kind: 'internal_api_unavailable',
-                        phase: 'post_check_failed',
-                        api_fallback_allowed: false,
-                        price: requestedPrice,
-                        condition: requestedCondition,
-                        condition_type: requestedConditionType,
-                        message: requestedMessage,
-                        price_set: true,
-                        created: null,
-                        creation_outcome: 'unknown',
-                        source,
-                        symbol: chartMeta.symbol,
-                        resolution: chartMeta.resolution,
-                        before_count: before.alerts.length,
-                        after_count: after.alerts.length
-                    }};
-                }}
+                const confirmed = confirmCreatedAlert(createData, before.alerts, after.alerts, submitted, 'price');
+                if (confirmed.error) return {{
+                    ...confirmed, api_fallback_allowed: false,
+                    price: requestedPrice, condition: requestedCondition,
+                    condition_type: requestedConditionType, message: requestedMessage,
+                    price_set: true, before_count: before.alerts.length, after_count: after.alerts.length
+                }};
+                const matched = publicAlert(confirmed.row);
 
                 return {{
                     alert_id: matched.alert_id || null,
@@ -307,6 +261,8 @@ pub async fn alert_create(
                     resolution: chartMeta.resolution,
                     before_count: before.alerts.length,
                     after_count: after.alerts.length,
+                    confirmation: confirmed.confirmation,
+                    activation: confirmed.activation,
                     matched_alert: matched
                 }};
             }})()
@@ -326,6 +282,7 @@ pub async fn alert_create(
                 Some("chart_metadata_unavailable" | "pre_list_unavailable")
             )
     });
+    let returned_result = result.is_ok();
     result
         .and_then(normalize_alert_create_payload)
         .map_err(|mut error| {
@@ -334,7 +291,9 @@ pub async fn alert_create(
                 .take()
                 .and_then(|value| value.as_object().cloned())
                 .unwrap_or_default();
-            if !preflight_failure {
+            if returned_result && details.get("created").and_then(Value::as_bool) == Some(true) {
+                details.remove("creation_outcome");
+            } else if !preflight_failure {
                 details.insert("created".into(), Value::Null);
                 details.insert("creation_outcome".into(), json!("unknown"));
             }
@@ -355,7 +314,9 @@ mod tests {
     #[tokio::test]
     async fn alert_create_returns_practical_old_cli_fields() {
         let mut runtime = FakeRuntime::new(VecDeque::from([json!({
-            "alert_id": "4530000001",
+            "alert_id": 4530000001_u64,
+            "confirmation": {"identity":"matched","settings":"matched"},
+            "activation": {"state":"active"},
             "opened": false,
             "open_selector": null,
             "price": 123.45,
@@ -377,7 +338,7 @@ mod tests {
             .await
             .unwrap();
 
-        assert_eq!(data["alert_id"], "4530000001");
+        assert_eq!(data["alert_id"], 4530000001_u64);
         assert_eq!(data["price"], 123.45);
         assert_eq!(data["condition"], "crossing");
         assert_eq!(data["condition_type"], "cross");
@@ -423,7 +384,9 @@ mod tests {
     #[tokio::test]
     async fn alert_create_defaults_message_to_none() {
         let mut runtime = FakeRuntime::new(VecDeque::from([json!({
-            "alert_id": "4530000002",
+            "alert_id": 4530000002_u64,
+            "confirmation": {"identity":"matched","settings":"matched"},
+            "activation": {"state":"pending"},
             "price": 100.0,
             "condition": "greater_than",
             "condition_type": "cross_up",

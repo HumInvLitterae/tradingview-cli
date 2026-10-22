@@ -1153,23 +1153,23 @@ are enabled, email/SMS are disabled and webhook is null. Currency can fall back
 to USD and resolution to 1. These are different defaults from official MCP.
 There is no dry-run.
 
-Creation uses the internal API and checks a new matching ID, symbol marker,
-message, condition type and approximate price. API preflight failure returns an
-error without opening a dialog. There is no automatic DOM or MCP fallback;
-failed readback can still follow account creation, so inspect before retrying.
-Older binaries can report `source: dom_fallback` and `created: true` after a
-button click without verifying conditions or persistence; that is not proof
-of a correctly saved alert.
+Creation attributes the saved row to the response's positive safe-integer
+`r.alert_id`, absent before creation and unique in readback. It compares saved
+symbol settings, exact price, conditions, frequency, message, notifications,
+auto-deactivation and expiry. Simple price conditions normalize to resolution
+`"1"` with `cross_interval:true`; the outer resolution remains the chart's.
+Symbol-marker key order and expiry truncation to seconds are handled.
 
-After a creation POST may have been sent, request/response failures and failed
-readback report error details with `created:null` and
-`creation_outcome:"unknown"`. Lost, exceptional, or malformed Runtime results
-without explicit preflight evidence have the same outcome. Only a returned
-preflight failure proving no POST was attempted retains `created:false`;
-local argument errors still stop before evaluation. Confirmed success remains
-`created:true`. Error kinds, exit codes, notification defaults, and `price_set`
-keep their existing meaning. Inspect account state before considering another
-creation; no automatic retry or cleanup is performed.
+Success reports `confirmation:{identity:"matched",settings:"matched"}` and
+`activation:{state:"active"|"pending"|"unknown"}`. Readback happens once; the CLI
+does not wait for activation or reactivate. Attributed settings mismatches,
+unavailable settings or stopped activation fail with `created:true`, the ID and
+confirmation/activation evidence. Unattributable outcomes, including failed
+readback and lost/malformed Runtime results, retain `created:null` and
+`creation_outcome:"unknown"`. Proven preflight failures retain `created:false`.
+No automatic DOM/MCP fallback, retry or cleanup occurs. See the
+[price-alert contract](../skills/account-management/references/legacy-alerts.md)
+for activation-state meanings and comparison limits.
 
 Delete requires exactly one of `--id` and `--all`. Dry-run is supported only
 with all and performs a fresh account read. Execution of all targets every alert

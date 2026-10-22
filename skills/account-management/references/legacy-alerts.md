@@ -28,23 +28,35 @@ are enabled, email/SMS are disabled and webhook is null. Currency can fall back
 to USD and resolution to 1. These are different defaults from official MCP.
 There is no dry-run.
 
-Creation uses the internal API and checks a new matching ID, symbol marker,
-message, condition type and approximate price. API preflight failure returns an
-error without opening a dialog. There is no automatic DOM or MCP fallback;
-failed readback can still follow account creation, so inspect before retrying.
-Older binaries can report `source: dom_fallback` and `created: true` after a
-button click without verifying conditions or persistence; that is not proof
-of a correctly saved alert.
+Creation requires a positive safe-integer `r.alert_id` from the create response,
+absent before dispatch and identifying exactly one saved row after dispatch.
+Content similarity never substitutes for that identity. The saved symbol settings,
+exact price, condition, frequency, message, notification settings, auto-deactivation
+and expiry must match the submitted settings. Symbol-marker object key order is
+ignored; expiry allows the server's truncation to whole seconds.
 
-After a creation POST may have been sent, request/response failures and failed
-readback report error details with `created:null` and
-`creation_outcome:"unknown"`. Lost, exceptional, or malformed Runtime results
-without explicit preflight evidence have the same outcome. Only a returned
-preflight failure proving no POST was attempted retains `created:false`;
-local argument errors still stop before evaluation. Confirmed success remains
-`created:true`. Error kinds, exit codes, notification defaults, and `price_set`
-keep their existing meaning. Inspect account state before considering another
-creation; no automatic retry or cleanup is performed.
+For these simple price conditions, saved condition resolution must be `"1"`
+and `cross_interval:true`, including the outer cross-interval flag. The outer
+resolution still matches the chart. This is the price-alert normalization, not
+an exception for indicators or drawings; creating from a daily chart does not
+request a daily-close trigger. Both `conditions` and an available `condition`
+alias are checked.
+
+Success includes `confirmation:{identity:"matched",settings:"matched"}` and
+`activation:{state:"active"|"pending"|"unknown"}`. The CLI reads back once and
+never waits or reactivates. Inactive with explicit null stop/error fields is
+`pending`; missing or contradictory status is `unknown`. Neither proves eventual
+activation. Inactive with a reported stop/error is `stopped` and fails.
+
+An attributed row with mismatched or unavailable settings, or stopped activation,
+returns an error with `created:true`, `alert_id`, `confirmation` and `activation`.
+Settings are `mismatch` or `unknown` as appropriate. Inspect that ID; do not create
+a replacement blindly. Missing/ambiguous response identity, failed readback,
+request failures and lost/malformed Runtime results remain `created:null` with
+`creation_outcome:"unknown"`. Only proven preflight failures retain `created:false`.
+There is no automatic DOM/MCP fallback, retry or cleanup. Notification defaults
+and `price_set` retain their existing meaning. Returned conditions remain a
+sanitized projection rather than a complete reusable alert payload.
 
 Delete requires exactly one of `--id` and `--all`. Dry-run is supported only
 with all and performs a fresh account read. Execution of all targets every alert

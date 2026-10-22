@@ -20,7 +20,7 @@ use saved_script::{VerifiedSavedPineScript, resolve_verified};
 pub use tradingview_model::alert::IndicatorStudySelection;
 
 const STUDY_INPUTS: &str = include_str!("indicator/study_inputs.js");
-const CONFIRMATION_SCRIPT: &str = include_str!("indicator/confirmation.js");
+const CONFIRMATION_SCRIPT: &str = include_str!("confirmation.js");
 const VERIFICATION_SCRIPT: &str = include_str!("indicator/verification.js");
 
 #[derive(Debug, Clone)]
@@ -667,7 +667,7 @@ async fn alert_create_indicator_via_api(
                     }};
                 }}
 
-                const confirmed = confirmCreatedAlert(createData, before.rows, after.rows, submitted);
+                const confirmed = confirmCreatedAlert(createData, before.rows, after.rows, submitted, 'indicator');
                 if (confirmed.error) return confirmed;
                 const publicMatched = publicAlert(confirmed.row);
                 return {{

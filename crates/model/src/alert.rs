@@ -203,7 +203,42 @@ pub fn normalize_alert_list_payload(data: Value) -> Value {
 
 pub fn normalize_alert_create_payload(data: Value) -> Result<Value, AppError> {
     let data = sanitize_alert_payload(data);
+    let invalid = || {
+        AppError::new(
+            ErrorKind::InternalApiUnavailable,
+            "Price alert evaluation did not return valid creation confirmation",
+        )
+    };
     if let Some(message) = data.get("error").and_then(Value::as_str) {
+        if data.get("created") == Some(&Value::Bool(true)) {
+            let (confirmation, activation) =
+                creation_confirmation_fields(&data).ok_or_else(invalid)?;
+            let reason = data.get("reason").and_then(Value::as_str);
+            let valid_reason = match reason {
+                Some("settings_mismatch") => confirmation["settings"] == "mismatch",
+                Some("settings_unavailable") => confirmation["settings"] == "unknown",
+                Some("activation_stopped") => {
+                    confirmation["settings"] == "matched" && activation["state"] == "stopped"
+                }
+                _ => false,
+            };
+            if !valid_reason
+                || data["phase"] != "post_check_failed"
+                || data["source"] != "internal_api"
+            {
+                return Err(invalid());
+            }
+            return Err(AppError::new(
+                ErrorKind::InternalApiUnavailable,
+                "Created price alert did not pass confirmation",
+            )
+            .with_details(json!({
+                "phase": "post_check_failed", "reason": reason, "created": true,
+                "alert_id": data["alert_id"], "confirmation": confirmation,
+                "activation": activation, "source": "internal_api",
+                "api_fallback_allowed": false, "price_set": true
+            })));
+        }
         let kind = match data.get("error_kind").and_then(Value::as_str) {
             Some("validation") => ErrorKind::Validation,
             _ => ErrorKind::InternalApiUnavailable,
@@ -219,8 +254,7 @@ pub fn normalize_alert_create_payload(data: Value) -> Result<Value, AppError> {
         return Err(AppError::new(
             ErrorKind::InternalApiUnavailable,
             "Alert price input could not be set",
-        )
-        .with_details(data));
+        ));
     }
 
     if !data
@@ -235,7 +269,16 @@ pub fn normalize_alert_create_payload(data: Value) -> Result<Value, AppError> {
         .with_details(data));
     }
 
+    let (confirmation, activation) = creation_confirmation_fields(&data).ok_or_else(invalid)?;
+    if confirmation["settings"] != "matched"
+        || activation["state"] == "stopped"
+        || data["source"] != "internal_api"
+    {
+        return Err(invalid());
+    }
     Ok(json!({
+        "confirmation": confirmation,
+        "activation": activation,
         "price": data.get("price").cloned().unwrap_or(Value::Null),
         "condition": data
             .get("condition")
@@ -270,7 +313,7 @@ pub fn normalize_alert_create_payload(data: Value) -> Result<Value, AppError> {
     }))
 }
 
-fn indicator_confirmation_fields(data: &Value) -> Option<(Value, Value)> {
+fn creation_confirmation_fields(data: &Value) -> Option<(Value, Value)> {
     let id = data.get("alert_id")?.as_u64()?;
     if id == 0 || id > 9_007_199_254_740_991 {
         return None;
@@ -309,7 +352,7 @@ pub fn normalize_indicator_alert_create_payload(data: Value) -> Result<Value, Ap
     if let Some(message) = data.get("error").and_then(Value::as_str) {
         if data.get("created") == Some(&Value::Bool(true)) {
             let (confirmation, activation) =
-                indicator_confirmation_fields(&data).ok_or_else(invalid)?;
+                creation_confirmation_fields(&data).ok_or_else(invalid)?;
             let reason = data.get("reason").and_then(Value::as_str);
             let valid_reason = match reason {
                 Some("settings_mismatch") => confirmation["settings"] == "mismatch",
@@ -353,7 +396,7 @@ pub fn normalize_indicator_alert_create_payload(data: Value) -> Result<Value, Ap
         .with_details(data));
     }
 
-    let (confirmation, activation) = indicator_confirmation_fields(&data).ok_or_else(invalid)?;
+    let (confirmation, activation) = creation_confirmation_fields(&data).ok_or_else(invalid)?;
     if confirmation["settings"] != "matched" || activation["state"] == "stopped" {
         return Err(invalid());
     }
@@ -659,6 +702,9 @@ mod tests {
         assert_eq!(error.message, "Alert price input could not be set");
 
         let payload = normalize_alert_create_payload(json!({
+            "alert_id": 2,
+            "confirmation": {"identity":"matched","settings":"matched"},
+            "activation": {"state":"pending"},
             "price": 100.0,
             "condition": "crossing",
             "message": "(none)",

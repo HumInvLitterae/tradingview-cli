@@ -27,10 +27,12 @@ async fn javascript_account_price_creation_outcomes() {
         let mode = row["mode"].as_str().unwrap();
         let mut runtime = FakeRuntime::new([row["result"].clone()]);
         let result = alert_create(&mut runtime, 100.0, "crossing", Some("Example")).await;
-        if mode == "success" {
+        if row["success"] == true {
             let data = result.unwrap();
             assert_eq!(data["created"], true);
-            assert_eq!(data["alert_id"], "new");
+            assert_eq!(data["alert_id"], 2);
+            assert_eq!(data["activation"], row["result"]["activation"]);
+            assert_eq!(data["confirmation"]["settings"], "matched");
             assert_eq!(data["price_set"], true);
             assert!(data.get("creation_outcome").is_none());
             assert!(data["matched_alert"]["condition"].get("series").is_none());
@@ -47,6 +49,11 @@ async fn javascript_account_price_creation_outcomes() {
             assert_eq!(details["price_set"], !preflight);
             if preflight {
                 assert_eq!(details["created"], false);
+                assert!(details.get("creation_outcome").is_none());
+            } else if row["attributed"] == true {
+                assert_eq!(details["created"], true);
+                assert_eq!(details["alert_id"], 2);
+                assert_eq!(details["reason"], row["result"]["reason"]);
                 assert!(details.get("creation_outcome").is_none());
             } else {
                 assert_eq!(details.get("created"), Some(&Value::Null), "{mode}");
@@ -95,6 +102,13 @@ async fn price_creation_malformed_result_does_not_prove_absence_of_write() {
         json!({"created": false, "phase": "post_check_failed", "error": "unconfirmed"}),
         json!({"created": false, "phase": "pre_list_unavailable"}),
         json!({"created": true, "price_set": false}),
+        json!({"created": true, "price_set": true, "source": "internal_api"}),
+        json!({
+            "created": true, "price_set": true, "source": "internal_api", "alert_id": 2,
+            "error": "untrusted confirmation", "phase": "post_check_failed", "reason": "settings_mismatch",
+            "confirmation": {"identity": "matched", "settings": "matched"},
+            "activation": {"state": "active"}
+        }),
     ] {
         let mut runtime = FakeRuntime::new([response.clone()]);
         let error = alert_create(&mut runtime, 100.0, "crossing", None)

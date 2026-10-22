@@ -11,16 +11,18 @@ function activationState(row) {
     return statuses.every(value => value === null) ? 'pending' : 'stopped';
 }
 
-function confirmCreatedAlert(response, before, after, submitted) {
+function confirmCreatedAlert(response, before, after, submitted, kind) {
+    const priceAlert = kind === 'price';
     const unknown = reason => ({
-        error: 'Indicator alert creation could not be attributed',
+        error: 'Alert creation could not be attributed',
         error_kind: 'internal_api_unavailable', phase: 'post_check_failed', reason,
         created: null, creation_outcome: 'unknown', source
     });
     const id = response && response.r && response.r.alert_id;
     if (!validAlertId(id)) return unknown('response_id_unavailable');
-    if (before.some(row => row.alert_id === id || row.id === id)) return unknown('response_id_preexisting');
-    const matches = after.filter(row => row.alert_id === id || row.id === id);
+    const hasId = row => [row.alert_id, row.id].some(value => value === id || value === String(id));
+    if (before.some(hasId)) return unknown('response_id_preexisting');
+    const matches = after.filter(hasId);
     if (matches.length !== 1) return unknown(matches.length ? 'response_id_ambiguous' : 'created_row_unavailable');
     const row = matches[0];
     if (row.alert_id !== id || (Object.hasOwn(row, 'id') && row.id !== id)) return unknown('response_id_ambiguous');
@@ -47,6 +49,14 @@ function confirmCreatedAlert(response, before, after, submitted) {
     function condition(actual) {
         if (!actual || typeof actual !== 'object' || Array.isArray(actual)) { unavailable = true; return; }
         const expected = submitted.conditions[0];
+        if (priceAlert) {
+            compare(expected.type, actual.type);
+            compare(expected.frequency, actual.frequency);
+            compare(expected.series, actual.series);
+            compare('1', actual.resolution);
+            compare(true, actual.cross_interval);
+            return;
+        }
         for (const key of ['type', 'frequency', 'alert_cond_id', 'resolution']) compare(expected[key], actual[key]);
         if (Object.hasOwn(actual, 'cross_interval')) compare(false, actual.cross_interval);
         if (!Array.isArray(actual.series)) { unavailable = true; return; }
@@ -57,8 +67,14 @@ function confirmCreatedAlert(response, before, after, submitted) {
     }
     for (const key of ['symbol', 'resolution', 'message', 'name', 'sound_file', 'sound_duration',
         'popup', 'auto_deactivate', 'email', 'sms_over_email', 'mobile_push', 'web_hook']) {
-        compare(submitted[key], row[key]);
+        if (priceAlert && key === 'symbol') {
+            try {
+                if (typeof row.symbol !== 'string' || !row.symbol.startsWith('=')) { unavailable = true; continue; }
+                compare(JSON.parse(submitted.symbol.slice(1)), JSON.parse(row.symbol.slice(1)));
+            } catch (_) { unavailable = true; }
+        } else compare(submitted[key], row[key]);
     }
+    if (priceAlert) compare(true, row.cross_interval);
     const expiry = typeof row.expiration === 'string' && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/.test(row.expiration)
         ? Date.parse(row.expiration) : NaN;
     if (!Number.isFinite(expiry)) unavailable = true;
@@ -73,7 +89,7 @@ function confirmCreatedAlert(response, before, after, submitted) {
     const confirmation = {identity: 'matched', settings};
     const activation = {state: activationState(row)};
     if (settings !== 'matched' || activation.state === 'stopped') return {
-        error: 'Created indicator alert did not pass confirmation',
+        error: 'Created alert did not pass confirmation',
         error_kind: 'internal_api_unavailable', phase: 'post_check_failed',
         reason: settings === 'mismatch' ? 'settings_mismatch' : settings === 'unknown' ? 'settings_unavailable' : 'activation_stopped',
         created: true, alert_id: id, confirmation, activation, source
