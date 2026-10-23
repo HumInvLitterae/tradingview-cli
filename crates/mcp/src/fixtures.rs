@@ -864,20 +864,35 @@ async fn protocol_diagnostics_separate_initialization_and_catalog_timeouts() {
         ("slow-catalog-headers", "tools/list"),
     ] {
         let server = Server::start(mode).await;
-        let (_root, _guard, _budget, http, _store) = context(&server, 1).await;
-        let outcome = crate::transport::inspect_tools(
-            &http,
-            "synthetic-secret-token".into(),
-            &[(
-                crate::tools::Tool::Bars,
-                tradingview_model::mcp_bars::Request::new("NASDAQ:EXAMPLE", "1D", 20)
-                    .unwrap()
-                    .arguments(),
-            )],
-        )
-        .await;
+        let (_root, _guard, _budget, http, _store) =
+            context(&server, RESPONSE_TEST_TIMEOUT_SECS).await;
+        let observer = http.clone();
+        let task = tokio::spawn(async move {
+            crate::transport::inspect_tools(
+                &http,
+                "synthetic-secret-token".into(),
+                &[(
+                    crate::tools::Tool::Bars,
+                    tradingview_model::mcp_bars::Request::new("NASDAQ:EXAMPLE", "1D", 20)
+                        .unwrap()
+                        .arguments(),
+                )],
+            )
+            .await
+        });
+        tokio::time::timeout(Duration::from_secs(RESPONSE_TEST_TIMEOUT_SECS), async {
+            while server.calls(waiting_method) == 0 {
+                sleep(Duration::from_millis(1)).await;
+            }
+        })
+        .await
+        .expect("target phase must dispatch before advancing time");
+        tokio::time::pause();
+        tokio::time::advance(Duration::from_secs(RESPONSE_TEST_TIMEOUT_SECS + 1)).await;
+        let outcome = task.await.unwrap();
+        tokio::time::resume();
         assert_eq!(outcome, Err(Failure::Timeout));
-        let diagnostics = http.diagnostics();
+        let diagnostics = observer.diagnostics();
         assert_eq!(
             diagnostics["protocol"][waiting_method]["phase"],
             "await_headers"
@@ -966,7 +981,7 @@ async fn three_timeframes_share_discovery_and_never_repeat_a_tool_request() {
 #[tokio::test]
 async fn current_protocol_reply_supports_catalog_and_tool_calls() {
     let server = Server::start("current-protocol").await;
-    let (_root, _guard, _budget, http, _store) = context(&server, 5).await;
+    let (_root, _guard, _budget, http, _store) = context(&server, RESPONSE_TEST_TIMEOUT_SECS).await;
     let report = proof::read_intervals(&http, "synthetic-access".into(), &["1D"], None)
         .await
         .unwrap();
@@ -990,7 +1005,8 @@ async fn current_protocol_reply_supports_catalog_and_tool_calls() {
 async fn sdk_json_and_sse_success_preserve_partiality_without_raw_payload_output() {
     for mode in ["json", "sse", "session-json"] {
         let server = Server::start(mode).await;
-        let (_root, _guard, budget, http, _store) = context(&server, 3).await;
+        let (_root, _guard, budget, http, _store) =
+            context(&server, RESPONSE_TEST_TIMEOUT_SECS).await;
         let result = proof::read(&http, "synthetic-access".into(), "1D")
             .await
             .unwrap();
@@ -1087,7 +1103,7 @@ async fn deadline_stops_stalled_response_and_schema_drift_prevents_tool_dispatch
 #[tokio::test]
 async fn sdk_oauth_pkce_state_rotation_and_fresh_manager_restore() {
     let server = Server::start("json").await;
-    let (_root, _guard, budget, http, store) = context(&server, 5).await;
+    let (_root, _guard, budget, http, store) = context(&server, RESPONSE_TEST_TIMEOUT_SECS).await;
     let mut auth = Auth::discover(http.clone(), store.clone(), budget.clone())
         .await
         .unwrap();
@@ -1143,7 +1159,8 @@ async fn sdk_oauth_pkce_state_rotation_and_fresh_manager_restore() {
 async fn oauth_origin_broader_grant_redirect_and_uncertain_refresh_fail_closed() {
     for mode in ["bad-resource", "broad-grant", "token-redirect"] {
         let server = Server::start(mode).await;
-        let (_root, _guard, budget, http, store) = context(&server, 5).await;
+        let (_root, _guard, budget, http, store) =
+            context(&server, RESPONSE_TEST_TIMEOUT_SECS).await;
         let discovered = Auth::discover(http, store.clone(), budget.clone()).await;
         if mode == "bad-resource" {
             assert!(matches!(discovered, Err(Failure::BindingMismatch)));
@@ -1166,7 +1183,7 @@ async fn oauth_origin_broader_grant_redirect_and_uncertain_refresh_fail_closed()
         assert!(budget.lock().unwrap().credential_continuity().is_err());
     }
     let server = Server::start("json").await;
-    let (_root, _guard, budget, _http, _store) = context(&server, 5).await;
+    let (_root, _guard, budget, _http, _store) = context(&server, RESPONSE_TEST_TIMEOUT_SECS).await;
     budget
         .lock()
         .unwrap()
@@ -1181,7 +1198,7 @@ async fn oauth_origin_broader_grant_redirect_and_uncertain_refresh_fail_closed()
 #[tokio::test]
 async fn successful_server_rotation_with_failed_save_requires_reauthorization() {
     let server = Server::start("json").await;
-    let (_root, _guard, budget, http, store) = context(&server, 5).await;
+    let (_root, _guard, budget, http, store) = context(&server, RESPONSE_TEST_TIMEOUT_SECS).await;
     let mut auth = Auth::discover(http.clone(), store.clone(), budget.clone())
         .await
         .unwrap();
@@ -1276,7 +1293,8 @@ async fn rejected_refresh_is_not_reused_and_new_authorization_restores_reads() {
 #[tokio::test]
 async fn rejected_tool_refreshes_once_without_replaying_and_prepares_next_invocation() {
     let server = Server::start("401").await;
-    let (_root, mut guard, budget, http, store) = context(&server, 5).await;
+    let (_root, mut guard, budget, http, store) =
+        context(&server, RESPONSE_TEST_TIMEOUT_SECS).await;
     let mut auth = Auth::discover(http, store.clone(), budget.clone())
         .await
         .unwrap();
@@ -1314,7 +1332,8 @@ async fn intraday_service_sends_exact_intervals_once_and_preserves_partiality() 
 
     for timeframe in ["1m", "5m", "15m", "30m", "1h", "4h"] {
         let server = Server::start("json").await;
-        let (_root, mut guard, budget, http, store) = context(&server, 5).await;
+        let (_root, mut guard, budget, http, store) =
+            context(&server, RESPONSE_TEST_TIMEOUT_SECS).await;
         let mut auth = Auth::discover(http.clone(), store.clone(), budget.clone())
             .await
             .unwrap();
@@ -1448,7 +1467,8 @@ async fn authenticated_read_reuses_the_validated_record_without_reopening_storag
     use tradingview_model::mcp_bars::Request as BarsRequest;
 
     let server = Server::start("json").await;
-    let (_root, mut guard, budget, http, store) = context(&server, 5).await;
+    let (_root, mut guard, budget, http, store) =
+        context(&server, RESPONSE_TEST_TIMEOUT_SECS).await;
     let mut auth = Auth::discover(http.clone(), store.clone(), budget.clone())
         .await
         .unwrap();
@@ -1619,7 +1639,8 @@ async fn account_read_service_preserves_contracts_and_never_replays_failures() {
             "schema-change",
         ] {
             let server = Server::start(mode).await;
-            let (_root, mut guard, budget, http, store) = context(&server, 5).await;
+            let (_root, mut guard, budget, http, store) =
+                context(&server, RESPONSE_TEST_TIMEOUT_SECS).await;
             let mut auth = Auth::discover(http.clone(), store.clone(), budget.clone())
                 .await
                 .unwrap();
@@ -1647,7 +1668,8 @@ async fn account_read_service_preserves_contracts_and_never_replays_failures() {
             .await;
             assert_eq!(
                 server.calls("tools/call"),
-                if mode == "schema-change" { 0 } else { 1 }
+                if mode == "schema-change" { 0 } else { 1 },
+                "mode={mode}, request={request:?}, result={result:?}"
             );
             if matches!(mode, "json" | "sse") {
                 let data = result.unwrap();
@@ -1739,7 +1761,8 @@ async fn watchlist_changes_dispatch_once_and_separate_readback_from_mutation() {
         ),
     ] {
         let server = Server::start(mode).await;
-        let (_root, mut guard, budget, http, store) = context(&server, 8).await;
+        let (_root, mut guard, budget, http, store) =
+            context(&server, RESPONSE_TEST_TIMEOUT_SECS).await;
         fixture_login(&http, &store, &budget).await;
         let result = execute(
             Operation::WatchlistMutation(request),
@@ -1781,7 +1804,8 @@ async fn failed_account_changes_do_not_refresh_or_replay() {
             "stall",
         ] {
             let server = Server::start(mode).await;
-            let (_root, mut guard, budget, http, store) = context(&server, 8).await;
+            let (_root, mut guard, budget, http, store) =
+                context(&server, RESPONSE_TEST_TIMEOUT_SECS).await;
             fixture_login(&http, &store, &budget).await;
             let counts = budget.clone();
             let request = WatchlistMutation::create("Example", &[]).unwrap();
@@ -1918,7 +1942,8 @@ async fn alert_changes_separate_received_reply_and_per_target_readback() {
         (create(), "readback-429", "failed"),
     ] {
         let server = Server::start(mode).await;
-        let (_root, mut guard, budget, http, store) = context(&server, 8).await;
+        let (_root, mut guard, budget, http, store) =
+            context(&server, RESPONSE_TEST_TIMEOUT_SECS).await;
         fixture_login(&http, &store, &budget).await;
         let result = execute(
             Operation::AlertMutation(request),
@@ -2022,7 +2047,8 @@ async fn research_service_keeps_references_access_and_single_dispatch_failures()
             "tool-error",
         ] {
             let server = Server::start(mode).await;
-            let (_root, mut guard, budget, http, store) = context(&server, 8).await;
+            let (_root, mut guard, budget, http, store) =
+                context(&server, RESPONSE_TEST_TIMEOUT_SECS).await;
             fixture_login(&http, &store, &budget).await;
             let result = execute(
                 Operation::Research(request.clone()),
@@ -2130,7 +2156,8 @@ async fn data_and_bars_keep_failure_clues_without_retry_or_cooldown() {
         Operation::Data(mcp_data::Request::symbol("NASDAQ:EXAMPLE", &["close".into()]).unwrap()),
     ] {
         let server = Server::start("application-429").await;
-        let (_root, mut guard, budget, http, store) = context(&server, 8).await;
+        let (_root, mut guard, budget, http, store) =
+            context(&server, RESPONSE_TEST_TIMEOUT_SECS).await;
         fixture_login(&http, &store, &budget).await;
         let error = execute(operation, &mut guard, store, http, budget, true)
             .await
@@ -2163,7 +2190,8 @@ async fn dividend_service_distinguishes_http_throttling_from_application_errors(
     for market_mode in [false, true] {
         for mode in ["429", "application-429", "401"] {
             let server = Server::start(mode).await;
-            let (_root, mut guard, budget, http, store) = context(&server, 8).await;
+            let (_root, mut guard, budget, http, store) =
+                context(&server, RESPONSE_TEST_TIMEOUT_SECS).await;
             fixture_login(&http, &store, &budget).await;
             let request = Request::dividends(if market_mode {
                 DividendOptions {
@@ -2229,7 +2257,8 @@ async fn alert_history_service_preserves_outcomes_without_replay() {
         ("alert-history-429", Some("rate_limited")),
     ] {
         let server = Server::start(mode).await;
-        let (_root, mut guard, budget, http, store) = context(&server, 8).await;
+        let (_root, mut guard, budget, http, store) =
+            context(&server, RESPONSE_TEST_TIMEOUT_SECS).await;
         fixture_login(&http, &store, &budget).await;
         let request =
             tradingview_model::mcp_account::Request::alert_history("NASDAQ:EXAMPLE", 7, 100)
@@ -2413,16 +2442,39 @@ async fn explicit_read_timeout_bounds_the_entire_operation_without_replay() {
         assert_eq!(error.details.unwrap()["code"], code);
         assert!(!directory.exists());
     }
-    for seconds in [1, 3] {
-        let server = Server::start("setup-latency-600").await;
+    for seconds in [30, 90] {
+        let expires = seconds == 30;
+        let server = Server::start(if expires {
+            "slow-initialize-headers"
+        } else {
+            "json"
+        })
+        .await;
         let operation = read();
         let duration = operation.timeout_duration(Some(seconds)).unwrap();
-        let (_root, mut guard, budget, mut http, store) = context(&server, 10).await;
+        let (_root, mut guard, budget, mut http, store) =
+            context(&server, RESPONSE_TEST_TIMEOUT_SECS).await;
         fixture_login(&http, &store, &budget).await;
         // Credential setup belongs to the fixture; the operation keeps one deadline.
         http.deadline = Instant::now() + duration;
-        let result = execute(operation, &mut guard, store, http, budget, true).await;
-        if seconds == 1 {
+        let task =
+            tokio::spawn(
+                async move { execute(operation, &mut guard, store, http, budget, true).await },
+            );
+        if expires {
+            tokio::time::timeout(Duration::from_secs(RESPONSE_TEST_TIMEOUT_SECS), async {
+                while server.calls("initialize") == 0 {
+                    sleep(Duration::from_millis(1)).await;
+                }
+            })
+            .await
+            .expect("initialization must dispatch before advancing time");
+            tokio::time::pause();
+            tokio::time::advance(duration + Duration::from_secs(1)).await;
+        }
+        let result = task.await.unwrap();
+        if expires {
+            tokio::time::resume();
             assert_eq!(
                 result.unwrap_err().details.unwrap()["code"],
                 "deadline_exceeded"
