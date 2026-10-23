@@ -7,10 +7,27 @@ package version omits the leading `v`.
 
 ## Unreleased
 
+## v0.40.0
+
+### Added
+
+- Official MCP watchlist snapshots expose ordered `entries` for symbols and
+  sections, including saved collapse state. Original `symbols`, duplicate
+  members, same-name sections and empty sections are preserved.
+
+### Fixed
+
+- Desktop price-alert creation attributes the saved row to the creation response
+  ID and compares submitted settings, including the one-minute, cross-interval
+  normalization of simple price conditions. Results separate saved-settings
+  confirmation from activation without automatic waiting. Attributed settings
+  or stopped-state failures retain `created:true` and the alert ID; uncertain
+  outcomes remain `created:null`.
+
 ### Changed
 
-- Updated rmcp to 3.6.0 and Tokio to 1.54.1, and refreshed eighteen compatible
-  transitive dependencies, including TLS certificate support and Unicode data.
+- Updated rmcp to 3.7.0 and Tokio to 1.54.1, and refreshed compatible transitive
+  dependencies, including TLS certificate support, Unicode data and ctutils.
 
 ## v0.39.0
 
