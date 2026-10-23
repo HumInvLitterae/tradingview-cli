@@ -909,7 +909,8 @@ async fn protocol_diagnostics_separate_initialization_and_catalog_timeouts() {
 #[tokio::test]
 async fn three_timeframes_share_discovery_and_never_repeat_a_tool_request() {
     let server = Server::start("numeric-nullable-schema").await;
-    let (_root, mut guard, budget, http, _store) = context(&server, 5).await;
+    let (_root, mut guard, budget, http, _store) =
+        context(&server, RESPONSE_TEST_TIMEOUT_SECS).await;
     let report = proof::read_intervals(
         &http,
         "synthetic-access".into(),
@@ -952,7 +953,7 @@ async fn three_timeframes_share_discovery_and_never_repeat_a_tool_request() {
         Failure::Timeout
     );
 
-    let (_root, _guard, _budget, http, _store) = context(&server, 5).await;
+    let (_root, _guard, _budget, http, _store) = context(&server, RESPONSE_TEST_TIMEOUT_SECS).await;
     let report = proof::read_intervals(&http, "synthetic-access".into(), &["1D", "1D"], None)
         .await
         .unwrap();
