@@ -1064,17 +1064,16 @@ fn data_indicator_requires_entity_id() {
 }
 
 #[test]
-fn data_shapes_rejects_zero_count_before_connecting() {
-    let assert = tv()
-        .env("TV_CDP_PORT", "9")
+fn data_shapes_accepts_zero_count_and_attempts_connection() {
+    let assert = tv_with_cdp_disconnect()
         .args(["data", "shapes", "--count", "0"])
         .assert()
         .failure()
-        .code(1);
+        .code(2);
     let value = stderr_json(&assert);
     assert_eq!(value["success"], false);
     assert_eq!(value["command"], "data");
-    assert_eq!(value["error"]["kind"], "validation");
+    assert_eq!(value["error"]["kind"], "connection");
 }
 
 #[test]

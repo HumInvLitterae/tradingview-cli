@@ -1096,12 +1096,6 @@ pub async fn dispatch(
                 count,
                 verbose,
             } => {
-                if count == Some(0) {
-                    return Err(AppError::new(
-                        ErrorKind::Validation,
-                        "--count must be greater than 0",
-                    ));
-                }
                 let mut runtime = connect_runtime(config).await?;
                 ops::data_shapes(&mut runtime, filter.as_deref(), count, verbose).await
             }

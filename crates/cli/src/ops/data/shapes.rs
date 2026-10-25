@@ -316,6 +316,37 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn data_shapes_zero_count_retains_metadata_without_signals() {
+        let raw = json!([{
+            "name": "Example",
+            "shapePlots": [{
+                "plotIndex": 0, "dataIndex": 1, "id": "signal",
+                "title": "Signal", "shape": "shape.triangleup",
+                "location": "BelowBar", "color": "green", "size": "small"
+            }],
+            "signals": [], "signalCount": 0, "barsScanned": 0
+        }]);
+        for verbose in [false, true] {
+            let mut runtime = FakeRuntime::new([raw.clone()]);
+            let result = data_shapes(&mut runtime, None, Some(0), verbose)
+                .await
+                .unwrap();
+            assert_eq!(result["scan_count"], 0);
+            assert_eq!(result["study_count"], 1);
+            let study = &result["studies"][0];
+            assert_eq!(study["name"], "Example");
+            assert_eq!(study["shape_plot_count"], 1);
+            assert_eq!(study["shape_plots"][0]["title"], "Signal");
+            assert_eq!(study["shape_plots"][0].get("id").is_some(), verbose);
+            assert_eq!(study["signal_count"], 0);
+            assert_eq!(study["bars_scanned"], 0);
+            assert_eq!(study["signals"], json!([]));
+            assert_eq!(runtime.evaluated.len(), 1);
+            assert!(runtime.evaluated[0].0.contains("var maxBars = 0;"));
+        }
+    }
+
+    #[tokio::test]
     async fn data_shapes_clamps_count_to_maximum() {
         let mut runtime = FakeRuntime::new([json!([])]);
 
