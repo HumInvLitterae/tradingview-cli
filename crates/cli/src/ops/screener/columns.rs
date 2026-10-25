@@ -991,25 +991,28 @@ mod tests {
 
     #[tokio::test]
     async fn screener_columns_remove_rejects_ambiguous_name() {
-        let mut runtime = FakeRuntime::new([
-            json!({ "button_found": true, "open": true }),
-            json!({
-                "button_found": true,
-                "open": true,
-                "columns": ["Price", "Price Change", "Change %"],
-                "column_count": 3
-            }),
-        ]);
+        let mut runtime = FakeRuntime::new([json!({
+            "button_found": true,
+            "open": true,
+            "columns": ["Price", "Price Change", "Change %"],
+            "column_count": 3
+        })]);
 
         let error = screener_columns_remove(
             &mut runtime,
             ScreenerColumnSelector::Name("Price".to_string()),
-            true,
+            false,
         )
         .await
         .unwrap_err();
 
         assert_eq!(error.kind, ErrorKind::Validation);
-        assert!(error.details.is_some());
+        assert_eq!(
+            error.details.unwrap()["matches"],
+            json!([{"index": 0, "name": "Price"}, {"index": 1, "name": "Price Change"}])
+        );
+        assert_eq!(runtime.evaluated.len(), 1);
+        assert!(runtime.key_events.is_empty());
+        assert!(runtime.mouse_events.is_empty());
     }
 }

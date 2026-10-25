@@ -4,6 +4,7 @@ import shutil
 import subprocess
 import sys
 
+from required_tests import run_required_tests
 
 EXPECTED_NODE_VERSION = "v24.21.0"
 TEST_NAMES = [
@@ -38,7 +39,7 @@ def main() -> int:
         return 1
 
     for test_name in TEST_NAMES:
-        result = subprocess.run(
+        result = run_required_tests(
             [
                 "cargo",
                 "test",
@@ -52,10 +53,9 @@ def main() -> int:
                 "--exact",
                 "--nocapture",
             ],
-            check=False,
         )
-        if result.returncode != 0:
-            return result.returncode
+        if result != 0:
+            return result
     return 0
 
 

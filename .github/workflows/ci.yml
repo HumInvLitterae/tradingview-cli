@@ -33,6 +33,8 @@ jobs:
           python scripts/check-public-hygiene.py
       - name: Check runtime package reference validator
         run: python scripts/check-runtime-package.py --self-test
+      - name: Check required test selection
+        run: python scripts/test_required_tests.py
       - name: Stage runtime guidance fixture
         shell: bash
         run: |

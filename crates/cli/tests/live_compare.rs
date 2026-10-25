@@ -388,7 +388,7 @@ fn assert_item_shape(symbol: &str, item: &Value, envelope: &Value, elapsed: Dura
             .get("missing_evidence")
             .and_then(Value::as_array)
             .map(|evidence| valid_missing_evidence(evidence))
-            .is_none()
+            != Some(true)
         || item
             .get("follow_up_hints")
             .and_then(Value::as_array)
@@ -674,4 +674,75 @@ fn bool_field(value: &Value, key: &str) -> String {
         .and_then(Value::as_bool)
         .map(|value| value.to_string())
         .unwrap_or_else(|| "<missing>".to_string())
+}
+
+#[test]
+fn item_shape_rejects_invalid_missing_evidence() {
+    let hints: Vec<_> = ["snapshot", "observe_chart", "chart_quote", "screenshot"]
+        .into_iter()
+        .map(|kind| {
+            serde_json::json!({
+                "kind": kind,
+                "command": "tv example",
+                "reason": "fixture",
+                "requires_desktop": true,
+                "source_category": "desktop",
+                "non_mutating": true,
+                "evidence_role": "supplementary",
+                "auto_execute": false
+            })
+        })
+        .collect();
+    let mut item = serde_json::json!({
+        "ok": true,
+        "errors": [],
+        "missing_summary": {},
+        "movement": {
+            "source_section": "quote",
+            "source_path": "sections.quote.data.change",
+            "available": false,
+            "missing_reason": "missing_fields",
+            "regular_change_percent": null,
+            "regular_change_abs": null,
+            "regular_last": null,
+            "regular_close": null
+        },
+        "missing_evidence": [],
+        "follow_up_hints": hints,
+        "sections": {
+            "quote": {"ok": true, "data": {}},
+            "info": {"ok": true, "data": {}},
+            "fundamentals": {"ok": true, "data": {}}
+        }
+    });
+    assert!(assert_item_shape(
+        "EXAMPLE",
+        &item,
+        &Value::Null,
+        Duration::ZERO
+    ));
+    item["missing_evidence"] = serde_json::json!([{
+        "section": "quote", "missing_reason": "missing_fields",
+        "suggested_follow_up": "chart_quote", "requires_desktop": true,
+        "missing_fields": ["price"]
+    }]);
+    assert!(assert_item_shape(
+        "EXAMPLE",
+        &item,
+        &Value::Null,
+        Duration::ZERO
+    ));
+    for invalid in [
+        serde_json::json!([null]),
+        serde_json::json!([{}]),
+        Value::Null,
+    ] {
+        item["missing_evidence"] = invalid;
+        assert!(
+            std::panic::catch_unwind(|| {
+                assert_item_shape("EXAMPLE", &item, &Value::Null, Duration::ZERO)
+            })
+            .is_err()
+        );
+    }
 }

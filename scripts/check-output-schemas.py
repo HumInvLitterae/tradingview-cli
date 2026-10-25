@@ -10,6 +10,8 @@ from pathlib import Path
 import subprocess
 import sys
 
+from required_tests import run_required_tests
+
 from jsonschema import Draft202012Validator
 
 EXPECTED_VERSION = "4.26.0"
@@ -48,13 +50,12 @@ def main():
     env["TV_SCHEMA_TEST_PYTHON"] = sys.executable
     env.setdefault("CARGO_BUILD_JOBS", "1")
     env.setdefault("RUST_TEST_THREADS", "1")
-    return subprocess.run(
+    return run_required_tests(
         ["cargo", "test", "--locked", "-p", "tradingview-cli", "--lib",
          "app::schema::tests::output_schemas_match_production_fixtures", "--", "--ignored", "--exact"],
         cwd=Path(__file__).resolve().parent.parent,
         env=env,
-        check=False,
-    ).returncode
+    )
 
 
 if __name__ == "__main__":

@@ -4,6 +4,7 @@ import shutil
 import subprocess
 import sys
 
+from required_tests import run_required_tests
 
 EXPECTED_NODE_VERSION = "v24.21.0"
 TEST_FILTER = "javascript_pine_"
@@ -34,7 +35,7 @@ def main() -> int:
         )
         return 1
 
-    result = subprocess.run(
+    return run_required_tests(
         [
             "cargo",
             "test",
@@ -46,9 +47,7 @@ def main() -> int:
             "--ignored",
             "--nocapture",
         ],
-        check=False,
     )
-    return result.returncode
 
 
 if __name__ == "__main__":
