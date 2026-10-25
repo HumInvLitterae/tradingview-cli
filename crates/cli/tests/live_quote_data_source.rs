@@ -103,14 +103,18 @@ fn quote_data_live_smoke() {
 }
 
 fn run_quote_data(tv: &str, target_id: Option<&str>, symbol: &str) -> std::process::Output {
+    quote_data_command(tv, target_id, symbol)
+        .output()
+        .expect("test-built tv binary should execute")
+}
+
+fn quote_data_command(tv: &str, target_id: Option<&str>, symbol: &str) -> Command {
     let mut command = Command::new(tv);
     if let Some(target_id) = target_id {
         command.args(["--target-id", target_id]);
     }
+    command.args(["quote", symbol, "--source", "quote-data"]);
     command
-        .args(["quote", symbol, "--source", "quote-data"])
-        .output()
-        .expect("test-built tv binary should execute")
 }
 
 fn parse_output(symbol: &str, output: std::process::Output, elapsed: Duration) -> Value {
@@ -481,21 +485,6 @@ fn bool_field(value: &Value, key: &str) -> String {
 }
 
 #[cfg(test)]
-fn quote_data_args(target_id: Option<&str>, symbol: &str) -> Vec<String> {
-    let mut args = Vec::new();
-    if let Some(target_id) = target_id {
-        args.extend(["--target-id".to_string(), target_id.to_string()]);
-    }
-    args.extend([
-        "quote".to_string(),
-        symbol.to_string(),
-        "--source".to_string(),
-        "quote-data".to_string(),
-    ]);
-    args
-}
-
-#[cfg(test)]
 mod tests {
     use super::*;
 
@@ -507,21 +496,23 @@ mod tests {
     }
 
     #[test]
-    fn quote_data_args_include_optional_target_before_command() {
-        let without_target = quote_data_args(None, "NASDAQ:RKLB");
+    fn quote_data_command_preserves_executable_and_optional_target() {
+        let without_target = quote_data_command("fixture-tv", None, "NASDAQ:EXAMPLE");
+        assert_eq!(without_target.get_program(), "fixture-tv");
         assert_eq!(
-            without_target,
-            ["quote", "NASDAQ:RKLB", "--source", "quote-data"]
+            without_target.get_args().collect::<Vec<_>>(),
+            ["quote", "NASDAQ:EXAMPLE", "--source", "quote-data"]
         );
 
-        let with_target = quote_data_args(Some("target-1"), "NASDAQ:RKLB");
+        let with_target = quote_data_command("fixture-tv", Some("target-1"), "NASDAQ:EXAMPLE");
+        assert_eq!(with_target.get_program(), "fixture-tv");
         assert_eq!(
-            with_target,
+            with_target.get_args().collect::<Vec<_>>(),
             [
                 "--target-id",
                 "target-1",
                 "quote",
-                "NASDAQ:RKLB",
+                "NASDAQ:EXAMPLE",
                 "--source",
                 "quote-data"
             ]

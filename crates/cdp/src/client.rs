@@ -580,10 +580,6 @@ mod tests {
         }
     }
 
-    fn initial_domain_enable_methods() -> &'static [&'static str] {
-        &[]
-    }
-
     #[test]
     fn screenshot_response_decodes_standard_base64() {
         let response = json!({ "data": "iVBORw0KGgo=" });
@@ -606,9 +602,29 @@ mod tests {
         );
     }
 
-    #[test]
-    fn cdp_connect_does_not_require_domain_enable_methods() {
-        assert!(initial_domain_enable_methods().is_empty());
+    #[tokio::test]
+    async fn cdp_connect_sends_requested_method_without_enabling_domains() {
+        tokio::time::timeout(Duration::from_secs(30), async {
+            let (mut client, mut server) = connected_test_client().await;
+            let request = client.call_method("Runtime.evaluate", json!({"expression": "1"}));
+            let respond = async {
+                let Message::Text(text) = server.next().await.unwrap().unwrap() else {
+                    panic!("client should send a text request");
+                };
+                let request: Value = serde_json::from_str(&text).unwrap();
+                assert_eq!(request["method"], "Runtime.evaluate");
+                assert_eq!(request["params"], json!({"expression": "1"}));
+                send_json(
+                    &mut server,
+                    json!({"id": request["id"], "result": {"value": 1}}),
+                )
+                .await;
+            };
+            let (result, ()) = tokio::join!(request, respond);
+            assert_eq!(result.unwrap(), json!({"value": 1}));
+        })
+        .await
+        .expect("connection and requested method should complete without domain enable requests");
     }
 
     #[test]

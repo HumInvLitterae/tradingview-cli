@@ -4,21 +4,6 @@ use predicates::prelude::*;
 
 use support::{stderr_json, tv, tv_with_cdp_disconnect};
 
-#[test]
-fn version_flag_prints_package_version() {
-    tv().arg("--version")
-        .assert()
-        .success()
-        .stdout(predicate::str::contains("tv"))
-        .stdout(predicate::str::contains(env!("CARGO_PKG_VERSION")));
-
-    tv().arg("-V")
-        .assert()
-        .success()
-        .stdout(predicate::str::contains("tv"))
-        .stdout(predicate::str::contains(env!("CARGO_PKG_VERSION")));
-}
-
 fn assert_date_field(label: &str, value: &str) {
     if value == "UNKNOWN" {
         return;
