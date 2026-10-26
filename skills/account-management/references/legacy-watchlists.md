@@ -47,3 +47,18 @@ saved content and the target display. Inspect `saved_confirmation` and
 `display_confirmation` separately on errors. Handler invocation is not proof of
 persistence; null `changed` means uncertain. Changes can synchronize to other
 tabs. Never repeat an uncertain write or infer rollback from a restored display.
+
+## Reordering
+
+Use `watchlist move <SYMBOL> --before <SYMBOL>`, `--after <SYMBOL>` or
+`--to-section <NAME>`, with exactly one destination. `watchlist section move
+<NAME> --before <NAME>` or `--after <NAME>` moves the entire section and its
+members. Source symbols must be displayed and destination sections expanded;
+whole-section moves preserve collapse state. Any duplicate symbol or heading
+anywhere in the list, selection, or display sort blocks the operation.
+
+These commands use full-array replacement. The final preflight GET can detect
+existing conflicts but cannot prevent a concurrent edit from being overwritten.
+Use only when the list is not being edited elsewhere. Saved and display
+confirmation are separate, and a failed save may leave the UI reordered. Do not
+retry or send a compensating replacement automatically.

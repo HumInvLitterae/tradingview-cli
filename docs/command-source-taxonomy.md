@@ -383,6 +383,8 @@ readback or post-check confirmed the requested after-state.
 `tv watchlist inspect <ID>` is a Desktop-backed read of a saved custom list and
 does not select it. `tv watchlist section rename/collapse/expand` are
 Desktop-backed operations on one rendered section of the displayed custom list.
+`watchlist move` and `watchlist section move` additionally replace the complete
+saved array; preflight reads do not provide atomic concurrency protection.
 They use existing UI handlers, which can synchronize state to other tabs, and
 require independent saved-content and target-display confirmation. Neither path
 falls back to MCP. See the [section contract](cli-spec.md#saved-watchlist-inspection-and-visible-section-changes).

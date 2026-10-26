@@ -988,3 +988,31 @@ fn watchlist_sections_and_inspect_specs_are_offline() {
         assert_eq!(spec["constraints"]["automatic_retry"], false);
     }
 }
+
+#[test]
+fn watchlist_reorder_specs_explain_full_replacement_risk() {
+    for path in [
+        vec!["watchlist", "move"],
+        vec!["watchlist", "section", "move"],
+    ] {
+        let output = Command::cargo_bin("tv")
+            .unwrap()
+            .env("TV_CDP_PORT", "invalid")
+            .arg("spec")
+            .args(path)
+            .assert()
+            .success()
+            .get_output()
+            .stdout
+            .clone();
+        let value: Value = serde_json::from_slice(&output).unwrap();
+        let spec = &value["data"]["semantics"];
+        assert_eq!(spec["output_contract"], "watchlist_reorder.v1");
+        assert_eq!(
+            spec["constraints"]["concurrency"],
+            "non_atomic_full_replace"
+        );
+        assert_eq!(spec["constraints"]["duplicate_entries_allowed"], false);
+        assert_eq!(spec["constraints"]["automatic_retry"], false);
+    }
+}

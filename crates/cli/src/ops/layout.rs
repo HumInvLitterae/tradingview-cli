@@ -1,7 +1,7 @@
 mod pane;
 mod watchlist;
 mod watchlist_sections;
-pub use watchlist_sections::{watchlist_inspect, watchlist_section_change};
+pub use watchlist_sections::{watchlist_inspect, watchlist_reorder, watchlist_section_change};
 
 pub(crate) use pane::supported_pane_layouts;
 pub use pane::{pane_focus, pane_layout, pane_list, pane_symbol, validate_pane_layout};

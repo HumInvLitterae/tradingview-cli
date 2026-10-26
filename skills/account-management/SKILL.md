@@ -30,10 +30,11 @@ index when the command is already known.
 | Create/change/stop/restart/delete simple price alerts | `tv mcp alert create/update/stop/restart/delete` | The condition, target and notifications are understood; read [mutation guidance](references/mutations.md). |
 
 For saved Desktop inspection use `tv watchlist inspect <ID>`. For a requested
-section rename/collapse/expand on the displayed custom list, read
+section rename/collapse/expand or symbol/section move on the displayed custom list, read
 [Desktop watchlist guidance](references/legacy-watchlists.md). These operations
 require a unique rendered heading, no selected rows and no display sort; saved
-and displayed confirmations are separate.
+and displayed confirmations are separate. Moves replace the complete saved array
+and cannot prevent concurrent edits from being overwritten.
 
 For an explicitly requested legacy Desktop watchlist change, read
 [legacy watchlist guidance](references/legacy-watchlists.md). Its active-list

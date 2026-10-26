@@ -2609,11 +2609,83 @@ fn watchlist_sections_reject_invalid_input_before_connecting() {
         vec!["watchlist", "section", "expand", "bad\nname"],
     ] {
         let assert = tv()
-            .env("TV_CDP_PORT", "invalid")
+            .env("TV_CDP_PORT", "9")
             .args(args)
             .assert()
             .failure()
             .code(1);
         assert_eq!(stderr_json(&assert)["error"]["kind"], "validation");
+    }
+}
+
+#[test]
+fn watchlist_reorder_requires_one_destination_and_exact_names() {
+    for (args, message) in [
+        (vec!["watchlist", "move", "NASDAQ:X"], "required"),
+        (
+            vec![
+                "watchlist",
+                "move",
+                "NASDAQ:X",
+                "--before",
+                "NASDAQ:Y",
+                "--after",
+                "NASDAQ:Z",
+            ],
+            "cannot be used",
+        ),
+        (
+            vec!["watchlist", "move", "X", "--to-section", "A"],
+            "exchange-qualified",
+        ),
+        (
+            vec!["watchlist", "section", "move", "A", "--before", " "],
+            "nonblank",
+        ),
+        (
+            vec![
+                "watchlist",
+                "section",
+                "move",
+                "A",
+                "--before",
+                "B",
+                "--after",
+                "C",
+            ],
+            "cannot be used",
+        ),
+    ] {
+        let assert = tv()
+            .env("TV_CDP_PORT", "9")
+            .args(args)
+            .assert()
+            .failure()
+            .code(1);
+        let error = stderr_json(&assert);
+        assert_eq!(error["error"]["kind"], "validation");
+        assert!(
+            error["error"]["message"]
+                .as_str()
+                .unwrap()
+                .contains(message),
+            "{error}"
+        );
+    }
+    for args in [
+        vec!["watchlist", "move", "NASDAQ:X", "--before", "NASDAQ:Y"],
+        vec!["watchlist", "move", "NASDAQ:X", "--after", "NASDAQ:Y"],
+        vec!["watchlist", "move", "NASDAQ:X", "--to-section", "Empty"],
+        vec!["watchlist", "section", "move", "A", "--before", "B"],
+        vec!["watchlist", "section", "move", "A", "--after", "B"],
+    ] {
+        let assert = tv_with_cdp_disconnect()
+            .args(args)
+            .assert()
+            .failure()
+            .code(2);
+        let error = stderr_json(&assert);
+        assert_eq!(error["error"]["kind"], "connection");
+        assert_eq!(error["error"]["details"]["write_attempted"], false);
     }
 }

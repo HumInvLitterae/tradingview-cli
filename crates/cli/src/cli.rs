@@ -403,6 +403,17 @@ pub enum WatchlistCommand {
         #[command(subcommand)]
         command: WatchlistSectionCommand,
     },
+    #[command(about = "Move one symbol in the displayed list; replaces the full saved array and cannot prevent concurrent overwrites",
+        group(clap::ArgGroup::new("destination").required(true).args(["before", "after", "to_section"])))]
+    Move {
+        symbol: String,
+        #[arg(long)]
+        before: Option<String>,
+        #[arg(long)]
+        after: Option<String>,
+        #[arg(long)]
+        to_section: Option<String>,
+    },
     #[command(about = "Add a symbol to the watchlist")]
     Add { symbol: String },
     #[command(about = "Add multiple symbols to the watchlist")]
@@ -431,6 +442,15 @@ pub enum WatchlistSectionCommand {
         about = "Expand one section; requires no selected rows and verifies saved and displayed state"
     )]
     Expand { section: String },
+    #[command(about = "Move a section with all its members; replaces the full saved array and cannot prevent concurrent overwrites",
+        group(clap::ArgGroup::new("destination").required(true).args(["before", "after"])))]
+    Move {
+        section: String,
+        #[arg(long)]
+        before: Option<String>,
+        #[arg(long)]
+        after: Option<String>,
+    },
 }
 
 #[derive(Debug, Subcommand)]

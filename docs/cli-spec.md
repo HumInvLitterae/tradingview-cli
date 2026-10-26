@@ -1493,3 +1493,59 @@ provider error. Other-tab synchronization is not a success criterion. The CLI
 never retries a mutation, substitutes MCP or direct REST writes, reloads the UI,
 or performs additional compensating writes. A timeout can leave an invoked
 handler in flight; inspect the saved and displayed state before any follow-up.
+
+## Watchlist symbol and section order
+
+```text
+tv watchlist move "NASDAQ:AAPL" --before "NASDAQ:MSFT"
+tv watchlist move "NASDAQ:AAPL" --after "NASDAQ:MSFT"
+tv watchlist move "NASDAQ:AAPL" --to-section "Candidates"
+tv watchlist section move "Candidates" --before "Excluded"
+tv watchlist section move "Candidates" --after "Holdings"
+```
+
+Specify exactly one destination. Symbol anchors are exact exchange-qualified
+saved symbols; `--to-section` appends to the named section, including an empty
+section. Before/after another section's symbol changes section membership.
+Section moves carry the heading and every member up to the next heading,
+preserving member order and collapse state. Leading unsectioned symbols remain
+in place during section moves. These commands do not add symbols or move them
+between lists.
+
+The displayed custom list must be movable, with no selected rows and no active
+display sort. The source symbol must be in the display array, and its destination
+section must be expanded. A whole section can move while collapsed. The CLI does
+not expand sections, clear selection, switch lists or scroll to make a request
+pass. Exact duplicate symbols or duplicate heading names anywhere in the list
+are rejected before dispatch; collapse markers do not distinguish headings.
+The existing Desktop reducer deduplicates arrays, so unrelated duplicates cannot
+safely be retained by this operation.
+
+The CLI builds the expected complete saved array, derives the display array and
+checks that the existing hidden-member expansion will reconstruct the expected
+result. It fetches the same list again immediately before dispatch and rejects
+changes to content or modification time. Internal state, selection, display
+order and rendered rows are rechecked. It then invokes the existing reorder
+handler once, which updates Desktop state and performs a full-array replacement.
+An already-satisfied move succeeds without writing only after these checks.
+
+**Full replacement is not atomic with the preflight reads.** The existing
+provider path has no revision precondition and can overwrite an edit made after
+the final GET. Even a matched post-write read cannot prove that no concurrent
+edit was lost. Use these commands only when the same list is not being edited
+elsewhere. A client-side token would not remove this limitation.
+
+The `watchlist_reorder.v1` result and error details report
+`concurrency: "non_atomic_full_replace"`, `write_attempted`, `changed`,
+`saved_confirmation` and `display_confirmation`. Success requires the expected
+complete saved array, unchanged list metadata, full internal/display arrays and
+consistent observable DOM rows. Virtualized rows need not all exist in the DOM;
+this is not all-row visual verification. Other tabs may synchronize, but their
+confirmation is not required for success.
+
+The eight-second in-page budget includes both preflight reads, handler dispatch
+and bounded confirmation. There is no automatic retry, reload, direct-REST/MCP
+fallback or compensating replacement. Save failure can leave the UI reordered.
+Post-dispatch uncertainty leaves `changed: null`; lost execution evidence also
+leaves `write_attempted: null`. Read saved and displayed state before deciding
+on any follow-up, rather than blindly repeating or reversing the move.

@@ -654,6 +654,36 @@ pub async fn dispatch(
                 let mut runtime = connect_runtime(config).await?;
                 ops::watchlist_inspect(&mut runtime, &id).await
             }
+            WatchlistCommand::Move {
+                symbol,
+                before,
+                after,
+                to_section,
+            } => {
+                use tradingview_model::watchlist::WatchlistReorderRequest;
+                let request = match (before, after, to_section) {
+                    (Some(before), None, None) => {
+                        WatchlistReorderRequest::SymbolBefore { symbol, before }
+                    }
+                    (None, Some(after), None) => {
+                        WatchlistReorderRequest::SymbolAfter { symbol, after }
+                    }
+                    (None, None, Some(section)) => {
+                        WatchlistReorderRequest::SymbolToSection { symbol, section }
+                    }
+                    _ => {
+                        return Err(AppError::new(
+                            ErrorKind::Validation,
+                            "Specify exactly one move destination",
+                        ));
+                    }
+                };
+                request.validate()?;
+                let mut runtime = connect_runtime(config)
+                    .await
+                    .map_err(|error| request.preflight_error(error))?;
+                ops::watchlist_reorder(&mut runtime, &request).await
+            }
             WatchlistCommand::Section { command } => {
                 use tradingview_model::watchlist::WatchlistSectionChange;
                 let request = match command {
@@ -665,6 +695,32 @@ pub async fn dispatch(
                     }
                     WatchlistSectionCommand::Expand { section } => {
                         WatchlistSectionChange::Expand { section }
+                    }
+                    WatchlistSectionCommand::Move {
+                        section,
+                        before,
+                        after,
+                    } => {
+                        use tradingview_model::watchlist::WatchlistReorderRequest;
+                        let request = match (before, after) {
+                            (Some(before), None) => {
+                                WatchlistReorderRequest::SectionBefore { section, before }
+                            }
+                            (None, Some(after)) => {
+                                WatchlistReorderRequest::SectionAfter { section, after }
+                            }
+                            _ => {
+                                return Err(AppError::new(
+                                    ErrorKind::Validation,
+                                    "Specify exactly one move destination",
+                                ));
+                            }
+                        };
+                        request.validate()?;
+                        let mut runtime = connect_runtime(config)
+                            .await
+                            .map_err(|error| request.preflight_error(error))?;
+                        return ops::watchlist_reorder(&mut runtime, &request).await;
                     }
                 };
                 request.validate()?;

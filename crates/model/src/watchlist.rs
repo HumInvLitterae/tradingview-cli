@@ -341,6 +341,84 @@ pub fn watchlist_entries(symbols: &Value) -> Result<Value, AppError> {
         .map(Value::from)
 }
 
+#[derive(Clone, Debug)]
+pub enum WatchlistReorderRequest {
+    SymbolBefore { symbol: String, before: String },
+    SymbolAfter { symbol: String, after: String },
+    SymbolToSection { symbol: String, section: String },
+    SectionBefore { section: String, before: String },
+    SectionAfter { section: String, after: String },
+}
+
+impl WatchlistReorderRequest {
+    pub fn arguments(&self) -> Value {
+        match self {
+            Self::SymbolBefore { symbol, before } => {
+                json!({"action": "move_symbol", "symbol": symbol, "before": before})
+            }
+            Self::SymbolAfter { symbol, after } => {
+                json!({"action": "move_symbol", "symbol": symbol, "after": after})
+            }
+            Self::SymbolToSection { symbol, section } => {
+                json!({"action": "move_symbol", "symbol": symbol, "to_section": section})
+            }
+            Self::SectionBefore { section, before } => {
+                json!({"action": "move_section", "section": section, "before": before})
+            }
+            Self::SectionAfter { section, after } => {
+                json!({"action": "move_section", "section": section, "after": after})
+            }
+        }
+    }
+
+    pub fn preflight_error(&self, error: AppError) -> AppError {
+        error.with_details(json!({
+            "contract_version": "watchlist_reorder.v1", "source": "desktop_watchlist_handler",
+            "action": self.arguments()["action"], "write_attempted": false, "changed": false,
+            "saved_confirmation": "not_performed", "display_confirmation": "not_performed",
+            "concurrency": "non_atomic_full_replace"
+        }))
+    }
+
+    pub fn validate(&self) -> Result<(), AppError> {
+        fn symbol(value: &str) -> Result<(), AppError> {
+            if value
+                .split_once(':')
+                .is_none_or(|(exchange, ticker)| exchange.is_empty() || ticker.is_empty())
+                || value.chars().any(|c| c.is_control() || c.is_whitespace())
+                || value.starts_with("###")
+            {
+                return Err(AppError::new(
+                    ErrorKind::Validation,
+                    "Use an exact exchange-qualified watchlist symbol",
+                ));
+            }
+            Ok(())
+        }
+        let result = match self {
+            Self::SymbolBefore {
+                symbol: value,
+                before,
+            } => symbol(value).and_then(|()| symbol(before)),
+            Self::SymbolAfter {
+                symbol: value,
+                after,
+            } => symbol(value).and_then(|()| symbol(after)),
+            Self::SymbolToSection {
+                symbol: value,
+                section,
+            } => symbol(value).and_then(|()| validate_section_name(section)),
+            Self::SectionBefore { section, before } => {
+                validate_section_name(section).and_then(|()| validate_section_name(before))
+            }
+            Self::SectionAfter { section, after } => {
+                validate_section_name(section).and_then(|()| validate_section_name(after))
+            }
+        };
+        result.map_err(|error| self.preflight_error(error))
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use serde_json::json;

@@ -4,6 +4,39 @@ use serde_json::{Value, json};
 use tradingview_model::watchlist::{MAX_WATCHLIST_BULK_DELAY_MS, MAX_WATCHLIST_BULK_SYMBOLS};
 
 pub(super) fn describe(path: &[&str]) -> Option<Value> {
+    if path == ["watchlist", "move"] || path == ["watchlist", "section", "move"] {
+        return Some(json!({
+            "source": "desktop_watchlist_handler",
+            "output_contract": "watchlist_reorder.v1",
+            "requires": {"desktop": true, "authentication": true},
+            "effects": {
+                "account_mutation": true,
+                "ui_mutation": true,
+                "provider_request": true,
+                "local_file_write": false
+            },
+            "constraints": {
+                "custom_lists_only": true,
+                "destination_count": 1,
+                "duplicate_entries_allowed": false,
+                "selected_rows_allowed": false,
+                "sorted_view_allowed": false,
+                "automatic_retry": false,
+                "automatic_rollback": false,
+                "operation_budget_ms": 8000,
+                "concurrency": "non_atomic_full_replace"
+            },
+            "limits": [
+                "Targets the displayed custom list and pins its ID. Exact duplicate symbols and duplicate headings anywhere in the list are rejected; collapse markers do not distinguish headings.",
+                "Symbol moves require an exchange-qualified source in the display array and an expanded destination section. before/after use exact symbol anchors; to-section appends within the named section, including an empty section.",
+                "Section moves carry the heading and all its members, preserving internal order and collapse state. Leading unsectioned symbols stay in place. before/after use exact heading names.",
+                "A fresh GET, internal state and rendered-row order are checked before one existing reorder handler call. Hidden members must reconstruct to the expected complete array. Already-satisfied moves do not write.",
+                "The provider uses full-array replacement without an atomic revision precondition. Preflight checks cannot prevent an edit between the final GET and POST from being overwritten. Use only when the list is not being edited elsewhere; even matched readback cannot prove no concurrent edit was lost.",
+                "Success requires the complete saved array, internal display order and observable DOM rows to agree. Virtualization prevents all-row visual verification. Other-tab synchronization can occur but is not a success requirement.",
+                "Errors retain write_attempted, changed and independent saved/display confirmations. No retry, UI reload, list switch, direct REST fallback or compensating replacement. A failed save can leave the UI reordered."
+            ]
+        }));
+    }
     if path == ["watchlist", "inspect"]
         || matches!(
             path,
@@ -15,11 +48,22 @@ pub(super) fn describe(path: &[&str]) -> Option<Value> {
             "source": if inspect { "watchlist_api" } else { "desktop_watchlist_handler" },
             "output_contract": if inspect { "watchlist_inspect.v1" } else { "watchlist_section_mutation.v1" },
             "requires": {"desktop": true, "authentication": true},
-            "effects": {"account_mutation": !inspect, "ui_mutation": !inspect, "provider_request": true, "local_file_write": false},
-            "constraints": {"custom_lists_only": true, "automatically_selects_list": false,
-                "section_matching": "exact unique display name", "selected_rows_allowed": false,
-                "sorted_view_allowed": false, "automatic_retry": false, "automatic_rollback": false,
-                "operation_budget_ms": 8000},
+            "effects": {
+                "account_mutation": !inspect,
+                "ui_mutation": !inspect,
+                "provider_request": true,
+                "local_file_write": false
+            },
+            "constraints": {
+                "custom_lists_only": true,
+                "automatically_selects_list": false,
+                "section_matching": "exact unique display name",
+                "selected_rows_allowed": false,
+                "sorted_view_allowed": false,
+                "automatic_retry": false,
+                "automatic_rollback": false,
+                "operation_budget_ms": 8000
+            },
             "limits": [
                 "Inspect reads a saved custom list by canonical decimal ID without selecting it. symbols and entries can be null when unknown; empty arrays mean empty.",
                 "Section commands pin the displayed custom list ID before invoking its existing handler once. The section must be rendered, unique, and consistent with saved state; no selected rows or sorted view are allowed.",
@@ -34,13 +78,29 @@ pub(super) fn describe(path: &[&str]) -> Option<Value> {
         return None;
     };
     let mut result = json!({
-        "source": null, "output_contract": null,
+        "source": null,
+        "output_contract": null,
         "requires": {"desktop": true, "authentication": null},
-        "effects": {"account_mutation": true, "ui_mutation": null,
-            "provider_request": true, "local_file_write": false},
-        "constraints": {"symbol": {"trimmed": true, "nonblank": true, "case_normalization": false,
-            "qualified_symbol_validation": false}, "dry_run": {"supported": false}},
-        "discovery": [{"argument": "target-id", "argv": ["tv", "tab", "list"], "result_path": "data.tabs[].id"}],
+        "effects": {
+            "account_mutation": true,
+            "ui_mutation": null,
+            "provider_request": true,
+            "local_file_write": false
+        },
+        "constraints": {
+            "symbol": {
+                "trimmed": true,
+                "nonblank": true,
+                "case_normalization": false,
+                "qualified_symbol_validation": false
+            },
+            "dry_run": {"supported": false}
+        },
+        "discovery": [{
+            "argument": "target-id",
+            "argv": ["tv", "tab", "list"],
+            "result_path": "data.tabs[].id"
+        }],
         "limits": [
             "Targets the active account list through the selected Desktop session, with no list-ID argument. The internal API chooses the first active custom list; DOM fallback acts on the visible panel. Do not assume the target is pinned across operations.",
             "Tries internal watchlist_api first. DOM fallback requires a recognized pre-dispatch list failure and api_fallback_allowed=true. Once a POST is attempted, transport/HTTP/readback failures stop without DOM replay.",
@@ -51,8 +111,11 @@ pub(super) fn describe(path: &[&str]) -> Option<Value> {
         ]
     });
     let example = if *action == "add-bulk" {
-        result["constraints"]["symbols"] = json!({"minimum": 1, "maximum_unique": MAX_WATCHLIST_BULK_SYMBOLS,
-            "deduplication": "case-sensitive exact equality after trimming; preserves first occurrence"});
+        result["constraints"]["symbols"] = json!({
+            "minimum": 1,
+            "maximum_unique": MAX_WATCHLIST_BULK_SYMBOLS,
+            "deduplication": "case-sensitive exact equality after trimming; preserves first occurrence"
+        });
         result["constraints"]["delay_ms"] =
             json!({"minimum": 0, "maximum": MAX_WATCHLIST_BULK_DELAY_MS, "default": 750});
         result["constraints"]["allow_partial"] = json!({"default": false});
