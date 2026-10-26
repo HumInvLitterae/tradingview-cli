@@ -4,6 +4,32 @@ use serde_json::{Value, json};
 use tradingview_model::watchlist::{MAX_WATCHLIST_BULK_DELAY_MS, MAX_WATCHLIST_BULK_SYMBOLS};
 
 pub(super) fn describe(path: &[&str]) -> Option<Value> {
+    if path == ["watchlist", "inspect"]
+        || matches!(
+            path,
+            ["watchlist", "section", "rename" | "collapse" | "expand"]
+        )
+    {
+        let inspect = path == ["watchlist", "inspect"];
+        return Some(json!({
+            "source": if inspect { "watchlist_api" } else { "desktop_watchlist_handler" },
+            "output_contract": if inspect { "watchlist_inspect.v1" } else { "watchlist_section_mutation.v1" },
+            "requires": {"desktop": true, "authentication": true},
+            "effects": {"account_mutation": !inspect, "ui_mutation": !inspect, "provider_request": true, "local_file_write": false},
+            "constraints": {"custom_lists_only": true, "automatically_selects_list": false,
+                "section_matching": "exact unique display name", "selected_rows_allowed": false,
+                "sorted_view_allowed": false, "automatic_retry": false, "automatic_rollback": false,
+                "operation_budget_ms": 8000},
+            "limits": [
+                "Inspect reads a saved custom list by canonical decimal ID without selecting it. symbols and entries can be null when unknown; empty arrays mean empty.",
+                "Section commands pin the displayed custom list ID before invoking its existing handler once. The section must be rendered, unique, and consistent with saved state; no selected rows or sorted view are allowed.",
+                "Names are preserved literally. Blank names, control characters, reserved section markers and destination collisions are rejected. No automatic case conversion or suffixing is performed by the CLI.",
+                "Success requires independent saved-state and target DOM confirmation; handler completion is insufficient. No-op requires both states to match. Internal handler actions can synchronize to other tabs and restore local display after errors.",
+                "Errors preserve write_attempted, changed, saved_confirmation and display_confirmation. A lost execution response leaves write_attempted and changed null. Do not repeat an uncertain write.",
+                "No atomic server-side concurrency guarantee, UI reload, list switch, MCP fallback or additional compensating write. Other-tab synchronization is not a success requirement."
+            ]
+        }));
+    }
     let ["watchlist", action @ ("add" | "add-bulk" | "remove")] = path else {
         return None;
     };

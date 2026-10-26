@@ -1443,3 +1443,53 @@ popup instead. An already closed panel returns `action=already_closed` and
 `closed=false`, which is a successful no-op. This command does not close a tab
 and has no full-page option. A full-page panel may remain detected after Escape;
 do not automatically substitute a tab-close operation.
+
+## Saved watchlist inspection and visible section changes
+
+`tv watchlist inspect <ID>` reads a saved custom watchlist through the selected
+Desktop session without selecting that list. The ID is a canonical unsigned
+decimal string. The `watchlist_inspect.v1` result contains `watchlist` with its
+ID, name, description, sharing state, symbols, ordered `entries` and modification
+time. `symbols: null` and `entries: null` mean unknown, not empty. Section entries
+have `kind: "section"`, `name` and `collapsed`; symbol entries have `kind:
+"symbol"` and `symbol`. This is distinct from the rendered-row `watchlist get`.
+
+```text
+tv watchlist section rename "Old section" "New section"
+tv watchlist section collapse "New section"
+tv watchlist section expand "New section"
+```
+
+These commands change one uniquely named, rendered section of the custom list
+currently displayed in the selected tab. Use the common `--target-id` option
+when target selection requires it. No list switch, panel opening, selection
+clearing or scrolling is performed. No rows may be selected and no display sort
+may be active. Duplicate headings, destination-name collisions, or disagreement
+between saved and displayed state stop the command before invoking a handler.
+Names are matched and preserved exactly; whitespace-only names, control
+characters, U+2064 and a leading `###` are rejected. The CLI does not uppercase,
+trim or automatically suffix names.
+
+The list ID is captured before dispatch. An existing Desktop handler is invoked
+once, and a separate GET and DOM read verify the result against the expected
+complete symbol/section order and collapse state. Names, descriptions and sharing
+state are also checked for unintended saved changes. Modification time may change.
+Verification has an eight-second in-page budget, including preflight and the
+handler, inside the existing CDP timeout. There is no atomic server-side
+compare-and-set guarantee. A tab switch cannot redirect the saved-state check.
+
+The `watchlist_section_mutation.v1` payload contains `write_attempted`, `changed`,
+`saved_confirmation` and `display_confirmation`. Success requires both
+confirmations to be `matched`. An already-satisfied request succeeds without a
+write only when saved and displayed state agree. Failure details retain the same
+fields; confirmation can be `mismatch`, `unavailable` or `not_performed`.
+`write_attempted: true` means the handler was invoked, not that the provider
+accepted a write. Lost CDP execution evidence leaves `write_attempted: null` and
+`changed: null`. A successful handler return alone is not success. Failed
+post-dispatch verification leaves `changed: null`; it does not prove rollback.
+
+Existing handlers can update other tabs and restore local display after a
+provider error. Other-tab synchronization is not a success criterion. The CLI
+never retries a mutation, substitutes MCP or direct REST writes, reloads the UI,
+or performs additional compensating writes. A timeout can leave an invoked
+handler in flight; inspect the saved and displayed state before any follow-up.

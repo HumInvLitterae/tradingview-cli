@@ -270,7 +270,7 @@ pub enum Command {
     },
     #[command(about = "Scroll the chart to a date or Unix timestamp")]
     Scroll { date: String },
-    #[command(about = "Watchlist read tools")]
+    #[command(about = "Read watchlists and explicitly change their contents")]
     Watchlist {
         #[command(subcommand)]
         command: WatchlistCommand,
@@ -396,6 +396,13 @@ pub enum DiagnoseCommand {
 pub enum WatchlistCommand {
     #[command(about = "Get watchlist symbols")]
     Get,
+    #[command(about = "Inspect a saved custom watchlist by ID without selecting it")]
+    Inspect { id: String },
+    #[command(about = "Change one unique section in the displayed custom watchlist")]
+    Section {
+        #[command(subcommand)]
+        command: WatchlistSectionCommand,
+    },
     #[command(about = "Add a symbol to the watchlist")]
     Add { symbol: String },
     #[command(about = "Add multiple symbols to the watchlist")]
@@ -408,6 +415,22 @@ pub enum WatchlistCommand {
     },
     #[command(about = "Remove a symbol from the watchlist")]
     Remove { symbol: String },
+}
+
+#[derive(Debug, Subcommand)]
+pub enum WatchlistSectionCommand {
+    #[command(
+        about = "Rename one section; requires no selected rows and verifies saved and displayed state"
+    )]
+    Rename { section: String, name: String },
+    #[command(
+        about = "Collapse one section; requires no selected rows and verifies saved and displayed state"
+    )]
+    Collapse { section: String },
+    #[command(
+        about = "Expand one section; requires no selected rows and verifies saved and displayed state"
+    )]
+    Expand { section: String },
 }
 
 #[derive(Debug, Subcommand)]

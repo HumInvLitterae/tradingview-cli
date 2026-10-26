@@ -32,3 +32,18 @@ Requested count includes duplicates; processed count excludes them. Each item
 resolves the active list again, so selection changes can split a batch across
 lists. Do not retry a whole batch or repeat uncertain writes without checking
 current state. Keep account-local details and raw errors out of shared artifacts.
+
+## Saved inspection and section changes
+
+Use `tv watchlist inspect <ID>` to read one saved custom list through Desktop
+without selecting it. For the displayed custom list, use `watchlist section
+rename <SECTION> <NAME>`, `collapse <SECTION>` or `expand <SECTION>`. Names are
+exact and preserved literally. The section must be rendered and unique, with no
+selected rows or active display sort. Do not clear selections or switch lists
+without authorization to make a request pass.
+
+Section changes use the existing UI handlers once and confirm both independent
+saved content and the target display. Inspect `saved_confirmation` and
+`display_confirmation` separately on errors. Handler invocation is not proof of
+persistence; null `changed` means uncertain. Changes can synchronize to other
+tabs. Never repeat an uncertain write or infer rollback from a restored display.

@@ -959,3 +959,32 @@ fn screener_lifecycle_specs_do_not_operate_desktop() {
         assert_eq!(value["data"]["semantics"]["effects"]["ui_mutation"], true);
     }
 }
+
+#[test]
+fn watchlist_sections_and_inspect_specs_are_offline() {
+    for path in [
+        vec!["watchlist", "inspect"],
+        vec!["watchlist", "section", "rename"],
+        vec!["watchlist", "section", "collapse"],
+        vec!["watchlist", "section", "expand"],
+    ] {
+        let output = Command::cargo_bin("tv")
+            .unwrap()
+            .env("TV_CDP_PORT", "invalid")
+            .arg("spec")
+            .args(&path)
+            .assert()
+            .success()
+            .get_output()
+            .stdout
+            .clone();
+        let value: Value = serde_json::from_slice(&output).unwrap();
+        let spec = &value["data"]["semantics"];
+        assert_eq!(spec["requires"]["desktop"], true);
+        assert_eq!(
+            spec["effects"]["account_mutation"],
+            path.last() != Some(&"inspect")
+        );
+        assert_eq!(spec["constraints"]["automatic_retry"], false);
+    }
+}

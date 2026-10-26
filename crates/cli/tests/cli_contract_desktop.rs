@@ -2598,3 +2598,22 @@ fn pine_create_checks_name_and_file_before_connecting() {
         .code(2);
     assert_eq!(stderr_json(&assertion)["error"]["kind"], "connection");
 }
+
+#[test]
+fn watchlist_sections_reject_invalid_input_before_connecting() {
+    for args in [
+        vec!["watchlist", "inspect", "01"],
+        vec!["watchlist", "section", "rename", "Old", " "],
+        vec!["watchlist", "section", "rename", "Old", "###Reserved"],
+        vec!["watchlist", "section", "collapse", ""],
+        vec!["watchlist", "section", "expand", "bad\nname"],
+    ] {
+        let assert = tv()
+            .env("TV_CDP_PORT", "invalid")
+            .args(args)
+            .assert()
+            .failure()
+            .code(1);
+        assert_eq!(stderr_json(&assert)["error"]["kind"], "validation");
+    }
+}

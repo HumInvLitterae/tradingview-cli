@@ -305,15 +305,7 @@ fn watchlist(row: &Value) -> Result<Value, AppError> {
 }
 
 fn watchlist_entry(symbol: &str) -> Result<Value, AppError> {
-    let Some(section) = symbol.strip_prefix("###") else {
-        return Ok(json!({"kind": "symbol", "symbol": symbol}));
-    };
-    let collapsed = section.starts_with('\u{2064}');
-    let name = section.strip_prefix('\u{2064}').unwrap_or(section);
-    if name.is_empty() || name.starts_with('\u{2064}') {
-        return Err(invalid_response("watchlist_section"));
-    }
-    Ok(json!({"kind": "section", "name": name, "collapsed": collapsed}))
+    crate::watchlist::watchlist_entry(symbol).map_err(|_| invalid_response("watchlist_section"))
 }
 
 fn alert(row: &Value) -> Result<Value, AppError> {

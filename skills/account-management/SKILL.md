@@ -29,6 +29,12 @@ index when the command is already known.
 | Create/edit/remove a watchlist or its symbols | `tv mcp watchlist create/update/add/remove/delete` | The target and account effect are requested; read [mutation guidance](references/mutations.md). |
 | Create/change/stop/restart/delete simple price alerts | `tv mcp alert create/update/stop/restart/delete` | The condition, target and notifications are understood; read [mutation guidance](references/mutations.md). |
 
+For saved Desktop inspection use `tv watchlist inspect <ID>`. For a requested
+section rename/collapse/expand on the displayed custom list, read
+[Desktop watchlist guidance](references/legacy-watchlists.md). These operations
+require a unique rendered heading, no selected rows and no display sort; saved
+and displayed confirmations are separate.
+
 For an explicitly requested legacy Desktop watchlist change, read
 [legacy watchlist guidance](references/legacy-watchlists.md). Its active-list
 targeting, API-to-DOM fallback and existing-member ordering differ from MCP.

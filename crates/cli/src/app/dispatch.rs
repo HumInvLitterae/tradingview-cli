@@ -10,6 +10,7 @@ use crate::{
         EventsCommand, ExportCommand, IndicatorCommand, LayoutCommand, PaneCommand, PineCommand,
         QuoteSource, ReplayCommand, ScannerCommand, ScreenerColumnsCommand, ScreenerCommand,
         ScreenerFiltersCommand, ScreenerScreensCommand, TabCommand, UiCommand, WatchlistCommand,
+        WatchlistSectionCommand,
     },
     ops,
 };
@@ -648,6 +649,30 @@ pub async fn dispatch(
             ops::scroll_to_date(&mut runtime, &date).await
         }
         Command::Watchlist { command } => match command {
+            WatchlistCommand::Inspect { id } => {
+                tradingview_model::watchlist::validate_watchlist_id(&id)?;
+                let mut runtime = connect_runtime(config).await?;
+                ops::watchlist_inspect(&mut runtime, &id).await
+            }
+            WatchlistCommand::Section { command } => {
+                use tradingview_model::watchlist::WatchlistSectionChange;
+                let request = match command {
+                    WatchlistSectionCommand::Rename { section, name } => {
+                        WatchlistSectionChange::Rename { section, name }
+                    }
+                    WatchlistSectionCommand::Collapse { section } => {
+                        WatchlistSectionChange::Collapse { section }
+                    }
+                    WatchlistSectionCommand::Expand { section } => {
+                        WatchlistSectionChange::Expand { section }
+                    }
+                };
+                request.validate()?;
+                let mut runtime = connect_runtime(config)
+                    .await
+                    .map_err(|error| request.preflight_error(error))?;
+                ops::watchlist_section_change(&mut runtime, &request).await
+            }
             WatchlistCommand::Get => {
                 let mut runtime = connect_runtime(config).await?;
                 ops::watchlist_get(&mut runtime).await

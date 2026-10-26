@@ -242,6 +242,105 @@ pub fn normalize_watchlist_remove_payload(data: Value) -> Result<Value, AppError
     }))
 }
 
+#[derive(Clone, Debug)]
+pub enum WatchlistSectionChange {
+    Rename { section: String, name: String },
+    Collapse { section: String },
+    Expand { section: String },
+}
+
+impl WatchlistSectionChange {
+    pub fn arguments(&self) -> Value {
+        match self {
+            Self::Rename { section, name } => {
+                json!({"action": "rename", "section": section, "name": name})
+            }
+            Self::Collapse { section } => json!({"action": "collapse", "section": section}),
+            Self::Expand { section } => json!({"action": "expand", "section": section}),
+        }
+    }
+
+    pub fn preflight_error(&self, error: AppError) -> AppError {
+        error.with_details(json!({
+            "contract_version": "watchlist_section_mutation.v1",
+            "source": "desktop_watchlist_handler", "action": self.arguments()["action"],
+            "write_attempted": false, "changed": false,
+            "saved_confirmation": "not_performed", "display_confirmation": "not_performed"
+        }))
+    }
+
+    pub fn validate(&self) -> Result<(), AppError> {
+        let result = match self {
+            Self::Rename { section, name } => {
+                validate_section_name(section).and_then(|()| validate_section_name(name))
+            }
+            Self::Collapse { section } | Self::Expand { section } => validate_section_name(section),
+        };
+        result.map_err(|error| self.preflight_error(error))
+    }
+}
+
+fn validate_section_name(name: &str) -> Result<(), AppError> {
+    if name.trim().is_empty()
+        || name.chars().any(char::is_control)
+        || name.contains('\u{2064}')
+        || name.starts_with("###")
+    {
+        return Err(AppError::new(
+            ErrorKind::Validation,
+            "Section names must be nonblank display names without control characters or reserved markers",
+        ));
+    }
+    Ok(())
+}
+
+pub fn validate_watchlist_id(id: &str) -> Result<(), AppError> {
+    if id.is_empty()
+        || id.parse::<u64>().is_err()
+        || !id.bytes().all(|b| b.is_ascii_digit())
+        || (id.len() > 1 && id.starts_with('0'))
+    {
+        return Err(AppError::new(
+            ErrorKind::Validation,
+            "Watchlist ID must be a canonical unsigned decimal integer",
+        ));
+    }
+    Ok(())
+}
+
+pub(crate) fn watchlist_entry(symbol: &str) -> Result<Value, AppError> {
+    let Some(section) = symbol.strip_prefix("###") else {
+        return Ok(json!({"kind": "symbol", "symbol": symbol}));
+    };
+    let collapsed = section.starts_with('\u{2064}');
+    let name = section.strip_prefix('\u{2064}').unwrap_or(section);
+    if name.is_empty() || name.starts_with('\u{2064}') {
+        return Err(AppError::new(
+            ErrorKind::InternalApiUnavailable,
+            "Invalid watchlist section",
+        )
+        .with_details(json!({"reason": "watchlist_section"})));
+    }
+    Ok(json!({"kind": "section", "name": name, "collapsed": collapsed}))
+}
+
+pub fn watchlist_entries(symbols: &Value) -> Result<Value, AppError> {
+    if symbols.is_null() {
+        return Ok(Value::Null);
+    }
+    let invalid = || {
+        AppError::new(
+            ErrorKind::InternalApiUnavailable,
+            "Unreadable watchlist symbols",
+        )
+    };
+    let rows = symbols.as_array().ok_or_else(invalid)?;
+    rows.iter()
+        .map(|row| watchlist_entry(row.as_str().ok_or_else(invalid)?))
+        .collect::<Result<Vec<_>, _>>()
+        .map(Value::from)
+}
+
 #[cfg(test)]
 mod tests {
     use serde_json::json;
