@@ -5,12 +5,14 @@ async function __readAlertRows() {
     try {
         response = await fetch('https://pricealerts.tradingview.com/list_alerts', {
             credentials: 'include',
-            headers: { 'accept': 'application/json' }
+            headers: { 'accept': 'application/json' },
         });
     } catch (_) {
         return unavailable;
     }
-    if (!response.ok) return unavailable;
+    if (!response.ok) {
+        return unavailable;
+    }
 
     let data;
     try {
@@ -18,9 +20,16 @@ async function __readAlertRows() {
     } catch (_) {
         return invalid;
     }
-    if (!data || typeof data !== 'object' || Array.isArray(data)) return invalid;
-    if (data.err || data.success === false) return unavailable;
-    if (!Array.isArray(data.r) || data.r.some(row => !row || typeof row !== 'object' || Array.isArray(row))) {
+    if (!data || typeof data !== 'object' || Array.isArray(data)) {
+        return invalid;
+    }
+    if (data.err || data.success === false) {
+        return unavailable;
+    }
+    if (
+        !Array.isArray(data.r) ||
+        data.r.some(row => !row || typeof row !== 'object' || Array.isArray(row))
+    ) {
         return invalid;
     }
     return { ok: true, alerts: data.r };
