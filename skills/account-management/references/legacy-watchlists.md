@@ -53,8 +53,9 @@ tabs. Never repeat an uncertain write or infer rollback from a restored display.
 Use `watchlist move <SYMBOL> --before <SYMBOL>`, `--after <SYMBOL>` or
 `--to-section <NAME>`, with exactly one destination. `watchlist section move
 <NAME> --before <NAME>` or `--after <NAME>` moves the entire section and its
-members. Source symbols must be displayed and destination sections expanded;
-whole-section moves preserve collapse state. Any duplicate symbol or heading
+members. Source symbols must be in the full display array and destination
+sections expanded; rows need not be inside the visible viewport. Whole-section
+moves preserve collapse state. Any duplicate symbol or heading
 anywhere in the list, selection, or display sort blocks the operation.
 
 These commands use full-array replacement. The final preflight GET can detect
