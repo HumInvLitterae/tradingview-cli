@@ -7,6 +7,30 @@ package version omits the leading `v`.
 
 ## Unreleased
 
+## v0.41.0
+
+### Added
+
+- Desktop `watchlist inspect <ID>` reads saved symbols, ordered section entries
+  and collapse state without selecting the list.
+- Desktop watchlists support section rename, collapse and expand, plus symbol
+  and whole-section moves. Changes use existing UI handlers and confirm saved
+  content and displayed state separately. Moves preserve section members and
+  collapse state, reject duplicate entries and use non-atomic full-array writes.
+
+### Fixed
+
+- `data shapes --count 0` now returns metadata without shape points, matching
+  the public specification.
+- Contract test gates reject zero selected tests, and affected tests check
+  actual execution paths rather than accepting unrelated errors.
+
+### Changed
+
+- Updated rmcp to 3.8.0 and refreshed compatible transitive dependencies.
+- Removed redundant tests and formatted embedded JavaScript without changing
+  runtime behavior.
+
 ## v0.40.0
 
 ### Added
