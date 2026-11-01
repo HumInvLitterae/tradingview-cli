@@ -962,8 +962,8 @@ false even though a separate storage-based remove command exists. Reset remains
 unimplemented. Treat these flags as limits of the probe, not a CLI capability map.
 
 These menu probes change visible UI even when the Screener is already open.
-Successful paths attempt to close their popups and any panel they opened, but
-do not reconstruct prior popup/focus state. Early failures can bypass cleanup.
+Commands attempt to close their popups and any panel they opened, including
+after errors, but do not reconstruct prior popup/focus state. Cleanup can fail.
 `restored_open_state` is the initial panel state, not cleanup success.
 
 Columns config instead requires an already open panel and reads screen storage
@@ -985,6 +985,11 @@ Dry-run still connects. Switch/save inspect menus; create/rename/save-as can ope
 and focus name dialogs without submitting. Delete preview fetches account storage.
 Cleanup attempts do not reconstruct prior popups or roll back selection/edits.
 `restored_open_state` is the initial panel state, not a cleanup-success flag.
+After a confirmed change, a failed panel close returns success with
+`cleanup.restored: false` and `cleanup.error`; `cleanup` is otherwise omitted.
+Other close failures remain errors.
+A delete whose readback fails adds `details.write_outcome: "uncertain"` and
+`details.delete_result`; inspect storage before retrying.
 
 | Action | Execution boundary and evidence |
 | --- | --- |
@@ -1029,8 +1034,9 @@ every screen field. Returned names derive from earlier positional mapping, not
 a fresh identity check; init-data fallback can also differ from unsaved UI state.
 Intervening edits are not reconciled by the adapter.
 
-A write may complete before readback fails. Inspect current storage before
-retrying, especially add, which can insert duplicates. These are account-setting
+A write may complete before readback fails. Such errors add
+`details.write_outcome: "uncertain"` and `details.save_result`. Inspect current
+storage before retrying, especially add, which can insert duplicates. These are account-setting
 changes, not temporary display toggles. Official MCP does not edit these saved
 column sets. Keep account-local configuration and IDs private.
 
@@ -1077,12 +1083,19 @@ readback, without reconciling intervening edits.
 
 For remove/clear, a full-page target can reload and poll filter count;
 `visible_refresh.confirmed` checks only that count. False or skipped refresh can
-accompany a successful storage change. Dialog targets skip reload. Neither this
+accompany a successful storage change, and a failed refresh after confirmed
+readback reports `reason: "refresh_failed"`. Dialog targets skip reload. Neither this
 flag nor pill text proves row coverage, freshness or every filter condition.
 
 Dry-run can change panel/popover/focus state and can read storage.
-`restored_open_state` is the initial panel state, not cleanup success. Failures
-can leave UI or saved settings changed; inspect current state before retrying.
+`restored_open_state` is the initial panel state, not cleanup success. A command
+that opened the panel attempts to close it after errors too, but failures can
+leave UI or saved settings changed; inspect current state before retrying.
+After a confirmed change, a failed panel close returns success with
+`cleanup.restored: false` and `cleanup.error`; `cleanup` is otherwise omitted.
+Other close failures remain errors.
+A storage write whose readback fails adds `details.write_outcome: "uncertain"`
+and `details.save_result`.
 Official MCP can answer a suitable data-only query but does not edit these
 Desktop filters. Keep account settings and IDs private.
 

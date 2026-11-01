@@ -1,4 +1,4 @@
-use serde_json::{Value, json};
+use serde_json::{Map, Value, json};
 
 use tradingview_cdp::{MouseEvent, MouseEventType, RuntimeEvaluator};
 use tradingview_core::{AppError, ErrorKind};
@@ -40,6 +40,7 @@ pub(super) struct ScreenerMutationSession<'a, R: RuntimeEvaluator> {
     pub(super) runtime: &'a mut R,
     pub(super) opened_for_mutation: bool,
     pub(super) restored_open_state: bool,
+    pub(super) write_confirmed: bool,
 }
 
 impl<'a, R: RuntimeEvaluator> ScreenerMutationSession<'a, R> {
@@ -57,15 +58,46 @@ impl<'a, R: RuntimeEvaluator> ScreenerMutationSession<'a, R> {
             runtime,
             opened_for_mutation,
             restored_open_state,
+            write_confirmed: false,
         })
     }
 
-    pub(super) async fn restore(&mut self) -> Result<(), AppError> {
+    pub(super) async fn finish(
+        &mut self,
+        result: Result<Value, AppError>,
+    ) -> Result<Value, AppError> {
+        let close_result = self.restore().await;
+        let mut value = result?;
+        if let Err(error) = close_result {
+            if !self.write_confirmed {
+                return Err(error);
+            }
+            value["cleanup"] = json!({
+                "restored": false,
+                "error": { "kind": error.kind, "message": error.message },
+            });
+        }
+        Ok(value)
+    }
+
+    async fn restore(&mut self) -> Result<(), AppError> {
         if self.opened_for_mutation {
             screener_close(self.runtime).await?;
         }
         Ok(())
     }
+}
+
+#[cfg(test)]
+pub(super) fn runtime_failing_at_call(
+    steps: &[Value],
+    call: usize,
+) -> super::super::test_support::FakeRuntime {
+    let mut responses = steps[..call].to_vec();
+    responses.push(json!({ "button_found": true, "open": true }));
+    responses.push(json!({ "button_found": true, "open": false }));
+    super::super::test_support::FakeRuntime::new(responses)
+        .with_evaluate_error_at_call(call, ErrorKind::Connection)
 }
 
 pub(super) async fn read_screener_with_restore(
@@ -99,6 +131,21 @@ pub(super) async fn read_screener_with_restore(
         opened_for_read,
         restored_open_state,
     })
+}
+
+pub(super) fn uncertain_write_error(
+    mut error: AppError,
+    result_key: &str,
+    write_result: &Value,
+) -> AppError {
+    let mut details = match error.details.take() {
+        Some(Value::Object(details)) => details,
+        Some(details) => Map::from_iter([("readback_details".to_string(), details)]),
+        None => Map::new(),
+    };
+    details.insert("write_outcome".to_string(), json!("uncertain"));
+    details.insert(result_key.to_string(), write_result.clone());
+    error.with_details(Value::Object(details))
 }
 
 pub(super) fn ensure_dialog_open(value: &Value) -> Result<(), AppError> {

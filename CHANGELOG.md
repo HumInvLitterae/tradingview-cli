@@ -7,6 +7,21 @@ package version omits the leading `v`.
 
 ## Unreleased
 
+### Changed
+
+- Screener commands report saved data and temporary UI separately. After a
+  confirmed filter or screen change, a failed panel close now returns success
+  with `cleanup.restored: false` instead of an error, and a failed visible
+  refresh returns `visible_refresh.reason: "refresh_failed"`. Automation that
+  treated these errors as failed writes must read those fields instead.
+- A Screener storage write whose readback fails now adds
+  `details.write_outcome: "uncertain"` with `save_result` or `delete_result`.
+
+### Fixed
+
+- Screener commands that open the panel now attempt to close it after errors,
+  not only on success paths. `filters add` also closes its search popup first.
+
 ## v0.41.0
 
 ### Added

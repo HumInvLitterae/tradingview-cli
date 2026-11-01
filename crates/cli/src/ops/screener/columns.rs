@@ -7,7 +7,7 @@ use super::{
     engine::{
         SCREENER_SOURCE, ScreenerMutationSession, ensure_dialog_open, expanded_expression,
         fetch_active_screener_storage_config, normalize_columns, read_screener_state,
-        read_screener_with_restore, require_active_screen_title, value_bool,
+        read_screener_with_restore, require_active_screen_title, uncertain_write_error, value_bool,
     },
     validation::{
         ScreenerColumnAddRequest, ScreenerColumnSelector, validate_screener_column_reorder_request,
@@ -61,12 +61,17 @@ pub async fn screener_columns_actions(
     runtime: &mut impl RuntimeEvaluator,
 ) -> Result<Value, AppError> {
     let mut session = ScreenerMutationSession::open(runtime).await?;
+    let result = columns_actions_in_session(&mut session).await;
+    session.finish(result).await
+}
+
+async fn columns_actions_in_session(
+    session: &mut ScreenerMutationSession<'_, impl RuntimeEvaluator>,
+) -> Result<Value, AppError> {
     let state = read_screener_state(session.runtime, None).await?;
     ensure_dialog_open(&state)?;
     let columns = column_targets_from_state(&state);
     let actions = read_column_actions(session.runtime).await?;
-    let close_result = session.restore().await;
-    close_result?;
 
     Ok(json!({
         "source": SCREENER_SOURCE,
@@ -123,7 +128,9 @@ pub async fn screener_columns_remove(
     ensure_test_screener_screen_for_column_mutation(&screen_title, "remove")?;
     let save_result =
         save_screener_storage_columns(runtime, &before_config, &expected_after_columns).await?;
-    let after_config = fetch_active_screener_storage_config(runtime, &screen_title).await?;
+    let after_config = fetch_active_screener_storage_config(runtime, &screen_title)
+        .await
+        .map_err(|error| uncertain_write_error(error, "save_result", &save_result))?;
     let after_columns = storage_columns_from_config(&after_config, &visible_columns);
     if !storage_column_order_matches(&after_columns, &expected_after_columns) {
         return Err(AppError::new(
@@ -196,7 +203,9 @@ pub async fn screener_columns_add(
     ensure_test_screener_screen_for_column_mutation(&screen_title, "add")?;
     let save_result =
         save_screener_storage_columns(runtime, &before_config, &expected_after_columns).await?;
-    let after_config = fetch_active_screener_storage_config(runtime, &screen_title).await?;
+    let after_config = fetch_active_screener_storage_config(runtime, &screen_title)
+        .await
+        .map_err(|error| uncertain_write_error(error, "save_result", &save_result))?;
     let after_columns = storage_columns_from_config(&after_config, &visible_columns);
     if !storage_column_order_matches(&after_columns, &expected_after_columns) {
         return Err(AppError::new(
@@ -272,7 +281,9 @@ pub async fn screener_columns_reorder(
     ensure_test_screener_screen_for_column_mutation(&screen_title, "reorder")?;
     let save_result =
         save_screener_storage_columns(runtime, &before_config, &expected_after_columns).await?;
-    let after_config = fetch_active_screener_storage_config(runtime, &screen_title).await?;
+    let after_config = fetch_active_screener_storage_config(runtime, &screen_title)
+        .await
+        .map_err(|error| uncertain_write_error(error, "save_result", &save_result))?;
     let after_columns = storage_columns_from_config(&after_config, &visible_columns);
     if !storage_column_order_matches(&after_columns, &expected_after_columns) {
         return Err(AppError::new(
@@ -548,6 +559,7 @@ mod tests {
     use serde_json::json;
 
     use super::super::super::test_support::FakeRuntime;
+    use super::super::engine::runtime_failing_at_call;
     use super::super::validation::validate_screener_column_add_request;
     use super::*;
 
@@ -1014,5 +1026,39 @@ mod tests {
         assert_eq!(runtime.evaluated.len(), 1);
         assert!(runtime.key_events.is_empty());
         assert!(runtime.mouse_events.is_empty());
+    }
+
+    #[tokio::test]
+    async fn screener_columns_actions_restores_opened_panel_after_failure() {
+        let steps = [
+            json!({ "button_found": true, "open": false }),
+            json!({ "button_found": true, "open": true }),
+            json!({ "button_found": true, "open": true, "columns": ["Price"] }),
+        ];
+        let mut runtime = runtime_failing_at_call(&steps, 3);
+
+        let error = screener_columns_actions(&mut runtime).await.unwrap_err();
+
+        assert_eq!(error.kind, ErrorKind::Connection);
+        assert_eq!(runtime.key_events.len(), 2);
+    }
+
+    #[tokio::test]
+    async fn screener_columns_remove_reports_uncertain_write_when_readback_fails() {
+        let mut runtime = FakeRuntime::new([
+            json!({ "button_found": true, "open": true, "screen_title": "CLI-Test1", "columns": ["Price"] }),
+            storage_config("CLI-Test1", vec![json!({ "id": "close", "params": {} })]),
+            json!({ "saved": true, "screen_id": "screen-test" }),
+        ])
+        .with_evaluate_error_at_call(3, ErrorKind::Connection);
+
+        let error = screener_columns_remove(&mut runtime, ScreenerColumnSelector::Index(0), false)
+            .await
+            .unwrap_err();
+
+        assert_eq!(error.kind, ErrorKind::Connection);
+        let details = error.details.unwrap();
+        assert_eq!(details["write_outcome"], "uncertain");
+        assert_eq!(details["save_result"]["saved"], true);
     }
 }

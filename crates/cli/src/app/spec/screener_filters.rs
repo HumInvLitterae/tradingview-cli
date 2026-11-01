@@ -27,9 +27,9 @@ pub(super) fn describe(path: &[&str]) -> Option<Value> {
         ],
         "limits": [
             "Dry-run is live: it can open the panel, search or inspect popovers, and the storage range path can fetch account configuration. Preview does not establish that a later edit is permitted or supported.",
-            "opened_for_mutation describes panel opening; restored_open_state is the initial open boolean, not cleanup success. Cleanup does not undo edits, restore every popup/focus state or guarantee completion after errors.",
+            "opened_for_mutation describes panel opening; restored_open_state is the initial open boolean, not cleanup success. Cleanup does not undo edits, restore every popup/focus state or guarantee completion after errors. After a confirmed change, a failed panel close returns success with cleanup.restored=false and cleanup.error; cleanup is otherwise omitted, and other close failures remain errors.",
             "UI add/modify paths have no test-name guard. Storage remove/clear/range-modify execution requires a screen title containing case-sensitive CLI-Test or テスト. Do not infer identical permissions or persistence from the shared command family.",
-            "Storage edits replace filters in a fetched screen document using the Desktop session, then compare ordered raw filter definitions with numeric equivalence. No automatic merge of intervening edits or rollback is provided. A failure after writing can leave the change applied.",
+            "Storage edits replace filters in a fetched screen document using the Desktop session, then compare ordered raw filter definitions with numeric equivalence. No automatic merge of intervening edits or rollback is provided. A failure after writing can leave the change applied: failed readback adds details.write_outcome=uncertain and details.save_result, while a failed visible refresh after confirmed readback reports visible_refresh.reason=refresh_failed.",
             "Official MCP can perform a suitable independent data query, not edit these saved/visible Desktop filters. No automatic provider fallback occurs; keep account configuration and IDs private."
         ]
     });

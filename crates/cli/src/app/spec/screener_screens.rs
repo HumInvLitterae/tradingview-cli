@@ -28,7 +28,7 @@ pub(super) fn describe(path: &[&str]) -> Option<Value> {
         "limits": [
             "Operates the selected Desktop Screener, not an official MCP saved-screen API. Data-only MCP screening does not replace these saved-screen operations.",
             "Dry-run still connects and discovers the target. Menu operations can open panels, menus and name dialogs, focus/select input and then attempt cleanup; delete preview fetches storage. It is not an offline or UI-free validation.",
-            "opened_for_mutation records panel opening, while restored_open_state is the initial open boolean, not cleanup success. Cleanup does not roll back screen selection or account edits; early errors can leave changed UI or uncertain writes. Inspect current state rather than blindly retrying.",
+            "opened_for_mutation records panel opening, while restored_open_state is the initial open boolean, not cleanup success. Cleanup does not roll back screen selection or account edits; errors can leave changed UI or uncertain writes. After a confirmed create, save-as or rename, a failed panel close returns success with cleanup.restored=false and cleanup.error; cleanup is otherwise omitted, and other close failures remain errors. A delete whose readback fails adds details.write_outcome=uncertain and details.delete_result. Inspect current state rather than blindly retrying.",
             "Account-local names, IDs and storage replies stay private. Example test names demonstrate code restrictions, not authorization to change an account."
         ]
     });

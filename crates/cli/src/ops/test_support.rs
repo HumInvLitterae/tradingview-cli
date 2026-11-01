@@ -13,6 +13,7 @@ pub(crate) struct FakeRuntime {
     clipped_screenshot: Result<Vec<u8>, ErrorKind>,
     evaluate_error: Option<AppError>,
     evaluate_error_after_responses: Option<AppError>,
+    evaluate_error_at_call: Option<(usize, AppError)>,
     evaluate_delay: Option<Duration>,
     pub(super) screenshot_count: usize,
     pub(super) clipped_screenshot_count: usize,
@@ -30,6 +31,7 @@ impl FakeRuntime {
             clipped_screenshot: Ok(vec![137, 80, 78, 71]),
             evaluate_error: None,
             evaluate_error_after_responses: None,
+            evaluate_error_at_call: None,
             evaluate_delay: None,
             screenshot_count: 0,
             clipped_screenshot_count: 0,
@@ -69,6 +71,12 @@ impl FakeRuntime {
         self
     }
 
+    pub(super) fn with_evaluate_error_at_call(mut self, call: usize, kind: ErrorKind) -> Self {
+        let error = AppError::new(kind, "simulated runtime evaluation failure");
+        self.evaluate_error_at_call = Some((call, error));
+        self
+    }
+
     pub(super) fn with_evaluate_delay(mut self, delay: Duration) -> Self {
         self.evaluate_delay = Some(delay);
         self
@@ -82,6 +90,15 @@ impl RuntimeEvaluator for FakeRuntime {
             tokio::time::sleep(delay).await;
         }
         if let Some(error) = self.evaluate_error.take() {
+            return Err(error);
+        }
+        let call = self.evaluated.len() - 1;
+        if self
+            .evaluate_error_at_call
+            .as_ref()
+            .is_some_and(|(failing_call, _)| *failing_call == call)
+            && let Some((_, error)) = self.evaluate_error_at_call.take()
+        {
             return Err(error);
         }
         if let Some(response) = self.responses.pop_front() {

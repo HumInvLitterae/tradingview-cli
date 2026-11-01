@@ -8,6 +8,11 @@ Dry-run still connects. Switch/save inspect menus; create/rename/save-as can ope
 and focus name dialogs without submitting. Delete preview fetches account storage.
 Cleanup attempts do not reconstruct prior popups or roll back selection/edits.
 `restored_open_state` is the initial panel state, not a cleanup-success flag.
+After a confirmed change, a failed panel close returns success with
+`cleanup.restored: false` and `cleanup.error`; `cleanup` is otherwise omitted.
+Other close failures remain errors.
+A delete whose readback fails adds `details.write_outcome: "uncertain"` and
+`details.delete_result`; inspect storage before retrying.
 
 | Action | Execution boundary and evidence |
 | --- | --- |

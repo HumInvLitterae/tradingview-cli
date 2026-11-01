@@ -40,11 +40,17 @@ readback, without reconciling intervening edits.
 
 For remove/clear, a full-page target can reload and poll filter count;
 `visible_refresh.confirmed` checks only that count. False or skipped refresh can
-accompany a successful storage change. Dialog targets skip reload. Neither this
+accompany a successful storage change, and a failed refresh after confirmed
+readback reports `reason: "refresh_failed"`. Dialog targets skip reload. Neither this
 flag nor pill text proves row coverage, freshness or every filter condition.
 
 Dry-run can change panel/popover/focus state and can read storage.
 `restored_open_state` is the initial panel state, not cleanup success. Failures
 can leave UI or saved settings changed; inspect current state before retrying.
+After a confirmed change, a failed panel close returns success with
+`cleanup.restored: false` and `cleanup.error`; `cleanup` is otherwise omitted.
+Other close failures remain errors.
+A storage write whose readback fails adds `details.write_outcome: "uncertain"`
+and `details.save_result`.
 Official MCP can answer a suitable data-only query but does not edit these
 Desktop filters. Keep account settings and IDs private.

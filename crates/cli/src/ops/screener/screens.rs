@@ -9,7 +9,7 @@ use super::{
     engine::{
         SCREENER_SOURCE, ScreenerMutationSession, dispatch_screen_menu_click, ensure_dialog_open,
         expanded_expression, read_screener_state, read_screener_with_restore,
-        screen_menu_click_point, value_bool,
+        screen_menu_click_point, uncertain_write_error, value_bool,
     },
     validation::validate_screener_screen_name,
 };
@@ -38,6 +38,13 @@ pub async fn screener_screens_actions(
     runtime: &mut impl RuntimeEvaluator,
 ) -> Result<Value, AppError> {
     let mut session = ScreenerMutationSession::open(runtime).await?;
+    let result = screens_actions_in_session(&mut session).await;
+    session.finish(result).await
+}
+
+async fn screens_actions_in_session(
+    session: &mut ScreenerMutationSession<'_, impl RuntimeEvaluator>,
+) -> Result<Value, AppError> {
     let state = read_screener_state(session.runtime, None).await?;
     ensure_dialog_open(&state)?;
     let result = session
@@ -53,15 +60,12 @@ pub async fn screener_screens_actions(
         .iter()
         .filter(|action| action.kind == "save")
         .collect::<Vec<_>>();
-    let opened_for_read = session.opened_for_mutation;
-    let restored_open_state = session.restored_open_state;
-    session.restore().await?;
     Ok(json!({
         "source": SCREENER_SOURCE,
         "scope": "screen_title_menu",
         "open": value_bool(&state, "open"),
-        "opened_for_read": opened_for_read,
-        "restored_open_state": restored_open_state,
+        "opened_for_read": session.opened_for_mutation,
+        "restored_open_state": session.restored_open_state,
         "screen_title": state.get("screen_title").cloned().unwrap_or(Value::Null),
         "action_count": actions.len(),
         "save_available": !save_actions.is_empty(),
@@ -75,6 +79,14 @@ pub async fn screener_screens_list(
     catalog: bool,
 ) -> Result<Value, AppError> {
     let mut session = ScreenerMutationSession::open(runtime).await?;
+    let result = screens_list_in_session(&mut session, catalog).await;
+    session.finish(result).await
+}
+
+async fn screens_list_in_session(
+    session: &mut ScreenerMutationSession<'_, impl RuntimeEvaluator>,
+    catalog: bool,
+) -> Result<Value, AppError> {
     let state = read_screener_state(session.runtime, None).await?;
     ensure_dialog_open(&state)?;
     if catalog {
@@ -88,15 +100,12 @@ pub async fn screener_screens_list(
             .await?;
         ensure_screen_catalog_opened(&result)?;
         let screens = screen_targets_from_menu(&result);
-        let opened_for_read = session.opened_for_mutation;
-        let restored_open_state = session.restored_open_state;
-        session.restore().await?;
         return Ok(json!({
             "source": SCREENER_SOURCE,
             "scope": "screen_catalog",
             "open": value_bool(&state, "open"),
-            "opened_for_read": opened_for_read,
-            "restored_open_state": restored_open_state,
+            "opened_for_read": session.opened_for_mutation,
+            "restored_open_state": session.restored_open_state,
             "screen_title": state.get("screen_title").cloned().unwrap_or(Value::Null),
             "screen_count": screens.len(),
             "screens": screen_targets_payload(&screens),
@@ -112,15 +121,12 @@ pub async fn screener_screens_list(
         .await?;
     ensure_screen_menu_opened(&result)?;
     let screens = screen_targets_from_menu(&result);
-    let opened_for_read = session.opened_for_mutation;
-    let restored_open_state = session.restored_open_state;
-    session.restore().await?;
     Ok(json!({
         "source": SCREENER_SOURCE,
         "scope": "screen_title_menu",
         "open": value_bool(&state, "open"),
-        "opened_for_read": opened_for_read,
-        "restored_open_state": restored_open_state,
+        "opened_for_read": session.opened_for_mutation,
+        "restored_open_state": session.restored_open_state,
         "screen_title": state.get("screen_title").cloned().unwrap_or(Value::Null),
         "catalog_entry_found": value_bool(&result, "catalog_entry_found"),
         "screen_count": screens.len(),
@@ -136,6 +142,16 @@ pub async fn screener_screens_switch(
 ) -> Result<Value, AppError> {
     let name = validate_screener_screen_name(name)?;
     let mut session = ScreenerMutationSession::open(runtime).await?;
+    let result = screens_switch_in_session(&mut session, &name, dry_run, catalog).await;
+    session.finish(result).await
+}
+
+async fn screens_switch_in_session(
+    session: &mut ScreenerMutationSession<'_, impl RuntimeEvaluator>,
+    name: &str,
+    dry_run: bool,
+    catalog: bool,
+) -> Result<Value, AppError> {
     let before_state = read_screener_state(session.runtime, None).await?;
     ensure_dialog_open(&before_state)?;
 
@@ -167,7 +183,7 @@ pub async fn screener_screens_switch(
         result
     };
     let screens = screen_targets_from_menu(&screen_list);
-    let target = resolve_screen_target(&screens, &name)?;
+    let target = resolve_screen_target(&screens, name)?;
     let active_before = before_state
         .get("screen_title")
         .and_then(Value::as_str)
@@ -177,8 +193,6 @@ pub async fn screener_screens_switch(
 
     if dry_run {
         close_screener_screen_lifecycle_popups(session.runtime).await?;
-        let close_result = session.restore().await;
-        close_result?;
         return Ok(json!({
             "source": SCREENER_SOURCE,
             "action": "screen_switch",
@@ -197,8 +211,6 @@ pub async fn screener_screens_switch(
     }
 
     if active_before == name {
-        let close_result = session.restore().await;
-        close_result?;
         return Ok(json!({
             "source": SCREENER_SOURCE,
             "action": "screen_switch",
@@ -216,25 +228,18 @@ pub async fn screener_screens_switch(
         }));
     }
 
-    let click_result = if catalog {
-        click_screen_catalog_target(session.runtime, &target).await
+    if catalog {
+        click_screen_catalog_target(session.runtime, &target).await?;
     } else {
-        click_screen_menu_target(session.runtime, &target).await
-    };
-    if let Err(err) = click_result {
-        let _ = session.restore().await;
-        return Err(err);
+        click_screen_menu_target(session.runtime, &target).await?;
     }
-    let after_state_result = wait_for_screen_title(session.runtime, &name).await;
-    let close_result = session.restore().await;
-    let after_state = after_state_result?;
+    let after_state = wait_for_screen_title(session.runtime, name).await?;
     let after_title = after_state
         .get("screen_title")
         .and_then(Value::as_str)
         .unwrap_or("")
         .trim()
         .to_string();
-    close_result?;
 
     Ok(json!({
         "source": SCREENER_SOURCE,
@@ -258,6 +263,14 @@ pub async fn screener_screens_save(
     dry_run: bool,
 ) -> Result<Value, AppError> {
     let mut session = ScreenerMutationSession::open(runtime).await?;
+    let result = screens_save_in_session(&mut session, dry_run).await;
+    session.finish(result).await
+}
+
+async fn screens_save_in_session(
+    session: &mut ScreenerMutationSession<'_, impl RuntimeEvaluator>,
+    dry_run: bool,
+) -> Result<Value, AppError> {
     let before_state = read_screener_state(session.runtime, None).await?;
     ensure_dialog_open(&before_state)?;
 
@@ -270,7 +283,6 @@ pub async fn screener_screens_save(
         .await?;
     ensure_screen_menu_opened(&result)?;
     if !value_bool(&result, "found") {
-        let _ = session.restore().await;
         return Err(AppError::new(
             ErrorKind::InternalApiUnavailable,
             "Screener screen save action was not found",
@@ -278,7 +290,6 @@ pub async fn screener_screens_save(
         .with_details(result));
     }
     if !value_bool(&result, "enabled") {
-        let _ = session.restore().await;
         return Err(AppError::new(
             ErrorKind::InternalApiUnavailable,
             "Screener screen save action is disabled",
@@ -297,8 +308,6 @@ pub async fn screener_screens_save(
 
     if dry_run {
         close_screener_screen_lifecycle_popups(session.runtime).await?;
-        let close_result = session.restore().await;
-        close_result?;
         return Ok(json!({
             "source": SCREENER_SOURCE,
             "action": "screen_save",
@@ -318,10 +327,7 @@ pub async fn screener_screens_save(
 
     let point = screen_menu_click_point(&result)?;
     dispatch_screen_menu_click(session.runtime, point).await?;
-    let after_state = wait_for_screen_save_post_check(session.runtime, &before_title).await;
-    let close_result = session.restore().await;
-    let after_state = after_state?;
-    close_result?;
+    let after_state = wait_for_screen_save_post_check(session.runtime, &before_title).await?;
 
     Ok(json!({
         "source": SCREENER_SOURCE,
@@ -357,6 +363,16 @@ pub async fn screener_screens_rename(
     dry_run: bool,
 ) -> Result<Value, AppError> {
     let mut session = ScreenerMutationSession::open(runtime).await?;
+    let result = screens_rename_in_session(&mut session, name, new_name, dry_run).await;
+    session.finish(result).await
+}
+
+async fn screens_rename_in_session(
+    session: &mut ScreenerMutationSession<'_, impl RuntimeEvaluator>,
+    name: &str,
+    new_name: &str,
+    dry_run: bool,
+) -> Result<Value, AppError> {
     let before_state = read_screener_state(session.runtime, None).await?;
     ensure_dialog_open(&before_state)?;
     let before_title = before_state
@@ -366,7 +382,6 @@ pub async fn screener_screens_rename(
         .trim()
         .to_string();
     if before_title != name {
-        let _ = session.restore().await;
         return Err(AppError::new(
             ErrorKind::Validation,
             format!("Active Screener screen is {before_title:?}, not {name:?}"),
@@ -381,8 +396,6 @@ pub async fn screener_screens_rename(
     let target_action = resolve_screen_action(&actions, "rename")?;
     if dry_run {
         close_screener_screen_lifecycle_popups(session.runtime).await?;
-        let close_result = session.restore().await;
-        close_result?;
         return Ok(json!({
             "source": SCREENER_SOURCE,
             "action": "screen_rename",
@@ -404,16 +417,14 @@ pub async fn screener_screens_rename(
     let submit = find_screen_name_dialog_submit_point(session.runtime, "rename").await?;
     let point = screen_menu_click_point(&submit)?;
     dispatch_screen_menu_click(session.runtime, point).await?;
-    let after_state_result = wait_for_screen_title(session.runtime, new_name).await;
-    let close_result = session.restore().await;
-    let after_state = after_state_result?;
+    let after_state = wait_for_screen_title(session.runtime, new_name).await?;
     let after_title = after_state
         .get("screen_title")
         .and_then(Value::as_str)
         .unwrap_or("")
         .trim()
         .to_string();
-    close_result?;
+    session.write_confirmed = true;
 
     Ok(json!({
         "source": SCREENER_SOURCE,
@@ -483,8 +494,9 @@ pub async fn screener_screens_delete(
 
     let _ = confirm_delete;
     let deleted = delete_screener_storage_screen(runtime, &target).await?;
-    let after_storage =
-        fetch_screener_storage_screens(runtime, before_screen_title.as_deref()).await?;
+    let after_storage = fetch_screener_storage_screens(runtime, before_screen_title.as_deref())
+        .await
+        .map_err(|error| uncertain_write_error(error, "delete_result", &deleted))?;
     let after_screens = screen_targets_from_menu(&after_storage);
     if after_screens
         .iter()
@@ -525,6 +537,19 @@ async fn screener_screens_name_dialog_mutation(
     dry_run: bool,
 ) -> Result<Value, AppError> {
     let mut session = ScreenerMutationSession::open(runtime).await?;
+    let result =
+        screens_name_dialog_in_session(&mut session, action_kind, payload_action, name, dry_run)
+            .await;
+    session.finish(result).await
+}
+
+async fn screens_name_dialog_in_session(
+    session: &mut ScreenerMutationSession<'_, impl RuntimeEvaluator>,
+    action_kind: &str,
+    payload_action: &str,
+    name: &str,
+    dry_run: bool,
+) -> Result<Value, AppError> {
     let before_state = read_screener_state(session.runtime, None).await?;
     ensure_dialog_open(&before_state)?;
     let before_title = before_state
@@ -538,8 +563,6 @@ async fn screener_screens_name_dialog_mutation(
     let target_action = resolve_screen_action(&actions, action_kind)?;
     if dry_run {
         close_screener_screen_lifecycle_popups(session.runtime).await?;
-        let close_result = session.restore().await;
-        close_result?;
         return Ok(json!({
             "source": SCREENER_SOURCE,
             "action": payload_action,
@@ -560,16 +583,14 @@ async fn screener_screens_name_dialog_mutation(
     let submit = find_screen_name_dialog_submit_point(session.runtime, action_kind).await?;
     let point = screen_menu_click_point(&submit)?;
     dispatch_screen_menu_click(session.runtime, point).await?;
-    let after_state_result = wait_for_screen_title(session.runtime, name).await;
-    let close_result = session.restore().await;
-    let after_state = after_state_result?;
+    let after_state = wait_for_screen_title(session.runtime, name).await?;
     let after_title = after_state
         .get("screen_title")
         .and_then(Value::as_str)
         .unwrap_or("")
         .trim()
         .to_string();
-    close_result?;
+    session.write_confirmed = true;
 
     Ok(json!({
         "source": SCREENER_SOURCE,
@@ -1333,6 +1354,7 @@ mod tests {
     use serde_json::json;
 
     use super::super::super::test_support::FakeRuntime;
+    use super::super::engine::runtime_failing_at_call;
     use super::*;
 
     #[tokio::test]
@@ -1965,5 +1987,147 @@ mod tests {
 
         assert_eq!(error.kind, ErrorKind::Validation);
         assert!(error.details.is_some());
+    }
+
+    fn assert_restored_after_failure(runtime: &FakeRuntime, error: AppError) {
+        assert_eq!(error.kind, ErrorKind::Connection);
+        assert_eq!(runtime.key_events.len(), 2);
+    }
+
+    #[tokio::test]
+    async fn screener_screens_restore_opened_panel_after_menu_failure() {
+        let steps = [
+            json!({ "button_found": true, "open": false }),
+            json!({ "button_found": true, "open": true }),
+            json!({ "button_found": true, "open": true, "screen_title": "CLI-Test1" }),
+        ];
+
+        let mut runtime = runtime_failing_at_call(&steps, 3);
+        let error = screener_screens_actions(&mut runtime).await.unwrap_err();
+        assert_restored_after_failure(&runtime, error);
+
+        let mut runtime = runtime_failing_at_call(&steps, 3);
+        let error = screener_screens_list(&mut runtime, false)
+            .await
+            .unwrap_err();
+        assert_restored_after_failure(&runtime, error);
+
+        let mut runtime = runtime_failing_at_call(&steps, 3);
+        let error = screener_screens_switch(&mut runtime, "CLI-Test2", true, false)
+            .await
+            .unwrap_err();
+        assert_restored_after_failure(&runtime, error);
+
+        let mut runtime = runtime_failing_at_call(&steps, 3);
+        let error = screener_screens_save(&mut runtime, true).await.unwrap_err();
+        assert_restored_after_failure(&runtime, error);
+
+        let mut runtime = runtime_failing_at_call(&steps, 3);
+        let error = screener_screens_create(&mut runtime, "CLI-Test2", true)
+            .await
+            .unwrap_err();
+        assert_restored_after_failure(&runtime, error);
+
+        let mut runtime = runtime_failing_at_call(&steps, 3);
+        let error = screener_screens_rename(&mut runtime, "CLI-Test1", "CLI-Test2", true)
+            .await
+            .unwrap_err();
+        assert_restored_after_failure(&runtime, error);
+    }
+
+    fn rename_write_steps() -> Vec<Value> {
+        vec![
+            json!({ "button_found": true, "open": false }),
+            json!({ "button_found": true, "open": true }),
+            json!({ "button_found": true, "open": true, "screen_title": "CLI-Test1" }),
+            json!({
+                "menu_opened": true,
+                "dialog_opened": true,
+                "input_found": true,
+                "input_value": "CLI-Test1",
+                "submit_found": true,
+                "dialog_title": "rename",
+                "screen_title": "CLI-Test1",
+                "actions": [
+                    { "index": 0, "text": "Rename", "kind": "rename", "enabled": true }
+                ],
+                "click_point": { "x": 100.0, "y": 200.0 }
+            }),
+            json!({
+                "dialog_opened": true,
+                "submit_found": true,
+                "click_point": { "x": 120.0, "y": 220.0 }
+            }),
+            json!({ "button_found": true, "open": true, "screen_title": "CLI-Test2" }),
+            json!({ "button_found": true, "open": true }),
+            json!({ "button_found": true, "open": true }),
+        ]
+    }
+
+    #[tokio::test]
+    async fn screener_screens_rename_reports_cleanup_failure_after_confirmed_write() {
+        let mut runtime = FakeRuntime::new(rename_write_steps());
+
+        let result = screener_screens_rename(&mut runtime, "CLI-Test1", "CLI-Test2", false)
+            .await
+            .unwrap();
+
+        assert_eq!(result["renamed"], true);
+        assert_eq!(result["after_screen_title"], "CLI-Test2");
+        assert_eq!(result["cleanup"]["restored"], false);
+    }
+
+    #[tokio::test]
+    async fn screener_screens_save_keeps_close_failure_as_error() {
+        let mut runtime = FakeRuntime::new([
+            json!({ "button_found": true, "open": false }),
+            json!({ "button_found": true, "open": true }),
+            json!({ "button_found": true, "open": true, "screen_title": "CLI-Test1" }),
+            json!({
+                "menu_opened": true,
+                "found": true,
+                "enabled": true,
+                "actions": [
+                    { "index": 0, "text": "Save screen", "kind": "save", "enabled": true }
+                ],
+                "click_point": { "x": 100.0, "y": 200.0 }
+            }),
+            json!({ "post_check_ok": true, "screen_title": "CLI-Test1" }),
+            json!({ "button_found": true, "open": true }),
+            json!({ "button_found": true, "open": true }),
+        ]);
+
+        let error = screener_screens_save(&mut runtime, false)
+            .await
+            .unwrap_err();
+
+        assert_eq!(error.kind, ErrorKind::InternalApiUnavailable);
+    }
+
+    #[tokio::test]
+    async fn screener_screens_delete_reports_uncertain_write_when_readback_fails() {
+        let storage = json!({
+            "storage_available": true,
+            "fetch_ok": true,
+            "screens": [
+                { "index": 0, "id": "screen-1", "name": "CLI-Test1", "active": true, "owner": true, "shared": false },
+                { "index": 1, "id": "screen-2", "name": "CLI-Test2", "active": false, "owner": true, "shared": false }
+            ]
+        });
+        let mut runtime = FakeRuntime::new([
+            json!({ "button_found": true, "open": true, "screen_title": "CLI-Test1" }),
+            storage,
+            json!({ "deleted": true, "status": 204 }),
+        ])
+        .with_evaluate_error_at_call(3, ErrorKind::Connection);
+
+        let error = screener_screens_delete(&mut runtime, "CLI-Test2", false, true)
+            .await
+            .unwrap_err();
+
+        assert_eq!(error.kind, ErrorKind::Connection);
+        let details = error.details.unwrap();
+        assert_eq!(details["write_outcome"], "uncertain");
+        assert_eq!(details["delete_result"]["deleted"], true);
     }
 }

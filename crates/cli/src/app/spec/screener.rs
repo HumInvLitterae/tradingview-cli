@@ -183,7 +183,7 @@ fn discovery(path: &[&str]) -> Option<Value> {
     } else {
         result["limits"].as_array_mut().unwrap().extend([
             json!("Can open a closed Screener and opens/closes menus, catalogs or popovers even if the panel was already open. No saved-screen/filter/column edits are dispatched. Exact preexisting popup/focus state is not restored."),
-            json!("opened_for_read records panel opening; restored_open_state is the initial open boolean, not a cleanup-success flag. Successful paths attempt panel closure only when opened by this command. Early errors can bypass cleanup and leave UI changed; inspect actual state after failure.")
+            json!("opened_for_read records panel opening; restored_open_state is the initial open boolean, not a cleanup-success flag. Commands attempt panel closure only when they opened the panel, including after errors. Failed cleanup can leave UI changed; inspect actual state after failure.")
         ]);
     }
     if path == ["screener", "screens", "list"] {

@@ -20,8 +20,8 @@ false even though a separate storage-based remove command exists. Reset remains
 unimplemented. Treat these flags as limits of the probe, not a CLI capability map.
 
 These menu probes change visible UI even when the Screener is already open.
-Successful paths attempt to close their popups and any panel they opened, but
-do not reconstruct prior popup/focus state. Early failures can bypass cleanup.
+Commands attempt to close their popups and any panel they opened, including
+after errors, but do not reconstruct prior popup/focus state. Cleanup can fail.
 `restored_open_state` is the initial panel state, not cleanup success.
 
 Columns config instead requires an already open panel and reads screen storage

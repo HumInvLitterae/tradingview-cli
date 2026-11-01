@@ -11,7 +11,7 @@ use super::{
         expanded_expression, fetch_active_screener_storage_config,
         fetch_current_screener_storage_config, read_screener_state, read_screener_with_restore,
         require_active_screen_title, screener_click_point, screener_click_point_from_value,
-        value_bool,
+        uncertain_write_error, value_bool,
     },
     validation::{
         ScreenerFilterAddRequest, ScreenerFilterModifyMode, ScreenerFilterModifyRequest,
@@ -47,12 +47,17 @@ pub async fn screener_filters_actions(
     runtime: &mut impl RuntimeEvaluator,
 ) -> Result<Value, AppError> {
     let mut session = ScreenerMutationSession::open(runtime).await?;
+    let result = filters_actions_in_session(&mut session).await;
+    session.finish(result).await
+}
+
+async fn filters_actions_in_session(
+    session: &mut ScreenerMutationSession<'_, impl RuntimeEvaluator>,
+) -> Result<Value, AppError> {
     let state = read_screener_state(session.runtime, None).await?;
     ensure_dialog_open(&state)?;
     let filters = filter_targets_from_state(&state);
     let actions = read_filter_actions(session.runtime).await?;
-    let close_result = session.restore().await;
-    close_result?;
 
     Ok(json!({
         "source": SCREENER_SOURCE,
@@ -77,6 +82,17 @@ pub async fn screener_filters_add(
     request: ScreenerFilterAddRequest,
 ) -> Result<Value, AppError> {
     let mut session = ScreenerMutationSession::open(runtime).await?;
+    let result = filters_add_in_session(&mut session, request).await;
+    if result.is_err() {
+        let _ = close_screener_transient_popups(session.runtime).await;
+    }
+    session.finish(result).await
+}
+
+async fn filters_add_in_session(
+    session: &mut ScreenerMutationSession<'_, impl RuntimeEvaluator>,
+    request: ScreenerFilterAddRequest,
+) -> Result<Value, AppError> {
     let before_state = read_screener_state(session.runtime, None).await?;
     ensure_dialog_open(&before_state)?;
     let before_filters = filter_targets_from_state(&before_state);
@@ -89,8 +105,6 @@ pub async fn screener_filters_add(
 
     if request.dry_run {
         close_screener_transient_popups(session.runtime).await?;
-        let close_result = session.restore().await;
-        close_result?;
         return Ok(json!({
             "source": SCREENER_SOURCE,
             "action": "filter_add",
@@ -125,8 +139,7 @@ pub async fn screener_filters_add(
         &request.name,
         &request.range_matchers,
     );
-    let close_result = session.restore().await;
-    close_result?;
+    session.write_confirmed = true;
 
     Ok(json!({
         "source": SCREENER_SOURCE,
@@ -150,14 +163,21 @@ pub async fn screener_filters_remove(
     dry_run: bool,
 ) -> Result<Value, AppError> {
     let mut session = ScreenerMutationSession::open(runtime).await?;
+    let result = filters_remove_in_session(&mut session, selector, dry_run).await;
+    session.finish(result).await
+}
+
+async fn filters_remove_in_session(
+    session: &mut ScreenerMutationSession<'_, impl RuntimeEvaluator>,
+    selector: ScreenerFilterSelector,
+    dry_run: bool,
+) -> Result<Value, AppError> {
     let before_state = read_screener_state(session.runtime, None).await?;
     ensure_dialog_open(&before_state)?;
     let before_filters = filter_targets_from_state(&before_state);
     let target = resolve_filter_target(&before_filters, &selector)?;
 
     if dry_run {
-        let close_result = session.restore().await;
-        close_result?;
         return Ok(json!({
             "source": SCREENER_SOURCE,
             "action": "filter_remove",
@@ -184,7 +204,9 @@ pub async fn screener_filters_remove(
     let save_result =
         save_screener_storage_filters(session.runtime, &before_config, &expected_after_filters)
             .await?;
-    let after_config = fetch_active_screener_storage_config(session.runtime, &screen_title).await?;
+    let after_config = fetch_active_screener_storage_config(session.runtime, &screen_title)
+        .await
+        .map_err(|error| uncertain_write_error(error, "save_result", &save_result))?;
     let after_storage_filters = storage_filters_from_config(&after_config, &[]);
     if !storage_filter_order_matches(&after_storage_filters, &expected_after_filters) {
         return Err(AppError::new(
@@ -201,14 +223,15 @@ pub async fn screener_filters_remove(
             "save_result": save_result,
         })));
     }
-    let visible_refresh = refresh_full_page_screener_after_storage_filter_save(
-        session.runtime,
-        &before_state,
-        expected_after_filters.len(),
-    )
-    .await?;
-    let close_result = session.restore().await;
-    close_result?;
+    session.write_confirmed = true;
+    let visible_refresh = visible_refresh_outcome(
+        refresh_full_page_screener_after_storage_filter_save(
+            session.runtime,
+            &before_state,
+            expected_after_filters.len(),
+        )
+        .await,
+    );
 
     Ok(json!({
         "source": SCREENER_SOURCE,
@@ -244,25 +267,33 @@ pub async fn screener_filters_modify(
         return Ok(result);
     }
 
-    let restored_open_state = value_bool(&initial_state, "open");
-    let mut opened_for_mutation = false;
+    let mut session = ScreenerMutationSession {
+        runtime,
+        opened_for_mutation: false,
+        restored_open_state: value_bool(&initial_state, "open"),
+        write_confirmed: false,
+    };
+    let result = filters_modify_in_session(&mut session, request, initial_state).await;
+    session.finish(result).await
+}
+
+async fn filters_modify_in_session(
+    session: &mut ScreenerMutationSession<'_, impl RuntimeEvaluator>,
+    request: ScreenerFilterModifyRequest,
+    initial_state: Value,
+) -> Result<Value, AppError> {
     let initial_has_filters = initial_state
         .get("filters")
         .and_then(Value::as_array)
         .is_some_and(|filters| !filters.is_empty());
-    let before_state = if restored_open_state && initial_has_filters {
+    let before_state = if session.restored_open_state && initial_has_filters {
         initial_state
     } else {
-        if !restored_open_state {
-            super::state::screener_open(runtime).await?;
-            opened_for_mutation = true;
+        if !session.restored_open_state {
+            super::state::screener_open(session.runtime).await?;
+            session.opened_for_mutation = true;
         }
-        read_screener_state(runtime, None).await?
-    };
-    let mut session = ScreenerMutationSession {
-        runtime,
-        opened_for_mutation,
-        restored_open_state,
+        read_screener_state(session.runtime, None).await?
     };
     ensure_dialog_open(&before_state)?;
     let before_filters = filter_targets_from_state(&before_state);
@@ -273,8 +304,6 @@ pub async fn screener_filters_modify(
             let requested_range = filter_modify_range_payload(&request);
 
             if request.dry_run {
-                let close_result = session.restore().await;
-                close_result?;
                 return Ok(json!({
                     "source": SCREENER_SOURCE,
                     "action": "filter_modify",
@@ -291,8 +320,6 @@ pub async fn screener_filters_modify(
             }
 
             if normalize_screener_text(&target.text).contains(preset_label) {
-                let close_result = session.restore().await;
-                close_result?;
                 return Ok(json!({
                     "source": SCREENER_SOURCE,
                     "action": "filter_modify",
@@ -318,8 +345,7 @@ pub async fn screener_filters_modify(
                 .iter()
                 .find(|filter| filter.data_name == target.data_name)
                 .cloned();
-            let close_result = session.restore().await;
-            close_result?;
+            session.write_confirmed = true;
 
             Ok(json!({
                 "source": SCREENER_SOURCE,
@@ -340,8 +366,6 @@ pub async fn screener_filters_modify(
             if request.dry_run {
                 let matched = resolve_filter_option(session.runtime, &target, option).await?;
                 let requested_option = filter_modify_option_payload(option, Some(&matched));
-                let close_result = session.restore().await;
-                close_result?;
                 return Ok(json!({
                     "source": SCREENER_SOURCE,
                     "action": "filter_modify",
@@ -361,8 +385,6 @@ pub async fn screener_filters_modify(
 
             if screener_filter_text_matches_option(&target.text, option) {
                 let requested_option = filter_modify_option_payload(option, None);
-                let close_result = session.restore().await;
-                close_result?;
                 return Ok(json!({
                     "source": SCREENER_SOURCE,
                     "action": "filter_modify",
@@ -391,8 +413,7 @@ pub async fn screener_filters_modify(
                 .iter()
                 .find(|filter| filter.data_name == target.data_name)
                 .cloned();
-            let close_result = session.restore().await;
-            close_result?;
+            session.write_confirmed = true;
 
             Ok(json!({
                 "source": SCREENER_SOURCE,
@@ -466,7 +487,9 @@ async fn try_screener_filters_modify_range_storage(
     ensure_test_screener_screen_for_filter_mutation(&screen_title, "modify")?;
     let save_result =
         save_screener_storage_filters(runtime, &before_config, &expected_after_filters).await?;
-    let after_config = fetch_current_screener_storage_config(runtime).await?;
+    let after_config = fetch_current_screener_storage_config(runtime)
+        .await
+        .map_err(|error| uncertain_write_error(error, "save_result", &save_result))?;
     let after_storage_filters = storage_filters_from_config(&after_config, &[]);
     if !storage_filter_order_matches(&after_storage_filters, &expected_after_filters) {
         return Err(AppError::new(
@@ -483,8 +506,9 @@ async fn try_screener_filters_modify_range_storage(
             "save_result": save_result,
         })));
     }
-    let visible_refresh =
-        request_full_page_screener_reload_after_storage_filter_save(runtime).await?;
+    let visible_refresh = visible_refresh_outcome(
+        request_full_page_screener_reload_after_storage_filter_save(runtime).await,
+    );
 
     Ok(Some(json!({
         "source": SCREENER_SOURCE,
@@ -512,6 +536,14 @@ pub async fn screener_filters_clear(
     validate_screener_filter_clear(dry_run, confirm_clear)?;
 
     let mut session = ScreenerMutationSession::open(runtime).await?;
+    let result = filters_clear_in_session(&mut session, dry_run).await;
+    session.finish(result).await
+}
+
+async fn filters_clear_in_session(
+    session: &mut ScreenerMutationSession<'_, impl RuntimeEvaluator>,
+    dry_run: bool,
+) -> Result<Value, AppError> {
     let before_state = read_screener_state(session.runtime, None).await?;
     ensure_dialog_open(&before_state)?;
     let before_filters = filter_targets_from_state(&before_state);
@@ -521,8 +553,6 @@ pub async fn screener_filters_clear(
         .collect::<Vec<_>>();
 
     if dry_run {
-        let close_result = session.restore().await;
-        close_result?;
         return Ok(json!({
             "source": SCREENER_SOURCE,
             "action": "filters_clear",
@@ -549,7 +579,9 @@ pub async fn screener_filters_clear(
     let save_result =
         save_screener_storage_filters(session.runtime, &before_config, &expected_after_filters)
             .await?;
-    let after_config = fetch_active_screener_storage_config(session.runtime, &screen_title).await?;
+    let after_config = fetch_active_screener_storage_config(session.runtime, &screen_title)
+        .await
+        .map_err(|error| uncertain_write_error(error, "save_result", &save_result))?;
     let after_storage_filters = storage_filters_from_config(&after_config, &[]);
     if !storage_filter_order_matches(&after_storage_filters, &expected_after_filters) {
         return Err(AppError::new(
@@ -565,14 +597,15 @@ pub async fn screener_filters_clear(
             "save_result": save_result,
         })));
     }
-    let visible_refresh = refresh_full_page_screener_after_storage_filter_save(
-        session.runtime,
-        &before_state,
-        expected_after_filters.len(),
-    )
-    .await?;
-    let close_result = session.restore().await;
-    close_result?;
+    session.write_confirmed = true;
+    let visible_refresh = visible_refresh_outcome(
+        refresh_full_page_screener_after_storage_filter_save(
+            session.runtime,
+            &before_state,
+            expected_after_filters.len(),
+        )
+        .await,
+    );
 
     Ok(json!({
         "source": SCREENER_SOURCE,
@@ -689,6 +722,16 @@ async fn save_screener_storage_filters(
         )
         .with_details(result))
     }
+}
+
+fn visible_refresh_outcome(result: Result<Value, AppError>) -> Value {
+    result.unwrap_or_else(|_| {
+        json!({
+            "requested": true,
+            "confirmed": false,
+            "reason": "refresh_failed",
+        })
+    })
 }
 
 async fn refresh_full_page_screener_after_storage_filter_save(
@@ -1486,6 +1529,7 @@ mod tests {
     use serde_json::{Value, json};
 
     use super::super::super::test_support::FakeRuntime;
+    use super::super::engine::runtime_failing_at_call;
     use super::super::validation::{
         validate_screener_filter_add_request, validate_screener_filter_modify_request,
     };
@@ -2263,5 +2307,276 @@ mod tests {
         assert!(runtime.evaluated.iter().any(|(expression, _)| {
             expression.contains("\"filters\":[]") || expression.contains("\"filters\": []")
         }));
+    }
+
+    fn ambiguous_filters_state() -> Value {
+        json!({
+            "button_found": true,
+            "open": true,
+            "filters": [
+                { "index": 0, "text": "Price", "data_name": "screener-filter-pill-price", "visible": true },
+                { "index": 1, "text": "Price EMA", "data_name": "screener-filter-pill-price_ema", "visible": true }
+            ],
+            "filter_count": 2
+        })
+    }
+
+    fn filter_remove_write_steps() -> Vec<Value> {
+        vec![
+            json!({ "button_found": true, "open": false }),
+            json!({ "button_found": true, "open": true }),
+            json!({
+                "button_found": true,
+                "open": true,
+                "screen_title": "CLI-Test1",
+                "filters": [
+                    { "index": 0, "text": "Market cap", "data_name": "screener-filter-pill-market_cap", "visible": true },
+                    { "index": 1, "text": "PER", "data_name": "screener-filter-pill-pe", "visible": true }
+                ],
+                "filter_count": 2
+            }),
+            storage_config_with_filters(
+                "CLI-Test1",
+                vec![],
+                vec![
+                    storage_filter("market_cap"),
+                    storage_filter("price_earnings_ttm"),
+                ],
+            ),
+            json!({ "saved": true, "screen_id": "screen-test", "filter_count": 1 }),
+            storage_config_with_filters("CLI-Test1", vec![], vec![storage_filter("market_cap")]),
+        ]
+    }
+
+    #[tokio::test]
+    async fn screener_filters_remove_restores_opened_panel_for_ambiguous_target() {
+        let mut runtime = FakeRuntime::new([
+            json!({ "button_found": true, "open": false }),
+            json!({ "button_found": true, "open": true }),
+            ambiguous_filters_state(),
+            json!({ "button_found": true, "open": true }),
+            json!({ "button_found": true, "open": false }),
+        ]);
+
+        let error = screener_filters_remove(
+            &mut runtime,
+            ScreenerFilterSelector::Text("price".to_string()),
+            true,
+        )
+        .await
+        .unwrap_err();
+
+        assert_eq!(error.kind, ErrorKind::Validation);
+        assert_eq!(runtime.evaluated.len(), 5);
+        assert_eq!(runtime.key_events.len(), 2);
+    }
+
+    #[tokio::test]
+    async fn screener_filters_remove_leaves_existing_panel_open_after_failure() {
+        let mut runtime = FakeRuntime::new([
+            json!({ "button_found": true, "open": true }),
+            ambiguous_filters_state(),
+        ]);
+
+        let error = screener_filters_remove(
+            &mut runtime,
+            ScreenerFilterSelector::Text("price".to_string()),
+            true,
+        )
+        .await
+        .unwrap_err();
+
+        assert_eq!(error.kind, ErrorKind::Validation);
+        assert_eq!(runtime.evaluated.len(), 2);
+        assert!(runtime.key_events.is_empty());
+    }
+
+    #[tokio::test]
+    async fn screener_filters_remove_prefers_operation_error_over_close_failure() {
+        let mut runtime = FakeRuntime::new([
+            json!({ "button_found": true, "open": false }),
+            json!({ "button_found": true, "open": true }),
+            ambiguous_filters_state(),
+            json!({ "button_found": true, "open": true }),
+            json!({ "button_found": true, "open": true }),
+        ]);
+
+        let error = screener_filters_remove(
+            &mut runtime,
+            ScreenerFilterSelector::Text("price".to_string()),
+            true,
+        )
+        .await
+        .unwrap_err();
+
+        assert_eq!(error.kind, ErrorKind::Validation);
+        assert_eq!(runtime.key_events.len(), 2);
+    }
+
+    #[tokio::test]
+    async fn screener_filters_remove_attempts_restore_after_each_failed_step() {
+        let steps = filter_remove_write_steps();
+
+        for call in 2..steps.len() {
+            let mut runtime = runtime_failing_at_call(&steps, call);
+
+            let error =
+                screener_filters_remove(&mut runtime, ScreenerFilterSelector::Index(1), false)
+                    .await
+                    .unwrap_err();
+
+            assert_eq!(error.kind, ErrorKind::Connection, "failing call {call}");
+            assert_eq!(runtime.key_events.len(), 2, "failing call {call}");
+        }
+    }
+
+    #[tokio::test]
+    async fn screener_filters_remove_reports_cleanup_failure_after_confirmed_write() {
+        let mut steps = filter_remove_write_steps();
+        steps.push(json!({ "button_found": true, "open": true }));
+        steps.push(json!({ "button_found": true, "open": true }));
+        let mut runtime = FakeRuntime::new(steps);
+
+        let result = screener_filters_remove(&mut runtime, ScreenerFilterSelector::Index(1), false)
+            .await
+            .unwrap();
+
+        assert_eq!(result["removed"], true);
+        assert_eq!(result["cleanup"]["restored"], false);
+        assert_eq!(
+            result["cleanup"]["error"],
+            json!({
+                "kind": "internal_api_unavailable",
+                "message": "Stock Screener dialog did not close after Escape",
+            })
+        );
+    }
+
+    #[tokio::test]
+    async fn screener_filters_remove_omits_cleanup_after_successful_restore() {
+        let mut steps = filter_remove_write_steps();
+        steps.push(json!({ "button_found": true, "open": true }));
+        steps.push(json!({ "button_found": true, "open": false }));
+        let mut runtime = FakeRuntime::new(steps);
+
+        let result = screener_filters_remove(&mut runtime, ScreenerFilterSelector::Index(1), false)
+            .await
+            .unwrap();
+
+        assert_eq!(result["removed"], true);
+        assert!(result.get("cleanup").is_none());
+    }
+
+    #[tokio::test]
+    async fn screener_filters_remove_dry_run_keeps_close_failure_as_error() {
+        let mut runtime = FakeRuntime::new([
+            json!({ "button_found": true, "open": false }),
+            json!({ "button_found": true, "open": true }),
+            ambiguous_filters_state(),
+            json!({ "button_found": true, "open": true }),
+            json!({ "button_found": true, "open": true }),
+        ]);
+
+        let error = screener_filters_remove(&mut runtime, ScreenerFilterSelector::Index(0), true)
+            .await
+            .unwrap_err();
+
+        assert_eq!(error.kind, ErrorKind::InternalApiUnavailable);
+        assert_eq!(
+            error.message,
+            "Stock Screener dialog did not close after Escape"
+        );
+    }
+
+    #[tokio::test]
+    async fn screener_filters_remove_reports_uncertain_write_when_readback_fails() {
+        let steps = filter_remove_write_steps();
+        let mut runtime = runtime_failing_at_call(&steps, 5);
+
+        let error = screener_filters_remove(&mut runtime, ScreenerFilterSelector::Index(1), false)
+            .await
+            .unwrap_err();
+
+        assert_eq!(error.kind, ErrorKind::Connection);
+        let details = error.details.unwrap();
+        assert_eq!(details["write_outcome"], "uncertain");
+        assert_eq!(details["save_result"]["saved"], true);
+        assert_eq!(runtime.key_events.len(), 2);
+    }
+
+    #[tokio::test]
+    async fn screener_filters_remove_failed_save_is_not_uncertain() {
+        let steps = filter_remove_write_steps();
+        let mut runtime = runtime_failing_at_call(&steps, 4);
+
+        let error = screener_filters_remove(&mut runtime, ScreenerFilterSelector::Index(1), false)
+            .await
+            .unwrap_err();
+
+        assert_eq!(error.kind, ErrorKind::Connection);
+        assert!(error.details.is_none());
+    }
+
+    #[tokio::test]
+    async fn screener_filters_remove_reports_failed_refresh_after_confirmed_write() {
+        let steps = filter_remove_write_steps();
+        let mut steps = steps[2..].to_vec();
+        steps[0]["button_found"] = json!(false);
+        steps.insert(0, json!({ "button_found": false, "open": true }));
+        let mut runtime =
+            FakeRuntime::new(steps).with_evaluate_error_at_call(5, ErrorKind::Connection);
+
+        let result = screener_filters_remove(&mut runtime, ScreenerFilterSelector::Index(1), false)
+            .await
+            .unwrap();
+
+        assert_eq!(result["removed"], true);
+        assert_eq!(
+            result["visible_refresh"],
+            json!({ "requested": true, "confirmed": false, "reason": "refresh_failed" })
+        );
+    }
+
+    #[tokio::test]
+    async fn screener_filters_add_closes_popups_before_restoring_after_failure() {
+        let mut runtime = FakeRuntime::new([
+            json!({ "button_found": true, "open": false }),
+            json!({ "button_found": true, "open": true }),
+            json!({ "button_found": true, "open": true, "filter_count": 0 }),
+            json!({ "opened": true, "input_found": true }),
+            json!({ "closed": true }),
+            json!({ "button_found": true, "open": true }),
+            json!({ "button_found": true, "open": false }),
+        ])
+        .with_evaluate_error_at_call(4, ErrorKind::Connection);
+        let request = validate_screener_filter_add_request("RSI", Some(70.0), None, true).unwrap();
+
+        let error = screener_filters_add(&mut runtime, request)
+            .await
+            .unwrap_err();
+
+        assert_eq!(error.kind, ErrorKind::Connection);
+        assert!(runtime.evaluated[5].0.contains("return { closed: true };"));
+        assert_eq!(runtime.evaluated.len(), 8);
+        assert_eq!(runtime.key_events.len(), 2);
+    }
+
+    #[tokio::test]
+    async fn screener_filters_modify_restores_panel_when_read_after_open_fails() {
+        let steps = [
+            json!({ "button_found": true, "open": false }),
+            json!({ "button_found": true, "open": true }),
+        ];
+        let mut runtime = runtime_failing_at_call(&steps, 2);
+        let request =
+            validate_screener_filter_modify_request(Some(0), None, None, None, Some("Above"), true)
+                .unwrap();
+
+        let error = screener_filters_modify(&mut runtime, request)
+            .await
+            .unwrap_err();
+
+        assert_eq!(error.kind, ErrorKind::Connection);
+        assert_eq!(runtime.key_events.len(), 2);
     }
 }
