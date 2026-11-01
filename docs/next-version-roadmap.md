@@ -5,6 +5,32 @@ sources explicit and distinguish confirmed writes, failed preflight checks and
 uncertain outcomes. Public contracts belong in the [CLI specification](cli-spec.md)
 and [Rust API reference](rust-api.md), rather than in execution logs.
 
+## Next release: Screener outcome reliability
+
+A Screener mutation must report what happened to saved data and what happened to
+the temporary UI as separate facts. Today a failure to close the panel can replace
+the result of a confirmed write, and input errors can leave a panel open that the
+command opened. Retrying after such a report can repeat a write, so this comes
+before performance and structural work.
+
+The release keeps cleanup best effort. It does not roll back saved changes, resend
+failed writes or close a panel the command did not open. Any change to the result
+of a confirmed write is a public contract change and needs agreed before/after
+examples first.
+
+Two smaller changes can accompany it because each is independent and useful alone:
+removing Screener JavaScript that an expression cannot reach, and reusing HTTP
+connections across `watch compare` polls. Neither claims a speedup without
+measurement, and the connection change must not delay the Screener work.
+Documentation also moves to the implemented bars deadlines; the behavior stays.
+Order and acceptance are in the [work inventory](next-version-work-items.md).
+
+## Later structural work
+
+Change bars deadlines, move Screener JavaScript into standalone files, or restructure
+snapshot and compare only when the inventory's stated condition is met. File size
+alone is not a reason to split code.
+
 ## Remaining alert work
 
 Indicator creation binds its readback to the response ID and compares the saved
