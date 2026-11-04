@@ -295,10 +295,15 @@ and cannot see `--verbose`. Two consequences are load-bearing:
 
 ## Integration test organization
 
-Large CLI contract suites should be split by command family. Keep shared
-integration-test helpers under `crates/cli/tests/support/`, keep root-level
-CLI contracts in `cli_contract.rs`, and add focused `cli_contract_*` test
-targets when a command family grows.
+Integration tests live in two test binaries, so a build links each once. CLI
+contract suites are modules of `crates/cli/tests/cli_contract/`, split by command
+family, with shared helpers in its `support.rs` and root-level contracts in
+`general.rs`. Live smokes, capability probes and their helper fixtures are
+modules of `crates/cli/tests/live/`. Add a module, not a new test target, when a
+family grows. Select a suite with a module filter such as `quote::`; an ignored
+live smoke panics without its environment gate, so always filter `--ignored`
+runs of `live`. `build_provenance` stays separate because it includes the build
+script.
 
 ## JavaScript and TradingView safety
 
@@ -325,7 +330,7 @@ Operation unit tests should live next to the module they verify under
 `#[cfg(test)]`. They must use fake runtime evaluators and must not require a
 running TradingView Desktop.
 
-CLI contract tests belong under `crates/cli/tests/cli_contract.rs`. They should
+CLI contract tests belong under `crates/cli/tests/cli_contract/`. They should
 cover argument parsing, structured connection errors, validation errors, and
 public command shape.
 
@@ -358,7 +363,7 @@ only and must not become CI requirements. For chart-source quote endurance
 checks, build the CLI and run:
 
 ```bash
-TV_LIVE_CHART_QUOTE_SMOKE=1 cargo test -p tradingview-cli --test live_chart_quote -- --ignored --nocapture
+TV_LIVE_CHART_QUOTE_SMOKE=1 cargo test -p tradingview-cli --test live chart_quote:: -- --ignored --nocapture
 ```
 
 Optional environment variables:
@@ -379,7 +384,7 @@ For Desktop quote-session extended-hours evidence checks, run this only during
 the relevant market phase:
 
 ```bash
-TV_LIVE_QUOTE_SESSION_SMOKE=1 TV_LIVE_QUOTE_SESSION_EXPECT_PHASE=postmarket cargo test -p tradingview-cli --test live_quote_session_extended_hours -- --ignored --nocapture
+TV_LIVE_QUOTE_SESSION_SMOKE=1 TV_LIVE_QUOTE_SESSION_EXPECT_PHASE=postmarket cargo test -p tradingview-cli --test live quote_session_extended_hours:: -- --ignored --nocapture
 ```
 
 Do not run the postmarket or premarket smoke early and treat the result as
@@ -412,7 +417,7 @@ field summaries and must not become a CI requirement.
 For explicit Desktop quote-data source contract checks, run:
 
 ```bash
-TV_LIVE_QUOTE_DATA_SMOKE=1 cargo test -p tradingview-cli --test live_quote_data_source -- --ignored --nocapture
+TV_LIVE_QUOTE_DATA_SMOKE=1 cargo test -p tradingview-cli --test live quote_data_source:: -- --ignored --nocapture
 ```
 
 Optional environment variables:
@@ -444,13 +449,13 @@ TV_LIVE_QUOTE_DATA_SMOKE=1 \
   TV_LIVE_QUOTE_DATA_EXPECT_PHASE=premarket \
   TV_LIVE_QUOTE_DATA_SYMBOL=NASDAQ:RKLB \
   TV_LIVE_QUOTE_DATA_ALLOW_UNAVAILABLE=1 \
-  cargo test -p tradingview-cli --test live_quote_data_source -- --ignored --nocapture
+  cargo test -p tradingview-cli --test live quote_data_source:: -- --ignored --nocapture
 ```
 
 For chart-source quote concurrency checks, run:
 
 ```bash
-TV_LIVE_CHART_QUOTE_CONCURRENCY_SMOKE=1 cargo test -p tradingview-cli --test live_chart_quote_concurrency -- --ignored --nocapture
+TV_LIVE_CHART_QUOTE_CONCURRENCY_SMOKE=1 cargo test -p tradingview-cli --test live chart_quote_concurrency:: -- --ignored --nocapture
 ```
 
 Optional environment variables:
@@ -472,7 +477,7 @@ public-safe summary fields only and must not become a CI requirement.
 For `tv observe chart` JSONL contract checks, run:
 
 ```bash
-TV_LIVE_OBSERVE_CHART_SMOKE=1 cargo test -p tradingview-cli --test live_observe_chart -- --ignored --nocapture
+TV_LIVE_OBSERVE_CHART_SMOKE=1 cargo test -p tradingview-cli --test live observe_chart:: -- --ignored --nocapture
 ```
 
 Optional environment variables:
@@ -511,7 +516,7 @@ For bounded Desktop-free watch compare contract checks, run:
 
 ```bash
 cargo test -p tradingview-cli watch -- --nocapture
-cargo test -p tradingview-cli --test cli_contract_quote watch -- --nocapture
+cargo test -p tradingview-cli --test cli_contract quote::watch -- --nocapture
 ```
 
 `tv watch compare <SYMBOL>...` emits JSONL readiness, sample, heartbeat, and
@@ -572,7 +577,7 @@ tracked docs.
 For `tv snapshot <SYMBOL>` live contract checks, run:
 
 ```bash
-TV_LIVE_SNAPSHOT_SMOKE=1 cargo test -p tradingview-cli --test live_snapshot -- --ignored --nocapture
+TV_LIVE_SNAPSHOT_SMOKE=1 cargo test -p tradingview-cli --test live snapshot:: -- --ignored --nocapture
 ```
 
 Optional environment variables:
@@ -593,7 +598,7 @@ output or live response payloads into tracked docs.
 For `tv compare <SYMBOL>...` live contract checks, run:
 
 ```bash
-TV_LIVE_COMPARE_SMOKE=1 cargo test -p tradingview-cli --test live_compare -- --ignored --nocapture
+TV_LIVE_COMPARE_SMOKE=1 cargo test -p tradingview-cli --test live compare:: -- --ignored --nocapture
 ```
 
 Optional environment variables:
@@ -622,7 +627,7 @@ thresholds.
 For `tv bars` WebSocket contract evidence checks, run:
 
 ```bash
-TV_LIVE_BARS_SMOKE=1 cargo test -p tradingview-cli --test live_bars -- --ignored --nocapture
+TV_LIVE_BARS_SMOKE=1 cargo test -p tradingview-cli --test live bars:: -- --ignored --nocapture
 ```
 
 Optional environment variables:
@@ -649,7 +654,7 @@ stores. Run them without provider access or native Keychain reads:
 
 ```bash
 cargo test -p tradingview-mcp -p tradingview-model
-cargo test -p tradingview-cli --test cli_contract_mcp
+cargo test -p tradingview-cli --test cli_contract mcp::
 cargo run -p tradingview-mcp --example connection_proof -- --local-admission
 ```
 
@@ -876,7 +881,7 @@ CI and release qualification install this test-only package; the binary embeds
 schemas and has no Python or schema-validator runtime dependency. The gate uses
 one Cargo job/test thread locally and is ignored in the ordinary Rust suite.
 
-For offline invocation changes, run `cli_contract_offline`, the `app::validate`
+For offline invocation changes, run the `cli_contract` `offline::` tests, the `app::validate`
 unit tests, and affected execution-contract tests. Shared request preparation
 must preserve execution error ordering. Candidate parsing uses clap without
 calling dispatch; do not use speculative connections, file reads or credential

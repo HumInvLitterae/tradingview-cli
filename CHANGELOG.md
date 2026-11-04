@@ -29,6 +29,10 @@ package version omits the leading `v`.
 - Contributors can build and test with the opt-in `agent` Cargo profile
   (`--profile agent`), which keeps line tables but drops full debug info to
   reduce build memory. Ordinary `dev` builds are unchanged.
+- Integration tests build as three test binaries instead of 26: CLI contract
+  suites are modules of `cli_contract` and live smokes of `live`, so a build
+  links each once. Select a suite with a module filter, such as `--test live
+  bars:: -- --ignored`.
 
 ### Fixed
 

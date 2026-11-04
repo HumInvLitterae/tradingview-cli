@@ -8,8 +8,8 @@ from required_tests import run_required_tests
 
 EXPECTED_NODE_VERSION = "v24.21.0"
 TEST_NAMES = [
-    "javascript_three_point_probe_contract_is_bounded_and_verified",
-    "javascript_three_point_production_contract_is_bounded_and_verified",
+    "three_point_drawing_capability::javascript_three_point_probe_contract_is_bounded_and_verified",
+    "three_point_drawing_capability::javascript_three_point_production_contract_is_bounded_and_verified",
 ]
 
 
@@ -46,7 +46,7 @@ def main() -> int:
                 "-p",
                 "tradingview-cli",
                 "--test",
-                "live_three_point_drawing_capability",
+                "live",
                 test_name,
                 "--",
                 "--ignored",
