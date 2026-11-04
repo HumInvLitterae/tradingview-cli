@@ -90,7 +90,9 @@ impl<'a, R: RuntimeEvaluator> ScreenerMutationSession<'a, R> {
 
 /// Opens the panel for a command that found it closed. A failed open request
 /// may still have opened it, so the panel is closed again when it is visible.
-async fn open_panel_or_close_again(runtime: &mut impl RuntimeEvaluator) -> Result<(), AppError> {
+pub(super) async fn open_panel_or_close_again(
+    runtime: &mut impl RuntimeEvaluator,
+) -> Result<(), AppError> {
     if let Err(error) = screener_open(runtime).await {
         let _ = screener_close(runtime).await;
         return Err(error);
@@ -247,7 +249,11 @@ async fn fetch_screener_storage_config(
                         encodeURIComponent(screenerKey) + '&version=' + encodeURIComponent(version);
                     var response = await fetch(url, {{ credentials: 'include' }});
                     var body = await response.json().catch(function() {{ return null; }});
-                    if (!response.ok || !body || typeof body !== 'object' || Array.isArray(body)) {{
+                    var bodyValid = !!body && typeof body === 'object' && !Array.isArray(body) &&
+                        ['filters', 'default_custom_column_set'].every(function(key) {{
+                            return body[key] === undefined || body[key] === null || Array.isArray(body[key]);
+                        }});
+                    if (!response.ok || !bodyValid) {{
                         return {{
                             storage_available: true,
                             fetch_ok: false,

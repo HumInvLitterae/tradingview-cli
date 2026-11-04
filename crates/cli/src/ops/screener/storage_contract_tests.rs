@@ -176,6 +176,14 @@ const run = expression => eval(expression);
     const listBody = await run(activeGet);
     assert.equal(listBody.fetch_ok, false);
     assert.equal(listBody.reason, 'screen_body_invalid');
+    for (const key of ['filters', 'default_custom_column_set']) {
+        respond(200, { id: 'scr/1', title: 'Visible', [key]: {} });
+        const wrongType = await run(activeGet);
+        assert.equal(wrongType.fetch_ok, false, key);
+        assert.equal(wrongType.reason, 'screen_body_invalid', key);
+        respond(200, { id: 'scr/1', title: 'Visible', [key]: null });
+        assert.equal((await run(activeGet)).fetch_ok, true, key);
+    }
 
     const body = {
         id: 'scr/1',

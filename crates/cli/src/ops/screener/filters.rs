@@ -9,9 +9,9 @@ use super::{
     engine::{
         SCREENER_SOURCE, ScreenerMutationSession, dispatch_screen_menu_click, ensure_dialog_open,
         expanded_expression, fetch_active_screener_storage_config,
-        fetch_current_screener_storage_config, read_screener_state, read_screener_with_restore,
-        require_active_screen_title, screener_click_point, screener_click_point_from_value,
-        unanswered_write_error, uncertain_write_error, value_bool,
+        fetch_current_screener_storage_config, open_panel_or_close_again, read_screener_state,
+        read_screener_with_restore, require_active_screen_title, screener_click_point,
+        screener_click_point_from_value, unanswered_write_error, uncertain_write_error, value_bool,
     },
     validation::{
         ScreenerFilterAddRequest, ScreenerFilterModifyMode, ScreenerFilterModifyRequest,
@@ -294,7 +294,7 @@ async fn filters_modify_in_session(
         initial_state
     } else {
         if !session.restored_open_state {
-            super::state::screener_open(session.runtime).await?;
+            open_panel_or_close_again(session.runtime).await?;
             session.opened_for_mutation = true;
         }
         read_screener_state(session.runtime, None).await?
@@ -2637,6 +2637,24 @@ mod tests {
                 { "result": { "closed": false }, "keys": 3, "events": ["keydown:Escape", "keyup:Escape"] }
             ])
         );
+    }
+
+    #[tokio::test]
+    async fn screener_filters_modify_closes_a_panel_whose_open_request_got_no_answer() {
+        // The open request fails, yet the next state read finds the panel open.
+        let steps = [json!({ "button_found": true, "open": false })];
+        let mut runtime = runtime_failing_at_call(&steps, 1);
+        let request =
+            validate_screener_filter_modify_request(Some(0), None, None, None, Some("Above"), true)
+                .unwrap();
+
+        let error = screener_filters_modify(&mut runtime, request)
+            .await
+            .unwrap_err();
+
+        assert_eq!(error.kind, ErrorKind::Connection);
+        assert_eq!(runtime.evaluated.len(), 4);
+        assert_eq!(runtime.key_events.len(), 2);
     }
 
     #[tokio::test]

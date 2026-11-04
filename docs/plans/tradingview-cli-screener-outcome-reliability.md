@@ -127,8 +127,10 @@ values and the `screener` command name were checked against the current code.
 - A storage save or delete whose evaluation times out, loses its connection or
   throws adds `write_outcome` without a result, because the request may have
   reached the provider. A refused request does not.
-- A readback whose response is successful but unreadable counts as a failed
-  readback, so it cannot confirm a delete or remove from an empty list.
+- A readback whose response is successful but cannot be read in full counts as a
+  failed readback: a malformed body, filters or columns present but not lists, or
+  list entries dropped for a missing id or title. It cannot confirm a delete or
+  remove from a list that lost entries.
 - If the request that opens the panel gets no answer, the command closes the panel
   when it is visible and returns the open error.
 - `filters add` stops sending Escape to its add-filter popup once the popup is gone.

@@ -15,8 +15,8 @@ use super::{
     },
 };
 use tradingview_model::screener::columns::{
-    ScreenerStorageColumnTarget, add_storage_column, column_targets_from_state,
-    column_targets_payload, ensure_storage_column_index,
+    ScreenerColumnTarget, ScreenerStorageColumnTarget, add_storage_column,
+    column_targets_from_state, column_targets_payload, ensure_storage_column_index,
     ensure_test_screener_screen_for_column_mutation, remove_storage_column,
     reorder_storage_columns, resolve_column_target, storage_column_order_matches,
     storage_column_target_payload, storage_column_targets_payload, storage_column_update_payload,
@@ -34,6 +34,29 @@ pub async fn screener_columns_list(runtime: &mut impl RuntimeEvaluator) -> Resul
         "column_count": columns.len(),
         "columns": columns,
     }))
+}
+
+/// Reads the stored column set for a mutation. A row the parser cannot read
+/// would otherwise vanish from the set, so a remove could confirm itself from
+/// it and a save could drop it from storage.
+fn complete_storage_columns(
+    config: &Value,
+    visible_columns: &[ScreenerColumnTarget],
+) -> Result<Vec<ScreenerStorageColumnTarget>, AppError> {
+    let columns = storage_columns_from_config(config, visible_columns);
+    let stored_count = config.get("column_count").and_then(Value::as_u64);
+    if stored_count != u64::try_from(columns.len()).ok() {
+        return Err(AppError::new(
+            ErrorKind::InternalApiUnavailable,
+            "Screener storage columns included entries that could not be read",
+        )
+        .with_details(json!({
+            "reason": "storage_columns_incomplete",
+            "column_count": stored_count,
+            "readable_column_count": columns.len(),
+        })));
+    }
+    Ok(columns)
 }
 
 pub async fn screener_columns_config(
@@ -104,7 +127,7 @@ pub async fn screener_columns_remove(
     let visible_target = resolve_column_target(&visible_columns, &selector)?;
     let screen_title = require_active_screen_title(&before_state)?;
     let before_config = fetch_active_screener_storage_config(runtime, &screen_title).await?;
-    let before_columns = storage_columns_from_config(&before_config, &visible_columns);
+    let before_columns = complete_storage_columns(&before_config, &visible_columns)?;
     ensure_storage_column_index(&before_columns, visible_target.index)?;
     let target = before_columns[visible_target.index].clone();
     let expected_after_columns = remove_storage_column(&before_columns, target.index);
@@ -132,7 +155,8 @@ pub async fn screener_columns_remove(
     let after_config = fetch_active_screener_storage_config(runtime, &screen_title)
         .await
         .map_err(|error| uncertain_write_error(error, "save_result", &save_result))?;
-    let after_columns = storage_columns_from_config(&after_config, &visible_columns);
+    let after_columns = complete_storage_columns(&after_config, &visible_columns)
+        .map_err(|error| uncertain_write_error(error, "save_result", &save_result))?;
     if !storage_column_order_matches(&after_columns, &expected_after_columns) {
         return Err(AppError::new(
             ErrorKind::InternalApiUnavailable,
@@ -174,7 +198,7 @@ pub async fn screener_columns_add(
     let visible_columns = column_targets_from_state(&before_state);
     let screen_title = require_active_screen_title(&before_state)?;
     let before_config = fetch_active_screener_storage_config(runtime, &screen_title).await?;
-    let before_columns = storage_columns_from_config(&before_config, &visible_columns);
+    let before_columns = complete_storage_columns(&before_config, &visible_columns)?;
     let expected_after_columns = add_storage_column(&before_columns, &request)?;
     let inserted_index = request
         .after_index
@@ -207,7 +231,8 @@ pub async fn screener_columns_add(
     let after_config = fetch_active_screener_storage_config(runtime, &screen_title)
         .await
         .map_err(|error| uncertain_write_error(error, "save_result", &save_result))?;
-    let after_columns = storage_columns_from_config(&after_config, &visible_columns);
+    let after_columns = complete_storage_columns(&after_config, &visible_columns)
+        .map_err(|error| uncertain_write_error(error, "save_result", &save_result))?;
     if !storage_column_order_matches(&after_columns, &expected_after_columns) {
         return Err(AppError::new(
             ErrorKind::InternalApiUnavailable,
@@ -254,7 +279,7 @@ pub async fn screener_columns_reorder(
     let visible_columns = column_targets_from_state(&before_state);
     let screen_title = require_active_screen_title(&before_state)?;
     let before_config = fetch_active_screener_storage_config(runtime, &screen_title).await?;
-    let before_columns = storage_columns_from_config(&before_config, &visible_columns);
+    let before_columns = complete_storage_columns(&before_config, &visible_columns)?;
     ensure_storage_column_index(&before_columns, from_index)?;
     ensure_storage_column_index(&before_columns, to_index)?;
     let target = before_columns[from_index].clone();
@@ -285,7 +310,8 @@ pub async fn screener_columns_reorder(
     let after_config = fetch_active_screener_storage_config(runtime, &screen_title)
         .await
         .map_err(|error| uncertain_write_error(error, "save_result", &save_result))?;
-    let after_columns = storage_columns_from_config(&after_config, &visible_columns);
+    let after_columns = complete_storage_columns(&after_config, &visible_columns)
+        .map_err(|error| uncertain_write_error(error, "save_result", &save_result))?;
     if !storage_column_order_matches(&after_columns, &expected_after_columns) {
         return Err(AppError::new(
             ErrorKind::InternalApiUnavailable,
@@ -579,6 +605,7 @@ mod tests {
                 "default_custom_column_set": columns,
                 "filters": []
             },
+            "column_count": columns.len(),
             "columns": columns
         })
     }
@@ -1072,6 +1099,68 @@ mod tests {
         let details = error.details.unwrap();
         assert_eq!(details["write_outcome"], "uncertain");
         assert_eq!(details["save_result"]["saved"], true);
+    }
+
+    #[tokio::test]
+    async fn screener_columns_remove_does_not_confirm_from_a_set_with_unreadable_entries() {
+        let mut runtime = FakeRuntime::new([
+            json!({
+                "button_found": true,
+                "open": true,
+                "screen_title": "CLI-Test1",
+                "columns": ["Symbol", "Price", "Change %"],
+                "column_count": 3
+            }),
+            storage_config(
+                "CLI-Test1",
+                vec![
+                    storage_column("TickerUniversal"),
+                    storage_column("Price"),
+                    storage_column("Change"),
+                ],
+            ),
+            json!({ "saved": true, "screen_id": "screen-test", "column_count": 2 }),
+            // The removed column is still stored, but without a readable id.
+            storage_config(
+                "CLI-Test1",
+                vec![
+                    storage_column("TickerUniversal"),
+                    storage_column("Price"),
+                    json!({ "params": {} }),
+                ],
+            ),
+        ]);
+
+        let error = screener_columns_remove(&mut runtime, ScreenerColumnSelector::Index(2), false)
+            .await
+            .unwrap_err();
+
+        assert_eq!(error.kind, ErrorKind::InternalApiUnavailable);
+        let details = error.details.unwrap();
+        assert_eq!(details["write_outcome"], "uncertain");
+        assert_eq!(details["reason"], "storage_columns_incomplete");
+        assert_eq!(details["save_result"]["saved"], true);
+    }
+
+    #[tokio::test]
+    async fn screener_columns_remove_refuses_to_save_over_unreadable_entries() {
+        let mut runtime = FakeRuntime::new([
+            json!({ "button_found": true, "open": true, "screen_title": "CLI-Test1", "columns": ["Symbol", "Price"] }),
+            storage_config(
+                "CLI-Test1",
+                vec![storage_column("TickerUniversal"), json!({ "id": "" })],
+            ),
+        ]);
+
+        let error = screener_columns_remove(&mut runtime, ScreenerColumnSelector::Index(0), false)
+            .await
+            .unwrap_err();
+
+        assert_eq!(
+            error.details.unwrap()["reason"],
+            "storage_columns_incomplete"
+        );
+        assert_eq!(runtime.evaluated.len(), 2);
     }
 
     #[tokio::test]

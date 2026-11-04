@@ -995,8 +995,9 @@ Other close failures remain errors.
 A delete whose readback fails adds `details.write_outcome: "uncertain"` and
 `details.delete_result`. A delete request that times out, loses its connection
 or throws before an answer adds only `details.write_outcome: "uncertain"`.
-A list response that is not a readable list counts as a failed readback. A list
-that is read and still contains the screen is an error without `write_outcome`.
+A list response that is not a readable list, or that has an entry without an id
+or title, counts as a failed readback. A list that is read and still contains the
+screen's id or name is an error without `write_outcome`.
 Inspect storage before retrying.
 
 | Action | Execution boundary and evidence |
@@ -1046,8 +1047,9 @@ A write may complete before readback fails. Such errors add
 `details.write_outcome: "uncertain"` and `details.save_result`. A save request
 that times out, loses its connection or throws before an answer may also have
 been applied, so it adds only `details.write_outcome: "uncertain"`. A readback
-response that is not a readable screen document counts as a failed readback. A
-readback that is read but does not match the request, and a save the provider
+response that is not a readable screen document, or whose column set has an
+entry without an id, counts as a failed readback; before a write, such a set is
+refused. A readback that is read but does not match the request, and a save the provider
 refuses, are errors without `write_outcome`. Inspect current
 storage before retrying, especially add, which can insert duplicates. These are account-setting
 changes, not temporary display toggles. Official MCP does not edit these saved
@@ -1112,8 +1114,9 @@ and `details.save_result`. A save request that times out, loses its connection
 or throws before an answer adds only `details.write_outcome: "uncertain"`. A
 save the provider refuses carries its response and no `write_outcome`, and so
 does a readback that is read but does not match the request or a UI edit whose
-post-check fails. A readback response that is not a readable screen document
-counts as a failed readback.
+post-check fails. A readback response that is not a readable screen document,
+including one whose filters are present but not a list, counts as a failed
+readback.
 Official MCP can answer a suitable data-only query but does not edit these
 Desktop filters. Keep account settings and IDs private.
 

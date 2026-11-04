@@ -494,13 +494,13 @@ pub async fn screener_screens_delete(
 
     let _ = confirm_delete;
     let deleted = delete_screener_storage_screen(runtime, &target).await?;
-    let after_storage = fetch_screener_storage_screens(runtime, before_screen_title.as_deref())
+    let after_screens = fetch_screener_storage_screens(runtime, before_screen_title.as_deref())
         .await
+        .and_then(|storage| complete_screen_targets(&storage))
         .map_err(|error| uncertain_write_error(error, "delete_result", &deleted))?;
-    let after_screens = screen_targets_from_menu(&after_storage);
     if after_screens
         .iter()
-        .any(|screen| screen.name == target.name)
+        .any(|screen| screen.name == target.name || (target.id.is_some() && screen.id == target.id))
     {
         return Err(AppError::new(
             ErrorKind::InternalApiUnavailable,
@@ -782,6 +782,25 @@ async fn find_screen_name_dialog_submit_point(
         .with_details(result));
     }
     Ok(result)
+}
+
+/// Reads every listed screen, so an entry the parser cannot read is not taken
+/// as evidence that a deleted screen is gone.
+fn complete_screen_targets(storage: &Value) -> Result<Vec<ScreenerScreenTarget>, AppError> {
+    let screens = screen_targets_from_menu(storage);
+    let listed_count = storage.get("screen_count").and_then(Value::as_u64);
+    if listed_count != u64::try_from(screens.len()).ok() {
+        return Err(AppError::new(
+            ErrorKind::InternalApiUnavailable,
+            "Screener screen list included entries that could not be read",
+        )
+        .with_details(json!({
+            "reason": "custom_screens_incomplete",
+            "screen_count": listed_count,
+            "readable_screen_count": screens.len(),
+        })));
+    }
+    Ok(screens)
 }
 
 pub(super) async fn fetch_screener_storage_screens(
@@ -1715,6 +1734,7 @@ mod tests {
             json!({
                 "storage_available": true,
                 "fetch_ok": true,
+                "screen_count": 1,
                 "screens": [
                     { "index": 0, "id": "screen-1", "name": "CLI-Test1", "active": true, "owner": true, "shared": false }
                 ],
@@ -2164,6 +2184,66 @@ mod tests {
         assert_eq!(details["write_outcome"], "uncertain");
         assert_eq!(details["delete_result"]["deleted"], true);
         assert_eq!(details["reason"], "custom_screens_body_invalid");
+    }
+
+    fn delete_with_readback(after: Value) -> FakeRuntime {
+        FakeRuntime::new([
+            json!({ "button_found": true, "open": true, "screen_title": "CLI-Test1" }),
+            json!({
+                "storage_available": true,
+                "fetch_ok": true,
+                "screen_count": 2,
+                "screens": [
+                    { "index": 0, "id": "screen-1", "name": "CLI-Test1", "active": true, "owner": true, "shared": false },
+                    { "index": 1, "id": "screen-2", "name": "CLI-Test2", "active": false, "owner": true, "shared": false }
+                ]
+            }),
+            json!({ "deleted": true, "status": 204 }),
+            after,
+        ])
+    }
+
+    #[tokio::test]
+    async fn screener_screens_delete_does_not_confirm_from_a_list_with_unreadable_entries() {
+        // The list expression drops a row without a title but still counts it.
+        let mut runtime = delete_with_readback(json!({
+            "storage_available": true,
+            "fetch_ok": true,
+            "screen_count": 2,
+            "screens": [
+                { "index": 0, "id": "screen-1", "name": "CLI-Test1", "active": true, "owner": true, "shared": false }
+            ]
+        }));
+
+        let error = screener_screens_delete(&mut runtime, "CLI-Test2", false, true)
+            .await
+            .unwrap_err();
+
+        assert_eq!(error.kind, ErrorKind::InternalApiUnavailable);
+        let details = error.details.unwrap();
+        assert_eq!(details["write_outcome"], "uncertain");
+        assert_eq!(details["reason"], "custom_screens_incomplete");
+        assert_eq!(details["delete_result"]["deleted"], true);
+    }
+
+    #[tokio::test]
+    async fn screener_screens_delete_treats_a_remaining_id_as_still_present() {
+        let mut runtime = delete_with_readback(json!({
+            "storage_available": true,
+            "fetch_ok": true,
+            "screen_count": 2,
+            "screens": [
+                { "index": 0, "id": "screen-1", "name": "CLI-Test1", "active": true, "owner": true, "shared": false },
+                { "index": 1, "id": "screen-2", "name": "Renamed", "active": false, "owner": true, "shared": false }
+            ]
+        }));
+
+        let error = screener_screens_delete(&mut runtime, "CLI-Test2", false, true)
+            .await
+            .unwrap_err();
+
+        assert_eq!(error.message, "Screener screen still appears after delete");
+        assert!(error.details.unwrap().get("write_outcome").is_none());
     }
 
     #[tokio::test]
