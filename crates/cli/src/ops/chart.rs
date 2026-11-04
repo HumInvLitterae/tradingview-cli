@@ -380,6 +380,33 @@ mod tests {
     }
 
     #[tokio::test]
+    #[ignore = "run through `node scripts/check-js-contracts.mjs desktop`"]
+    async fn javascript_desktop_set_timeframe_passes_hostile_input_as_one_string() {
+        let timeframe = "D\"); window.bad = 1; (\"\n\u{2028}'`${x}";
+        let mut runtime = FakeRuntime::new([json!({})]);
+        let _ = set_timeframe(&mut runtime, timeframe).await;
+        let expression = serde_json::to_string(&runtime.evaluated[0].0).unwrap();
+        let result = crate::ops::test_support::run_node_json(&format!(
+            r#"
+            const expression = {expression};
+            const calls = [];
+            let resolution = 'D';
+            global.window = {{ TradingViewApi: {{ _activeChartWidgetWV: {{ value: () => ({{
+                setResolution: (value, options) => {{ calls.push([value, options]); resolution = value; }},
+                resolution: () => resolution
+            }}) }} }} }};
+            const result = eval(expression);
+            console.log(JSON.stringify({{ calls, result, bad: global.window.bad === 1 }}));
+            "#
+        ));
+
+        assert_eq!(result["calls"], json!([[timeframe, {}]]));
+        assert_eq!(result["bad"], false);
+        assert_eq!(result["result"]["requested_timeframe"], timeframe);
+        assert_eq!(result["result"]["chart_ready"], true);
+    }
+
+    #[tokio::test]
     async fn current_chart_type_returns_runtime_payload() {
         let payload = json!({
             "chart_type": "Candles",

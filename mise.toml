@@ -23,6 +23,10 @@ run = "node scripts/check-js-contracts.mjs equity"
 description = "Run account JavaScript contracts with pinned Node.js"
 run = "node scripts/check-js-contracts.mjs account"
 
+[tasks."check:desktop-js"]
+description = "Run Desktop operation JavaScript contracts with pinned Node.js"
+run = "node scripts/check-js-contracts.mjs desktop"
+
 [tasks."check:output-schemas"]
 description = "Check output schemas with jsonschema 4.26.0 installed in Python"
 run = "python3 scripts/check-output-schemas.py"

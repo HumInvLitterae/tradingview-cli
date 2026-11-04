@@ -145,7 +145,7 @@ pub async fn drawing_clear(
 mod tests {
     use serde_json::json;
 
-    use crate::ops::test_support::FakeRuntime;
+    use crate::ops::test_support::{FakeRuntime, run_node_json};
 
     use super::*;
     use tradingview_core::ErrorKind;
@@ -159,6 +159,94 @@ mod tests {
         let err = drawing_remove(&mut runtime, "shape123").await.unwrap_err();
 
         assert_eq!(err.kind, ErrorKind::InternalApiUnavailable);
+    }
+
+    #[tokio::test]
+    #[ignore = "run through `node scripts/check-js-contracts.mjs desktop`"]
+    async fn javascript_desktop_drawing_remove_and_clear_touch_only_their_targets() {
+        let mut expressions = Vec::new();
+        let mut runtime = FakeRuntime::new([]);
+        let _ = drawing_remove(&mut runtime, "shape'2").await;
+        expressions.push(runtime.evaluated[0].0.clone());
+        for dry_run in [true, false] {
+            let mut runtime = FakeRuntime::new([]);
+            let _ = drawing_clear(&mut runtime, dry_run).await;
+            expressions.push(runtime.evaluated[0].0.clone());
+        }
+        let expressions = serde_json::to_string(&expressions).unwrap();
+        let results = run_node_json(&format!(
+            r#"
+            const [remove, dryRun, clear] = {expressions};
+            // A chart whose mutations are recorded; `stuck` ignores them.
+            function chart(ids, stuck = false) {{
+                const mutations = [];
+                let shapes = ids.map(id => ({{ id, name: () => 'Line ' + id }}));
+                const api = {{
+                    getAllShapes: () => shapes.slice(),
+                    getShapeById: id => {{
+                        const shape = shapes.find(shape => shape.id === id);
+                        if (!shape) throw new Error('missing');
+                        return shape;
+                    }},
+                    removeEntity: id => {{
+                        mutations.push(['removeEntity', id]);
+                        if (!stuck) shapes = shapes.filter(shape => shape.id !== id);
+                    }},
+                    removeAllShapes: () => {{
+                        mutations.push(['removeAllShapes']);
+                        if (!stuck) shapes = [];
+                    }}
+                }};
+                global.window = {{ TradingViewApi: {{ _activeChartWidgetWV: {{ value: () => api }} }} }};
+                return mutations;
+            }}
+            const results = [];
+            for (const [expression, ids, stuck] of [
+                [remove, ['shape1', "shape'2", 'shape3'], false],
+                [remove, ['shape1'], false],
+                [remove, ["shape'2"], true],
+                [dryRun, ['shape1', 'shape2'], false],
+                [clear, ['shape1', 'shape2'], false],
+                [clear, ['shape1'], true],
+                [clear, [], false]
+            ]) {{
+                const mutations = chart(ids, stuck);
+                results.push({{ result: eval(expression), mutations }});
+            }}
+            console.log(JSON.stringify(results));
+            "#
+        ));
+
+        // Remove deletes only the requested ID and reads the chart again.
+        assert_eq!(
+            results[0]["mutations"],
+            json!([["removeEntity", "shape'2"]])
+        );
+        assert_eq!(
+            results[0]["result"],
+            json!({"action": "remove", "entity_id": "shape'2", "removed": true,
+                "before_count": 3, "remaining_shapes": 2})
+        );
+        assert_eq!(results[1]["mutations"], json!([]));
+        assert_eq!(results[1]["result"]["available"], json!(["shape1"]));
+        assert_eq!(results[2]["result"]["removed"], false);
+
+        // A dry run lists the targets without removing anything.
+        assert_eq!(results[3]["mutations"], json!([]));
+        assert_eq!(
+            results[3]["result"]["cleared_entities"],
+            json!([{"id": "shape1", "name": "Line shape1"}, {"id": "shape2", "name": "Line shape2"}])
+        );
+        assert_eq!(results[3]["result"]["would_clear_count"], 2);
+
+        // Clearing removes once and reports what the chart shows afterwards.
+        assert_eq!(results[4]["mutations"], json!([["removeAllShapes"]]));
+        assert_eq!(results[4]["result"]["after_count"], 0);
+        assert_eq!(results[4]["result"]["cleared"], true);
+        assert_eq!(results[5]["result"]["after_count"], 1);
+        assert_eq!(results[5]["result"]["cleared"], false);
+        assert_eq!(results[6]["mutations"], json!([]));
+        assert_eq!(results[6]["result"]["action"], "noop");
     }
 
     #[tokio::test]
@@ -201,16 +289,6 @@ mod tests {
 
         assert_eq!(result, payload);
         assert!(runtime.evaluated[0].0.contains("removeAllShapes"));
-    }
-
-    #[tokio::test]
-    async fn drawing_clear_returns_noop_when_empty() {
-        let payload = json!({"action": "noop", "cleared": false, "before_count": 0, "after_count": 0, "cleared_entities": [], "source": "chart_api"});
-        let mut runtime = FakeRuntime::new([payload.clone()]);
-
-        let result = drawing_clear(&mut runtime, false).await.unwrap();
-
-        assert_eq!(result, payload);
     }
 
     #[tokio::test]

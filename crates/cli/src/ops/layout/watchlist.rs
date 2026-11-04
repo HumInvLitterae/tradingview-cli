@@ -1031,9 +1031,13 @@ mod tests {
                     for (const mode of ['preflight', 'network', 'body', 'http', 'missing', 'malformed', 'switched', 'verified']) {{
                         let writes = 0;
                         let reads = 0;
-                        global.fetch = async (_, options) => {{
+                        global.fetch = async (url, options) => {{
                             if (options.method === 'POST') {{
                                 writes++;
+                                // Only the requested symbol goes to the active list.
+                                assert.equal(url, '/api/v1/symbols_list/custom/12/' +
+                                    (index === 0 ? 'append' : 'remove') + '/?source=web-tvd');
+                                assert.equal(options.body, '["NASDAQ:EXAMPLE"]');
                                 if (mode === 'network') throw new Error('response lost after write');
                                 return {{
                                     ok: mode !== 'http', status: mode === 'http' ? 500 : 200,

@@ -64,6 +64,7 @@ export const SUITES = {
       "three_point_drawing_capability::javascript_three_point_production_contract_is_bounded_and_verified",
     ),
   ],
+  desktop: [libTest("javascript_desktop_")],
 };
 
 export function pinnedNodeVersion(miseToml) {

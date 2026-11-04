@@ -52,6 +52,12 @@ package version omits the leading `v`.
   the drawing and Pine graphics specs now exercise the real loop, a paused
   clock, fixed install paths, one changed field at a time and the published
   constraints. `watch` no longer carries an unreachable `completed` end reason.
+- A new Desktop JavaScript gate (`mise run check:desktop-js`) executes the
+  generated drawing remove/clear, saved-layout switch, trade, OHLCV, indicator
+  input and timeframe expressions. It checks that dry runs change nothing, that
+  writes touch only their target and are read back, and that limits and user
+  input are applied as documented. The alert delete-all expression gets the
+  same check in the account gate.
 
 ## v0.41.0
 

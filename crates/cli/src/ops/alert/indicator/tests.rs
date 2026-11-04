@@ -228,7 +228,11 @@ alertcondition(close > open, "Long", "Long message")"#;
                 "condition": {
                     "type": "alert_cond",
                     "alert_cond_id": "plot_1",
-                    "has_study_series": true
+                    "series": [{
+                        "type": "study",
+                        "pine_id": "USER;private-script-id;4",
+                        "inputs": {"in_0": "private-input"}
+                    }]
                 }
             }
         }),
@@ -258,7 +262,15 @@ alertcondition(close > open, "Long", "Long message")"#;
     assert_eq!(data["alert_id"], 4550000001_u64);
     assert_eq!(data["condition"]["alert_cond_id"], "plot_1");
     assert!(data["script"].get("id").is_none());
-    assert!(data["matched_alert"]["condition"].get("pine_id").is_none());
+    // The raw study series is reduced to counts before it reaches the output.
+    assert_eq!(
+        data["matched_alert"]["condition"],
+        json!({"type": "alert_cond", "alert_cond_id": "plot_1",
+            "series_count": 1, "has_study_series": true})
+    );
+    let serialized = data.to_string();
+    assert!(!serialized.contains("private-script-id"));
+    assert!(!serialized.contains("private-input"));
     assert_eq!(runtime.evaluated.len(), 3);
     assert!(runtime.evaluated[2].0.contains("create_alert"));
     assert!(runtime.evaluated[2].0.contains("list_alerts"));

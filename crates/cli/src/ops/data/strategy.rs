@@ -391,6 +391,70 @@ mod tests {
     use super::super::super::test_support::FakeRuntime;
     use super::*;
 
+    #[tokio::test]
+    #[ignore = "run through `node scripts/check-js-contracts.mjs desktop`"]
+    async fn javascript_desktop_data_trades_returns_at_most_the_clamped_limit() {
+        let mut expressions = Vec::new();
+        for max in [Some(900), Some(3)] {
+            let mut runtime = FakeRuntime::new([ready_candidate(), json!({})]);
+            data_trades(&mut runtime, max).await.unwrap();
+            expressions.push(runtime.evaluated[1].0.clone());
+        }
+        let expressions = serde_json::to_string(&expressions).unwrap();
+        let results = super::super::super::test_support::run_node_json(&format!(
+            r#"
+            const [clamped, three] = {expressions};
+            function chart(fields) {{
+                const source = Object.assign({{ id: () => 'study-1' }}, fields);
+                const chartModel = {{ dataSources: () => [source] }};
+                const chartWidget = {{ model: () => ({{ model: () => chartModel }}) }};
+                global.window = {{ TradingViewApi: {{
+                    _activeChartWidgetWV: {{ value: () => ({{ _chartWidget: chartWidget }}) }}
+                }} }};
+            }}
+            const report = Array.from({{ length: 25 }}, (_, i) => ({{ e: {{ c: 'T' + i }}, x: {{}} }}));
+            const orders = Array.from({{ length: 25 }}, (_, i) => ({{ id: 'O' + i }}));
+            const results = [];
+            for (const [expression, fields] of [
+                [clamped, {{ _reportData: {{ trades: report }} }}],
+                [clamped, {{ ordersData: () => orders }}],
+                [three, {{ _reportData: {{ trades: report }} }}]
+            ]) {{
+                chart(fields);
+                const result = eval(expression);
+                results.push({{
+                    trade_count: result.trade_count,
+                    total_trade_count: result.total_trade_count,
+                    ids: result.trades.map(trade => trade.entry_order_id || trade.id)
+                }});
+            }}
+            console.log(JSON.stringify(results));
+            "#
+        ));
+        let ids = |prefix: &str, count: usize| {
+            json!(
+                (0..count)
+                    .map(|i| format!("{prefix}{i}"))
+                    .collect::<Vec<_>>()
+            )
+        };
+
+        // 900 is clamped to 20 for report trades and raw orders alike; the
+        // total still reports every trade the strategy holds.
+        assert_eq!(
+            results[0],
+            json!({"trade_count": 20, "total_trade_count": 25, "ids": ids("T", 20)})
+        );
+        assert_eq!(
+            results[1],
+            json!({"trade_count": 20, "total_trade_count": 25, "ids": ids("O", 20)})
+        );
+        assert_eq!(
+            results[2],
+            json!({"trade_count": 3, "total_trade_count": 25, "ids": ids("T", 3)})
+        );
+    }
+
     #[test]
     #[ignore = "run through `node scripts/check-js-contracts.mjs equity`"]
     fn javascript_equity_preserves_branch_identity_and_zero() {

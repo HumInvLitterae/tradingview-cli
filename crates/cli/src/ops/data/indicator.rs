@@ -152,6 +152,52 @@ mod tests {
     }
 
     #[tokio::test]
+    #[ignore = "run through `node scripts/check-js-contracts.mjs desktop`"]
+    async fn javascript_desktop_data_indicator_drops_oversized_inputs_at_their_limits() {
+        let mut runtime = FakeRuntime::new([json!({})]);
+        let _ = data_indicator(&mut runtime, "eFu1Ot'); window.bad = true; ('").await;
+        let expression = serde_json::to_string(&runtime.evaluated[0].0).unwrap();
+        let result = crate::ops::test_support::run_node_json(&format!(
+            r#"
+            const expression = {expression};
+            const requested = [];
+            const study = {{
+                isVisible: () => true,
+                getInputValues: () => [
+                    null,
+                    {{ id: 'length', value: 20 }},
+                    {{ id: 'text', value: 'a'.repeat(200) }},
+                    {{ id: 'text', value: 'b'.repeat(201) }},
+                    {{ id: 'note', value: 'c'.repeat(500) }},
+                    {{ id: 'note', value: 'd'.repeat(501) }}
+                ]
+            }};
+            global.window = {{ TradingViewApi: {{ _activeChartWidgetWV: {{ value: () => ({{
+                getStudyById: id => {{ requested.push(id); return study; }}
+            }}) }} }} }};
+            const result = eval(expression);
+            console.log(JSON.stringify({{
+                requested,
+                bad: global.window.bad === true,
+                inputs: result.inputs.map(input => [input.id, String(input.value).length])
+            }}));
+            "#
+        ));
+
+        // The ID reaches the chart as one string, and only inputs within the
+        // 200-character text and 500-character general limits remain.
+        assert_eq!(
+            result["requested"],
+            json!(["eFu1Ot'); window.bad = true; ('"])
+        );
+        assert_eq!(result["bad"], false);
+        assert_eq!(
+            result["inputs"],
+            json!([["length", 2], ["text", 200], ["note", 500]])
+        );
+    }
+
+    #[tokio::test]
     async fn data_indicator_maps_missing_study_to_internal_api_error() {
         let mut runtime = FakeRuntime::new([json!({"error": "Study not found: missing"})]);
 

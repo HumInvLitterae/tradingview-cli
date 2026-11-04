@@ -359,7 +359,7 @@ fn normalize_saved_layout_switch_payload(data: Value) -> Result<Value, AppError>
 mod tests {
     use serde_json::json;
 
-    use super::super::test_support::FakeRuntime;
+    use super::super::test_support::{FakeRuntime, run_node_json};
     use super::*;
 
     #[tokio::test]
@@ -424,6 +424,90 @@ mod tests {
         assert_eq!(result["layout_count"], 0);
         assert_eq!(result["source"], "internal_api");
         assert_eq!(result["layouts"].as_array().unwrap().len(), 0);
+    }
+
+    #[tokio::test]
+    #[ignore = "run through `node scripts/check-js-contracts.mjs desktop`"]
+    async fn javascript_desktop_saved_layout_switch_loads_only_the_matched_layout() {
+        let mut expressions = Vec::new();
+        for (target, dry_run) in [
+            ("Swing Layout", true),
+            ("swing layout", false),
+            ("chart-2", false),
+            ("Twin", false),
+        ] {
+            let mut runtime = FakeRuntime::new([]);
+            let _ = saved_layout_switch(&mut runtime, target, dry_run).await;
+            expressions.push(runtime.evaluated[0].0.clone());
+        }
+        let expressions = serde_json::to_string(&expressions).unwrap();
+        let results = run_node_json(&format!(
+            r#"
+            const expressions = {expressions};
+            // Shorten the expression's waits while keeping their order.
+            const realSetTimeout = setTimeout;
+            global.setTimeout = (callback, ms) => realSetTimeout(callback, ms / 100);
+            const charts = [
+                {{ id: 'chart-1', name: 'Swing Layout', url: 'abc123' }},
+                {{ id: 'chart-2', name: 'Scalping', url: null }},
+                {{ id: 'chart-3', name: 'Twin', url: 'twin1' }},
+                {{ id: 'chart-4', name: 'twin', url: 'twin2' }}
+            ];
+            function desktop(withService) {{
+                const calls = [];
+                const dialog = {{ textContent: 'Save changes?', click: () => calls.push(['dialog.click']) }};
+                global.document = {{ querySelectorAll: () => [dialog] }};
+                global.window = {{
+                    location: {{ assign: url => calls.push(['location.assign', url]) }},
+                    TradingViewApi: {{
+                        getSavedCharts: callback => callback(charts),
+                        loadChartFromServer: id => calls.push(['loadChartFromServer', id]),
+                        _loadChartService: withService
+                            ? {{ loadChart: (chart, a, b) => calls.push(['loadChart', chart.id, a, b]) }}
+                            : undefined
+                    }}
+                }};
+                return calls;
+            }}
+            (async () => {{
+                const results = [];
+                for (const [index, withService] of [[0, true], [1, true], [2, true], [2, false], [3, true]]) {{
+                    const calls = desktop(withService);
+                    const result = await eval(expressions[index]);
+                    await new Promise(resolve => realSetTimeout(resolve, 20));
+                    results.push({{ result, calls }});
+                }}
+                console.log(JSON.stringify(results));
+            }})().catch(error => {{ console.error(error); process.exitCode = 1; }});
+            "#
+        ));
+
+        // A dry run resolves the layout without loading or navigating.
+        assert_eq!(results[0]["calls"], json!([]));
+        assert_eq!(results[0]["result"]["layout_id"], "chart-1");
+        // A layout with a short URL navigates there once; the unsaved-changes
+        // dialog is reported, never confirmed.
+        assert_eq!(
+            results[1]["calls"],
+            json!([["location.assign", "/chart/abc123/"]])
+        );
+        assert_eq!(results[1]["result"]["unsaved_dialog_observed"], true);
+        assert_eq!(results[1]["result"]["unsaved_dialog_dismissed"], false);
+        // Without a URL the layout is loaded by its own record or ID.
+        assert_eq!(
+            results[2]["calls"],
+            json!([["loadChart", "chart-2", false, false]])
+        );
+        assert_eq!(
+            results[3]["calls"],
+            json!([["loadChartFromServer", "chart-2"]])
+        );
+        // Two layouts whose names differ only in case are ambiguous.
+        assert_eq!(results[4]["calls"], json!([]));
+        assert_eq!(
+            results[4]["result"]["error"],
+            "Multiple layouts match: Twin"
+        );
     }
 
     #[tokio::test]

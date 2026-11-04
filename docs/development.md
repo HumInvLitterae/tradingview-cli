@@ -800,8 +800,9 @@ git diff --check
 
 The regular Cargo baseline remains Rust-only. Changes to the production
 study-value JavaScript identity helper, strategy-equity extraction, saved-script
-binding helper, indicator-insertion expression, or native three-point drawing
-probe/production expression also require separate executable contract gates:
+binding helper, indicator-insertion expression, native three-point drawing
+probe/production expression, or an expression covered by the Desktop gate also
+require separate executable contract gates:
 
 ```bash
 mise run check:study-values-js
@@ -810,6 +811,7 @@ mise run check:account-js
 mise run check:pine-open-js
 mise run check:indicator-insertion-js
 mise run check:three-point-drawing-js
+mise run check:desktop-js
 ```
 
 Each task runs `node scripts/check-js-contracts.mjs <suite>`, which accepts
@@ -857,6 +859,12 @@ observation deadline, sticky multi-entity ambiguity, exact native identity and
 point readback, verified-only probe cleanup, and the production path's
 no-auto-cleanup boundary. It does not connect to TradingView Desktop or perform
 a live drawing mutation.
+The Desktop gate executes generated chart and layout expressions whose
+mistakes would change or misreport the user's chart: drawing removal and
+clearing, saved-layout switching, and the trade, OHLCV and indicator-input
+limits. It checks that dry runs make no mutation, that writes touch only the
+requested target and are read back, and that user input reaches TradingView as
+one string. Name these tests `javascript_desktop_*`.
 The corresponding executable JavaScript tests are
 ignored during ordinary `cargo test --workspace`; CI and the release workflow
 install the pinned Node version and run each gate explicitly. Node.js is not a

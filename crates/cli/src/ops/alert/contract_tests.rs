@@ -1,6 +1,6 @@
 use serde_json::{Value, json};
 
-use super::super::test_support::FakeRuntime;
+use super::super::test_support::{FakeRuntime, run_node_json};
 use super::{ALERT_LIST_READER, alert_delete, alert_delete_all, alert_list};
 
 #[tokio::test]
@@ -122,6 +122,84 @@ async fn javascript_account_alert_lists_reject_failed_reads() {
         "{}",
         String::from_utf8_lossy(&output.stderr)
     );
+}
+
+#[tokio::test]
+#[ignore = "run through `node scripts/check-js-contracts.mjs account`"]
+async fn javascript_account_alert_delete_all_writes_only_after_dry_run_and_reads_back() {
+    let mut expressions = Vec::new();
+    for dry_run in [true, false] {
+        let mut runtime = FakeRuntime::new([]);
+        let _ = alert_delete_all(&mut runtime, dry_run).await;
+        expressions.push(runtime.evaluated[0].0.clone());
+    }
+    let expressions = serde_json::to_string(&expressions).unwrap();
+    let results = run_node_json(&format!(
+        r#"
+        const [dryRun, deleteAll] = {expressions};
+        // Each list read returns the next listing; the last one repeats.
+        function account(listings) {{
+            const requests = [];
+            global.fetch = async (url, options = {{}}) => {{
+                requests.push({{ url, method: options.method || 'GET', body: options.body || null }});
+                if (options.method === 'POST') {{
+                    return {{ ok: true, json: async () => ({{ s: 'ok' }}) }};
+                }}
+                const rows = listings[Math.min(requests.filter(r => r.method === 'GET').length - 1, listings.length - 1)];
+                return {{ ok: true, json: async () => ({{ s: 'ok', r: rows }}) }};
+            }};
+            return requests;
+        }}
+        const rows = [{{ alert_id: 12, message: 'one' }}, {{ id: 'abc', message: 'two' }}];
+        (async () => {{
+            const results = [];
+            for (const [expression, listings] of [
+                [dryRun, [rows]],
+                [deleteAll, [rows, []]],
+                [deleteAll, [rows, [rows[1]]]],
+                [deleteAll, [[]]]
+            ]) {{
+                const requests = account(listings);
+                const result = await eval(expression);
+                results.push({{ result, requests }});
+            }}
+            console.log(JSON.stringify(results));
+        }})().catch(error => {{ console.error(error); process.exitCode = 1; }});
+        "#
+    ));
+    let list = json!({
+        "url": "https://pricealerts.tradingview.com/list_alerts", "method": "GET", "body": null
+    });
+    let delete = json!({
+        "url": "https://pricealerts.tradingview.com/delete_alerts",
+        "method": "POST",
+        "body": "{\"payload\":{\"alert_ids\":[12,\"abc\"]}}"
+    });
+
+    // A dry run lists once and never posts a deletion.
+    assert_eq!(results[0]["requests"], json!([list]));
+    assert_eq!(results[0]["result"]["action"], "dry_run");
+    assert_eq!(results[0]["result"]["target_alert_ids"], json!([12, "abc"]));
+
+    // A deletion posts every listed ID once, then lists again to confirm.
+    assert_eq!(results[1]["requests"], json!([list, delete, list]));
+    assert_eq!(results[1]["result"]["deleted"], true);
+    assert_eq!(results[1]["result"]["after_count"], 0);
+    assert_eq!(
+        results[1]["result"]["remaining_target_alert_ids"],
+        json!([])
+    );
+
+    // An alert still listed after the deletion is reported, not hidden.
+    assert_eq!(results[2]["result"]["deleted"], false);
+    assert_eq!(
+        results[2]["result"]["remaining_target_alert_ids"],
+        json!(["abc"])
+    );
+
+    // An empty account posts nothing.
+    assert_eq!(results[3]["requests"], json!([list]));
+    assert_eq!(results[3]["result"]["action"], "noop");
 }
 
 #[tokio::test]

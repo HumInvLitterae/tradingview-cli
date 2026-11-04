@@ -97,7 +97,7 @@ jobs:
         run: cargo clippy --workspace --all-targets --all-features -- -D warnings
 
   study-values-js-contract:
-    name: Study-value, equity and account JavaScript contracts
+    name: Study-value, equity, account and Desktop JavaScript contracts
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -110,7 +110,7 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
       - name: Run study-value, equity, account and Desktop JavaScript contracts
         run: |
-          node scripts/check-js-contracts.mjs study-values equity account
+          node scripts/check-js-contracts.mjs study-values equity account desktop
       - name: Install schema test runtime
         uses: actions/setup-python@v7
         with:

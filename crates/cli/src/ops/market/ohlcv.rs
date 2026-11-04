@@ -492,6 +492,57 @@ mod tests {
     use super::*;
 
     #[tokio::test]
+    #[ignore = "run through `node scripts/check-js-contracts.mjs desktop`"]
+    async fn javascript_desktop_ohlcv_reads_the_last_bars_up_to_the_clamped_count() {
+        let mut expressions = Vec::new();
+        for count in [Some(900), Some(2)] {
+            let mut runtime = FakeRuntime::new([]);
+            let _ = ohlcv_bars(&mut runtime, count).await;
+            expressions.push(runtime.evaluated[0].0.clone());
+        }
+        let expressions = serde_json::to_string(&expressions).unwrap();
+        let results = crate::ops::test_support::run_node_json(&format!(
+            r#"
+            const [clamped, two] = {expressions};
+            function chart(barCount) {{
+                const bars = {{
+                    firstIndex: () => 0,
+                    lastIndex: () => barCount - 1,
+                    valueAt: i => [1000 + i, 1, 2, 0.5, 1.5, 10]
+                }};
+                const api = {{
+                    symbol: () => 'NASDAQ:EXAMPLE',
+                    resolution: () => '1D',
+                    getVisibleRange: () => ({{ from: 1000, to: 1000 + barCount }}),
+                    getVisibleBarsRange: () => null,
+                    _chartWidget: {{ model: () => ({{ mainSeries: () => ({{ bars: () => bars }}) }}) }}
+                }};
+                global.window = {{ TradingViewApi: {{ _activeChartWidgetWV: {{ value: () => api }} }} }};
+            }}
+            const results = [];
+            for (const [expression, barCount] of [[clamped, 600], [clamped, 300], [two, 600]]) {{
+                chart(barCount);
+                const result = eval(expression);
+                const times = result.bars.map(bar => bar.time);
+                results.push({{ count: times.length, first: times[0], last: times[times.length - 1] }});
+            }}
+            console.log(JSON.stringify(results));
+            "#
+        ));
+
+        // 900 is clamped to the newest 500 bars; fewer bars are all returned.
+        assert_eq!(
+            results[0],
+            json!({"count": 500, "first": 1100, "last": 1599})
+        );
+        assert_eq!(
+            results[1],
+            json!({"count": 300, "first": 1000, "last": 1299})
+        );
+        assert_eq!(results[2], json!({"count": 2, "first": 1598, "last": 1599}));
+    }
+
+    #[tokio::test]
     async fn ohlcv_count_is_clamped_to_500() {
         let mut runtime = FakeRuntime::new([
             json!({"symbol": "NASDAQ:AAPL", "timeframe": "D", "bars": [{"time": 1, "open": 1, "high": 1, "low": 1, "close": 1, "volume": 1}]}),

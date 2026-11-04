@@ -511,27 +511,6 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn alert_delete_all_returns_noop_when_empty() {
-        let mut runtime = FakeRuntime::new(VecDeque::from([json!({
-            "action": "noop",
-            "dry_run": false,
-            "deleted": false,
-            "source": "internal_api",
-            "before_count": 0,
-            "after_count": 0,
-            "target_alert_ids": [],
-            "target_alerts": []
-        })]));
-
-        let data = alert_delete_all(&mut runtime, false).await.unwrap();
-
-        assert_eq!(data["action"], "noop");
-        assert_eq!(data["deleted"], false);
-        assert_eq!(data["before_count"], 0);
-        assert_eq!(data["after_count"], 0);
-    }
-
-    #[tokio::test]
     async fn alert_delete_all_returns_success_payload() {
         let mut runtime = FakeRuntime::new(VecDeque::from([json!({
             "action": "delete_all",
