@@ -780,19 +780,9 @@ machine's current state rather than a fixed number: wait or stay at one or two
 while another build runs or memory pressure and swap are high, and use up to four
 otherwise. Memory, not CPU, is usually the limit on a shared workstation.
 
-Agent-run builds and tests use the opt-in `agent` profile, which keeps line
-tables for panic locations but drops full debug info, most of it from
-dependencies:
-
-```bash
-cargo test -p tradingview-cli --profile agent --lib
-```
-
-Its artifacts live in `target/agent`, apart from ordinary `dev` builds. Check
-and Clippy produce no debug info, so they keep the default profile. Avoid unnecessary release
-builds, fresh target directories and repeated full-workspace checks. Start with
-affected tests and reuse unchanged evidence; use normal CI for broad platform
-and parallel-test coverage. These limits do not disable CI or replace missing
+Avoid unnecessary release builds, fresh target directories and repeated
+full-workspace checks. Start with affected tests and reuse unchanged evidence;
+use normal CI for broad platform and parallel-test coverage. These limits do not disable CI or replace missing
 acceptance evidence with a claim that tests passed.
 
 The explicit local baseline runner below supplies these conservative defaults
