@@ -41,7 +41,9 @@ package version omits the leading `v`.
 ### Fixed
 
 - Screener commands that open the panel now attempt to close it after errors,
-  not only on success paths. `filters add` also closes its search popup first.
+  not only on success paths. When `filters add` fails after opening its
+  add-filter popup, it closes that popup first, sending Escape only while the
+  popup is visible.
 - Snapshot total-failure, screenshot clip and crop, hotlist slug and MCP
   technicals interval tests now check the production path and independent
   expected values, so a dropped error detail, wrong crop origin or removed

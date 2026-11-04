@@ -82,9 +82,10 @@ pub async fn screener_filters_add(
     request: ScreenerFilterAddRequest,
 ) -> Result<Value, AppError> {
     let mut session = ScreenerMutationSession::open(runtime).await?;
-    let result = filters_add_in_session(&mut session, request).await;
-    if result.is_err() {
-        let _ = close_screener_transient_popups(session.runtime).await;
+    let mut popup_requested = false;
+    let result = filters_add_in_session(&mut session, request, &mut popup_requested).await;
+    if result.is_err() && popup_requested {
+        let _ = close_filter_add_popup(session.runtime).await;
     }
     session.finish(result).await
 }
@@ -92,19 +93,22 @@ pub async fn screener_filters_add(
 async fn filters_add_in_session(
     session: &mut ScreenerMutationSession<'_, impl RuntimeEvaluator>,
     request: ScreenerFilterAddRequest,
+    popup_requested: &mut bool,
 ) -> Result<Value, AppError> {
     let before_state = read_screener_state(session.runtime, None).await?;
     ensure_dialog_open(&before_state)?;
     let before_filters = filter_targets_from_state(&before_state);
     let requested_range = filter_add_range_payload(&request);
 
+    // A lost answer can still leave the popup open, so mark it before the request.
+    *popup_requested = true;
     let search_result = open_filter_add_search(session.runtime).await?;
     ensure_filter_add_search_opened(&search_result)?;
     session.runtime.insert_text(&request.name).await?;
     let candidate = wait_for_filter_add_candidate(session.runtime, &request.name).await?;
 
     if request.dry_run {
-        close_screener_transient_popups(session.runtime).await?;
+        close_filter_add_popup(session.runtime).await?;
         return Ok(json!({
             "source": SCREENER_SOURCE,
             "action": "filter_add",
@@ -1077,17 +1081,19 @@ async fn wait_for_filter_add_range_option(
     }
 }
 
-async fn close_screener_transient_popups(
-    runtime: &mut impl RuntimeEvaluator,
-) -> Result<(), AppError> {
+/// Sends Escape only while the add-filter popup is present.
+async fn close_filter_add_popup(runtime: &mut impl RuntimeEvaluator) -> Result<(), AppError> {
     runtime
         .evaluate(
             &expanded_expression(
                 r#"
                 (function() {
                     REPLACE_HELPERS
+                    if (!findScreenerAddFilterDialog()) {
+                        return { closed: false, reason: 'popup_not_found' };
+                    }
                     closeScreenerTransientPopups();
-                    return { closed: true };
+                    return { closed: !findScreenerAddFilterDialog() };
                 })()
                 "#,
             ),
@@ -1522,7 +1528,7 @@ async fn wait_for_filter_added(
 mod tests {
     use serde_json::{Value, json};
 
-    use super::super::super::test_support::FakeRuntime;
+    use super::super::super::test_support::{FakeRuntime, run_node_json};
     use super::super::engine::runtime_failing_at_call;
     use super::super::validation::{
         validate_screener_filter_add_request, validate_screener_filter_modify_request,
@@ -2537,9 +2543,99 @@ mod tests {
             .unwrap_err();
 
         assert_eq!(error.kind, ErrorKind::Connection);
-        assert!(runtime.evaluated[5].0.contains("return { closed: true };"));
+        assert!(runtime.evaluated[5].0.contains("reason: 'popup_not_found'"));
         assert_eq!(runtime.evaluated.len(), 8);
         assert_eq!(runtime.key_events.len(), 2);
+    }
+
+    #[tokio::test]
+    async fn screener_filters_add_failure_before_the_popup_only_closes_the_panel() {
+        let steps = [
+            json!({ "button_found": true, "open": false }),
+            json!({ "button_found": true, "open": true }),
+        ];
+        let mut runtime = runtime_failing_at_call(&steps, 2);
+        let request = validate_screener_filter_add_request("RSI", Some(70.0), None, true).unwrap();
+
+        let error = screener_filters_add(&mut runtime, request)
+            .await
+            .unwrap_err();
+
+        assert_eq!(error.kind, ErrorKind::Connection);
+        assert_eq!(runtime.evaluated.len(), 5);
+        assert!(
+            runtime
+                .evaluated
+                .iter()
+                .all(|(expression, _)| !expression.contains("closeScreenerTransientPopups();"))
+        );
+        assert_eq!(runtime.key_events.len(), 2);
+    }
+
+    #[tokio::test]
+    #[ignore = "run through `node scripts/check-js-contracts.mjs desktop`"]
+    async fn javascript_desktop_filter_add_popup_close_sends_escape_only_while_open() {
+        let mut runtime = FakeRuntime::new([json!({ "closed": true })]);
+        close_filter_add_popup(&mut runtime).await.unwrap();
+        let expression = serde_json::to_string(&runtime.evaluated[0].0).unwrap();
+        let results = run_node_json(&format!(
+            r#"
+            const expression = {expression};
+            global.KeyboardEvent = class {{
+                constructor(type, init) {{ this.type = type; this.key = init.key; }}
+            }};
+            global.window = {{
+                innerWidth: 1600, innerHeight: 900,
+                getComputedStyle: () => ({{ visibility: 'visible', display: 'block' }})
+            }};
+            function element(text) {{
+                return {{
+                    textContent: text,
+                    getBoundingClientRect: () => ({{
+                        left: 100, top: 100, right: 500, bottom: 400, width: 400, height: 300
+                    }}),
+                    querySelectorAll: () => [],
+                    getAttribute: () => null
+                }};
+            }}
+            function page(popupOpen) {{
+                const events = [];
+                let open = popupOpen;
+                global.document = {{
+                    querySelectorAll: selector =>
+                        open && selector.includes('[role="dialog"]')
+                            ? [element('フィルターを追加 RSI')] : [],
+                    dispatchEvent: event => {{
+                        events.push(event.type + ':' + event.key);
+                        open = false;
+                    }}
+                }};
+                return events;
+            }}
+            const results = [];
+            for (const popupOpen of [false, true]) {{
+                const events = page(popupOpen);
+                const result = eval(expression);
+                results.push({{ result, events }});
+            }}
+            console.log(JSON.stringify(results));
+            "#
+        ));
+
+        assert_eq!(
+            results,
+            json!([
+                { "result": { "closed": false, "reason": "popup_not_found" }, "events": [] },
+                {
+                    "result": { "closed": true },
+                    "events": [
+                        "keydown:Escape", "keyup:Escape",
+                        "keydown:Escape", "keyup:Escape",
+                        "keydown:Escape", "keyup:Escape"
+                    ]
+                }
+            ])
+        );
     }
 
     #[tokio::test]

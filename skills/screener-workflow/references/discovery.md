@@ -20,9 +20,12 @@ false even though a separate storage-based remove command exists. Reset remains
 unimplemented. Treat these flags as limits of the probe, not a CLI capability map.
 
 These menu probes change visible UI even when the Screener is already open.
-Commands attempt to close their popups and any panel they opened, including
-after errors, but do not reconstruct prior popup/focus state. Cleanup can fail.
-`restored_open_state` is the initial panel state, not cleanup success.
+Commands attempt to close any panel they opened, including after errors. Popups
+are closed by the expression that opened them, so a popup can stay open when a
+Desktop call fails midway; only `filters add` closes its add-filter popup again
+after an error, and only when that popup is visible. Commands do not reconstruct
+prior popup/focus state, and cleanup can fail. `restored_open_state` is the
+initial panel state, not cleanup success.
 
 Columns config instead requires an already open panel and reads screen storage
 using the Desktop session. It does not open menus or use MCP OAuth. Missing init

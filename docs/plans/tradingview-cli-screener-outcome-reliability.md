@@ -23,9 +23,11 @@ writes, or closing a panel the command did not open.
   is the existing `read_screener_with_restore` and screen-switch behavior.
 - `restored_open_state` keeps its meaning: the initial panel state, not cleanup
   success.
-- `filters add` closes transient popups before the panel on failure, because it is
-  the only flow that can fail with its search popup open. Its helper dispatches
-  synthetic Escape events and is safe to repeat.
+- `filters add` closes its add-filter popup before the panel on failure, because it
+  is the only flow that can fail with its search popup open. It does so only after
+  it has started opening the popup, and the expression sends Escape only while
+  the popup is visible, so a failure before the popup sends no Escape and leaves
+  an already open panel alone.
 - Other flows do not gain popup cleanup. Filter and column expressions close their
   own popups. `closeScreenerScreenLifecyclePopups` clicks a visible Cancel or close
   control, or else clicks the screen title, which toggles the menu; on a path with
