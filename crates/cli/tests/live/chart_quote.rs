@@ -5,6 +5,8 @@ use std::{
 
 use serde_json::Value;
 
+use crate::support::{read_chart_symbol, symbol_matches_request};
+
 const DEFAULT_SYMBOLS: &str = "PLUG,AAPL,MSFT,IONQ,MU,PLUG";
 
 #[test]
@@ -35,6 +37,9 @@ fn chart_quote_sequence_live_smoke() {
         }
     );
 
+    // The chart must show this symbol again after every quote, read by a
+    // separate command rather than taken from the quote's own `restored`.
+    let original_symbol = read_chart_symbol(tv, target_id.as_deref());
     let mut slowest: Option<(String, Duration)> = None;
     let mut checked = 0usize;
     for run in 1..=runs {
@@ -44,6 +49,11 @@ fn chart_quote_sequence_live_smoke() {
             let elapsed = started.elapsed();
             let envelope = parse_output(symbol, output, elapsed);
             assert_chart_quote_success(symbol, &envelope, elapsed);
+            assert_eq!(
+                read_chart_symbol(tv, target_id.as_deref()),
+                original_symbol,
+                "chart symbol was not restored after quoting {symbol}"
+            );
             checked += 1;
             if slowest
                 .as_ref()
@@ -140,9 +150,9 @@ fn assert_chart_quote_success(symbol: &str, envelope: &Value, elapsed: Duration)
     let required_stable_samples = if switch_performed { 2 } else { 1 };
 
     if envelope.get("success").and_then(Value::as_bool) != Some(true)
-        || bare_symbol(requested) != bare_symbol(symbol)
-        || bare_symbol(observed) != bare_symbol(symbol)
-        || bare_symbol(chart) != bare_symbol(symbol)
+        || !symbol_matches_request(symbol, requested)
+        || !symbol_matches_request(symbol, observed)
+        || !symbol_matches_request(symbol, chart)
         || !freshness_passed
         || stable_samples < required_stable_samples
         || !restored
@@ -218,13 +228,4 @@ fn string_field<'a>(value: &'a Value, key: &str) -> Option<&'a str> {
         .and_then(Value::as_str)
         .map(str::trim)
         .filter(|value| !value.is_empty())
-}
-
-fn bare_symbol(symbol: &str) -> String {
-    symbol
-        .split(':')
-        .next_back()
-        .unwrap_or(symbol)
-        .trim()
-        .to_ascii_uppercase()
 }

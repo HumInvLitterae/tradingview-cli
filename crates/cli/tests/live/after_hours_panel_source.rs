@@ -6,6 +6,8 @@ use std::{
 
 use serde_json::Value;
 
+use crate::support::phase_matches_expected;
+
 const DEFAULT_SYMBOL: &str = "RKLB";
 const DEFAULT_QUALIFIED_SYMBOL: &str = "NASDAQ:RKLB";
 const PROBE_STATE_NAME: &str = "__tvAfterHoursPanelSourceProbe";
@@ -663,19 +665,6 @@ fn assert_panel_summary(panel: &Value, symbol: &str, expected_visible_price: Opt
     }
 }
 
-fn phase_matches_expected(expected: &str, observed: &str) -> bool {
-    normalize_phase(expected) == normalize_phase(observed)
-}
-
-fn normalize_phase(phase: &str) -> String {
-    phase
-        .trim()
-        .chars()
-        .filter(|ch| ch.is_ascii_alphanumeric())
-        .flat_map(char::to_lowercase)
-        .collect()
-}
-
 fn scanner_summary(envelope: &Value) -> String {
     let data = envelope.get("data").unwrap_or(&Value::Null);
     format!(
@@ -916,18 +905,4 @@ fn env_string(name: &str) -> Option<String> {
         .ok()
         .map(|value| value.trim().to_string())
         .filter(|value| !value.is_empty())
-}
-
-#[test]
-fn phase_matching_accepts_tradingview_extended_hours_aliases() {
-    assert!(phase_matches_expected("postmarket", "post-market"));
-    assert!(phase_matches_expected("post-market", "postmarket"));
-    assert!(phase_matches_expected("premarket", "pre-market"));
-    assert!(phase_matches_expected("pre-market", "premarket"));
-}
-
-#[test]
-fn phase_matching_keeps_regular_distinct_from_extended_hours() {
-    assert!(!phase_matches_expected("postmarket", "regular"));
-    assert!(!phase_matches_expected("premarket", "regular"));
 }

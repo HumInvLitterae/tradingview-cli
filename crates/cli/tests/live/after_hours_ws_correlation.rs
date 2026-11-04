@@ -12,6 +12,8 @@ use tokio_tungstenite::{
     tungstenite::{Error as WsError, Message},
 };
 
+use crate::support::phase_matches_expected;
+
 const DEFAULT_SYMBOL: &str = "RKLB";
 const DEFAULT_QUALIFIED_SYMBOL: &str = "NASDAQ:RKLB";
 const DEFAULT_CAPTURE_DURATION_MS: u64 = 30_000;
@@ -935,19 +937,6 @@ fn decimal_tokens(text: &str) -> Vec<String> {
     tokens
 }
 
-fn phase_matches_expected(expected: &str, observed: &str) -> bool {
-    normalize_phase(expected) == normalize_phase(observed)
-}
-
-fn normalize_phase(phase: &str) -> String {
-    phase
-        .trim()
-        .chars()
-        .filter(|ch| ch.is_ascii_alphanumeric())
-        .flat_map(char::to_lowercase)
-        .collect()
-}
-
 fn env_string(name: &str) -> Option<String> {
     std::env::var(name)
         .ok()
@@ -991,13 +980,6 @@ fn exact_candidate_matches_visible_prices() {
         exact_candidate_matches(&stats, &["105.67".to_string()]),
         vec!["ws_received:105.67"]
     );
-}
-
-#[test]
-fn phase_matching_accepts_hyphenated_aliases() {
-    assert!(phase_matches_expected("postmarket", "post-market"));
-    assert!(phase_matches_expected("premarket", "pre-market"));
-    assert!(!phase_matches_expected("postmarket", "regular"));
 }
 
 #[test]

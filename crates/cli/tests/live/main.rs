@@ -20,4 +20,5 @@ mod quote_data_source;
 mod quote_session_extended_hours;
 mod right_offset_capability;
 mod snapshot;
+mod support;
 mod three_point_drawing_capability;

@@ -1449,19 +1449,6 @@ fn stream_attempts_connection_when_cdp_is_unavailable() {
 }
 
 #[test]
-fn pine_compile_attempts_connection_when_cdp_is_unavailable() {
-    let assert = tv_with_cdp_disconnect()
-        .args(["pine", "compile"])
-        .assert()
-        .failure()
-        .code(2);
-    let value = stderr_json(&assert);
-    assert_eq!(value["success"], false);
-    assert_eq!(value["command"], "pine");
-    assert_eq!(value["error"]["kind"], "connection");
-}
-
-#[test]
 fn read_utilities_attempt_connection_when_cdp_is_unavailable() {
     for args in [
         vec!["info"],
@@ -1553,20 +1540,24 @@ fn read_utilities_attempt_connection_when_cdp_is_unavailable() {
         vec!["ui", "fullscreen"],
         vec!["ui", "mouse", "1", "2"],
     ] {
+        let command = args[0];
         let assert = tv_with_cdp_disconnect()
-            .args(args)
+            .args(&args)
             .assert()
             .failure()
             .code(2);
         let value = stderr_json(&assert);
-        assert_eq!(value["success"], false);
-        assert_eq!(value["error"]["kind"], "connection");
+        assert_eq!(value["success"], false, "{args:?}");
+        assert_eq!(value["command"], command, "{args:?}");
+        assert_eq!(value["error"]["kind"], "connection", "{args:?}");
     }
 }
 
 #[test]
 fn ui_eval_is_disabled_before_connecting_without_env_gate() {
+    // The gate may be set in the developer's shell; this case needs it absent.
     let assert = tv()
+        .env_remove("TV_ALLOW_UNSAFE_UI_EVAL")
         .env("TV_CDP_PORT", "9")
         .args(["ui", "eval", "1+1"])
         .assert()

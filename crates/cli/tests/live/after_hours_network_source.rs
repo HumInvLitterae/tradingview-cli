@@ -13,6 +13,8 @@ use tokio_tungstenite::{
     tungstenite::{Error as WsError, Message},
 };
 
+use crate::support::phase_matches_expected;
+
 const DEFAULT_SYMBOL: &str = "RKLB";
 const DEFAULT_QUALIFIED_SYMBOL: &str = "NASDAQ:RKLB";
 const DEFAULT_CAPTURE_DURATION_MS: u64 = 15_000;
@@ -633,19 +635,6 @@ fn decimal_token_count(text: &str) -> usize {
         .count()
 }
 
-fn phase_matches_expected(expected: &str, observed: &str) -> bool {
-    normalize_phase(expected) == normalize_phase(observed)
-}
-
-fn normalize_phase(phase: &str) -> String {
-    phase
-        .trim()
-        .chars()
-        .filter(|ch| ch.is_ascii_alphanumeric())
-        .flat_map(char::to_lowercase)
-        .collect()
-}
-
 fn env_string(name: &str) -> Option<String> {
     std::env::var(name)
         .ok()
@@ -685,11 +674,4 @@ fn candidate_detection_reports_tokens_without_raw_payload() {
     assert!(candidate.contains_expected_price);
     assert!(candidate.contains_after_token);
     assert_eq!(candidate.decimal_token_count, 1);
-}
-
-#[test]
-fn phase_matching_accepts_tradingview_extended_hours_aliases() {
-    assert!(phase_matches_expected("postmarket", "post-market"));
-    assert!(phase_matches_expected("premarket", "pre-market"));
-    assert!(!phase_matches_expected("postmarket", "regular"));
 }

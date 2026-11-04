@@ -278,8 +278,15 @@ fn run_tv(
         read_file(stderr.as_file())
     };
     let latency_ms = elapsed_ms(started.elapsed());
-    let Some(value) = parse_envelope(&bytes) else {
-        return Ok((
+    Ok(classify_output(status.success(), &bytes, latency_ms))
+}
+
+/// Classifies one invocation's output; the flag reports malformed output.
+/// Only the classification is kept, never the bytes.
+fn classify_output(success: bool, bytes: &[u8], latency_ms: u64) -> (InvocationResult, bool) {
+    match parse_envelope(bytes) {
+        Some(value) => (classify_envelope(success, &value, latency_ms), false),
+        None => (
             InvocationResult {
                 success: false,
                 failure_stage: Some("transport_unknown".to_string()),
@@ -288,12 +295,8 @@ fn run_tv(
                 latency_ms,
             },
             true,
-        ));
-    };
-    Ok((
-        classify_envelope(status.success(), &value, latency_ms),
-        false,
-    ))
+        ),
+    }
 }
 
 fn read_file(file: &File) -> Vec<u8> {
@@ -448,9 +451,15 @@ fn envelope_classification_is_allowlisted() {
     });
     let result = classify_envelope(false, &value, 12);
     assert_eq!(result.failure_stage.as_deref(), Some("transport_unknown"));
-    let serialized = serde_json::to_string(&Summary::requested()).unwrap();
+    let mut summary = Summary::requested();
+    summary.record(result);
+    summary.finish();
+    let serialized = serde_json::to_string(&summary).unwrap();
     assert!(!serialized.contains(private));
     assert!(!serialized.contains("ws://"));
+    assert!(!serialized.contains("future_private_stage"));
+    assert_eq!(summary.failure_count, 1);
+    assert_eq!(summary.failure_stage_counts["transport_unknown"], 1);
 }
 
 #[test]
@@ -501,21 +510,19 @@ fn cohort_and_run_deadlines_stop_without_extending_either_budget() {
 
 #[test]
 fn malformed_output_is_rejected_without_retaining_it() {
-    let private = b"not-json-private-target-value";
-    assert!(parse_envelope(private).is_none());
-    let result = InvocationResult {
-        success: false,
-        failure_stage: Some("transport_unknown".to_string()),
-        ambiguous: false,
-        target_count: None,
-        latency_ms: 1,
-    };
+    let (result, malformed) = classify_output(true, b"not-json-private-target-value", 1);
+    assert!(malformed);
+    assert!(!result.success);
     let mut summary = Summary::requested();
     summary.record(result);
     summary.finish();
     let serialized = serde_json::to_string(&summary).unwrap();
     assert!(!serialized.contains("private-target-value"));
     assert_eq!(summary.failure_stage_counts["transport_unknown"], 1);
+
+    let (result, malformed) = classify_output(true, br#"{"success": true}"#, 2);
+    assert!(!malformed);
+    assert!(result.success);
 }
 
 #[test]

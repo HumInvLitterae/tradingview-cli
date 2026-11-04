@@ -529,6 +529,7 @@ fn env_string(name: &str) -> Option<String> {
 
 #[test]
 fn widget_summary_reports_components_and_hits() {
+    // Each field carries its own value so a dropped or swapped field shows.
     let value = serde_json::json!({
         "symbol": "RKLB",
         "observed_phase": "post-market",
@@ -537,12 +538,19 @@ fn widget_summary_reports_components_and_hits() {
         "expected_visible_price_seen": true,
         "matched_node_found": true,
         "fiber_found": true,
-        "fiber_chain": [{"depth": 0, "component": "span"}],
-        "hit_count": 1,
-        "hits": [{"source": "memoizedProps", "component": "span", "path": "memoizedProps.children", "value": "110.17"}],
-        "numeric_candidates": ["110.17"]
+        "fiber_chain": [{"depth": 0, "component": "ChainSpan"}, {"depth": 1, "component": "ChainDiv"}],
+        "hit_count": 2,
+        "hits": [
+            {"source": "memoizedProps", "component": "HitSpan", "path": "memoizedProps.children", "value": "111.11"},
+            {"source": "stateNode", "component": "HitDiv", "path": "textContent", "value": "1;2\n3"}
+        ],
+        "numeric_candidates": ["222.22", "333.33"]
     });
-    let summary = widget_summary(&value);
-    assert!(summary.contains("span"));
-    assert!(summary.contains("110.17"));
+    assert_eq!(
+        widget_summary(&value),
+        "symbol=RKLB phase=post-market expected_phase_match=true expected_price=110.17 \
+         expected_seen=true matched=true fiber=true components=0:ChainSpan|1:ChainDiv \
+         hit_count=2 hits=memoizedProps:HitSpan:memoizedProps.children=111.11|\
+         stateNode:HitDiv:textContent=1,2 3 numbers=222.22,333.33"
+    );
 }

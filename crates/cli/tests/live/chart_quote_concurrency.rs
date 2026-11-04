@@ -5,6 +5,8 @@ use std::{
 
 use serde_json::Value;
 
+use crate::support::{read_chart_symbol, symbol_matches_request};
+
 const DEFAULT_SYMBOLS: &str = "PLUG,AAPL,MSFT,IONQ,MU,PLUG";
 
 #[test]
@@ -41,6 +43,9 @@ fn chart_quote_concurrency_live_smoke() {
         }
     );
 
+    // After each batch of concurrent quotes the chart must show its original
+    // symbol again, read by a separate command.
+    let original_symbol = read_chart_symbol(tv, target_id.as_deref());
     let mut checked = 0usize;
     let total_started = Instant::now();
     for run in 1..=runs {
@@ -72,6 +77,11 @@ fn chart_quote_concurrency_live_smoke() {
                     completed.elapsed.as_millis(),
                 );
             }
+            assert_eq!(
+                read_chart_symbol(tv, target_id.as_deref()),
+                original_symbol,
+                "chart symbol was not restored after run {run}"
+            );
         }
     }
 
@@ -183,9 +193,9 @@ fn assert_chart_quote_success(completed: &CompletedQuote, envelope: &Value) {
     let required_stable_samples = if switch_performed { 2 } else { 1 };
 
     if envelope.get("success").and_then(Value::as_bool) != Some(true)
-        || bare_symbol(requested) != bare_symbol(&completed.symbol)
-        || bare_symbol(observed) != bare_symbol(&completed.symbol)
-        || bare_symbol(chart) != bare_symbol(&completed.symbol)
+        || !symbol_matches_request(&completed.symbol, requested)
+        || !symbol_matches_request(&completed.symbol, observed)
+        || !symbol_matches_request(&completed.symbol, chart)
         || !freshness_passed
         || stable_samples < required_stable_samples
         || !restored
@@ -284,13 +294,4 @@ fn string_field<'a>(value: &'a Value, key: &str) -> Option<&'a str> {
         .and_then(Value::as_str)
         .map(str::trim)
         .filter(|value| !value.is_empty())
-}
-
-fn bare_symbol(symbol: &str) -> String {
-    symbol
-        .split(':')
-        .next_back()
-        .unwrap_or(symbol)
-        .trim()
-        .to_ascii_uppercase()
 }

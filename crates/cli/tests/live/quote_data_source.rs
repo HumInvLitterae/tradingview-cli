@@ -5,6 +5,8 @@ use std::{
 
 use serde_json::Value;
 
+use crate::support::phase_matches_expected;
+
 const DEFAULT_SYMBOL: &str = "NASDAQ:RKLB";
 
 #[test]
@@ -391,17 +393,6 @@ fn print_phase_result(expected: &str, observed: Option<&str>) {
     }
 }
 
-fn phase_matches_expected(expected: &str, observed: &str) -> bool {
-    normalize_phase(expected) == normalize_phase(observed)
-}
-
-fn normalize_phase(value: &str) -> String {
-    value
-        .trim()
-        .to_ascii_lowercase()
-        .replace(['-', '_', ' '], "")
-}
-
 fn summarize_envelope(envelope: &Value) -> String {
     let data = envelope.get("data").unwrap_or(&Value::Null);
     let error = envelope.get("error").unwrap_or(&Value::Null);
@@ -487,13 +478,6 @@ fn bool_field(value: &Value, key: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn phase_matching_accepts_extended_hours_aliases() {
-        assert!(phase_matches_expected("postmarket", "post-market"));
-        assert!(phase_matches_expected("premarket", "pre_market"));
-        assert!(!phase_matches_expected("postmarket", "regular"));
-    }
 
     #[test]
     fn quote_data_command_preserves_executable_and_optional_target() {

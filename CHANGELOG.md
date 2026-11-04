@@ -58,6 +58,14 @@ package version omits the leading `v`.
   writes touch only their target and are read back, and that limits and user
   input are applied as documented. The alert delete-all expression gets the
   same check in the account gate.
+- Live smokes check what they asked for. Date-range bars must fall inside the
+  requested UTC days for the requested symbol. Chart quotes must keep a
+  qualified exchange, and a separate `tv symbol` read must show the original
+  chart symbol again. An observe-chart run must return at least one sample with
+  coherent OHLC data. Private values in the range and resilience summaries now
+  go through the real summary path. The `ui eval` gate test clears
+  `TV_ALLOW_UNSAFE_UI_EVAL` itself, and the five live probes share one
+  market-phase matcher.
 
 ## v0.41.0
 

@@ -160,7 +160,12 @@ fn one_minute_date_range_live_smoke() {
         let output = run_bars_range(tv, &symbol, &from, &to, case.count);
         let elapsed = started.elapsed();
         let envelope = parse_range_output(output, elapsed);
-        cases.push(assert_range_success(case, &envelope, elapsed));
+        let requested = RangeRequest {
+            symbol: &symbol,
+            from: &from,
+            to: &to,
+        };
+        cases.push(assert_range_success(case, &requested, &envelope, elapsed));
     }
 
     let summary = RangeSmokeSummary {
@@ -268,8 +273,21 @@ fn parse_range_output(output: std::process::Output, elapsed: Duration) -> Value 
     parsed
 }
 
-fn assert_range_success(case: RangeCase, envelope: &Value, elapsed: Duration) -> RangeCaseSummary {
+/// What the smoke asked for. Assertion messages never print these values.
+struct RangeRequest<'a> {
+    symbol: &'a str,
+    from: &'a str,
+    to: &'a str,
+}
+
+fn assert_range_success(
+    case: RangeCase,
+    requested: &RangeRequest<'_>,
+    envelope: &Value,
+    elapsed: Duration,
+) -> RangeCaseSummary {
     let data = envelope.get("data").unwrap_or(&Value::Null);
+    assert_bars_match_request(data, requested);
     let bar_count = required_u64(data, "/bar_count");
     let fetch_window_count = required_u64(data, "/range_fetch_summary/fetch_window_count");
     let request_more_count = required_u64(data, "/range_fetch_summary/request_more_count");
@@ -371,6 +389,82 @@ fn is_exchange_qualified_symbol(value: &str) -> bool {
         return false;
     };
     !exchange.is_empty() && !symbol.is_empty() && !symbol.contains(':')
+}
+
+/// Checks, in memory, that the bars belong to the requested symbol and dates.
+fn assert_bars_match_request(data: &Value, requested: &RangeRequest<'_>) {
+    assert!(
+        data.get("requested_symbol").and_then(Value::as_str) == Some(requested.symbol),
+        "range smoke returned a different requested symbol"
+    );
+    assert!(
+        data.get("symbol")
+            .and_then(Value::as_str)
+            .is_some_and(|symbol| symbol.eq_ignore_ascii_case(requested.symbol)),
+        "range smoke resolved a different symbol"
+    );
+    // The requested dates are inclusive UTC days, so bars must start at or
+    // after the first midnight and before the midnight after the last day.
+    let start = utc_day_start(requested.from);
+    let end = utc_day_start(requested.to) + 86_400;
+    assert!(
+        data.pointer("/requested_range/from_time")
+            .and_then(Value::as_i64)
+            == Some(start)
+            && data
+                .pointer("/requested_range/to_time_exclusive")
+                .and_then(Value::as_i64)
+                == Some(end),
+        "range smoke reported a different requested range"
+    );
+    let times = data
+        .get("bars")
+        .and_then(Value::as_array)
+        .unwrap_or_else(|| panic!("range smoke returned no bars array"))
+        .iter()
+        .map(|bar| {
+            bar.get("time")
+                .and_then(Value::as_i64)
+                .unwrap_or_else(|| panic!("range smoke returned a bar without a time"))
+        })
+        .collect::<Vec<_>>();
+    assert!(
+        times.iter().all(|time| (start..end).contains(time)),
+        "range smoke returned a bar outside the requested dates"
+    );
+    assert!(
+        times.windows(2).all(|pair| pair[0] < pair[1]),
+        "range smoke returned bars out of order"
+    );
+    assert!(
+        data.pointer("/returned_range/first_time")
+            .and_then(Value::as_i64)
+            == times.first().copied()
+            && data
+                .pointer("/returned_range/last_time")
+                .and_then(Value::as_i64)
+                == times.last().copied(),
+        "range smoke returned_range does not match its bars"
+    );
+}
+
+/// Unix seconds at 00:00 UTC of a `YYYY-MM-DD` date (proleptic Gregorian).
+fn utc_day_start(date: &str) -> i64 {
+    let parts = date
+        .split('-')
+        .map(|part| part.parse::<i64>())
+        .collect::<Result<Vec<_>, _>>()
+        .ok()
+        .filter(|parts| parts.len() == 3)
+        .unwrap_or_else(|| panic!("range smoke dates must be YYYY-MM-DD"));
+    let (year, month, day) = (parts[0], parts[1], parts[2]);
+    // Days from civil, counting from March so leap days fall at year end.
+    let year = if month <= 2 { year - 1 } else { year };
+    let era = year.div_euclid(400);
+    let year_of_era = year - era * 400;
+    let day_of_year = (153 * (month + if month > 2 { -3 } else { 9 }) + 2) / 5 + day - 1;
+    let day_of_era = year_of_era * 365 + year_of_era / 4 - year_of_era / 100 + day_of_year;
+    (era * 146_097 + day_of_era - 719_468) * 86_400
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -477,33 +571,65 @@ fn one_minute_range_classification_rejects_contradictions() {
 
 #[test]
 fn one_minute_range_summary_is_aggregate_only() {
-    let summary = RangeSmokeSummary {
-        requested: 3,
-        completed: 3,
-        cases: vec![RangeCaseSummary {
-            case: "single_window",
-            requested: 1,
-            completed: true,
-            bar_count: 10,
-            coverage_status: "complete".to_string(),
-            fetch_window_count: 1,
-            request_more_count: 0,
-            range_truncated: false,
-            truncation_reason: "none".to_string(),
-            elapsed_ms: 42,
-        }],
+    // Private values go through the real assertion and summary path.
+    let requested = RangeRequest {
+        symbol: "NASDAQ:PRIVATE",
+        from: "2020-01-01",
+        to: "2020-01-02",
     };
-    let serialized = serde_json::to_string(&summary).unwrap();
-    for private in [
-        "NASDAQ:PRIVATE",
-        "2020-01-01",
-        "\"bars\"",
-        "\"prices\"",
-        "raw_payload",
-        "ws://",
-    ] {
-        assert!(!serialized.contains(private));
-    }
+    let envelope = serde_json::json!({
+        "success": true,
+        "command": "bars",
+        "data": {
+            "contract_version": "bars.v1",
+            "request_mode": "date_range",
+            "requested_symbol": "NASDAQ:PRIVATE",
+            "symbol": "NASDAQ:PRIVATE",
+            "timeframe": "1",
+            "bar_count": 2,
+            "requested_range": {
+                "from": "2020-01-01", "to": "2020-01-02",
+                "from_time": 1_577_836_800, "to_time_exclusive": 1_578_009_600
+            },
+            "range_alignment": {"bar_timestamp_semantics": "period_start"},
+            "returned_range": {"first_time": 1_577_836_800, "last_time": 1_578_009_540},
+            "range_coverage_status": "complete",
+            "range_fetch_summary": {
+                "fetch_window_count": 1, "request_more_count": 0,
+                "filtered_count": 2, "returned_count": 2,
+                "range_truncated": false, "range_truncation_reason": "none"
+            },
+            "data_quality": {"completed": true, "partial_result": true},
+            "source_availability": {
+                "timed_out": false,
+                "wait_summary": {"completed": true, "series_completed_seen": true}
+            },
+            "bars": [
+                {"time": 1_577_836_800, "close": 101.5},
+                {"time": 1_578_009_540, "close": 102.5}
+            ],
+            "raw_payload": "ws://private"
+        }
+    });
+    let case = assert_range_success(
+        RANGE_CASES[0],
+        &requested,
+        &envelope,
+        Duration::from_millis(42),
+    );
+    let serialized = serde_json::to_string(&RangeSmokeSummary {
+        requested: 1,
+        completed: 1,
+        cases: vec![case],
+    })
+    .unwrap();
+
+    assert_eq!(
+        serialized,
+        r#"{"requested":1,"completed":1,"cases":[{"case":"single_window","requested":1,"completed":true,"bar_count":2,"coverage_status":"complete","fetch_window_count":1,"request_more_count":0,"range_truncated":false,"truncation_reason":"none","elapsed_ms":42}]}"#
+    );
+    assert_eq!(utc_day_start("2024-02-29"), 1_709_164_800);
+    assert_eq!(utc_day_start("1970-01-01"), 0);
 }
 
 fn run_bars(tv: &str, symbol: &str, timeframe: &str, count: usize) -> std::process::Output {

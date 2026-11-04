@@ -98,6 +98,13 @@ fn observe_chart_jsonl_live_smoke() {
         summary_count, 1,
         "observe chart live smoke did not emit a final summary event"
     );
+    // A run that only produced lifecycle events never proved a chart read.
+    assert!(
+        sample_count >= 1,
+        "observe chart live smoke emitted no sample events: heartbeats={} stderr_events={}",
+        heartbeat_count,
+        stderr_events.len()
+    );
     assert_eq!(
         stdout_events
             .last()
@@ -194,6 +201,43 @@ fn assert_sample_event(event: &Value, sample_count: u64, heartbeat_count: u64) {
             heartbeat_count,
             summarize_event(event)
         );
+    }
+    assert!(
+        sample_has_bar_data(data),
+        "observe chart live smoke sample event lacked bar data: samples={} heartbeats={} summary={}",
+        sample_count,
+        heartbeat_count,
+        summarize_event(event)
+    );
+}
+
+/// A sample must carry the chart symbol and a coherent OHLC bar, not only
+/// stream metadata.
+fn sample_has_bar_data(data: &Value) -> bool {
+    let number = |key| {
+        data.get(key)
+            .and_then(Value::as_f64)
+            .filter(|v| v.is_finite())
+    };
+    let symbol = data
+        .get("symbol")
+        .and_then(Value::as_str)
+        .is_some_and(|symbol| !symbol.trim().is_empty());
+    match (
+        number("bar_time"),
+        number("open"),
+        number("high"),
+        number("low"),
+        number("close"),
+    ) {
+        (Some(time), Some(open), Some(high), Some(low), Some(close)) => {
+            symbol
+                && time > 0.0
+                && low <= high
+                && (low..=high).contains(&open)
+                && (low..=high).contains(&close)
+        }
+        _ => false,
     }
 }
 
@@ -340,4 +384,24 @@ fn number_summary(value: Option<&Value>) -> String {
         .and_then(Value::as_u64)
         .map(|value| value.to_string())
         .unwrap_or_else(|| "<missing>".to_string())
+}
+
+#[test]
+fn sample_bar_data_requires_symbol_and_coherent_ohlc() {
+    let valid = serde_json::json!({
+        "symbol": "NASDAQ:EXAMPLE", "bar_time": 1_700_000_000,
+        "open": 10.0, "high": 12.0, "low": 9.0, "close": 11.0
+    });
+    assert!(sample_has_bar_data(&valid));
+    for (key, value) in [
+        ("symbol", serde_json::json!("")),
+        ("bar_time", Value::Null),
+        ("close", serde_json::json!(13.0)),
+        ("open", serde_json::json!(8.0)),
+        ("high", Value::Null),
+    ] {
+        let mut sample = valid.clone();
+        sample[key] = value;
+        assert!(!sample_has_bar_data(&sample), "{key}");
+    }
 }
