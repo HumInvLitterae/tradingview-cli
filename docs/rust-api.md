@@ -48,6 +48,12 @@ Prefer the typed functions from `tradingview-market` for Rust callers:
 - `quote_symbol_typed(symbol)`
 - `quote_symbols_typed(symbols)`
 
+`quote_symbols_typed` builds a new HTTP client on every call. A caller that
+repeats batch quote reads, such as a polling loop, can keep one
+`QuoteClient::new()?` and call `client.quote_symbols_typed(symbols)`, so idle
+connections may be reused. Clones share one connection pool; results, timeouts,
+the 25-symbol limit and four-request concurrency match the free function.
+
 The JSON-returning functions `symbol_search`, `symbol_info`,
 `fundamentals_symbol`, `quote_symbol`, `quote_symbols`, and `bars_symbol`
 remain public for CLI payload compatibility. New Rust code should not parse

@@ -54,7 +54,9 @@ connection behavior.
 
 Each crate that owns HTTP creates a configured `reqwest::Client` for the
 top-level operation and passes it through sequential internal reads, allowing
-connection-pool reuse without a global client or cross-source cache. Public
+connection-pool reuse without a global client or cross-source cache. `watch
+compare` keeps one `tradingview_market::QuoteClient` for the whole run, so a poll
+can reuse connections left idle by the previous one. Public
 TradingView HTTP reads use a five-second connection timeout and a fifteen-second
 total request deadline. Local CDP HTTP sessions use one- and three-second
 deadlines; CDP WebSocket handshakes use five seconds; and browserless bars

@@ -7,6 +7,12 @@ package version omits the leading `v`.
 
 ## Unreleased
 
+### Added
+
+- `tradingview_market::QuoteClient` reads batch quotes over HTTP connections
+  kept between calls. `watch compare` uses one for the whole run, so polls can
+  reuse idle connections; its output is unchanged.
+
 ### Changed
 
 - Screener commands report saved data and temporary UI separately. After a

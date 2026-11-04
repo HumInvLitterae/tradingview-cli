@@ -103,15 +103,32 @@ pub async fn quote_symbols(symbols: Vec<String>) -> Result<Value, AppError> {
 /// This is the typed Rust API. Use [`quote_symbols`] only when preserving the
 /// CLI-compatible JSON payload shape is required.
 pub async fn quote_symbols_typed(symbols: Vec<String>) -> Result<BatchQuotes, AppError> {
-    let client = configured_client()?;
-    quote_symbols_typed_with_client(&client, symbols).await
+    QuoteClient::new()?.quote_symbols_typed(symbols).await
 }
 
-pub(crate) async fn quote_symbols_typed_with_client(
-    client: &reqwest::Client,
-    symbols: Vec<String>,
-) -> Result<BatchQuotes, AppError> {
-    quote_symbols_typed_with_client_and_url(client, symbols, QUOTE_SCAN_URL).await
+/// Reads batch quotes over HTTP connections kept between calls.
+///
+/// [`quote_symbols_typed`] builds a new client for every call. Repeated readers
+/// such as polling loops can keep one `QuoteClient` so that idle connections
+/// may be reused. Clones share one connection pool. Each request keeps the
+/// same connect and total timeouts, and results match [`quote_symbols_typed`].
+#[derive(Clone, Debug)]
+pub struct QuoteClient {
+    client: reqwest::Client,
+}
+
+impl QuoteClient {
+    pub fn new() -> Result<Self, AppError> {
+        Ok(Self {
+            client: configured_client()?,
+        })
+    }
+
+    /// Reads multiple scanner-backed quotes in input order, like
+    /// [`quote_symbols_typed`].
+    pub async fn quote_symbols_typed(&self, symbols: Vec<String>) -> Result<BatchQuotes, AppError> {
+        quote_symbols_typed_with_client_and_url(&self.client, symbols, QUOTE_SCAN_URL).await
+    }
 }
 
 async fn quote_symbols_typed_with_client_and_url(
@@ -625,10 +642,20 @@ mod tests {
     }
 
     async fn read_http_request(stream: &mut tokio::net::TcpStream) -> String {
+        try_read_http_request(stream)
+            .await
+            .expect("client closed before a complete request")
+    }
+
+    /// Returns `None` when the client closes the connection between requests.
+    async fn try_read_http_request(stream: &mut tokio::net::TcpStream) -> Option<String> {
         let mut request = Vec::new();
         let mut buffer = [0u8; 512];
         let (header_end, content_length) = loop {
             let count = stream.read(&mut buffer).await.unwrap();
+            if count == 0 && request.is_empty() {
+                return None;
+            }
             assert!(count > 0, "client closed before a complete request");
             request.extend_from_slice(&buffer[..count]);
             if let Some(header_end) = request.windows(4).position(|part| part == b"\r\n\r\n") {
@@ -649,7 +676,91 @@ mod tests {
             assert!(count > 0, "client closed before the request body completed");
             request.extend_from_slice(&buffer[..count]);
         }
-        String::from_utf8(request).unwrap()
+        Some(String::from_utf8(request).unwrap())
+    }
+
+    /// Serves AAPL quotes with keep-alive and counts accepted connections.
+    /// With `close_after_first`, each connection closes after one response.
+    fn spawn_keep_alive_quote_server(
+        listener: TcpListener,
+        close_after_first: bool,
+    ) -> Arc<AtomicUsize> {
+        let accepts = Arc::new(AtomicUsize::new(0));
+        let server_accepts = Arc::clone(&accepts);
+        tokio::spawn(async move {
+            loop {
+                let (mut stream, _) = listener.accept().await.unwrap();
+                server_accepts.fetch_add(1, Ordering::SeqCst);
+                tokio::spawn(async move {
+                    while try_read_http_request(&mut stream).await.is_some() {
+                        let payload = json!({
+                            "data": [{
+                                "s": "NASDAQ:AAPL",
+                                "d": [
+                                    "AAPL", "Apple Inc.", 100.0, 100.0, 100.0, 100.0,
+                                    1000, 0.0, "NASDAQ", "stock", "common"
+                                ]
+                            }]
+                        })
+                        .to_string();
+                        let response = format!(
+                            "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: keep-alive\r\n\r\n{}",
+                            payload.len(),
+                            payload
+                        );
+                        stream.write_all(response.as_bytes()).await.unwrap();
+                        if close_after_first {
+                            break;
+                        }
+                    }
+                });
+            }
+        });
+        accepts
+    }
+
+    async fn poll_quotes(client: &QuoteClient, address: std::net::SocketAddr) {
+        let batch = quote_symbols_typed_with_client_and_url(
+            &client.client,
+            vec!["NASDAQ:AAPL".to_string()],
+            &format!("http://{address}/scan"),
+        )
+        .await
+        .unwrap();
+        assert_eq!(batch.resolved_count, 1);
+    }
+
+    #[tokio::test]
+    async fn quote_client_reuses_connections_across_polls() {
+        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let address = listener.local_addr().unwrap();
+        let accepts = spawn_keep_alive_quote_server(listener, false);
+
+        let shared = QuoteClient::new().unwrap();
+        for _ in 0..3 {
+            poll_quotes(&shared, address).await;
+        }
+        assert_eq!(accepts.load(Ordering::SeqCst), 1);
+
+        // A client per poll, as `quote_symbols_typed` does, opens one each time.
+        for _ in 0..3 {
+            poll_quotes(&QuoteClient::new().unwrap(), address).await;
+        }
+        assert_eq!(accepts.load(Ordering::SeqCst), 4);
+    }
+
+    #[tokio::test]
+    async fn quote_client_reconnects_after_the_server_closes_an_idle_connection() {
+        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let address = listener.local_addr().unwrap();
+        let accepts = spawn_keep_alive_quote_server(listener, true);
+
+        let client = QuoteClient::new().unwrap();
+        for poll in 1..=3 {
+            poll_quotes(&client, address).await;
+            assert_eq!(accepts.load(Ordering::SeqCst), poll);
+            sleep(Duration::from_millis(50)).await;
+        }
     }
 
     #[test]

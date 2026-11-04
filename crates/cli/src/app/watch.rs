@@ -6,7 +6,7 @@ use std::{
 
 use serde_json::{Value, json};
 use tradingview_core::{AppError, ErrorBody, ErrorEnvelope, ErrorKind, SuccessEnvelope};
-use tradingview_market::quote_symbols_typed;
+use tradingview_market::QuoteClient;
 
 use crate::{
     app::output::{
@@ -81,13 +81,20 @@ async fn run_watch_compare(request: WatchCompareRequest) -> Result<(), JsonlRunE
     let stderr = std::io::stderr();
     let mut stdout = JsonlOutput::new(stdout.lock());
     let mut stderr = JsonlOutput::new(stderr.lock());
+    // One client keeps idle connections between polls. A failed build is that
+    // poll's error, and the next poll tries again.
+    let mut cached_client: Option<QuoteClient> = None;
     run_watch_compare_with(
         request,
         &mut stdout,
         &mut stderr,
         move |elapsed_ms, poll_index| {
             let request = poll_request.clone();
-            async move { watch_sample(&request, elapsed_ms, poll_index).await }
+            let client = match cached_client.clone() {
+                Some(client) => Ok(client),
+                None => QuoteClient::new().inspect(|created| cached_client = Some(created.clone())),
+            };
+            async move { watch_sample(&client?, &request, elapsed_ms, poll_index).await }
         },
     )
     .await
@@ -317,11 +324,12 @@ fn validate_positive_optional(field: &str, value: Option<u64>) -> Result<(), App
 }
 
 async fn watch_sample(
+    client: &QuoteClient,
     request: &WatchCompareRequest,
     elapsed_ms: u64,
     poll_index: u64,
 ) -> Result<Value, AppError> {
-    let batch = quote_symbols_typed(request.symbols.clone()).await?;
+    let batch = client.quote_symbols_typed(request.symbols.clone()).await?;
     let mut payload = serde_json::to_value(batch)
         .map_err(|err| AppError::new(ErrorKind::Internal, err.to_string()))?;
     let Some(object) = payload.as_object_mut() else {

@@ -15,6 +15,7 @@
 //! - [`events_symbol_typed`] for event-shaped earnings/dividends readback.
 //! - [`quote_symbol_typed`] for one scanner-backed quote.
 //! - [`quote_symbols_typed`] for ordered batch quotes.
+//! - [`QuoteClient`] for repeated batch quotes over reused connections.
 //! - [`compare_symbols_typed`] for ordered multi-symbol comparison packets.
 //! - [`bars_symbol`] for CLI-compatible browserless recent historical bars.
 //! - [`bars_symbol_range`] for CLI-compatible browserless daily range bars.
@@ -72,7 +73,9 @@ pub use fundamentals::{
     fundamentals_symbol_with_groups_typed, validate_fundamentals_selection,
 };
 pub use info::{symbol_info, symbol_info_typed};
-pub use quote::{quote_symbol, quote_symbol_typed, quote_symbols, quote_symbols_typed};
+pub use quote::{
+    QuoteClient, quote_symbol, quote_symbol_typed, quote_symbols, quote_symbols_typed,
+};
 pub use search::{search_symbols_typed, symbol_search};
 pub use snapshot::{snapshot_symbol, snapshot_symbol_typed};
 pub use types::{
