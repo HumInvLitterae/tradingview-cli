@@ -498,6 +498,26 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn trial_measures_synchronous_serialization() {
+        // A paused clock cannot advance inside synchronous work, so this uses
+        // real time and checks only a lower bound.
+        let result = run_trial(
+            || async { Ok(runtime(Duration::ZERO, [json!({"ok": true})])) },
+            |runtime| Box::pin(async move { runtime.evaluate("fixture", false).await }),
+            |value| {
+                std::thread::sleep(Duration::from_millis(10));
+                serde_json::to_vec(value)
+                    .map_err(|_| AppError::new(ErrorKind::Internal, "fixture serialization failed"))
+            },
+        )
+        .await
+        .unwrap();
+
+        assert!(result.direct.payload_serialize_ms >= 10);
+        assert!(result.direct.trial_ms >= result.direct.payload_serialize_ms);
+    }
+
+    #[tokio::test]
     async fn trial_rejects_zero_or_multiple_evaluations() {
         let zero = run_trial(
             || async { Ok(runtime(Duration::ZERO, [])) },
