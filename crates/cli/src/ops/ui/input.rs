@@ -352,8 +352,19 @@ mod tests {
         let result = ui_hover(&mut runtime, "text", "Alerts").await.unwrap();
 
         assert_eq!(result["hovered"]["x"], 10.0);
-        assert_eq!(runtime.mouse_events.len(), 1);
-        assert_eq!(runtime.mouse_events[0].event_type, MouseEventType::Moved);
+        assert_eq!(
+            runtime.mouse_events,
+            vec![MouseEvent {
+                event_type: MouseEventType::Moved,
+                x: 10.0,
+                y: 20.0,
+                button: None,
+                buttons: None,
+                click_count: None,
+                delta_x: None,
+                delta_y: None,
+            }]
+        );
     }
 
     #[tokio::test]
@@ -372,10 +383,46 @@ mod tests {
     async fn ui_mouse_dispatches_click_events() {
         let mut runtime = FakeRuntime::new([]);
 
-        let result = ui_mouse(&mut runtime, 1.0, 2.0, true, false).await.unwrap();
+        let result = ui_mouse(&mut runtime, 1.5, 2.5, true, true).await.unwrap();
 
-        assert_eq!(result["button"], "right");
+        assert_eq!(
+            result,
+            json!({"x": 1.5, "y": 2.5, "button": "right", "double_click": true})
+        );
+        let event = |event_type, button, buttons, click_count| MouseEvent {
+            event_type,
+            x: 1.5,
+            y: 2.5,
+            button,
+            buttons,
+            click_count,
+            delta_x: None,
+            delta_y: None,
+        };
+        // Move, press, release for the first click, then again with
+        // click_count 2 for the double click.
+        assert_eq!(
+            runtime.mouse_events,
+            vec![
+                event(MouseEventType::Moved, None, None, None),
+                event(MouseEventType::Pressed, Some("right"), Some(2), Some(1)),
+                event(MouseEventType::Released, Some("right"), Some(0), Some(1)),
+                event(MouseEventType::Moved, None, None, None),
+                event(MouseEventType::Pressed, Some("right"), Some(2), Some(2)),
+                event(MouseEventType::Released, Some("right"), Some(0), Some(2)),
+            ]
+        );
+
+        let mut runtime = FakeRuntime::new([]);
+        ui_mouse(&mut runtime, 3.0, 4.0, false, false)
+            .await
+            .unwrap();
         assert_eq!(runtime.mouse_events.len(), 3);
-        assert_eq!(runtime.mouse_events[1].button, Some("right"));
+        assert_eq!(runtime.mouse_events[1].button, Some("left"));
+        assert_eq!(runtime.mouse_events[1].buttons, Some(1));
+        assert_eq!(
+            (runtime.mouse_events[1].x, runtime.mouse_events[1].y),
+            (3.0, 4.0)
+        );
     }
 }
