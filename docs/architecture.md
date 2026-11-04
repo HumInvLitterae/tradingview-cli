@@ -59,9 +59,11 @@ compare` keeps one `tradingview_market::QuoteClient` for the whole run, so a pol
 can reuse connections left idle by the previous one. Public
 TradingView HTTP reads use a five-second connection timeout and a fifteen-second
 total request deadline. Local CDP HTTP sessions use one- and three-second
-deadlines; CDP WebSocket handshakes use five seconds; and browserless bars
-WebSocket connection, setup, read-side sends, and cleanup are bounded by the
-existing ten-second bars request deadline. HTTP-owning crates use the same
+deadlines; and CDP WebSocket handshakes use five seconds. Browserless bars
+has no whole-operation deadline: the WebSocket connection, the setup sends, the
+read loop with its read-side sends, and cleanup each start their own ten-second
+deadline, so a stalled source can take about 40 seconds after any REST symbol
+search, which uses the HTTP deadlines above. HTTP-owning crates use the same
 error taxonomy while keeping reqwest-specific code local: input rejected
 before I/O is `Validation`; DNS, TCP, TLS, socket, and body-transport failure
 is `Connection`; deadline expiry is `Timeout`; received non-success status,

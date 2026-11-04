@@ -67,6 +67,13 @@ package version omits the leading `v`.
   `TV_ALLOW_UNSAFE_UI_EVAL` itself, and the five live probes share one
   market-phase matcher.
 
+### Documentation
+
+- The architecture guide now states that browserless bars has no
+  whole-operation deadline: connection, setup, reading and cleanup each allow
+  ten seconds. The adapter-boundary notes say `tv bars` lives in
+  `tradingview-market` and point to the current roadmap.
+
 ## v0.41.0
 
 ### Added

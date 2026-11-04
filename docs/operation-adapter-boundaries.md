@@ -148,12 +148,14 @@ for a concrete workflow and clear endpoint evidence.
 These are not current crate-extraction tasks. Each needs its own evidence-gated
 ExecPlan before behavior changes.
 
-For `v0.16.0`, `tv bars` is a stable CLI-owned Desktop-free historical bars
-read rather than a `tradingview-market` typed API. It still depends on an
-undocumented WebSocket chart-session protocol, so callers must keep its source
-metadata and data-quality boundary visible. A broad diagnostic command remains
-deferred until existing diagnostics prove insufficient. See
-`docs/v0.5-roadmap.md` for the current roadmap.
+`tv bars` is a stable Desktop-free historical bars read. Since `v0.17.0` its
+implementation lives in `tradingview-market`, which exposes `bars_symbol` and
+`bars_symbol_range` as JSON-returning wrappers for the `bars.v1` contract
+rather than typed bars APIs; the CLI `ops` layer is a thin command adapter. It
+still depends on an undocumented WebSocket chart-session protocol, so callers
+must keep its source metadata and data-quality boundary visible. A broad
+diagnostic command remains deferred until existing diagnostics prove
+insufficient. See `docs/next-version-roadmap.md` for current direction.
 
 For `v0.6.0`, source taxonomy and observation-first planning are recorded.
 Existing Desktop-backed `tv stream ...` commands are current-chart JSONL
