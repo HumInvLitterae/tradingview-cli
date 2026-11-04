@@ -24,7 +24,8 @@ package version omits the leading `v`.
   `details.write_outcome: "uncertain"` with `save_result` or `delete_result`.
   A save or delete request that times out, loses its connection or throws
   before an answer adds `details.write_outcome: "uncertain"` alone, because it
-  may have been applied. A request the provider refuses is still a plain error.
+  may have been applied. A request the provider refuses, and a readback that
+  is read but does not match, are still plain errors.
 - Screener storage requests and page reloads no longer embed the UI helper
   script, seven uncalled helpers were removed, and the two screen-storage reads
   share one expression. Output is unchanged; the account JavaScript gate now
@@ -41,9 +42,14 @@ package version omits the leading `v`.
 ### Fixed
 
 - Screener commands that open the panel now attempt to close it after errors,
-  not only on success paths. When `filters add` fails after opening its
-  add-filter popup, it closes that popup first, sending Escape only while the
-  popup is visible.
+  not only on success paths, including when the request that opens it gets no
+  answer. When `filters add` fails after opening its add-filter popup, it
+  closes that popup first, sending Escape only while the popup is visible.
+- Screener storage reads that receive a successful response with an
+  unreadable body now fail instead of reading as an empty screen list or
+  column set, so after a write they add `details.write_outcome: "uncertain"`.
+  A screen delete could previously report `confirmed: true` from such a
+  response.
 - Snapshot total-failure, screenshot clip and crop, hotlist slug and MCP
   technicals interval tests now check the production path and independent
   expected values, so a dropped error detail, wrong crop origin or removed

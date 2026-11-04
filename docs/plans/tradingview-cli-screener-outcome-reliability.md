@@ -120,13 +120,18 @@ values and the `screener` command name were checked against the current code.
   and screen save keep the error.
 - Failed readback adds `write_outcome`; a failed save does not. A failed refresh
   after confirmed readback returns success.
-- Run the `tradingview-cli` library and `cli_contract_spec` tests, Clippy and format
+- Run the `tradingview-cli` library and `cli_contract` tests, Clippy and format
   checks.
 - `UNCONFIRMED` until observed in Desktop: whether Escape closes the panel while a
   screen name dialog is open, and how often a close fails after a write.
 - A storage save or delete whose evaluation times out, loses its connection or
   throws adds `write_outcome` without a result, because the request may have
   reached the provider. A refused request does not.
+- A readback whose response is successful but unreadable counts as a failed
+  readback, so it cannot confirm a delete or remove from an empty list.
+- If the request that opens the panel gets no answer, the command closes the panel
+  when it is visible and returns the open error.
+- `filters add` stops sending Escape to its add-filter popup once the popup is gone.
 - Not covered: a readback mismatch or a failed UI post-check keeps its existing
   error without `write_outcome`.
 

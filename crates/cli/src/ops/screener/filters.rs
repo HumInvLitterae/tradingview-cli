@@ -1081,7 +1081,8 @@ async fn wait_for_filter_add_range_option(
     }
 }
 
-/// Sends Escape only while the add-filter popup is present.
+/// Sends Escape only while the add-filter popup is present, checking it after
+/// each key so that no Escape reaches whatever lies beneath it.
 async fn close_filter_add_popup(runtime: &mut impl RuntimeEvaluator) -> Result<(), AppError> {
     runtime
         .evaluate(
@@ -1092,7 +1093,11 @@ async fn close_filter_add_popup(runtime: &mut impl RuntimeEvaluator) -> Result<(
                     if (!findScreenerAddFilterDialog()) {
                         return { closed: false, reason: 'popup_not_found' };
                     }
-                    closeScreenerTransientPopups();
+                    var escape = { key: 'Escape', code: 'Escape', keyCode: 27, which: 27, bubbles: true, cancelable: true };
+                    for (var i = 0; i < 3 && findScreenerAddFilterDialog(); i++) {
+                        document.dispatchEvent(new KeyboardEvent('keydown', escape));
+                        document.dispatchEvent(new KeyboardEvent('keyup', escape));
+                    }
                     return { closed: !findScreenerAddFilterDialog() };
                 })()
                 "#,
@@ -2567,7 +2572,7 @@ mod tests {
             runtime
                 .evaluated
                 .iter()
-                .all(|(expression, _)| !expression.contains("closeScreenerTransientPopups();"))
+                .all(|(expression, _)| !expression.contains("reason: 'popup_not_found'"))
         );
         assert_eq!(runtime.key_events.len(), 2);
     }
@@ -2598,25 +2603,26 @@ mod tests {
                     getAttribute: () => null
                 }};
             }}
-            function page(popupOpen) {{
+            // The popup closes after this many Escape keydowns (0: never open).
+            function page(keydownsToClose) {{
                 const events = [];
-                let open = popupOpen;
+                let remaining = keydownsToClose;
                 global.document = {{
                     querySelectorAll: selector =>
-                        open && selector.includes('[role="dialog"]')
+                        remaining > 0 && selector.includes('[role="dialog"]')
                             ? [element('フィルターを追加 RSI')] : [],
                     dispatchEvent: event => {{
                         events.push(event.type + ':' + event.key);
-                        open = false;
+                        if (event.type === 'keydown') remaining -= 1;
                     }}
                 }};
                 return events;
             }}
             const results = [];
-            for (const popupOpen of [false, true]) {{
-                const events = page(popupOpen);
+            for (const keydownsToClose of [0, 1, 2, 99]) {{
+                const events = page(keydownsToClose);
                 const result = eval(expression);
-                results.push({{ result, events }});
+                results.push({{ result, keys: events.length / 2, events: [...new Set(events)] }});
             }}
             console.log(JSON.stringify(results));
             "#
@@ -2625,15 +2631,10 @@ mod tests {
         assert_eq!(
             results,
             json!([
-                { "result": { "closed": false, "reason": "popup_not_found" }, "events": [] },
-                {
-                    "result": { "closed": true },
-                    "events": [
-                        "keydown:Escape", "keyup:Escape",
-                        "keydown:Escape", "keyup:Escape",
-                        "keydown:Escape", "keyup:Escape"
-                    ]
-                }
+                { "result": { "closed": false, "reason": "popup_not_found" }, "keys": 0, "events": [] },
+                { "result": { "closed": true }, "keys": 1, "events": ["keydown:Escape", "keyup:Escape"] },
+                { "result": { "closed": true }, "keys": 2, "events": ["keydown:Escape", "keyup:Escape"] },
+                { "result": { "closed": false }, "keys": 3, "events": ["keydown:Escape", "keyup:Escape"] }
             ])
         );
     }

@@ -53,6 +53,9 @@ Other close failures remain errors.
 A storage write whose readback fails adds `details.write_outcome: "uncertain"`
 and `details.save_result`. A save request that times out, loses its connection
 or throws before an answer adds only `details.write_outcome: "uncertain"`. A
-save the provider refuses carries its response and no `write_outcome`.
+save the provider refuses carries its response and no `write_outcome`, and so
+does a readback that is read but does not match the request or a UI edit whose
+post-check fails. A readback response that is not a readable screen document
+counts as a failed readback.
 Official MCP can answer a suitable data-only query but does not edit these
 Desktop filters. Keep account settings and IDs private.

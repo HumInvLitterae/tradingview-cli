@@ -818,10 +818,10 @@ pub(super) async fn fetch_screener_storage_screens(
                     if (!response.ok || !Array.isArray(body)) {{
                         return {{
                             storage_available: true,
-                            fetch_ok: response.ok,
+                            fetch_ok: false,
                             status: response.status,
                             status_text: response.statusText,
-                            reason: 'custom_screens_fetch_failed',
+                            reason: response.ok ? 'custom_screens_body_invalid' : 'custom_screens_fetch_failed',
                             screens: []
                         }};
                     }}
@@ -2128,6 +2128,42 @@ mod tests {
         let details = error.details.unwrap();
         assert_eq!(details["write_outcome"], "uncertain");
         assert_eq!(details["delete_result"]["deleted"], true);
+    }
+
+    #[tokio::test]
+    async fn screener_screens_delete_does_not_confirm_from_an_unreadable_list() {
+        let storage = json!({
+            "storage_available": true,
+            "fetch_ok": true,
+            "screens": [
+                { "index": 0, "id": "screen-1", "name": "CLI-Test1", "active": true, "owner": true, "shared": false },
+                { "index": 1, "id": "screen-2", "name": "CLI-Test2", "active": false, "owner": true, "shared": false }
+            ]
+        });
+        // The storage list expression reports a 200 with a non-list body this way.
+        let unreadable = json!({
+            "storage_available": true,
+            "fetch_ok": false,
+            "status": 200,
+            "reason": "custom_screens_body_invalid",
+            "screens": []
+        });
+        let mut runtime = FakeRuntime::new([
+            json!({ "button_found": true, "open": true, "screen_title": "CLI-Test1" }),
+            storage,
+            json!({ "deleted": true, "status": 204 }),
+            unreadable,
+        ]);
+
+        let error = screener_screens_delete(&mut runtime, "CLI-Test2", false, true)
+            .await
+            .unwrap_err();
+
+        assert_eq!(error.kind, ErrorKind::InternalApiUnavailable);
+        let details = error.details.unwrap();
+        assert_eq!(details["write_outcome"], "uncertain");
+        assert_eq!(details["delete_result"]["deleted"], true);
+        assert_eq!(details["reason"], "custom_screens_body_invalid");
     }
 
     #[tokio::test]

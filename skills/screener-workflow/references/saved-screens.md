@@ -14,6 +14,8 @@ Other close failures remain errors.
 A delete whose readback fails adds `details.write_outcome: "uncertain"` and
 `details.delete_result`. A delete request that times out, loses its connection
 or throws before an answer adds only `details.write_outcome: "uncertain"`.
+A list response that is not a readable list counts as a failed readback. A list
+that is read and still contains the screen is an error without `write_outcome`.
 Inspect storage before retrying.
 
 | Action | Execution boundary and evidence |

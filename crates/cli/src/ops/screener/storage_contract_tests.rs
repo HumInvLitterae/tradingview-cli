@@ -167,10 +167,15 @@ const run = expression => eval(expression);
         reason: 'screen_fetch_failed',
         columns: []
     });
+    // A 200 whose body is not a screen document is a failed read, not an empty screen.
     respond(200, new Error('invalid json'));
     const unreadable = await run(currentGet);
-    assert.equal(unreadable.fetch_ok, true);
-    assert.equal(unreadable.reason, 'screen_fetch_failed');
+    assert.equal(unreadable.fetch_ok, false);
+    assert.equal(unreadable.reason, 'screen_body_invalid');
+    respond(200, []);
+    const listBody = await run(activeGet);
+    assert.equal(listBody.fetch_ok, false);
+    assert.equal(listBody.reason, 'screen_body_invalid');
 
     const body = {
         id: 'scr/1',
@@ -288,10 +293,15 @@ const run = expression => eval(expression);
     assert.equal(calls.length, 0);
 
     setWindow(initData);
+    // A 200 whose body is not a list is a failed read, not an empty list.
     respond(200, {});
     const notList = await run(screensGet);
-    assert.equal(notList.fetch_ok, true);
-    assert.equal(notList.reason, 'custom_screens_fetch_failed');
+    assert.equal(notList.fetch_ok, false);
+    assert.equal(notList.reason, 'custom_screens_body_invalid');
+    respond(503, []);
+    const unavailable = await run(screensGet);
+    assert.equal(unavailable.fetch_ok, false);
+    assert.equal(unavailable.reason, 'custom_screens_fetch_failed');
     respond(200, [
         { id: 1, title: 'Momentum', is_owner: true, is_shared: false },
         { id: 'b', title: 'Other' },

@@ -962,10 +962,11 @@ false even though a separate storage-based remove command exists. Reset remains
 unimplemented. Treat these flags as limits of the probe, not a CLI capability map.
 
 These menu probes change visible UI even when the Screener is already open.
-Commands attempt to close any panel they opened, including after errors. Popups
+Commands attempt to close any panel they opened, including after errors and
+when the request that opens it gets no answer. Popups
 are closed by the expression that opened them, so a popup can stay open when a
 Desktop call fails midway; only `filters add` closes its add-filter popup again
-after an error, and only when that popup is visible. Commands do not reconstruct
+after an error, sending Escape only while that popup is visible. Commands do not reconstruct
 prior popup/focus state, and cleanup can fail. `restored_open_state` is the
 initial panel state, not cleanup success.
 
@@ -994,6 +995,8 @@ Other close failures remain errors.
 A delete whose readback fails adds `details.write_outcome: "uncertain"` and
 `details.delete_result`. A delete request that times out, loses its connection
 or throws before an answer adds only `details.write_outcome: "uncertain"`.
+A list response that is not a readable list counts as a failed readback. A list
+that is read and still contains the screen is an error without `write_outcome`.
 Inspect storage before retrying.
 
 | Action | Execution boundary and evidence |
@@ -1042,7 +1045,10 @@ Intervening edits are not reconciled by the adapter.
 A write may complete before readback fails. Such errors add
 `details.write_outcome: "uncertain"` and `details.save_result`. A save request
 that times out, loses its connection or throws before an answer may also have
-been applied, so it adds only `details.write_outcome: "uncertain"`. Inspect current
+been applied, so it adds only `details.write_outcome: "uncertain"`. A readback
+response that is not a readable screen document counts as a failed readback. A
+readback that is read but does not match the request, and a save the provider
+refuses, are errors without `write_outcome`. Inspect current
 storage before retrying, especially add, which can insert duplicates. These are account-setting
 changes, not temporary display toggles. Official MCP does not edit these saved
 column sets. Keep account-local configuration and IDs private.
@@ -1104,7 +1110,10 @@ Other close failures remain errors.
 A storage write whose readback fails adds `details.write_outcome: "uncertain"`
 and `details.save_result`. A save request that times out, loses its connection
 or throws before an answer adds only `details.write_outcome: "uncertain"`. A
-save the provider refuses carries its response and no `write_outcome`.
+save the provider refuses carries its response and no `write_outcome`, and so
+does a readback that is read but does not match the request or a UI edit whose
+post-check fails. A readback response that is not a readable screen document
+counts as a failed readback.
 Official MCP can answer a suitable data-only query but does not edit these
 Desktop filters. Keep account settings and IDs private.
 

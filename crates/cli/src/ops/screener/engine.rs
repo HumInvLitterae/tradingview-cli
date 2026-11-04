@@ -50,7 +50,7 @@ impl<'a, R: RuntimeEvaluator> ScreenerMutationSession<'a, R> {
         let mut opened_for_mutation = false;
 
         if !restored_open_state {
-            screener_open(runtime).await?;
+            open_panel_or_close_again(runtime).await?;
             opened_for_mutation = true;
         }
 
@@ -88,6 +88,16 @@ impl<'a, R: RuntimeEvaluator> ScreenerMutationSession<'a, R> {
     }
 }
 
+/// Opens the panel for a command that found it closed. A failed open request
+/// may still have opened it, so the panel is closed again when it is visible.
+async fn open_panel_or_close_again(runtime: &mut impl RuntimeEvaluator) -> Result<(), AppError> {
+    if let Err(error) = screener_open(runtime).await {
+        let _ = screener_close(runtime).await;
+        return Err(error);
+    }
+    Ok(())
+}
+
 #[cfg(test)]
 pub(super) fn runtime_failing_at_call(
     steps: &[Value],
@@ -109,7 +119,7 @@ pub(super) async fn read_screener_with_restore(
     let mut opened_for_read = false;
 
     if !restored_open_state {
-        screener_open(runtime).await?;
+        open_panel_or_close_again(runtime).await?;
         opened_for_read = true;
     }
 
@@ -237,13 +247,13 @@ async fn fetch_screener_storage_config(
                         encodeURIComponent(screenerKey) + '&version=' + encodeURIComponent(version);
                     var response = await fetch(url, {{ credentials: 'include' }});
                     var body = await response.json().catch(function() {{ return null; }});
-                    if (!response.ok || !body) {{
+                    if (!response.ok || !body || typeof body !== 'object' || Array.isArray(body)) {{
                         return {{
                             storage_available: true,
-                            fetch_ok: response.ok,
+                            fetch_ok: false,
                             status: response.status,
                             status_text: response.statusText,
-                            reason: 'screen_fetch_failed',
+                            reason: response.ok ? 'screen_body_invalid' : 'screen_fetch_failed',
                             columns: []
                         }};
                     }}
@@ -1152,8 +1162,64 @@ pub(super) fn expanded_expression(template: &str) -> String {
 mod tests {
     use serde_json::json;
 
+    use super::super::super::test_support::FakeRuntime;
     use super::*;
     use tradingview_core::ErrorKind;
+
+    fn open_request_lost(after_open: Value) -> FakeRuntime {
+        FakeRuntime::new([
+            json!({ "button_found": true, "open": false }),
+            after_open,
+            json!({ "button_found": true, "open": false }),
+        ])
+        .with_evaluate_app_error_at_call(
+            1,
+            AppError::new(ErrorKind::Timeout, "CDP request timed out")
+                .with_details(json!({ "failure_stage": "method_call" })),
+        )
+    }
+
+    #[tokio::test]
+    async fn mutation_session_closes_a_panel_whose_open_request_got_no_answer() {
+        let mut runtime = open_request_lost(json!({ "button_found": true, "open": true }));
+
+        let error = match ScreenerMutationSession::open(&mut runtime).await {
+            Ok(_) => panic!("a lost open request should fail"),
+            Err(error) => error,
+        };
+
+        assert_eq!(error.kind, ErrorKind::Timeout);
+        assert_eq!(runtime.evaluated.len(), 4);
+        assert_eq!(runtime.key_events.len(), 2);
+    }
+
+    #[tokio::test]
+    async fn mutation_session_leaves_a_panel_that_did_not_open_alone() {
+        let mut runtime = open_request_lost(json!({ "button_found": true, "open": false }));
+
+        let error = match ScreenerMutationSession::open(&mut runtime).await {
+            Ok(_) => panic!("a lost open request should fail"),
+            Err(error) => error,
+        };
+
+        assert_eq!(error.kind, ErrorKind::Timeout);
+        assert_eq!(runtime.evaluated.len(), 3);
+        assert!(runtime.key_events.is_empty());
+    }
+
+    #[tokio::test]
+    async fn read_closes_a_panel_whose_open_request_got_no_answer() {
+        let mut runtime = open_request_lost(json!({ "button_found": true, "open": true }));
+
+        let error = match read_screener_with_restore(&mut runtime, None).await {
+            Ok(_) => panic!("a lost open request should fail"),
+            Err(error) => error,
+        };
+
+        assert_eq!(error.kind, ErrorKind::Timeout);
+        assert_eq!(runtime.evaluated.len(), 4);
+        assert_eq!(runtime.key_events.len(), 2);
+    }
 
     #[test]
     fn ensure_dialog_open_rejects_toolbar_only_state() {
