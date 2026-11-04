@@ -318,7 +318,7 @@ pub async fn screener_columns_reorder(
     }))
 }
 
-async fn save_screener_storage_columns(
+pub(super) async fn save_screener_storage_columns(
     runtime: &mut impl RuntimeEvaluator,
     config: &Value,
     columns: &[ScreenerStorageColumnTarget],
@@ -354,10 +354,9 @@ async fn save_screener_storage_columns(
 
     let result = runtime
         .evaluate(
-            &expanded_expression(&format!(
+            &format!(
                 r#"
                 (async function() {{
-                    REPLACE_HELPERS
                     var initData = window.initData || {{}};
                     var storageUrl = initData.SCREENER_STORAGE_URL;
                     if (!storageUrl) {{
@@ -390,7 +389,7 @@ async fn save_screener_storage_columns(
                     }};
                 }})()
                 "#
-            )),
+            ),
             true,
         )
         .await?;

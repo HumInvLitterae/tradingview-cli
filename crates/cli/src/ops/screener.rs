@@ -3,6 +3,8 @@ mod engine;
 mod filters;
 mod screens;
 mod state;
+#[cfg(test)]
+mod storage_contract_tests;
 mod validation;
 
 pub use columns::{

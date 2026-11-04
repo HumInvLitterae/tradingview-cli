@@ -811,7 +811,9 @@ branch precedence, empty/error outcomes and zero versus missing drawdown.
 The account gate executes shared alert-list validation and generated list,
 create and delete expressions against synthetic fetch responses; missing or
 malformed readback cannot stand in for an empty account. It also executes
-watchlist mutation expressions to check lost responses and original-list identity.
+watchlist mutation expressions to check lost responses and original-list identity,
+and the Screener storage GET, PUT, DELETE and page-reload expressions with DOM
+access rejected.
 Indicator-alert fixtures exercise the generated saved-script lookup and exact
 versioned source GET, with encoded IDs, malformed/error responses, no redirects,
 and no editor/account mutation. Rust fixtures enforce source comparison and

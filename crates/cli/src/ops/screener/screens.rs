@@ -784,7 +784,7 @@ async fn find_screen_name_dialog_submit_point(
     Ok(result)
 }
 
-async fn fetch_screener_storage_screens(
+pub(super) async fn fetch_screener_storage_screens(
     runtime: &mut impl RuntimeEvaluator,
     active_title: Option<&str>,
 ) -> Result<Value, AppError> {
@@ -792,10 +792,9 @@ async fn fetch_screener_storage_screens(
     let active_title = active_title.unwrap_or_else(|| "null".to_string());
     let result = runtime
         .evaluate(
-            &expanded_expression(&format!(
+            &format!(
                 r#"
                 (async function() {{
-                    REPLACE_HELPERS
                     var initData = window.initData || {{}};
                     var storageUrl = initData.SCREENER_STORAGE_URL;
                     var version = initData.screener_storage_release_version;
@@ -846,7 +845,7 @@ async fn fetch_screener_storage_screens(
                     }};
                 }})()
                 "#
-            )),
+            ),
             true,
         )
         .await?;
@@ -862,7 +861,7 @@ async fn fetch_screener_storage_screens(
     }
 }
 
-async fn delete_screener_storage_screen(
+pub(super) async fn delete_screener_storage_screen(
     runtime: &mut impl RuntimeEvaluator,
     target: &ScreenerScreenTarget,
 ) -> Result<Value, AppError> {
@@ -876,10 +875,9 @@ async fn delete_screener_storage_screen(
     let target_id = js_string(target_id)?;
     let result = runtime
         .evaluate(
-            &expanded_expression(&format!(
+            &format!(
                 r#"
                 (async function() {{
-                    REPLACE_HELPERS
                     var initData = window.initData || {{}};
                     var storageUrl = initData.SCREENER_STORAGE_URL;
                     if (!storageUrl) {{
@@ -903,7 +901,7 @@ async fn delete_screener_storage_screen(
                     }};
                 }})()
                 "#
-            )),
+            ),
             true,
         )
         .await?;

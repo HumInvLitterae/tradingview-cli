@@ -168,13 +168,38 @@ pub(super) async fn fetch_active_screener_storage_config(
     runtime: &mut impl RuntimeEvaluator,
     expected_title: &str,
 ) -> Result<Value, AppError> {
-    let expected_title = js_string(expected_title)?;
+    let result = fetch_screener_storage_config(runtime, Some(expected_title)).await?;
+    if !value_bool(&result, "title_matches") {
+        return Err(AppError::new(
+            ErrorKind::InternalApiUnavailable,
+            "Screener active screen storage title did not match visible title",
+        )
+        .with_details(result));
+    }
+    Ok(result)
+}
+
+pub(super) async fn fetch_current_screener_storage_config(
+    runtime: &mut impl RuntimeEvaluator,
+) -> Result<Value, AppError> {
+    fetch_screener_storage_config(runtime, None).await
+}
+
+/// Reads the active screen from storage. Without an expected title, the storage
+/// title is reported as expected.
+async fn fetch_screener_storage_config(
+    runtime: &mut impl RuntimeEvaluator,
+    expected_title: Option<&str>,
+) -> Result<Value, AppError> {
+    let expected_title = expected_title
+        .map(js_string)
+        .transpose()?
+        .unwrap_or_else(|| "null".to_string());
     let result = runtime
         .evaluate(
-            &expanded_expression(&format!(
+            &format!(
                 r#"
                 (async function() {{
-                    REPLACE_HELPERS
                     var initData = window.initData || {{}};
                     var active = initData.screen_data || {{}};
                     var storageUrl = initData.SCREENER_STORAGE_URL;
@@ -220,8 +245,8 @@ pub(super) async fn fetch_active_screener_storage_config(
                         version: body.version || active.version || version,
                         screen_id: String(body.id || screenId),
                         screen_title: title,
-                        expected_title: expectedTitle,
-                        title_matches: title === expectedTitle,
+                        expected_title: expectedTitle === null ? title : expectedTitle,
+                        title_matches: expectedTitle === null || title === expectedTitle,
                         active_column_set: body.active_column_set || active.active_column_set || null,
                         storage_screen: body,
                         column_count: columns.length,
@@ -235,96 +260,6 @@ pub(super) async fn fetch_active_screener_storage_config(
                     }};
                 }})()
                 "#
-            )),
-            true,
-        )
-        .await?;
-
-    if !(value_bool(&result, "storage_available") && value_bool(&result, "fetch_ok")) {
-        return Err(AppError::new(
-            ErrorKind::InternalApiUnavailable,
-            "Screener active screen storage API was not available",
-        )
-        .with_details(result));
-    }
-    if !value_bool(&result, "title_matches") {
-        return Err(AppError::new(
-            ErrorKind::InternalApiUnavailable,
-            "Screener active screen storage title did not match visible title",
-        )
-        .with_details(result));
-    }
-    Ok(result)
-}
-
-pub(super) async fn fetch_current_screener_storage_config(
-    runtime: &mut impl RuntimeEvaluator,
-) -> Result<Value, AppError> {
-    let result = runtime
-        .evaluate(
-            &expanded_expression(
-                r#"
-                (async function() {
-                    REPLACE_HELPERS
-                    var initData = window.initData || {};
-                    var active = initData.screen_data || {};
-                    var storageUrl = initData.SCREENER_STORAGE_URL;
-                    var version = initData.screener_storage_release_version;
-                    var screenId = String(active.id || '');
-                    var screenerKey = initData.standalone_type ||
-                        active.screener_key ||
-                        'stock';
-                    if (!storageUrl || !version || !screenId || !screenerKey) {
-                        return {
-                            storage_available: false,
-                            reason: 'missing_screener_storage_init_data',
-                            columns: []
-                        };
-                    }
-                    var base = String(storageUrl).replace(/\/$/, '') + '/api/v2/screens/';
-                    var url = base + encodeURIComponent(screenId) + '/?screener_key=' +
-                        encodeURIComponent(screenerKey) + '&version=' + encodeURIComponent(version);
-                    var response = await fetch(url, { credentials: 'include' });
-                    var body = await response.json().catch(function() { return null; });
-                    if (!response.ok || !body) {
-                        return {
-                            storage_available: true,
-                            fetch_ok: response.ok,
-                            status: response.status,
-                            status_text: response.statusText,
-                            reason: 'screen_fetch_failed',
-                            columns: []
-                        };
-                    }
-                    var title = String(body.title || active.title || '');
-                    var columns = Array.isArray(body.default_custom_column_set)
-                        ? body.default_custom_column_set
-                        : (Array.isArray(active.default_custom_column_set)
-                            ? active.default_custom_column_set
-                            : []);
-                    return {
-                        storage_available: true,
-                        fetch_ok: true,
-                        status: response.status,
-                        screener_key: screenerKey,
-                        version: body.version || active.version || version,
-                        screen_id: String(body.id || screenId),
-                        screen_title: title,
-                        expected_title: title,
-                        title_matches: true,
-                        active_column_set: body.active_column_set || active.active_column_set || null,
-                        storage_screen: body,
-                        column_count: columns.length,
-                        columns: columns.map(function(column, index) {
-                            return {
-                                index: index,
-                                id: String(column && column.id || ''),
-                                params: column && column.params ? column.params : {}
-                            };
-                        }).filter(function(column) { return column.id; })
-                    };
-                })()
-                "#,
             ),
             true,
         )
@@ -544,14 +479,6 @@ function screenerScreenActionKind(text) {
 function screenerScreenShortcutText(text) {
     return /^(⌘\s*S|Ctrl\s*\+\s*S|⇧\s*N|Shift\s*\+\s*N|ドット|Dot)$/i.test(text);
 }
-function screenerElementLabel(el) {
-    return {
-        text: textOf(el),
-        aria_label: el.getAttribute('aria-label') || null,
-        title: el.getAttribute('title') || null,
-        data_name: el.getAttribute('data-name') || null
-    };
-}
 function collectScreenerScreenActions(menu) {
     var seen = {};
     var actions = [];
@@ -744,31 +671,6 @@ function findScreenerCatalogOpenItem(menu) {
     });
     return candidates[0] || null;
 }
-function openScreenerScreenMenu() {
-    var title = document.querySelector('[data-name="screener-topbar-screen-title"]');
-    if (!title || !visible(title)) {
-        return { menu_opened: false, reason: 'title_not_found', screens: [] };
-    }
-    var activeTitle = textOf(title);
-    mouseClick(title);
-    var menu = findScreenerScreenMenu();
-    if (!menu) {
-        return {
-            menu_opened: false,
-            reason: 'menu_not_found',
-            screen_title: activeTitle,
-            screens: []
-        };
-    }
-    var entries = collectScreenerScreenEntries(menu, activeTitle);
-    return {
-        menu_opened: true,
-        screen_title: activeTitle,
-        catalog_entry_found: /スクリーンを開く|Open screen/i.test(textOf(menu)),
-        screens: entries,
-        menu: menu
-    };
-}
 function findScreenerScreenCatalog() {
     var containers = visibleElements('[role="dialog"], [class*="dialog"], [class*="Dialog"], [class*="modal"], [class*="Modal"], .portal-lATuqHRX');
     return containers.find(function(container) {
@@ -877,67 +779,6 @@ function findScreenerCatalogScreenItem(catalog, targetName) {
     });
     return candidates[0] || null;
 }
-function findScreenerCatalogDeleteButton(catalog) {
-    var buttons = Array.from(catalog.querySelectorAll('button, [role="button"], [aria-label], [title], [data-name]')).filter(visible);
-    return buttons.find(function(el) {
-        var label = [textOf(el), el.getAttribute('aria-label'), el.getAttribute('title'), el.getAttribute('data-name')].filter(Boolean).join(' ');
-        return /^(削除|Delete)$|削除|Delete/i.test(label);
-    }) || null;
-}
-function findScreenerDeleteConfirmDialog(targetName) {
-    var containers = visibleElements('[role="dialog"], [class*="dialog"], [class*="Dialog"], [class*="modal"], [class*="Modal"], .portal-lATuqHRX');
-    return containers.find(function(container) {
-        if (container.querySelector && container.querySelector('table')) return false;
-        var text = textOf(container);
-        if (text.length > 1000) return false;
-        return /削除|Delete/i.test(text) && (!targetName || text.indexOf(targetName) >= 0 || /本当に|Are you sure|確認/i.test(text));
-    }) || null;
-}
-function findScreenerDeleteConfirmButton(dialog) {
-    return Array.from(dialog.querySelectorAll('button, [role="button"]')).filter(visible).find(function(el) {
-        return /^(削除|Delete)$/i.test(textOf(el));
-    }) || null;
-}
-async function openScreenerScreenCatalog() {
-    function sleep(ms) {
-        return new Promise(function(resolve) { setTimeout(resolve, ms); });
-    }
-    var title = document.querySelector('[data-name="screener-topbar-screen-title"]');
-    if (!title || !visible(title)) {
-        return { catalog_opened: false, menu_opened: false, reason: 'title_not_found', screens: [] };
-    }
-    var activeTitle = textOf(title);
-    mouseClick(title);
-    var menu = null;
-    for (var i = 0; i < 10; i++) {
-        menu = findScreenerScreenMenu();
-        if (menu) break;
-        await sleep(150);
-    }
-    if (!menu) {
-        return { catalog_opened: false, menu_opened: false, reason: 'menu_not_found', screen_title: activeTitle, screens: [] };
-    }
-    var openItem = findScreenerCatalogOpenItem(menu);
-    if (!openItem) {
-        closeScreenerScreenMenu();
-        return { catalog_opened: false, menu_opened: true, reason: 'catalog_open_item_not_found', screen_title: activeTitle, screens: collectScreenerScreenEntries(menu, activeTitle) };
-    }
-    mouseClick(openItem);
-    for (var j = 0; j < 4; j++) {
-        var catalog = findScreenerScreenCatalog();
-        if (catalog) {
-            return {
-                catalog_opened: true,
-                menu_opened: true,
-                screen_title: activeTitle,
-                screens: collectScreenerCatalogScreenEntries(catalog, activeTitle),
-                catalog: catalog
-            };
-        }
-        await sleep(100);
-    }
-    return { catalog_opened: false, menu_opened: true, reason: 'catalog_not_found', screen_title: activeTitle, screens: [] };
-}
 function normalizeScreenerFilterText(value) {
     return String(value || '').replace(/[\u2066\u2067\u2068\u2069]/g, '').replace(/\s+/g, ' ').trim();
 }
@@ -1003,12 +844,6 @@ function findScreenerNumericFilterPill() {
     }) || filters.find(function(el) {
         return /greater|less|between|range/i.test(normalizeScreenerFilterText(textOf(el)));
     }) || null;
-}
-function findScreenerFallbackNumericFilterPill() {
-    var filters = visibleElements('[data-name^="screener-filter-pill-"]');
-    return filters.find(function(el) {
-        return /%|以上|以下|未満|greater|less|between|range/i.test(normalizeScreenerFilterText(textOf(el)));
-    }) || filters[0] || null;
 }
 function scopedVisibleElements(scope, selector) {
     return Array.from((scope || document).querySelectorAll(selector)).filter(visible);

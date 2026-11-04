@@ -640,7 +640,7 @@ fn ensure_filter_add_search_opened(value: &Value) -> Result<(), AppError> {
     }
 }
 
-async fn save_screener_storage_filters(
+pub(super) async fn save_screener_storage_filters(
     runtime: &mut impl RuntimeEvaluator,
     config: &Value,
     filters: &[ScreenerStorageFilterTarget],
@@ -672,10 +672,9 @@ async fn save_screener_storage_filters(
 
     let result = runtime
         .evaluate(
-            &expanded_expression(&format!(
+            &format!(
                 r#"
                 (async function() {{
-                    REPLACE_HELPERS
                     var initData = window.initData || {{}};
                     var storageUrl = initData.SCREENER_STORAGE_URL;
                     if (!storageUrl) {{
@@ -708,7 +707,7 @@ async fn save_screener_storage_filters(
                     }};
                 }})()
                 "#
-            )),
+            ),
             true,
         )
         .await?;
@@ -734,7 +733,7 @@ fn visible_refresh_outcome(result: Result<Value, AppError>) -> Value {
     })
 }
 
-async fn refresh_full_page_screener_after_storage_filter_save(
+pub(super) async fn refresh_full_page_screener_after_storage_filter_save(
     runtime: &mut impl RuntimeEvaluator,
     before_state: &Value,
     expected_filter_count: usize,
@@ -749,18 +748,15 @@ async fn refresh_full_page_screener_after_storage_filter_save(
 
     let reload_result = runtime
         .evaluate(
-            &expanded_expression(
-                r#"
-                (function() {
-                    REPLACE_HELPERS
-                    if (!window.location || !window.location.reload) {
-                        return { requested: false, reason: 'location_reload_unavailable' };
-                    }
-                    window.location.reload();
-                    return { requested: true };
-                })()
-                "#,
-            ),
+            r#"
+            (function() {
+                if (!window.location || !window.location.reload) {
+                    return { requested: false, reason: 'location_reload_unavailable' };
+                }
+                window.location.reload();
+                return { requested: true };
+            })()
+            "#,
             true,
         )
         .await?;
@@ -805,31 +801,28 @@ async fn refresh_full_page_screener_after_storage_filter_save(
     }))
 }
 
-async fn request_full_page_screener_reload_after_storage_filter_save(
+pub(super) async fn request_full_page_screener_reload_after_storage_filter_save(
     runtime: &mut impl RuntimeEvaluator,
 ) -> Result<Value, AppError> {
     runtime
         .evaluate(
-            &expanded_expression(
-                r#"
-                (function() {
-                    REPLACE_HELPERS
-                    if (!window.location || !window.location.reload) {
-                        return {
-                            requested: false,
-                            confirmed: false,
-                            reason: 'location_reload_unavailable'
-                        };
-                    }
-                    window.location.reload();
+            r#"
+            (function() {
+                if (!window.location || !window.location.reload) {
                     return {
-                        requested: true,
+                        requested: false,
                         confirmed: false,
-                        reason: 'reload_requested_after_storage_post_check'
+                        reason: 'location_reload_unavailable'
                     };
-                })()
-                "#,
-            ),
+                }
+                window.location.reload();
+                return {
+                    requested: true,
+                    confirmed: false,
+                    reason: 'reload_requested_after_storage_post_check'
+                };
+            })()
+            "#,
             true,
         )
         .await
