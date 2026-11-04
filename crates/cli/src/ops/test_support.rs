@@ -17,6 +17,7 @@ pub(crate) struct FakeRuntime {
     evaluate_delay: Option<Duration>,
     pub(super) screenshot_count: usize,
     pub(super) clipped_screenshot_count: usize,
+    pub(super) screenshot_clips: Vec<ScreenshotClip>,
     pub(super) inserted_text: Vec<String>,
     pub(super) key_events: Vec<KeyEvent>,
     pub(super) mouse_events: Vec<MouseEvent>,
@@ -35,6 +36,7 @@ impl FakeRuntime {
             evaluate_delay: None,
             screenshot_count: 0,
             clipped_screenshot_count: 0,
+            screenshot_clips: Vec::new(),
             inserted_text: Vec::new(),
             key_events: Vec::new(),
             mouse_events: Vec::new(),
@@ -115,11 +117,9 @@ impl RuntimeEvaluator for FakeRuntime {
         Ok(self.screenshot.clone())
     }
 
-    async fn capture_screenshot_clip(
-        &mut self,
-        _clip: ScreenshotClip,
-    ) -> Result<Vec<u8>, AppError> {
+    async fn capture_screenshot_clip(&mut self, clip: ScreenshotClip) -> Result<Vec<u8>, AppError> {
         self.clipped_screenshot_count += 1;
+        self.screenshot_clips.push(clip);
         self.clipped_screenshot
             .clone()
             .map_err(|kind| AppError::new(kind, "simulated clipped screenshot capture failure"))

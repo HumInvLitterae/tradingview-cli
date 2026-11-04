@@ -640,63 +640,34 @@ mod tests {
         assert!(!follow_ups.contains(&"quote_chart"));
     }
 
-    #[test]
-    fn total_failure_details_include_snapshot_contract_and_blocked_status() {
-        let sections = SnapshotSections {
-            quote: SnapshotSection {
-                ok: false,
-                data: None,
-                error: Some(SnapshotSectionError {
-                    section: "quote".to_string(),
-                    kind: ErrorKind::InternalApiUnavailable,
-                    message: "temporary failure".to_string(),
-                    details: None,
-                }),
-            },
-            info: SnapshotSection {
-                ok: false,
-                data: None,
-                error: Some(SnapshotSectionError {
-                    section: "info".to_string(),
-                    kind: ErrorKind::InternalApiUnavailable,
-                    message: "temporary failure".to_string(),
-                    details: None,
-                }),
-            },
-            fundamentals: SnapshotSection {
-                ok: false,
-                data: None,
-                error: Some(SnapshotSectionError {
-                    section: "fundamentals".to_string(),
-                    kind: ErrorKind::InternalApiUnavailable,
-                    message: "temporary failure".to_string(),
-                    details: None,
-                }),
-            },
-        };
-        let errors = section_errors(&sections);
-        let snapshot = Snapshot {
-            contract_version: SNAPSHOT_CONTRACT_VERSION.to_string(),
-            source: SNAPSHOT_SOURCE.to_string(),
-            source_category: DESKTOP_FREE_READ_CATEGORY.to_string(),
-            requires_desktop: false,
-            non_mutating: true,
-            requested_symbol: "AAPL".to_string(),
-            symbol: best_symbol(&sections),
-            observed_symbol: best_observed_symbol(&sections),
-            summary: snapshot_summary(&sections, errors.len()),
-            missing_evidence: missing_evidence(&sections),
-            sections,
-            errors,
-            follow_up_hints: follow_up_hints(&Value::Null),
-            next_action_hints: Vec::new(),
-        };
+    #[tokio::test]
+    async fn total_failure_returns_snapshot_contract_in_error_details() {
+        // Route every provider request through a closed local port, so all three
+        // reads fail without network access.
+        let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+        let address = listener.local_addr().unwrap();
+        drop(listener);
+        let client = reqwest::Client::builder()
+            .proxy(reqwest::Proxy::all(format!("http://{address}")).unwrap())
+            .build()
+            .unwrap();
 
-        assert_eq!(snapshot.contract_version, "snapshot.v1");
-        assert_eq!(snapshot.summary.coverage_status, "blocked");
-        assert!(!snapshot.summary.quote_ok);
-        assert!(!snapshot.summary.info_ok);
-        assert!(!snapshot.summary.fundamentals_ok);
-        assert_eq!(snapshot.missing_evidence.len(), 3);
+        let error = snapshot_symbol_typed_with_client(&client, "AAPL", Vec::new(), Vec::new())
+            .await
+            .unwrap_err();
+
+        assert_eq!(error.kind, ErrorKind::Connection);
+        let details = error.details.unwrap();
+        assert_eq!(details["contract_version"], "snapshot.v1");
+        assert_eq!(details["requested_symbol"], "AAPL");
+        assert_eq!(details["summary"]["coverage_status"], "blocked");
+        for section in ["quote", "info", "fundamentals"] {
+            assert_eq!(details["summary"][format!("{section}_ok")], false);
+            assert_eq!(details["sections"][section]["ok"], false);
+            assert_eq!(details["sections"][section]["error"]["section"], section);
+            assert_eq!(details["sections"][section]["error"]["kind"], "connection");
+        }
+        assert_eq!(details["errors"].as_array().unwrap().len(), 3);
+        assert_eq!(details["missing_evidence"].as_array().unwrap().len(), 3);
     }
 }

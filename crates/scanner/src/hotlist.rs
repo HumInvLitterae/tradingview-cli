@@ -200,8 +200,20 @@ mod tests {
 
     #[test]
     fn validate_hotlist_slug_accepts_known_slugs() {
-        for slug in HOTLIST_SLUGS {
-            assert_eq!(validate_hotlist_slug(slug).unwrap(), *slug);
+        // Written out rather than read from HOTLIST_SLUGS, so removing a public
+        // slug fails here.
+        for slug in [
+            "volume_gainers",
+            "percent_change_gainers",
+            "percent_change_losers",
+            "percent_range_gainers",
+            "percent_range_losers",
+            "gap_gainers",
+            "gap_losers",
+            "percent_gap_gainers",
+            "percent_gap_losers",
+        ] {
+            assert_eq!(validate_hotlist_slug(slug).unwrap(), slug);
         }
     }
 

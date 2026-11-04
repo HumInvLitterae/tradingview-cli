@@ -813,10 +813,26 @@ mod tests {
         assert_eq!(data["capture_mode"], "full_page_crop");
         assert_eq!(runtime.clipped_screenshot_count, 1);
         assert_eq!(runtime.screenshot_count, 1);
+        assert_eq!(
+            runtime.screenshot_clips,
+            [ScreenshotClip {
+                x: 10.0,
+                y: 20.0,
+                width: 640.0,
+                height: 360.0,
+                scale: 1.0
+            }]
+        );
 
-        let cropped = image::load_from_memory(&fs::read(output).unwrap()).unwrap();
+        // The fixture encodes each pixel's position, so the corners show the crop origin.
+        let cropped = image::load_from_memory(&fs::read(output).unwrap())
+            .unwrap()
+            .to_rgba8();
         assert_eq!(cropped.width(), 640);
         assert_eq!(cropped.height(), 360);
+        assert_eq!(cropped.get_pixel(0, 0).0, [10, 20, 100, 255]);
+        // Source pixel (649, 379): 649 % 255 = 139, 379 % 255 = 124.
+        assert_eq!(cropped.get_pixel(639, 359).0, [139, 124, 100, 255]);
     }
 
     #[tokio::test]
@@ -858,6 +874,16 @@ mod tests {
         assert!(runtime.evaluated[0].0.contains("strategyReport"));
         assert_eq!(runtime.clipped_screenshot_count, 1);
         assert_eq!(runtime.screenshot_count, 0);
+        assert_eq!(
+            runtime.screenshot_clips,
+            [ScreenshotClip {
+                x: 30.0,
+                y: 420.0,
+                width: 700.0,
+                height: 260.0,
+                scale: 1.0
+            }]
+        );
 
         let cropped = image::load_from_memory(&fs::read(output).unwrap()).unwrap();
         assert_eq!(cropped.width(), 700);

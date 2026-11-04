@@ -12,7 +12,9 @@ fn response() -> Value {
 
 #[test]
 fn request_timeframes_are_independent_of_bars() {
-    for timeframe in TIMEFRAMES {
+    // Written out rather than read from TIMEFRAMES, so removing a public
+    // interval fails here.
+    for timeframe in ["1m", "5m", "15m", "30m", "1h", "2h", "4h", "1D", "1W", "1M"] {
         assert_eq!(
             Request::new("NASDAQ:EXAMPLE", timeframe)
                 .unwrap()
