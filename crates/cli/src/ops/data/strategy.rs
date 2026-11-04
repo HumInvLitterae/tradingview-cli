@@ -392,7 +392,7 @@ mod tests {
     use super::*;
 
     #[test]
-    #[ignore = "run through scripts/check-equity-js-contract.py with pinned Node.js"]
+    #[ignore = "run through `node scripts/check-js-contracts.mjs equity`"]
     fn javascript_equity_preserves_branch_identity_and_zero() {
         let expression = serde_json::to_string(&strategy_equity_expression("study-1")).unwrap();
         let script = format!(

@@ -892,7 +892,7 @@ Promise.resolve({expression}).then(function(result) {{
     }
 
     #[tokio::test]
-    #[ignore = "run through scripts/check-indicator-insertion-js-contract.py with pinned Node.js"]
+    #[ignore = "run through `node scripts/check-js-contracts.mjs indicator-insertion`"]
     async fn javascript_indicator_add_contract_verifies_immediate_name_and_inputs() {
         let payload = json!({
             "action": "add",

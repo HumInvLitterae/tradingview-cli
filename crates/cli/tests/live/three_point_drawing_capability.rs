@@ -96,7 +96,7 @@ async fn native_three_point_drawing_mutation_probe() {
 }
 
 #[test]
-#[ignore = "run through scripts/check-three-point-drawing-js-contract.py with pinned Node.js"]
+#[ignore = "run through `node scripts/check-js-contracts.mjs three-point-drawing`"]
 fn javascript_three_point_probe_contract_is_bounded_and_verified() {
     let expression = three_point_probe_expression(fixture_points());
 
@@ -276,7 +276,7 @@ fn javascript_three_point_probe_contract_is_bounded_and_verified() {
 }
 
 #[tokio::test]
-#[ignore = "run through scripts/check-three-point-drawing-js-contract.py with pinned Node.js"]
+#[ignore = "run through `node scripts/check-js-contracts.mjs three-point-drawing`"]
 async fn javascript_three_point_production_contract_is_bounded_and_verified() {
     let mut runtime = CaptureRuntime::default();
     let request = DrawingShapeRequest {

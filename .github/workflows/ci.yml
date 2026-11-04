@@ -13,6 +13,8 @@ concurrency:
 
 env:
   CARGO_TERM_COLOR: always
+  # Keep equal to the node pin in mise.toml; the JavaScript gates check it.
+  NODE_VERSION: "26.13.0"
 
 jobs:
   script-check:
@@ -35,6 +37,12 @@ jobs:
         run: python scripts/check-runtime-package.py --self-test
       - name: Check required test selection
         run: python scripts/test_required_tests.py
+      - name: Install Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - name: Check JavaScript contract gate
+        run: node --test scripts/check-js-contracts.test.mjs
       - name: Stage runtime guidance fixture
         shell: bash
         run: |
@@ -89,7 +97,7 @@ jobs:
         run: cargo clippy --workspace --all-targets --all-features -- -D warnings
 
   study-values-js-contract:
-    name: Study-values and equity JavaScript contracts
+    name: Study-value, equity and account JavaScript contracts
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -97,14 +105,12 @@ jobs:
       - name: Install Node.js
         uses: actions/setup-node@v7
         with:
-          node-version: "24.21.0"
+          node-version: ${{ env.NODE_VERSION }}
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
-      - name: Run study-values and equity JavaScript contracts
+      - name: Run study-value, equity, account and Desktop JavaScript contracts
         run: |
-          python3 scripts/check-study-values-js-contract.py
-          python3 scripts/check-equity-js-contract.py
-          python3 scripts/check-account-js-contract.py
+          node scripts/check-js-contracts.mjs study-values equity account
       - name: Install schema test runtime
         uses: actions/setup-python@v7
         with:
@@ -123,11 +129,11 @@ jobs:
       - name: Install Node.js
         uses: actions/setup-node@v7
         with:
-          node-version: "24.21.0"
+          node-version: ${{ env.NODE_VERSION }}
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
       - name: Run Pine open JavaScript contract
-        run: python3 scripts/check-pine-open-js-contract.py
+        run: node scripts/check-js-contracts.mjs pine-open
 
   indicator-insertion-js-contract:
     name: Indicator insertion JavaScript contract
@@ -138,11 +144,11 @@ jobs:
       - name: Install Node.js
         uses: actions/setup-node@v7
         with:
-          node-version: "24.21.0"
+          node-version: ${{ env.NODE_VERSION }}
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
       - name: Run indicator insertion JavaScript contract
-        run: python3 scripts/check-indicator-insertion-js-contract.py
+        run: node scripts/check-js-contracts.mjs indicator-insertion
 
   three-point-drawing-js-contract:
     name: Three-point drawing JavaScript contract
@@ -153,11 +159,11 @@ jobs:
       - name: Install Node.js
         uses: actions/setup-node@v7
         with:
-          node-version: "24.21.0"
+          node-version: ${{ env.NODE_VERSION }}
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
       - name: Run three-point drawing JavaScript contract
-        run: python3 scripts/check-three-point-drawing-js-contract.py
+        run: node scripts/check-js-contracts.mjs three-point-drawing
 
   test:
     name: Test (${{ matrix.os }})

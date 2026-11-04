@@ -143,7 +143,7 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "run through scripts/check-account-js-contract.py with pinned Node.js"]
+    #[ignore = "run through `node scripts/check-js-contracts.mjs account`"]
     fn javascript_account_watchlist_sections_verify_saved_and_displayed_state() {
         let script = format!(
             "const operation = async request => {{ {SCRIPT} {REORDER} }};\n{}",
@@ -160,7 +160,7 @@ mod tests {
         );
     }
     #[test]
-    #[ignore = "run through scripts/check-account-js-contract.py with pinned Node.js"]
+    #[ignore = "run through `node scripts/check-js-contracts.mjs account`"]
     fn javascript_account_watchlist_reorder_preserves_complete_lists() {
         let script = format!(
             "const operation = async request => {{ {SCRIPT} {REORDER} }};\n{}",

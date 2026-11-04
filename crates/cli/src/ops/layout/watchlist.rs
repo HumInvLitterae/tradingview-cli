@@ -1010,7 +1010,7 @@ mod tests {
     }
 
     #[tokio::test]
-    #[ignore = "run through scripts/check-account-js-contract.py with pinned Node.js"]
+    #[ignore = "run through `node scripts/check-js-contracts.mjs account`"]
     async fn javascript_account_watchlist_checks_dispatch_and_original_identity() {
         let mut runtime = FakeRuntime::new([]);
         let _ = watchlist_add_via_api(&mut runtime, "NASDAQ:EXAMPLE").await;

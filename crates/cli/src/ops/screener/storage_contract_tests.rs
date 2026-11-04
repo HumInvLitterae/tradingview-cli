@@ -25,7 +25,7 @@ fn only_expression(runtime: FakeRuntime) -> String {
 }
 
 #[tokio::test]
-#[ignore = "run through scripts/check-account-js-contract.py with pinned Node.js"]
+#[ignore = "run through `node scripts/check-js-contracts.mjs account`"]
 async fn javascript_account_screener_storage_expressions_avoid_dom() {
     let config = json!({
         "storage_screen": { "id": "scr/1", "title": "Momentum", "filters": [] }

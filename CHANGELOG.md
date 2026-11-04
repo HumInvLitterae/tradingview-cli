@@ -30,6 +30,10 @@ package version omits the leading `v`.
   suites are modules of `cli_contract` and live smokes of `live`, so a build
   links each once. Select a suite with a module filter, such as `--test live
   bars:: -- --ignored`.
+- JavaScript contract gates run through one Node.js script,
+  `node scripts/check-js-contracts.mjs <suite>...`, instead of six Python
+  scripts, and use Node.js 26.13.0 (Active LTS) pinned once in `mise.toml`. The
+  `mise run check:*-js` tasks keep their names.
 
 ### Fixed
 

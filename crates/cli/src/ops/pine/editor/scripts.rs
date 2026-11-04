@@ -948,7 +948,7 @@ Promise.resolve({expression}).then(function(result) {{
     }
 
     #[test]
-    #[ignore = "run through scripts/check-pine-open-js-contract.py with pinned Node.js"]
+    #[ignore = "run through `node scripts/check-js-contracts.mjs pine-open`"]
     fn javascript_pine_open_contract_is_fail_closed_and_verifies_binding() {
         let success = execute_pine_open_fixture("installFixture({});");
         assert_eq!(success["slot_rebound"], true);

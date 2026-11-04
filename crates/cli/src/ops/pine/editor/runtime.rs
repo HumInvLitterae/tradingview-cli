@@ -286,7 +286,7 @@ mod tests {
     use super::*;
 
     #[test]
-    #[ignore = "run through scripts/check-pine-open-js-contract.py with pinned Node.js"]
+    #[ignore = "run through `node scripts/check-js-contracts.mjs pine-open`"]
     fn javascript_pine_panel_opens_when_legacy_widget_is_unregistered() {
         for has_button in [true, false] {
             let script = format!(

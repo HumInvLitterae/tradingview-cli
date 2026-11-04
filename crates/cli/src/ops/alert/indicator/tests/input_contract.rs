@@ -1,7 +1,7 @@
 use super::*;
 
 #[tokio::test]
-#[ignore = "run through scripts/check-account-js-contract.py with pinned Node.js"]
+#[ignore = "run through `node scripts/check-js-contracts.mjs account`"]
 async fn javascript_account_indicator_input_ids() {
     let source =
         "indicator(\"Signals\")\nlength=input.int(20)\nalertcondition(close > open, \"Long\")";

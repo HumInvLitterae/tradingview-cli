@@ -9,6 +9,7 @@ import shutil
 from pathlib import Path
 import subprocess
 import sys
+import tomllib
 
 from required_tests import run_required_tests
 
@@ -38,14 +39,17 @@ def main():
     if args.fixtures:
         check_fixtures()
         return 0
+    root = Path(__file__).resolve().parent.parent
+    with open(root / "mise.toml", "rb") as file:
+        expected = "v" + tomllib.load(file)["tools"]["node"]
     executable = shutil.which("node")
     if executable is None:
-        parser.error("production OHLCV fixtures require Node.js v24.21.0")
+        parser.error(f"production OHLCV fixtures require Node.js {expected}")
     node = subprocess.run(
         [executable, "--version"], capture_output=True, text=True, check=False
     )
-    if node.returncode != 0 or node.stdout.strip() != "v24.21.0":
-        parser.error("production OHLCV fixtures require Node.js v24.21.0")
+    if node.returncode != 0 or node.stdout.strip() != expected:
+        parser.error(f"production OHLCV fixtures require Node.js {expected}")
     env = os.environ.copy()
     env["TV_SCHEMA_TEST_PYTHON"] = sys.executable
     env.setdefault("CARGO_BUILD_JOBS", "1")
@@ -53,7 +57,7 @@ def main():
     return run_required_tests(
         ["cargo", "test", "--locked", "-p", "tradingview-cli", "--lib",
          "app::schema::tests::output_schemas_match_production_fixtures", "--", "--ignored", "--exact"],
-        cwd=Path(__file__).resolve().parent.parent,
+        cwd=root,
         env=env,
     )
 

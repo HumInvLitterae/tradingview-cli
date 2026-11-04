@@ -4,7 +4,7 @@ use super::super::test_support::FakeRuntime;
 use super::{ALERT_LIST_READER, alert_delete, alert_delete_all, alert_list};
 
 #[tokio::test]
-#[ignore = "run through scripts/check-account-js-contract.py with pinned Node.js"]
+#[ignore = "run through `node scripts/check-js-contracts.mjs account`"]
 async fn javascript_account_alert_lists_reject_failed_reads() {
     let mut runtime = FakeRuntime::new([json!({"alerts": []})]);
     alert_list(&mut runtime).await.unwrap();

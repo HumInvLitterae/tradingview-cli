@@ -201,7 +201,7 @@ async fn verified_indicator_rejects_wrong_selected_entity_and_invalid_preview() 
 }
 
 #[tokio::test]
-#[ignore = "run through scripts/check-account-js-contract.py with pinned Node.js"]
+#[ignore = "run through `node scripts/check-js-contracts.mjs account`"]
 async fn javascript_account_indicator_verification() {
     let mut expressions = serde_json::Map::new();
     for inputs in [false, true] {

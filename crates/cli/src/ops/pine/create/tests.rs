@@ -120,7 +120,7 @@ fn pine_create_distinguishes_saved_from_compiled() {
 }
 
 #[tokio::test]
-#[ignore = "run through scripts/check-pine-open-js-contract.py with pinned Node.js"]
+#[ignore = "run through `node scripts/check-js-contracts.mjs pine-open`"]
 async fn javascript_pine_create_contract() {
     let mut runtime = FakeRuntime::new([]);
     let _ = pine_create(&mut runtime, NAME, SOURCE).await;

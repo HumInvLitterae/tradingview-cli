@@ -234,7 +234,7 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "run through scripts/check-study-values-js-contract.py with pinned Node.js"]
+    #[ignore = "run through `node scripts/check-js-contracts.mjs study-values`"]
     fn javascript_collector_distinguishes_same_name_instances_and_is_total() {
         let output = execute_identity_fixture(
             r#"

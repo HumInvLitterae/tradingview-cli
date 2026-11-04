@@ -532,7 +532,7 @@ async fn alert_indicator_invalid_catalog_is_not_a_public_payload() {
 }
 
 #[tokio::test]
-#[ignore = "run through scripts/check-account-js-contract.py with pinned Node.js"]
+#[ignore = "run through `node scripts/check-js-contracts.mjs account`"]
 async fn javascript_account_indicator_source_fetch_is_versioned_and_read_only() {
     let source = "indicator(\"Signals\")\nalertcondition(close > open, \"Long\")";
     let mut catalog = saved_script_fixture();
@@ -621,7 +621,7 @@ async fn javascript_account_indicator_source_fetch_is_versioned_and_read_only() 
 }
 
 #[tokio::test]
-#[ignore = "run through scripts/check-account-js-contract.py with pinned Node.js"]
+#[ignore = "run through `node scripts/check-js-contracts.mjs account`"]
 async fn javascript_account_indicator_creation_outcomes() {
     let source = "indicator(\"Signals\")\nalertcondition(close > open, \"Long\")";
     let mut runtime = FakeRuntime::new([saved_script_fixture(), json!({"source": source})]);
@@ -774,7 +774,7 @@ async fn alert_indicator_malformed_creation_result_is_unknown() {
 }
 
 #[tokio::test]
-#[ignore = "run through scripts/check-account-js-contract.py with pinned Node.js"]
+#[ignore = "run through `node scripts/check-js-contracts.mjs account`"]
 async fn javascript_account_indicator_confirmation() {
     let source = "indicator(\"Signals\")\nalertcondition(close > open, \"Long\")";
     let mut runtime = FakeRuntime::new([saved_script_fixture(), json!({"source": source})]);
