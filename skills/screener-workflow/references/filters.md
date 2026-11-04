@@ -51,6 +51,8 @@ After a confirmed change, a failed panel close returns success with
 `cleanup.restored: false` and `cleanup.error`; `cleanup` is otherwise omitted.
 Other close failures remain errors.
 A storage write whose readback fails adds `details.write_outcome: "uncertain"`
-and `details.save_result`.
+and `details.save_result`. A save request that times out, loses its connection
+or throws before an answer adds only `details.write_outcome: "uncertain"`. A
+save the provider refuses carries its response and no `write_outcome`.
 Official MCP can answer a suitable data-only query but does not edit these
 Desktop filters. Keep account settings and IDs private.

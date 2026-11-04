@@ -9,7 +9,7 @@ use super::{
     engine::{
         SCREENER_SOURCE, ScreenerMutationSession, dispatch_screen_menu_click, ensure_dialog_open,
         expanded_expression, read_screener_state, read_screener_with_restore,
-        screen_menu_click_point, uncertain_write_error, value_bool,
+        screen_menu_click_point, unanswered_write_error, uncertain_write_error, value_bool,
     },
     validation::validate_screener_screen_name,
 };
@@ -904,7 +904,8 @@ pub(super) async fn delete_screener_storage_screen(
             ),
             true,
         )
-        .await?;
+        .await
+        .map_err(unanswered_write_error)?;
 
     if value_bool(&result, "deleted") {
         Ok(result)
@@ -2127,5 +2128,32 @@ mod tests {
         let details = error.details.unwrap();
         assert_eq!(details["write_outcome"], "uncertain");
         assert_eq!(details["delete_result"]["deleted"], true);
+    }
+
+    #[tokio::test]
+    async fn screener_screens_delete_reports_uncertain_write_when_request_gets_no_answer() {
+        let storage = json!({
+            "storage_available": true,
+            "fetch_ok": true,
+            "screens": [
+                { "index": 0, "id": "screen-1", "name": "CLI-Test1", "active": true, "owner": true, "shared": false },
+                { "index": 1, "id": "screen-2", "name": "CLI-Test2", "active": false, "owner": true, "shared": false }
+            ]
+        });
+        let mut runtime = FakeRuntime::new([
+            json!({ "button_found": true, "open": true, "screen_title": "CLI-Test1" }),
+            storage,
+        ])
+        .with_evaluate_error_at_call(2, ErrorKind::Connection);
+
+        let error = screener_screens_delete(&mut runtime, "CLI-Test2", false, true)
+            .await
+            .unwrap_err();
+
+        assert_eq!(error.kind, ErrorKind::Connection);
+        assert_eq!(
+            error.details.unwrap(),
+            json!({ "write_outcome": "uncertain" })
+        );
     }
 }

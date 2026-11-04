@@ -989,7 +989,9 @@ After a confirmed change, a failed panel close returns success with
 `cleanup.restored: false` and `cleanup.error`; `cleanup` is otherwise omitted.
 Other close failures remain errors.
 A delete whose readback fails adds `details.write_outcome: "uncertain"` and
-`details.delete_result`; inspect storage before retrying.
+`details.delete_result`. A delete request that times out, loses its connection
+or throws before an answer adds only `details.write_outcome: "uncertain"`.
+Inspect storage before retrying.
 
 | Action | Execution boundary and evidence |
 | --- | --- |
@@ -1035,7 +1037,9 @@ a fresh identity check; init-data fallback can also differ from unsaved UI state
 Intervening edits are not reconciled by the adapter.
 
 A write may complete before readback fails. Such errors add
-`details.write_outcome: "uncertain"` and `details.save_result`. Inspect current
+`details.write_outcome: "uncertain"` and `details.save_result`. A save request
+that times out, loses its connection or throws before an answer may also have
+been applied, so it adds only `details.write_outcome: "uncertain"`. Inspect current
 storage before retrying, especially add, which can insert duplicates. These are account-setting
 changes, not temporary display toggles. Official MCP does not edit these saved
 column sets. Keep account-local configuration and IDs private.
@@ -1095,7 +1099,9 @@ After a confirmed change, a failed panel close returns success with
 `cleanup.restored: false` and `cleanup.error`; `cleanup` is otherwise omitted.
 Other close failures remain errors.
 A storage write whose readback fails adds `details.write_outcome: "uncertain"`
-and `details.save_result`.
+and `details.save_result`. A save request that times out, loses its connection
+or throws before an answer adds only `details.write_outcome: "uncertain"`. A
+save the provider refuses carries its response and no `write_outcome`.
 Official MCP can answer a suitable data-only query but does not edit these
 Desktop filters. Keep account settings and IDs private.
 

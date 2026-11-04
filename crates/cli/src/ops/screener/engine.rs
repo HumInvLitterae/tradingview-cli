@@ -134,17 +134,33 @@ pub(super) async fn read_screener_with_restore(
 }
 
 pub(super) fn uncertain_write_error(
-    mut error: AppError,
+    error: AppError,
     result_key: &str,
     write_result: &Value,
 ) -> AppError {
+    with_uncertain_write_details(error, "readback_details", Some((result_key, write_result)))
+}
+
+/// A storage request whose evaluation failed may still have reached the
+/// provider, so the write is neither confirmed nor ruled out.
+pub(super) fn unanswered_write_error(error: AppError) -> AppError {
+    with_uncertain_write_details(error, "request_details", None)
+}
+
+fn with_uncertain_write_details(
+    mut error: AppError,
+    other_details_key: &str,
+    write_result: Option<(&str, &Value)>,
+) -> AppError {
     let mut details = match error.details.take() {
         Some(Value::Object(details)) => details,
-        Some(details) => Map::from_iter([("readback_details".to_string(), details)]),
+        Some(details) => Map::from_iter([(other_details_key.to_string(), details)]),
         None => Map::new(),
     };
     details.insert("write_outcome".to_string(), json!("uncertain"));
-    details.insert(result_key.to_string(), write_result.clone());
+    if let Some((result_key, write_result)) = write_result {
+        details.insert(result_key.to_string(), write_result.clone());
+    }
     error.with_details(Value::Object(details))
 }
 

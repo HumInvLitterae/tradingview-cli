@@ -22,6 +22,9 @@ package version omits the leading `v`.
   treated these errors as failed writes must read those fields instead.
 - A Screener storage write whose readback fails now adds
   `details.write_outcome: "uncertain"` with `save_result` or `delete_result`.
+  A save or delete request that times out, loses its connection or throws
+  before an answer adds `details.write_outcome: "uncertain"` alone, because it
+  may have been applied. A request the provider refuses is still a plain error.
 - Screener storage requests and page reloads no longer embed the UI helper
   script, seven uncalled helpers were removed, and the two screen-storage reads
   share one expression. Output is unchanged; the account JavaScript gate now

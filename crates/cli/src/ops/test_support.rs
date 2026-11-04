@@ -73,8 +73,12 @@ impl FakeRuntime {
         self
     }
 
-    pub(super) fn with_evaluate_error_at_call(mut self, call: usize, kind: ErrorKind) -> Self {
+    pub(super) fn with_evaluate_error_at_call(self, call: usize, kind: ErrorKind) -> Self {
         let error = AppError::new(kind, "simulated runtime evaluation failure");
+        self.with_evaluate_app_error_at_call(call, error)
+    }
+
+    pub(super) fn with_evaluate_app_error_at_call(mut self, call: usize, error: AppError) -> Self {
         self.evaluate_error_at_call = Some((call, error));
         self
     }

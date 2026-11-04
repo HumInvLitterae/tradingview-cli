@@ -7,7 +7,8 @@ use super::{
     engine::{
         SCREENER_SOURCE, ScreenerMutationSession, ensure_dialog_open, expanded_expression,
         fetch_active_screener_storage_config, normalize_columns, read_screener_state,
-        read_screener_with_restore, require_active_screen_title, uncertain_write_error, value_bool,
+        read_screener_with_restore, require_active_screen_title, unanswered_write_error,
+        uncertain_write_error, value_bool,
     },
     validation::{
         ScreenerColumnAddRequest, ScreenerColumnSelector, validate_screener_column_reorder_request,
@@ -392,7 +393,8 @@ pub(super) async fn save_screener_storage_columns(
             ),
             true,
         )
-        .await?;
+        .await
+        .map_err(unanswered_write_error)?;
 
     if value_bool(&result, "saved") {
         Ok(result)
@@ -1070,5 +1072,27 @@ mod tests {
         let details = error.details.unwrap();
         assert_eq!(details["write_outcome"], "uncertain");
         assert_eq!(details["save_result"]["saved"], true);
+    }
+
+    #[tokio::test]
+    async fn screener_columns_remove_reports_uncertain_write_when_save_throws() {
+        let mut runtime = FakeRuntime::new([
+            json!({ "button_found": true, "open": true, "screen_title": "CLI-Test1", "columns": ["Price"] }),
+            storage_config("CLI-Test1", vec![json!({ "id": "close", "params": {} })]),
+        ])
+        .with_evaluate_app_error_after_responses(
+            AppError::new(ErrorKind::InternalApiUnavailable, "TypeError: Failed to fetch")
+                .with_details(json!({ "text": "Uncaught (in promise)" })),
+        );
+
+        let error = screener_columns_remove(&mut runtime, ScreenerColumnSelector::Index(0), false)
+            .await
+            .unwrap_err();
+
+        assert_eq!(error.kind, ErrorKind::InternalApiUnavailable);
+        assert_eq!(
+            error.details.unwrap(),
+            json!({ "text": "Uncaught (in promise)", "write_outcome": "uncertain" })
+        );
     }
 }

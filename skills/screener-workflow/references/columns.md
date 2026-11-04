@@ -26,7 +26,9 @@ a fresh identity check; init-data fallback can also differ from unsaved UI state
 Intervening edits are not reconciled by the adapter.
 
 A write may complete before readback fails. Such errors add
-`details.write_outcome: "uncertain"` and `details.save_result`. Inspect current
+`details.write_outcome: "uncertain"` and `details.save_result`. A save request
+that times out, loses its connection or throws before an answer may also have
+been applied, so it adds only `details.write_outcome: "uncertain"`. Inspect current
 storage before retrying, especially add, which can insert duplicates. These are account-setting
 changes, not temporary display toggles. Official MCP does not edit these saved
 column sets. Keep account-local configuration and IDs private.

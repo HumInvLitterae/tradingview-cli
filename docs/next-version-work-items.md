@@ -19,7 +19,6 @@ inspection and local fixtures, not from TradingView Desktop or the provider.
 
 | Candidate | Current limitation | Condition or required investigation |
 | --- | --- | --- |
-| Screener saves with a lost response | A storage save or delete whose CDP evaluation times out, loses its connection or throws returns a plain error without `write_outcome`, although the request may have reached the provider. A retry can then repeat the change. | Mark these failures `write_outcome: "uncertain"` once the error contract change is agreed. |
 | Desktop price-alert response-ID attribution | Confirmation selects a newly listed alert by content; concurrent matching writes can be ambiguous. | Establish the authoritative response ID and saved-row identity before changing the success contract. |
 | Broader indicator-input qualification | A non-default integer case does not establish every Pine input type's provider representation. | Qualify additional types when a concrete supported workflow requires them; preserve typed comparisons. |
 | Standalone Screener JavaScript | The remaining helpers live in a Rust raw string and no contract gate executes them. | Move them to `.js` files only with a fixture and `mise` gate like the account contracts, so that behavior gains a test rather than a new location. The 22 expressions that still embed helpers need 5.1 KB of them at the median and 12.5 KB at most; split by those dependencies. |

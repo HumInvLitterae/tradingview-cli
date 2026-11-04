@@ -12,7 +12,9 @@ After a confirmed change, a failed panel close returns success with
 `cleanup.restored: false` and `cleanup.error`; `cleanup` is otherwise omitted.
 Other close failures remain errors.
 A delete whose readback fails adds `details.write_outcome: "uncertain"` and
-`details.delete_result`; inspect storage before retrying.
+`details.delete_result`. A delete request that times out, loses its connection
+or throws before an answer adds only `details.write_outcome: "uncertain"`.
+Inspect storage before retrying.
 
 | Action | Execution boundary and evidence |
 | --- | --- |

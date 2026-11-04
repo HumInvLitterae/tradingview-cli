@@ -122,9 +122,11 @@ values and the `screener` command name were checked against the current code.
   checks.
 - `UNCONFIRMED` until observed in Desktop: whether Escape closes the panel while a
   screen name dialog is open, and how often a close fails after a write.
-- Not covered: a save request that times out may have reached the provider, and a
-  readback mismatch or a failed UI post-check keeps its existing error without
-  `write_outcome`.
+- A storage save or delete whose evaluation times out, loses its connection or
+  throws adds `write_outcome` without a result, because the request may have
+  reached the provider. A refused request does not.
+- Not covered: a readback mismatch or a failed UI post-check keeps its existing
+  error without `write_outcome`.
 
 ## Progress
 

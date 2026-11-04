@@ -11,7 +11,7 @@ use super::{
         expanded_expression, fetch_active_screener_storage_config,
         fetch_current_screener_storage_config, read_screener_state, read_screener_with_restore,
         require_active_screen_title, screener_click_point, screener_click_point_from_value,
-        uncertain_write_error, value_bool,
+        unanswered_write_error, uncertain_write_error, value_bool,
     },
     validation::{
         ScreenerFilterAddRequest, ScreenerFilterModifyMode, ScreenerFilterModifyRequest,
@@ -710,7 +710,8 @@ pub(super) async fn save_screener_storage_filters(
             ),
             true,
         )
-        .await?;
+        .await
+        .map_err(unanswered_write_error)?;
 
     if value_bool(&result, "saved") {
         Ok(result)
@@ -2498,19 +2499,6 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn screener_filters_remove_failed_save_is_not_uncertain() {
-        let steps = filter_remove_write_steps();
-        let mut runtime = runtime_failing_at_call(&steps, 4);
-
-        let error = screener_filters_remove(&mut runtime, ScreenerFilterSelector::Index(1), false)
-            .await
-            .unwrap_err();
-
-        assert_eq!(error.kind, ErrorKind::Connection);
-        assert!(error.details.is_none());
-    }
-
-    #[tokio::test]
     async fn screener_filters_remove_reports_failed_refresh_after_confirmed_write() {
         let steps = filter_remove_write_steps();
         let mut steps = steps[2..].to_vec();
@@ -2571,5 +2559,50 @@ mod tests {
 
         assert_eq!(error.kind, ErrorKind::Connection);
         assert_eq!(runtime.key_events.len(), 2);
+    }
+
+    #[tokio::test]
+    async fn screener_filters_remove_reports_uncertain_write_when_save_gets_no_answer() {
+        let steps = filter_remove_write_steps();
+        let mut responses = steps[..4].to_vec();
+        responses.push(json!({ "button_found": true, "open": true }));
+        responses.push(json!({ "button_found": true, "open": false }));
+        let mut runtime = FakeRuntime::new(responses).with_evaluate_app_error_at_call(
+            4,
+            AppError::new(ErrorKind::Timeout, "CDP request timed out")
+                .with_details(json!({ "failure_stage": "method_call" })),
+        );
+
+        let error = screener_filters_remove(&mut runtime, ScreenerFilterSelector::Index(1), false)
+            .await
+            .unwrap_err();
+
+        assert_eq!(error.kind, ErrorKind::Timeout);
+        assert_eq!(error.message, "CDP request timed out");
+        assert_eq!(
+            error.details.unwrap(),
+            json!({ "failure_stage": "method_call", "write_outcome": "uncertain" })
+        );
+        assert_eq!(runtime.key_events.len(), 2);
+    }
+
+    #[tokio::test]
+    async fn screener_filters_remove_refused_save_is_not_uncertain() {
+        let steps = filter_remove_write_steps();
+        let mut responses = steps[..4].to_vec();
+        responses.push(json!({ "saved": false, "status": 409 }));
+        responses.push(json!({ "button_found": true, "open": true }));
+        responses.push(json!({ "button_found": true, "open": false }));
+        let mut runtime = FakeRuntime::new(responses);
+
+        let error = screener_filters_remove(&mut runtime, ScreenerFilterSelector::Index(1), false)
+            .await
+            .unwrap_err();
+
+        assert_eq!(error.message, "Screener storage filter save request failed");
+        assert_eq!(
+            error.details.unwrap(),
+            json!({ "saved": false, "status": 409 })
+        );
     }
 }
