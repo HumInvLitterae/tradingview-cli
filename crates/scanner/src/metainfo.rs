@@ -2,7 +2,7 @@ use serde_json::{Map, Value, json};
 
 use tradingview_core::{AppError, ErrorKind};
 
-use super::http::{configured_client, map_http_error, remote_status_error};
+use super::http::{configured_client, send_json};
 use super::types::{ScannerFieldInfo, ScannerMetainfoResult};
 
 const METAINFO_BASE_URL: &str = "https://scanner.tradingview.com";
@@ -43,23 +43,12 @@ pub async fn scanner_metainfo_typed(
         builder = builder.json(&json!({ "fields": normalized.fields }));
     }
 
-    let response = builder
-        .send()
-        .await
-        .map_err(|err| map_http_error(err, "Scanner metainfo request"))?;
-
-    let status = response.status();
-    if !status.is_success() {
-        return Err(remote_status_error(
-            "TradingView scanner metainfo API",
-            status,
-        ));
-    }
-
-    let value = response
-        .json::<Value>()
-        .await
-        .map_err(|err| map_http_error(err, "Scanner metainfo response"))?;
+    let value = send_json(
+        builder,
+        "Scanner metainfo",
+        "TradingView scanner metainfo API",
+    )
+    .await?;
 
     normalize_metainfo_response_typed(&normalized, &value)
 }
@@ -289,49 +278,23 @@ mod tests {
             ]
         });
 
-        let result = normalize_metainfo_response(&request, &payload).unwrap();
-
-        assert_eq!(result["source"], "scanner_metainfo_rest");
-        assert_eq!(result["source_category"], "desktop_free_read");
-        assert_eq!(result["requires_desktop"], false);
-        assert_eq!(result["non_mutating"], true);
-        assert_eq!(result["market"], "america");
-        assert_eq!(result["requested_fields"], json!(["close", "banana"]));
-        assert_eq!(result["field_count"], 1);
-        assert_eq!(result["financial_currency"], "USD");
-        assert_eq!(result["fields"][0]["name"], "close");
-        assert_eq!(result["fields"][0]["type"], "price");
-        assert_eq!(result["fields"][0]["range"], json!([0, 1000]));
-        assert_eq!(result["missing_fields"], json!(["banana"]));
-    }
-
-    #[test]
-    fn normalize_metainfo_response_typed_preserves_requested_and_missing_fields() {
-        let request = normalize_metainfo_request(ScannerMetainfoRequest {
-            market: "america".to_string(),
-            fields: vec!["close".to_string(), "banana".to_string()],
-        })
-        .unwrap();
-        let payload = json!({
-            "financial_currency": "USD",
-            "fields": [
-                { "n": "close", "t": "price", "r": [0, 1000] }
-            ]
-        });
-
-        let result = normalize_metainfo_response_typed(&request, &payload).unwrap();
-
-        assert_eq!(result.source, "scanner_metainfo_rest");
-        assert_eq!(result.source_category, "desktop_free_read");
-        assert!(!result.requires_desktop);
-        assert!(result.non_mutating);
-        assert_eq!(result.market, "america");
-        assert_eq!(result.requested_fields, ["close", "banana"]);
-        assert_eq!(result.field_count, 1);
-        assert_eq!(result.fields[0].name, "close");
-        assert_eq!(result.fields[0].field_type, json!("price"));
-        assert_eq!(result.missing_fields, ["banana"]);
-        assert_eq!(result.financial_currency, Some(json!("USD")));
+        // The JSON payload is the typed result serialized; one literal pins both,
+        // including the typed `field_type` (`type`) and `financial_currency`.
+        assert_eq!(
+            normalize_metainfo_response(&request, &payload).unwrap(),
+            json!({
+                "source": "scanner_metainfo_rest",
+                "source_category": "desktop_free_read",
+                "requires_desktop": false,
+                "non_mutating": true,
+                "market": "america",
+                "requested_fields": ["close", "banana"],
+                "field_count": 1,
+                "fields": [{"name": "close", "type": "price", "range": [0, 1000]}],
+                "missing_fields": ["banana"],
+                "financial_currency": "USD"
+            })
+        );
     }
 
     #[test]

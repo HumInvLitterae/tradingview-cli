@@ -814,14 +814,38 @@ mod tests {
         use std::os::unix::fs::PermissionsExt;
         let root = tempfile::tempdir().unwrap();
         let script = root.path().join("stalled-worker");
-        std::fs::write(&script, "#!/bin/sh\nexec sleep 30\n").unwrap();
+        let pid_file = root.path().join("worker.pid");
+        // `exec` keeps the recorded PID for the sleeping process.
+        std::fs::write(
+            &script,
+            format!(
+                "#!/bin/sh\necho $$ > '{}'\nexec sleep 30\n",
+                pid_file.display()
+            ),
+        )
+        .unwrap();
         std::fs::set_permissions(&script, std::fs::Permissions::from_mode(0o700)).unwrap();
+        // Long enough for a cold first launch to record its PID.
+        let started = std::time::Instant::now();
         let result = worker_request(
             &script,
             Operation::Load,
-            Instant::now() + Duration::from_millis(100),
+            Instant::now() + Duration::from_secs(2),
         )
         .await;
         assert!(matches!(result, Err(Failure::Timeout)));
+        // Waiting for the 30-second sleep instead of killing would block here.
+        assert!(started.elapsed() < Duration::from_secs(10));
+
+        let pid = std::fs::read_to_string(&pid_file).unwrap();
+        // `kill -0` still succeeds for a zombie, so failure shows the worker was
+        // both killed and reaped before worker_request returned.
+        let alive = std::process::Command::new("kill")
+            .args(["-0", pid.trim()])
+            .stderr(Stdio::null())
+            .status()
+            .unwrap()
+            .success();
+        assert!(!alive, "worker {} outlived the deadline", pid.trim());
     }
 }

@@ -183,6 +183,18 @@ impl Server {
             })
             .count()
     }
+
+    /// The `{name, arguments}` params of each `tools/call` request, in order.
+    fn tool_calls(&self) -> Vec<Value> {
+        self.requests
+            .lock()
+            .unwrap()
+            .iter()
+            .filter_map(|r| serde_json::from_slice::<Value>(&r.body).ok())
+            .filter(|v| v["method"] == "tools/call")
+            .map(|v| json!({"name": v["params"]["name"], "arguments": v["params"]["arguments"]}))
+            .collect()
+    }
 }
 
 fn respond(ep: &Endpoints, r: &Request, mode: &str) -> Response {
@@ -1974,11 +1986,53 @@ async fn financial_service_keeps_source_values_and_failure_dispatch_counts() {
     use crate::client::{Operation, execute};
     use tradingview_model::mcp_financials::Request;
 
-    for request in [
-        Request::snapshot("NASDAQ:EXAMPLE", "ttm", &[]).unwrap(),
-        Request::history("NASDAQ:EXAMPLE", "fq", Some("2025-01-01"), None).unwrap(),
-        Request::forecasts("NASDAQ:EXAMPLE").unwrap(),
-        Request::earnings(&["NASDAQ:EXAMPLE".into(), "NYSE:OTHER".into()], None, None).unwrap(),
+    for (request, tool, contract, values) in [
+        (
+            Request::snapshot("NASDAQ:EXAMPLE", "ttm", &[]).unwrap(),
+            "mcp-tv-get-financials",
+            "mcp_financials.v1",
+            vec![(
+                "/fields",
+                json!({"name": "EXAMPLE", "total_revenue_ttm": 0, "net_income_ttm": null}),
+            )],
+        ),
+        (
+            Request::history("NASDAQ:EXAMPLE", "fq", Some("2025-01-01"), None).unwrap(),
+            "mcp-tv-get-financial-history",
+            "mcp_financial_history.v1",
+            vec![
+                ("/labels", json!(["FY2025 Q1"])),
+                (
+                    "/series",
+                    json!({"revenue": [{"value": 0, "yoy_pct": null}]}),
+                ),
+            ],
+        ),
+        (
+            Request::forecasts("NASDAQ:EXAMPLE").unwrap(),
+            "mcp-tv-get-forecasts",
+            "mcp_forecasts.v1",
+            vec![
+                ("/forecast/estimates/eps_next_quarter", json!(0)),
+                ("/forecast/price_targets/average", Value::Null),
+                ("/provider_metadata/currency", json!("EUR")),
+            ],
+        ),
+        (
+            Request::earnings(&["NASDAQ:EXAMPLE".into(), "NYSE:OTHER".into()], None, None).unwrap(),
+            "mcp-tv-get-earnings-calendar",
+            "mcp_earnings.v1",
+            vec![
+                ("/items/0/release_date", json!("2026-05-01")),
+                (
+                    "/symbol_results",
+                    json!([
+                        {"requested_symbol": "NASDAQ:EXAMPLE", "status": "returned", "item_indices": [0]},
+                        {"requested_symbol": "NYSE:OTHER", "status": "unreported", "item_indices": []}
+                    ]),
+                ),
+            ],
+        ),
     ] {
         for mode in [
             "json",
@@ -2010,6 +2064,14 @@ async fn financial_service_keeps_source_values_and_failure_dispatch_counts() {
             );
             if matches!(mode, "json" | "sse") {
                 let data = result.unwrap();
+                assert_eq!(
+                    server.tool_calls(),
+                    vec![json!({"name": tool, "arguments": request.arguments()})]
+                );
+                assert_eq!(data["contract_version"], contract);
+                for (pointer, expected) in &values {
+                    assert_eq!(data.pointer(pointer), Some(expected), "{tool} {pointer}");
+                }
                 assert_eq!(data["source"], "tradingview_mcp");
                 assert_eq!(data["transport"]["tool_attempts"], 1);
                 assert_eq!(data["client_observation"]["completeness"], "unconfirmed");
@@ -2030,11 +2092,58 @@ async fn research_service_keeps_references_access_and_single_dispatch_failures()
     use crate::client::{Operation, execute};
     use tradingview_model::mcp_research::{DocumentOptions, Request};
 
-    for request in [
-        Request::news("NASDAQ:EXAMPLE", "en", 2, 0).unwrap(),
-        Request::story("urn:newsml:example:one", "en", "non_pro", None).unwrap(),
-        Request::documents("NASDAQ:EXAMPLE", DocumentOptions::default()).unwrap(),
-        Request::document("opaque-view").unwrap(),
+    for (request, tool, contract, values) in [
+        (
+            Request::news("NASDAQ:EXAMPLE", "en", 2, 0).unwrap(),
+            "mcp-tv-get-news",
+            "mcp_news.v1",
+            vec![
+                ("/items/0/id", json!("urn:newsml:example:one")),
+                ("/items/0/permission", json!("restricted")),
+                ("/items/0/paywall", json!(true)),
+                (
+                    "/pagination",
+                    json!({"offset": 0, "next_offset": 1, "has_more": true, "total_available": 2}),
+                ),
+            ],
+        ),
+        (
+            Request::story("urn:newsml:example:one", "en", "non_pro", None).unwrap(),
+            "mcp-tv-get-news-story",
+            "mcp_news_story.v1",
+            vec![
+                ("/provider_metadata/id", json!("urn:newsml:example:one")),
+                ("/provider_metadata/permission", json!("restricted")),
+                ("/client_observation/content_status", json!("not_returned")),
+            ],
+        ),
+        (
+            Request::documents("NASDAQ:EXAMPLE", DocumentOptions::default()).unwrap(),
+            "mcp-tv-get-documents",
+            "mcp_documents.v1",
+            vec![
+                ("/items/0/id", json!("synthetic-document")),
+                ("/items/0/reported", json!(1000)),
+                (
+                    "/items/0/views",
+                    json!([{"id": "opaque-view", "type": "summary"}]),
+                ),
+            ],
+        ),
+        (
+            Request::document("opaque-view").unwrap(),
+            "mcp-tv-get-document-view",
+            "mcp_document.v1",
+            vec![
+                ("/provider_metadata/id", json!("opaque-view")),
+                (
+                    "/content/astDescription",
+                    json!({"type": "root", "children": [
+                        {"type": "paragraph", "children": ["Synthetic text"]}
+                    ]}),
+                ),
+            ],
+        ),
     ] {
         for mode in [
             "json",
@@ -2065,6 +2174,14 @@ async fn research_service_keeps_references_access_and_single_dispatch_failures()
             );
             if matches!(mode, "json" | "sse") {
                 let data = result.unwrap();
+                assert_eq!(
+                    server.tool_calls(),
+                    vec![json!({"name": tool, "arguments": request.arguments()})]
+                );
+                assert_eq!(data["contract_version"], contract);
+                for (pointer, expected) in &values {
+                    assert_eq!(data.pointer(pointer), Some(expected), "{tool} {pointer}");
+                }
                 assert_eq!(data["source"], "tradingview_mcp");
                 assert_eq!(data["transport"]["tool_attempts"], 1);
                 assert_eq!(data["client_observation"]["completeness"], "unconfirmed");
@@ -2085,21 +2202,77 @@ async fn economic_service_keeps_nulls_and_single_dispatch_failures() {
     use crate::client::{Operation, execute};
     use tradingview_model::mcp_economics::{CalendarOptions, DividendOptions, Request};
 
-    for request in [
-        Request::symbols(Some("US"), None, None).unwrap(),
-        Request::series("ECONOMICS:USEXAMPLE", None, None).unwrap(),
-        Request::calendar(CalendarOptions::default()).unwrap(),
-        Request::dividends(DividendOptions {
-            symbols: vec!["NASDAQ:EXAMPLE".into(), "NYSE:OTHER".into()],
-            ..Default::default()
-        })
-        .unwrap(),
-        Request::dividends(DividendOptions {
-            market: Some("america".into()),
-            limit: Some(2),
-            ..Default::default()
-        })
-        .unwrap(),
+    for (request, tool, contract, values) in [
+        (
+            Request::symbols(Some("US"), None, None).unwrap(),
+            "mcp-tv-get-economic-symbols",
+            "mcp_economic_symbols.v1",
+            vec![(
+                "/items",
+                json!([{
+                    "symbol": "ECONOMICS:USEXAMPLE",
+                    "description": "Synthetic indicator",
+                    "category": "prce"
+                }]),
+            )],
+        ),
+        (
+            Request::series("ECONOMICS:USEXAMPLE", None, None).unwrap(),
+            "mcp-tv-get-economic-data",
+            "mcp_economic_data.v1",
+            vec![(
+                "/series",
+                json!([
+                    {"date": "2026-01-01", "value": 0},
+                    {"date": "2026-02-01", "value": null}
+                ]),
+            )],
+        ),
+        (
+            Request::calendar(CalendarOptions::default()).unwrap(),
+            "mcp-tv-get-economic-calendar",
+            "mcp_economic_calendar.v1",
+            vec![
+                ("/items/0/id", json!("synthetic-event")),
+                ("/items/0/actual", json!(0)),
+                ("/items/0/forecast", Value::Null),
+            ],
+        ),
+        (
+            Request::dividends(DividendOptions {
+                symbols: vec!["NASDAQ:EXAMPLE".into(), "NYSE:OTHER".into()],
+                ..Default::default()
+            })
+            .unwrap(),
+            "mcp-tv-get-dividends-calendar",
+            "mcp_dividends.v1",
+            vec![
+                ("/items/0/dividend_amount_recent", json!(0)),
+                ("/items/0/dividend_amount_upcoming", Value::Null),
+                (
+                    "/outcomes",
+                    json!([
+                        {"requested_symbol": "NASDAQ:EXAMPLE", "status": "returned"},
+                        {"requested_symbol": "NYSE:OTHER", "status": "unreported"}
+                    ]),
+                ),
+            ],
+        ),
+        (
+            Request::dividends(DividendOptions {
+                market: Some("america".into()),
+                limit: Some(2),
+                ..Default::default()
+            })
+            .unwrap(),
+            "mcp-tv-get-dividends-calendar",
+            "mcp_dividends.v1",
+            vec![
+                ("/mode", json!("market")),
+                ("/items/0/dividend_amount_recent", json!(0)),
+                ("/items/0/dividend_amount_upcoming", Value::Null),
+            ],
+        ),
     ] {
         for mode in [
             "json",
@@ -2131,6 +2304,14 @@ async fn economic_service_keeps_nulls_and_single_dispatch_failures() {
             );
             if matches!(mode, "json" | "sse") {
                 let data = result.unwrap();
+                assert_eq!(
+                    server.tool_calls(),
+                    vec![json!({"name": tool, "arguments": request.arguments()})]
+                );
+                assert_eq!(data["contract_version"], contract);
+                for (pointer, expected) in &values {
+                    assert_eq!(data.pointer(pointer), Some(expected), "{tool} {pointer}");
+                }
                 assert_eq!(data["source"], "tradingview_mcp");
                 assert_eq!(data["transport"]["tool_attempts"], 1);
                 assert_eq!(data["client_observation"]["completeness"], "unconfirmed");

@@ -2,7 +2,7 @@ use serde_json::{Value, json};
 
 use tradingview_core::{AppError, ErrorKind};
 
-use crate::http::{configured_client, map_http_error, remote_status_error};
+use crate::http::{configured_client, send_json};
 
 const PINE_CHECK_URL: &str = "https://pine-facade.tradingview.com/pine-facade/translate_light?user_name=Guest&pine_id=00000000-0000-0000-0000-000000000000";
 
@@ -14,25 +14,17 @@ pub async fn pine_check(source: &str, input_source: &str) -> Result<Value, AppEr
             .unwrap_or("")
             .to_string();
     let client = configured_client()?;
-    let response = client
-        .post(PINE_CHECK_URL)
-        .header("Accept", "application/json")
-        .header("Content-Type", "application/x-www-form-urlencoded")
-        .header("Referer", "https://www.tradingview.com/")
-        .body(body)
-        .send()
-        .await
-        .map_err(|err| map_http_error(err, "Pine check request"))?;
-
-    let status = response.status();
-    if !status.is_success() {
-        return Err(remote_status_error("Pine check API", status));
-    }
-
-    let value = response
-        .json::<Value>()
-        .await
-        .map_err(|err| map_http_error(err, "Pine check response"))?;
+    let value = send_json(
+        client
+            .post(PINE_CHECK_URL)
+            .header("Accept", "application/json")
+            .header("Content-Type", "application/x-www-form-urlencoded")
+            .header("Referer", "https://www.tradingview.com/")
+            .body(body),
+        "Pine check",
+        "Pine check API",
+    )
+    .await?;
     normalize_check_response(value, input_source)
 }
 

@@ -42,6 +42,11 @@ package version omits the leading `v`.
   technicals interval tests now check the production path and independent
   expected values, so a dropped error detail, wrong crop origin or removed
   public value fails.
+- Library tests in the CDP, market, MCP, model, Pine and scanner crates now
+  check full outputs, wire arguments and every validation branch instead of
+  counts or a single field. The Desktop-free HTTP callers share one request
+  helper, so its status test covers each of them. Nine overlapping tests were
+  merged into the tests they duplicated.
 
 ## v0.41.0
 

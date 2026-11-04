@@ -3,7 +3,7 @@ use serde_json::{Value, json};
 use tradingview_core::{AppError, ErrorKind};
 
 use super::common::field_values_object;
-use super::http::{configured_client, map_http_error, remote_status_error};
+use super::http::{configured_client, send_json};
 use super::types::{ScannerHotlistResult, ScannerRow};
 
 const HOTLIST_BASE_URL: &str = "https://scanner.tradingview.com/presets";
@@ -41,24 +41,12 @@ pub async fn scanner_hotlist_typed(
     let limit = normalize_hotlist_limit(limit)?;
     let url = hotlist_url(slug)?;
     let client = configured_client()?;
-    let response = client
-        .get(url)
-        .send()
-        .await
-        .map_err(|err| map_http_error(err, "Scanner hotlist request"))?;
-
-    let status = response.status();
-    if !status.is_success() {
-        return Err(remote_status_error(
-            "TradingView scanner preset API",
-            status,
-        ));
-    }
-
-    let value = response
-        .json::<Value>()
-        .await
-        .map_err(|err| map_http_error(err, "Scanner hotlist response"))?;
+    let value = send_json(
+        client.get(url),
+        "Scanner hotlist",
+        "TradingView scanner preset API",
+    )
+    .await?;
 
     normalize_hotlist_response_typed(slug, limit, &value)
 }
@@ -249,45 +237,27 @@ mod tests {
             "totalCount": 20
         });
 
-        let result = normalize_hotlist_response("volume_gainers", 1, &payload).unwrap();
-
-        assert_eq!(result["source"], "scanner_preset_rest");
-        assert_eq!(result["source_category"], "desktop_free_read");
-        assert_eq!(result["requires_desktop"], false);
-        assert_eq!(result["non_mutating"], true);
-        assert_eq!(result["region"], "US");
-        assert_eq!(result["slug"], "volume_gainers");
-        assert_eq!(result["limit"], 1);
-        assert_eq!(result["count"], 1);
-        assert_eq!(result["total_count"], 20);
-        assert_eq!(result["fields"], json!(["volume", "change"]));
-        assert_eq!(result["symbols"][0]["symbol"], "NASDAQ:AAPL");
-        assert_eq!(result["symbols"][0]["values"], json!([123456, 1.5]));
-        assert_eq!(result["symbols"][0]["field_values"]["volume"], 123456);
-        assert_eq!(result["symbols"][0]["field_values"]["change"], 1.5);
-    }
-
-    #[test]
-    fn normalize_hotlist_response_typed_preserves_fields_and_rows() {
-        let payload = json!({
-            "fields": ["volume", "change"],
-            "symbols": [
-                { "s": "NASDAQ:AAPL", "f": [123456, 1.5] }
-            ],
-            "totalCount": 20
-        });
-
-        let result = normalize_hotlist_response_typed("volume_gainers", 1, &payload).unwrap();
-
-        assert_eq!(result.source, "scanner_preset_rest");
-        assert_eq!(result.source_category, "desktop_free_read");
-        assert!(!result.requires_desktop);
-        assert!(result.non_mutating);
-        assert_eq!(result.region, "US");
-        assert_eq!(result.slug, "volume_gainers");
-        assert_eq!(result.fields, ["volume", "change"]);
-        assert_eq!(result.symbols[0].symbol, "NASDAQ:AAPL");
-        assert_eq!(result.symbols[0].field_values["volume"], 123456);
+        // The JSON payload is the typed result serialized; one literal pins both.
+        assert_eq!(
+            normalize_hotlist_response("volume_gainers", 1, &payload).unwrap(),
+            json!({
+                "source": "scanner_preset_rest",
+                "source_category": "desktop_free_read",
+                "requires_desktop": false,
+                "non_mutating": true,
+                "region": "US",
+                "slug": "volume_gainers",
+                "limit": 1,
+                "count": 1,
+                "total_count": 20,
+                "fields": ["volume", "change"],
+                "symbols": [{
+                    "symbol": "NASDAQ:AAPL",
+                    "values": [123456, 1.5],
+                    "field_values": {"volume": 123456, "change": 1.5}
+                }]
+            })
+        );
     }
 
     #[test]

@@ -441,22 +441,33 @@ fn probe_config_is_bounded_before_network_access() {
 
 #[test]
 fn aggregation_uses_nearest_rank_percentiles_without_private_values() {
+    const PRIVATE: [&str; 3] = ["target-secret", "ws://private", "Runtime.evaluate"];
+    let observer = TransportObserver::default();
+    for elapsed in [40, 10, 30, 20] {
+        observer.record(
+            TransportStage::TargetList,
+            Duration::from_millis(elapsed),
+            &Ok::<(), AppError>(()),
+        );
+    }
+    observer.record(
+        TransportStage::WebSocketConnect,
+        Duration::from_millis(5),
+        &Err::<(), _>(AppError::new(
+            ErrorKind::Connection,
+            "Runtime.evaluate failed for target-secret at ws://private/endpoint",
+        )),
+    );
     let mut accumulator = ProbeAccumulator {
         iterations_requested: 4,
         iterations_completed: 4,
         success_count: 3,
-        failure_count: 1,
         ..ProbeAccumulator::default()
     };
-    accumulator
-        .stage_samples
-        .insert(TransportStage::TargetList, vec![40, 10, 30, 20]);
-    accumulator
-        .failure_stage_counts
-        .insert("websocket_connect", 1);
-    accumulator
-        .stale_target_diagnosis_counts
-        .insert("endpoint_changed", 1);
+    let stage = accumulator
+        .record_samples(observer.take_samples())
+        .expect("the failed sample names a stage");
+    accumulator.record_failure(stage);
 
     let summary = accumulator.summary();
     assert_eq!(
@@ -467,55 +478,54 @@ fn aggregation_uses_nearest_rank_percentiles_without_private_values() {
             p95: Some(40),
         }
     );
+    assert_eq!(
+        summary.failure_stage_counts,
+        BTreeMap::from([("websocket_connect".to_string(), 1)])
+    );
     assert_eq!(StageLatency::from_samples(&[]).p50, None);
     let encoded = serde_json::to_string(&summary).unwrap();
-    assert!(!encoded.contains("target-id"));
-    assert!(!encoded.contains("ws://"));
-    assert!(!encoded.contains("Runtime.evaluate"));
+    for private in PRIVATE {
+        assert!(
+            !encoded.contains(private),
+            "{private} leaked into {encoded}"
+        );
+    }
 }
 
 #[test]
-fn stale_target_diagnosis_covers_all_aggregate_labels() {
-    let failed = target("target-a", "ws://private/old");
-    let unchanged = target("target-a", "ws://private/old");
-    let changed_endpoint = target("target-a", "ws://private/new");
-    let duplicate = target("target-a", "ws://private/other");
-
-    assert_eq!(
-        diagnose_stale_target_from_targets(&failed, "target-a", &Ok(vec![unchanged.clone()]),),
-        StaleTargetDiagnosis::Unchanged
-    );
-    assert_eq!(
-        diagnose_stale_target_from_targets(&failed, "target-a", &Ok(vec![changed_endpoint])),
-        StaleTargetDiagnosis::EndpointChanged
-    );
-    assert_eq!(
-        diagnose_stale_target_from_targets(&failed, "target-a", &Ok(vec![unchanged, duplicate]),),
-        StaleTargetDiagnosis::SelectionChangedOrAmbiguous
-    );
-    assert_eq!(
-        diagnose_stale_target_from_targets(&failed, "target-a", &Ok(vec![])),
-        StaleTargetDiagnosis::SelectionMissing
-    );
-    assert_eq!(
-        diagnose_stale_target_from_targets(
+fn stale_target_diagnoses_are_counted_by_public_label() {
+    let failed = target("target-secret", "ws://private/old");
+    let fresh_results = [
+        Ok(vec![target("target-secret", "ws://private/old")]),
+        Ok(vec![target("target-secret", "ws://private/new")]),
+        Ok(vec![target("target-secret", "ws://private/new")]),
+        Ok(vec![]),
+        Err(AppError::new(
+            ErrorKind::Connection,
+            "ws://private unavailable",
+        )),
+    ];
+    let mut accumulator = ProbeAccumulator::default();
+    for fresh in &fresh_results {
+        accumulator.record_diagnosis(diagnose_stale_target_from_targets(
             &failed,
-            "target-a",
-            &Err(AppError::new(ErrorKind::Connection, "unavailable")),
-        ),
-        StaleTargetDiagnosis::Unavailable
-    );
+            "target-secret",
+            fresh,
+        ));
+    }
 
-    let labels = [
-        StaleTargetDiagnosis::Unchanged,
-        StaleTargetDiagnosis::EndpointChanged,
-        StaleTargetDiagnosis::SelectionMissing,
-        StaleTargetDiagnosis::SelectionChangedOrAmbiguous,
-        StaleTargetDiagnosis::Unavailable,
-    ]
-    .map(StaleTargetDiagnosis::as_str);
-    let encoded = serde_json::to_string(&labels).unwrap();
-    assert!(!encoded.contains("target-a"));
+    let summary = accumulator.summary();
+    assert_eq!(
+        summary.stale_target_diagnosis_counts,
+        BTreeMap::from([
+            ("endpoint_changed".to_string(), 2),
+            ("selection_missing".to_string(), 1),
+            ("unavailable".to_string(), 1),
+            ("unchanged".to_string(), 1),
+        ])
+    );
+    let encoded = serde_json::to_string(&summary).unwrap();
+    assert!(!encoded.contains("target-secret"));
     assert!(!encoded.contains("ws://"));
 }
 

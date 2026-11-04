@@ -2,7 +2,7 @@ use serde_json::Value;
 use tradingview_core::{AppError, ErrorKind};
 
 use crate::{
-    http::{configured_client, map_http_error, remote_status_error},
+    http::{configured_client, send_json},
     normalize::strip_em,
     types::{SymbolSearchResponse, SymbolSearchResult},
 };
@@ -48,23 +48,15 @@ pub(crate) async fn search_symbols_typed_with_client(
         ],
     )
     .map_err(|err| AppError::new(ErrorKind::Internal, err.to_string()))?;
-    let response = client
-        .get(url)
-        .header("Origin", "https://www.tradingview.com")
-        .header("Referer", "https://www.tradingview.com/")
-        .send()
-        .await
-        .map_err(|err| map_http_error(err, "Symbol search request"))?;
-
-    let status = response.status();
-    if !status.is_success() {
-        return Err(remote_status_error("Symbol search API", status));
-    }
-
-    let value = response
-        .json::<Value>()
-        .await
-        .map_err(|err| map_http_error(err, "Symbol search response"))?;
+    let value = send_json(
+        client
+            .get(url)
+            .header("Origin", "https://www.tradingview.com")
+            .header("Referer", "https://www.tradingview.com/"),
+        "Symbol search",
+        "Symbol search API",
+    )
+    .await?;
     Ok(normalize_symbol_search_response_typed(query, &value))
 }
 
@@ -152,39 +144,42 @@ mod tests {
             }]
         });
 
-        let result = normalize_symbol_search_response("AAPL", &response);
-
-        assert_eq!(result["query"], "AAPL");
-        assert_eq!(result["source"], "rest_api");
-        assert_eq!(result["source_category"], "desktop_free_read");
-        assert_eq!(result["requires_desktop"], false);
-        assert_eq!(result["non_mutating"], true);
-        assert_eq!(result["count"], 1);
-        assert_eq!(result["results"][0]["symbol"], "AAPL");
-        assert_eq!(result["results"][0]["description"], "Apple Inc");
-        assert_eq!(result["results"][0]["full_name"], "NASDAQ:AAPL");
-    }
-
-    #[test]
-    fn normalize_symbol_search_response_typed_returns_results() {
-        let response = json!({
-            "symbols": [{
-                "symbol": "<em>AAPL</em>",
-                "description": "Apple <em>Inc</em>",
-                "exchange": "NASDAQ",
-                "type": "stock"
-            }]
-        });
-
-        let result = normalize_symbol_search_response_typed("AAPL", &response);
-
-        assert_eq!(result.query, "AAPL");
-        assert_eq!(result.source, "rest_api");
-        assert_eq!(result.source_category, "desktop_free_read");
-        assert!(!result.requires_desktop);
-        assert!(result.non_mutating);
-        assert_eq!(result.count, 1);
-        assert_eq!(result.results[0].symbol, "AAPL");
-        assert_eq!(result.results[0].symbol_type, "stock");
+        assert_eq!(
+            normalize_symbol_search_response_typed("AAPL", &response),
+            SymbolSearchResponse {
+                query: "AAPL".to_string(),
+                source: "rest_api".to_string(),
+                source_category: "desktop_free_read".to_string(),
+                requires_desktop: false,
+                non_mutating: true,
+                count: 1,
+                results: vec![SymbolSearchResult {
+                    symbol: "AAPL".to_string(),
+                    description: "Apple Inc".to_string(),
+                    exchange: "NASDAQ".to_string(),
+                    symbol_type: "stock".to_string(),
+                    full_name: "NASDAQ:AAPL".to_string(),
+                }],
+            }
+        );
+        // The JSON wrapper keeps the CLI field names, including `type`.
+        assert_eq!(
+            normalize_symbol_search_response("AAPL", &response),
+            json!({
+                "query": "AAPL",
+                "source": "rest_api",
+                "source_category": "desktop_free_read",
+                "requires_desktop": false,
+                "non_mutating": true,
+                "count": 1,
+                "results": [{
+                    "symbol": "AAPL",
+                    "description": "Apple Inc",
+                    "exchange": "NASDAQ",
+                    "type": "stock",
+                    "full_name": "NASDAQ:AAPL"
+                }]
+            })
+        );
     }
 }

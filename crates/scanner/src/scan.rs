@@ -12,7 +12,7 @@ use serde_json::{Value, json};
 use tradingview_core::{AppError, ErrorKind};
 
 use super::common::field_values_object;
-use super::http::{configured_client, map_http_error, remote_status_error};
+use super::http::{configured_client, send_json};
 use super::types::{
     ScannerAggregateScanResult, ScannerPageScanResult, ScannerRow, ScannerScanResult, ScannerSort,
 };
@@ -186,22 +186,12 @@ async fn fetch_scanner_page_typed(
     normalized: &NormalizedScannerScanRequest,
 ) -> Result<NormalizedScannerPage, AppError> {
     let url = scan_url(&normalized.market)?;
-    let response = client
-        .post(url)
-        .json(&normalized.body)
-        .send()
-        .await
-        .map_err(|err| map_http_error(err, "Scanner scan request"))?;
-
-    let status = response.status();
-    if !status.is_success() {
-        return Err(remote_status_error("TradingView scanner scan API", status));
-    }
-
-    let value = response
-        .json::<Value>()
-        .await
-        .map_err(|err| map_http_error(err, "Scanner scan response"))?;
+    let value = send_json(
+        client.post(url).json(&normalized.body),
+        "Scanner scan",
+        "TradingView scanner scan API",
+    )
+    .await?;
 
     normalize_scan_response_page(normalized, &value)
 }
@@ -1101,16 +1091,15 @@ mod tests {
         assert_eq!(normalized.columns, ["name", "close", "volume"]);
         assert_eq!(normalized.sort_field, "volume");
         assert_eq!(normalized.sort_order, "asc");
-        assert_eq!(normalized.filters.len(), 5);
-        assert_eq!(
-            normalized.filters[0],
-            json!({
-                "left": "exchange",
-                "operation": "in_range",
-                "right": ["NASDAQ", "NYSE"]
-            })
-        );
-        assert_eq!(normalized.body["filter"], json!(normalized.filters));
+        let expected = json!([
+            {"left": "exchange", "operation": "in_range", "right": ["NASDAQ", "NYSE"]},
+            {"left": "close", "operation": "greater", "right": 10.0},
+            {"left": "close", "operation": "less", "right": 500.0},
+            {"left": "volume", "operation": "greater", "right": 1_000_000.0},
+            {"left": "market_cap_basic", "operation": "greater", "right": 10_000_000_000.0}
+        ]);
+        assert_eq!(json!(normalized.filters), expected);
+        assert_eq!(normalized.body["filter"], expected);
     }
 
     #[test]
@@ -2064,8 +2053,22 @@ mod tests {
         request.body["range"] = json!([100, 125]);
         assert_eq!(scan_query_fingerprint(&request), original);
 
-        request.columns.push("volume".to_string());
-        assert_ne!(scan_query_fingerprint(&request), original);
+        type Edit = fn(&mut NormalizedScannerScanRequest);
+        let changes: [(&str, Edit); 5] = [
+            ("market", |r| r.market = "germany".to_string()),
+            ("columns", |r| r.columns.push("volume".to_string())),
+            ("sort field", |r| r.sort_field = "close".to_string()),
+            ("sort order", |r| r.sort_order = "desc".to_string()),
+            ("filters", |r| {
+                r.filters
+                    .push(json!({"left": "close", "operation": "greater", "right": 1.0}))
+            }),
+        ];
+        for (field, change) in changes {
+            let mut changed = aggregate_base_request(25);
+            change(&mut changed);
+            assert_ne!(scan_query_fingerprint(&changed), original, "{field}");
+        }
     }
 
     #[test]

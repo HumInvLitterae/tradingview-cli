@@ -1122,20 +1122,28 @@ mod tests {
         )
         .await
         .unwrap();
-        let frames = sink
+        let sent = sink
             .messages
-            .iter()
-            .map(|message| message.to_text().unwrap())
+            .into_iter()
+            .flat_map(|message| parse_packets(message).unwrap())
             .collect::<Vec<_>>();
-        for (frame, method) in frames.iter().zip([
-            "set_auth_token",
-            "chart_create_session",
-            "resolve_symbol",
-            "create_series",
-            "switch_timezone",
-        ]) {
-            assert!(frame.contains(&format!("\"m\":\"{method}\"")));
-        }
+        assert_eq!(
+            sent,
+            [
+                json!({"m": "set_auth_token", "p": ["unauthorized_user_token"]}),
+                json!({"m": "chart_create_session", "p": ["cs_fixture", ""]}),
+                json!({"m": "resolve_symbol", "p": [
+                    "cs_fixture",
+                    "symbol_1",
+                    "={\"adjustment\":\"splits\",\"symbol\":\"NASDAQ:AAPL\"}"
+                ]}),
+                json!({"m": "create_series", "p": [
+                    "cs_fixture", "s1", "s1", "symbol_1", "1D", 5
+                ]}),
+                json!({"m": "switch_timezone", "p": ["cs_fixture", "Etc/UTC"]}),
+            ]
+            .map(WsPacket::Message)
+        );
     }
 
     #[tokio::test]

@@ -563,16 +563,30 @@ mod tests {
 
     #[test]
     fn symbol_defaults_are_explicit_and_do_not_disguise_missing_fields() {
+        // Written out rather than read from DEFAULT_COLUMNS, so changing the
+        // public default set fails here.
+        let defaults = json!([
+            "name",
+            "description",
+            "close",
+            "change",
+            "change_abs",
+            "volume",
+            "market_cap_basic",
+            "price_earnings_ttm",
+            "sector",
+            "industry"
+        ]);
         let request = Request::symbol("NASDAQ:EXAMPLE", &[]).unwrap();
-        assert_eq!(request.arguments()["columns"].as_array().unwrap().len(), 10);
+        assert_eq!(request.arguments()["columns"], defaults);
         let data = normalize(&request, json!({"data": {}}), 0).unwrap();
         assert_eq!(data["client_observation"]["fields_status"], "incomplete");
-        assert_eq!(
-            data["client_observation"]["missing_fields"]
-                .as_array()
-                .unwrap()
-                .len(),
-            10
-        );
+        let missing = defaults
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|field| json!({"field": field, "reason": "absent"}))
+            .collect::<Vec<_>>();
+        assert_eq!(data["client_observation"]["missing_fields"], json!(missing));
     }
 }

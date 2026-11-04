@@ -331,22 +331,70 @@ mod tests {
 
     #[test]
     fn validate_position_request_rejects_non_finite_and_non_positive_inputs() {
-        let mut request = DrawingPositionRequest {
+        let valid = DrawingPositionRequest {
             direction: PositionDirection::Long,
-            entry_price: f64::NAN,
+            entry_price: 100.0,
             stop_loss: 90.0,
             take_profit: 120.0,
-            entry_time: None,
-            account_size: None,
-            risk: None,
-            lot_size: None,
+            entry_time: Some(1_700_000_000.0),
+            account_size: Some(10_000.0),
+            risk: Some(1.0),
+            lot_size: Some(1.0),
         };
-        let err = validate_position_request(&request).unwrap_err();
-        assert_eq!(err.kind, ErrorKind::Validation);
+        assert!(validate_position_request(&valid).is_ok());
 
-        request.entry_price = 100.0;
-        request.risk = Some(0.0);
-        let err = validate_position_request(&request).unwrap_err();
-        assert_eq!(err.kind, ErrorKind::Validation);
+        type Edit = fn(&mut DrawingPositionRequest);
+        let cases: [(Edit, &str); 13] = [
+            (
+                |r| r.entry_price = f64::NAN,
+                "entry_price must be a finite number",
+            ),
+            (
+                |r| r.stop_loss = f64::NEG_INFINITY,
+                "stop_loss must be a finite number",
+            ),
+            (
+                |r| r.take_profit = f64::INFINITY,
+                "take_profit must be a finite number",
+            ),
+            (
+                |r| r.entry_time = Some(f64::NAN),
+                "entry_time must be a finite number",
+            ),
+            (
+                |r| r.account_size = Some(f64::INFINITY),
+                "account_size must be a finite number",
+            ),
+            (
+                |r| r.account_size = Some(0.0),
+                "account_size must be greater than 0",
+            ),
+            (
+                |r| r.account_size = Some(-1.0),
+                "account_size must be greater than 0",
+            ),
+            (|r| r.risk = Some(f64::NAN), "risk must be a finite number"),
+            (|r| r.risk = Some(0.0), "risk must be greater than 0"),
+            (|r| r.risk = Some(-0.5), "risk must be greater than 0"),
+            (
+                |r| r.lot_size = Some(f64::INFINITY),
+                "lot_size must be a finite number",
+            ),
+            (
+                |r| r.lot_size = Some(0.0),
+                "lot_size must be greater than 0",
+            ),
+            (
+                |r| r.lot_size = Some(-2.0),
+                "lot_size must be greater than 0",
+            ),
+        ];
+        for (edit, message) in cases {
+            let mut request = valid.clone();
+            edit(&mut request);
+            let err = validate_position_request(&request).unwrap_err();
+            assert_eq!(err.kind, ErrorKind::Validation, "{message}");
+            assert_eq!(err.message, message);
+        }
     }
 }

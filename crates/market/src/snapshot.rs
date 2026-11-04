@@ -547,6 +547,41 @@ mod tests {
         assert_eq!(evidence[2].section, "fundamentals");
         assert_eq!(evidence[2].suggested_follow_up, "snapshot");
         assert!(!evidence[2].requires_desktop);
+
+        // A section error and missing fields in a successful section combine.
+        let mixed_sections = SnapshotSections {
+            fundamentals: SnapshotSection {
+                ok: true,
+                data: Some(json!({
+                    "symbol": "NASDAQ:AAPL",
+                    "missing_fields": ["next_dividend_date"]
+                })),
+                error: None,
+            },
+            ..sections
+        };
+        let entry = |section: &str, fields: &[&str], reason: &str, follow_up: &str| {
+            SnapshotMissingEvidence {
+                section: section.to_string(),
+                missing_fields: fields.iter().map(|field| field.to_string()).collect(),
+                missing_reason: reason.to_string(),
+                suggested_follow_up: follow_up.to_string(),
+                requires_desktop: follow_up == "chart_quote",
+            }
+        };
+        assert_eq!(
+            missing_evidence(&mixed_sections),
+            vec![
+                entry("quote", &[], "section_error", "chart_quote"),
+                entry("info", &[], "section_error", "snapshot"),
+                entry(
+                    "fundamentals",
+                    &["next_dividend_date"],
+                    "missing_fields",
+                    "snapshot"
+                ),
+            ]
+        );
     }
 
     #[test]
@@ -589,55 +624,6 @@ mod tests {
             ]
         );
         assert!(!hints.iter().any(|hint| hint.kind == "quote_chart"));
-    }
-
-    #[test]
-    fn snapshot_missing_evidence_uses_stable_follow_up_vocabulary() {
-        let sections = SnapshotSections {
-            quote: SnapshotSection {
-                ok: false,
-                data: None,
-                error: Some(SnapshotSectionError {
-                    section: "quote".to_string(),
-                    kind: ErrorKind::InternalApiUnavailable,
-                    message: "temporary failure".to_string(),
-                    details: None,
-                }),
-            },
-            info: SnapshotSection {
-                ok: false,
-                data: None,
-                error: Some(SnapshotSectionError {
-                    section: "info".to_string(),
-                    kind: ErrorKind::InternalApiUnavailable,
-                    message: "temporary failure".to_string(),
-                    details: None,
-                }),
-            },
-            fundamentals: SnapshotSection {
-                ok: true,
-                data: Some(json!({
-                    "symbol": "NASDAQ:AAPL",
-                    "missing_fields": ["next_dividend_date"]
-                })),
-                error: None,
-            },
-        };
-        let evidence = missing_evidence(&sections);
-        let follow_ups = evidence
-            .iter()
-            .map(|entry| entry.suggested_follow_up.as_str())
-            .collect::<Vec<_>>();
-
-        assert_eq!(
-            follow_ups,
-            vec![
-                FOLLOW_UP_CHART_QUOTE,
-                FOLLOW_UP_SNAPSHOT,
-                FOLLOW_UP_SNAPSHOT
-            ]
-        );
-        assert!(!follow_ups.contains(&"quote_chart"));
     }
 
     #[tokio::test]

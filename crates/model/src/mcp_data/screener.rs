@@ -309,15 +309,26 @@ mod tests {
             symbol_types: Some(vec!["stock".into()]),
             filter_preset: Some("new_highs".into()),
             symbolset: Some(vec!["SYML:SP;SPX".into()]),
+            columns: vec!["close".into(), "sector".into()],
             ..Default::default()
         })
         .unwrap();
+        // Written from the options above, so a field dropped while building
+        // the arguments fails here even if parsing drops it too.
+        let expected = json!({
+            "market": "america",
+            "filters": {"close": [10, null], "sector": "Technology"},
+            "sort_by": "volume",
+            "sort_order": "asc",
+            "limit": 100,
+            "columns": ["close", "sector"],
+            "symbol_types": ["stock"],
+            "filter_preset": "new_highs",
+            "symbolset": ["SYML:SP;SPX"]
+        });
+        assert_eq!(request.arguments(), expected);
         let parsed = ScreenerOptions::from_arguments(&request.arguments()).unwrap();
-        assert_eq!(
-            Request::screener(parsed).unwrap().arguments(),
-            request.arguments()
-        );
-        assert_eq!(request.arguments()["symbolset"][0], "SYML:SP;SPX");
+        assert_eq!(Request::screener(parsed).unwrap().arguments(), expected);
     }
 
     #[test]

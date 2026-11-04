@@ -754,8 +754,18 @@ mod tests {
             .with_details(json!({"api_fallback_allowed": true}));
         assert!(alert_api_error_allows_fallback(&fallback));
 
-        let no_fallback = AppError::new(ErrorKind::InternalApiUnavailable, "unavailable")
-            .with_details(json!({"api_fallback_allowed": false}));
-        assert!(!alert_api_error_allows_fallback(&no_fallback));
+        // Anything but an explicit `true` keeps the fallback closed.
+        for details in [
+            Some(json!({"api_fallback_allowed": false})),
+            Some(json!({})),
+            Some(json!({"api_fallback_allowed": "true"})),
+            Some(json!({"api_fallback_allowed": 1})),
+            Some(json!({"api_fallback_allowed": null})),
+            None,
+        ] {
+            let mut error = AppError::new(ErrorKind::InternalApiUnavailable, "unavailable");
+            error.details = details.clone();
+            assert!(!alert_api_error_allows_fallback(&error), "{details:?}");
+        }
     }
 }

@@ -1,10 +1,7 @@
 use serde_json::{Value, json};
 use tradingview_core::AppError;
 
-use crate::{
-    http::{map_http_error, remote_status_error},
-    normalize::split_exchange_symbol,
-};
+use crate::{http::send_json, normalize::split_exchange_symbol};
 
 const FUNDAMENTALS_SCAN_URL: &str = "https://scanner.tradingview.com/america/scan";
 
@@ -32,23 +29,10 @@ pub(super) async fn fundamentals_symbol_via_scanner(
         "filter": filters,
         "range": [0, 2],
     });
-    let response = client
-        .post(FUNDAMENTALS_SCAN_URL)
-        .json(&body)
-        .send()
-        .await
-        .map_err(|err| map_http_error(err, "Scanner fundamentals request"))?;
-
-    let status = response.status();
-    if !status.is_success() {
-        return Err(remote_status_error(
-            "TradingView scanner fundamentals API",
-            status,
-        ));
-    }
-
-    response
-        .json::<Value>()
-        .await
-        .map_err(|err| map_http_error(err, "Scanner fundamentals response"))
+    send_json(
+        client.post(FUNDAMENTALS_SCAN_URL).json(&body),
+        "Scanner fundamentals",
+        "TradingView scanner fundamentals API",
+    )
+    .await
 }

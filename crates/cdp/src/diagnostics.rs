@@ -265,14 +265,27 @@ mod tests {
             Duration::from_millis(12),
             &Err::<(), _>(AppError::new(ErrorKind::TargetAmbiguous, "ambiguous")),
         );
+        // Duration::MAX is about 1.8e22 ms, beyond u64; it must clamp, not wrap.
+        observer.record(
+            TransportStage::MethodCall,
+            Duration::MAX,
+            &Ok::<(), AppError>(()),
+        );
 
         assert_eq!(
             observer.samples(),
-            vec![StageSample {
-                stage: TransportStage::TargetSelect,
-                elapsed_ms: 12,
-                outcome: StageOutcome::Failure(ErrorKind::TargetAmbiguous),
-            }]
+            vec![
+                StageSample {
+                    stage: TransportStage::TargetSelect,
+                    elapsed_ms: 12,
+                    outcome: StageOutcome::Failure(ErrorKind::TargetAmbiguous),
+                },
+                StageSample {
+                    stage: TransportStage::MethodCall,
+                    elapsed_ms: u64::MAX,
+                    outcome: StageOutcome::Success,
+                },
+            ]
         );
     }
 

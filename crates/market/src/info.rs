@@ -276,41 +276,44 @@ mod tests {
             "full_name": "NYSE:IONQ"
         });
 
-        let result = symbol_info_from_search_result("IONQ", &target);
-
-        assert_eq!(result["symbol"], "IONQ");
-        assert_eq!(result["full_name"], "NYSE:IONQ");
-        assert_eq!(result["exchange"], "NYSE");
-        assert_eq!(result["description"], "IonQ, Inc.");
-        assert_eq!(result["type"], "stock");
-        assert_eq!(result["pro_name"], "NYSE:IONQ");
-        assert_eq!(result["source"], "symbol_search_rest");
-        assert_eq!(result["source_category"], "desktop_free_read");
-        assert_eq!(result["requires_desktop"], false);
-        assert_eq!(result["non_mutating"], true);
-        assert_eq!(result["requested_symbol"], "IONQ");
-    }
-
-    #[test]
-    fn symbol_info_from_search_result_typed_returns_current_info_shape() {
-        let target = json!({
-            "symbol": "IONQ",
-            "description": "IonQ, Inc.",
-            "exchange": "NYSE",
-            "type": "stock",
-            "full_name": "NYSE:IONQ"
-        });
-
-        let result = symbol_info_from_search_result_typed("IONQ", &target);
-
-        assert_eq!(result.symbol, "IONQ");
-        assert_eq!(result.full_name, "NYSE:IONQ");
-        assert_eq!(result.exchange, "NYSE");
-        assert_eq!(result.description, json!("IonQ, Inc."));
-        assert_eq!(result.symbol_type, json!("stock"));
-        assert_eq!(result.source, "symbol_search_rest");
-        assert_eq!(result.source_category, "desktop_free_read");
-        assert!(!result.requires_desktop);
-        assert!(result.non_mutating);
+        assert_eq!(
+            symbol_info_from_search_result_typed("IONQ", &target),
+            SymbolInfo {
+                symbol: "IONQ".to_string(),
+                full_name: "NYSE:IONQ".to_string(),
+                exchange: "NYSE".to_string(),
+                description: json!("IonQ, Inc."),
+                symbol_type: json!("stock"),
+                pro_name: "NYSE:IONQ".to_string(),
+                typespecs: Value::Null,
+                resolution: Value::Null,
+                chart_type: Value::Null,
+                source: "symbol_search_rest".to_string(),
+                source_category: "desktop_free_read".to_string(),
+                requires_desktop: false,
+                non_mutating: true,
+                requested_symbol: "IONQ".to_string(),
+            }
+        );
+        // The JSON wrapper keeps the CLI field names, including `type`.
+        assert_eq!(
+            symbol_info_from_search_result("IONQ", &target),
+            json!({
+                "symbol": "IONQ",
+                "full_name": "NYSE:IONQ",
+                "exchange": "NYSE",
+                "description": "IonQ, Inc.",
+                "type": "stock",
+                "pro_name": "NYSE:IONQ",
+                "typespecs": null,
+                "resolution": null,
+                "chart_type": null,
+                "source": "symbol_search_rest",
+                "source_category": "desktop_free_read",
+                "requires_desktop": false,
+                "non_mutating": true,
+                "requested_symbol": "IONQ"
+            })
+        );
     }
 }

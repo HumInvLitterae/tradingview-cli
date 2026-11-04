@@ -258,19 +258,23 @@ mod tests {
     }
 
     #[test]
-    fn parses_unicode_payloads_in_text_and_binary_frames() {
+    fn parses_ordered_packets_in_text_and_binary_frames() {
         let first = json!({"description": "日本語 é 🦀"});
         let second = json!({"m": "series_completed", "p": ["cs", "s1"]});
-        let raw = format!(
-            "{}{}{}",
-            frame(&first.to_string()),
-            pong_frame(42),
-            frame(&second.to_string())
-        );
-        for message in [
-            Message::Text(raw.clone().into()),
-            Message::Binary(raw.as_bytes().to_vec().into()),
-        ] {
+        // The heartbeat between the JSON frames arrives framed or bare.
+        let messages = [pong_frame(42), "~h~42".to_string()].map(|heartbeat| {
+            format!(
+                "{}{heartbeat}{}",
+                frame(&first.to_string()),
+                frame(&second.to_string())
+            )
+        });
+        for message in messages.iter().flat_map(|raw| {
+            [
+                Message::Text(raw.clone().into()),
+                Message::Binary(raw.as_bytes().to_vec().into()),
+            ]
+        }) {
             assert_eq!(
                 parse_packets(message).unwrap(),
                 vec![
@@ -280,17 +284,6 @@ mod tests {
                 ]
             );
         }
-    }
-
-    #[test]
-    fn parse_text_packets_handles_multiple_frames_and_ping() {
-        let first = json!({"m": "timescale_update", "p": ["cs", {}]}).to_string();
-        let second = json!({"m": "series_completed", "p": ["cs", "s1"]}).to_string();
-        let raw = format!("{}~h~42{}", frame(&first), frame(&second));
-        let packets = parse_text_packets(&raw).unwrap();
-        assert!(matches!(packets[0], WsPacket::Message(_)));
-        assert_eq!(packets[1], WsPacket::Ping(42));
-        assert!(matches!(packets[2], WsPacket::Message(_)));
     }
 
     #[test]

@@ -703,30 +703,24 @@ val = array.get(a, 4)"#,
     }
 
     #[test]
-    fn first_on_empty_array_is_warning() {
-        let result = diagnostics(
-            r#"//@version=6
-indicator("Test")
-a = array.new_float(0)
-x = a.first()"#,
-        );
+    fn first_and_last_on_empty_array_are_warnings() {
+        for method in ["first", "last"] {
+            let result = diagnostics(&format!(
+                "//@version=6\nindicator(\"Test\")\na = array.new_float(0)\nx = a.{method}()"
+            ));
 
-        assert_eq!(result.len(), 1);
-        assert_eq!(result[0].severity, "warning");
-        assert!(result[0].message.contains("empty array"));
-    }
-
-    #[test]
-    fn last_on_empty_array_is_warning() {
-        let result = diagnostics(
-            r#"//@version=6
-indicator("Test")
-a = array.new_float(0)
-x = a.last()"#,
-        );
-
-        assert_eq!(result.len(), 1);
-        assert_eq!(result[0].severity, "warning");
+            assert_eq!(
+                result,
+                vec![PineDiagnostic {
+                    line: 4,
+                    column: 5,
+                    message: format!(
+                        "a.{method}() called on possibly empty array (declared with size 0)"
+                    ),
+                    severity: "warning",
+                }]
+            );
+        }
     }
 
     #[test]
@@ -803,20 +797,30 @@ y = b.first()
 strategy.entry("Long", strategy.long)"#,
         );
 
-        assert!(result.len() >= 3);
-        assert!(
-            result
-                .iter()
-                .filter(|item| item.severity == "error")
-                .count()
-                >= 2
-        );
-        assert!(
-            result
-                .iter()
-                .filter(|item| item.severity == "warning")
-                .count()
-                >= 1
+        assert_eq!(
+            result,
+            vec![
+                PineDiagnostic {
+                    line: 5,
+                    column: 5,
+                    message: "array.get(a, 5) — index 5 out of bounds (array size is 2)"
+                        .to_string(),
+                    severity: "error",
+                },
+                PineDiagnostic {
+                    line: 6,
+                    column: 5,
+                    message: "b.first() called on possibly empty array (declared with size 0)"
+                        .to_string(),
+                    severity: "warning",
+                },
+                PineDiagnostic {
+                    line: 7,
+                    column: 1,
+                    message: "strategy.entry/close used but no strategy() declaration found — did you mean to use indicator()?".to_string(),
+                    severity: "error",
+                },
+            ]
         );
     }
 

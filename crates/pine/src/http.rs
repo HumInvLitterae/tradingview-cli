@@ -1,7 +1,7 @@
 use std::time::Duration;
 
-use reqwest::{Client, StatusCode};
-use serde_json::json;
+use reqwest::{Client, RequestBuilder, StatusCode};
+use serde_json::{Value, json};
 use tradingview_core::{AppError, ErrorKind};
 
 const PUBLIC_HTTP_CONNECT_TIMEOUT: Duration = Duration::from_secs(5);
@@ -22,7 +22,7 @@ fn configured_client_with_timeouts(
         .map_err(|_| AppError::new(ErrorKind::Internal, "Could not build Pine HTTP client"))
 }
 
-pub(crate) fn map_http_error(error: reqwest::Error, operation: &str) -> AppError {
+fn map_http_error(error: reqwest::Error, operation: &str) -> AppError {
     if error.is_timeout() {
         http_failure(ErrorKind::Timeout, operation, "timeout", "timed out")
     } else if error.is_decode() {
@@ -42,7 +42,30 @@ pub(crate) fn map_http_error(error: reqwest::Error, operation: &str) -> AppError
     }
 }
 
-pub(crate) fn remote_status_error(operation: &str, status: StatusCode) -> AppError {
+/// Sends `request` and reads its JSON body.
+///
+/// `operation` names transport and payload failures (`"{operation} request"`,
+/// `"{operation} response"`); `api` names a non-success HTTP status.
+pub(crate) async fn send_json(
+    request: RequestBuilder,
+    operation: &str,
+    api: &str,
+) -> Result<Value, AppError> {
+    let response = request
+        .send()
+        .await
+        .map_err(|err| map_http_error(err, &format!("{operation} request")))?;
+    let status = response.status();
+    if !status.is_success() {
+        return Err(remote_status_error(api, status));
+    }
+    response
+        .json::<Value>()
+        .await
+        .map_err(|err| map_http_error(err, &format!("{operation} response")))
+}
+
+fn remote_status_error(operation: &str, status: StatusCode) -> AppError {
     AppError::new(
         ErrorKind::InternalApiUnavailable,
         format!("{operation} returned HTTP {status}"),
@@ -63,7 +86,6 @@ fn http_failure(kind: ErrorKind, operation: &str, failure_class: &str, message: 
 
 #[cfg(test)]
 mod tests {
-    use serde_json::Value;
     use tokio::{
         io::{AsyncReadExt, AsyncWriteExt},
         net::TcpListener,
@@ -116,7 +138,10 @@ mod tests {
 
     #[tokio::test]
     async fn remote_statuses_map_to_internal_api_unavailable() {
-        for status_line in ["429 Too Many Requests", "500 Internal Server Error"] {
+        for (status_line, status) in [
+            ("429 Too Many Requests", 429),
+            ("500 Internal Server Error", 500),
+        ] {
             let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
             let address = listener.local_addr().unwrap();
             let server = tokio::spawn(async move {
@@ -128,20 +153,26 @@ mod tests {
                 );
                 stream.write_all(response.as_bytes()).await.unwrap();
             });
-            let response = configured_client()
+            let request = configured_client()
                 .unwrap()
-                .get(format!("http://{address}/status"))
-                .send()
+                .get(format!("http://{address}/status"));
+            let error = send_json(request, "Test HTTP", "Test HTTP API")
                 .await
-                .unwrap();
-            let status = response.status();
-            let error = remote_status_error("Pine test API", status);
+                .unwrap_err();
+
             assert_eq!(error.kind, ErrorKind::InternalApiUnavailable);
             assert_eq!(error.exit_code(), 3);
-            assert!(
-                !serde_json::to_string(&error.details)
-                    .unwrap()
-                    .contains("secret")
+            assert_eq!(
+                error.message,
+                format!("Test HTTP API returned HTTP {status_line}")
+            );
+            assert_eq!(
+                error.details,
+                Some(json!({
+                    "operation": "Test HTTP API",
+                    "http_failure_class": "remote_status",
+                    "status": status,
+                }))
             );
             server.await.unwrap();
         }
@@ -160,15 +191,18 @@ mod tests {
                 .await
                 .unwrap();
         });
-        let response = configured_client()
+        let request = configured_client()
             .unwrap()
-            .get(format!("http://{address}/malformed"))
-            .send()
+            .get(format!("http://{address}/malformed"));
+        let error = send_json(request, "Test HTTP", "Test HTTP API")
             .await
-            .unwrap();
-        let error = map_http_error(
-            response.json::<Value>().await.unwrap_err(),
-            "Pine test response",
+            .unwrap_err();
+        assert_eq!(
+            error.details,
+            Some(json!({
+                "operation": "Test HTTP response",
+                "http_failure_class": "payload",
+            }))
         );
         assert_eq!(error.kind, ErrorKind::InternalApiUnavailable);
         assert_eq!(error.exit_code(), 3);
