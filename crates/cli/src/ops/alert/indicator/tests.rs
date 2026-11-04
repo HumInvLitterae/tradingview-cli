@@ -266,48 +266,6 @@ alertcondition(close > open, "Long", "Long message")"#;
 }
 
 #[tokio::test]
-async fn alert_indicator_create_rejects_missing_script_id_before_create_request() {
-    let source = "alertcondition(close > open, \"Long\")";
-    let mut runtime = FakeRuntime::new(VecDeque::from([json!({
-        "requested": "Signals",
-        "match_count": 1,
-        "match": {
-            "name": "Signals",
-            "title": "Signals",
-            "version": 1,
-            "modified": null,
-            "script_id": null,
-            "script_id_available": false
-        },
-        "candidates": []
-    })]));
-
-    let error = alert_create_indicator(
-        &mut runtime,
-        IndicatorAlertRequest {
-            script: "Signals",
-            source,
-            input_source: "stdin",
-            condition_title: Some("Long"),
-            alert_cond_id: None,
-            symbol: None,
-            resolution: None,
-            message: None,
-            dry_run: false,
-        },
-    )
-    .await
-    .unwrap_err();
-
-    assert_eq!(error.kind, ErrorKind::InternalApiUnavailable);
-    assert_eq!(
-        error.message,
-        "Saved Pine script identity or version is unavailable"
-    );
-    assert_eq!(runtime.evaluated.len(), 1);
-}
-
-#[tokio::test]
 async fn alert_indicator_create_post_check_failure_does_not_fallback() {
     let source = "alertcondition(close > open, \"Long\")";
     let mut runtime = FakeRuntime::new(VecDeque::from([
@@ -475,6 +433,10 @@ async fn alert_indicator_requires_id_and_version_in_both_modes() {
                 .await
                 .unwrap_err();
             assert_eq!(error.kind, ErrorKind::InternalApiUnavailable);
+            assert_eq!(
+                error.message,
+                "Saved Pine script identity or version is unavailable"
+            );
             assert_eq!(
                 error.details,
                 Some(json!({

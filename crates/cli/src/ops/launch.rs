@@ -1046,9 +1046,44 @@ mod tests {
 
     #[test]
     fn platform_candidate_paths_are_non_empty_for_known_platforms() {
-        assert!(!platform_candidate_paths_for("macos").is_empty());
-        assert!(!platform_candidate_paths_for("windows").is_empty());
-        assert!(!platform_candidate_paths_for("linux").is_empty());
+        // Fixed install locations come first; home-based ones depend on the
+        // environment, so only their shape is checked.
+        let macos = platform_candidate_paths_for("macos");
+        assert_eq!(
+            macos[0],
+            PathBuf::from("/Applications/TradingView.app/Contents/MacOS/TradingView")
+        );
+        assert!(
+            macos[1..]
+                .iter()
+                .all(|path| path
+                    .ends_with("Applications/TradingView.app/Contents/MacOS/TradingView"))
+        );
+
+        let linux = platform_candidate_paths_for("linux");
+        assert_eq!(
+            linux[..4],
+            [
+                PathBuf::from("/opt/TradingView/tradingview"),
+                PathBuf::from("/opt/TradingView/TradingView"),
+                PathBuf::from("/usr/bin/tradingview"),
+                PathBuf::from("/snap/tradingview/current/tradingview"),
+            ]
+        );
+        assert!(
+            linux[4..]
+                .iter()
+                .all(|path| path.ends_with(".local/share/TradingView/TradingView"))
+        );
+
+        // Windows paths come from LOCALAPPDATA and PROGRAMFILES when set, with
+        // a fixed fallback otherwise.
+        let windows = platform_candidate_paths_for("windows");
+        assert!(!windows.is_empty());
+        for path in &windows {
+            let path = path.to_string_lossy().replace('\\', "/");
+            assert!(path.ends_with("TradingView/TradingView.exe"), "{path}");
+        }
     }
 
     #[test]

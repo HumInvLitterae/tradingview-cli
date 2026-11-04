@@ -140,4 +140,45 @@ mod tests {
         assert!(Cli::try_parse_from(["tv", "data", "shapes", "--count", "0"]).is_ok());
         assert!(Cli::try_parse_from(["tv", "data", "tables", "--verbose"]).is_err());
     }
+
+    #[tokio::test]
+    async fn described_minimums_pass_through_the_operations() {
+        // The CLI contract test shows `--count 0` reaches the connection; these
+        // run the operations with each published minimum.
+        let max = describe(&["data", "labels"]).unwrap()["constraints"]["max"]["minimum"]
+            .as_u64()
+            .unwrap() as usize;
+        let mut runtime = crate::ops::test_support::FakeRuntime::new([json!([{
+            "name": "Example",
+            "count": 2,
+            "items": [
+                {"id": "a", "raw": {"t": "first", "y": 1.0}},
+                {"id": "b", "raw": {"t": "second", "y": 2.0}}
+            ]
+        }])]);
+        let labels = crate::ops::data_labels(&mut runtime, None, Some(max), false)
+            .await
+            .unwrap();
+        assert_eq!(
+            labels["studies"][0],
+            json!({
+                "name": "Example",
+                "total_labels": 2,
+                "available_labels": 2,
+                "limit": 0,
+                "showing": 0,
+                "truncated": true,
+                "labels": []
+            })
+        );
+
+        let count = describe(&["data", "shapes"]).unwrap()["constraints"]["count"]["minimum"]
+            .as_u64()
+            .unwrap() as usize;
+        let mut runtime = crate::ops::test_support::FakeRuntime::new([json!([])]);
+        crate::ops::data_shapes(&mut runtime, None, Some(count), false)
+            .await
+            .unwrap();
+        assert!(runtime.evaluated[0].0.contains("var maxBars = 0;"));
+    }
 }

@@ -52,10 +52,8 @@ impl WatchDedupe {
     }
 }
 
-#[allow(dead_code)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum WatchEndReason {
-    Completed,
     DurationElapsed,
     MaxEventsReached,
 }
@@ -63,7 +61,6 @@ enum WatchEndReason {
 impl WatchEndReason {
     fn label(self) -> &'static str {
         match self {
-            Self::Completed => "completed",
             Self::DurationElapsed => "duration_elapsed",
             Self::MaxEventsReached => "max_events_reached",
         }
@@ -471,7 +468,11 @@ fn comparable_watch_sample(sample: &Value) -> Value {
 
 #[cfg(test)]
 mod tests {
-    use std::{cell::Cell, io::Write, rc::Rc};
+    use std::{
+        cell::{Cell, RefCell},
+        io::Write,
+        rc::Rc,
+    };
 
     use super::*;
 
@@ -778,9 +779,54 @@ mod tests {
         assert_eq!(poll_count.get(), 2);
     }
 
-    #[test]
-    fn completed_end_reason_label_is_stable() {
-        assert_eq!(WatchEndReason::Completed.label(), "completed");
-        assert_eq!(WatchEndReason::DurationElapsed.label(), "duration_elapsed");
+    #[derive(Clone, Default)]
+    struct SharedBuffer(Rc<RefCell<Vec<u8>>>);
+
+    impl Write for SharedBuffer {
+        fn write(&mut self, bytes: &[u8]) -> std::io::Result<usize> {
+            self.0.borrow_mut().extend_from_slice(bytes);
+            Ok(bytes.len())
+        }
+
+        fn flush(&mut self) -> std::io::Result<()> {
+            Ok(())
+        }
+    }
+
+    #[tokio::test]
+    async fn elapsed_duration_ends_the_loop_with_its_public_label() {
+        let request = WatchCompareRequest {
+            symbols: vec!["NASDAQ:AAPL".to_string(), "NASDAQ:MSFT".to_string()],
+            interval_ms: 10_000,
+            duration_ms: 50,
+            max_events: None,
+            heartbeat_ms: 10_000,
+        };
+        let buffer = SharedBuffer::default();
+        let mut stdout = JsonlOutput::new(buffer.clone());
+        let mut stderr = JsonlOutput::new(Vec::new());
+
+        run_watch_compare_with(
+            request,
+            &mut stdout,
+            &mut stderr,
+            |_elapsed_ms, poll_index| {
+                std::future::ready(Ok(json!({
+                    "_ts": 1,
+                    "resolved_count": 2,
+                    "error_count": 0,
+                    "poll_index": poll_index,
+                    "items": [],
+                })))
+            },
+        )
+        .await
+        .unwrap();
+
+        let output = String::from_utf8(buffer.0.borrow().clone()).unwrap();
+        let summary: Value = serde_json::from_str(output.lines().last().unwrap()).unwrap();
+        assert_eq!(summary["data"]["_event"], "summary");
+        assert_eq!(summary["data"]["end_reason"], "duration_elapsed");
+        assert_eq!(summary["data"]["poll_count"], 1);
     }
 }

@@ -626,9 +626,9 @@ mod tests {
                     { "index": 0, "text": "銘柄情報26", "count": 26 },
                     { "index": 1, "text": "テクニカル39", "count": 39 }
                 ],
-                "header_menu_actions": [
-                    { "index": 0, "text": "左に移動", "kind": "move_left", "enabled": true }
-                ],
+                // The expression never collects header menu actions, so the
+                // reachable state is an empty list with remove unsupported.
+                "header_menu_actions": [],
                 "remove_supported": false,
                 "reset_supported": false,
                 "unavailable_reason": "visible_column_remove_action_not_found"
@@ -641,9 +641,20 @@ mod tests {
         assert_eq!(result["screen_title"], "米国株（テスト用）");
         assert_eq!(result["column_count"], 3);
         assert_eq!(result["settings_opened"], true);
-        assert_eq!(result["categories"].as_array().unwrap().len(), 2);
-        assert_eq!(result["header_menu_actions"][0]["kind"], "move_left");
+        assert_eq!(
+            result["categories"],
+            json!([
+                { "index": 0, "text": "銘柄情報26", "count": 26 },
+                { "index": 1, "text": "テクニカル39", "count": 39 }
+            ])
+        );
+        assert_eq!(result["header_menu_actions"], json!([]));
         assert_eq!(result["remove_supported"], false);
+        assert_eq!(result["reset_supported"], false);
+        assert_eq!(
+            result["unavailable_reason"],
+            "visible_column_remove_action_not_found"
+        );
     }
 
     #[tokio::test]

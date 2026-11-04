@@ -1,13 +1,9 @@
-use std::{
-    collections::BTreeMap,
-    future::Future,
-    pin::Pin,
-    time::{Duration, Instant},
-};
+use std::{collections::BTreeMap, future::Future, pin::Pin, time::Duration};
 
 use serde::Serialize;
 use serde_json::Value;
-use tokio::time::{Instant as TokioInstant, timeout_at};
+// Tokio's clock matches std's at run time and lets tests pause it.
+use tokio::time::{Instant, timeout_at};
 use tradingview_cdp::{KeyEvent, MouseEvent, RuntimeEvaluator, ScreenshotClip, TransportConfig};
 use tradingview_core::{AppError, ErrorKind};
 
@@ -297,14 +293,14 @@ fn invalid_trial_error(error: &AppError) -> bool {
 async fn run_live_cohort(
     operation: Operation,
     config: &TransportConfig,
-    cohort_deadline: TokioInstant,
-    run_deadline: TokioInstant,
+    cohort_deadline: Instant,
+    run_deadline: Instant,
 ) -> CohortSummary {
     let mut summary = CohortSummary::new(operation);
     let mut samples = Vec::new();
 
     for _ in 0..TRIALS_PER_COHORT {
-        let now = TokioInstant::now();
+        let now = Instant::now();
         if now >= cohort_deadline || now >= run_deadline {
             summary.deadline_stops += 1;
             break;
@@ -372,11 +368,11 @@ async fn live_chart_read_latency_attribution() {
         .expect("latency attribution requires an explicit target id");
     let config = TransportConfig::from_env_with_target_id(Some(&target_id))
         .expect("latency attribution transport configuration must be valid");
-    let run_deadline = TokioInstant::now() + RUN_TIMEOUT;
+    let run_deadline = Instant::now() + RUN_TIMEOUT;
 
     let mut summaries = Vec::new();
     for operation in [Operation::OhlcvSummary, Operation::StudyValues] {
-        let cohort_deadline = (TokioInstant::now() + COHORT_TIMEOUT).min(run_deadline);
+        let cohort_deadline = (Instant::now() + COHORT_TIMEOUT).min(run_deadline);
         summaries.push(run_live_cohort(operation, &config, cohort_deadline, run_deadline).await);
     }
 
@@ -458,8 +454,11 @@ mod tests {
         }
     }
 
-    #[tokio::test]
+    #[tokio::test(start_paused = true)]
     async fn trial_attributes_direct_and_derived_phases() {
+        // The paused clock advances only through the sleeps below, so each
+        // phase is exact: connect 20, evaluate 30, then 40 ms of normalization.
+        let serialized = std::cell::Cell::new(false);
         let result = run_trial(
             || async {
                 tokio::time::sleep(Duration::from_millis(20)).await;
@@ -473,7 +472,7 @@ mod tests {
                 })
             },
             |value| {
-                std::thread::sleep(Duration::from_millis(10));
+                serialized.set(true);
                 serde_json::to_vec(value)
                     .map_err(|_| AppError::new(ErrorKind::Internal, "fixture serialization failed"))
             },
@@ -481,13 +480,21 @@ mod tests {
         .await
         .unwrap();
 
-        assert!(result.direct.connect_ms >= 15);
-        assert!(result.direct.evaluate_ms >= 25);
-        assert!(result.direct.operation_ms >= 65);
-        assert!(result.direct.payload_serialize_ms >= 8);
-        assert!(result.direct.trial_ms >= 90);
-        assert!(result.normalization_residual_ms >= 35);
-        assert!(result.unattributed_residual_ms <= 15);
+        assert!(serialized.get());
+        assert_eq!(
+            result,
+            TrialTimings {
+                direct: DirectTimings {
+                    connect_ms: 20,
+                    evaluate_ms: 30,
+                    operation_ms: 70,
+                    payload_serialize_ms: 0,
+                    trial_ms: 90,
+                },
+                normalization_residual_ms: 40,
+                unattributed_residual_ms: 0,
+            }
+        );
     }
 
     #[tokio::test]
@@ -586,7 +593,7 @@ mod tests {
     #[tokio::test]
     async fn absolute_deadline_stops_delayed_trial() {
         let result = timeout_at(
-            TokioInstant::now() + Duration::from_millis(20),
+            Instant::now() + Duration::from_millis(20),
             run_trial(
                 || async { Ok(runtime(Duration::from_secs(1), [Value::Null])) },
                 |runtime| Box::pin(async move { runtime.evaluate("slow", false).await }),
@@ -612,20 +619,16 @@ mod tests {
         });
         assert_eq!(timings.normalization_residual_ms, 0);
         assert_eq!(timings.unattributed_residual_ms, 0);
-    }
 
-    #[test]
-    fn summary_serialization_is_aggregate_only() {
-        let mut summary = CohortSummary::new(Operation::StudyValues);
-        summary.completed = 1;
-        summary.failure = 1;
-        summary
-            .failure_stages
-            .insert("transport_unknown".to_string(), 1);
-        summary.finish(&[]);
-        let encoded = serde_json::to_string(&[summary]).unwrap();
-        assert_public_safe_summary(&encoded);
-        assert!(!encoded.contains("private-marker"));
+        let timings = TrialTimings::new(DirectTimings {
+            connect_ms: 20,
+            evaluate_ms: 30,
+            operation_ms: 70,
+            payload_serialize_ms: 5,
+            trial_ms: 100,
+        });
+        assert_eq!(timings.normalization_residual_ms, 40);
+        assert_eq!(timings.unattributed_residual_ms, 5);
     }
 
     #[test]
@@ -641,8 +644,21 @@ mod tests {
                 .with_details(json!({"failure_stage": stage}));
             assert_eq!(failure_stage(&error), stage);
         }
-        let unknown = AppError::new(ErrorKind::Connection, "fixed")
+        let unknown = AppError::new(ErrorKind::Connection, "ws://private-endpoint failed")
             .with_details(json!({"failure_stage": "private-stage"}));
         assert_eq!(failure_stage(&unknown), "transport_unknown");
+
+        // The summary keeps only the mapped stage, never the error's own values.
+        let mut summary = CohortSummary::new(Operation::StudyValues);
+        summary.completed = 1;
+        summary.failure = 1;
+        summary
+            .failure_stages
+            .insert(failure_stage(&unknown).to_string(), 1);
+        summary.finish(&[]);
+        let encoded = serde_json::to_string(&[summary]).unwrap();
+        assert_public_safe_summary(&encoded);
+        assert!(!encoded.contains("private"));
+        assert!(encoded.contains("\"transport_unknown\":1"));
     }
 }

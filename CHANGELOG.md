@@ -47,6 +47,10 @@ package version omits the leading `v`.
   counts or a single field. The Desktop-free HTTP callers share one request
   helper, so its status test covers each of them. Nine overlapping tests were
   merged into the tests they duplicated.
+- CLI tests for watch, latency attribution, launch paths, render waiting and
+  the drawing and Pine graphics specs now exercise the real loop, a paused
+  clock, fixed install paths, one changed field at a time and the published
+  constraints. `watch` no longer carries an unreachable `completed` end reason.
 
 ## v0.41.0
 

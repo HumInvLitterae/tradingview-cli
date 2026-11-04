@@ -130,27 +130,6 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn study_values_preserves_same_name_rows_and_hidden_values() {
-        let mut runtime = FakeRuntime::new([json!({
-            "study_count": 2,
-            "studies": [
-                {"name": "EMA", "values": {"MA": "1"}, "entity_id": "first", "short_name": "EMA", "study_kind": "indicator", "inputs": {"length": 9}, "visible": false},
-                {"name": "EMA", "values": {"MA": "2"}, "entity_id": "second", "short_name": "EMA", "study_kind": "indicator", "inputs": {"length": 20}, "visible": true}
-            ]
-        })]);
-
-        let result = study_values(&mut runtime).await.unwrap();
-
-        assert_eq!(result["study_count"], 2);
-        assert_eq!(result["studies"][0]["values"], json!({"MA": "1"}));
-        assert_eq!(result["studies"][0]["entity_id"], "first");
-        assert_eq!(result["studies"][0]["inputs"]["length"], 9);
-        assert_eq!(result["studies"][0]["visible"], false);
-        assert_eq!(result["studies"][1]["entity_id"], "second");
-        assert_eq!(result["studies"][1]["inputs"]["length"], 20);
-    }
-
-    #[tokio::test]
     async fn data_indicator_serializes_entity_id_and_filters_large_inputs() {
         let payload = json!({
             "entity_id": "eFu1Ot",

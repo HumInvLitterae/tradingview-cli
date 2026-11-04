@@ -546,42 +546,39 @@ mod tests {
 
     #[tokio::test(start_paused = true)]
     async fn every_signature_field_change_resets_stability() {
-        let ready = ready_observation();
-        let mut changed_symbol = ready.clone();
-        changed_symbol["symbol"] = json!("NASDAQ:MSFT");
-        let mut changed_resolution = ready.clone();
-        changed_resolution["resolution"] = json!("15");
-        let mut changed_canvas = ready.clone();
-        changed_canvas["canvas_width"] = json!(1199);
-        let mut changed_canvas_height = ready.clone();
-        changed_canvas_height["canvas_height"] = json!(639);
-        let mut changed_region_width = ready.clone();
-        changed_region_width["region_width"] = json!(1199);
-        let mut changed_region = ready.clone();
-        changed_region["region_height"] = json!(639);
-        let mut runtime = FakeRuntime::new([
-            ready.clone(),
-            changed_symbol,
-            changed_resolution,
-            changed_canvas,
-            changed_canvas_height,
-            changed_region_width,
-            changed_region,
-            ready.clone(),
-            ready.clone(),
-            ready,
-        ]);
+        // One field changes at a time after two stable samples. If that field
+        // were left out of the comparison, the third sample would already be
+        // the third stable one.
+        for (field, value) in [
+            ("symbol", json!("NASDAQ:MSFT")),
+            ("resolution", json!("15")),
+            ("canvas_width", json!(1199)),
+            ("canvas_height", json!(639)),
+            ("region_width", json!(1199)),
+            ("region_height", json!(639)),
+        ] {
+            let ready = ready_observation();
+            let mut changed = ready.clone();
+            changed[field] = value;
+            let mut runtime = FakeRuntime::new([
+                ready.clone(),
+                ready,
+                changed.clone(),
+                changed.clone(),
+                changed,
+            ]);
 
-        let result = wait_for_render(
-            &mut runtime,
-            ScreenshotRegion::Chart,
-            test_controls(Duration::from_secs(5)),
-        )
-        .await
-        .unwrap();
+            let result = wait_for_render(
+                &mut runtime,
+                ScreenshotRegion::Chart,
+                test_controls(Duration::from_secs(5)),
+            )
+            .await
+            .unwrap();
 
-        assert_eq!(result["sample_count"], 10);
-        assert_eq!(result["stable_sample_count"], 3);
+            assert_eq!(result["sample_count"], 5, "{field}");
+            assert_eq!(result["stable_sample_count"], 3, "{field}");
+        }
     }
 
     #[tokio::test(start_paused = true)]

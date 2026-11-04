@@ -156,8 +156,12 @@ mod tests {
 
     #[test]
     fn described_geometry_matches_model_validation() {
+        // Each check reads the published constraint and confirms the model
+        // validator enforces it, so the two cannot drift apart silently.
+        let shape_spec = describe(&["draw", "shape"]).unwrap();
+        let point3 = &shape_spec["constraints"]["point3"];
         let mut shape = DrawingShapeRequest {
-            shape_type: "parallel_channel".into(),
+            shape_type: point3["type"].as_str().unwrap().into(),
             point: DrawingPoint {
                 time: 1.0,
                 price: 100.0,
@@ -174,31 +178,95 @@ mod tests {
             overrides: None,
         };
         assert!(validate_shape_request(&shape).is_ok());
+        assert_eq!(point3["time3_equals_time"], true);
         shape.point3.as_mut().unwrap().time = 3.0;
         assert!(validate_shape_request(&shape).is_err());
         shape.point3.as_mut().unwrap().time = 1.0;
+        assert_eq!(point3["nonblank_text_allowed"], false);
         shape.text = Some("unsupported".into());
         assert!(validate_shape_request(&shape).is_err());
+        shape.text = None;
+        assert_eq!(point3["requires_point2"], true);
+        shape.point2 = None;
+        assert!(validate_shape_request(&shape).is_err());
+        shape.point2 = Some(DrawingPoint {
+            time: 2.0,
+            price: 110.0,
+        });
+        shape.shape_type = "trend_line".into();
+        assert!(validate_shape_request(&shape).is_err());
+        assert_eq!(shape_spec["constraints"]["coordinates"]["finite"], true);
+        shape.shape_type = point3["type"].as_str().unwrap().into();
+        shape.point.price = f64::NAN;
+        assert!(validate_shape_request(&shape).is_err());
+        assert_eq!(
+            shape_spec["constraints"]["overrides"],
+            json!({"type": "JSON object", "empty_allowed": true})
+        );
         assert!(parse_drawing_overrides("{}").is_ok());
         assert!(parse_drawing_overrides("[]").is_err());
 
-        let mut position = DrawingPositionRequest {
-            direction: PositionDirection::Long,
+        let position_spec = describe(&["draw", "position"]).unwrap();
+        let constraints = &position_spec["constraints"];
+        let long = PositionDirection::Long.as_str();
+        let short = PositionDirection::Short.as_str();
+        assert_eq!(constraints["direction"]["choices"], json!([long, short]));
+        assert_eq!(
+            constraints["prices"]["long"],
+            "stop_loss < entry_price < take_profit"
+        );
+        assert_eq!(
+            constraints["prices"]["short"],
+            "take_profit < entry_price < stop_loss"
+        );
+        let valid = |direction| DrawingPositionRequest {
+            direction,
             entry_price: 100.0,
-            stop_loss: 90.0,
-            take_profit: 120.0,
+            stop_loss: if direction == PositionDirection::Long {
+                90.0
+            } else {
+                110.0
+            },
+            take_profit: if direction == PositionDirection::Long {
+                120.0
+            } else {
+                80.0
+            },
             entry_time: None,
             account_size: None,
             risk: None,
             lot_size: None,
         };
-        assert!(validate_position_request(&position).is_ok());
-        position.direction = PositionDirection::Short;
-        assert!(validate_position_request(&position).is_err());
-        position.stop_loss = 110.0;
-        position.take_profit = 80.0;
-        assert!(validate_position_request(&position).is_ok());
-        position.risk = Some(0.0);
-        assert!(validate_position_request(&position).is_err());
+        for direction in [PositionDirection::Long, PositionDirection::Short] {
+            let request = valid(direction);
+            assert!(validate_position_request(&request).is_ok());
+            let mut swapped = request.clone();
+            std::mem::swap(&mut swapped.stop_loss, &mut swapped.take_profit);
+            assert!(validate_position_request(&swapped).is_err());
+        }
+
+        type Setter = fn(&mut DrawingPositionRequest, f64);
+        let optional: [(&str, Setter); 3] = [
+            ("account-size", |r, v| r.account_size = Some(v)),
+            ("risk", |r, v| r.risk = Some(v)),
+            ("lot-size", |r, v| r.lot_size = Some(v)),
+        ];
+        for (key, set) in optional {
+            assert_eq!(constraints[key]["finite"], true, "{key}");
+            let minimum = constraints[key]["exclusive_minimum"].as_f64().unwrap();
+            for (value, accepted) in [
+                (minimum, false),
+                (minimum + 0.01, true),
+                (f64::INFINITY, false),
+            ] {
+                let mut request = valid(PositionDirection::Long);
+                set(&mut request, value);
+                assert_eq!(
+                    validate_position_request(&request).is_ok(),
+                    accepted,
+                    "{key} = {value}"
+                );
+            }
+        }
     }
 }

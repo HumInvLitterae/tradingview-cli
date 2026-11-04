@@ -293,7 +293,7 @@ mod tests {
         let mut payload = json!({
             "study_count": 2,
             "studies": [
-                {"name": "EMA", "values": {"MA": "1"}, "entity_id": "first", "short_name": "EMA", "study_kind": "indicator", "inputs": {"length": 9}, "visible": true},
+                {"name": "EMA", "values": {"MA": "1"}, "entity_id": "first", "short_name": "EMA", "study_kind": "indicator", "inputs": {"length": 9}, "visible": false},
                 {"name": "EMA", "values": {"MA": "2"}, "entity_id": "second", "short_name": "EMA", "study_kind": "indicator", "inputs": {"length": 20}, "visible": true}
             ]
         });
@@ -305,6 +305,8 @@ mod tests {
         assert_eq!(payload["studies"][0]["values"], json!({"MA": "1"}));
         assert_eq!(payload["studies"][0]["entity_id"], "first");
         assert_eq!(payload["studies"][0]["inputs"]["length"], 9);
+        // A hidden study keeps its row and values.
+        assert_eq!(payload["studies"][0]["visible"], false);
         assert_eq!(payload["studies"][1]["entity_id"], "second");
         assert_eq!(payload["studies"][1]["inputs"]["length"], 20);
     }
