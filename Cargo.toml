@@ -52,3 +52,13 @@ tradingview-mcp = { path = "crates/mcp" }
 tradingview-model = { path = "crates/model" }
 tradingview-pine = { path = "crates/pine" }
 tradingview-scanner = { path = "crates/scanner" }
+
+# Opt-in profile for agent-run builds and tests on memory-constrained machines:
+# `cargo test --profile agent`. Line tables keep panic locations while cutting
+# rustc and linker memory; ordinary `dev` builds keep full debug info.
+[profile.agent]
+inherits = "dev"
+debug = "line-tables-only"
+
+[profile.agent.package."*"]
+debug = false

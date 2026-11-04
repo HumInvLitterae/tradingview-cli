@@ -770,7 +770,21 @@ binary does not need a rebuild or full suite merely because its guidance changed
 Keep local verification proportional to the changed properties. Do not run
 multiple Cargo builds, Clippy jobs or test suites concurrently. For local Cargo
 commands use `CARGO_BUILD_JOBS=1`; for tests also use `RUST_TEST_THREADS=1`, unless
-the owner explicitly chooses higher concurrency. Avoid unnecessary release
+the owner explicitly chooses higher concurrency. Agents choose the value from the
+machine's current state rather than a fixed number: wait or stay at one or two
+while another build runs or memory pressure and swap are high, and use up to four
+otherwise. Memory, not CPU, is usually the limit on a shared workstation.
+
+Agent-run builds and tests use the opt-in `agent` profile, which keeps line
+tables for panic locations but drops full debug info, most of it from
+dependencies:
+
+```bash
+cargo test -p tradingview-cli --profile agent --lib
+```
+
+Its artifacts live in `target/agent`, apart from ordinary `dev` builds. Check
+and Clippy produce no debug info, so they keep the default profile. Avoid unnecessary release
 builds, fresh target directories and repeated full-workspace checks. Start with
 affected tests and reuse unchanged evidence; use normal CI for broad platform
 and parallel-test coverage. These limits do not disable CI or replace missing

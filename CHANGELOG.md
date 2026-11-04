@@ -26,6 +26,9 @@ package version omits the leading `v`.
   script, seven uncalled helpers were removed, and the two screen-storage reads
   share one expression. Output is unchanged; the account JavaScript gate now
   executes these expressions with DOM access rejected.
+- Contributors can build and test with the opt-in `agent` Cargo profile
+  (`--profile agent`), which keeps line tables but drops full debug info to
+  reduce build memory. Ordinary `dev` builds are unchanged.
 
 ### Fixed
 
