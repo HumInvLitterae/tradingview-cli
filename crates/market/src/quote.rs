@@ -115,19 +115,26 @@ pub async fn quote_symbols_typed(symbols: Vec<String>) -> Result<BatchQuotes, Ap
 #[derive(Clone, Debug)]
 pub struct QuoteClient {
     client: reqwest::Client,
+    scan_url: String,
 }
 
 impl QuoteClient {
     pub fn new() -> Result<Self, AppError> {
+        Self::with_scan_url(QUOTE_SCAN_URL)
+    }
+
+    // Tests point the same client at a loopback server.
+    fn with_scan_url(scan_url: &str) -> Result<Self, AppError> {
         Ok(Self {
             client: configured_client()?,
+            scan_url: scan_url.to_string(),
         })
     }
 
     /// Reads multiple scanner-backed quotes in input order, like
     /// [`quote_symbols_typed`].
     pub async fn quote_symbols_typed(&self, symbols: Vec<String>) -> Result<BatchQuotes, AppError> {
-        quote_symbols_typed_with_client_and_url(&self.client, symbols, QUOTE_SCAN_URL).await
+        quote_symbols_typed_with_client_and_url(&self.client, symbols, &self.scan_url).await
     }
 }
 
@@ -707,14 +714,15 @@ mod tests {
         accepts
     }
 
-    async fn poll_quotes(client: &QuoteClient, address: std::net::SocketAddr) {
-        let batch = quote_symbols_typed_with_client_and_url(
-            &client.client,
-            vec!["NASDAQ:AAPL".to_string()],
-            &format!("http://{address}/scan"),
-        )
-        .await
-        .unwrap();
+    fn loopback_client(address: std::net::SocketAddr) -> QuoteClient {
+        QuoteClient::with_scan_url(&format!("http://{address}/scan")).unwrap()
+    }
+
+    async fn poll_quotes(client: &QuoteClient) {
+        let batch = client
+            .quote_symbols_typed(vec!["NASDAQ:AAPL".to_string()])
+            .await
+            .unwrap();
         assert_eq!(batch.resolved_count, 1);
     }
 
@@ -724,15 +732,15 @@ mod tests {
         let address = listener.local_addr().unwrap();
         let accepts = spawn_keep_alive_quote_server(listener, false);
 
-        let shared = QuoteClient::new().unwrap();
+        let shared = loopback_client(address);
         for _ in 0..3 {
-            poll_quotes(&shared, address).await;
+            poll_quotes(&shared).await;
         }
         assert_eq!(accepts.load(Ordering::SeqCst), 1);
 
         // A client per poll, as `quote_symbols_typed` does, opens one each time.
         for _ in 0..3 {
-            poll_quotes(&QuoteClient::new().unwrap(), address).await;
+            poll_quotes(&loopback_client(address)).await;
         }
         assert_eq!(accepts.load(Ordering::SeqCst), 4);
     }
@@ -743,9 +751,9 @@ mod tests {
         let address = listener.local_addr().unwrap();
         let accepts = spawn_keep_alive_quote_server(listener, true);
 
-        let client = QuoteClient::new().unwrap();
+        let client = loopback_client(address);
         for poll in 1..=3 {
-            poll_quotes(&client, address).await;
+            poll_quotes(&client).await;
             assert_eq!(accepts.load(Ordering::SeqCst), poll);
             sleep(Duration::from_millis(50)).await;
         }
