@@ -17,7 +17,10 @@ Text uses a case-insensitive substring and must match exactly one visible pill.
 Modify accepts either a nonblank option or numeric bounds. Numeric presets are:
 min-only 3, 5, 10, 15, 20, 30, 40, 50, 60, 70, 80, 90; or min 0 with max
 3, 5, 10, 20, 30. Max-only is rejected for modify although add accepts it.
-These are preset selectors, not arbitrary numeric input.
+These are preset selectors, not arbitrary numeric input. In TradingView Desktop
+3.4.0 the manual setting shows a condition and a value field instead of these
+presets, so numeric modify through the UI fails with "manual settings button not
+found"; the storage path below is unaffected.
 
 Option modification prefers a normalized exact match, then a unique substring
 match in either direction. It can clear other selected options before selecting

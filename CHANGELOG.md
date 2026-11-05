@@ -45,6 +45,15 @@ package version omits the leading `v`.
   not only on success paths, including when the request that opens it gets no
   answer. When `filters add` fails after opening its add-filter popup, it
   closes that popup first, sending Escape only while the popup is visible.
+- `filters add` failed with `add_button_not_found` every time in TradingView
+  Desktop 3.4.0, and filter edits closed the Screener panel they were working
+  in. Popups were closed by sending Escape to the page three times, and an
+  Escape that reaches the page also closes the panel. Escape now goes inside the
+  popup and only while it is visible, and an option modify closes its option
+  list after the change instead of leaving it to take the Escape meant for the
+  panel. `filters add` also finds its add button while the button has focus,
+  finds the range step that no longer shows the "Filter" title, and no longer
+  takes an icon button without text as the matching filter.
 - Screener storage reads used to confirm a change now fail when the response
   cannot be read in full: a body that is not a screen list or screen document,
   filters or columns set to a value other than a list or `null` (`null` reads

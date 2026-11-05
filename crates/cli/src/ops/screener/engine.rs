@@ -814,16 +814,23 @@ function findScreenerCatalogScreenItem(catalog, targetName) {
 function normalizeScreenerFilterText(value) {
     return String(value || '').replace(/[\u2066\u2067\u2068\u2069]/g, '').replace(/\s+/g, ' ').trim();
 }
+// The tooltip library removes the button's title while the button has focus, and
+// focus returns to the button when the add-filter popup closes.
 function findScreenerAddFilterButton() {
+    var tagged = document.querySelector('[data-qa-id="screener-add-new-filter"]');
+    if (tagged && visible(tagged)) return tagged;
     return visibleElements('button, [role="button"], [title], [aria-label], [data-name]').find(function(el) {
         var label = [el.getAttribute('title'), el.getAttribute('aria-label'), el.getAttribute('data-name'), textOf(el)].filter(Boolean).join(' ');
         return /新しいフィルターを追加|フィルターを追加|Add new filter|Add filter/i.test(label);
     }) || null;
 }
+// After a filter is chosen, the popup lists its ranges without the "Filter" title,
+// but its category and range items keep add-filter test ids.
 function findScreenerAddFilterDialog() {
     return visibleElements('[role="dialog"], [class*="popover"], [class*="contentDefaultAppearance"]').find(function(el) {
-        var text = normalizeScreenerFilterText(textOf(el));
-        return /フィルター|Filter/i.test(text) && el.getBoundingClientRect().width >= 180;
+        if (el.getBoundingClientRect().width < 180) return false;
+        if (el.querySelector('[data-qa-id^="screener-add-filter-"]')) return true;
+        return /フィルター|Filter/i.test(normalizeScreenerFilterText(textOf(el)));
     }) || null;
 }
 function findScreenerAddFilterSearchInput() {
@@ -843,9 +850,11 @@ function findScreenerAddFilterCandidate(name) {
         return normalizeScreenerFilterText(textOf(option)).toLowerCase() === normalizedName;
     });
     if (exact) return exact;
+    // An icon button such as the search clear button has no text, and an empty
+    // string is contained in every name.
     return options.find(function(option) {
         var text = normalizeScreenerFilterText(textOf(option)).toLowerCase();
-        return text.indexOf(normalizedName) >= 0 || normalizedName.indexOf(text) >= 0;
+        return text && (text.indexOf(normalizedName) >= 0 || normalizedName.indexOf(text) >= 0);
     }) || null;
 }
 function findScreenerAddFilterRangeOption(matchers) {
@@ -1056,11 +1065,23 @@ function collectScreenerOptionChoices(scope) {
     });
     return options;
 }
-function closeScreenerTransientPopups() {
+// An Escape dispatched to the document closes the Screener panel along with any
+// popup, so the key goes to the focused element inside the popup, or the popup
+// itself, and only while findPopup still returns it. A nested list can take two.
+async function closeScreenerPopup(findPopup) {
+    var escape = { key: 'Escape', code: 'Escape', keyCode: 27, which: 27, bubbles: true, cancelable: true };
     for (var i = 0; i < 3; i++) {
-        document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', code: 'Escape', keyCode: 27, which: 27, bubbles: true, cancelable: true }));
-        document.dispatchEvent(new KeyboardEvent('keyup', { key: 'Escape', code: 'Escape', keyCode: 27, which: 27, bubbles: true, cancelable: true }));
+        var popup = findPopup();
+        if (!popup) break;
+        var focused = document.activeElement;
+        var target = focused && popup.contains(focused) ? focused : popup;
+        target.dispatchEvent(new KeyboardEvent('keydown', escape));
+        target.dispatchEvent(new KeyboardEvent('keyup', escape));
+        for (var j = 0; j < 10 && findPopup(); j++) {
+            await new Promise(function(resolve) { setTimeout(resolve, 100); });
+        }
     }
+    return !findPopup();
 }
 function nearestScreenerPanelRoot(el) {
     var current = el;

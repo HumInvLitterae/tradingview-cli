@@ -963,12 +963,14 @@ unimplemented. Treat these flags as limits of the probe, not a CLI capability ma
 
 These menu probes change visible UI even when the Screener is already open.
 Commands attempt to close any panel they opened, including after errors and
-when the request that opens it gets no answer. Popups
-are closed by the expression that opened them, so a popup can stay open when a
-Desktop call fails midway; only `filters add` closes its add-filter popup again
-after an error, sending Escape only while that popup is visible. Commands do not reconstruct
-prior popup/focus state, and cleanup can fail. `restored_open_state` is the
-initial panel state, not cleanup success.
+when the request that opens it gets no answer. An Escape that reaches the page
+also closes the panel, so filter commands send Escape inside a popup and only
+while it is visible. Popups are closed by the expression that opened them, so a
+popup can stay open when a Desktop call fails midway; `filters add` closes its
+add-filter popup again after an error, and an option modify closes the option
+list after its change. Commands do not reconstruct prior popup/focus state, and
+cleanup can fail. `restored_open_state` is the initial panel state, not cleanup
+success.
 
 Columns config instead requires an already open panel and reads screen storage
 using the Desktop session. It does not open menus or use MCP OAuth. Missing init
@@ -1076,7 +1078,10 @@ Text uses a case-insensitive substring and must match exactly one visible pill.
 Modify accepts either a nonblank option or numeric bounds. Numeric presets are:
 min-only 3, 5, 10, 15, 20, 30, 40, 50, 60, 70, 80, 90; or min 0 with max
 3, 5, 10, 20, 30. Max-only is rejected for modify although add accepts it.
-These are preset selectors, not arbitrary numeric input.
+These are preset selectors, not arbitrary numeric input. In TradingView Desktop
+3.4.0 the manual setting shows a condition and a value field instead of these
+presets, so numeric modify through the UI fails with "manual settings button not
+found"; the storage path below is unaffected.
 
 Option modification prefers a normalized exact match, then a unique substring
 match in either direction. It can clear other selected options before selecting

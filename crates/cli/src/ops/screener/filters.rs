@@ -418,6 +418,9 @@ async fn filters_modify_in_session(
                 .find(|filter| filter.data_name == target.data_name)
                 .cloned();
             session.write_confirmed = true;
+            // The option list stays open after a choice. Left open, it would take
+            // the Escape meant for the panel.
+            let _ = close_filter_option_popover(session.runtime, &target, option).await;
 
             Ok(json!({
                 "source": SCREENER_SOURCE,
@@ -884,7 +887,7 @@ async fn read_filter_actions(runtime: &mut impl RuntimeEvaluator) -> Result<Valu
                                 await sleep(100);
                             }
                         }
-                        closeScreenerTransientPopups();
+                        await closeScreenerPopup(function() { return findScreenerFilterEditPopoverForPill(candidate); });
                     }
                     return {
                         source: 'ui_screener_dialog',
@@ -924,7 +927,7 @@ async fn open_filter_add_search(runtime: &mut impl RuntimeEvaluator) -> Result<V
                         return new Promise(function(resolve) { setTimeout(resolve, ms); });
                     }
                     REPLACE_HELPERS
-                    closeScreenerTransientPopups();
+                    await closeScreenerPopup(findScreenerAddFilterDialog);
                     var addButton = findScreenerAddFilterButton();
                     if (!addButton) {
                         return { opened: false, reason: 'add_button_not_found' };
@@ -1088,17 +1091,12 @@ async fn close_filter_add_popup(runtime: &mut impl RuntimeEvaluator) -> Result<(
         .evaluate(
             &expanded_expression(
                 r#"
-                (function() {
+                (async function() {
                     REPLACE_HELPERS
                     if (!findScreenerAddFilterDialog()) {
                         return { closed: false, reason: 'popup_not_found' };
                     }
-                    var escape = { key: 'Escape', code: 'Escape', keyCode: 27, which: 27, bubbles: true, cancelable: true };
-                    for (var i = 0; i < 3 && findScreenerAddFilterDialog(); i++) {
-                        document.dispatchEvent(new KeyboardEvent('keydown', escape));
-                        document.dispatchEvent(new KeyboardEvent('keyup', escape));
-                    }
-                    return { closed: !findScreenerAddFilterDialog() };
+                    return { closed: await closeScreenerPopup(findScreenerAddFilterDialog) };
                 })()
                 "#,
             ),
@@ -1138,7 +1136,7 @@ async fn click_filter_range_preset(
                         await sleep(75);
                     }}
                     if (!manualButton) {{
-                        closeScreenerTransientPopups();
+                        await closeScreenerPopup(function() {{ return findScreenerFilterEditPopoverForPill(pill); }});
                         return {{
                             found: true,
                             manual_settings_found: false,
@@ -1171,7 +1169,7 @@ async fn click_filter_range_preset(
                         await sleep(75);
                     }}
                     if (!combo && !rangeOptionsOpenedDirectly) {{
-                        closeScreenerTransientPopups();
+                        await closeScreenerPopup(function() {{ return findScreenerFilterEditPopoverForPill(pill); }});
                         return {{
                             found: true,
                             manual_settings_found: true,
@@ -1193,7 +1191,7 @@ async fn click_filter_range_preset(
                         }}
                     }}
                     if (!option || !option.element) {{
-                        closeScreenerTransientPopups();
+                        await closeScreenerPopup(function() {{ return findScreenerFilterEditPopoverForPill(pill); }});
                         return {{
                             found: true,
                             manual_settings_found: true,
@@ -1322,8 +1320,7 @@ async fn filter_option_operation(
                     if (!pill || !visible(pill)) {{
                         return {{ found: false, data_name: {data_name}, reason: 'filter_pill_not_found' }};
                     }}
-                    closeScreenerTransientPopups();
-                    await sleep(80);
+                    await closeScreenerPopup(function() {{ return findScreenerOptionPopoverForPill(pill, requestedOption); }});
                     mouseClick(pill);
                     var editScope = null;
                     var options = [];
@@ -1334,7 +1331,7 @@ async fn filter_option_operation(
                         await sleep(100);
                     }}
                     if (!editScope) {{
-                        closeScreenerTransientPopups();
+                        await closeScreenerPopup(function() {{ return findScreenerOptionPopoverForPill(pill, requestedOption); }});
                         return {{
                             found: true,
                             option_popover_found: false,
@@ -1355,7 +1352,7 @@ async fn filter_option_operation(
                         }});
                     }}
                     if (matches.length !== 1) {{
-                        closeScreenerTransientPopups();
+                        await closeScreenerPopup(function() {{ return findScreenerOptionPopoverForPill(pill, requestedOption); }});
                         return {{
                             found: true,
                             option_popover_found: true,
@@ -1401,7 +1398,7 @@ async fn filter_option_operation(
                         }});
                         payload.click_scheduled = true;
                     }} else {{
-                        closeScreenerTransientPopups();
+                        await closeScreenerPopup(function() {{ return findScreenerOptionPopoverForPill(pill, requestedOption); }});
                         payload.click_scheduled = false;
                     }}
                     return payload;
@@ -1447,6 +1444,36 @@ async fn filter_option_operation(
         .with_details(result));
     }
     Ok(result)
+}
+
+async fn close_filter_option_popover(
+    runtime: &mut impl RuntimeEvaluator,
+    target: &ScreenerFilterTarget,
+    option: &str,
+) -> Result<Value, AppError> {
+    let data_name = js_string(&target.data_name)?;
+    let option = js_string(option)?;
+    runtime
+        .evaluate(
+            &expanded_expression(&format!(
+                r#"
+                (async function() {{
+                    REPLACE_HELPERS
+                    var pill = document.querySelector('[data-name=' + {data_name} + ']');
+                    if (!pill || !visible(pill)) {{
+                        return {{ closed: false, reason: 'filter_pill_not_found' }};
+                    }}
+                    return {{
+                        closed: await closeScreenerPopup(function() {{
+                            return findScreenerOptionPopoverForPill(pill, {option});
+                        }})
+                    }};
+                }})()
+                "#
+            )),
+            true,
+        )
+        .await
 }
 
 async fn wait_for_filter_modified(
@@ -2036,8 +2063,8 @@ mod tests {
 
         let option_script = &runtime.evaluated[2].0;
         let cleanup_index = option_script
-            .find("closeScreenerTransientPopups();")
-            .expect("option editor should close stale transient popups");
+            .find("await closeScreenerPopup(function() { return findScreenerOptionPopoverForPill(pill, requestedOption); });")
+            .expect("option editor should close a stale option popover");
         let click_index = option_script
             .find("mouseClick(pill);")
             .expect("option editor should click the target pill");
@@ -2101,6 +2128,8 @@ mod tests {
             result["requested_option"]["matched_option"]["normalized_text"],
             "強い買い"
         );
+        let popover_close = &runtime.evaluated.last().unwrap().0;
+        assert!(popover_close.contains("findScreenerOptionPopoverForPill(pill, \"強い買い\")"));
     }
 
     #[tokio::test]
@@ -2593,38 +2622,41 @@ mod tests {
                 innerWidth: 1600, innerHeight: 900,
                 getComputedStyle: () => ({{ visibility: 'visible', display: 'block' }})
             }};
-            function element(text) {{
-                return {{
-                    textContent: text,
-                    getBoundingClientRect: () => ({{
-                        left: 100, top: 100, right: 500, bottom: 400, width: 400, height: 300
-                    }}),
-                    querySelectorAll: () => [],
-                    getAttribute: () => null
-                }};
-            }}
             // The popup closes after this many Escape keydowns (0: never open).
             function page(keydownsToClose) {{
                 const events = [];
                 let remaining = keydownsToClose;
-                global.document = {{
-                    querySelectorAll: selector =>
-                        remaining > 0 && selector.includes('[role="dialog"]')
-                            ? [element('フィルターを追加 RSI')] : [],
+                const popup = {{
+                    textContent: 'フィルターを追加 RSI',
+                    getBoundingClientRect: () => ({{
+                        left: 100, top: 100, right: 500, bottom: 400, width: 400, height: 300
+                    }}),
+                    querySelectorAll: () => [],
+                    querySelector: () => null,
+                    getAttribute: () => null,
+                    contains: () => false,
                     dispatchEvent: event => {{
-                        events.push(event.type + ':' + event.key);
+                        events.push('popup:' + event.type + ':' + event.key);
                         if (event.type === 'keydown') remaining -= 1;
                     }}
                 }};
+                global.document = {{
+                    activeElement: null,
+                    querySelectorAll: selector =>
+                        remaining > 0 && selector.includes('[role="dialog"]') ? [popup] : [],
+                    dispatchEvent: event => events.push('document:' + event.type + ':' + event.key)
+                }};
                 return events;
             }}
-            const results = [];
-            for (const keydownsToClose of [0, 1, 2, 99]) {{
-                const events = page(keydownsToClose);
-                const result = eval(expression);
-                results.push({{ result, keys: events.length / 2, events: [...new Set(events)] }});
-            }}
-            console.log(JSON.stringify(results));
+            (async () => {{
+                const results = [];
+                for (const keydownsToClose of [0, 1, 2, 99]) {{
+                    const events = page(keydownsToClose);
+                    const result = await eval(expression);
+                    results.push({{ result, keys: events.length / 2, events: [...new Set(events)] }});
+                }}
+                console.log(JSON.stringify(results));
+            }})();
             "#
         ));
 
@@ -2632,10 +2664,268 @@ mod tests {
             results,
             json!([
                 { "result": { "closed": false, "reason": "popup_not_found" }, "keys": 0, "events": [] },
-                { "result": { "closed": true }, "keys": 1, "events": ["keydown:Escape", "keyup:Escape"] },
-                { "result": { "closed": true }, "keys": 2, "events": ["keydown:Escape", "keyup:Escape"] },
-                { "result": { "closed": false }, "keys": 3, "events": ["keydown:Escape", "keyup:Escape"] }
+                { "result": { "closed": true }, "keys": 1, "events": ["popup:keydown:Escape", "popup:keyup:Escape"] },
+                { "result": { "closed": true }, "keys": 2, "events": ["popup:keydown:Escape", "popup:keyup:Escape"] },
+                { "result": { "closed": false }, "keys": 3, "events": ["popup:keydown:Escape", "popup:keyup:Escape"] }
             ])
+        );
+    }
+
+    #[tokio::test]
+    #[ignore = "run through `node scripts/check-js-contracts.mjs desktop`"]
+    async fn javascript_desktop_filter_add_search_finds_a_focused_add_button() {
+        let mut runtime = FakeRuntime::new([json!({})]);
+        let _ = open_filter_add_search(&mut runtime).await;
+        let expression = serde_json::to_string(&runtime.evaluated[0].0).unwrap();
+        let result = run_node_json(&format!(
+            r#"
+            const expression = {expression};
+            global.MouseEvent = class {{
+                constructor(type) {{ this.type = type; }}
+            }};
+            global.window = {{
+                innerWidth: 1600, innerHeight: 900,
+                getComputedStyle: () => ({{ visibility: 'visible', display: 'block' }})
+            }};
+            let dialogOpen = false;
+            function element(text, attributes, extra = {{}}) {{
+                return {{
+                    textContent: text,
+                    getBoundingClientRect: () => ({{
+                        left: 100, top: 100, right: 420, bottom: 400, width: 320, height: 300
+                    }}),
+                    querySelectorAll: () => [],
+                    querySelector: () => null,
+                    getAttribute: name => attributes[name] ?? null,
+                    ...extra
+                }};
+            }}
+            // A focused button keeps its test id but has no title or text.
+            const button = element('', {{ 'data-qa-id': 'screener-add-new-filter' }}, {{
+                dispatchEvent: event => {{ if (event.type === 'click') dialogOpen = true; }}
+            }});
+            const input = element('', {{ placeholder: '検索' }}, {{ focus: () => {{}} }});
+            const dialog = element('フィルター', {{ role: 'dialog' }}, {{
+                querySelectorAll: selector => selector.includes('input') ? [input] : []
+            }});
+            global.document = {{
+                activeElement: button,
+                querySelector: selector => selector.includes('screener-add-new-filter') ? button : null,
+                querySelectorAll: selector =>
+                    dialogOpen && selector.includes('[role="dialog"]') ? [dialog] : [],
+                elementFromPoint: () => null
+            }};
+            eval(expression).then(result => console.log(JSON.stringify(result)));
+            "#
+        ));
+
+        assert_eq!(result["opened"], true);
+    }
+
+    #[tokio::test]
+    #[ignore = "run through `node scripts/check-js-contracts.mjs desktop`"]
+    async fn javascript_desktop_filter_add_range_step_is_found_without_its_title() {
+        let mut runtime = FakeRuntime::new([json!({})]);
+        let matchers = ["> 70".to_string(), "70以上".to_string()];
+        let _ = wait_for_filter_add_range_option(&mut runtime, &matchers).await;
+        let expression = serde_json::to_string(&runtime.evaluated[0].0).unwrap();
+        let result = run_node_json(&format!(
+            r#"
+            const expression = {expression};
+            global.window = {{
+                innerWidth: 1600, innerHeight: 900,
+                getComputedStyle: () => ({{ visibility: 'visible', display: 'block' }})
+            }};
+            function element(text, attributes, children = []) {{
+                return {{
+                    textContent: text,
+                    getBoundingClientRect: () => ({{
+                        left: 100, top: 100, right: 420, bottom: 400, width: 320, height: 300
+                    }}),
+                    querySelectorAll: () => children,
+                    querySelector: selector =>
+                        selector.includes('screener-add-filter-') ? children[0] || null : null,
+                    getAttribute: name => attributes[name] ?? null
+                }};
+            }}
+            // The range step shows the chosen filter's name, not the popup title.
+            const option = element('> 70 買われすぎ', {{
+                role: 'option',
+                'data-qa-id': 'screener-add-filter-popover-filter-option-1'
+            }});
+            const dialog = element('RSI (相対力指数) > 70 買われすぎ', {{ role: 'dialog' }}, [option]);
+            global.document = {{
+                querySelectorAll: selector => selector.includes('[role="dialog"]') ? [dialog] : []
+            }};
+            eval(expression).then(result => console.log(JSON.stringify(result)));
+            "#
+        ));
+
+        assert_eq!(result["found"], true);
+        assert_eq!(result["range_option"]["text"], "> 70 買われすぎ");
+    }
+
+    #[tokio::test]
+    #[ignore = "run through `node scripts/check-js-contracts.mjs desktop`"]
+    async fn javascript_desktop_filter_add_candidate_skips_buttons_without_text() {
+        let mut runtime = FakeRuntime::new([json!({})]);
+        let _ = wait_for_filter_add_candidate(&mut runtime, "RSI").await;
+        let expression = serde_json::to_string(&runtime.evaluated[0].0).unwrap();
+        let result = run_node_json(&format!(
+            r#"
+            const expression = {expression};
+            global.window = {{
+                innerWidth: 1600, innerHeight: 900,
+                getComputedStyle: () => ({{ visibility: 'visible', display: 'block' }})
+            }};
+            function element(text, role, children = []) {{
+                return {{
+                    textContent: text,
+                    getBoundingClientRect: () => ({{
+                        left: 100, top: 100, right: 420, bottom: 400, width: 320, height: 300
+                    }}),
+                    querySelectorAll: () => children,
+                    querySelector: () => null,
+                    getAttribute: name => name === 'role' ? role : null
+                }};
+            }}
+            // The search clear button comes first and has no text.
+            const options = [
+                element('', 'button'),
+                element('RSI (相対力指数)', 'option'),
+                element('STOCH RSI (ストキャスティクス RSI)', 'option')
+            ];
+            const dialog = element('フィルター RSI', 'dialog', options);
+            global.document = {{
+                querySelectorAll: selector => selector.includes('[role="dialog"]') ? [dialog] : []
+            }};
+            eval(expression).then(result => console.log(JSON.stringify(result.candidate)));
+            "#
+        ));
+
+        assert_eq!(result["text"], "RSI (相対力指数)");
+    }
+
+    #[tokio::test]
+    #[ignore = "run through `node scripts/check-js-contracts.mjs desktop`"]
+    async fn javascript_desktop_filter_popup_closes_send_escape_only_to_their_popup() {
+        // Escape on the document also closes the Screener panel, so each expression
+        // may send one only inside its own popup and only while it is visible.
+        let target = ScreenerFilterTarget {
+            index: 0,
+            text: "EMA 21 0% 〜 10%".to_string(),
+            data_name: "screener-filter-pill-ema".to_string(),
+            visible: true,
+        };
+        let mut runtime = FakeRuntime::new([json!({})]);
+        let _ = read_filter_actions(&mut runtime).await;
+        let _ = open_filter_add_search(&mut runtime).await;
+        let _ = click_filter_range_preset(&mut runtime, &target, "0% 〜 10%").await;
+        let _ = filter_option_operation(&mut runtime, &target, "EMA", false).await;
+        let _ = close_filter_option_popover(&mut runtime, &target, "EMA").await;
+        let expressions: Vec<&str> = runtime
+            .evaluated
+            .iter()
+            .map(|(expression, _)| expression.as_str())
+            .collect();
+        assert_eq!(expressions.len(), 5);
+        let expressions = serde_json::to_string(&expressions).unwrap();
+        let results = run_node_json(&format!(
+            r#"
+            const [actions, addSearch, rangePreset, option, optionAfterWrite] = {expressions};
+            global.KeyboardEvent = class {{
+                constructor(type, init) {{ this.type = type; this.key = init.key; }}
+            }};
+            global.MouseEvent = class {{
+                constructor(type) {{ this.type = type; }}
+            }};
+            global.window = {{
+                innerWidth: 1600, innerHeight: 900,
+                getComputedStyle: () => ({{ visibility: 'visible', display: 'block' }})
+            }};
+            // Escape on the document closes the popup and the panel, as observed in
+            // Desktop; inside the popup it closes only the popup.
+            function element(text, rect, onKeydown) {{
+                return {{
+                    textContent: text,
+                    getBoundingClientRect: () => ({{
+                        left: rect[0], top: rect[1], width: rect[2], height: rect[3],
+                        right: rect[0] + rect[2], bottom: rect[1] + rect[3]
+                    }}),
+                    querySelectorAll: () => [],
+                    querySelector: () => null,
+                    getAttribute: () => null,
+                    closest: () => null,
+                    contains: () => false,
+                    dispatchEvent: event => {{ if (event.type === 'keydown' && onKeydown) onKeydown(); }}
+                }};
+            }}
+            // When clickOpens is set, clicking the pill opens a popup with no
+            // controls; focusInside puts the focus on an input inside it.
+            function page(clickOpens, focusInside, openAtStart = false) {{
+                const state = {{ popupOpen: openAtStart, panelOpen: true, popupKeys: 0, documentKeys: 0 }};
+                const closePopup = () => {{ state.popupKeys += 1; state.popupOpen = false; }};
+                const input = element('', [110, 100, 300, 30], closePopup);
+                const popup = element('EMA 21 フィルター 手動', [100, 90, 400, 300], closePopup);
+                popup.contains = el => el === input;
+                const pill = element('EMA 21 0% 〜 10%', [100, 50, 150, 30]);
+                pill.getAttribute = name => name === 'data-name' ? 'screener-filter-pill-ema' : null;
+                pill.dispatchEvent = event => {{
+                    if (event.type === 'click' && clickOpens) state.popupOpen = true;
+                }};
+                global.document = {{
+                    get activeElement() {{ return state.popupOpen && focusInside ? input : null; }},
+                    querySelectorAll: selector => {{
+                        if (selector.includes('screener-filter-pill-')) return [pill];
+                        if (state.popupOpen && selector.includes('[role="dialog"]')) return [popup];
+                        return [];
+                    }},
+                    querySelector: selector => selector.includes('screener-filter-pill-ema') ? pill : null,
+                    elementFromPoint: () => null,
+                    dispatchEvent: event => {{
+                        if (event.type !== 'keydown') return;
+                        state.documentKeys += 1;
+                        state.popupOpen = false;
+                        state.panelOpen = false;
+                    }}
+                }};
+                return state;
+            }}
+            (async () => {{
+                const results = {{}};
+                for (const [name, expression, clickOpens, focusInside, openAtStart] of [
+                    ['add_search', addSearch, false, false, false],
+                    ['actions', actions, true, true, false],
+                    ['range_preset', rangePreset, true, false, false],
+                    ['option', option, true, true, false],
+                    ['option_without_popup', option, false, false, false],
+                    ['option_after_write', optionAfterWrite, false, true, true],
+                    ['option_after_write_without_popup', optionAfterWrite, false, false, false],
+                ]) {{
+                    const state = page(clickOpens, focusInside, openAtStart);
+                    await eval(expression);
+                    results[name] = state;
+                }}
+                console.log(JSON.stringify(results));
+            }})();
+            "#
+        ));
+
+        let untouched =
+            json!({ "popupOpen": false, "panelOpen": true, "popupKeys": 0, "documentKeys": 0 });
+        let closed_popup =
+            json!({ "popupOpen": false, "panelOpen": true, "popupKeys": 1, "documentKeys": 0 });
+        assert_eq!(
+            results,
+            json!({
+                "add_search": untouched,
+                "actions": closed_popup,
+                "range_preset": closed_popup,
+                "option": closed_popup,
+                "option_without_popup": untouched,
+                "option_after_write": closed_popup,
+                "option_after_write_without_popup": untouched
+            })
         );
     }
 

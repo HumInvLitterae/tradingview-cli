@@ -137,6 +137,28 @@ values and the `screener` command name were checked against the current code.
     runs. v0.41.0 has the same code. The other eight points send their Escapes
     after one popup closes, so the remaining keys are expected to close the panel
     too; that was not observed.
+  - One Escape dispatched to the document with the add-filter popup open closed
+    the popup and the panel together. Dispatched to the focused element inside
+    the popup, or to the popup with focus elsewhere, it closed only the popup, for
+    both the add-filter popup and a filter pill's popover.
+- Filter popups are closed by `closeScreenerPopup`, which sends Escape inside the
+  popup each caller names and only while that popup is visible. A Node gate runs
+  each of the five expressions that close a filter popup against a fake page where
+  an Escape on the document closes the panel.
+- Observed after that change on the same day, on a disposable `CLI-Test` screen,
+  with screenshots forcing frames because a window that is not in front does not
+  draw a newly opened panel's filters:
+  - `filters add` succeeded 3 of 3 times. Started with the panel open, it left
+    the panel open; started closed, it closed the panel again without `cleanup`
+    (2 of 2).
+  - Option `modify` succeeded 4 of 4 times and closes its option list after the
+    change; started closed, it closed the panel without `cleanup` (2 of 2). One
+    more run failed before writing because the panel had not been drawn yet.
+    Across these and the three screen creates, no close after a write failed
+    (7 of 7).
+  - Numeric `modify` through the UI fails before writing: the manual setting now
+    shows a condition and a value field instead of presets. Its failure path
+    closed only the popover.
 - A storage save or delete whose evaluation times out, loses its connection or
   throws adds `write_outcome` without a result, because the request may have
   reached the provider. A refused request does not.
@@ -153,6 +175,8 @@ values and the `screener` command name were checked against the current code.
 ## Progress
 
 Stages 1 and 2 are implemented with fixture evidence and are unreleased. The
-Desktop observation on 2026-11-05 is recorded under Acceptance. It found that
-`filters add` closes the panel before it can add a filter, which the
-[work inventory](../next-version-work-items.md) tracks.
+Desktop observation on 2026-11-05 found that filter popups were closed with
+Escapes that also closed the panel, so `filters add` could not add a filter. The
+fix and its Desktop evidence are recorded under Acceptance. The problems it
+found outside this plan are tracked in the
+[work inventory](../next-version-work-items.md).
