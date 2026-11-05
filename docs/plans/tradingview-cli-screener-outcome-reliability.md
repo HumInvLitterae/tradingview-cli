@@ -124,8 +124,8 @@ values and the `screener` command name were checked against the current code.
   checks.
 - `UNCONFIRMED` until observed in Desktop: whether Escape closes the panel while a
   screen name dialog is open, how often a close fails after a write, and what the
-  Escapes left over after a filter popup closes reach. Nine filter expressions
-  still send Escape three times without checking between keys.
+  Escapes left over after a filter popup closes reach. Four filter expressions
+  still send Escape three times at nine points without checking between keys.
 - A storage save or delete whose evaluation times out, loses its connection or
   throws adds `write_outcome` without a result, because the request may have
   reached the provider. A refused request does not.
