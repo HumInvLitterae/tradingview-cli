@@ -6,7 +6,10 @@ the latter paths with the same `tv spec screener` prefix. Discovery does not
 authorize changing the screen, filters or columns.
 
 Screen lists read the title menu by default or open the catalog with `--catalog`.
-They do not enumerate all account storage. Names and indexes are UI observations;
+The title menu lists recently used screens, not every saved screen, and the list
+takes only its screen items. They do not enumerate all account storage. The
+title menu can keep a deleted screen until the page reloads. Names and indexes
+are UI observations;
 IDs and owner/shared flags can be absent. Scope and exact names matter when
 selecting a target. Screen actions report recognized menu entries. `save_enabled`
 means an enabled save candidate was seen, not that saving succeeded.

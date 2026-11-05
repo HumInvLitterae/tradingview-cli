@@ -60,6 +60,9 @@ package version omits the leading `v`.
   name dialog. They now close that dialog with its close button, which keeps the
   screen and its changes, and fail with `details.reason: "unsaved_changes"` and
   `details.dialog_closed`. They never save or discard the changes.
+- `screens list` returned the title menu's auto-save toggle as a screen, and an
+  entry joining several screen names when the active screen was not listed
+  first. It now takes only the menu's recent-screen items.
 - When the `filters add` search does not open while TradingView Desktop is not in
   front, the error adds `page_visibility: "hidden"` and a `next_action_hint`. A
   window that is not in front may not draw a newly opened panel.

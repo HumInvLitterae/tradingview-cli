@@ -1786,6 +1786,60 @@ mod tests {
 
     #[test]
     #[ignore = "run through `node scripts/check-js-contracts.mjs desktop`"]
+    fn javascript_desktop_screen_menu_lists_only_recent_screen_items() {
+        let expression = serde_json::to_string(&expanded_expression(
+            r#"
+            (function() {
+                REPLACE_HELPERS
+                return collectScreenerScreenEntries(global.menu, 'CLI-Test-B');
+            })()
+            "#,
+        ))
+        .unwrap();
+        let result = run_node_json(&format!(
+            r#"
+            const expression = {expression};
+            global.window = {{
+                innerWidth: 1600, innerHeight: 900,
+                getComputedStyle: () => ({{ visibility: 'visible', display: 'block' }})
+            }};
+            function element(text) {{
+                return {{
+                    textContent: text,
+                    getBoundingClientRect: () => ({{
+                        left: 100, top: 100, right: 300, bottom: 130, width: 200, height: 30
+                    }})
+                }};
+            }}
+            // A just-created copy is listed first while another screen stays active,
+            // so the wrapper text does not start with the active title.
+            const items = ['CLI-Test-B のコピー', 'CLI-Test-B', '米国株'].map(element);
+            const others = [
+                element('スクリーンを保存'),
+                element('自動保存'),
+                element(items.map(item => item.textContent).join(' ')),
+                ...items
+            ];
+            global.menu = {{
+                querySelectorAll: selector =>
+                    selector.includes('screener-popover-recent-screens-item') ? items : others
+            }};
+            console.log(JSON.stringify(eval(expression)));
+            "#
+        ));
+
+        assert_eq!(
+            result,
+            json!([
+                { "index": 0, "name": "CLI-Test-B のコピー", "active": false },
+                { "index": 1, "name": "CLI-Test-B", "active": true },
+                { "index": 2, "name": "米国株", "active": false }
+            ])
+        );
+    }
+
+    #[test]
+    #[ignore = "run through `node scripts/check-js-contracts.mjs desktop`"]
     fn javascript_desktop_name_dialog_finder_skips_the_title_menu() {
         let expression = serde_json::to_string(&expanded_expression(
             r#"

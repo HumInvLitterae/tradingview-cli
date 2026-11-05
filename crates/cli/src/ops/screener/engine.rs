@@ -622,9 +622,21 @@ function findScreenerScreenNameDialogSubmit(dialog, kind) {
         return false;
     }) || null;
 }
+// Recent screens carry a test id. Without it, any short text in the menu counts,
+// which also takes the auto-save toggle and a wrapper joining several names.
 function collectScreenerScreenEntries(menu, activeTitle) {
     var seen = {};
     var entries = [];
+    var items = Array.from(menu.querySelectorAll('[data-qa-id="screener-popover-recent-screens-item"]')).filter(visible);
+    if (items.length > 0) {
+        items.forEach(function(el) {
+            var name = textOf(el);
+            if (!name || seen[name]) return;
+            seen[name] = true;
+            entries.push({ index: entries.length, name: name, active: name === activeTitle });
+        });
+        return entries;
+    }
     var nodes = Array.from(menu.querySelectorAll('button, [role="menuitem"], [role="option"], div, span')).filter(visible);
     nodes.forEach(function(el) {
         var name = textOf(el);
