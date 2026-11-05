@@ -110,6 +110,9 @@ package version omits the leading `v`.
   `tradingview-market` and point to the current roadmap.
 - The development guide now describes the one-minute `tv bars` date-range live
   smoke, its environment variables and how to choose its three ranges.
+- The specification and Screener skill now state that in Desktop 3.4.0
+  `screens save-as` creates the copy and then fails because the docked panel
+  keeps showing the original, so the list should be checked before retrying.
 
 ## v0.41.0
 

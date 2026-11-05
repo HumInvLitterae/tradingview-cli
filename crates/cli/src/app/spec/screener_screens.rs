@@ -77,7 +77,7 @@ pub(super) fn describe(path: &[&str]) -> Option<Value> {
             "Opens the create-name dialog even in preview. Execution submits the new name and waits for that title to become active. created true reflects this UI readback, not an independent storage/uniqueness audit; previous screen selection is not restored."
         }
         _ => {
-            "Opens the make-copy name dialog even in preview. Execution creates a copy of the active screen and waits for the requested title. It does not verify complete filter/column equivalence or independent persistence, and leaves the copy active."
+            "Opens the make-copy name dialog even in preview. Execution creates a copy of the active screen and waits for the requested title. It does not verify complete filter/column equivalence or independent persistence. In Desktop 3.4.0 the docked panel keeps showing the original, so the command fails with \"title did not change\" after the copy, which holds only the saved version, was created; check the list before retrying."
         }
     };
     argv.push(json!("--dry-run"));

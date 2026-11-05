@@ -1013,7 +1013,7 @@ Inspect storage before retrying.
 | --- | --- |
 | switch | Resolves one exact name in the title menu or `--catalog` scope. Missing/duplicate matches fail. An already-active title returns `switched: false`; otherwise the new title is observed and left active. No test-name restriction. |
 | save | Targets the active screen, with no name argument or test-name restriction. Requires an enabled save action. `save_requested: true` with `confirmation: not_observable` confirms the request, not durable storage. |
-| create / save-as | Execution requires a destination name containing case-sensitive `CLI-Test` or `テスト`. Opens create/copy dialog, submits and waits for the new active title; this is not a uniqueness, content-equivalence or storage audit. |
+| create / save-as | Execution requires a destination name containing case-sensitive `CLI-Test` or `テスト`. Opens create/copy dialog, submits and waits for the new active title; this is not a uniqueness, content-equivalence or storage audit. In Desktop 3.4.0 the docked panel keeps showing the original after a copy, so save-as fails with "title did not change" after creating the copy, which holds only the saved version. Check the list before retrying, because a retry creates another copy. |
 | rename | `--name` must match the active title even in preview; `--to` must differ after trimming. Execution requires the test substring in both names. Success observes the new title, not independent persistence. |
 | delete | Resolves an exact saved name through storage. Execution requires a test name and `--confirm-delete`, and refuses an active target. Preview can report an active target without rejecting it. After deletion by ID, checks name absence in a fresh list. |
 
