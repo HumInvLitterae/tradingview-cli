@@ -591,6 +591,9 @@ function screenerScreenNameDialogTitle(dialog, kind) {
     if (kind === 'make_copy' && /スクリーンのコピーを作成|Make a copy|Copy screen/i.test(text)) return 'make_copy';
     return null;
 }
+// The title menu also has inputs and lists "新規スクリーンを作成", and it is still
+// open just after an action is clicked, so a container showing the menu's save
+// action is not a name dialog.
 function findScreenerScreenNameDialog(kind) {
     var inputs = visibleElements('input, textarea');
     for (var i = 0; i < inputs.length; i++) {
@@ -599,7 +602,7 @@ function findScreenerScreenNameDialog(kind) {
             var rect = current.getBoundingClientRect();
             if (rect.width >= 240 && rect.height >= 80) {
                 var text = textOf(current);
-                if (text.length <= 800) {
+                if (text.length <= 800 && !/スクリーンを保存|Save screen/i.test(text)) {
                     if (kind === 'create' && /スクリーンを作成|Create screen/i.test(text)) return current;
                     if (kind === 'rename' && /スクリーン名の変更|Rename screen|Change screen name/i.test(text)) return current;
                     if (kind === 'make_copy' && /スクリーンのコピーを作成|Make a copy|Copy screen/i.test(text)) return current;
@@ -749,6 +752,15 @@ function findBlockingScreenerMutationDialog() {
             /スクリーンを開く|Open screen/i.test(text) &&
             /最近使用した項目|Recent/i.test(text)) return false;
         return /名前を変更|Rename|コピーを作成|Make a copy|新規スクリーン|Create new screen|削除|Delete|保存先|Save as/i.test(text);
+    }) || null;
+}
+// Leaving a screen with unsaved changes asks whether to save them. The English
+// wording is unconfirmed; the save and discard buttons carry these test ids.
+function findScreenerUnsavedChangesDialog() {
+    return visibleElements('[role="dialog"], [class*="dialog"], [class*="Dialog"]').find(function(el) {
+        return !!el.querySelector('[data-qa-id="yes-btn"]') &&
+            !!el.querySelector('[data-qa-id="no-btn"]') &&
+            /変更を保存しますか|Save changes|unsaved changes/i.test(textOf(el));
     }) || null;
 }
 function screenerCatalogActionText(text) {

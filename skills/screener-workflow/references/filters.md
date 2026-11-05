@@ -10,7 +10,11 @@ Add searches the catalog and matches an existing range option. Supply a nonblank
 name and at least one finite bound; with both bounds, max must exceed min.
 Dry-run finds only the candidate, not the requested range option. Success checks
 a new matching visible pill, not saved storage. Recognized greater/less labels
-do not establish a uniform inclusive-bound interpretation.
+do not establish a uniform inclusive-bound interpretation. UI add and modify
+leave the screen with unsaved changes, so a later switch or create fails with
+`unsaved_changes` until the screen is saved or the changes are discarded. When
+the add search does not open and Desktop is not in front, the error adds
+`page_visibility: "hidden"` and a `next_action_hint`.
 
 Modify/remove require either a zero-based index or nonblank text, not both.
 Text uses a case-insensitive substring and must match exactly one visible pill.

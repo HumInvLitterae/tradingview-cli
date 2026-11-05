@@ -54,6 +54,15 @@ package version omits the leading `v`.
   panel. `filters add` also finds its add button while the button has focus,
   finds the range step that no longer shows the "Filter" title, and no longer
   takes an icon button without text as the matching filter.
+- `screens switch` and `screens create` from a screen with unsaved changes
+  stopped at TradingView's save-changes dialog and reported only that the title
+  did not change; create could also mistake the still-open title menu for its
+  name dialog. They now close that dialog with its close button, which keeps the
+  screen and its changes, and fail with `details.reason: "unsaved_changes"` and
+  `details.dialog_closed`. They never save or discard the changes.
+- When the `filters add` search does not open while TradingView Desktop is not in
+  front, the error adds `page_visibility: "hidden"` and a `next_action_hint`. A
+  window that is not in front may not draw a newly opened panel.
 - Screener storage reads used to confirm a change now fail when the response
   cannot be read in full: a body that is not a screen list or screen document,
   filters or columns set to a value other than a list or `null` (`null` reads

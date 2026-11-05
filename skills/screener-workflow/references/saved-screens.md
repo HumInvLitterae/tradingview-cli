@@ -11,6 +11,10 @@ Cleanup attempts do not reconstruct prior popups or roll back selection/edits.
 After a confirmed change, a failed panel close returns success with
 `cleanup.restored: false` and `cleanup.error`; `cleanup` is otherwise omitted.
 Other close failures remain errors.
+Leaving a screen with unsaved changes, by switching or creating a screen, opens
+a save-changes dialog. The command closes it with its close button, which keeps
+the screen and its changes and never saves or discards them, then fails with
+`details.reason: "unsaved_changes"` and `details.dialog_closed`.
 A delete whose readback fails adds `details.write_outcome: "uncertain"` and
 `details.delete_result`. A delete request that times out, loses its connection
 or throws before an answer adds only `details.write_outcome: "uncertain"`.

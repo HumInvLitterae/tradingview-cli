@@ -994,6 +994,10 @@ Cleanup attempts do not reconstruct prior popups or roll back selection/edits.
 After a confirmed change, a failed panel close returns success with
 `cleanup.restored: false` and `cleanup.error`; `cleanup` is otherwise omitted.
 Other close failures remain errors.
+Leaving a screen with unsaved changes, by switching or creating a screen, opens
+a save-changes dialog. The command closes it with its close button, which keeps
+the screen and its changes and never saves or discards them, then fails with
+`details.reason: "unsaved_changes"` and `details.dialog_closed`.
 A delete whose readback fails adds `details.write_outcome: "uncertain"` and
 `details.delete_result`. A delete request that times out, loses its connection
 or throws before an answer adds only `details.write_outcome: "uncertain"`.
@@ -1071,7 +1075,11 @@ Add searches the catalog and matches an existing range option. Supply a nonblank
 name and at least one finite bound; with both bounds, max must exceed min.
 Dry-run finds only the candidate, not the requested range option. Success checks
 a new matching visible pill, not saved storage. Recognized greater/less labels
-do not establish a uniform inclusive-bound interpretation.
+do not establish a uniform inclusive-bound interpretation. UI add and modify
+leave the screen with unsaved changes, so a later switch or create fails with
+`unsaved_changes` until the screen is saved or the changes are discarded. When
+the add search does not open and Desktop is not in front, the error adds
+`page_visibility: "hidden"` and a `next_action_hint`.
 
 Modify/remove require either a zero-based index or nonblank text, not both.
 Text uses a case-insensitive substring and must match exactly one visible pill.

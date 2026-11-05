@@ -637,14 +637,20 @@ async fn filters_clear_in_session(
 
 fn ensure_filter_add_search_opened(value: &Value) -> Result<(), AppError> {
     if value_bool(value, "opened") && value_bool(value, "input_found") {
-        Ok(())
-    } else {
-        Err(AppError::new(
-            ErrorKind::InternalApiUnavailable,
-            "Screener filter add search did not open",
-        )
-        .with_details(value.clone()))
+        return Ok(());
     }
+    let mut details = value.clone();
+    // A window that is not in front may not have drawn a newly opened panel.
+    if value.get("page_visibility").and_then(Value::as_str) == Some("hidden") {
+        details["next_action_hint"] = json!(
+            "TradingView Desktop is not in front, so the Screener panel may not be drawn yet. Bring the window to the front and retry."
+        );
+    }
+    Err(AppError::new(
+        ErrorKind::InternalApiUnavailable,
+        "Screener filter add search did not open",
+    )
+    .with_details(details))
 }
 
 pub(super) async fn save_screener_storage_filters(
@@ -930,7 +936,7 @@ async fn open_filter_add_search(runtime: &mut impl RuntimeEvaluator) -> Result<V
                     await closeScreenerPopup(findScreenerAddFilterDialog);
                     var addButton = findScreenerAddFilterButton();
                     if (!addButton) {
-                        return { opened: false, reason: 'add_button_not_found' };
+                        return { opened: false, reason: 'add_button_not_found', page_visibility: document.visibilityState };
                     }
                     mouseClick(addButton);
                     var input = null;
@@ -940,7 +946,7 @@ async fn open_filter_add_search(runtime: &mut impl RuntimeEvaluator) -> Result<V
                         await sleep(150);
                     }
                     if (!input) {
-                        return { opened: false, reason: 'search_input_not_found' };
+                        return { opened: false, reason: 'search_input_not_found', page_visibility: document.visibilityState };
                     }
                     input.focus();
                     return {
@@ -2669,6 +2675,30 @@ mod tests {
                 { "result": { "closed": false }, "keys": 3, "events": ["popup:keydown:Escape", "popup:keyup:Escape"] }
             ])
         );
+    }
+
+    #[test]
+    fn filter_add_search_failure_hints_at_a_window_that_is_not_in_front() {
+        let hidden = json!({ "opened": false, "reason": "add_button_not_found", "page_visibility": "hidden" });
+        let visible = json!({ "opened": false, "reason": "add_button_not_found", "page_visibility": "visible" });
+
+        let hidden_details = ensure_filter_add_search_opened(&hidden)
+            .unwrap_err()
+            .details
+            .unwrap();
+        let visible_details = ensure_filter_add_search_opened(&visible)
+            .unwrap_err()
+            .details
+            .unwrap();
+
+        assert_eq!(hidden_details["reason"], "add_button_not_found");
+        assert!(
+            hidden_details["next_action_hint"]
+                .as_str()
+                .unwrap()
+                .contains("Bring the window to the front")
+        );
+        assert_eq!(visible_details, visible);
     }
 
     #[tokio::test]

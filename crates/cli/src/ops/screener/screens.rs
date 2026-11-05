@@ -233,7 +233,8 @@ async fn screens_switch_in_session(
     } else {
         click_screen_menu_target(session.runtime, &target).await?;
     }
-    let after_state = wait_for_screen_title(session.runtime, name).await?;
+    let after_state =
+        wait_for_screen_title(session.runtime, name, unsaved_changes_purpose("switch")).await?;
     let after_title = after_state
         .get("screen_title")
         .and_then(Value::as_str)
@@ -417,7 +418,8 @@ async fn screens_rename_in_session(
     let submit = find_screen_name_dialog_submit_point(session.runtime, "rename").await?;
     let point = screen_menu_click_point(&submit)?;
     dispatch_screen_menu_click(session.runtime, point).await?;
-    let after_state = wait_for_screen_title(session.runtime, new_name).await?;
+    let after_state =
+        wait_for_screen_title(session.runtime, new_name, unsaved_changes_purpose("rename")).await?;
     let after_title = after_state
         .get("screen_title")
         .and_then(Value::as_str)
@@ -583,7 +585,8 @@ async fn screens_name_dialog_in_session(
     let submit = find_screen_name_dialog_submit_point(session.runtime, action_kind).await?;
     let point = screen_menu_click_point(&submit)?;
     dispatch_screen_menu_click(session.runtime, point).await?;
-    let after_state = wait_for_screen_title(session.runtime, name).await?;
+    let after_state =
+        wait_for_screen_title(session.runtime, name, unsaved_changes_purpose(action_kind)).await?;
     let after_title = after_state
         .get("screen_title")
         .and_then(Value::as_str)
@@ -655,6 +658,7 @@ async fn open_screen_name_dialog(
     runtime: &mut impl RuntimeEvaluator,
     action_kind: &str,
 ) -> Result<Value, AppError> {
+    let purpose = unsaved_changes_purpose(action_kind);
     let action_kind = js_string(action_kind)?;
     let result = runtime
         .evaluate(
@@ -689,6 +693,9 @@ async fn open_screen_name_dialog(
                     mouseClick(action);
                     var dialog = null;
                     for (var j = 0; j < 12; j++) {{
+                        if (findScreenerUnsavedChangesDialog()) {{
+                            return {{ menu_opened: true, dialog_opened: false, reason: 'unsaved_changes', screen_title: activeTitle, actions: actions }};
+                        }}
                         dialog = findScreenerScreenNameDialog({action_kind});
                         if (dialog) break;
                         await sleep(150);
@@ -726,6 +733,10 @@ async fn open_screen_name_dialog(
         )
         .await?;
 
+    if result.get("reason").and_then(Value::as_str) == Some("unsaved_changes") {
+        let dialog = close_unsaved_changes_dialog(runtime).await?;
+        return Err(unsaved_changes_error(purpose, dialog.closed, json!({})));
+    }
     if !(value_bool(&result, "dialog_opened") && value_bool(&result, "input_found")) {
         return Err(AppError::new(
             ErrorKind::InternalApiUnavailable,
@@ -734,6 +745,63 @@ async fn open_screen_name_dialog(
         .with_details(result));
     }
     Ok(result)
+}
+
+fn unsaved_changes_purpose(action_kind: &str) -> &'static str {
+    match action_kind {
+        "create" => "creating a screen",
+        "make_copy" => "copying the screen",
+        "rename" => "renaming the screen",
+        _ => "switching",
+    }
+}
+
+struct UnsavedChangesDialog {
+    found: bool,
+    closed: bool,
+}
+
+/// Closes the save-changes dialog with its close button, which keeps the
+/// current screen and its unsaved changes. It never saves or discards them.
+async fn close_unsaved_changes_dialog(
+    runtime: &mut impl RuntimeEvaluator,
+) -> Result<UnsavedChangesDialog, AppError> {
+    let result = runtime
+        .evaluate(
+            &expanded_expression(
+                r#"
+                (async function() {
+                    REPLACE_HELPERS
+                    var dialog = findScreenerUnsavedChangesDialog();
+                    if (!dialog) return { found: false };
+                    var close = dialog.querySelector('[data-name="close"]');
+                    if (close) mouseClick(close);
+                    for (var i = 0; i < 10 && findScreenerUnsavedChangesDialog(); i++) {
+                        await new Promise(function(resolve) { setTimeout(resolve, 100); });
+                    }
+                    return { found: true, closed: !findScreenerUnsavedChangesDialog() };
+                })()
+                "#,
+            ),
+            true,
+        )
+        .await?;
+    let found = value_bool(&result, "found");
+    Ok(UnsavedChangesDialog {
+        found,
+        closed: !found || value_bool(&result, "closed"),
+    })
+}
+
+fn unsaved_changes_error(purpose: &str, dialog_closed: bool, details: Value) -> AppError {
+    let mut details = details;
+    details["reason"] = json!("unsaved_changes");
+    details["dialog_closed"] = json!(dialog_closed);
+    AppError::new(
+        ErrorKind::InternalApiUnavailable,
+        format!("The current screen has unsaved changes; save or discard them before {purpose}"),
+    )
+    .with_details(details)
 }
 
 async fn find_screen_name_dialog_submit_point(
@@ -1106,6 +1174,7 @@ async fn click_screen_catalog_target(
 async fn wait_for_screen_title(
     runtime: &mut impl RuntimeEvaluator,
     expected_name: &str,
+    purpose: &str,
 ) -> Result<Value, AppError> {
     let mut last_state = Value::Null;
     for _ in 0..6 {
@@ -1120,6 +1189,16 @@ async fn wait_for_screen_title(
             return Ok(state);
         }
         last_state = state;
+    }
+    // A failed check keeps the title error, which already follows the request.
+    if let Ok(dialog) = close_unsaved_changes_dialog(runtime).await
+        && dialog.found
+    {
+        return Err(unsaved_changes_error(
+            purpose,
+            dialog.closed,
+            json!({ "expected_screen_title": expected_name }),
+        ));
     }
     Err(AppError::new(
         ErrorKind::InternalApiUnavailable,
@@ -1371,7 +1450,7 @@ const SCREENER_SCREEN_SAVE_POINT_EXPRESSION: &str = r#"
 mod tests {
     use serde_json::json;
 
-    use super::super::super::test_support::FakeRuntime;
+    use super::super::super::test_support::{FakeRuntime, run_node_json};
     use super::super::engine::runtime_failing_at_call;
     use super::*;
 
@@ -1592,6 +1671,254 @@ mod tests {
         assert_eq!(error.kind, ErrorKind::InternalApiUnavailable);
         assert!(error.details.is_some());
         assert_eq!(runtime.mouse_events.len(), 3);
+    }
+
+    #[tokio::test]
+    async fn screener_screens_switch_reports_unsaved_changes() {
+        let unchanged = json!({ "button_found": true, "open": true, "screen_title": "CLI-Test1" });
+        let mut responses = vec![
+            json!({ "button_found": true, "open": true }),
+            unchanged.clone(),
+            json!({
+                "menu_opened": true,
+                "catalog_entry_found": true,
+                "screens": [
+                    { "index": 0, "name": "CLI-Test1", "active": true },
+                    { "index": 1, "name": "米国株", "active": false }
+                ]
+            }),
+            json!({
+                "found": true,
+                "menu_opened": true,
+                "target_name": "米国株",
+                "click_point": { "x": 120.0, "y": 240.0 }
+            }),
+        ];
+        responses.extend(std::iter::repeat_n(unchanged, 6));
+        responses.push(json!({ "found": true, "closed": true }));
+        let mut runtime = FakeRuntime::new(responses);
+
+        let error = screener_screens_switch(&mut runtime, "米国株", false, false)
+            .await
+            .unwrap_err();
+
+        assert_eq!(
+            error.message,
+            "The current screen has unsaved changes; save or discard them before switching"
+        );
+        assert_eq!(
+            error.details.unwrap(),
+            json!({
+                "expected_screen_title": "米国株",
+                "reason": "unsaved_changes",
+                "dialog_closed": true
+            })
+        );
+        assert!(
+            runtime
+                .evaluated
+                .last()
+                .unwrap()
+                .0
+                .contains("findScreenerUnsavedChangesDialog()")
+        );
+    }
+
+    #[tokio::test]
+    async fn screener_screens_switch_keeps_title_error_without_a_save_dialog() {
+        let unchanged = json!({ "button_found": true, "open": true, "screen_title": "CLI-Test1" });
+        let mut responses = vec![
+            json!({ "button_found": true, "open": true }),
+            unchanged.clone(),
+            json!({
+                "menu_opened": true,
+                "screens": [
+                    { "index": 0, "name": "CLI-Test1", "active": true },
+                    { "index": 1, "name": "米国株", "active": false }
+                ]
+            }),
+            json!({ "found": true, "menu_opened": true, "click_point": { "x": 120.0, "y": 240.0 } }),
+        ];
+        responses.extend(std::iter::repeat_n(unchanged, 6));
+        responses.push(json!({ "found": false }));
+        let mut runtime = FakeRuntime::new(responses);
+
+        let error = screener_screens_switch(&mut runtime, "米国株", false, false)
+            .await
+            .unwrap_err();
+
+        assert_eq!(
+            error.message,
+            "Stock Screener screen title did not change to the requested screen"
+        );
+    }
+
+    #[tokio::test]
+    async fn screener_screens_create_reports_unsaved_changes_before_the_name_dialog() {
+        let mut runtime = FakeRuntime::new([
+            json!({ "button_found": true, "open": true }),
+            json!({ "button_found": true, "open": true, "screen_title": "CLI-Test1" }),
+            json!({
+                "menu_opened": true,
+                "dialog_opened": false,
+                "reason": "unsaved_changes",
+                "screen_title": "CLI-Test1",
+                "actions": []
+            }),
+            json!({ "found": true, "closed": true }),
+        ]);
+
+        let error = screener_screens_create(&mut runtime, "CLI-Test-New", false)
+            .await
+            .unwrap_err();
+
+        assert_eq!(
+            error.message,
+            "The current screen has unsaved changes; save or discard them before creating a screen"
+        );
+        assert_eq!(
+            error.details.unwrap(),
+            json!({ "reason": "unsaved_changes", "dialog_closed": true })
+        );
+        assert!(runtime.inserted_text.is_empty());
+        assert!(runtime.mouse_events.is_empty());
+    }
+
+    #[test]
+    #[ignore = "run through `node scripts/check-js-contracts.mjs desktop`"]
+    fn javascript_desktop_name_dialog_finder_skips_the_title_menu() {
+        let expression = serde_json::to_string(&expanded_expression(
+            r#"
+            (function() {
+                REPLACE_HELPERS
+                var dialog = findScreenerScreenNameDialog('create');
+                return dialog ? textOf(dialog) : null;
+            })()
+            "#,
+        ))
+        .unwrap();
+        let results = run_node_json(&format!(
+            r#"
+            const expression = {expression};
+            global.window = {{
+                innerWidth: 1600, innerHeight: 900,
+                getComputedStyle: () => ({{ visibility: 'visible', display: 'block' }})
+            }};
+            const body = {{}};
+            function box(text, parentElement, size) {{
+                return {{
+                    textContent: text,
+                    parentElement,
+                    getBoundingClientRect: () => ({{
+                        left: 100, top: 100, width: size[0], height: size[1],
+                        right: 100 + size[0], bottom: 100 + size[1]
+                    }})
+                }};
+            }}
+            // Each page has one input inside a container of the given text.
+            function page(text) {{
+                const container = box(text, body, [320, 300]);
+                const input = box('', container, [200, 30]);
+                global.document = {{
+                    body,
+                    documentElement: {{}},
+                    querySelectorAll: selector => selector.includes('input') ? [input] : []
+                }};
+            }}
+            const results = {{}};
+            for (const [name, text] of [
+                ['menu', 'スクリーンを保存 自動保存 スクリーンを共有 コピーを作成… 名前を変更… 新規スクリーンを作成… スクリーンを開く…'],
+                ['dialog', 'スクリーンを作成 新しいスクリーン名 キャンセル 作成']
+            ]) {{
+                page(text);
+                results[name] = eval(expression);
+            }}
+            console.log(JSON.stringify(results));
+            "#
+        ));
+
+        assert_eq!(
+            results,
+            json!({ "menu": null, "dialog": "スクリーンを作成 新しいスクリーン名 キャンセル 作成" })
+        );
+    }
+
+    #[tokio::test]
+    #[ignore = "run through `node scripts/check-js-contracts.mjs desktop`"]
+    async fn javascript_desktop_unsaved_changes_dialog_closes_without_saving_or_discarding() {
+        let mut runtime = FakeRuntime::new([json!({})]);
+        let _ = close_unsaved_changes_dialog(&mut runtime).await;
+        let expression = serde_json::to_string(&runtime.evaluated[0].0).unwrap();
+        let results = run_node_json(&format!(
+            r#"
+            const expression = {expression};
+            global.MouseEvent = class {{
+                constructor(type) {{ this.type = type; }}
+            }};
+            global.window = {{
+                innerWidth: 1600, innerHeight: 900,
+                getComputedStyle: () => ({{ visibility: 'visible', display: 'block' }})
+            }};
+            function element(text, attributes = {{}}, children = []) {{
+                return {{
+                    textContent: text,
+                    getBoundingClientRect: () => ({{
+                        left: 100, top: 100, right: 420, bottom: 300, width: 320, height: 200
+                    }}),
+                    querySelectorAll: () => children,
+                    querySelector: selector =>
+                        children.find(child => Object.entries(child.attributes)
+                            .some(([name, value]) => selector === `[${{name}}="${{value}}"]`)) || null,
+                    getAttribute: name => attributes[name] ?? null,
+                    attributes
+                }};
+            }}
+            // text: the dialog text; the close button closes the dialog.
+            function page(text) {{
+                const state = {{ open: true, clicked: [] }};
+                const button = (label, attributes) => {{
+                    const el = element(label, attributes);
+                    el.dispatchEvent = event => {{
+                        if (event.type !== 'click') return;
+                        state.clicked.push(label);
+                        if (label === 'close') state.open = false;
+                    }};
+                    return el;
+                }};
+                const dialog = element(text, {{}}, [
+                    button('保存', {{ 'data-qa-id': 'yes-btn' }}),
+                    button('保存しない', {{ 'data-qa-id': 'no-btn' }}),
+                    button('close', {{ 'data-name': 'close' }})
+                ]);
+                global.document = {{
+                    querySelectorAll: selector =>
+                        state.open && selector.includes('[role="dialog"]') ? [dialog] : [],
+                    elementFromPoint: () => null
+                }};
+                return state;
+            }}
+            (async () => {{
+                const results = {{}};
+                for (const [name, text] of [
+                    ['unsaved', '変更を保存しますか？保存せずにこの操作を継続すると変更内容が失われます。'],
+                    ['other_confirmation', 'このスクリーンを削除しますか？']
+                ]) {{
+                    const state = page(text);
+                    const result = await eval(expression);
+                    results[name] = {{ result, clicked: state.clicked }};
+                }}
+                console.log(JSON.stringify(results));
+            }})();
+            "#
+        ));
+
+        assert_eq!(
+            results,
+            json!({
+                "unsaved": { "result": { "found": true, "closed": true }, "clicked": ["close"] },
+                "other_confirmation": { "result": { "found": false }, "clicked": [] }
+            })
+        );
     }
 
     #[tokio::test]

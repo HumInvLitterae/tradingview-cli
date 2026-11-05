@@ -159,6 +159,11 @@ values and the `screener` command name were checked against the current code.
   - Numeric `modify` through the UI fails before writing: the manual setting now
     shows a condition and a value field instead of presets. Its failure path
     closed only the popover.
+- A screen switch or create from a screen with unsaved changes stops at a
+  save-changes dialog. The command closes it with the dialog's close button and
+  fails with `details.reason: "unsaved_changes"`; in Desktop the screen and its
+  changes stayed and no screen was created (switch 2 of 2, create 2 of 2). The
+  name-dialog finder no longer takes the still-open title menu for the dialog.
 - A storage save or delete whose evaluation times out, loses its connection or
   throws adds `write_outcome` without a result, because the request may have
   reached the provider. A refused request does not.
