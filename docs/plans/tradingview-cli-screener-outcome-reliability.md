@@ -122,10 +122,21 @@ values and the `screener` command name were checked against the current code.
   after confirmed readback returns success.
 - Run the `tradingview-cli` library and `cli_contract` tests, Clippy and format
   checks.
-- `UNCONFIRMED` until observed in Desktop: whether Escape closes the panel while a
-  screen name dialog is open, how often a close fails after a write, and what the
-  Escapes left over after a filter popup closes reach. Four filter expressions
-  still send Escape three times at nine points without checking between keys.
+- Observed in TradingView Desktop 3.4.0 on 2026-11-05, with the panel docked
+  beside a chart whose window was not in front:
+  - Escape while a screen name dialog is open closes only the dialog. The panel
+    stayed open and `screener close` failed in 2 of 2 trials, once with "did not
+    close after Escape" and once with a CDP timeout. A failure after the dialog
+    opens therefore returns its own error and leaves the panel open.
+  - After a write, the panel closed in 3 of 3 `screens create` runs. No filter
+    write was sampled: `filters add` fails before writing (next point), and
+    storage writes run only on the full-page Screener, which has no panel to close.
+  - One Escape dispatched to the document closes the Screener panel when no popup
+    is open (3 of 3). `filters add` sends three before it looks for the add button,
+    so it closed the panel and failed with `add_button_not_found` in 5 of 5 dry
+    runs. v0.41.0 has the same code. The other eight points send their Escapes
+    after one popup closes, so the remaining keys are expected to close the panel
+    too; that was not observed.
 - A storage save or delete whose evaluation times out, loses its connection or
   throws adds `write_outcome` without a result, because the request may have
   reached the provider. A refused request does not.
@@ -141,5 +152,7 @@ values and the `screener` command name were checked against the current code.
 
 ## Progress
 
-Stages 1 and 2 are implemented with fixture evidence and are unreleased. No Desktop
-observation has been made.
+Stages 1 and 2 are implemented with fixture evidence and are unreleased. The
+Desktop observation on 2026-11-05 is recorded under Acceptance. It found that
+`filters add` closes the panel before it can add a filter, which the
+[work inventory](../next-version-work-items.md) tracks.
