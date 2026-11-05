@@ -1047,9 +1047,10 @@ A write may complete before readback fails. Such errors add
 `details.write_outcome: "uncertain"` and `details.save_result`. A save request
 that times out, loses its connection or throws before an answer may also have
 been applied, so it adds only `details.write_outcome: "uncertain"`. A readback
-response that is not a readable screen document, or whose column set has an
-entry without an id, counts as a failed readback; before a write, such a set is
-refused. A readback that is read but does not match the request, and a save the provider
+response that is not a readable screen document, or whose column set is neither
+a list nor `null` or has an entry without an id, counts as a failed readback;
+before a write, such a set is refused. A readback that is read but does not
+match the request, and a save the provider
 refuses, are errors without `write_outcome`. Inspect current
 storage before retrying, especially add, which can insert duplicates. These are account-setting
 changes, not temporary display toggles. Official MCP does not edit these saved
@@ -1115,8 +1116,8 @@ or throws before an answer adds only `details.write_outcome: "uncertain"`. A
 save the provider refuses carries its response and no `write_outcome`, and so
 does a readback that is read but does not match the request or a UI edit whose
 post-check fails. A readback response that is not a readable screen document,
-including one whose filters are present but not a list, counts as a failed
-readback.
+including one whose filters are neither a list nor `null` (`null` reads as no
+filters), counts as a failed readback.
 Official MCP can answer a suitable data-only query but does not edit these
 Desktop filters. Keep account settings and IDs private.
 

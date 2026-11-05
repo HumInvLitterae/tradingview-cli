@@ -47,7 +47,8 @@ package version omits the leading `v`.
   closes that popup first, sending Escape only while the popup is visible.
 - Screener storage reads used to confirm a change now fail when the response
   cannot be read in full: a body that is not a screen list or screen document,
-  filters or columns that are present but not lists, or entries without an id
+  filters or columns set to a value other than a list or `null` (`null` reads
+  as absent), or entries without an id
   or title. After a write such a read adds `details.write_outcome: "uncertain"`;
   before one, column edits refuse to save. A screen delete could previously
   report `confirmed: true` from such a response, and a delete now also checks

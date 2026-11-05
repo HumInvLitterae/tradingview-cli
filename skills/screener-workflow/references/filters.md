@@ -56,7 +56,7 @@ or throws before an answer adds only `details.write_outcome: "uncertain"`. A
 save the provider refuses carries its response and no `write_outcome`, and so
 does a readback that is read but does not match the request or a UI edit whose
 post-check fails. A readback response that is not a readable screen document,
-including one whose filters are present but not a list, counts as a failed
-readback.
+including one whose filters are neither a list nor `null` (`null` reads as no
+filters), counts as a failed readback.
 Official MCP can answer a suitable data-only query but does not edit these
 Desktop filters. Keep account settings and IDs private.
