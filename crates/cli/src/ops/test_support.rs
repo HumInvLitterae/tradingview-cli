@@ -1,4 +1,9 @@
-use std::{collections::VecDeque, io::Cursor, time::Duration};
+use std::{
+    collections::VecDeque,
+    io::{Cursor, Write},
+    process::Stdio,
+    time::Duration,
+};
 
 use image::{ImageBuffer, ImageFormat, Rgba};
 use serde_json::Value;
@@ -156,16 +161,30 @@ pub(super) fn png_fixture(width: u32, height: u32) -> Vec<u8> {
     cursor.into_inner()
 }
 
-/// Runs `script` with `node -e` for the ignored JavaScript contract tests and
+/// Runs `script` with Node for the ignored JavaScript contract tests and
 /// returns the JSON value it prints last.
 ///
+/// The script goes through standard input, because Linux limits one command-line
+/// argument to 128 KiB and scripts that embed several expressions exceed it.
 /// The script must print one JSON value per line with `console.log`; a thrown
 /// assertion or nonzero exit fails the test with Node's stderr.
 pub(crate) fn run_node_json(script: &str) -> Value {
-    let output = std::process::Command::new("node")
-        .args(["-e", script])
-        .output()
+    let mut child = std::process::Command::new("node")
+        .arg("-")
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
         .expect("Node.js is required for the JavaScript contract tests");
+    child
+        .stdin
+        .take()
+        .expect("Node's standard input should be piped")
+        .write_all(script.as_bytes())
+        .expect("the script should be written to Node");
+    let output = child
+        .wait_with_output()
+        .expect("Node should finish the JavaScript contract script");
     assert!(
         output.status.success(),
         "{}",
