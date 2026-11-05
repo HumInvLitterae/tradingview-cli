@@ -7,6 +7,8 @@ package version omits the leading `v`.
 
 ## Unreleased
 
+## v0.42.0
+
 ### Added
 
 - `tradingview_market::QuoteClient` reads batch quotes over HTTP connections
@@ -38,6 +40,7 @@ package version omits the leading `v`.
   `node scripts/check-js-contracts.mjs <suite>...`, instead of six Python
   scripts, and use Node.js 26.13.0 (Active LTS) pinned once in `mise.toml`. The
   `mise run check:*-js` tasks keep their names.
+- Refreshed compatible transitive dependencies, including aws-lc-rs 1.19.0.
 
 ### Fixed
 
@@ -113,6 +116,10 @@ package version omits the leading `v`.
 - The specification and Screener skill now state that in Desktop 3.4.0
   `screens save-as` creates the copy and then fails because the docked panel
   keeps showing the original, so the list should be checked before retrying.
+- The specification and Screener skill now state that `filters add` and
+  `modify` leave the screen with unsaved changes, and that in Desktop 3.4.0
+  numeric `modify` through the UI fails before writing because the manual
+  setting no longer shows presets.
 
 ## v0.41.0
 
