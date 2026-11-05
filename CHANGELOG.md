@@ -105,6 +105,8 @@ package version omits the leading `v`.
   whole-operation deadline: connection, setup, reading and cleanup each allow
   ten seconds. The adapter-boundary notes say `tv bars` lives in
   `tradingview-market` and point to the current roadmap.
+- The development guide now describes the one-minute `tv bars` date-range live
+  smoke, its environment variables and how to choose its three ranges.
 
 ## v0.41.0
 

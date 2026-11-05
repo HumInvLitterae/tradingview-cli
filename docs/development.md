@@ -647,6 +647,25 @@ non-empty bars, `summary`, `range`, `symbol_resolution`,
 `source_availability`, public-safe `wait_summary`, and `data_quality`. Do not
 paste raw WebSocket output or live response payloads into tracked docs.
 
+For one-minute `tv bars --from/--to` range checks, choose an exchange-qualified
+symbol and three date ranges, then run:
+
+```bash
+TV_LIVE_BARS_RANGE_SMOKE=1 \
+TV_LIVE_BARS_RANGE_SYMBOL=<EXCHANGE:SYMBOL> \
+TV_LIVE_BARS_RANGE_SINGLE_FROM=<YYYY-MM-DD> TV_LIVE_BARS_RANGE_SINGLE_TO=<YYYY-MM-DD> \
+TV_LIVE_BARS_RANGE_PAGED_FROM=<YYYY-MM-DD> TV_LIVE_BARS_RANGE_PAGED_TO=<YYYY-MM-DD> \
+TV_LIVE_BARS_RANGE_CLOSURE_FROM=<YYYY-MM-DD> TV_LIVE_BARS_RANGE_CLOSURE_TO=<YYYY-MM-DD> \
+cargo test -p tradingview-cli --test live bars::one_minute_date_range_live_smoke -- --ignored --exact --nocapture
+```
+
+`SINGLE` must fit in one 500-bar fetch window, such as one regular session, and
+the test requires no additional window for it. `PAGED` must need at least one
+additional window, such as a week. `CLOSURE` should span a weekend or holiday.
+Run `tv bars` once with each range first if the windows are uncertain. Each case
+runs once with a 15-second deadline. The test prints only aggregate counts and
+classifications, never the symbol, dates or bars.
+
 ## Official MCP client development checks
 
 The internal client has loopback-only OAuth/MCP fixtures and synthetic credential
