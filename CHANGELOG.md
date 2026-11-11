@@ -7,6 +7,10 @@ package version omits the leading `v`.
 
 ## Unreleased
 
+### Changed
+
+- Updated rmcp to 3.9.0 and refreshed compatible transitive dependencies.
+
 ## v0.42.0
 
 ### Added
