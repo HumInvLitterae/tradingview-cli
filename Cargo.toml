@@ -45,7 +45,6 @@ tracing = "0.1.44"
 tracing-subscriber = "0.3.23"
 
 tradingview-cdp = { path = "crates/cdp" }
-tradingview-cli = { path = "crates/cli" }
 tradingview-core = { path = "crates/core" }
 tradingview-market = { path = "crates/market" }
 tradingview-mcp = { path = "crates/mcp" }
