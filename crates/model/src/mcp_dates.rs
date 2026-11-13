@@ -24,10 +24,7 @@ pub(crate) fn iso_date(date: &str) -> bool {
         2 => 28,
         _ => 0,
     };
-    if year == 0 || day == 0 || day > max {
-        return false;
-    }
-    true
+    year != 0 && day != 0 && day <= max
 }
 
 pub(crate) fn utc_seconds(value: &str) -> bool {
