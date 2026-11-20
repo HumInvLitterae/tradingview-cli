@@ -9,7 +9,8 @@ package version omits the leading `v`.
 
 ### Changed
 
-- Updated rmcp to 3.10.0 and refreshed compatible transitive dependencies.
+- Updated rmcp to 3.11.0, keyring-core to 1.1.0, and clap to 4.6.9.
+  Refreshed compatible transitive dependencies.
 
 ## v0.42.0
 
